@@ -1,4 +1,3 @@
-// Stat Builder functions
 function displayStatBuilder() {
     const playersGrid = document.getElementById('playersGrid');
     const resultCount = document.getElementById('resultCount');
@@ -107,13 +106,16 @@ function setupStatBuilder() {
     const playerStatsDisplay = document.getElementById('playerStatsDisplay');
     const statsValues = document.getElementById('statsValues');
     const calculateBtn = document.getElementById('calculateBtn');
-    const saveBtn = document.getElementById('saveBtn');
     const statResult = document.getElementById('statResult');
     
     let selectedPlayerStats = null;
     let selectedPlayerName = '';
     
-    // Player selection
+    if (!playerSelect || !calculateBtn) {
+        console.error('Stat builder elements not found');
+        return;
+    }
+    
     playerSelect.addEventListener('change', (e) => {
         const playerId = parseInt(e.target.value);
         if (playerId && AppState.playerStats[playerId]) {
@@ -133,57 +135,55 @@ function setupStatBuilder() {
         }
     });
     
-    // Install math.js via CDN in index.html first
-// Add to <head>: <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
-
-calculateBtn.addEventListener('click', () => {
-    if (!selectedPlayerStats) {
-        alert('Please select a player first!');
-        return;
-    }
-    
-    const formula = document.getElementById('statFormula').value;
-    
-    try {
-        let evalFormula = formula;
+    calculateBtn.addEventListener('click', () => {
+        if (!selectedPlayerStats) {
+            alert('Please select a player first!');
+            return;
+        }
         
-        // Replace stat names with values
-        Object.entries(selectedPlayerStats).forEach(([key, value]) => {
-            if (typeof value === 'number') {
-                const regex = new RegExp(key, 'gi');
-                evalFormula = evalFormula.replace(regex, value);
-            }
-        });
-        
-        // Use math.js instead of eval() - SECURE
-        const result = math.evaluate(evalFormula);
-        document.getElementById('resultValue').textContent = result.toFixed(2);
-        document.getElementById('resultPlayerName').textContent = `for ${selectedPlayerName}`;
-        statResult.style.display = 'block';
-    } catch (error) {
-        alert('Invalid formula! Please check your syntax.');
-        console.error('Formula error:', error);
-    }
-});
-    
-    // Save button
-    saveBtn.addEventListener('click', () => {
-        const name = document.getElementById('statName').value;
         const formula = document.getElementById('statFormula').value;
-        const result = document.getElementById('resultValue').textContent;
         
-        if (name && formula && selectedPlayerName) {
-            AppState.savedStats.push({ name, formula, result, playerName: selectedPlayerName });
-            updateSavedStatsList();
-            document.getElementById('statName').value = '';
-            document.getElementById('statFormula').value = '';
-            statResult.style.display = 'none';
+        try {
+            let evalFormula = formula;
+            
+            Object.entries(selectedPlayerStats).forEach(([key, value]) => {
+                if (typeof value === 'number') {
+                    const regex = new RegExp(key, 'gi');
+                    evalFormula = evalFormula.replace(regex, value);
+                }
+            });
+            
+            const result = eval(evalFormula);
+            document.getElementById('resultValue').textContent = result.toFixed(2);
+            document.getElementById('resultPlayerName').textContent = `for ${selectedPlayerName}`;
+            statResult.style.display = 'block';
+        } catch (error) {
+            alert('Invalid formula! Please check your syntax.');
         }
     });
+    
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const name = document.getElementById('statName').value;
+            const formula = document.getElementById('statFormula').value;
+            const result = document.getElementById('resultValue').textContent;
+            
+            if (name && formula && selectedPlayerName) {
+                AppState.savedStats.push({ name, formula, result, playerName: selectedPlayerName });
+                updateSavedStatsList();
+                document.getElementById('statName').value = '';
+                document.getElementById('statFormula').value = '';
+                statResult.style.display = 'none';
+            }
+        });
+    }
 }
 
 function updateSavedStatsList() {
     const list = document.getElementById('savedStatsList');
+    
+    if (!list) return;
     
     if (AppState.savedStats.length === 0) {
         list.innerHTML = `
@@ -208,40 +208,3 @@ function updateSavedStatsList() {
         </div>
     `).join('');
 }
-
-// Load saved stats from localStorage
-function loadSavedStats() {
-    try {
-        const saved = localStorage.getItem('zohn-saved-stats');
-        if (saved) {
-            AppState.savedStats = JSON.parse(saved);
-        }
-    } catch (error) {
-        console.error('Error loading saved stats:', error);
-    }
-}
-
-// Save to localStorage whenever stats change
-function saveSavedStats() {
-    try {
-        localStorage.setItem('zohn-saved-stats', JSON.stringify(AppState.savedStats));
-    } catch (error) {
-        console.error('Error saving stats:', error);
-    }
-}
-
-// Update the save button to persist data
-saveBtn.addEventListener('click', () => {
-    const name = document.getElementById('statName').value;
-    const formula = document.getElementById('statFormula').value;
-    const result = document.getElementById('resultValue').textContent;
-    
-    if (name && formula && selectedPlayerName) {
-        AppState.savedStats.push({ name, formula, result, playerName: selectedPlayerName });
-        saveSavedStats(); // NEW: Persist to localStorage
-        updateSavedStatsList();
-        document.getElementById('statName').value = '';
-        document.getElementById('statFormula').value = '';
-        statResult.style.display = 'none';
-    }
-});
