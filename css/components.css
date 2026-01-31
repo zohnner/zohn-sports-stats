@@ -259,3 +259,73 @@
         text-align: center;
     }
 }
+
+/* ESPN Style Ticker */
+.ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    background: #111;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    border-bottom: 3px solid #cc0000;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.ticker-title {
+    background: #cc0000;
+    color: white;
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    z-index: 5;
+    box-shadow: 10px 0 20px rgba(0,0,0,0.5);
+}
+
+.ticker {
+    display: flex;
+    white-space: nowrap;
+    /* The animation duration (60s) controls the speed */
+    animation: ticker-move 60s linear infinite;
+}
+
+.ticker:hover {
+    animation-play-state: paused; /* Pause on hover so users can read */
+}
+
+.ticker__item {
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    border-right: 1px solid #333;
+}
+
+.ticker-logo {
+    width: 28px;
+    height: 28px;
+    margin: 0 10px;
+}
+
+.ticker-team {
+    color: #94a3b8;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.ticker-score {
+    color: white;
+    font-weight: 800;
+    margin: 0 8px;
+    font-size: 1rem;
+}
+
+@keyframes ticker-move {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } /* Resets halfway through the duplicated list */
+}

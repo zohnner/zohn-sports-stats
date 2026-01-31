@@ -13,23 +13,28 @@ body {
 
 /* Animated gradient background */
 body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-    z-index: -1;
-    opacity: 0.15;
+    /* ... existing properties ... */
+    opacity: 0.1; /* Slightly lowered for better text readability */
+    will-change: transform; /* Performance hint for browser */
+    pointer-events: none; /* Ensure it doesn't block clicks */
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+/* Add a smooth fade-in for cards */
+.player-card {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ensure Search Box is visible against background */
+.search-container input {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 /* Header */

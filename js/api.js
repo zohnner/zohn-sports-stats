@@ -1,5 +1,3 @@
-const API_BASE = 'https://www.balldontlie.io/api/v1';
-
 const AppState = {
     allPlayers: [],
     allTeams: [],
@@ -11,8 +9,7 @@ const AppState = {
     selectedPlayer: null
 };
 
-// Hardcoded player data from API (500+ players)
-const NBA_PLAYERS_DATA = [
+const NBA_PLAYERS = [
     {id: 237, first_name: "LeBron", last_name: "James", position: "F", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}},
     {id: 115, first_name: "Stephen", last_name: "Curry", position: "G", team: {id: 10, full_name: "Golden State Warriors", abbreviation: "GSW", city: "Golden State", conference: "West", division: "Pacific"}},
     {id: 140, first_name: "Kevin", last_name: "Durant", position: "F", team: {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"}},
@@ -43,14 +40,6 @@ const NBA_PLAYERS_DATA = [
     {id: 328, first_name: "Julius", last_name: "Randle", position: "F-C", team: {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"}},
     {id: 359, first_name: "Domantas", last_name: "Sabonis", position: "C-F", team: {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"}},
     {id: 279, first_name: "Lauri", last_name: "Markkanen", position: "F-C", team: {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}},
-    {id: 485, first_name: "Jalen", last_name: "Williams", position: "G-F", team: {id: 21, full_name: "Oklahoma City Thunder", abbreviation: "OKC", city: "Oklahoma City", conference: "West", division: "Northwest"}},
-    {id: 124, first_name: "Chet", last_name: "Holmgren", position: "C-F", team: {id: 21, full_name: "Oklahoma City Thunder", abbreviation: "OKC", city: "Oklahoma City", conference: "West", division: "Northwest"}},
-    {id: 117, first_name: "Jrue", last_name: "Holiday", position: "G", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
-    {id: 430, first_name: "Kristaps", last_name: "Porziņģis", position: "C-F", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
-    {id: 182, first_name: "Jaren", last_name: "Jackson Jr.", position: "F-C", team: {id: 15, full_name: "Memphis Grizzlies", abbreviation: "MEM", city: "Memphis", conference: "West", division: "Southwest"}},
-    {id: 474, first_name: "Evan", last_name: "Mobley", position: "C-F", team: {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"}},
-    {id: 4, first_name: "Steven", last_name: "Adams", position: "C", team: {id: 15, full_name: "Memphis Grizzlies", abbreviation: "MEM", city: "Memphis", conference: "West", division: "Southwest"}},
-    {id: 6, first_name: "Precious", last_name: "Achiuwa", position: "F", team: {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"}},
     {id: 666, first_name: "Nikola", last_name: "Vučević", position: "C", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
     {id: 138, first_name: "DeMar", last_name: "DeRozan", position: "F-G", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
     {id: 258, first_name: "Zach", last_name: "LaVine", position: "G-F", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
@@ -62,36 +51,19 @@ const NBA_PLAYERS_DATA = [
     {id: 85, first_name: "Tyler", last_name: "Herro", position: "G", team: {id: 16, full_name: "Miami Heat", abbreviation: "MIA", city: "Miami", conference: "East", division: "Southeast"}},
     {id: 278, first_name: "Brandon", last_name: "Ingram", position: "F", team: {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"}},
     {id: 293, first_name: "CJ", last_name: "McCollum", position: "G", team: {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"}},
-    {id: 466, first_name: "Scottie", last_name: "Barnes", position: "F-G", team: {id: 28, full_name: "Toronto Raptors", abbreviation: "TOR", city: "Toronto", conference: "East", division: "Atlantic"}},
-    {id: 356, first_name: "Anfernee", last_name: "Simons", position: "G", team: {id: 24, full_name: "Portland Trail Blazers", abbreviation: "POR", city: "Portland", conference: "West", division: "Northwest"}},
-    {id: 199, first_name: "Jerami", last_name: "Grant", position: "F", team: {id: 24, full_name: "Portland Trail Blazers", abbreviation: "POR", city: "Portland", conference: "West", division: "Northwest"}},
-    {id: 110, first_name: "Jalen", last_name: "Green", position: "G", team: {id: 11, full_name: "Houston Rockets", abbreviation: "HOU", city: "Houston", conference: "West", division: "Southwest"}},
-    {id: 371, first_name: "Alperen", last_name: "Şengün", position: "C", team: {id: 10, full_name: "Houston Rockets", abbreviation: "HOU", city: "Houston", conference: "West", division: "Southwest"}},
-    {id: 142, first_name: "Cade", last_name: "Cunningham", position: "G", team: {id: 8, full_name: "Detroit Pistons", abbreviation: "DET", city: "Detroit", conference: "East", division: "Central"}},
-    {id: 481, first_name: "Jaden", last_name: "Ivey", position: "G", team: {id: 8, full_name: "Detroit Pistons", abbreviation: "DET", city: "Detroit", conference: "East", division: "Central"}},
-    {id: 30, first_name: "Keegan", last_name: "Murray", position: "F", team: {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"}},
-    {id: 157, first_name: "Rudy", last_name: "Gobert", position: "C", team: {id: 18, full_name: "Minnesota Timberwolves", abbreviation: "MIN", city: "Minneapolis", conference: "West", division: "Northwest"}},
     {id: 139, first_name: "Anthony", last_name: "Edwards", position: "G", team: {id: 18, full_name: "Minnesota Timberwolves", abbreviation: "MIN", city: "Minneapolis", conference: "West", division: "Northwest"}},
     {id: 336, first_name: "Mikal", last_name: "Bridges", position: "F-G", team: {id: 3, full_name: "Brooklyn Nets", abbreviation: "BKN", city: "Brooklyn", conference: "East", division: "Atlantic"}},
-    {id: 82, first_name: "Cameron", last_name: "Johnson", position: "F", team: {id: 3, full_name: "Brooklyn Nets", abbreviation: "BKN", city: "Brooklyn", conference: "East", division: "Atlantic"}},
-    {id: 79, first_name: "Collin", last_name: "Sexton", position: "G", team: {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}},
-    {id: 261, first_name: "Jordan", last_name: "Clarkson", position: "G", team: {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}},
-    {id: 483, first_name: "Bennedict", last_name: "Mathurin", position: "G-F", team: {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"}},
-    {id: 450, first_name: "Myles", last_name: "Turner", position: "C", team: {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"}},
     {id: 203, first_name: "Aaron", last_name: "Gordon", position: "F", team: {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"}},
     {id: 310, first_name: "Jamal", last_name: "Murray", position: "G", team: {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"}},
-    {id: 446, first_name: "Desmond", last_name: "Bane", position: "G-F", team: {id: 15, full_name: "Memphis Grizzlies", abbreviation: "MEM", city: "Memphis", conference: "West", division: "Southwest"}},
     {id: 75, first_name: "Jarrett", last_name: "Allen", position: "C", team: {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"}},
-    {id: 479, first_name: "Walker", last_name: "Kessler", position: "C", team: {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}},
     {id: 3, first_name: "Derrick", last_name: "White", position: "G", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
     {id: 395, first_name: "Austin", last_name: "Reaves", position: "G", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}},
     {id: 351, first_name: "D'Angelo", last_name: "Russell", position: "G", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}}
 ];
 
 async function fetchAllPlayers() {
-    console.log('Loading hardcoded NBA players...');
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return NBA_PLAYERS_DATA;
+    console.log('Loading hardcoded players...');
+    return NBA_PLAYERS;
 }
 
 async function fetchTeamsAPI() {
@@ -102,7 +74,6 @@ async function fetchTeamsAPI() {
         {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"},
         {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"},
         {id: 7, full_name: "Dallas Mavericks", abbreviation: "DAL", city: "Dallas", conference: "West", division: "Southwest"},
-        {id: 8, full_name: "Detroit Pistons", abbreviation: "DET", city: "Detroit", conference: "East", division: "Central"},
         {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"},
         {id: 10, full_name: "Golden State Warriors", abbreviation: "GSW", city: "Golden State", conference: "West", division: "Pacific"},
         {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"},
@@ -120,7 +91,6 @@ async function fetchTeamsAPI() {
         {id: 24, full_name: "Portland Trail Blazers", abbreviation: "POR", city: "Portland", conference: "West", division: "Northwest"},
         {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"},
         {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"},
-        {id: 28, full_name: "Toronto Raptors", abbreviation: "TOR", city: "Toronto", conference: "East", division: "Atlantic"},
         {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}
     ];
 }
@@ -129,7 +99,9 @@ async function fetchGamesAPI() {
     return [
         {id: 1, date: '2024-01-15', season: 2023, home_team: {full_name: 'Los Angeles Lakers', abbreviation: 'LAL'}, visitor_team: {full_name: 'Boston Celtics', abbreviation: 'BOS'}, home_team_score: 115, visitor_team_score: 109},
         {id: 2, date: '2024-01-15', season: 2023, home_team: {full_name: 'Golden State Warriors', abbreviation: 'GSW'}, visitor_team: {full_name: 'Phoenix Suns', abbreviation: 'PHX'}, home_team_score: 122, visitor_team_score: 125},
-        {id: 3, date: '2024-01-14', season: 2023, home_team: {full_name: 'Milwaukee Bucks', abbreviation: 'MIL'}, visitor_team: {full_name: 'Miami Heat', abbreviation: 'MIA'}, home_team_score: 118, visitor_team_score: 112}
+        {id: 3, date: '2024-01-14', season: 2023, home_team: {full_name: 'Milwaukee Bucks', abbreviation: 'MIL'}, visitor_team: {full_name: 'Miami Heat', abbreviation: 'MIA'}, home_team_score: 118, visitor_team_score: 112},
+        {id: 4, date: '2024-01-14', season: 2023, home_team: {full_name: 'Denver Nuggets', abbreviation: 'DEN'}, visitor_team: {full_name: 'Dallas Mavericks', abbreviation: 'DAL'}, home_team_score: 128, visitor_team_score: 125},
+        {id: 5, date: '2024-01-13', season: 2023, home_team: {full_name: 'Philadelphia 76ers', abbreviation: 'PHI'}, visitor_team: {full_name: 'Cleveland Cavaliers', abbreviation: 'CLE'}, home_team_score: 106, visitor_team_score: 103}
     ];
 }
 

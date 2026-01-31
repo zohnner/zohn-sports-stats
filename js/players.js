@@ -3,16 +3,19 @@ async function loadPlayers() {
     const playersGrid = document.getElementById('playersGrid');
     
     try {
-        resultCount.textContent = 'Loading players from API...';
+        resultCount.textContent = 'Loading players...';
         playersGrid.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: white;">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🏀</div>
-                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Fetching NBA players...</p>
-                <p style="color: #94a3b8; font-size: 0.9rem;">This may take 10-20 seconds</p>
+                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Loading NBA players...</p>
             </div>
         `;
         
         AppState.allPlayers = await fetchAllPlayers();
+        
+        if (!AppState.allPlayers || AppState.allPlayers.length === 0) {
+            throw new Error('No players returned');
+        }
         
         console.log(`Loaded ${AppState.allPlayers.length} players`);
         
@@ -31,9 +34,8 @@ async function loadPlayers() {
         playersGrid.innerHTML = `
             <div style="grid-column: 1/-1; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center; color: white;">
                 <h3 style="color: #f87171; margin-bottom: 1rem;">⚠️ Failed to Load Players</h3>
-                <p style="color: #fca5a5; margin-bottom: 1rem;">${error.message}</p>
-                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">The API may be rate-limited or temporarily unavailable.</p>
-                <button onclick="loadPlayers()" style="padding: 0.75rem 1.5rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Retry</button>
+                <p style="color: #fca5a5; margin-bottom: 1rem;">Failed to load players.</p>
+                <button onclick="loadPlayers()" style="padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">🔄 Retry</button>
             </div>
         `;
     }
