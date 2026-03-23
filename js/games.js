@@ -114,10 +114,16 @@ function createGameCard(game) {
         </div>
     ` : '';
 
+    const margin    = isFinal && hasScore ? Math.abs(homeScore - awayScore) : null;
+    const marginStr = margin != null ? `<span class="game-margin">by ${margin}</span>` : '';
+
     card.innerHTML = `
         <div class="game-card-header">
             <span class="game-date">${dateStr}</span>
-            <span class="game-status ${statusCls}">${isLive ? '<span class="live-dot"></span>' : ''}${status}</span>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+                ${marginStr}
+                <span class="game-status ${statusCls}">${isLive ? '<span class="live-dot"></span>' : ''}${status}</span>
+            </div>
         </div>
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}">

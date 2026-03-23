@@ -1335,6 +1335,21 @@
     z-index: 0;
 }
 
+/* Mini stat bar in leaderboard rows */
+.lb-bar {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.lb-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
 /* ============================================================
    QUARTER-BY-QUARTER SCORE TABLE  (NBA game cards)
    ============================================================ */

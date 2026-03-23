@@ -87,9 +87,12 @@ function _buildPanel(cat) {
     if (ranked.length === 0) {
         list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
     } else {
+        const topVal = AppState.playerStats[ranked[0].id][cat.key];
+
         ranked.forEach((player, i) => {
             const val     = AppState.playerStats[player.id][cat.key];
             const display = cat.pct ? (val * 100).toFixed(cat.decimals) + '%' : val.toFixed(cat.decimals);
+            const barPct  = topVal > 0 ? Math.round((val / topVal) * 100) : 0;
             const abbr    = player.team?.abbreviation || '';
             const colors  = getTeamColors(abbr);
             const initials = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
@@ -102,12 +105,13 @@ function _buildPanel(cat) {
             row.innerHTML = `
                 <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
                 <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
-                    ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.lb-avatar-initials');if(s)s.style.visibility='hidden'">` : ''}
                     <span class="lb-avatar-initials">${initials}</span>
                 </div>
                 <div class="lb-player">
                     <span class="lb-name">${player.first_name} ${player.last_name}</span>
                     <span class="lb-team">${abbr}${player.position ? ' · ' + player.position : ''}</span>
+                    <div class="lb-bar"><div class="lb-bar-fill" style="width:${barPct}%;background:${cat.color}22;border-right:2px solid ${cat.color}88"></div></div>
                 </div>
                 <span class="lb-value" style="color:${cat.color}">${display}</span>
             `;

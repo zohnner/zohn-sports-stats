@@ -64,6 +64,13 @@ function _createTeamCard(team) {
     card.setAttribute('aria-label', `View ${team.full_name}`);
     card.addEventListener('click', () => showTeamDetail(team.id));
 
+    // Pull live W-L + conf rank from standings if already loaded
+    const standing  = AppState.nbaStandings?.find(s => s.teamAbbr === team.abbreviation);
+    const record    = standing ? `${standing.wins}–${standing.losses}` : null;
+    const confRank  = standing ? `#${standing.rank} ${team.conference}` : null;
+    const streak    = standing?.streak || null;
+    const streakClr = streak?.startsWith('W') ? '#10b981' : '#f87171';
+
     card.innerHTML = `
         <div class="player-card-top">
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);color:#fff;font-weight:800;font-size:1.4rem;letter-spacing:0.02em">
@@ -71,21 +78,31 @@ function _createTeamCard(team) {
                 <span class="avatar-text">${initials}</span>
             </div>
             <div class="player-name">${team.full_name}</div>
-            <div class="player-team">${team.abbreviation}</div>
+            <div class="player-team">${team.abbreviation}${record ? ' · ' + record : ''}</div>
         </div>
         <div class="player-details">
             <div class="detail-row">
                 <span class="detail-label">Conference</span>
-                <span class="detail-value" style="color:${team.conference === 'East' ? 'var(--color-east)' : 'var(--color-west)'};font-weight:700">${team.conference}</span>
+                <span class="detail-value" style="color:${team.conference === 'East' ? 'var(--color-east)' : 'var(--color-west)'};font-weight:700">${confRank ?? team.conference}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Division</span>
                 <span class="detail-value">${team.division}</span>
             </div>
+            ${record ? `
+            <div class="detail-row">
+                <span class="detail-label">Record</span>
+                <span class="detail-value" style="font-weight:700">${record}</span>
+            </div>` : `
             <div class="detail-row">
                 <span class="detail-label">City</span>
                 <span class="detail-value">${team.city}</span>
-            </div>
+            </div>`}
+            ${streak ? `
+            <div class="detail-row">
+                <span class="detail-label">Streak</span>
+                <span class="detail-value" style="color:${streakClr};font-weight:700">${streak}</span>
+            </div>` : ''}
         </div>
     `;
 

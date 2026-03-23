@@ -419,7 +419,12 @@ function _chartsCard(recentGames) {
 function _compareCard(currentPlayer) {
     const options = AppState.allPlayers
         .filter(p => p.id !== currentPlayer.id)
-        .map(p => `<option value="${p.id}">${p.first_name} ${p.last_name} · ${p.team?.abbreviation || ''}</option>`)
+        .sort((a, b) => (AppState.playerStats[b.id]?.pts ?? 0) - (AppState.playerStats[a.id]?.pts ?? 0))
+        .map(p => {
+            const pts = AppState.playerStats[p.id]?.pts;
+            const ptsStr = pts != null ? ` · ${pts.toFixed(1)} PPG` : '';
+            return `<option value="${p.id}">${p.first_name} ${p.last_name} · ${p.team?.abbreviation || ''}${ptsStr}</option>`;
+        })
         .join('');
 
     return `
