@@ -181,6 +181,23 @@ function _teamHeader(team, colors) {
     const initials  = _teamInitials(team);
     const logoUrl   = _espnTeamLogoUrl(team.abbreviation);
     const confLabel = `${team.conference}ern Conference · ${team.division} Division`;
+
+    const standing   = AppState.nbaStandings?.find(s => s.teamAbbr === team.abbreviation);
+    const record     = standing ? `${standing.wins}–${standing.losses}` : null;
+    const confRank   = standing ? `#${standing.rank} in ${team.conference}` : null;
+    const streak     = standing?.streak;
+    const streakClr  = streak?.startsWith('W') ? '#10b981' : '#f87171';
+    const l10        = standing?.l10;
+
+    const standingBio = record ? `
+        <div class="player-bio-grid" style="margin-top:0.75rem">
+            <div class="player-bio-item"><span class="bio-label">Record</span><span class="bio-value" style="font-weight:800">${record}</span></div>
+            ${confRank ? `<div class="player-bio-item"><span class="bio-label">Conf Rank</span><span class="bio-value">${confRank}</span></div>` : ''}
+            ${streak   ? `<div class="player-bio-item"><span class="bio-label">Streak</span><span class="bio-value" style="color:${streakClr};font-weight:700">${streak}</span></div>` : ''}
+            ${l10      ? `<div class="player-bio-item"><span class="bio-label">Last 10</span><span class="bio-value">${l10}</span></div>` : ''}
+        </div>
+    ` : '';
+
     return `
         <div class="player-detail-header"
              style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
@@ -201,6 +218,7 @@ function _teamHeader(team, colors) {
                     </div>
                     <p class="player-detail-meta" style="color:var(--color-text-secondary)">${team.city}</p>
                     <p class="player-detail-meta">${confLabel}</p>
+                    ${standingBio}
                 </div>
             </div>
         </div>

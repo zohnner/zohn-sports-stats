@@ -844,6 +844,13 @@
 .game-status--live  { background: rgba(245,158,11,0.12);  color: #f59e0b; }
 .game-status--sched { background: rgba(100,116,139,0.1);  color: #64748b; }
 
+.game-margin {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.3px;
+}
+
 .live-dot {
     width: 6px;
     height: 6px;

@@ -222,17 +222,20 @@ function displayPlayersTable(players) {
     table.className = 'stats-table';
 
     const COLS = [
-        { label: '#',     field: null,      cls: 'tbl-rank' },
-        { label: 'Player', field: null,     cls: '' },
-        { label: 'Team',  field: null,      cls: '' },
-        { label: 'PPG',   field: 'pts',     cls: 'tbl-stat tbl-pts' },
-        { label: 'RPG',   field: 'reb',     cls: 'tbl-stat tbl-reb' },
-        { label: 'APG',   field: 'ast',     cls: 'tbl-stat tbl-ast' },
-        { label: 'FG%',   field: 'fg_pct',  cls: 'tbl-stat tbl-pct', pct: true },
-        { label: '3P%',   field: 'fg3_pct', cls: 'tbl-stat tbl-pct', pct: true },
-        { label: 'STL',   field: 'stl',     cls: 'tbl-stat' },
-        { label: 'BLK',   field: 'blk',     cls: 'tbl-stat' },
-        { label: 'MIN',   field: 'min',     cls: 'tbl-stat' },
+        { label: '#',     field: null,          cls: 'tbl-rank' },
+        { label: 'Player', field: null,         cls: '' },
+        { label: 'Team',  field: null,          cls: '' },
+        { label: 'GP',    field: 'games_played',cls: 'tbl-stat' },
+        { label: 'PPG',   field: 'pts',         cls: 'tbl-stat tbl-pts' },
+        { label: 'RPG',   field: 'reb',         cls: 'tbl-stat tbl-reb' },
+        { label: 'APG',   field: 'ast',         cls: 'tbl-stat tbl-ast' },
+        { label: 'FG%',   field: 'fg_pct',      cls: 'tbl-stat tbl-pct', pct: true },
+        { label: '3P%',   field: 'fg3_pct',     cls: 'tbl-stat tbl-pct', pct: true },
+        { label: 'FT%',   field: 'ft_pct',      cls: 'tbl-stat tbl-pct', pct: true },
+        { label: 'STL',   field: 'stl',         cls: 'tbl-stat' },
+        { label: 'BLK',   field: 'blk',         cls: 'tbl-stat' },
+        { label: 'TOV',   field: 'turnover',    cls: 'tbl-stat' },
+        { label: 'MIN',   field: 'min',         cls: 'tbl-stat' },
     ];
 
     // Header
@@ -257,10 +260,23 @@ function displayPlayersTable(players) {
             if (!col.field) {
                 // Static cells
                 if (col.label === '#')      return `<td class="tbl-rank">${i + 1}</td>`;
-                if (col.label === 'Player') return `<td>
-                    <div class="tbl-player-name">${player.first_name} ${player.last_name}</div>
-                    <div class="tbl-player-pos">${player.position || ''}</div>
-                </td>`;
+                if (col.label === 'Player') {
+                    const hsUrl  = getESPNHeadshotUrl(player);
+                    const clrs   = getTeamColors(player.team?.abbreviation || '');
+                    const inits  = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
+                    return `<td>
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                                ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">` : ''}
+                                <span>${inits}</span>
+                            </div>
+                            <div>
+                                <div class="tbl-player-name">${player.first_name} ${player.last_name}</div>
+                                <div class="tbl-player-pos">${player.position || ''}</div>
+                            </div>
+                        </div>
+                    </td>`;
+                }
                 if (col.label === 'Team')   return `<td><span class="tbl-team-badge">${player.team?.abbreviation || '—'}</span></td>`;
             }
             if (!stats || stats[col.field] == null) return `<td class="${col.cls}" style="color:#334155">—</td>`;

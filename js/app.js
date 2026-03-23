@@ -76,6 +76,19 @@ fetchESPNPlayerMap()
     }
 })();
 
+// Pre-fetch standings so team cards + player cards show W-L on first render
+fetchNBAStandings()
+    .then(rows => {
+        if (rows.length) {
+            AppState.nbaStandings = rows;
+            // Re-render current view only if it displays team/player data
+            const v = AppState.currentView;
+            if (v === 'players' && AppState.filteredPlayers.length > 0) displayPlayers(AppState.filteredPlayers);
+            if (v === 'teams'   && AppState.allTeams.length > 0)        displayTeams(AppState.allTeams);
+        }
+    })
+    .catch(() => {});
+
 // Live score polling — re-fetches NBA games every 30s when live games are present
 (function setupLivePolling() {
     const INTERVAL = 30_000;
