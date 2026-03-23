@@ -1,119 +1,299 @@
-/**
- * Teams-related functions
- */
+// ============================================================
+// Teams — grid view + team detail with roster
+// ============================================================
 
 async function loadTeams() {
-    const resultCount = document.getElementById('resultCount');
-    const playersGrid = document.getElementById('playersGrid');
-    
+    const grid = document.getElementById('playersGrid');
+
+    if (window.setBreadcrumb) setBreadcrumb('teams', null);
+    grid.className = 'players-grid';
+
+    // Skeleton while fetching
+    grid.innerHTML = Array.from({ length: 6 }, () => `
+        <div class="skeleton-card">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-line" style="width:70%;margin:0 auto 0.5rem"></div>
+            <div class="skeleton-line" style="width:40%;margin:0 auto 1rem"></div>
+            <div class="skeleton-line" style="width:90%"></div>
+            <div class="skeleton-line" style="width:80%;margin-top:0.5rem"></div>
+        </div>
+    `).join('');
+
     try {
-        resultCount.textContent = 'Loading teams...';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: white;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🏀</div>
-                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Fetching NBA teams...</p>
-                <div class="loading-spinner" style="margin-top: 2rem;"></div>
-            </div>
-        `;
-        
-        AppState.allTeams = await fetchTeamsAPI();
-        
-        console.log(`✅ Loaded ${AppState.allTeams.length} teams`);
+        if (!AppState.allTeams.length) {
+            AppState.allTeams = await fetchTeamsAPI();
+        }
+        Logger.info(`Teams loaded: ${AppState.allTeams.length}`, undefined, 'TEAMS');
         displayTeams(AppState.allTeams);
-        
     } catch (error) {
-        console.error('❌ Error loading teams:', error);
-        resultCount.textContent = 'Error loading teams';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center; color: white;">
-                <h3 style="color: #f87171; margin-bottom: 1rem;">⚠️ Failed to Load Teams</h3>
-                <p style="color: #fca5a5; margin-bottom: 1rem;">${error.message}</p>
-                <button onclick="loadTeams()" style="padding: 0.75rem 1.5rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    🔄 Retry
-                </button>
-            </div>
-        `;
+        Logger.error('Failed to load teams', error, 'TEAMS');
+        ErrorHandler.renderErrorState(grid, error, loadTeams);
+        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Teams' });
     }
 }
 
 function displayTeams(teams) {
-    const playersGrid = document.getElementById('playersGrid');
-    const resultCount = document.getElementById('resultCount');
-    
-    playersGrid.innerHTML = '';
-    playersGrid.className = 'players-grid';
-    
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+
     if (!teams || teams.length === 0) {
-        playersGrid.innerHTML = `
-            <p style="color: white; text-align: center; grid-column: 1/-1; padding: 3rem;">
-                No teams found.
-            </p>
-        `;
+        ErrorHandler.renderEmptyState(grid, 'No teams found', '🏟');
         return;
     }
-    
-    // Use DocumentFragment for performance
+
     const fragment = document.createDocumentFragment();
-    
-    teams.forEach(team => {
-        const card = createTeamCard(team);
-        fragment.appendChild(card);
-    });
-    
-    playersGrid.appendChild(fragment);
-    resultCount.textContent = `Showing ${teams.length} NBA teams`;
+    teams.forEach(team => fragment.appendChild(_createTeamCard(team)));
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
 }
 
-function createTeamCard(team) {
+function _espnTeamLogoUrl(abbr) {
+    return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr.toLowerCase()}.png` : null;
+}
+
+function _createTeamCard(team) {
+    const colors   = getTeamColors(team.abbreviation);
+    const confCls  = team.conference === 'East' ? 'conference-east' : 'conference-west';
+    const initials = _teamInitials(team);
+    const logoUrl  = _espnTeamLogoUrl(team.abbreviation);
+
     const card = document.createElement('div');
-    card.className = 'player-card team-card';
-    
-    // Conference colors
-    const conferenceColor = team.conference === 'East' ? '#3b82f6' : '#ef4444';
-    const divisionColors = {
-        'Atlantic': '#8b5cf6',
-        'Central': '#ec4899',
-        'Southeast': '#f59e0b',
-        'Northwest': '#10b981',
-        'Pacific': '#06b6d4',
-        'Southwest': '#f97316'
-    };
-    const divisionColor = divisionColors[team.division] || '#64748b';
-    
+    card.className = `player-card team-card ${confCls}`;
+    card.style.cursor = 'pointer';
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `View ${team.full_name}`);
+    card.addEventListener('click', () => showTeamDetail(team.id));
+
     card.innerHTML = `
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-            <div style="width: 100px; height: 100px; margin: 0 auto 1rem; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${conferenceColor};">
-                <div style="font-size: 3rem;">🏀</div>
+        <div class="player-card-top">
+            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);color:#fff;font-weight:800;font-size:1.4rem;letter-spacing:0.02em">
+                ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;padding:4px" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
+                <span class="avatar-text">${initials}</span>
             </div>
-            <div class="player-name" style="font-size: 1.3rem;">${team.full_name}</div>
-            <div class="player-id" style="font-size: 1rem; color: #94a3b8; margin-top: 0.5rem;">${team.abbreviation}</div>
+            <div class="player-name">${team.full_name}</div>
+            <div class="player-team">${team.abbreviation}</div>
         </div>
         <div class="player-details">
             <div class="detail-row">
-                <span class="detail-label">City:</span>
+                <span class="detail-label">Conference</span>
+                <span class="detail-value" style="color:${team.conference === 'East' ? 'var(--color-east)' : 'var(--color-west)'};font-weight:700">${team.conference}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Division</span>
+                <span class="detail-value">${team.division}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">City</span>
                 <span class="detail-value">${team.city}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Conference:</span>
-                <span class="detail-value" style="color: ${conferenceColor}; font-weight: 800;">
-                    ${team.conference}
-                </span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Division:</span>
-                <span class="detail-value" style="color: ${divisionColor}; font-weight: 700;">
-                    ${team.division}
-                </span>
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
-// Export to window
+// ── Team Detail ──────────────────────────────────────────────
+
+async function showTeamDetail(teamId, push = true) {
+    const team = AppState.allTeams.find(t => t.id === teamId);
+    if (!team) {
+        Logger.error(`Team ${teamId} not found`, undefined, 'TEAMS');
+        return;
+    }
+
+    const grid = document.getElementById('playersGrid');
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('teams', team.full_name);
+
+    if (push) {
+        history.pushState({ view: 'team', id: teamId }, '', `#team-${teamId}`);
+    }
+
+    const loadColors   = getTeamColors(team.abbreviation);
+    const loadInitials = _teamInitials(team);
+
+    grid.className = 'player-detail-container';
+    grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:4rem;color:white;">
+            <div class="player-avatar" style="background:linear-gradient(135deg,${loadColors.primary}cc,${loadColors.primary}55);width:88px;height:88px;font-size:1.75rem;font-weight:800;margin:0 auto 1.25rem">
+                ${loadInitials}
+            </div>
+            <p style="font-size:1.1rem;color:var(--color-text-secondary)">Loading roster…</p>
+            <div class="loading-spinner" style="margin-top:1.5rem"></div>
+        </div>
+    `;
+
+    try {
+        const roster = await fetchTeamRoster(teamId);
+        const colors  = getTeamColors(team.abbreviation);
+
+        // Load season stats for roster via NBA.com map (name matching)
+        const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
+        roster.forEach(p => {
+            if (!AppState.playerStats[p.id]) {
+                const key  = `${p.first_name} ${p.last_name}`.toLowerCase();
+                const stat = statsMap[key];
+                if (stat) AppState.playerStats[p.id] = { ...stat, player_id: p.id };
+            }
+        });
+
+        Logger.info(`Roster loaded: ${roster.length} players`, undefined, 'TEAMS');
+
+        grid.innerHTML = `
+            ${_teamHeader(team, colors)}
+            ${_rosterCard(roster, colors)}
+        `;
+
+
+    } catch (error) {
+        Logger.error('Error loading team detail', error, 'TEAMS');
+        grid.innerHTML = `
+            <div class="error-state">
+                <div class="error-state-icon">⚠️</div>
+                <h3 class="error-state-title">Failed to Load Team</h3>
+                <p class="error-state-message">${error.message}</p>
+                <button class="retry-btn" onclick="backToTeams()">← Back to Teams</button>
+            </div>
+        `;
+    }
+}
+
+function _teamHeader(team, colors) {
+    const initials  = _teamInitials(team);
+    const logoUrl   = _espnTeamLogoUrl(team.abbreviation);
+    const confLabel = `${team.conference}ern Conference · ${team.division} Division`;
+    return `
+        <div class="player-detail-header"
+             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
+                    border-top:3px solid ${colors.primary}88">
+            <button onclick="backToTeams()" class="back-button">← Back to Teams</button>
+            <div class="player-hero">
+                <div class="player-detail-avatar"
+                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                            color:#fff;font-size:2rem;font-weight:800;letter-spacing:0.02em;
+                            box-shadow:0 0 40px ${colors.primary}44">
+                    ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;padding:8px" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
+                    <span class="avatar-text">${initials}</span>
+                </div>
+                <div class="player-hero-info">
+                    <div class="player-hero-top">
+                        <h1 class="player-detail-name">${team.full_name}</h1>
+                        <span class="player-hero-pos">${team.abbreviation}</span>
+                    </div>
+                    <p class="player-detail-meta" style="color:var(--color-text-secondary)">${team.city}</p>
+                    <p class="player-detail-meta">${confLabel}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _rosterCard(roster, colors) {
+    if (!roster || roster.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title">Roster</h2>
+                <p style="color:var(--color-text-muted);text-align:center;padding:2rem">No roster data available for this season.</p>
+            </div>
+        `;
+    }
+
+    // Group by position
+    const positions = ['G', 'F', 'C', ''];
+    const byPos = {};
+    positions.forEach(pos => { byPos[pos] = []; });
+    roster.forEach(p => {
+        const pos = p.position || '';
+        const bucket = positions.includes(pos) ? pos : '';
+        byPos[bucket].push(p);
+    });
+
+    const rows = roster
+        .slice()
+        .sort((a, b) => {
+            const posOrder = { G: 0, F: 1, C: 2 };
+            const ap = posOrder[a.position] ?? 3;
+            const bp = posOrder[b.position] ?? 3;
+            if (ap !== bp) return ap - bp;
+            return (a.last_name || '').localeCompare(b.last_name || '');
+        })
+        .map(p => {
+            const stats      = AppState.playerStats[p.id];
+            const pts        = stats ? parseFloat(stats.pts).toFixed(1) : '—';
+            const reb        = stats ? parseFloat(stats.reb).toFixed(1) : '—';
+            const ast        = stats ? parseFloat(stats.ast).toFixed(1) : '—';
+            const jersey     = p.jersey_number ? `#${p.jersey_number}` : '';
+            const initials   = _playerInitials(p);
+            const headshotUrl = getESPNHeadshotUrl(p);
+
+            return `
+                <div class="roster-row" onclick="showPlayerDetail(${p.id})" style="cursor:pointer">
+                    <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden">
+                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">` : ''}
+                        <span style="position:relative;z-index:0">${initials}</span>
+                    </div>
+                    <div class="roster-info">
+                        <span class="roster-name">${p.first_name} ${p.last_name}</span>
+                        <span class="roster-meta">${p.position || 'N/A'}${jersey ? ' · ' + jersey : ''}</span>
+                    </div>
+                    <div class="roster-stats">
+                        <span style="color:var(--color-pts)">${pts}</span>
+                        <span style="color:var(--color-reb)">${reb}</span>
+                        <span style="color:var(--color-ast)">${ast}</span>
+                    </div>
+                    <div class="roster-labels">
+                        <span>PTS</span><span>REB</span><span>AST</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Roster · ${roster.length} Players</h2>
+            <div class="roster-list">${rows}</div>
+        </div>
+    `;
+}
+
+// ── Back to teams ────────────────────────────────────────────
+
+function backToTeams() {
+    history.pushState({ view: 'teams' }, '', '#teams');
+
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('[data-view="teams"]').forEach(t => t.classList.add('active'));
+    AppState.currentView = 'teams';
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('teams', null);
+
+    displayTeams(AppState.allTeams);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function _teamInitials(team) {
+    const name = team.name || team.full_name || '';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) return words[0][0] + words[words.length - 1][0];
+    return name.slice(0, 2);
+}
+
+function _playerInitials(player) {
+    const f = player.first_name?.[0] || '';
+    const l = player.last_name?.[0]  || '';
+    return f + l;
+}
+
+// ── Exports ──────────────────────────────────────────────────
+
 if (typeof window !== 'undefined') {
-    window.loadTeams = loadTeams;
-    window.displayTeams = displayTeams;
-    window.createTeamCard = createTeamCard;
+    window.loadTeams      = loadTeams;
+    window.displayTeams   = displayTeams;
+    window.showTeamDetail = showTeamDetail;
+    window.backToTeams    = backToTeams;
 }

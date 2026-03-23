@@ -1,147 +1,461 @@
+// ============================================================
+// CONFIGURATION
+// Get a free API key at https://www.balldontlie.io
+// Then replace the placeholder below with your key.
+// ============================================================
+const BDL_API_KEY = '857bec7d-aada-496f-abb1-79b16926fb37';
+
+const BDL_BASE_URL = 'https://api.balldontlie.io/v1';
+let CURRENT_SEASON = 2025; // BDL uses the year the season starts — mutable via season selector
+
+// ============================================================
+// App State
+// ============================================================
 const AppState = {
     allPlayers: [],
     allTeams: [],
     allGames: [],
-    playerStats: {},
+    playerStats: {},      // keyed by player id
     filteredPlayers: [],
     currentView: 'players',
     savedStats: [],
-    selectedPlayer: null
+    selectedPlayer: null,
+    positionFilter: 'all',
+    espnPlayerMap: null,  // name-key → ESPN athlete ID (loaded async on startup)
+    nbaStatsMap:   null,  // lowercase name → stat object (from NBA.com, loaded once per season)
+    _nbaStatsSeason: null,
 };
 
-const NBA_PLAYERS = [
-    {id: 237, first_name: "LeBron", last_name: "James", position: "F", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}},
-    {id: 115, first_name: "Stephen", last_name: "Curry", position: "G", team: {id: 10, full_name: "Golden State Warriors", abbreviation: "GSW", city: "Golden State", conference: "West", division: "Pacific"}},
-    {id: 140, first_name: "Kevin", last_name: "Durant", position: "F", team: {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"}},
-    {id: 15, first_name: "Giannis", last_name: "Antetokounmpo", position: "F", team: {id: 17, full_name: "Milwaukee Bucks", abbreviation: "MIL", city: "Milwaukee", conference: "East", division: "Central"}},
-    {id: 145, first_name: "Luka", last_name: "Dončić", position: "G", team: {id: 7, full_name: "Dallas Mavericks", abbreviation: "DAL", city: "Dallas", conference: "West", division: "Southwest"}},
-    {id: 132, first_name: "Joel", last_name: "Embiid", position: "C-F", team: {id: 23, full_name: "Philadelphia 76ers", abbreviation: "PHI", city: "Philadelphia", conference: "East", division: "Atlantic"}},
-    {id: 246, first_name: "Nikola", last_name: "Jokić", position: "C", team: {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"}},
-    {id: 434, first_name: "Jayson", last_name: "Tatum", position: "F-G", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
-    {id: 270, first_name: "Damian", last_name: "Lillard", position: "G", team: {id: 17, full_name: "Milwaukee Bucks", abbreviation: "MIL", city: "Milwaukee", conference: "East", division: "Central"}},
-    {id: 96, first_name: "Anthony", last_name: "Davis", position: "F-C", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}},
-    {id: 265, first_name: "Kawhi", last_name: "Leonard", position: "F", team: {id: 12, full_name: "LA Clippers", abbreviation: "LAC", city: "Los Angeles", conference: "West", division: "Pacific"}},
-    {id: 67, first_name: "Jimmy", last_name: "Butler", position: "F", team: {id: 16, full_name: "Miami Heat", abbreviation: "MIA", city: "Miami", conference: "East", division: "Southeast"}},
-    {id: 41, first_name: "Devin", last_name: "Booker", position: "G", team: {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"}},
-    {id: 299, first_name: "Ja", last_name: "Morant", position: "G", team: {id: 15, full_name: "Memphis Grizzlies", abbreviation: "MEM", city: "Memphis", conference: "West", division: "Southwest"}},
-    {id: 490, first_name: "Trae", last_name: "Young", position: "G", team: {id: 1, full_name: "Atlanta Hawks", abbreviation: "ATL", city: "Atlanta", conference: "East", division: "Southeast"}},
-    {id: 192, first_name: "Shai", last_name: "Gilgeous-Alexander", position: "G", team: {id: 21, full_name: "Oklahoma City Thunder", abbreviation: "OKC", city: "Oklahoma City", conference: "West", division: "Northwest"}},
-    {id: 294, first_name: "Donovan", last_name: "Mitchell", position: "G", team: {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"}},
-    {id: 184, first_name: "Paul", last_name: "George", position: "F-G", team: {id: 12, full_name: "LA Clippers", abbreviation: "LAC", city: "Los Angeles", conference: "West", division: "Pacific"}},
-    {id: 57, first_name: "Jaylen", last_name: "Brown", position: "G-F", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
-    {id: 169, first_name: "De'Aaron", last_name: "Fox", position: "G", team: {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"}},
-    {id: 196, first_name: "Tyrese", last_name: "Haliburton", position: "G", team: {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"}},
-    {id: 449, first_name: "Karl-Anthony", last_name: "Towns", position: "C-F", team: {id: 18, full_name: "Minnesota Timberwolves", abbreviation: "MIN", city: "Minneapolis", conference: "West", division: "Northwest"}},
-    {id: 2, first_name: "Bam", last_name: "Adebayo", position: "C-F", team: {id: 16, full_name: "Miami Heat", abbreviation: "MIA", city: "Miami", conference: "East", division: "Southeast"}},
-    {id: 488, first_name: "Zion", last_name: "Williamson", position: "F", team: {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"}},
-    {id: 31, first_name: "Bradley", last_name: "Beal", position: "G", team: {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"}},
-    {id: 22, first_name: "Deandre", last_name: "Ayton", position: "C", team: {id: 24, full_name: "Portland Trail Blazers", abbreviation: "POR", city: "Portland", conference: "West", division: "Northwest"}},
-    {id: 375, first_name: "Pascal", last_name: "Siakam", position: "F", team: {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"}},
-    {id: 328, first_name: "Julius", last_name: "Randle", position: "F-C", team: {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"}},
-    {id: 359, first_name: "Domantas", last_name: "Sabonis", position: "C-F", team: {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"}},
-    {id: 279, first_name: "Lauri", last_name: "Markkanen", position: "F-C", team: {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}},
-    {id: 666, first_name: "Nikola", last_name: "Vučević", position: "C", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
-    {id: 138, first_name: "DeMar", last_name: "DeRozan", position: "F-G", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
-    {id: 258, first_name: "Zach", last_name: "LaVine", position: "G-F", team: {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"}},
-    {id: 126, first_name: "Jalen", last_name: "Brunson", position: "G", team: {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"}},
-    {id: 340, first_name: "OG", last_name: "Anunoby", position: "F-G", team: {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"}},
-    {id: 347, first_name: "Darius", last_name: "Garland", position: "G", team: {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"}},
-    {id: 477, first_name: "Paolo", last_name: "Banchero", position: "F", team: {id: 22, full_name: "Orlando Magic", abbreviation: "ORL", city: "Orlando", conference: "East", division: "Southeast"}},
-    {id: 467, first_name: "Franz", last_name: "Wagner", position: "F-G", team: {id: 22, full_name: "Orlando Magic", abbreviation: "ORL", city: "Orlando", conference: "East", division: "Southeast"}},
-    {id: 85, first_name: "Tyler", last_name: "Herro", position: "G", team: {id: 16, full_name: "Miami Heat", abbreviation: "MIA", city: "Miami", conference: "East", division: "Southeast"}},
-    {id: 278, first_name: "Brandon", last_name: "Ingram", position: "F", team: {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"}},
-    {id: 293, first_name: "CJ", last_name: "McCollum", position: "G", team: {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"}},
-    {id: 139, first_name: "Anthony", last_name: "Edwards", position: "G", team: {id: 18, full_name: "Minnesota Timberwolves", abbreviation: "MIN", city: "Minneapolis", conference: "West", division: "Northwest"}},
-    {id: 336, first_name: "Mikal", last_name: "Bridges", position: "F-G", team: {id: 3, full_name: "Brooklyn Nets", abbreviation: "BKN", city: "Brooklyn", conference: "East", division: "Atlantic"}},
-    {id: 203, first_name: "Aaron", last_name: "Gordon", position: "F", team: {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"}},
-    {id: 310, first_name: "Jamal", last_name: "Murray", position: "G", team: {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"}},
-    {id: 75, first_name: "Jarrett", last_name: "Allen", position: "C", team: {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"}},
-    {id: 3, first_name: "Derrick", last_name: "White", position: "G", team: {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"}},
-    {id: 395, first_name: "Austin", last_name: "Reaves", position: "G", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}},
-    {id: 351, first_name: "D'Angelo", last_name: "Russell", position: "G", team: {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"}}
-];
-
-async function fetchAllPlayers() {
-    console.log('Loading hardcoded players...');
-    return NBA_PLAYERS;
-}
-
-async function fetchTeamsAPI() {
-    return [
-        {id: 1, full_name: "Atlanta Hawks", abbreviation: "ATL", city: "Atlanta", conference: "East", division: "Southeast"},
-        {id: 2, full_name: "Boston Celtics", abbreviation: "BOS", city: "Boston", conference: "East", division: "Atlantic"},
-        {id: 3, full_name: "Brooklyn Nets", abbreviation: "BKN", city: "Brooklyn", conference: "East", division: "Atlantic"},
-        {id: 4, full_name: "Chicago Bulls", abbreviation: "CHI", city: "Chicago", conference: "East", division: "Central"},
-        {id: 5, full_name: "Cleveland Cavaliers", abbreviation: "CLE", city: "Cleveland", conference: "East", division: "Central"},
-        {id: 7, full_name: "Dallas Mavericks", abbreviation: "DAL", city: "Dallas", conference: "West", division: "Southwest"},
-        {id: 9, full_name: "Denver Nuggets", abbreviation: "DEN", city: "Denver", conference: "West", division: "Northwest"},
-        {id: 10, full_name: "Golden State Warriors", abbreviation: "GSW", city: "Golden State", conference: "West", division: "Pacific"},
-        {id: 11, full_name: "Indiana Pacers", abbreviation: "IND", city: "Indianapolis", conference: "East", division: "Central"},
-        {id: 12, full_name: "LA Clippers", abbreviation: "LAC", city: "Los Angeles", conference: "West", division: "Pacific"},
-        {id: 14, full_name: "Los Angeles Lakers", abbreviation: "LAL", city: "Los Angeles", conference: "West", division: "Pacific"},
-        {id: 15, full_name: "Memphis Grizzlies", abbreviation: "MEM", city: "Memphis", conference: "West", division: "Southwest"},
-        {id: 16, full_name: "Miami Heat", abbreviation: "MIA", city: "Miami", conference: "East", division: "Southeast"},
-        {id: 17, full_name: "Milwaukee Bucks", abbreviation: "MIL", city: "Milwaukee", conference: "East", division: "Central"},
-        {id: 18, full_name: "Minnesota Timberwolves", abbreviation: "MIN", city: "Minneapolis", conference: "West", division: "Northwest"},
-        {id: 19, full_name: "New Orleans Pelicans", abbreviation: "NOP", city: "New Orleans", conference: "West", division: "Southwest"},
-        {id: 20, full_name: "New York Knicks", abbreviation: "NYK", city: "New York", conference: "East", division: "Atlantic"},
-        {id: 21, full_name: "Oklahoma City Thunder", abbreviation: "OKC", city: "Oklahoma City", conference: "West", division: "Northwest"},
-        {id: 22, full_name: "Orlando Magic", abbreviation: "ORL", city: "Orlando", conference: "East", division: "Southeast"},
-        {id: 23, full_name: "Philadelphia 76ers", abbreviation: "PHI", city: "Philadelphia", conference: "East", division: "Atlantic"},
-        {id: 24, full_name: "Portland Trail Blazers", abbreviation: "POR", city: "Portland", conference: "West", division: "Northwest"},
-        {id: 25, full_name: "Sacramento Kings", abbreviation: "SAC", city: "Sacramento", conference: "West", division: "Pacific"},
-        {id: 26, full_name: "Phoenix Suns", abbreviation: "PHX", city: "Phoenix", conference: "West", division: "Pacific"},
-        {id: 29, full_name: "Utah Jazz", abbreviation: "UTA", city: "Utah", conference: "West", division: "Northwest"}
-    ];
-}
-
-async function fetchGamesAPI() {
-    return [
-        {id: 1, date: '2024-01-15', season: 2023, home_team: {full_name: 'Los Angeles Lakers', abbreviation: 'LAL'}, visitor_team: {full_name: 'Boston Celtics', abbreviation: 'BOS'}, home_team_score: 115, visitor_team_score: 109},
-        {id: 2, date: '2024-01-15', season: 2023, home_team: {full_name: 'Golden State Warriors', abbreviation: 'GSW'}, visitor_team: {full_name: 'Phoenix Suns', abbreviation: 'PHX'}, home_team_score: 122, visitor_team_score: 125},
-        {id: 3, date: '2024-01-14', season: 2023, home_team: {full_name: 'Milwaukee Bucks', abbreviation: 'MIL'}, visitor_team: {full_name: 'Miami Heat', abbreviation: 'MIA'}, home_team_score: 118, visitor_team_score: 112},
-        {id: 4, date: '2024-01-14', season: 2023, home_team: {full_name: 'Denver Nuggets', abbreviation: 'DEN'}, visitor_team: {full_name: 'Dallas Mavericks', abbreviation: 'DAL'}, home_team_score: 128, visitor_team_score: 125},
-        {id: 5, date: '2024-01-13', season: 2023, home_team: {full_name: 'Philadelphia 76ers', abbreviation: 'PHI'}, visitor_team: {full_name: 'Cleveland Cavaliers', abbreviation: 'CLE'}, home_team_score: 106, visitor_team_score: 103}
-    ];
-}
-
-async function fetchPlayerStatsAPI(playerId, season = 2023) {
-    return null;
-}
-
-async function fetchPlayerGamesAPI(playerId) {
-    return [];
-}
-
-function generateMockStats(player) {
-    let ptsBase = 15, rebBase = 5, astBase = 3;
-    
-    if (player.position && player.position.includes('C')) {
-        ptsBase = 18; rebBase = 10; astBase = 2;
-    } else if (player.position && player.position.includes('F')) {
-        ptsBase = 16; rebBase = 7; astBase = 3;
-    } else if (player.position && player.position.includes('G')) {
-        ptsBase = 14; rebBase = 4; astBase = 6;
+// ============================================================
+// Core fetch helper — with caching and exponential-backoff retry
+//
+// Options:
+//   cache   {boolean} — read/write ApiCache (default: true)
+//   ttl     {number}  — cache TTL in ms (default: ApiCache.TTL.MEDIUM)
+//   retries {number}  — max retries on 429 / network error (default: 2)
+// ============================================================
+async function bdlFetch(endpoint, params = {}, { cache = true, ttl, retries = 2 } = {}) {
+    if (!BDL_API_KEY || BDL_API_KEY === 'YOUR_API_KEY_HERE') {
+        throw new Error(
+            'API key not configured. ' +
+            'Get a free key at balldontlie.io and add it to js/api.js'
+        );
     }
-    
+
+    const url = new URL(`${BDL_BASE_URL}${endpoint}`);
+    Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+            value.forEach(v => url.searchParams.append(`${key}[]`, v));
+        } else {
+            url.searchParams.set(key, value);
+        }
+    });
+
+    const cacheKey = url.pathname + url.search;
+
+    // ── Cache read ──────────────────────────────────────────
+    if (cache) {
+        const hit = ApiCache.get(cacheKey);
+        if (hit) return hit;
+    }
+
+    Logger.debug(`→ ${url.pathname}${url.search}`, undefined, 'API');
+
+    // ── Fetch with retry ────────────────────────────────────
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        if (attempt > 0) {
+            const delay = Math.pow(2, attempt - 1) * 1000; // 1 s, 2 s, 4 s…
+            Logger.warn(`Retry ${attempt}/${retries} in ${delay}ms — ${endpoint}`, undefined, 'API');
+            await new Promise(r => setTimeout(r, delay));
+        }
+
+        const response = await fetch(url.toString(), {
+            headers: { 'Authorization': BDL_API_KEY }
+        });
+
+        // Hard failures — don't retry
+        if (response.status === 401) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(`Unauthorized (401): ${body?.error || 'Check your API key in js/api.js'}`);
+        }
+        if (!response.ok && response.status !== 429) {
+            throw new Error(`API error ${response.status}: ${response.statusText}`);
+        }
+
+        // Rate-limit — retry if we have attempts left
+        if (response.status === 429) {
+            if (attempt < retries) continue;
+            throw new Error('Rate limit hit — please wait a moment and try again.');
+        }
+
+        // ── Success ────────────────────────────────────────
+        const json = await response.json();
+        Logger.debug(`← ${url.pathname} — ${json.data?.length ?? '?'} records`, undefined, 'API');
+
+        if (cache) {
+            ApiCache.set(cacheKey, json, ttl ?? ApiCache.TTL.MEDIUM);
+        }
+
+        return json;
+    }
+
+    throw new Error('Request failed after maximum retries.');
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+
+/**
+ * BDL returns minutes as "MM:SS" strings. Convert to decimal float
+ * so formulas in the stat builder can use `min` numerically.
+ */
+function parseMinutes(minStr) {
+    if (typeof minStr === 'number') return minStr;
+    if (!minStr || minStr === '00' || minStr === '') return 0;
+    const [mins, secs = '0'] = minStr.split(':');
+    return parseFloat(mins) + parseFloat(secs) / 60;
+}
+
+/**
+ * Normalize a player stats object: converts min to float, ensures
+ * all numeric fields are numbers (not strings).
+ */
+function normalizeStats(stat) {
     return {
-        player_id: player.id,
-        season: 2023,
-        pts: parseFloat((Math.random() * 10 + ptsBase).toFixed(1)),
-        reb: parseFloat((Math.random() * 5 + rebBase).toFixed(1)),
-        ast: parseFloat((Math.random() * 4 + astBase).toFixed(1)),
-        stl: parseFloat((Math.random() * 1.5 + 0.5).toFixed(1)),
-        blk: parseFloat((Math.random() * 1.5 + 0.3).toFixed(1)),
-        turnover: parseFloat((Math.random() * 2 + 1).toFixed(1)),
-        min: parseFloat((Math.random() * 10 + 25).toFixed(1)),
-        fgm: parseFloat((Math.random() * 5 + 4).toFixed(1)),
-        fga: parseFloat((Math.random() * 8 + 10).toFixed(1)),
-        fg_pct: parseFloat((Math.random() * 0.2 + 0.4).toFixed(3)),
-        fg3m: parseFloat((Math.random() * 2 + 0.5).toFixed(1)),
-        fg3a: parseFloat((Math.random() * 4 + 2).toFixed(1)),
-        fg3_pct: parseFloat((Math.random() * 0.2 + 0.3).toFixed(3)),
-        ftm: parseFloat((Math.random() * 4 + 1).toFixed(1)),
-        fta: parseFloat((Math.random() * 2 + 3).toFixed(1)),
-        ft_pct: parseFloat((Math.random() * 0.15 + 0.75).toFixed(3))
+        ...stat,
+        min: parseMinutes(stat.min)
     };
+}
+
+// ============================================================
+// API functions
+// ============================================================
+
+/**
+ * Fetch the first 100 active NBA players.
+ * Use the search param when the user types a name (3+ chars).
+ */
+async function fetchAllPlayers(searchQuery = '') {
+    return Logger.time('fetchAllPlayers', async () => {
+        const params = { per_page: 100 };
+        if (searchQuery.length >= 3) params.search = searchQuery;
+
+        const data = await bdlFetch('/players', params, { ttl: ApiCache.TTL.MEDIUM });
+        return data.data.filter(p => p.team && p.team.id);
+    }, 'API');
+}
+
+/**
+ * Search players by name via the API (used for live search).
+ */
+async function searchPlayersAPI(query) {
+    if (!query || query.length < 2) return [];
+    const data = await bdlFetch('/players', {
+        search: query,
+        per_page: 50
+    });
+    return data.data.filter(p => p.team && p.team.id);
+}
+
+/**
+ * Fetch all 30 NBA teams.
+ */
+async function fetchTeamsAPI() {
+    return Logger.time('fetchTeamsAPI', async () => {
+        const data = await bdlFetch('/teams', { per_page: 100 }, { ttl: ApiCache.TTL.LONG });
+        return data.data.map(team => ({
+            ...team,
+            full_name: team.full_name || `${team.city} ${team.name}`
+        }));
+    }, 'API');
+}
+
+/**
+ * Fetch recent games (last 14 days).
+ * Falls back to the current season's latest games if date range is empty.
+ */
+async function fetchGamesAPI() {
+    return Logger.time('fetchGamesAPI', async () => {
+        const today       = new Date();
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(today.getDate() - 14);
+        const fmt = d => d.toISOString().split('T')[0];
+
+        let data = await bdlFetch('/games', {
+            per_page: 15,
+            start_date: fmt(twoWeeksAgo),
+            end_date: fmt(today)
+        }, { ttl: ApiCache.TTL.SHORT });
+
+        // Off-season fallback: return latest games of the current season
+        if (!data.data || data.data.length === 0) {
+            Logger.warn('No games in last 14 days — falling back to season fetch', undefined, 'API');
+            data = await bdlFetch('/games', { per_page: 15, seasons: [CURRENT_SEASON] }, { ttl: ApiCache.TTL.SHORT });
+        }
+
+        return (data.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, 'API');
+}
+
+/**
+ * Batch-fetch season averages for a list of player IDs.
+ * Chunks into groups of 25 to stay within URL length limits.
+ * Returns an array of stat objects (one per player with data).
+ */
+async function fetchPlayerStatsAPI(playerIds, season = CURRENT_SEASON) {
+    if (!Array.isArray(playerIds)) playerIds = [playerIds];
+    if (playerIds.length === 0) return [];
+
+    const CHUNK = 25;
+    const results = [];
+
+    for (let i = 0; i < playerIds.length; i += CHUNK) {
+        const chunk = playerIds.slice(i, i + CHUNK);
+        try {
+            const data = await bdlFetch('/season_averages', {
+                season,
+                player_ids: chunk
+            }, { ttl: ApiCache.TTL.MEDIUM });
+            results.push(...(data.data || []));
+        } catch (err) {
+            Logger.warn(`Stats chunk ${i}–${i + CHUNK} failed`, err.message, 'API');
+        }
+    }
+
+    return results.map(normalizeStats);
+}
+
+/**
+ * Fetch all players on a team roster for the current season.
+ * Returns active players belonging to the given team ID.
+ */
+async function fetchTeamRoster(teamId) {
+    return Logger.time(`fetchTeamRoster(${teamId})`, async () => {
+        const data = await bdlFetch('/players', {
+            team_ids: [teamId],
+            per_page: 100,
+        }, { ttl: ApiCache.TTL.MEDIUM });
+        return (data.data || []).filter(p => p.team && p.team.id);
+    }, 'API');
+}
+
+/**
+ * Fetch ESPN's NBA athlete list and return a normalised name→ESPN-ID map.
+ * Stored in AppState.espnPlayerMap so it's only fetched once per session.
+ * Returns {} silently on any network/CORS failure.
+ */
+async function fetchESPNPlayerMap() {
+    if (AppState.espnPlayerMap) return AppState.espnPlayerMap;
+    try {
+        const res = await fetch(
+            'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/athletes?limit=1000'
+        );
+        if (!res.ok) { AppState.espnPlayerMap = {}; return {}; }
+        const json = await res.json();
+        // ESPN API returns athletes under `items`; also try `athletes` as a fallback
+        const list = json.items || json.athletes || [];
+        const map  = {};
+        list.forEach(a => {
+            if (!a.id) return;
+            // Prefer separate first/last fields; fall back to splitting displayName
+            const first = a.firstName || (a.displayName || '').split(' ')[0] || '';
+            const last  = a.lastName  || (a.displayName || '').split(' ').slice(1).join(' ') || '';
+            if (first && last) {
+                map[`${first} ${last}`.toLowerCase()] = a.id;
+            } else if (a.displayName) {
+                map[a.displayName.toLowerCase()] = a.id;
+            }
+        });
+        AppState.espnPlayerMap = map;
+        Logger.info(`ESPN map loaded — ${Object.keys(map).length} athletes`, undefined, 'ESPN');
+        return map;
+    } catch (err) {
+        Logger.warn('ESPN athlete map unavailable', err.message, 'ESPN');
+        AppState.espnPlayerMap = {};
+        return {};
+    }
+}
+
+/**
+ * Return the ESPN CDN headshot URL for a player, or null if no mapping exists.
+ */
+function getESPNHeadshotUrl(player) {
+    const map = AppState.espnPlayerMap;
+    if (!map) return null;
+    const key  = `${player.first_name} ${player.last_name}`.toLowerCase();
+    const id   = map[key];
+    return id ? `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png` : null;
+}
+
+if (typeof window !== 'undefined') {
+    window.getESPNHeadshotUrl  = getESPNHeadshotUrl;
+    window.fetchESPNPlayerMap  = fetchESPNPlayerMap;
+}
+
+/**
+ * Fetch per-game season averages for all NBA players from NBA.com's public stats API.
+ * Returns a plain object { [lowercaseFullName]: statObject } for all players who have appeared.
+ * Cached in localStorage for 30 minutes; also held in AppState.nbaStatsMap for the session.
+ * Returns {} silently on any network failure so the rest of the app keeps working.
+ *
+ * NBA.com season format: "2024-25" when CURRENT_SEASON = 2024.
+ */
+async function fetchNBAStatsMap(season = CURRENT_SEASON) {
+    // In-memory shortcut — avoids localStorage round-trip within same session & season
+    if (AppState.nbaStatsMap && AppState._nbaStatsSeason === season) {
+        return AppState.nbaStatsMap;
+    }
+
+    const nbaSeasonStr = `${season}-${String(season + 1).slice(-2)}`;
+    const cacheKey     = `/nba_stats/${nbaSeasonStr}`;
+
+    const hit = ApiCache.get(cacheKey);
+    if (hit) {
+        AppState.nbaStatsMap    = hit;
+        AppState._nbaStatsSeason = season;
+        return hit;
+    }
+
+    try {
+        const url = `https://stats.nba.com/stats/leagueLeaders` +
+            `?LeagueID=00&PerMode=PerGame&Scope=S&Season=${nbaSeasonStr}` +
+            `&SeasonType=Regular%20Season&StatCategory=PTS`;
+
+        const res = await fetch(url, { headers: { 'Referer': 'https://www.nba.com/' } });
+        if (!res.ok) throw new Error(`NBA stats API error ${res.status}`);
+
+        const json     = await res.json();
+        const { headers, rowSet } = json.resultSet;
+        const get      = (row, h) => row[headers.indexOf(h)];
+
+        const map = {};
+        rowSet.forEach(row => {
+            const name = String(get(row, 'PLAYER') || '').toLowerCase();
+            if (!name) return;
+            map[name] = {
+                pts:          get(row, 'PTS'),
+                reb:          get(row, 'REB'),
+                ast:          get(row, 'AST'),
+                stl:          get(row, 'STL'),
+                blk:          get(row, 'BLK'),
+                turnover:     get(row, 'TOV'),
+                min:          get(row, 'MIN'),
+                fgm:          get(row, 'FGM'),
+                fga:          get(row, 'FGA'),
+                fg_pct:       get(row, 'FG_PCT'),   // already 0–1
+                fg3m:         get(row, 'FG3M'),
+                fg3a:         get(row, 'FG3A'),
+                fg3_pct:      get(row, 'FG3_PCT'),  // already 0–1
+                ftm:          get(row, 'FTM'),
+                fta:          get(row, 'FTA'),
+                ft_pct:       get(row, 'FT_PCT'),   // already 0–1
+                oreb:         get(row, 'OREB'),
+                dreb:         get(row, 'DREB'),
+                games_played: get(row, 'GP'),
+                nba_id:       get(row, 'PLAYER_ID'),
+            };
+        });
+
+        Logger.info(`NBA stats map: ${Object.keys(map).length} players (${nbaSeasonStr})`, undefined, 'NBA');
+
+        ApiCache.set(cacheKey, map, ApiCache.TTL.MEDIUM);
+        AppState.nbaStatsMap    = map;
+        AppState._nbaStatsSeason = season;
+        return map;
+
+    } catch (err) {
+        Logger.warn('NBA stats map failed', err.message, 'NBA');
+        return {};
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.fetchNBAStatsMap = fetchNBAStatsMap;
+}
+
+/**
+ * Fetch NBA standings from NBA.com's public stats API.
+ * Returns an array of team row objects for all 30 teams.
+ * Cached for a short TTL (scores / wins change daily).
+ */
+async function fetchNBAStandings(season = CURRENT_SEASON) {
+    const nbaSeasonStr = `${season}-${String(season + 1).slice(-2)}`;
+    const cacheKey     = `/nba_standings/${nbaSeasonStr}`;
+
+    const hit = ApiCache.get(cacheKey);
+    if (hit) return hit;
+
+    try {
+        const url = `https://stats.nba.com/stats/leaguestandingsv3` +
+            `?LeagueID=00&Season=${nbaSeasonStr}&SeasonType=Regular%20Season`;
+
+        const res = await fetch(url, { headers: { 'Referer': 'https://www.nba.com/' } });
+        if (!res.ok) throw new Error(`NBA standings API error ${res.status}`);
+
+        const json    = await res.json();
+        const rs      = json.resultSets[0];
+        const headers = rs.headers;
+        const get     = (row, h) => row[headers.indexOf(h)];
+
+        const rows = rs.rowSet.map(row => ({
+            rank:        get(row, 'PlayoffRank'),
+            teamId:      get(row, 'TeamID'),
+            teamAbbr:    get(row, 'TeamAbbreviation'),
+            teamName:    get(row, 'TeamName'),
+            teamCity:    get(row, 'TeamCity'),
+            conference:  get(row, 'Conference'),
+            wins:        get(row, 'WINS'),
+            losses:      get(row, 'LOSSES'),
+            pct:         get(row, 'WinPCT'),
+            gb:          get(row, 'ConferenceGamesBack'),
+            l10:         get(row, 'L10'),
+            streak:      get(row, 'strCurrentStreak'),
+            home:        get(row, 'HOME'),
+            road:        get(row, 'ROAD'),
+            clinchedDiv: get(row, 'clinchedDivisionTitle'),
+            clinchedPO:  get(row, 'clinchedPlayoffBirth'),
+        }));
+
+        Logger.info(`NBA standings: ${rows.length} teams (${nbaSeasonStr})`, undefined, 'NBA');
+        ApiCache.set(cacheKey, rows, ApiCache.TTL.SHORT);
+        return rows;
+
+    } catch (err) {
+        Logger.warn('NBA standings fetch failed', err.message, 'NBA');
+        return [];
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.fetchNBAStandings = fetchNBAStandings;
+}
+
+/**
+ * Fetch a player's last 10 game log entries for the current season.
+ * BDL /stats is a paid-tier endpoint — returns [] gracefully on 401
+ * so the player detail page still loads with season averages intact.
+ */
+async function fetchPlayerGamesAPI(playerId, season = CURRENT_SEASON) {
+    return Logger.time(`fetchPlayerGames(${playerId})`, async () => {
+        try {
+            const data = await bdlFetch('/stats', {
+                player_ids: [playerId],
+                seasons: [season],
+                per_page: 10
+            }, { ttl: ApiCache.TTL.SHORT });
+            return (data.data || []).sort(
+                (a, b) => new Date(b.game?.date || 0) - new Date(a.game?.date || 0)
+            );
+        } catch (err) {
+            if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+                Logger.warn(
+                    'fetchPlayerGamesAPI: /stats requires a paid BDL plan — game log unavailable',
+                    undefined, 'API'
+                );
+                return [];
+            }
+            throw err;
+        }
+    }, 'API');
 }

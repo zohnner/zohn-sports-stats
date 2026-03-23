@@ -1,226 +1,461 @@
-/**
- * Player detail view functions
- */
+// ============================================================
+// Player Detail — full profile page
+// ============================================================
 
-async function showPlayerDetail(playerId) {
+async function showPlayerDetail(playerId, push = true) {
     const player = AppState.allPlayers.find(p => p.id === playerId);
     if (!player) {
-        console.error(`❌ Player ${playerId} not found`);
+        Logger.error(`Player ${playerId} not found in AppState`, undefined, 'DETAIL');
         return;
     }
-    
+
     AppState.selectedPlayer = player;
-    const playersGrid = document.getElementById('playersGrid');
-    const resultCount = document.getElementById('resultCount');
-    
-    // Show loading state
-    playersGrid.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: white;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏀</div>
-            <p style="color: white; text-align: center; padding: 3rem;">Loading player details...</p>
+    _per36Mode = false;   // reset toggle when viewing a new player
+    const grid = document.getElementById('playersGrid');
+    const fullName = `${player.first_name} ${player.last_name}`;
+
+    // ── Nav state ─────────────────────────────────────────────
+    // Keep Players tab active; show breadcrumb instead of search bar
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('[data-view="players"]').forEach(t => t.classList.add('active'));
+    AppState.currentView = 'players';
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('players', fullName);
+
+    // ── Push history so browser back works ────────────────────
+    if (push) {
+        history.pushState({ view: 'player', id: playerId }, '', `#player-${playerId}`);
+    }
+
+    // ── Destroy existing charts ───────────────────────────────
+    if (window.StatsCharts) StatsCharts.destroyAll();
+
+    // ── Loading state with team-coloured initials ─────────────
+    const abbr     = player.team?.abbreviation || '';
+    const colors   = getTeamColors(abbr);
+    const initials = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
+
+    grid.className = 'player-detail-container';
+    grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:4rem;color:white;">
+            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);width:88px;height:88px;font-size:1.75rem;margin:0 auto 1.25rem">
+                ${initials}
+            </div>
+            <p style="font-size:1.1rem;color:var(--color-text-secondary)">Loading profile…</p>
+            <div class="loading-spinner" style="margin-top:1.5rem;"></div>
         </div>
     `;
-    resultCount.textContent = 'Loading player details...';
-    
+
     try {
-        // Get stats and recent games
-        const stats = AppState.playerStats[playerId];
+        const stats       = AppState.playerStats[playerId];
         const recentGames = await fetchPlayerGamesAPI(playerId);
-        
-        // Check if we have stats
+
+        const teamName = player.team?.full_name || player.team?.name || 'Unknown Team';
+        const season   = `${CURRENT_SEASON}–${(CURRENT_SEASON + 1).toString().slice(2)}`;
+
+        // ── No-stats state ────────────────────────────────────
         if (!stats) {
-            playersGrid.className = 'player-detail-container';
-            playersGrid.innerHTML = `
-                <div class="player-detail-header">
-                    <button onclick="backToPlayers()" class="back-button">← Back to Players</button>
-                    <div class="player-detail-info">
-                        <div class="player-detail-avatar">
-                            <div style="font-size: 5rem;">🏀</div>
-                        </div>
-                        <div>
-                            <h1 class="player-detail-name">${player.first_name} ${player.last_name}</h1>
-                            <p class="player-detail-meta">#${player.position || 'N/A'} • ${player.team.full_name}</p>
-                            <p class="player-detail-meta">${player.team.conference} Conference • ${player.team.division} Division</p>
-                        </div>
-                    </div>
-                </div>
-                <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center;">
-                    <h3 style="color: #f87171; margin-bottom: 1rem;">📊 No 2023 Season Stats Available</h3>
-                    <p style="color: #fca5a5;">This player did not have recorded stats for the 2023 season.</p>
+            grid.innerHTML = `
+                ${_playerHero(player, teamName, null)}
+                <div class="detail-no-stats">
+                    <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
+                    <h3 style="color:var(--color-error-light);margin-bottom:0.5rem">No ${season} Stats Available</h3>
+                    <p style="color:var(--color-text-muted)">This player does not have recorded stats for the current season.</p>
                 </div>
             `;
-            resultCount.textContent = `Player: ${player.first_name} ${player.last_name}`;
             return;
         }
-        
-        // Render full player detail with stats
-        playersGrid.className = 'player-detail-container';
-        playersGrid.innerHTML = `
-            <div class="player-detail-header">
-                <button onclick="backToPlayers()" class="back-button">← Back to Players</button>
-                <div class="player-detail-info">
-                    <div class="player-detail-avatar">
-                        <div style="font-size: 5rem;">🏀</div>
-                    </div>
-                    <div>
-                        <h1 class="player-detail-name">${player.first_name} ${player.last_name}</h1>
-                        <p class="player-detail-meta">#${player.position || 'N/A'} • ${player.team.full_name}</p>
-                        <p class="player-detail-meta">${player.team.conference} Conference • ${player.team.division} Division</p>
-                    </div>
-                </div>
-            </div>
-            
+
+        // ── Full detail ───────────────────────────────────────
+        const hasGames   = recentGames && recentGames.length > 0;
+        const hasPlayers = AppState.allPlayers.length > 1;
+
+        grid.innerHTML = `
+            ${_playerHero(player, teamName, stats)}
+
             <div class="player-detail-grid">
-                <div class="stats-card">
-                    <h2 style="color: #f1f5f9; margin-bottom: 1.5rem; font-size: 1.5rem;">Season Stats (2023)</h2>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #fbbf24;">${stats.pts?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Points Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #34d399;">${stats.reb?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Rebounds Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #60a5fa;">${stats.ast?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Assists Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #f472b6;">${stats.fg_pct ? (stats.fg_pct * 100).toFixed(1) : '0.0'}%</div>
-                            <div class="stat-label">Field Goal %</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #a78bfa;">${stats.fg3_pct ? (stats.fg3_pct * 100).toFixed(1) : '0.0'}%</div>
-                            <div class="stat-label">3-Point %</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" style="color: #fb923c;">${stats.ft_pct ? (stats.ft_pct * 100).toFixed(1) : '0.0'}%</div>
-                            <div class="stat-label">Free Throw %</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${stats.stl?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Steals Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${stats.blk?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Blocks Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${stats.turnover?.toFixed(1) || '0.0'}</div>
-                            <div class="stat-label">Turnovers Per Game</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value">${stats.min || '0'}</div>
-                            <div class="stat-label">Minutes Per Game</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stats-card">
-                    <h2 style="color: #f1f5f9; margin-bottom: 1.5rem; font-size: 1.5rem;">Recent Games</h2>
-                    <div class="recent-games-list">
-                        ${recentGames && recentGames.length > 0 ? recentGames.map(game => {
-                            const gameDate = game.game?.date ? new Date(game.game.date).toLocaleDateString() : 'Unknown Date';
-                            const homeAbbr = game.game?.home_team?.abbreviation || 'HOME';
-                            const visitorAbbr = game.game?.visitor_team?.abbreviation || 'AWAY';
-                            const homeScore = game.game?.home_team_score || 0;
-                            const visitorScore = game.game?.visitor_team_score || 0;
-                            
-                            return `
-                                <div class="recent-game-item">
-                                    <div class="recent-game-date">${gameDate}</div>
-                                    <div class="recent-game-matchup">
-                                        <span>${homeAbbr} vs ${visitorAbbr}</span>
-                                        <span style="color: #64748b;">${homeScore} - ${visitorScore}</span>
-                                    </div>
-                                    <div class="recent-game-stats">
-                                        <span style="color: #fbbf24;">${game.pts || 0} PTS</span>
-                                        <span style="color: #34d399;">${game.reb || 0} REB</span>
-                                        <span style="color: #60a5fa;">${game.ast || 0} AST</span>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('') : '<p style="color: #64748b; text-align: center; padding: 2rem;">No recent games available</p>'}
-                    </div>
-                </div>
+                ${_seasonStatsCard(stats, season)}
+                ${_recentGamesCard(recentGames)}
             </div>
-            
-            <div class="stats-card">
-                <h2 style="color: #f1f5f9; margin-bottom: 1.5rem; font-size: 1.5rem;">Shooting Stats</h2>
-                <div class="shooting-stats-grid">
-                    <div class="shooting-stat-item">
-                        <div class="shooting-stat-header">
-                            <span style="color: #cbd5e1;">Field Goals</span>
-                            <span style="color: #f1f5f9; font-weight: bold;">${stats.fg_pct ? (stats.fg_pct * 100).toFixed(1) : '0.0'}%</span>
-                        </div>
-                        <div class="shooting-stat-bar">
-                            <div class="shooting-stat-fill" style="width: ${stats.fg_pct ? stats.fg_pct * 100 : 0}%; background: #f472b6;"></div>
-                        </div>
-                        <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">${stats.fgm?.toFixed(1) || '0.0'} / ${stats.fga?.toFixed(1) || '0.0'} per game</div>
-                    </div>
-                    
-                    <div class="shooting-stat-item">
-                        <div class="shooting-stat-header">
-                            <span style="color: #cbd5e1;">3-Pointers</span>
-                            <span style="color: #f1f5f9; font-weight: bold;">${stats.fg3_pct ? (stats.fg3_pct * 100).toFixed(1) : '0.0'}%</span>
-                        </div>
-                        <div class="shooting-stat-bar">
-                            <div class="shooting-stat-fill" style="width: ${stats.fg3_pct ? stats.fg3_pct * 100 : 0}%; background: #a78bfa;"></div>
-                        </div>
-                        <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">${stats.fg3m?.toFixed(1) || '0.0'} / ${stats.fg3a?.toFixed(1) || '0.0'} per game</div>
-                    </div>
-                    
-                    <div class="shooting-stat-item">
-                        <div class="shooting-stat-header">
-                            <span style="color: #cbd5e1;">Free Throws</span>
-                            <span style="color: #f1f5f9; font-weight: bold;">${stats.ft_pct ? (stats.ft_pct * 100).toFixed(1) : '0.0'}%</span>
-                        </div>
-                        <div class="shooting-stat-bar">
-                            <div class="shooting-stat-fill" style="width: ${stats.ft_pct ? stats.ft_pct * 100 : 0}%; background: #fb923c;"></div>
-                        </div>
-                        <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">${stats.ftm?.toFixed(1) || '0.0'} / ${stats.fta?.toFixed(1) || '0.0'} per game</div>
-                    </div>
-                </div>
-            </div>
+
+            ${_shootingCard(stats)}
+
+            ${_chartsCard(recentGames)}
+
+            ${hasPlayers ? _compareCard(player) : ''}
         `;
-        
-        resultCount.textContent = `Player: ${player.first_name} ${player.last_name}`;
-        
+
+        // ── Initialise charts ─────────────────────────────────
+        requestAnimationFrame(() => {
+            if (window.StatsCharts) {
+                StatsCharts.radar('pd-radar', [
+                    { label: fullName, data: stats, color: '#818cf8' }
+                ]);
+                StatsCharts.shootingBars('pd-shooting', stats);
+                if (hasGames) StatsCharts.gameTrend('pd-trend', recentGames);
+            }
+
+            document.getElementById('per36Btn')
+                ?.addEventListener('click', () => togglePer36(stats, season));
+
+            document.getElementById('pd-compare-select')
+                ?.addEventListener('change', e => _onCompareChange(e, player, stats));
+        });
+
     } catch (error) {
-        console.error('❌ Error loading player details:', error);
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center; color: white;">
-                <h3 style="color: #f87171; margin-bottom: 1rem;">⚠️ Failed to Load Player Details</h3>
-                <p style="color: #fca5a5; margin-bottom: 1rem;">${error.message}</p>
-                <button onclick="backToPlayers()" class="back-button" style="margin: 0 auto;">← Back to Players</button>
+        Logger.error('Error loading player details', error, 'DETAIL');
+        grid.innerHTML = `
+            <div class="error-state">
+                <div class="error-state-icon">⚠️</div>
+                <h3 class="error-state-title">Failed to Load Player</h3>
+                <p class="error-state-message">${error.message}</p>
+                <button class="retry-btn" onclick="backToPlayers()">← Back to Players</button>
             </div>
         `;
     }
 }
 
+// ── Per-36 toggle state ───────────────────────────────────────
+let _per36Mode = false;
+
+function togglePer36(stats, season) {
+    _per36Mode = !_per36Mode;
+    // Replace the stats card in-place; _seasonStatsCard reads _per36Mode to render correct state
+    const card = document.getElementById('seasonStatsCard');
+    if (card) card.outerHTML = _seasonStatsCard(stats, season);
+    // Re-attach listener — outerHTML removes the old node including its event listeners
+    document.getElementById('per36Btn')?.addEventListener('click', () => togglePer36(stats, season));
+}
+
+// ── Comparison handler ────────────────────────────────────────
+
+async function _onCompareChange(e, player, stats) {
+    const cid  = parseInt(e.target.value);
+    const wrap = document.getElementById('pd-compare-chart-wrap');
+    if (!wrap) return;
+
+    if (!cid) {
+        wrap.style.display = 'none';
+        StatsCharts.destroy('pd-compare-radar');
+        return;
+    }
+
+    const cPlayer = AppState.allPlayers.find(p => p.id === cid);
+    if (!cPlayer) return;
+
+    let cStats = AppState.playerStats[cid];
+    if (!cStats) {
+        wrap.innerHTML = '<p style="color:var(--color-text-muted);padding:1rem;text-align:center">Loading…</p>';
+        wrap.style.display = 'block';
+        const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
+        const key = `${cPlayer.first_name} ${cPlayer.last_name}`.toLowerCase();
+        const stat = statsMap[key];
+        if (stat) {
+            cStats = { ...stat, player_id: cid };
+            AppState.playerStats[cid] = cStats;
+        }
+    }
+
+    if (!cStats) {
+        wrap.innerHTML = `<p style="color:var(--color-text-muted);padding:1rem;text-align:center">No stats for ${cPlayer.first_name} ${cPlayer.last_name}</p>`;
+        wrap.style.display = 'block';
+        return;
+    }
+
+    wrap.innerHTML = '<canvas id="pd-compare-radar"></canvas>';
+    wrap.style.display = 'block';
+
+    requestAnimationFrame(() => {
+        StatsCharts.radar('pd-compare-radar', [
+            { label: `${player.first_name} ${player.last_name}`,  data: stats,  color: '#818cf8' },
+            { label: `${cPlayer.first_name} ${cPlayer.last_name}`, data: cStats, color: '#34d399' },
+        ]);
+    });
+}
+
+// ── HTML fragment builders ────────────────────────────────────
+
+function _playerHero(player, teamName, stats) {
+    const conf     = player.team?.conference || '';
+    const div      = player.team?.division   || '';
+    const abbr        = player.team?.abbreviation || '';
+    const colors      = getTeamColors(abbr);
+    const initials    = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
+    const headshotUrl = getESPNHeadshotUrl(player);
+    const headshotImg = headshotUrl
+        ? `<img class="player-headshot player-headshot--detail" src="${headshotUrl}" alt="${player.first_name} ${player.last_name}" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
+        : '';
+
+    // Bio attributes available from BDL player object
+    const jersey   = player.jersey_number ? `#${player.jersey_number}` : null;
+    const height   = player.height   || null;   // e.g. "6-8"
+    const weight   = player.weight   ? `${player.weight} lbs` : null;
+    const college  = player.college  || null;
+    const country  = player.country  || null;
+    const draftStr = player.draft_year
+        ? `${player.draft_year} Draft · Rd ${player.draft_round || '?'} · Pick ${player.draft_number || '?'}`
+        : null;
+
+    const gp = stats?.games_played;
+
+    const bioItems = [
+        jersey  && `<div class="player-bio-item"><span class="bio-label">Jersey</span><span class="bio-value">${jersey}</span></div>`,
+        height  && `<div class="player-bio-item"><span class="bio-label">Height</span><span class="bio-value">${height}</span></div>`,
+        weight  && `<div class="player-bio-item"><span class="bio-label">Weight</span><span class="bio-value">${weight}</span></div>`,
+        college && `<div class="player-bio-item"><span class="bio-label">College</span><span class="bio-value">${college}</span></div>`,
+        country && `<div class="player-bio-item"><span class="bio-label">Country</span><span class="bio-value">${country}</span></div>`,
+        draftStr && `<div class="player-bio-item"><span class="bio-label">Draft</span><span class="bio-value">${draftStr}</span></div>`,
+        gp != null && `<div class="player-bio-item"><span class="bio-label">Games</span><span class="bio-value">${gp} GP</span></div>`,
+    ].filter(Boolean).join('');
+
+    return `
+        <div class="player-detail-header"
+             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
+                    border-top:3px solid ${colors.primary}88">
+            <button onclick="backToPlayers()" class="back-button">← Players</button>
+            <div class="player-hero">
+                <div class="player-detail-avatar"
+                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                            color:#fff;font-size:2.5rem;font-weight:800;letter-spacing:0.02em;
+                            box-shadow:0 0 40px ${colors.primary}44">
+                    ${headshotImg}<span class="avatar-text">${initials}</span>
+                </div>
+                <div class="player-hero-info">
+                    <div class="player-hero-top">
+                        <h1 class="player-detail-name">${player.first_name} ${player.last_name}</h1>
+                        <span class="player-hero-pos">${player.position || 'N/A'}</span>
+                    </div>
+                    <p class="player-detail-meta" style="color:var(--color-text-secondary)">${teamName}</p>
+                    ${conf ? `<p class="player-detail-meta">${conf} Conference · ${div} Division</p>` : ''}
+                    ${bioItems ? `<div class="player-bio-grid">${bioItems}</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _computeLeagueRanks(stats) {
+    const map = AppState.nbaStatsMap;
+    if (!map || !stats) return {};
+    const players = Object.values(map);
+    const ranks   = {};
+    const fields  = ['pts', 'reb', 'ast', 'stl', 'blk', 'turnover', 'min', 'fg_pct', 'fg3_pct', 'ft_pct', 'oreb', 'dreb'];
+
+    for (const f of fields) {
+        const vals = players
+            .map(p => parseFloat(p[f]))
+            .filter(v => !isNaN(v))
+            .sort((a, b) => b - a); // descending — higher = better rank
+        const val = parseFloat(stats[f]);
+        if (!isNaN(val) && vals.length > 0) {
+            // Find first index where stored value <= player value
+            const idx = vals.findIndex(v => v <= val);
+            ranks[f]  = idx === -1 ? vals.length : idx + 1;
+        }
+    }
+    return ranks;
+}
+
+function _rankTag(rank, total) {
+    if (!rank || !total) return '';
+    const pct = rank / total;
+    const cls = pct <= 0.05 ? 'stat-rank--elite'
+              : pct <= 0.15 ? 'stat-rank--great'
+              : pct <= 0.35 ? 'stat-rank--good'
+              : '';
+    return `<div class="stat-rank ${cls}">#${rank}</div>`;
+}
+
+function _seasonStatsCard(stats, season) {
+    // Per-36 normalisation: multiply rate stats by (36 / min), keep percentages unchanged
+    const min36  = _per36Mode && stats.min > 0 ? 36 / stats.min : 1;
+    const r = (v, d = 1) => v != null ? (parseFloat(v) * min36).toFixed(d) : '—';
+    const s = (v, d = 1) => v != null ? parseFloat(v).toFixed(d) : '—';
+    const p = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+    const modeLabel = _per36Mode ? 'Per 36 Min' : `Season Averages · ${season}`;
+
+    // Ranks only meaningful in raw mode (not per-36)
+    const ranks = _per36Mode ? {} : _computeLeagueRanks(stats);
+    const total = AppState.nbaStatsMap ? Object.keys(AppState.nbaStatsMap).length : 0;
+    const rk    = f => _rankTag(ranks[f], total);
+
+    return `
+        <div class="stats-card" id="seasonStatsCard">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5)">
+                <h2 class="detail-section-title" style="margin-bottom:0">${modeLabel}</h2>
+                <button id="per36Btn" class="per36-btn"
+                    style="${_per36Mode ? 'background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.5);color:#818cf8' : ''}">
+                    ${_per36Mode ? 'Per 36 ON' : 'Per 36'}
+                </button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-pts)">${r(stats.pts)}</div>${rk('pts')}<div class="stat-label">PTS</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-reb)">${r(stats.reb)}</div>${rk('reb')}<div class="stat-label">REB</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-ast)">${r(stats.ast)}</div>${rk('ast')}<div class="stat-label">AST</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-blk)">${p(stats.fg_pct)}</div>${rk('fg_pct')}<div class="stat-label">FG%</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-stl)">${p(stats.fg3_pct)}</div>${rk('fg3_pct')}<div class="stat-label">3P%</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-pct)">${p(stats.ft_pct)}</div>${rk('ft_pct')}<div class="stat-label">FT%</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.stl)}</div>${rk('stl')}<div class="stat-label">STL</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.blk)}</div>${rk('blk')}<div class="stat-label">BLK</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.turnover)}</div><div class="stat-label">TOV</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-min)">${s(stats.min)}</div>${rk('min')}<div class="stat-label">MIN</div></div>
+                ${stats.oreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.oreb)}</div>${rk('oreb')}<div class="stat-label">OREB</div></div>` : ''}
+                ${stats.dreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.dreb)}</div>${rk('dreb')}<div class="stat-label">DREB</div></div>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function _recentGamesCard(recentGames) {
+    const rows = recentGames && recentGames.length > 0
+        ? recentGames.map(g => {
+            const date      = g.game?.date ? new Date(g.game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+            const homeAbbr  = g.game?.home_team?.abbreviation    || 'HME';
+            const awayAbbr  = g.game?.visitor_team?.abbreviation || 'AWY';
+            const homeScore = g.game?.home_team_score    ?? null;
+            const awayScore = g.game?.visitor_team_score ?? null;
+            const scoreStr  = homeScore != null && awayScore != null ? `${homeScore}–${awayScore}` : '—';
+            const fgPct     = (g.fgm != null && g.fga != null && g.fga > 0) ? ` · ${((g.fgm / g.fga) * 100).toFixed(0)}% FG` : '';
+            const mins      = g.min != null ? `${parseFloat(g.min).toFixed(0)}m` : '';
+            const pts       = g.pts ?? 0;
+            // Colour-code big games
+            const ptsColor  = pts >= 30 ? '#fbbf24' : pts >= 20 ? 'var(--color-pts)' : 'var(--color-text-secondary)';
+            return `
+                <div class="recent-game-item">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem">
+                        <span class="recent-game-date">${date} · ${homeAbbr} vs ${awayAbbr}</span>
+                        <span style="color:var(--color-text-muted);font-size:0.8rem;font-weight:600">${scoreStr}${mins ? ' · ' + mins : ''}</span>
+                    </div>
+                    <div class="recent-game-stats">
+                        <span style="color:${ptsColor};font-weight:800">${pts} PTS</span>
+                        <span style="color:var(--color-reb)">${g.reb ?? 0} REB</span>
+                        <span style="color:var(--color-ast)">${g.ast ?? 0} AST</span>
+                        <span style="color:var(--color-stl)">${g.stl ?? 0} STL</span>
+                        <span style="color:var(--color-blk)">${g.blk ?? 0} BLK</span>
+                        ${fgPct ? `<span style="color:var(--color-text-muted);font-size:0.8rem">${g.fgm}/${g.fga}${fgPct}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('')
+        : `<p style="color:var(--color-text-muted);text-align:center;padding:2rem">No recent games available</p>`;
+
+    return `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Recent Games</h2>
+            <div class="recent-games-list">${rows}</div>
+        </div>
+    `;
+}
+
+function _shootingCard(stats) {
+    const bar = (pct, color) => `
+        <div class="shooting-stat-bar">
+            <div class="shooting-stat-fill" style="width:${pct ? pct * 100 : 0}%;background:${color}"></div>
+        </div>
+    `;
+    const fmt = v => v != null ? (v * 100).toFixed(1) + '%' : '0.0%';
+    const sub = (m, a) => `${(m ?? 0).toFixed(1)} / ${(a ?? 0).toFixed(1)} per game`;
+
+    return `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Shooting</h2>
+            <div class="shooting-stats-grid">
+                <div class="shooting-stat-item">
+                    <div class="shooting-stat-header">
+                        <span style="color:var(--color-text-secondary)">Field Goals</span>
+                        <span style="color:var(--color-text-primary);font-weight:700">${fmt(stats.fg_pct)}</span>
+                    </div>
+                    ${bar(stats.fg_pct, 'var(--color-blk)')}
+                    <div style="color:var(--color-text-muted);font-size:0.82rem;margin-top:0.25rem">${sub(stats.fgm, stats.fga)}</div>
+                </div>
+                <div class="shooting-stat-item">
+                    <div class="shooting-stat-header">
+                        <span style="color:var(--color-text-secondary)">3-Pointers</span>
+                        <span style="color:var(--color-text-primary);font-weight:700">${fmt(stats.fg3_pct)}</span>
+                    </div>
+                    ${bar(stats.fg3_pct, 'var(--color-stl)')}
+                    <div style="color:var(--color-text-muted);font-size:0.82rem;margin-top:0.25rem">${sub(stats.fg3m, stats.fg3a)}</div>
+                </div>
+                <div class="shooting-stat-item">
+                    <div class="shooting-stat-header">
+                        <span style="color:var(--color-text-secondary)">Free Throws</span>
+                        <span style="color:var(--color-text-primary);font-weight:700">${fmt(stats.ft_pct)}</span>
+                    </div>
+                    ${bar(stats.ft_pct, 'var(--color-pct)')}
+                    <div style="color:var(--color-text-muted);font-size:0.82rem;margin-top:0.25rem">${sub(stats.ftm, stats.fta)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _chartsCard(recentGames) {
+    const hasGames = recentGames && recentGames.length > 0;
+    return `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Performance Charts</h2>
+            <div class="charts-duo">
+                <div class="chart-panel">
+                    <p class="chart-label">Stat Profile</p>
+                    <div class="chart-wrap"><canvas id="pd-radar"></canvas></div>
+                </div>
+                <div class="chart-panel">
+                    <p class="chart-label">Shooting Splits</p>
+                    <div class="chart-wrap"><canvas id="pd-shooting"></canvas></div>
+                </div>
+            </div>
+            ${hasGames ? `
+                <div class="chart-panel" style="margin-top:var(--space-5)">
+                    <p class="chart-label">Last ${recentGames.length} Games · PTS / REB / AST</p>
+                    <div class="chart-wrap chart-wrap--tall"><canvas id="pd-trend"></canvas></div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function _compareCard(currentPlayer) {
+    const options = AppState.allPlayers
+        .filter(p => p.id !== currentPlayer.id)
+        .map(p => `<option value="${p.id}">${p.first_name} ${p.last_name} · ${p.team?.abbreviation || ''}</option>`)
+        .join('');
+
+    return `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Compare Players</h2>
+            <select id="pd-compare-select" class="compare-select">
+                <option value="">— Select a player to compare —</option>
+                ${options}
+            </select>
+            <div id="pd-compare-chart-wrap" class="chart-wrap chart-wrap--tall" style="display:none;margin-top:var(--space-5)">
+            </div>
+        </div>
+    `;
+}
+
+// ── Back to players ───────────────────────────────────────────
+
 function backToPlayers() {
     AppState.selectedPlayer = null;
-    
-    // Switch back to players view
+    if (window.StatsCharts) StatsCharts.destroyAll();
+
+    history.pushState({ view: 'players' }, '', '#players');
+
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('[data-view="players"]').classList.add('active');
-    
+    document.querySelectorAll('[data-view="players"]').forEach(t => t.classList.add('active'));
     AppState.currentView = 'players';
-    
-    // Show search box
-    const searchBox = document.getElementById('searchBox');
-    if (searchBox) {
-        searchBox.parentElement.style.display = 'block';
-    }
-    
-    // Display players
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'block');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'none');
+
     displayPlayers(AppState.filteredPlayers);
     updatePlayerCount();
 }
 
-// Export to window
 if (typeof window !== 'undefined') {
     window.showPlayerDetail = showPlayerDetail;
-    window.backToPlayers = backToPlayers;
+    window.backToPlayers    = backToPlayers;
+    window.togglePer36      = togglePer36;
 }

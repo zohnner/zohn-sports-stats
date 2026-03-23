@@ -3,47 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zohn Sports Stats</title>
+    <title>ZohnStats — Sports Analytics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Design tokens first so all stylesheets can reference variables -->
+    <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/ticker.css"> 
+    <link rel="stylesheet" href="css/ticker.css">
 </head>
 <body>
+
     <header>
-        <h1>🏀 Zohn Sports Stats</h1>
-        <p>NBA Statistics & Analytics Platform</p>
-        <nav class="nav-tabs">
-            <button class="nav-tab active" data-view="players">Players</button>
-            <button class="nav-tab" data-view="teams">Teams</button>
-            <button class="nav-tab" data-view="games">Games</button>
-            <button class="nav-tab" data-view="builder">Stat Builder</button>
-        </nav>
+        <div class="header-inner">
+            <div class="brand">
+                <span class="brand-icon" id="brandIcon">🏀</span>
+                <div class="brand-text">
+                    <span class="brand-name">ZohnStats</span>
+                    <span class="brand-sub" id="brandSub">NBA Analytics</span>
+                </div>
+            </div>
+
+            <!-- Sport switcher -->
+            <div class="sport-switcher" role="group" aria-label="Select sport">
+                <button class="sport-btn active" data-sport="nba" aria-pressed="true">🏀 NBA</button>
+                <button class="sport-btn" data-sport="mlb" aria-pressed="false">⚾ MLB</button>
+                <button class="sport-btn sport-btn--soon" disabled title="Coming soon">🏈 NFL</button>
+                <button class="sport-btn sport-btn--soon" disabled title="Coming soon">🏒 NHL</button>
+            </div>
+
+            <!-- NBA season selector (hidden when MLB is active) -->
+            <select id="seasonSelect" class="season-select" aria-label="Select season">
+                <option value="2025">2025–26</option>
+                <option value="2024">2024–25</option>
+                <option value="2023">2023–24</option>
+                <option value="2022">2022–23</option>
+                <option value="2021">2021–22</option>
+                <option value="2020">2020–21</option>
+                <option value="2019">2019–20</option>
+                <option value="2018">2018–19</option>
+            </select>
+
+            <!-- NBA navigation -->
+            <nav class="nav-tabs" id="nba-nav">
+                <button class="nav-tab active" data-view="players">
+                    <span class="nav-icon">👤</span>
+                    <span>Players</span>
+                </button>
+                <button class="nav-tab" data-view="leaders">
+                    <span class="nav-icon">🏆</span>
+                    <span>Leaders</span>
+                </button>
+                <button class="nav-tab" data-view="teams">
+                    <span class="nav-icon">🏟</span>
+                    <span>Teams</span>
+                </button>
+                <button class="nav-tab" data-view="games">
+                    <span class="nav-icon">📅</span>
+                    <span>Games</span>
+                </button>
+                <button class="nav-tab" data-view="standings">
+                    <span class="nav-icon">📊</span>
+                    <span>Standings</span>
+                </button>
+                <button class="nav-tab" data-view="builder">
+                    <span class="nav-icon">🧮</span>
+                    <span>Builder</span>
+                </button>
+            </nav>
+
+            <!-- MLB navigation (hidden by default) -->
+            <nav class="nav-tabs" id="mlb-nav" style="display:none">
+                <button class="nav-tab" data-view="mlb-players">
+                    <span class="nav-icon">👤</span>
+                    <span>Players</span>
+                </button>
+                <button class="nav-tab" data-view="mlb-leaders">
+                    <span class="nav-icon">🏆</span>
+                    <span>Leaders</span>
+                </button>
+                <button class="nav-tab" data-view="mlb-teams">
+                    <span class="nav-icon">🏟</span>
+                    <span>Teams</span>
+                </button>
+                <button class="nav-tab" data-view="mlb-games">
+                    <span class="nav-icon">📅</span>
+                    <span>Games</span>
+                </button>
+            </nav>
+        </div>
     </header>
 
     <div class="ticker-wrap">
-        <div class="ticker-title">RECENT SCORES</div>
+        <div class="ticker-title">SCORES</div>
         <div class="ticker" id="scoreTicker">
-            <div class="ticker__item">Loading live scores...</div>
+            <div class="ticker__item">Loading scores…</div>
         </div>
     </div>
 
+    <!-- Mobile bottom navigation — visible only on small screens -->
+    <nav class="mobile-nav" id="mobile-nba-nav" aria-label="Mobile NBA navigation">
+        <button class="nav-tab active" data-view="players">
+            <span class="nav-icon">👤</span>
+            <span class="mobile-nav-label">Players</span>
+        </button>
+        <button class="nav-tab" data-view="leaders">
+            <span class="nav-icon">🏆</span>
+            <span class="mobile-nav-label">Leaders</span>
+        </button>
+        <button class="nav-tab" data-view="teams">
+            <span class="nav-icon">🏟</span>
+            <span class="mobile-nav-label">Teams</span>
+        </button>
+        <button class="nav-tab" data-view="games">
+            <span class="nav-icon">📅</span>
+            <span class="mobile-nav-label">Games</span>
+        </button>
+        <button class="nav-tab" data-view="standings">
+            <span class="nav-icon">📊</span>
+            <span class="mobile-nav-label">Standings</span>
+        </button>
+        <button class="nav-tab" data-view="builder">
+            <span class="nav-icon">🧮</span>
+            <span class="mobile-nav-label">Builder</span>
+        </button>
+    </nav>
+    <nav class="mobile-nav" id="mobile-mlb-nav" style="display:none" aria-label="Mobile MLB navigation">
+        <button class="nav-tab" data-view="mlb-players">
+            <span class="nav-icon">👤</span>
+            <span class="mobile-nav-label">Players</span>
+        </button>
+        <button class="nav-tab" data-view="mlb-leaders">
+            <span class="nav-icon">🏆</span>
+            <span class="mobile-nav-label">Leaders</span>
+        </button>
+        <button class="nav-tab" data-view="mlb-teams">
+            <span class="nav-icon">🏟</span>
+            <span class="mobile-nav-label">Teams</span>
+        </button>
+        <button class="nav-tab" data-view="mlb-games">
+            <span class="nav-icon">📅</span>
+            <span class="mobile-nav-label">Games</span>
+        </button>
+    </nav>
+
     <main>
-        <div class="search-container">
-            <input type="text" id="searchBox" placeholder="Search players...">
-            <p id="resultCount">Loading players...</p>
+        <!-- Search + filters — shown only on Players view -->
+        <div class="search-container" id="searchBar">
+            <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchBox" placeholder="Search players by name or team…">
+                <button class="search-clear" id="searchClear" style="display:none">✕</button>
+            </div>
+            <div class="search-meta">
+                <p id="resultCount">Loading players…</p>
+                <div class="view-toggle">
+                    <button class="view-toggle-btn active" id="cardViewBtn" onclick="setPlayerView('cards')" title="Card view">⊞</button>
+                    <button class="view-toggle-btn" id="tableViewBtn" onclick="setPlayerView('table')" title="Table view">≡</button>
+                </div>
+            </div>
         </div>
 
-        <div id="playersGrid" class="players-grid">
-            </div>
+        <!-- Breadcrumb / status bar — shown on all non-search views -->
+        <div class="view-header" id="viewHeader" style="display:none">
+            <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb"></nav>
+        </div>
+
+        <div id="playersGrid" class="players-grid"></div>
     </main>
 
+    <!-- math.js: safe formula evaluation in Stat Builder (never use eval()) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <!-- Chart.js: data visualisation — loaded before charts.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <!-- App scripts — order matters (no bundler, no ES modules) -->
+    <script src="js/config.js"></script>
+    <script src="js/errorHandler.js"></script>
+    <script src="js/cache.js"></script>
     <script src="js/api.js"></script>
     <script src="js/players.js"></script>
+    <script src="js/leaderboards.js"></script>
     <script src="js/teams.js"></script>
     <script src="js/games.js"></script>
+    <script src="js/charts.js"></script>
     <script src="js/playerDetail.js"></script>
     <script src="js/statBuilder.js"></script>
+    <script src="js/mlb.js"></script>
+    <script src="js/standings.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/app.js"></script>
 </body>

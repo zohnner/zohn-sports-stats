@@ -1,209 +1,208 @@
-/**
- * Games-related functions
- */
+// ============================================================
+// Games — recent results grid + score ticker
+// ============================================================
 
 async function loadGames() {
-    const resultCount = document.getElementById('resultCount');
-    const playersGrid = document.getElementById('playersGrid');
-    
-    try {
-        resultCount.textContent = 'Loading games...';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: white;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🏀</div>
-                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Fetching recent NBA games...</p>
-                <div class="loading-spinner" style="margin-top: 2rem;"></div>
+    const grid = document.getElementById('playersGrid');
+
+    if (window.setBreadcrumb) setBreadcrumb('games', null);
+
+    grid.className = 'games-grid';
+    grid.innerHTML = Array.from({ length: 6 }, () => `
+        <div class="skeleton-card" style="min-height:160px">
+            <div class="skeleton-line" style="width:60%;height:14px;margin-bottom:1.25rem"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:12%;height:20px"></div>
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
             </div>
-        `;
-        
-        // Fetch data
+            <div class="skeleton-line" style="width:40%;height:28px;border-radius:20px"></div>
+        </div>
+    `).join('');
+
+    try {
+        Logger.info('Fetching games…', undefined, 'GAMES');
         const games = await fetchGamesAPI();
         AppState.allGames = games;
-        
-        console.log(`✅ Loaded ${AppState.allGames.length} games`);
-        
-        // Update both the main grid AND the ticker
-        displayGames(AppState.allGames);
-        updateTicker(AppState.allGames);
-        
+        Logger.info(`Loaded ${games.length} games`, undefined, 'GAMES');
+        displayGames(games);
+        updateTicker(games);
     } catch (error) {
-        console.error('❌ Error loading games:', error);
-        resultCount.textContent = 'Error loading games';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center; color: white;">
-                <h3 style="color: #f87171; margin-bottom: 1rem;">⚠️ Failed to Load Games</h3>
-                <p style="color: #fca5a5; margin-bottom: 1rem;">${error.message}</p>
-                <button onclick="loadGames()" style="padding: 0.75rem 1.5rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    🔄 Retry
-                </button>
-            </div>
-        `;
+        Logger.error('Failed to load games', error, 'GAMES');
+        ErrorHandler.renderErrorState(grid, error, loadGames);
+        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Games' });
     }
-}
-
-function updateTicker(games) {
-    const tickerContainer = document.getElementById('scoreTicker');
-    
-    if (!tickerContainer) {
-        console.warn('⚠️ Ticker container not found');
-        return;
-    }
-    
-    // ONLY show games that have actually started or finished (have scores)
-    const liveGames = games.filter(g => 
-        (g.home_team_score !== null && g.home_team_score > 0) || 
-        (g.visitor_team_score !== null && g.visitor_team_score > 0)
-    );
-    
-    if (liveGames.length === 0) {
-        tickerContainer.innerHTML = `
-            <div class="ticker__item" style="padding: 0 40px;">
-                📅 No recent live scores available • Check back during game time
-            </div>
-        `;
-        return;
-    }
-
-    // Duplicate for infinite scroll effect
-    const tickerData = [...liveGames, ...liveGames];
-    
-    tickerContainer.innerHTML = tickerData.map(game => {
-        const homeScore = game.home_team_score || 0;
-        const visitorScore = game.visitor_team_score || 0;
-        
-        // Determine game status
-        let statusText = game.status || 'Final';
-        let statusColor = '#64748b';
-        
-        if (statusText.includes('Final')) {
-            statusColor = '#10b981';
-        } else if (statusText.includes('Q') || statusText.includes('Half')) {
-            statusColor = '#f59e0b';
-        }
-        
-        return `
-            <div class="ticker__item">
-                <span class="ticker-team">${game.home_team.abbreviation}</span>
-                <span class="ticker-score">${homeScore}</span>
-                <span class="ticker-divider">-</span>
-                <span class="ticker-score">${visitorScore}</span>
-                <span class="ticker-team">${game.visitor_team.abbreviation}</span>
-                <span class="ticker-status" style="color: ${statusColor};">${statusText}</span>
-            </div>
-        `;
-    }).join('');
 }
 
 function displayGames(games) {
-    const playersGrid = document.getElementById('playersGrid');
-    const resultCount = document.getElementById('resultCount');
-    
-    playersGrid.innerHTML = '';
-    playersGrid.className = 'games-grid';
-    
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'games-grid';
+
     if (!games || games.length === 0) {
-        playersGrid.innerHTML = `
-            <p style="color: white; text-align: center; padding: 3rem;">
-                No games found.
-            </p>
-        `;
+        ErrorHandler.renderEmptyState(grid, 'No recent games found', '📅');
         return;
     }
-    
-    // Use DocumentFragment for performance
+
     const fragment = document.createDocumentFragment();
-    
-    games.forEach(game => {
-        const card = createGameCard(game);
-        fragment.appendChild(card);
-    });
-    
-    playersGrid.appendChild(fragment);
-    resultCount.textContent = `Showing ${games.length} recent games`;
+    games.forEach(game => fragment.appendChild(createGameCard(game)));
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
 }
 
 function createGameCard(game) {
     const card = document.createElement('div');
     card.className = 'game-card';
-    
-    const homeScore = game.home_team_score || 0;
-    const visitorScore = game.visitor_team_score || 0;
-    
-    // Determine winner styling
-    const homeWon = homeScore > visitorScore;
-    const visitorWon = visitorScore > homeScore;
-    const isTie = homeScore === visitorScore;
-    
-    const homeScoreColor = homeWon ? '#10b981' : isTie ? '#f59e0b' : '#64748b';
-    const visitorScoreColor = visitorWon ? '#10b981' : isTie ? '#f59e0b' : '#64748b';
-    
-    // Parse and format date
-    let dateString = 'Date TBD';
+
+    const homeScore = game.home_team_score    ?? 0;
+    const awayScore = game.visitor_team_score ?? 0;
+    const hasScore  = homeScore > 0 || awayScore > 0;
+
+    const homeWon = hasScore && homeScore > awayScore;
+    const awayWon = hasScore && awayScore > homeScore;
+
+    const homeColors = getTeamColors(game.home_team?.abbreviation);
+    const awayColors = getTeamColors(game.visitor_team?.abbreviation);
+
+    const homeInitials = _teamAbbrInitials(game.home_team?.abbreviation);
+    const awayInitials = _teamAbbrInitials(game.visitor_team?.abbreviation);
+
+    // Status
+    const status    = game.status || 'Scheduled';
+    const isFinal   = status.includes('Final');
+    const isLive    = status.includes('Q') || status.includes('Half') || status.includes(':');
+    const statusCls = isFinal ? 'game-status--final' : isLive ? 'game-status--live' : 'game-status--sched';
+
+    // Date
+    let dateStr = '';
     if (game.date) {
         try {
-            const date = new Date(game.date);
-            dateString = date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            });
-        } catch (e) {
-            console.warn('Could not parse game date:', game.date);
-        }
+            dateStr = new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        } catch (_) { dateStr = game.date; }
     }
-    
-    // Game status with styling
-    let statusText = game.status || 'Scheduled';
-    let statusColor = '#64748b';
-    let statusBg = 'rgba(100, 116, 139, 0.1)';
-    
-    if (statusText.includes('Final')) {
-        statusColor = '#10b981';
-        statusBg = 'rgba(16, 185, 129, 0.1)';
-    } else if (statusText.includes('Q') || statusText.includes('Half')) {
-        statusColor = '#f59e0b';
-        statusBg = 'rgba(245, 158, 11, 0.1)';
-        statusText = '🔴 ' + statusText; // Live indicator
-    }
-    
+
+    const hasQuarters = hasScore && (game.home_q1 != null || game.visitor_q1 != null);
+    const hasOT       = game.home_ot != null || game.visitor_ot != null;
+    const homeAbbr    = game.home_team?.abbreviation || '—';
+    const awayAbbr    = game.visitor_team?.abbreviation || '—';
+
+    const quartersHtml = hasQuarters ? `
+        <div class="game-quarters">
+            <div class="quarter-row quarter-row--header">
+                <span class="quarter-team"></span>
+                <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span>
+                ${hasOT ? '<span>OT</span>' : ''}
+                <span class="quarter-total">T</span>
+            </div>
+            <div class="quarter-row">
+                <span class="quarter-team">${homeAbbr}</span>
+                <span>${game.home_q1 ?? '—'}</span>
+                <span>${game.home_q2 ?? '—'}</span>
+                <span>${game.home_q3 ?? '—'}</span>
+                <span>${game.home_q4 ?? '—'}</span>
+                ${hasOT ? `<span>${game.home_ot ?? '—'}</span>` : ''}
+                <span class="quarter-total ${homeWon ? 'quarter-win' : ''}">${homeScore}</span>
+            </div>
+            <div class="quarter-row">
+                <span class="quarter-team">${awayAbbr}</span>
+                <span>${game.visitor_q1 ?? '—'}</span>
+                <span>${game.visitor_q2 ?? '—'}</span>
+                <span>${game.visitor_q3 ?? '—'}</span>
+                <span>${game.visitor_q4 ?? '—'}</span>
+                ${hasOT ? `<span>${game.visitor_ot ?? '—'}</span>` : ''}
+                <span class="quarter-total ${awayWon ? 'quarter-win' : ''}">${awayScore}</span>
+            </div>
+        </div>
+    ` : '';
+
     card.innerHTML = `
+        <div class="game-card-header">
+            <span class="game-date">${dateStr}</span>
+            <span class="game-status ${statusCls}">${isLive ? '<span class="live-dot"></span>' : ''}${status}</span>
+        </div>
         <div class="game-matchup">
-            <div class="team-section">
-                <div class="team-name">${game.home_team.full_name}</div>
-                <div class="team-score" style="color: ${homeScoreColor}; font-weight: 900;">
-                    ${homeScore}
+            <div class="game-team ${homeWon ? 'game-team--winner' : ''}">
+                <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
+                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png" loading="lazy" onerror="this.style.display='none'" onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">
+                    <span class="game-logo-text">${homeInitials}</span>
                 </div>
-                ${homeWon ? '<div style="color: #10b981; font-size: 0.8rem; margin-top: 0.25rem;">✓ WIN</div>' : ''}
+                <div class="game-team-abbr">${homeAbbr}</div>
+                <div class="game-team-name">${game.home_team?.full_name || ''}</div>
             </div>
-            
-            <div class="vs-section">VS</div>
-            
-            <div class="team-section">
-                <div class="team-name">${game.visitor_team.full_name}</div>
-                <div class="team-score" style="color: ${visitorScoreColor}; font-weight: 900;">
-                    ${visitorScore}
+            <div class="game-scores">
+                <span class="game-score ${homeWon ? 'game-score--win' : hasScore && !homeWon ? 'game-score--loss' : ''}">${hasScore ? homeScore : '—'}</span>
+                <span class="game-scores-sep">:</span>
+                <span class="game-score ${awayWon ? 'game-score--win' : hasScore && !awayWon ? 'game-score--loss' : ''}">${hasScore ? awayScore : '—'}</span>
+            </div>
+            <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}">
+                <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
+                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${awayAbbr.toLowerCase()}.png" loading="lazy" onerror="this.style.display='none'" onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">
+                    <span class="game-logo-text">${awayInitials}</span>
                 </div>
-                ${visitorWon ? '<div style="color: #10b981; font-size: 0.8rem; margin-top: 0.25rem;">✓ WIN</div>' : ''}
+                <div class="game-team-abbr">${awayAbbr}</div>
+                <div class="game-team-name">${game.visitor_team?.full_name || ''}</div>
             </div>
         </div>
-        
-        <div class="game-info">
-            <span style="background: ${statusBg}; color: ${statusColor}; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.9rem;">
-                ${statusText}
-            </span>
-            <span style="color: #94a3b8; font-weight: 600;">
-                📅 ${dateString}
-            </span>
-        </div>
+        ${quartersHtml}
     `;
-    
+
     return card;
 }
 
-// Export to window
+function _teamAbbrInitials(abbr) {
+    if (!abbr) return '?';
+    return abbr.length <= 3 ? abbr : abbr.slice(0, 2);
+}
+
+function updateTicker(games) {
+    const ticker = document.getElementById('scoreTicker');
+    if (!ticker) {
+        Logger.warn('Ticker container not found', undefined, 'GAMES');
+        return;
+    }
+
+    const scored = games.filter(g =>
+        (g.home_team_score != null && g.home_team_score > 0) ||
+        (g.visitor_team_score != null && g.visitor_team_score > 0)
+    );
+
+    if (scored.length === 0) {
+        ticker.innerHTML = `<div class="ticker__item">No recent scores — check back during game time</div>`;
+        return;
+    }
+
+    const items = [...scored, ...scored].map(g => {
+        const hs       = g.home_team_score    ?? 0;
+        const vs       = g.visitor_team_score ?? 0;
+        const st       = g.status || 'Final';
+        const isLive   = st.includes('Q') || st.includes('Half') || st.includes(':');
+        const isFinal  = st.includes('Final');
+        const pillCls  = isFinal ? 'final' : isLive ? 'live' : 'sched';
+        const pillLbl  = isFinal ? 'F' : isLive ? st : 'SCH';
+        const homeAbbr = g.home_team?.abbreviation || '?';
+        const awayAbbr = g.visitor_team?.abbreviation || '?';
+        const homeLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png`;
+        const awayLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${awayAbbr.toLowerCase()}.png`;
+        const homeWon  = hs > vs;
+        const awayWon  = vs > hs;
+        return `
+            <div class="ticker__item">
+                <img class="ticker-logo" src="${homeLogo}" alt="" loading="lazy" onerror="this.style.display='none'">
+                <span class="ticker-team">${homeAbbr}</span>
+                <span class="ticker-score ${homeWon && isFinal ? 'ticker-score--win' : ''}">${hs}</span>
+                <span class="ticker-divider">–</span>
+                <span class="ticker-score ${awayWon && isFinal ? 'ticker-score--win' : ''}">${vs}</span>
+                <span class="ticker-team">${awayAbbr}</span>
+                <img class="ticker-logo" src="${awayLogo}" alt="" loading="lazy" onerror="this.style.display='none'">
+                <span class="ticker-status-pill ticker-status-pill--${pillCls}">${pillLbl}</span>
+            </div>
+        `;
+    }).join('');
+
+    ticker.innerHTML = items;
+}
+
 if (typeof window !== 'undefined') {
-    window.loadGames = loadGames;
+    window.loadGames    = loadGames;
     window.displayGames = displayGames;
-    window.createGameCard = createGameCard;
     window.updateTicker = updateTicker;
 }

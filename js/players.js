@@ -1,127 +1,418 @@
+// ---- State ------------------------------------------------------------------
+
+let playerViewMode  = 'cards';   // 'cards' | 'table'
+let tableSortField  = 'pts';
+let tableSortDir    = 'desc';    // 'asc' | 'desc'
+
+function setPlayerView(mode) {
+    playerViewMode = mode;
+    document.getElementById('cardViewBtn')?.classList.toggle('active',  mode === 'cards');
+    document.getElementById('tableViewBtn')?.classList.toggle('active', mode === 'table');
+    displayPlayers(AppState.filteredPlayers);
+    Logger.debug(`Player view → ${mode}`, undefined, 'PLAYERS');
+}
+
+// ---- Skeleton loading -------------------------------------------------------
+
+function showSkeletonCards(count = 9) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.innerHTML = Array.from({ length: count }, () => `
+        <div class="skeleton-card">
+            <div class="skeleton-card-header">
+                <div>
+                    <div class="skeleton-line" style="width:140px;height:18px;margin-bottom:8px"></div>
+                    <div class="skeleton-line" style="width:70px;height:12px"></div>
+                </div>
+                <div class="skeleton-line" style="width:52px;height:28px;border-radius:20px"></div>
+            </div>
+            <div class="skeleton-card-rows">
+                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ---- Data loading -----------------------------------------------------------
+
 async function loadPlayers() {
     const resultCount = document.getElementById('resultCount');
-    const playersGrid = document.getElementById('playersGrid');
-    
+    const grid = document.getElementById('playersGrid');
+
     try {
-        resultCount.textContent = 'Loading players...';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: white;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🏀</div>
-                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Loading NBA players...</p>
-            </div>
-        `;
-        
+        resultCount.textContent = 'Loading players…';
+        showSkeletonCards(9);
+
+        Logger.info('Fetching players from API…', undefined, 'PLAYERS');
         AppState.allPlayers = await fetchAllPlayers();
-        
+
         if (!AppState.allPlayers || AppState.allPlayers.length === 0) {
-            throw new Error('No players returned');
+            throw new Error('No players returned from API');
         }
-        
-        console.log(`Loaded ${AppState.allPlayers.length} players`);
-        
-        AppState.allPlayers.forEach(player => {
-            AppState.playerStats[player.id] = generateMockStats(player);
-        });
-        
+
+        Logger.info(`Fetched ${AppState.allPlayers.length} players`, undefined, 'PLAYERS');
+
+        await loadStatsForPlayers(AppState.allPlayers);
+
         AppState.filteredPlayers = AppState.allPlayers;
-        
+
+        renderPositionFilters();
         displayPlayers(AppState.filteredPlayers);
         updatePlayerCount();
-        
+
     } catch (error) {
-        console.error('Error loading players:', error);
+        Logger.error('Failed to load players', error, 'PLAYERS');
         resultCount.textContent = 'Error loading players';
-        playersGrid.innerHTML = `
-            <div style="grid-column: 1/-1; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); padding: 2rem; border-radius: 12px; text-align: center; color: white;">
-                <h3 style="color: #f87171; margin-bottom: 1rem;">⚠️ Failed to Load Players</h3>
-                <p style="color: #fca5a5; margin-bottom: 1rem;">Failed to load players.</p>
-                <button onclick="loadPlayers()" style="padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">🔄 Retry</button>
-            </div>
-        `;
+        ErrorHandler.renderErrorState(grid, error, loadPlayers);
+        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Players' });
     }
 }
+
+async function loadStatsForPlayers(players) {
+    Logger.info(`Fetching season averages for ${players.length} players…`, undefined, 'PLAYERS');
+    const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
+    let matched = 0;
+    players.forEach(player => {
+        const key  = `${player.first_name} ${player.last_name}`.toLowerCase();
+        const stat = statsMap[key];
+        if (stat) {
+            AppState.playerStats[player.id] = { ...stat, player_id: player.id };
+            matched++;
+        }
+    });
+    Logger.info(`Stats matched for ${matched} of ${players.length} players`, undefined, 'PLAYERS');
+    if (matched === 0 && players.length > 0) {
+        ErrorHandler.toast('Season stats unavailable — NBA stats service unreachable', 'warn');
+    }
+}
+
+// ---- Display dispatcher -----------------------------------------------------
 
 function displayPlayers(players) {
-    const playersGrid = document.getElementById('playersGrid');
-    playersGrid.innerHTML = '';
-    playersGrid.className = 'players-grid';
-    
-    if (players.length === 0) {
-        playersGrid.innerHTML = '<p style="color: white; text-align: center; grid-column: 1/-1;">No players found.</p>';
-        return;
+    if (playerViewMode === 'table') {
+        displayPlayersTable(players);
+    } else {
+        displayPlayerCards(players);
     }
-    
-    players.forEach(player => {
-        const stats = AppState.playerStats[player.id];
-        const card = createPlayerCard(player, stats);
-        playersGrid.appendChild(card);
-    });
 }
 
-function createPlayerCard(player, stats) {
+// ---- Card view --------------------------------------------------------------
+
+function displayPlayerCards(players) {
+    const grid = document.getElementById('playersGrid');
+    grid.innerHTML = '';
+    grid.className = 'players-grid';
+
+    if (players.length === 0) {
+        ErrorHandler.renderEmptyState(grid, 'No players match your search');
+        return;
+    }
+
+    // Build global PPG rank map from ALL players (not just current page)
+    const ppgRankMap = {};
+    [...AppState.allPlayers]
+        .filter(p => AppState.playerStats[p.id]?.pts != null)
+        .sort((a, b) => AppState.playerStats[b.id].pts - AppState.playerStats[a.id].pts)
+        .forEach((p, i) => { ppgRankMap[p.id] = i + 1; });
+
+    const fragment = document.createDocumentFragment();
+    players.forEach(player => {
+        fragment.appendChild(createPlayerCard(player, AppState.playerStats[player.id], ppgRankMap[player.id]));
+    });
+    grid.appendChild(fragment);
+}
+
+function createPlayerCard(player, stats, ppgRank) {
     const card = document.createElement('div');
     card.className = 'player-card';
+
+    const conf = player.team?.conference;
+    if (conf === 'East') card.classList.add('conference-east');
+    else if (conf === 'West') card.classList.add('conference-west');
+
     card.style.cursor = 'pointer';
     card.onclick = () => showPlayerDetail(player.id);
-    
+
+    const teamName    = player.team?.full_name || player.team?.name || 'Unknown Team';
+    const abbr        = player.team?.abbreviation || '';
+    const colors      = getTeamColors(abbr);
+    const initials    = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
+    const headshotUrl = getESPNHeadshotUrl(player);
+    const headshotImg = headshotUrl
+        ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
+        : '';
+
+    const rankBadge = ppgRank != null ? `<span class="player-rank-badge ${ppgRank <= 10 ? 'player-rank-badge--top' : ''}">#${ppgRank} PPG</span>` : '';
+
+    // Team record from standings (if already loaded)
+    const standing  = AppState.nbaStandings?.find(s => s.teamAbbr === abbr);
+    const recordStr = standing ? `${standing.wins}–${standing.losses}` : '';
+
+    // Colour-tier the PPG value
+    const pts    = stats?.pts;
+    const ptsClr = pts >= 25 ? '#fbbf24' : pts >= 20 ? '#a78bfa' : pts >= 15 ? 'var(--color-pts)' : 'var(--color-text-primary)';
+
     card.innerHTML = `
-        <div class="player-header">
-            <div>
-                <div class="player-name">${player.first_name} ${player.last_name}</div>
-                <div class="player-id">#${player.id}</div>
+        <div class="player-card-top">
+            ${rankBadge}
+            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
+                ${headshotImg}<span class="avatar-text">${initials}</span>
             </div>
-            <div class="position-badge">${player.position || 'N/A'}</div>
+            <div class="player-name">${player.first_name} ${player.last_name}</div>
+            <div class="player-team">${abbr ? abbr + ' · ' : ''}${player.position || 'N/A'}${recordStr ? ' · ' + recordStr : ''}</div>
         </div>
         <div class="player-details">
             <div class="detail-row">
-                <span class="detail-label">Team:</span>
-                <span class="detail-value">${player.team.full_name}</span>
+                <span class="detail-label">Team</span>
+                <span class="detail-value">${teamName}</span>
             </div>
             ${stats ? `
                 <div class="detail-row">
-                    <span class="detail-label">PPG:</span>
-                    <span class="detail-value" style="color: #fbbf24;">${stats.pts}</span>
+                    <span class="detail-label">PPG</span>
+                    <span class="detail-value" style="color:${ptsClr};font-weight:800">${pts?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">RPG:</span>
-                    <span class="detail-value" style="color: #34d399;">${stats.reb}</span>
+                    <span class="detail-label">RPG</span>
+                    <span class="detail-value" style="color:var(--color-reb)">${stats.reb?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">APG:</span>
-                    <span class="detail-value" style="color: #60a5fa;">${stats.ast}</span>
+                    <span class="detail-label">APG</span>
+                    <span class="detail-value" style="color:var(--color-ast)">${stats.ast?.toFixed(1) ?? '—'}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">FG%:</span>
-                    <span class="detail-value" style="color: #f472b6;">${(stats.fg_pct * 100).toFixed(1)}%</span>
+                    <span class="detail-label">FG%</span>
+                    <span class="detail-value" style="color:var(--color-blk)">${stats.fg_pct != null ? (stats.fg_pct * 100).toFixed(1) + '%' : '—'}</span>
                 </div>
-            ` : ''}
+                <div class="detail-row">
+                    <span class="detail-label">3P%</span>
+                    <span class="detail-value">${stats.fg3_pct != null ? (stats.fg3_pct * 100).toFixed(1) + '%' : '—'}</span>
+                </div>
+            ` : `
+                <div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">
+                    No season stats available
+                </div>
+            `}
         </div>
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: #667eea; font-weight: 600; font-size: 0.9rem;">
-            Click for details →
-        </div>
+        <div class="card-cta">VIEW PROFILE →</div>
     `;
-    
+
     return card;
 }
 
-function searchPlayers(searchTerm) {
-    const term = searchTerm.toLowerCase().trim();
-    
-    if (term === '') {
-        AppState.filteredPlayers = AppState.allPlayers;
-    } else {
-        AppState.filteredPlayers = AppState.allPlayers.filter(player => {
-            const fullName = `${player.first_name} ${player.last_name}`.toLowerCase();
-            const teamName = player.team.full_name.toLowerCase();
-            return fullName.includes(term) || teamName.includes(term);
-        });
+// ---- Table view -------------------------------------------------------------
+
+function displayPlayersTable(players) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';          // remove grid layout — table fills full width
+    grid.innerHTML = '';
+
+    if (players.length === 0) {
+        ErrorHandler.renderEmptyState(grid, 'No players match your search');
+        return;
     }
-    
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-wrapper';
+
+    const table = document.createElement('table');
+    table.className = 'stats-table';
+
+    const COLS = [
+        { label: '#',     field: null,      cls: 'tbl-rank' },
+        { label: 'Player', field: null,     cls: '' },
+        { label: 'Team',  field: null,      cls: '' },
+        { label: 'PPG',   field: 'pts',     cls: 'tbl-stat tbl-pts' },
+        { label: 'RPG',   field: 'reb',     cls: 'tbl-stat tbl-reb' },
+        { label: 'APG',   field: 'ast',     cls: 'tbl-stat tbl-ast' },
+        { label: 'FG%',   field: 'fg_pct',  cls: 'tbl-stat tbl-pct', pct: true },
+        { label: '3P%',   field: 'fg3_pct', cls: 'tbl-stat tbl-pct', pct: true },
+        { label: 'STL',   field: 'stl',     cls: 'tbl-stat' },
+        { label: 'BLK',   field: 'blk',     cls: 'tbl-stat' },
+        { label: 'MIN',   field: 'min',     cls: 'tbl-stat' },
+    ];
+
+    // Header
+    const thead = document.createElement('thead');
+    thead.innerHTML = `<tr>${COLS.map(col => {
+        const sortable  = col.field ? 'sortable' : '';
+        const isActive  = col.field === tableSortField ? 'sort-active' : '';
+        const dir       = col.field === tableSortField ? (tableSortDir === 'desc' ? '↓' : '↑') : '';
+        const dataAttr  = col.field ? `data-sort="${col.field}" data-dir="${dir}"` : '';
+        return `<th class="${sortable} ${isActive}" ${dataAttr}>${col.label}</th>`;
+    }).join('')}</tr>`;
+    table.appendChild(thead);
+
+    // Body
+    const tbody = document.createElement('tbody');
+    players.forEach((player, i) => {
+        const stats = AppState.playerStats[player.id];
+        const tr    = document.createElement('tr');
+        tr.onclick = () => showPlayerDetail(player.id);
+
+        const cells = COLS.map(col => {
+            if (!col.field) {
+                // Static cells
+                if (col.label === '#')      return `<td class="tbl-rank">${i + 1}</td>`;
+                if (col.label === 'Player') return `<td>
+                    <div class="tbl-player-name">${player.first_name} ${player.last_name}</div>
+                    <div class="tbl-player-pos">${player.position || ''}</div>
+                </td>`;
+                if (col.label === 'Team')   return `<td><span class="tbl-team-badge">${player.team?.abbreviation || '—'}</span></td>`;
+            }
+            if (!stats || stats[col.field] == null) return `<td class="${col.cls}" style="color:#334155">—</td>`;
+            const raw     = stats[col.field];
+            const display = col.pct ? (raw * 100).toFixed(1) + '%' : parseFloat(raw).toFixed(1);
+            return `<td class="${col.cls}">${display}</td>`;
+        });
+
+        tr.innerHTML = cells.join('');
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    // Column sort click
+    thead.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const field = th.dataset.sort;
+            if (tableSortField === field) {
+                tableSortDir = tableSortDir === 'desc' ? 'asc' : 'desc';
+            } else {
+                tableSortField = field;
+                tableSortDir   = 'desc';
+            }
+
+            AppState.filteredPlayers.sort((a, b) => {
+                const av = AppState.playerStats[a.id]?.[field] ?? -Infinity;
+                const bv = AppState.playerStats[b.id]?.[field] ?? -Infinity;
+                return tableSortDir === 'desc' ? bv - av : av - bv;
+            });
+
+            displayPlayersTable(AppState.filteredPlayers);
+        });
+    });
+
+    wrapper.appendChild(table);
+    grid.appendChild(wrapper);
+}
+
+// ---- Position filter --------------------------------------------------------
+
+function renderPositionFilters() {
+    if (document.getElementById('positionFilters')) return;
+
+    const container = document.querySelector('.search-container');
+    if (!container) return;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'positionFilters';
+    wrap.style.cssText = 'display:flex;gap:0.4rem;margin-top:0.875rem;flex-wrap:wrap;';
+
+    [
+        { label: 'All',  value: 'all' },
+        { label: 'G',    value: 'G'   },
+        { label: 'F',    value: 'F'   },
+        { label: 'C',    value: 'C'   },
+    ].forEach(({ label, value }) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.dataset.pos = value;
+        _styleFilterBtn(btn, AppState.positionFilter === value);
+        btn.addEventListener('click', () => setPositionFilter(value));
+        wrap.appendChild(btn);
+    });
+
+    // Insert before search-meta
+    const meta = container.querySelector('.search-meta');
+    container.insertBefore(wrap, meta);
+}
+
+function _styleFilterBtn(btn, active) {
+    btn.style.cssText = `
+        padding:0.3rem 0.75rem;border-radius:20px;cursor:pointer;font-weight:700;
+        font-size:0.8rem;transition:all 0.2s;font-family:inherit;
+        border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.12)'};
+        background:${active ? 'rgba(102,126,234,0.2)' : 'rgba(255,255,255,0.04)'};
+        color:${active ? '#818cf8' : '#64748b'};
+    `;
+}
+
+function setPositionFilter(position) {
+    AppState.positionFilter = position;
+    document.querySelectorAll('[data-pos]').forEach(btn => {
+        _styleFilterBtn(btn, btn.dataset.pos === position);
+    });
+    applyFilters();
+}
+
+function applyFilters() {
+    const term = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
+    const pos  = AppState.positionFilter;
+
+    AppState.filteredPlayers = AppState.allPlayers.filter(player => {
+        const teamName = player.team?.full_name || player.team?.name || '';
+        const matchesSearch = term === '' ||
+            `${player.first_name} ${player.last_name}`.toLowerCase().includes(term) ||
+            teamName.toLowerCase().includes(term);
+        const matchesPos = pos === 'all' || (player.position?.includes(pos));
+        return matchesSearch && matchesPos;
+    });
+
     displayPlayers(AppState.filteredPlayers);
     updatePlayerCount();
 }
 
+// Live search — filters local data immediately, then enriches from the API
+let _searchAbort = null; // tracks in-flight search so stale results are dropped
+
+async function searchPlayers(term) {
+    // Always apply local filter first for instant feedback
+    applyFilters();
+
+    const q = (term || '').trim();
+    if (q.length < 2) return;
+
+    // Cancel any pending remote search
+    _searchAbort = Symbol();
+    const thisSearch = _searchAbort;
+
+    try {
+        const apiResults = await searchPlayersAPI(q);
+        if (thisSearch !== _searchAbort) return; // stale — a newer search started
+
+        // Find players not yet in allPlayers
+        const newPlayers = apiResults.filter(p => !AppState.allPlayers.find(a => a.id === p.id));
+        if (!newPlayers.length) return;
+
+        // Look up stats for new players from the NBA map (already fetched)
+        const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
+        newPlayers.forEach(p => {
+            const key  = `${p.first_name} ${p.last_name}`.toLowerCase();
+            const stat = statsMap[key];
+            if (stat) AppState.playerStats[p.id] = { ...stat, player_id: p.id };
+        });
+        AppState.allPlayers = [...AppState.allPlayers, ...newPlayers];
+
+        // Re-apply filters so newly loaded players appear
+        applyFilters();
+        Logger.info(`Live search added ${newPlayers.length} players`, undefined, 'SEARCH');
+    } catch (err) {
+        Logger.warn('Live search failed', err.message, 'SEARCH');
+    }
+}
+
 function updatePlayerCount() {
-    const resultCount = document.getElementById('resultCount');
-    resultCount.textContent = `Showing ${AppState.filteredPlayers.length} of ${AppState.allPlayers.length} players`;
+    const el = document.getElementById('resultCount');
+    if (el) el.textContent = `Showing ${AppState.filteredPlayers.length} of ${AppState.allPlayers.length} players`;
+}
+
+if (typeof window !== 'undefined') {
+    window.setPlayerView    = setPlayerView;
+    window.loadPlayers      = loadPlayers;
+    window.displayPlayers   = displayPlayers;
+    window.loadStatsForPlayers = loadStatsForPlayers;
+    window.updatePlayerCount   = updatePlayerCount;
 }
