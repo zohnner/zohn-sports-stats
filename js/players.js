@@ -88,6 +88,10 @@ async function loadStatsForPlayers(players) {
     if (matched === 0 && players.length > 0) {
         ErrorHandler.toast('Season stats unavailable — NBA stats service unreachable', 'warn');
     }
+    // Seed IndexedDB for the Q&A engine
+    if (typeof StatsDB !== 'undefined') {
+        StatsDB.syncPlayers(players, statsMap).catch(() => {});
+    }
 }
 
 // ---- Display dispatcher -----------------------------------------------------

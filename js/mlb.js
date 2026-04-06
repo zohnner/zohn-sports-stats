@@ -387,10 +387,23 @@ function displayMLBPlayersTable(group) {
         const cells = COLS.map(col => {
             if (!col.field) {
                 if (col.label === '#')       return `<td class="tbl-rank">${i + 1}</td>`;
-                if (col.label === 'Player')  return `<td>
-                    <div class="tbl-player-name">${player.fullName}</div>
-                    <div class="tbl-player-pos">${player.position || ''}</div>
-                </td>`;
+                if (col.label === 'Player') {
+                    const hsUrl  = getMLBPlayerHeadshotUrl(player.id);
+                    const clrs   = getMLBTeamColors(player.teamAbbr);
+                    const inits  = (player.fullName || '').split(' ').map(w => w[0]).slice(0, 2).join('');
+                    return `<td>
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                                <img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">
+                                <span>${inits}</span>
+                            </div>
+                            <div>
+                                <div class="tbl-player-name">${player.fullName}</div>
+                                <div class="tbl-player-pos">${player.position || ''}</div>
+                            </div>
+                        </div>
+                    </td>`;
+                }
                 if (col.label === 'Team')    return `<td><span class="tbl-team-badge">${player.teamAbbr || '—'}</span></td>`;
             }
             if (!stats || stats[col.field] == null) return `<td class="${col.cls}" style="color:#334155">—</td>`;

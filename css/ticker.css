@@ -1,40 +1,59 @@
-/* ── Ticker wrap ──────────────────────────────────────────── */
+/* ============================================================
+   TICKER — ZohnStats
+   Sticky scores strip below the header.
+   ============================================================ */
+
 .ticker-wrap {
     width: 100%;
     overflow: hidden;
-    background: rgba(5, 11, 24, 0.98);
-    height: 36px;
+    background: rgba(4, 9, 20, 0.98);
+    height: var(--ticker-height);
     display: flex;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
     position: sticky;
-    top: 64px;          /* stack below header (--header-height) */
-    z-index: 98;        /* below header (100) */
+    top: var(--header-height);
+    z-index: calc(var(--z-sticky) - 2);
 }
 
 /* "SCORES" label pill */
 .ticker-title {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
     color: #fff;
     padding: 0 14px;
     height: 100%;
     display: flex;
     align-items: center;
+    gap: 6px;
     font-weight: 900;
     font-size: 0.68rem;
     letter-spacing: 0.8px;
     text-transform: uppercase;
     white-space: nowrap;
     flex-shrink: 0;
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 4px 0 12px rgba(0,0,0,0.4);
+}
+
+/* "N LIVE" badge inside the title pill */
+.ticker-live-badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.25);
+    border: 1px solid rgba(245,158,11,0.5);
+    color: var(--color-live);
+    font-size: 0.58rem;
+    font-weight: 900;
+    padding: 1px 5px;
+    border-radius: var(--radius-xs);
+    letter-spacing: 0.3px;
+    animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
 
 /* Scrolling strip */
 .ticker {
     display: flex;
     white-space: nowrap;
-    animation: ticker-scroll 50s linear infinite;
+    animation: tickerScroll 50s linear infinite;
     will-change: transform;
 }
 .ticker:hover { animation-play-state: paused; }
@@ -46,9 +65,9 @@
     gap: 5px;
     padding: 0 18px;
     font-size: 0.78rem;
-    color: #e2e8f0;
-    font-family: 'Inter', sans-serif;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    border-right: 1px solid var(--border-default);
 }
 
 /* Team logos inside ticker */
@@ -64,7 +83,7 @@
 .ticker-team {
     font-weight: 800;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     letter-spacing: 0.3px;
 }
 
@@ -72,15 +91,15 @@
 .ticker-score {
     font-weight: 900;
     font-size: 0.85rem;
-    color: #f1f5f9;
+    color: var(--text-primary);
     min-width: 1.4ch;
     text-align: center;
 }
-.ticker-score--win { color: #10b981; }
+.ticker-score--win { color: var(--color-win); }
 
 /* Divider between scores */
 .ticker-divider {
-    color: #334155;
+    color: var(--text-subtle);
     font-weight: 300;
     margin: 0 1px;
 }
@@ -91,46 +110,36 @@
     font-weight: 800;
     letter-spacing: 0.4px;
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     margin-left: 3px;
     flex-shrink: 0;
     text-transform: uppercase;
 }
 .ticker-status-pill--final {
-    background: rgba(16, 185, 129, 0.12);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.25);
+    background: rgba(34,211,160,0.10);
+    color: var(--color-win);
+    border: 1px solid rgba(34,211,160,0.25);
 }
 .ticker-status-pill--live {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    animation: ticker-live-pulse 1.8s ease-in-out infinite;
+    background: rgba(245,158,11,0.14);
+    color: var(--color-live);
+    border: 1px solid rgba(245,158,11,0.3);
+    animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
 .ticker-status-pill--sched {
-    background: rgba(100, 116, 139, 0.1);
-    color: #64748b;
-    border: 1px solid rgba(100, 116, 139, 0.2);
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    border: 1px solid var(--border-default);
 }
 .ticker-status-pill--other {
-    background: rgba(100, 116, 139, 0.1);
-    color: #475569;
-    border: 1px solid rgba(100, 116, 139, 0.15);
+    background: var(--bg-subtle);
+    color: var(--text-subtle);
+    border: 1px solid var(--border-default);
 }
 
-@keyframes ticker-live-pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.6; }
-}
-
-@keyframes ticker-scroll {
-    0%   { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-50%, 0, 0); }
-}
-
-/* Mobile — slightly smaller ticker */
+/* Mobile — slightly smaller */
 @media (max-width: 600px) {
-    .ticker-wrap  { height: 32px; top: 64px; }
+    .ticker-wrap  { height: 32px; }
     .ticker-title { padding: 0 10px; font-size: 0.62rem; }
     .ticker__item { padding: 0 12px; font-size: 0.72rem; }
     .ticker-logo  { width: 15px; height: 15px; }

@@ -256,9 +256,12 @@ function _rosterCard(roster, colors) {
         })
         .map(p => {
             const stats      = AppState.playerStats[p.id];
-            const pts        = stats ? parseFloat(stats.pts).toFixed(1) : '—';
-            const reb        = stats ? parseFloat(stats.reb).toFixed(1) : '—';
-            const ast        = stats ? parseFloat(stats.ast).toFixed(1) : '—';
+            const ptsRaw     = stats ? parseFloat(stats.pts) : null;
+            const pts        = ptsRaw != null ? ptsRaw.toFixed(1) : '—';
+            const reb        = stats?.reb != null ? parseFloat(stats.reb).toFixed(1) : '—';
+            const ast        = stats?.ast != null ? parseFloat(stats.ast).toFixed(1) : '—';
+            const fgPct      = stats?.fg_pct != null ? (stats.fg_pct * 100).toFixed(1) + '%' : '—';
+            const ptsClr     = ptsRaw >= 25 ? '#fbbf24' : ptsRaw >= 20 ? '#a78bfa' : ptsRaw >= 15 ? 'var(--color-pts)' : 'var(--color-text-secondary)';
             const jersey     = p.jersey_number ? `#${p.jersey_number}` : '';
             const initials   = _playerInitials(p);
             const headshotUrl = getESPNHeadshotUrl(p);
@@ -266,20 +269,21 @@ function _rosterCard(roster, colors) {
             return `
                 <div class="roster-row" onclick="showPlayerDetail(${p.id})" style="cursor:pointer">
                     <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden">
-                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%">` : ''}
-                        <span style="position:relative;z-index:0">${initials}</span>
+                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" onerror="this.style.display='none'">` : ''}
+                        <span style="position:relative">${initials}</span>
                     </div>
                     <div class="roster-info">
                         <span class="roster-name">${p.first_name} ${p.last_name}</span>
                         <span class="roster-meta">${p.position || 'N/A'}${jersey ? ' · ' + jersey : ''}</span>
                     </div>
                     <div class="roster-stats">
-                        <span style="color:var(--color-pts)">${pts}</span>
+                        <span style="color:${ptsClr};font-weight:800">${pts}</span>
                         <span style="color:var(--color-reb)">${reb}</span>
                         <span style="color:var(--color-ast)">${ast}</span>
+                        <span style="color:var(--color-text-muted)">${fgPct}</span>
                     </div>
                     <div class="roster-labels">
-                        <span>PTS</span><span>REB</span><span>AST</span>
+                        <span>PTS</span><span>REB</span><span>AST</span><span>FG%</span>
                     </div>
                 </div>
             `;

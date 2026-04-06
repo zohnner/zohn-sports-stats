@@ -1,111 +1,177 @@
 /* ============================================================
-   DESIGN TOKENS — ZohnStats
-   Single source of truth for all design values.
-   All new CSS must reference variables from this file.
+   DESIGN TOKENS — ZohnStats v2
+   Complete token system. All CSS must use variables from here.
    ============================================================ */
 
 :root {
-    /* ── Surfaces ── */
-    --color-bg:              #080f1e;
-    --color-surface:         rgba(15, 23, 42, 0.80);
-    --color-surface-raised:  rgba(15, 23, 42, 0.95);
-    --color-surface-subtle:  rgba(255, 255, 255, 0.025);
-    --color-surface-hover:   rgba(255, 255, 255, 0.05);
+    /* ── Base palette ── */
+    --bg-base:            #060c18;
+    --bg-surface:         #0c1629;
+    --bg-raised:          #111e38;
+    --bg-card:            rgba(12, 22, 41, 0.85);
+    --bg-card-hover:      rgba(17, 30, 56, 0.95);
+    --bg-overlay:         rgba(6, 12, 24, 0.96);
+    --bg-subtle:          rgba(255, 255, 255, 0.028);
+    --bg-interactive:     rgba(255, 255, 255, 0.05);
+    --bg-interactive-hov: rgba(255, 255, 255, 0.08);
 
     /* ── Borders ── */
-    --color-border:          rgba(255, 255, 255, 0.08);
-    --color-border-mid:      rgba(255, 255, 255, 0.12);
-    --color-border-hover:    rgba(102, 126, 234, 0.40);
-    --color-border-active:   rgba(102, 126, 234, 0.60);
+    --border-default:     rgba(255, 255, 255, 0.07);
+    --border-mid:         rgba(255, 255, 255, 0.11);
+    --border-strong:      rgba(255, 255, 255, 0.18);
+    --border-accent:      rgba(124, 141, 240, 0.32);
+    --border-accent-hov:  rgba(124, 141, 240, 0.55);
 
     /* ── Text ── */
-    --color-text-primary:    #f1f5f9;
-    --color-text-secondary:  #94a3b8;
-    --color-text-muted:      #64748b;
-    --color-text-subtle:     #475569;
-    --color-text-disabled:   #334155;
+    --text-primary:       #eef2f8;
+    --text-secondary:     #8fa3c0;
+    --text-muted:         #5b7497;
+    --text-subtle:        #3d5470;
+    --text-disabled:      #253347;
 
-    /* ── Accent (brand indigo-violet) ── */
-    --color-accent:          #667eea;
-    --color-accent-light:    #818cf8;
-    --color-accent-dark:     #764ba2;
-    --color-accent-bg:       rgba(102, 126, 234, 0.12);
-    --color-accent-border:   rgba(102, 126, 234, 0.30);
-    --color-accent-glow:     rgba(102, 126, 234, 0.25);
-
-    /* ── Stat category colours ── */
-    --color-pts:  #fbbf24;   /* Points   — gold   */
-    --color-reb:  #34d399;   /* Rebounds — green  */
-    --color-ast:  #60a5fa;   /* Assists  — blue   */
-    --color-stl:  #a78bfa;   /* Steals   — violet */
-    --color-blk:  #f472b6;   /* Blocks   — pink   */
-    --color-pct:  #fb923c;   /* % stats  — orange */
-    --color-min:  #94a3b8;   /* Minutes  — slate  */
+    /* ── Brand (indigo-violet) ── */
+    --accent:             #7c8df0;
+    --accent-light:       #a5b4fc;
+    --accent-dark:        #6d28d9;
+    --accent-subtle:      rgba(124, 141, 240, 0.10);
+    --accent-border:      rgba(124, 141, 240, 0.28);
+    --accent-glow:        rgba(124, 141, 240, 0.22);
 
     /* ── Semantic ── */
-    --color-win:           #10b981;
-    --color-live:          #f59e0b;
-    --color-error:         #ef4444;
-    --color-error-light:   #f87171;
-    --color-error-bg:      rgba(239, 68, 68, 0.05);
-    --color-error-border:  rgba(239, 68, 68, 0.20);
+    --color-win:          #22d3a0;
+    --color-loss:         #f26b6b;
+    --color-live:         #f5a623;
+    --color-error:        #ef4444;
+    --color-warn:         #f59e0b;
+    --color-info:         #38bdf8;
 
     /* ── Conference ── */
-    --color-east:  rgba(59, 130, 246, 0.70);
-    --color-west:  rgba(239,  68,  68, 0.70);
+    --color-east:         #3b82f6;
+    --color-west:         #f43f5e;
 
-    /* ── Spacing scale (4-point grid) ── */
+    /* ── Stat categories (tuned for dark bg) ── */
+    --color-pts:          #fbbf24;   /* Points    — amber-gold  */
+    --color-reb:          #34d399;   /* Rebounds  — emerald     */
+    --color-ast:          #60a5fa;   /* Assists   — sky blue    */
+    --color-stl:          #c084fc;   /* Steals    — violet      */
+    --color-blk:          #f472b6;   /* Blocks    — pink        */
+    --color-pct:          #fb923c;   /* FG%       — orange      */
+    --color-min:          #7c8df0;   /* Minutes   — indigo      */
+    --color-tov:          #f87171;   /* Turnovers — red-light   */
+
+    /* Back-compat aliases */
+    --color-bg:           var(--bg-base);
+    --color-surface:      var(--bg-card);
+    --color-surface-raised: rgba(17, 30, 56, 0.95);
+    --color-surface-subtle: var(--bg-subtle);
+    --color-surface-hover:  var(--bg-interactive);
+    --color-border:       var(--border-default);
+    --color-border-mid:   var(--border-mid);
+    --color-border-hover: var(--border-accent);
+    --color-border-active:var(--border-accent-hov);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary:var(--text-secondary);
+    --color-text-muted:   var(--text-muted);
+    --color-text-subtle:  var(--text-subtle);
+    --color-text-disabled:var(--text-disabled);
+    --color-accent:       var(--accent);
+    --color-accent-light: var(--accent-light);
+    --color-accent-dark:  var(--accent-dark);
+    --color-accent-bg:    var(--accent-subtle);
+    --color-accent-border:var(--accent-border);
+    --color-accent-glow:  var(--accent-glow);
+
+    /* ── Spacing ── */
     --space-1:   0.25rem;   /*  4px */
-    --space-2:   0.50rem;   /*  8px */
+    --space-2:   0.5rem;    /*  8px */
     --space-3:   0.75rem;   /* 12px */
-    --space-4:   1.00rem;   /* 16px */
+    --space-4:   1rem;      /* 16px */
     --space-5:   1.25rem;   /* 20px */
-    --space-6:   1.50rem;   /* 24px */
-    --space-8:   2.00rem;   /* 32px */
-    --space-10:  2.50rem;   /* 40px */
-    --space-12:  3.00rem;   /* 48px */
+    --space-6:   1.5rem;    /* 24px */
+    --space-8:   2rem;      /* 32px */
+    --space-10:  2.5rem;    /* 40px */
+    --space-12:  3rem;      /* 48px */
+    --space-16:  4rem;      /* 64px */
 
     /* ── Border radius ── */
-    --radius-sm:   6px;
-    --radius-md:   10px;
-    --radius-lg:   14px;
-    --radius-xl:   20px;
-    --radius-full: 9999px;
-
-    /* ── Glassmorphism blur levels ── */
-    --blur-sm:  blur(12px);
-    --blur-md:  blur(20px);
-    --blur-lg:  blur(28px);
+    --radius-xs:    4px;
+    --radius-sm:    6px;
+    --radius-md:    10px;
+    --radius-lg:    14px;
+    --radius-xl:    20px;
+    --radius-2xl:   28px;
+    --radius-full:  9999px;
 
     /* ── Shadows ── */
-    --shadow-sm:     0 2px 12px rgba(0, 0, 0, 0.20);
-    --shadow-md:     0 4px 24px rgba(0, 0, 0, 0.28);
-    --shadow-lg:     0 8px 40px rgba(0, 0, 0, 0.40);
-    --shadow-accent: 0 8px 32px var(--color-accent-glow);
+    --shadow-sm:      0 1px 8px  rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-md:      0 4px 20px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg:      0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-accent:  0 8px 32px var(--accent-glow);
+    --shadow-card:    0 2px 12px rgba(0,0,0,0.35), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:0 8px 32px rgba(0,0,0,0.5),  0 0 0 1px var(--border-accent);
+
+    /* ── Glassmorphism ── */
+    --blur-sm:   blur(12px);
+    --blur-md:   blur(20px);
+    --blur-lg:   blur(28px);
+    --blur-xl:   blur(40px);
+
+    /* ── Easing curves ── */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+    --ease-snap:   cubic-bezier(0.25, 0, 0, 1);
 
     /* ── Transitions ── */
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.25s ease;
-    --transition-slow: 0.40s ease;
+    --transition-fast: 120ms var(--ease-snap);
+    --transition-base: 220ms var(--ease-out);
+    --transition-slow: 380ms var(--ease-out);
+
+    /* ── Deprecated aliases ── */
+    --blur-md: blur(20px);
 
     /* ── Typography ── */
     --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --text-xs:    0.75rem;
-    --text-sm:    0.875rem;
-    --text-base:  1rem;
-    --text-lg:    1.125rem;
-    --text-xl:    1.25rem;
-    --text-2xl:   1.5rem;
-    --text-3xl:   2rem;
-    --text-4xl:   2.5rem;
+    --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+    /* Fluid type: clamp(min, preferred, max) */
+    --text-xs:   0.72rem;    /* 11.5px */
+    --text-sm:   0.8125rem;  /* 13px   */
+    --text-base: 0.9375rem;  /* 15px   */
+    --text-md:   1rem;       /* 16px   */
+    --text-lg:   1.125rem;   /* 18px   */
+    --text-xl:   1.25rem;    /* 20px   */
+    --text-2xl:  1.5rem;     /* 24px   */
+    --text-3xl:  clamp(1.75rem, 4vw, 2.25rem);
+    --text-4xl:  clamp(2rem,   5vw, 3rem);
+
+    /* ── Z-index scale ── */
+    --z-base:    0;
+    --z-raised:  10;
+    --z-sticky:  100;
+    --z-nav:     200;
+    --z-overlay: 300;
+    --z-modal:   400;
+    --z-toast:   500;
 
     /* ── Layout ── */
-    --max-width:     1440px;
-    --header-height: 64px;
+    --max-width:      1440px;
+    --content-width:  1200px;
+    --header-height:  60px;
+    --ticker-height:  38px;
+    --mobile-nav-h:   58px;
+    --sidebar-w:      280px;
+    --card-min-w:     280px;
+    --card-lb-min-w:  300px;
+    --card-game-min-w:360px;
 
-    /* ── Chart.js theming tokens ── */
-    --chart-grid:    rgba(255, 255, 255, 0.06);
-    --chart-tick:    #64748b;
-    --chart-tooltip-bg:     rgba(8, 15, 30, 0.95);
-    --chart-tooltip-border: rgba(255, 255, 255, 0.10);
+    /* ── Team color CSS custom property (set inline per card) ── */
+    --team-color:     #667eea;   /* fallback; overridden per element */
+    --team-color-dim: rgba(102,126,234,0.15);
+
+    /* ── Chart.js ── */
+    --chart-grid:           rgba(255,255,255,0.05);
+    --chart-tick:           #5b7497;
+    --chart-tooltip-bg:     rgba(6,12,24,0.97);
+    --chart-tooltip-border: rgba(255,255,255,0.08);
 }

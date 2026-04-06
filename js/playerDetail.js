@@ -274,7 +274,8 @@ function _seasonStatsCard(stats, season) {
     const r = (v, d = 1) => v != null ? (parseFloat(v) * min36).toFixed(d) : '—';
     const s = (v, d = 1) => v != null ? parseFloat(v).toFixed(d) : '—';
     const p = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
-    const modeLabel = _per36Mode ? 'Per 36 Min' : `Season Averages · ${season}`;
+    const gpLabel   = !_per36Mode && stats.games_played ? ` · ${stats.games_played} GP` : '';
+    const modeLabel = _per36Mode ? 'Per 36 Min' : `Season Averages · ${season}${gpLabel}`;
 
     // Ranks only meaningful in raw mode (not per-36)
     const ranks = _per36Mode ? {} : _computeLeagueRanks(stats);

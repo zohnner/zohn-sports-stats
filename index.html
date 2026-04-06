@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#060c18">
+    <meta name="description" content="ZohnStats — Real-time NBA and MLB analytics, standings, player stats, and live scores.">
+    <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>ZohnStats — Sports Analytics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
     <!-- Design tokens first so all stylesheets can reference variables -->
     <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/ticker.css">
@@ -93,6 +98,12 @@
                 </button>
             </nav>
         </div>
+
+        <!-- Ask button in header -->
+        <button class="ask-trigger-btn" onclick="AskEngine.togglePanel()" aria-label="Ask a question">
+            <span class="ask-trigger-icon">?</span>
+            <span class="ask-trigger-label">Ask</span>
+        </button>
     </header>
 
     <div class="ticker-wrap">
@@ -101,6 +112,28 @@
             <div class="ticker__item">Loading scores…</div>
         </div>
     </div>
+
+    <!-- Ask / Q&A slide-over panel -->
+    <div id="askPanel" class="ask-panel" role="dialog" aria-label="Ask about NBA stats">
+        <div class="ask-panel-inner">
+            <div class="ask-panel-header">
+                <div>
+                    <h2 class="ask-panel-title">Ask ZohnStats</h2>
+                    <p class="ask-panel-sub">Natural language queries over live NBA data</p>
+                </div>
+                <button class="ask-close-btn" onclick="AskEngine.closePanel()" aria-label="Close">✕</button>
+            </div>
+            <div class="ask-input-row">
+                <input id="askInput" class="ask-input" type="text"
+                       placeholder="Who leads in points? Lakers record? Top 5 rebounders…"
+                       autocomplete="off" spellcheck="false"
+                       onkeydown="if(event.key==='Enter')AskEngine.submit()">
+                <button class="ask-submit-btn" onclick="AskEngine.submit()">Ask</button>
+            </div>
+            <div id="askOutput" class="ask-output"></div>
+        </div>
+    </div>
+    <div class="ask-backdrop" onclick="AskEngine.closePanel()"></div>
 
     <!-- Mobile bottom navigation — visible only on small screens -->
     <nav class="mobile-nav" id="mobile-nba-nav" aria-label="Mobile NBA navigation">
@@ -174,9 +207,13 @@
     </main>
 
     <!-- math.js: safe formula evaluation in Stat Builder (never use eval()) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"
+            integrity="sha512-VMIzok05yICztVJ0Pu2ZXHHz6Pe+fNONIcepOD3kzgL0SJG3GH4IO3DmBRO766hIWUOHIS/IWdSqRGWWzgzqRw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- Chart.js: data visualisation — loaded before charts.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+            integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"
+            crossorigin="anonymous"></script>
 
     <!-- App scripts — order matters (no bundler, no ES modules) -->
     <script src="js/config.js"></script>
@@ -192,6 +229,9 @@
     <script src="js/statBuilder.js"></script>
     <script src="js/mlb.js"></script>
     <script src="js/standings.js"></script>
+    <script src="js/schema.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/ask.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/app.js"></script>
 </body>

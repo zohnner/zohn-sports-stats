@@ -166,10 +166,22 @@ function updateTicker(games) {
         return;
     }
 
-    const scored = games.filter(g =>
+    const scored  = games.filter(g =>
         (g.home_team_score != null && g.home_team_score > 0) ||
         (g.visitor_team_score != null && g.visitor_team_score > 0)
     );
+    const liveCount = scored.filter(g => {
+        const st = g.status || '';
+        return st.includes('Q') || st.includes('Half') || st.includes(':');
+    }).length;
+
+    // Update the "SCORES" title pill to show live game count when games are in progress
+    const titleEl = document.querySelector('.ticker-title');
+    if (titleEl) {
+        titleEl.innerHTML = liveCount > 0
+            ? `SCORES <span class="ticker-live-badge">${liveCount} LIVE</span>`
+            : 'SCORES';
+    }
 
     if (scored.length === 0) {
         ticker.innerHTML = `<div class="ticker__item">No recent scores — check back during game time</div>`;

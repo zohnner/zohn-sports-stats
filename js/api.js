@@ -12,18 +12,21 @@ let CURRENT_SEASON = 2025; // BDL uses the year the season starts — mutable vi
 // App State
 // ============================================================
 const AppState = {
+    // NBA
     allPlayers: [],
     allTeams: [],
     allGames: [],
     playerStats: {},      // keyed by player id
     filteredPlayers: [],
     currentView: 'players',
+    currentSport: 'nba',
     savedStats: [],
     selectedPlayer: null,
     positionFilter: 'all',
     espnPlayerMap: null,  // name-key → ESPN athlete ID (loaded async on startup)
     nbaStatsMap:   null,  // lowercase name → stat object (from NBA.com, loaded once per season)
     _nbaStatsSeason: null,
+    nbaStandings: null,   // array of team standing rows from leaguestandingsv3
 };
 
 // ============================================================
@@ -399,22 +402,52 @@ async function fetchNBAStandings(season = CURRENT_SEASON) {
         const get     = (row, h) => row[headers.indexOf(h)];
 
         const rows = rs.rowSet.map(row => ({
-            rank:        get(row, 'PlayoffRank'),
-            teamId:      get(row, 'TeamID'),
-            teamAbbr:    get(row, 'TeamAbbreviation'),
-            teamName:    get(row, 'TeamName'),
-            teamCity:    get(row, 'TeamCity'),
-            conference:  get(row, 'Conference'),
-            wins:        get(row, 'WINS'),
-            losses:      get(row, 'LOSSES'),
-            pct:         get(row, 'WinPCT'),
-            gb:          get(row, 'ConferenceGamesBack'),
-            l10:         get(row, 'L10'),
-            streak:      get(row, 'strCurrentStreak'),
-            home:        get(row, 'HOME'),
-            road:        get(row, 'ROAD'),
-            clinchedDiv: get(row, 'clinchedDivisionTitle'),
-            clinchedPO:  get(row, 'clinchedPlayoffBirth'),
+            // Identity
+            rank:           get(row, 'PlayoffRank'),
+            teamId:         get(row, 'TeamID'),
+            teamAbbr:       get(row, 'TeamAbbreviation'),
+            teamName:       get(row, 'TeamName'),
+            teamCity:       get(row, 'TeamCity'),
+            conference:     get(row, 'Conference'),
+            division:       get(row, 'Division'),
+            // Core record
+            wins:           get(row, 'WINS'),
+            losses:         get(row, 'LOSSES'),
+            pct:            get(row, 'WinPCT'),
+            gb:             get(row, 'ConferenceGamesBack'),
+            divRank:        get(row, 'DivisionRank'),
+            leagueRank:     get(row, 'LeagueRank'),
+            // Splits
+            l10:            get(row, 'L10'),
+            home:           get(row, 'HOME'),
+            road:           get(row, 'ROAD'),
+            confRecord:     get(row, 'ConferenceRecord'),
+            divRecord:      get(row, 'DivisionRecord'),
+            otRecord:       get(row, 'OT'),
+            // Scoring
+            pointsPg:       get(row, 'PointsPG'),
+            oppPointsPg:    get(row, 'OppPointsPG'),
+            diffPointsPg:   get(row, 'DiffPointsPG'),
+            // Situational
+            above500:       get(row, 'OppOver500'),
+            score100:       get(row, 'Score100PTS'),
+            oppScore100:    get(row, 'OppScore100PTS'),
+            blowouts3:      get(row, 'TenPTSOrLess'),   // games ≤ 3 pts not in all versions
+            blowouts10:     get(row, 'TenPTSOrMore'),
+            leadHalf:       get(row, 'AheadAtHalf'),
+            behindHalf:     get(row, 'BehindAtHalf'),
+            // Streaks
+            streak:         get(row, 'strCurrentStreak'),
+            longWinStreak:  get(row, 'LongWinStreak'),
+            longLossStreak: get(row, 'LongLossStreak'),
+            curHomeStreak:  get(row, 'strCurrentHomeStreak'),
+            curRoadStreak:  get(row, 'strCurrentRoadStreak'),
+            // Clinch / elimination
+            clinchedDiv:    get(row, 'clinchedDivisionTitle'),
+            clinchedPO:     get(row, 'clinchedPlayoffBirth'),
+            clinchedConf:   get(row, 'clinchedConferenceTitle'),
+            clinchedSeed:   get(row, 'clinchedSeed'),
+            eliminated:     get(row, 'EliminatedConference'),
         }));
 
         Logger.info(`NBA standings: ${rows.length} teams (${nbaSeasonStr})`, undefined, 'NBA');

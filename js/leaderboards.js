@@ -65,10 +65,10 @@ function displayLeaderboards() {
 }
 
 function _buildPanel(cat) {
-    const ranked = AppState.allPlayers
+    const eligible = AppState.allPlayers
         .filter(p => AppState.playerStats[p.id]?.[cat.key] != null)
-        .sort((a, b) => AppState.playerStats[b.id][cat.key] - AppState.playerStats[a.id][cat.key])
-        .slice(0, 8);
+        .sort((a, b) => AppState.playerStats[b.id][cat.key] - AppState.playerStats[a.id][cat.key]);
+    const ranked = eligible.slice(0, 8);
 
     const panel = document.createElement('div');
     panel.className = 'leaderboard-panel';
@@ -78,7 +78,7 @@ function _buildPanel(cat) {
     header.style.borderLeftColor = cat.color;
     header.innerHTML = `
         <span class="leaderboard-title">${cat.label}</span>
-        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit}</span>
+        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit}${eligible.length > 8 ? ` · of ${eligible.length}` : ''}</span>
     `;
 
     const list = document.createElement('div');

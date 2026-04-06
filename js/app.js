@@ -54,11 +54,14 @@ setupNavigation();
     new ResizeObserver(update).observe(header);
 })();
 
-// Fetch ESPN player map; once resolved, refresh the players grid so headshots appear
+// Fetch ESPN player map — refresh headshots when ready, then sync players to DB
 fetchESPNPlayerMap()
     .then(() => {
         if (AppState.currentView === 'players' && AppState.filteredPlayers.length > 0) {
             displayPlayers(AppState.filteredPlayers);
+        }
+        if (AppState.allPlayers.length && AppState.nbaStatsMap) {
+            StatsDB.syncPlayers(AppState.allPlayers, AppState.nbaStatsMap).catch(() => {});
         }
     })
     .catch(() => {});
@@ -76,12 +79,12 @@ fetchESPNPlayerMap()
     }
 })();
 
-// Pre-fetch standings so team cards + player cards show W-L on first render
+// Pre-fetch standings — feeds team/player cards AND the Q&A engine's IndexedDB
 fetchNBAStandings()
     .then(rows => {
         if (rows.length) {
             AppState.nbaStandings = rows;
-            // Re-render current view only if it displays team/player data
+            StatsDB.syncStandings(rows).catch(() => {});
             const v = AppState.currentView;
             if (v === 'players' && AppState.filteredPlayers.length > 0) displayPlayers(AppState.filteredPlayers);
             if (v === 'teams'   && AppState.allTeams.length > 0)        displayTeams(AppState.allTeams);
