@@ -70,7 +70,12 @@ async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM) {
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`MLB API ${res.status}: ${res.statusText}`);
 
-    const json = await res.json();
+    let json;
+    try {
+        json = await res.json();
+    } catch {
+        throw new Error(`MLB API returned non-JSON response (${url.pathname})`);
+    }
     ApiCache.set(cacheKey, json, ttl);
     return json;
 }
@@ -85,13 +90,15 @@ async function fetchMLBTeams(season = MLB_SEASON) {
 }
 
 async function fetchMLBSchedule(daysBack = 7) {
-    const today = new Date();
-    const from  = new Date(); from.setDate(today.getDate() - daysBack);
-    const fmt   = d => d.toISOString().split('T')[0];
-    const data  = await mlbFetch('/schedule', {
+    // MLB schedule dates are ET-based. toISOString() is UTC, so after ~8pm ET the
+    // UTC date is already "tomorrow" — subtract 5h to anchor to the ET calendar day.
+    const nowET  = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    const fromET = new Date(nowET.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    const fmt    = d => d.toISOString().split('T')[0];
+    const data   = await mlbFetch('/schedule', {
         sportId:   1,
-        startDate: fmt(from),
-        endDate:   fmt(today),
+        startDate: fmt(fromET),
+        endDate:   fmt(nowET),
     }, ApiCache.TTL.SHORT);
     return (data.dates || [])
         .flatMap(d => d.games || [])
@@ -1049,8 +1056,12 @@ function updateMLBTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
 
+    // Exclude Preview (not-yet-started) games so 0-0 SCH items don't flood the ticker.
+    // abstractGameState: 'Preview' | 'Live' | 'Final'
     const scored = (games || []).filter(g =>
-        g.teams?.home?.score != null && g.teams?.away?.score != null
+        g.status?.abstractGameState !== 'Preview' &&
+        g.teams?.home?.score != null &&
+        g.teams?.away?.score != null
     );
 
     if (scored.length === 0) {
@@ -1091,6 +1102,14 @@ function updateMLBTicker(games) {
     }).join('');
 
     ticker.innerHTML = items;
+
+    // Proportional scroll speed — same logic as NBA ticker in games.js
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const w = ticker.scrollWidth;
+        if (w > 0) {
+            ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
+        }
+    }));
 }
 
 // ── Standings ─────────────────────────────────────────────────

@@ -217,6 +217,17 @@ function updateTicker(games) {
     }).join('');
 
     ticker.innerHTML = items;
+
+    // Set scroll duration proportional to content width so longer strips (many games)
+    // move at the same comfortable reading pace (~60 px/s) regardless of game count.
+    // Double-rAF ensures the browser has laid out the new DOM before we measure.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const w = ticker.scrollWidth;
+        if (w > 0) {
+            // Content is doubled for seamless loop → actual scroll distance = w/2
+            ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
+        }
+    }));
 }
 
 if (typeof window !== 'undefined') {

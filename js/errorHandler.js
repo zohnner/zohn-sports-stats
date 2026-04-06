@@ -153,3 +153,16 @@ class ErrorHandler {
 
 window.Logger = Logger;
 window.ErrorHandler = ErrorHandler;
+
+// ============================================================
+// Global unhandled-rejection safety net
+// Catches any Promise that rejects without a .catch() handler
+// and fires a warn toast so the user knows something went wrong.
+// ============================================================
+window.addEventListener('unhandledrejection', event => {
+    // AbortError is expected when fetches are intentionally cancelled — ignore it.
+    if (event.reason?.name === 'AbortError') return;
+    const msg = event.reason?.message || String(event.reason) || 'An unexpected error occurred';
+    Logger.error('Unhandled rejection', event.reason, 'GLOBAL');
+    ErrorHandler.toast(msg, 'warn', { title: 'Something failed', duration: 4000 });
+});
