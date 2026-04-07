@@ -170,10 +170,8 @@ function updateTicker(games) {
         (g.home_team_score != null && g.home_team_score > 0) ||
         (g.visitor_team_score != null && g.visitor_team_score > 0)
     );
-    const liveCount = scored.filter(g => {
-        const st = g.status || '';
-        return st.includes('Q') || st.includes('Half') || st.includes(':');
-    }).length;
+    const _isLiveStatus = st => /Q[1-4]|[Hh]alf|:\d|OT\d?/.test(st) || st.includes(':');
+    const liveCount = scored.filter(g => _isLiveStatus(g.status || '')).length;
 
     // Update the "SCORES" title pill to show live game count when games are in progress
     const titleEl = document.querySelector('.ticker-title');
@@ -192,10 +190,11 @@ function updateTicker(games) {
         const hs       = g.home_team_score    ?? 0;
         const vs       = g.visitor_team_score ?? 0;
         const st       = g.status || 'Final';
-        const isLive   = st.includes('Q') || st.includes('Half') || st.includes(':');
-        const isFinal  = st.includes('Final');
-        const pillCls  = isFinal ? 'final' : isLive ? 'live' : 'sched';
-        const pillLbl  = isFinal ? 'F' : isLive ? st : 'SCH';
+        const isLive   = _isLiveStatus(st);
+        const isFinal  = /final|^f$/i.test(st);
+        const isPostponed = /ppd|postponed/i.test(st);
+        const pillCls  = isFinal ? 'final' : isLive ? 'live' : isPostponed ? 'other' : 'sched';
+        const pillLbl  = isFinal ? 'F' : isPostponed ? 'PPD' : isLive ? st : 'SCH';
         const homeAbbr = g.home_team?.abbreviation || '?';
         const awayAbbr = g.visitor_team?.abbreviation || '?';
         const homeLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png`;

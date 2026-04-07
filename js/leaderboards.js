@@ -64,11 +64,41 @@ function displayLeaderboards() {
     grid.appendChild(fragment);
 }
 
+const LB_INIT_COUNT = 10;
+
+function _buildLeaderboardRow(player, rank, cat, topVal) {
+    const val     = AppState.playerStats[player.id][cat.key];
+    const display = cat.pct ? (val * 100).toFixed(cat.decimals) + '%' : val.toFixed(cat.decimals);
+    const barPct  = topVal > 0 ? Math.round((val / topVal) * 100) : 0;
+    const abbr    = player.team?.abbreviation || '';
+    const colors  = getTeamColors(abbr);
+    const initials = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
+    const headshotUrl = getESPNHeadshotUrl(player);
+
+    const row = document.createElement('div');
+    row.className = 'leaderboard-row';
+    row.addEventListener('click', () => showPlayerDetail(player.id));
+
+    row.innerHTML = `
+        <span class="lb-rank ${rank < 3 ? `lb-rank-${rank + 1}` : ''}">${rank + 1}</span>
+        <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+            ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.lb-avatar-initials');if(s)s.style.visibility='hidden'">` : ''}
+            <span class="lb-avatar-initials">${initials}</span>
+        </div>
+        <div class="lb-player">
+            <span class="lb-name">${player.first_name} ${player.last_name}</span>
+            <span class="lb-team">${abbr}${player.position ? ' · ' + player.position : ''}</span>
+            <div class="lb-bar"><div class="lb-bar-fill" style="width:${barPct}%;background:${cat.color}22;border-right:2px solid ${cat.color}88"></div></div>
+        </div>
+        <span class="lb-value" style="color:${cat.color}">${display}</span>
+    `;
+    return row;
+}
+
 function _buildPanel(cat) {
     const eligible = AppState.allPlayers
         .filter(p => AppState.playerStats[p.id]?.[cat.key] != null)
         .sort((a, b) => AppState.playerStats[b.id][cat.key] - AppState.playerStats[a.id][cat.key]);
-    const ranked = eligible.slice(0, 8);
 
     const panel = document.createElement('div');
     panel.className = 'leaderboard-panel';
@@ -78,45 +108,54 @@ function _buildPanel(cat) {
     header.style.borderLeftColor = cat.color;
     header.innerHTML = `
         <span class="leaderboard-title">${cat.label}</span>
-        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit}${eligible.length > 8 ? ` · of ${eligible.length}` : ''}</span>
+        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit} · ${eligible.length} players</span>
     `;
 
     const list = document.createElement('div');
     list.className = 'leaderboard-list';
 
-    if (ranked.length === 0) {
-        list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+    if (eligible.length === 0) {
+        list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
     } else {
-        const topVal = AppState.playerStats[ranked[0].id][cat.key];
+        const topVal = AppState.playerStats[eligible[0].id][cat.key];
 
-        ranked.forEach((player, i) => {
-            const val     = AppState.playerStats[player.id][cat.key];
-            const display = cat.pct ? (val * 100).toFixed(cat.decimals) + '%' : val.toFixed(cat.decimals);
-            const barPct  = topVal > 0 ? Math.round((val / topVal) * 100) : 0;
-            const abbr    = player.team?.abbreviation || '';
-            const colors  = getTeamColors(abbr);
-            const initials = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
-            const headshotUrl = getESPNHeadshotUrl(player);
+        // Always render the first LB_INIT_COUNT rows visible
+        eligible.slice(0, LB_INIT_COUNT).forEach((player, i) => {
+            list.appendChild(_buildLeaderboardRow(player, i, cat, topVal));
+        });
 
-            const row = document.createElement('div');
-            row.className = 'leaderboard-row';
-            row.addEventListener('click', () => showPlayerDetail(player.id));
-
-            row.innerHTML = `
-                <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
-                    ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.lb-avatar-initials');if(s)s.style.visibility='hidden'">` : ''}
-                    <span class="lb-avatar-initials">${initials}</span>
-                </div>
-                <div class="lb-player">
-                    <span class="lb-name">${player.first_name} ${player.last_name}</span>
-                    <span class="lb-team">${abbr}${player.position ? ' · ' + player.position : ''}</span>
-                    <div class="lb-bar"><div class="lb-bar-fill" style="width:${barPct}%;background:${cat.color}22;border-right:2px solid ${cat.color}88"></div></div>
-                </div>
-                <span class="lb-value" style="color:${cat.color}">${display}</span>
-            `;
+        // Render the remainder hidden; revealed by the toggle button below
+        const extra = eligible.slice(LB_INIT_COUNT);
+        extra.forEach((player, i) => {
+            const row = _buildLeaderboardRow(player, LB_INIT_COUNT + i, cat, topVal);
+            row.style.display = 'none';
+            row.dataset.extra = '1';
             list.appendChild(row);
         });
+
+        if (extra.length > 0) {
+            const moreBtn = document.createElement('button');
+            moreBtn.className = 'leaderboard-more-btn';
+            moreBtn.textContent = `Show ${extra.length} more`;
+            moreBtn.style.cssText = `
+                width:100%;padding:0.5rem;margin-top:0.5rem;background:var(--bg-subtle);
+                border:1px solid var(--border-default);border-radius:var(--radius-sm);
+                color:var(--text-muted);font-size:0.75rem;cursor:pointer;
+                transition:background var(--transition-fast);
+            `;
+            moreBtn.addEventListener('mouseenter', () => moreBtn.style.background = 'var(--bg-card)');
+            moreBtn.addEventListener('mouseleave', () => moreBtn.style.background = 'var(--bg-subtle)');
+            moreBtn.addEventListener('click', () => {
+                const hidden = [...list.querySelectorAll('[data-extra]')];
+                const showing = hidden[0]?.style.display !== 'none';
+                hidden.forEach(r => r.style.display = showing ? 'none' : '');
+                moreBtn.textContent = showing ? `Show ${extra.length} more` : 'Show less';
+            });
+            panel.appendChild(header);
+            panel.appendChild(list);
+            panel.appendChild(moreBtn);
+            return panel;
+        }
     }
 
     panel.appendChild(header);

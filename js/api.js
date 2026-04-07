@@ -16,17 +16,18 @@ const AppState = {
     allPlayers: [],
     allTeams: [],
     allGames: [],
-    playerStats: {},      // keyed by player id
+    playerStats: {},        // keyed by player id
     filteredPlayers: [],
     currentView: 'players',
     currentSport: 'nba',
     savedStats: [],
     selectedPlayer: null,
     positionFilter: 'all',
-    espnPlayerMap: null,  // name-key → ESPN athlete ID (loaded async on startup)
-    nbaStatsMap:   null,  // lowercase name → stat object (from NBA.com, loaded once per season)
+    espnPlayerMap: null,    // name-key → ESPN athlete ID (loaded async on startup)
+    nbaStatsMap:   null,    // lowercase name → stat object (from NBA.com, loaded once per season)
     _nbaStatsSeason: null,
-    nbaStandings: null,   // array of team standing rows from leaguestandingsv3
+    nbaStandings: null,     // array of team standing rows from leaguestandingsv3
+    _teamRecentGames: {},   // teamId → array of recent games (cached per session)
 };
 
 // ============================================================
@@ -240,6 +241,43 @@ async function fetchTeamRoster(teamId) {
             per_page: 100,
         }, { ttl: ApiCache.TTL.MEDIUM });
         return (data.data || []).filter(p => p.team && p.team.id);
+    }, 'API');
+}
+
+/**
+ * Fetch the most recent N games played by a specific team this season.
+ * Returns games sorted most-recent first.
+ */
+async function fetchTeamGamesAPI(teamId, limit = 10) {
+    return Logger.time(`fetchTeamGames(${teamId})`, async () => {
+        let data = await bdlFetch('/games', {
+            team_ids: [teamId],
+            per_page: limit,
+            seasons:  [CURRENT_SEASON],
+        }, { ttl: ApiCache.TTL.SHORT });
+        // Off-season: current season has no games yet — fall back to last completed season
+        if (!data.data || data.data.length === 0) {
+            data = await bdlFetch('/games', {
+                team_ids: [teamId],
+                per_page: limit,
+                seasons:  [CURRENT_SEASON - 1],
+            }, { ttl: ApiCache.TTL.MEDIUM });
+        }
+        return (data.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, 'API');
+}
+
+/**
+ * Fetch all player stat lines for a single game (box score).
+ * Returns an array of stat objects, each with a nested `player` and `team`.
+ */
+async function fetchGameBoxScoreAPI(gameId) {
+    return Logger.time(`fetchGameBoxScore(${gameId})`, async () => {
+        const data = await bdlFetch('/stats', {
+            game_ids: [gameId],
+            per_page: 100,
+        }, { ttl: ApiCache.TTL.LONG });
+        return data.data || [];
     }, 'API');
 }
 

@@ -143,11 +143,22 @@ async function showTeamDetail(teamId, push = true) {
     `;
 
     try {
-        const roster = await fetchTeamRoster(teamId);
-        const colors  = getTeamColors(team.abbreviation);
+        // Fetch roster, recent games, and stats map in parallel
+        const [roster, recentGames, statsMap] = await Promise.all([
+            fetchTeamRoster(teamId),
+            fetchTeamGamesAPI(teamId, 12).catch(err => {
+                Logger.warn('Recent games fetch failed', err.message, 'TEAMS');
+                return [];
+            }),
+            fetchNBAStatsMap(CURRENT_SEASON),
+        ]);
 
-        // Load season stats for roster via NBA.com map (name matching)
-        const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
+        // Cache recent games for use by game-detail view
+        AppState._teamRecentGames[teamId] = recentGames;
+
+        const colors = getTeamColors(team.abbreviation);
+
+        // Enrich roster with season stats via NBA.com name-matching
         roster.forEach(p => {
             if (!AppState.playerStats[p.id]) {
                 const key  = `${p.first_name} ${p.last_name}`.toLowerCase();
@@ -156,13 +167,13 @@ async function showTeamDetail(teamId, push = true) {
             }
         });
 
-        Logger.info(`Roster loaded: ${roster.length} players`, undefined, 'TEAMS');
+        Logger.info(`Team loaded: ${roster.length} players, ${recentGames.length} recent games`, undefined, 'TEAMS');
 
         grid.innerHTML = `
             ${_teamHeader(team, colors)}
+            ${_recentGamesCard(recentGames, teamId)}
             ${_rosterCard(roster, colors)}
         `;
-
 
     } catch (error) {
         Logger.error('Error loading team detail', error, 'TEAMS');
@@ -297,6 +308,261 @@ function _rosterCard(roster, colors) {
     `;
 }
 
+// ── Recent Games card ────────────────────────────────────────
+
+function _recentGamesCard(games, teamId) {
+    if (!games || games.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title">Recent Games</h2>
+                <p style="color:var(--text-muted);text-align:center;padding:1.5rem 0">No recent games this season.</p>
+            </div>
+        `;
+    }
+
+    const rows = games.map(g => {
+        const isHome     = g.home_team?.id === teamId;
+        const teamScore  = isHome ? (g.home_team_score ?? 0) : (g.visitor_team_score ?? 0);
+        const oppScore   = isHome ? (g.visitor_team_score ?? 0) : (g.home_team_score ?? 0);
+        const opp        = isHome ? g.visitor_team : g.home_team;
+        const oppAbbr    = opp?.abbreviation || '???';
+        const oppLogo    = `https://a.espncdn.com/i/teamlogos/nba/500/${oppAbbr.toLowerCase()}.png`;
+        const status     = g.status || '';
+        const isFinal    = /final|^f$/i.test(status);
+        const hasScores  = teamScore > 0 || oppScore > 0;
+        const isWin      = isFinal && hasScores && teamScore > oppScore;
+        const isLoss     = isFinal && hasScores && teamScore < oppScore;
+        const outcome    = isFinal && hasScores ? (isWin ? 'W' : 'L') : (status.slice(0, 4) || '—');
+        const outcomeClr = isWin ? 'var(--color-win)' : isLoss ? '#f87171' : 'var(--text-muted)';
+        // Use noon UTC so we never land on the wrong day after timezone offset
+        const dateStr    = g.date
+            ? new Date(g.date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : '—';
+        const homeAway   = isHome ? 'vs' : '@';
+        const scoreStr   = isFinal && hasScores ? `${teamScore}–${oppScore}` : '—';
+
+        return `
+            <div class="roster-row" style="cursor:pointer" onclick="showTeamGameDetail(${g.id}, ${teamId})">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                    <span style="font-weight:900;font-size:0.88rem;min-width:18px;color:${outcomeClr}">${outcome}</span>
+                    <span style="color:var(--text-muted);font-size:0.75rem;min-width:52px">${dateStr}</span>
+                    <span style="color:var(--text-subtle);font-size:0.75rem;margin-right:2px">${homeAway}</span>
+                    <img src="${oppLogo}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0"
+                         loading="lazy" onerror="this.style.display='none'">
+                    <span style="font-weight:700;font-size:0.85rem">${oppAbbr}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-weight:800;font-size:0.9rem;
+                                 color:${isWin?'var(--color-win)':isLoss?'#f87171':'var(--text-primary)'}">${scoreStr}</span>
+                    <span style="color:var(--text-subtle);font-size:0.8rem">›</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Recent Games · ${games.length}</h2>
+            <div class="roster-list">${rows}</div>
+        </div>
+    `;
+}
+
+// ── Game Detail (box score) ───────────────────────────────────
+
+async function showTeamGameDetail(gameId, teamId) {
+    const team = AppState.allTeams.find(t => t.id === teamId);
+    if (!team) return;
+
+    const grid = document.getElementById('playersGrid');
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('teams', `${team.full_name} · Game`);
+
+    history.pushState({ view: 'team-game', gameId, teamId }, '', `#team-${teamId}-game-${gameId}`);
+
+    grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:3rem;color:white">
+            <p style="color:var(--text-secondary)">Loading box score…</p>
+            <div class="loading-spinner" style="margin-top:1.5rem"></div>
+        </div>
+    `;
+
+    try {
+        const playerStats = await fetchGameBoxScoreAPI(gameId);
+        const game = AppState._teamRecentGames[teamId]?.find(g => g.id === gameId) ?? null;
+        grid.innerHTML = _teamGameDetailHTML(game, playerStats, team, teamId);
+    } catch (err) {
+        Logger.error('Failed to load box score', err, 'TEAMS');
+        grid.innerHTML = `
+            <div class="error-state">
+                <div class="error-state-icon">⚠️</div>
+                <h3 class="error-state-title">Failed to Load Box Score</h3>
+                <p class="error-state-message">${err.message}</p>
+                <button class="retry-btn" onclick="showTeamDetail(${teamId})">← Back to Team</button>
+            </div>
+        `;
+    }
+}
+
+function _teamGameDetailHTML(game, playerStats, team, teamId) {
+    const colors = getTeamColors(team.abbreviation);
+    let gameHeader = '';
+
+    if (game) {
+        const isHome     = game.home_team?.id === teamId;
+        const teamScore  = isHome ? (game.home_team_score ?? 0) : (game.visitor_team_score ?? 0);
+        const oppScore   = isHome ? (game.visitor_team_score ?? 0) : (game.home_team_score ?? 0);
+        const opp        = isHome ? game.visitor_team : game.home_team;
+        const oppAbbr    = opp?.abbreviation || '???';
+        const oppColors  = getTeamColors(oppAbbr);
+        const oppLogo    = `https://a.espncdn.com/i/teamlogos/nba/500/${oppAbbr.toLowerCase()}.png`;
+        const teamLogo   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.abbreviation.toLowerCase()}.png`;
+        const dateStr    = game.date
+            ? new Date(game.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
+            : '';
+        const status     = game.status || 'Final';
+        const isFinal    = /final|^f$/i.test(status);
+        const isWin      = isFinal && teamScore > oppScore;
+
+        gameHeader = `
+            <div class="player-detail-header" style="grid-column:1/-1;
+                background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,rgba(15,23,42,0.85) 55%);
+                border-top:3px solid ${colors.primary}88">
+                <button onclick="showTeamDetail(${teamId})" class="back-button">← ${team.full_name}</button>
+                <div class="player-hero">
+                    <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+                        <div class="player-detail-avatar"
+                             style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                                    box-shadow:0 0 40px ${colors.primary}44">
+                            <img class="player-headshot" src="${teamLogo}" alt="" loading="lazy"
+                                 style="object-fit:contain;padding:8px" onerror="this.style.display='none'">
+                            <span class="avatar-text">${_teamInitials(team)}</span>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:2.8rem;font-weight:900;line-height:1;
+                                        color:${isWin?'var(--color-win)':'#f87171'}">${teamScore}</div>
+                            <div style="font-size:0.65rem;color:var(--text-muted);letter-spacing:0.8px;
+                                        text-transform:uppercase;margin-top:2px">${team.abbreviation}</div>
+                        </div>
+                        <div style="text-align:center;padding:0 0.5rem">
+                            <div style="font-size:0.65rem;color:var(--text-subtle);text-transform:uppercase;
+                                        letter-spacing:1.5px;font-weight:700">${status}</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:2.8rem;font-weight:900;line-height:1;
+                                        color:${!isWin?'var(--color-win)':'#f87171'}">${oppScore}</div>
+                            <div style="font-size:0.65rem;color:var(--text-muted);letter-spacing:0.8px;
+                                        text-transform:uppercase;margin-top:2px">${oppAbbr}</div>
+                        </div>
+                        <div class="player-detail-avatar"
+                             style="background:linear-gradient(135deg,${oppColors.primary}cc,${oppColors.primary}55)">
+                            <img class="player-headshot" src="${oppLogo}" alt="" loading="lazy"
+                                 style="object-fit:contain;padding:8px" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                    <div class="player-hero-info">
+                        <p class="player-detail-meta">${dateStr}</p>
+                        <p class="player-detail-meta" style="color:var(--text-subtle)">${isHome ? 'Home' : 'Away'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        gameHeader = `
+            <div class="stats-card" style="grid-column:1/-1">
+                <button onclick="showTeamDetail(${teamId})" class="back-button">← ${team.full_name}</button>
+            </div>
+        `;
+    }
+
+    // Split stats by team
+    const myStats  = playerStats.filter(s => s.team?.id === teamId);
+    const oppStats = playerStats.filter(s => s.team?.id !== teamId);
+    const oppTeam  = game ? (game.home_team?.id === teamId ? game.visitor_team : game.home_team) : null;
+    const oppTitle = oppTeam?.full_name || 'Opponent';
+
+    return `
+        ${gameHeader}
+        ${_boxScoreTable(myStats, team.full_name, colors)}
+        ${_boxScoreTable(oppStats, oppTitle, getTeamColors(oppTeam?.abbreviation || ''))}
+    `;
+}
+
+function _boxScoreTable(stats, title, colors) {
+    if (!stats || stats.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title" style="border-left:3px solid ${colors.primary};padding-left:0.75rem">${title}</h2>
+                <p style="color:var(--text-muted);text-align:center;padding:1.5rem">No player stats available.</p>
+            </div>
+        `;
+    }
+
+    // Filter out DNP / inactive rows (no minutes and no counting stats)
+    const active = stats.filter(s =>
+        s.min && s.min !== '00' && s.min !== '0' && s.min !== 0 ||
+        (s.pts ?? 0) > 0 || (s.reb ?? 0) > 0 || (s.ast ?? 0) > 0
+    );
+    if (active.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title" style="border-left:3px solid ${colors.primary};padding-left:0.75rem">${title}</h2>
+                <p style="color:var(--text-muted);text-align:center;padding:1.5rem">No player stats available.</p>
+            </div>
+        `;
+    }
+    const sorted = [...active].sort((a, b) => (b.pts ?? 0) - (a.pts ?? 0));
+
+    const rows = sorted.map(s => {
+        const p       = s.player;
+        const name    = p ? `${p.first_name} ${p.last_name}` : 'Unknown';
+        const id      = p?.id;
+        const pts     = s.pts  ?? '—';
+        const reb     = s.reb  ?? '—';
+        const ast     = s.ast  ?? '—';
+        const stl     = s.stl  ?? '—';
+        const blk     = s.blk  ?? '—';
+        const fgPct   = s.fg_pct != null ? (s.fg_pct * 100).toFixed(1) + '%' : '—';
+        const minRaw  = s.min;
+        const minDisp = minRaw
+            ? (typeof minRaw === 'string' ? minRaw.split(':')[0] : Math.round(minRaw))
+            : '—';
+        const ptsNum  = typeof s.pts === 'number' ? s.pts : 0;
+        const ptsClr  = ptsNum >= 30 ? '#fbbf24'
+                      : ptsNum >= 20 ? '#a78bfa'
+                      : ptsNum >= 10 ? 'var(--color-pts)'
+                      : 'var(--text-secondary)';
+
+        return `
+            <div class="roster-row" ${id ? `onclick="showPlayerDetail(${id})" style="cursor:pointer"` : ''}>
+                <div class="roster-info" style="flex:1;min-width:0">
+                    <span class="roster-name">${name}</span>
+                    <span class="roster-meta">${s.player?.position || ''} · ${minDisp} min</span>
+                </div>
+                <div class="roster-stats">
+                    <span style="color:${ptsClr};font-weight:800">${pts}</span>
+                    <span style="color:var(--color-reb)">${reb}</span>
+                    <span style="color:var(--color-ast)">${ast}</span>
+                    <span style="color:var(--text-muted)">${stl}/${blk}</span>
+                    <span style="color:var(--text-muted)">${fgPct}</span>
+                </div>
+                <div class="roster-labels">
+                    <span>PTS</span><span>REB</span><span>AST</span><span>S/B</span><span>FG%</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title" style="border-left:3px solid ${colors.primary};padding-left:0.75rem">${title}</h2>
+            <div class="roster-list">${rows}</div>
+        </div>
+    `;
+}
+
 // ── Back to teams ────────────────────────────────────────────
 
 function backToTeams() {
@@ -331,8 +597,9 @@ function _playerInitials(player) {
 // ── Exports ──────────────────────────────────────────────────
 
 if (typeof window !== 'undefined') {
-    window.loadTeams      = loadTeams;
-    window.displayTeams   = displayTeams;
-    window.showTeamDetail = showTeamDetail;
-    window.backToTeams    = backToTeams;
+    window.loadTeams          = loadTeams;
+    window.displayTeams       = displayTeams;
+    window.showTeamDetail     = showTeamDetail;
+    window.showTeamGameDetail = showTeamGameDetail;
+    window.backToTeams        = backToTeams;
 }

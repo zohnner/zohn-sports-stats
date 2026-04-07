@@ -41,8 +41,9 @@ function setupNavigation() {
     window.addEventListener('popstate', e => {
         const s = e.state;
         if (!s)                  { navigateTo('players', false); return; }
-        if (s.view === 'player') { _restorePlayerDetail(s.id);  return; }
-        if (s.view === 'team')   { _restoreTeamDetail(s.id);    return; }
+        if (s.view === 'player')    { _restorePlayerDetail(s.id);             return; }
+        if (s.view === 'team')      { _restoreTeamDetail(s.id);              return; }
+        if (s.view === 'team-game') { _restoreTeamGameDetail(s.teamId, s.gameId); return; }
         if (s.view === 'mlb-player') {
             // Restore MLB player detail — ensure sport is set correctly
             if (AppState.currentSport !== 'mlb') {
@@ -324,16 +325,32 @@ async function _restoreTeamDetail(teamId) {
     showTeamDetail(teamId, false);
 }
 
+async function _restoreTeamGameDetail(teamId, gameId) {
+    Logger.info(`Restoring team game detail team=${teamId} game=${gameId}`, undefined, 'NAV');
+    if (AppState.allTeams.length === 0) {
+        AppState.allTeams = await fetchTeamsAPI();
+    }
+    // Restore the recent-games cache so the game header renders correctly
+    if (!AppState._teamRecentGames[teamId]) {
+        AppState._teamRecentGames[teamId] = await fetchTeamGamesAPI(teamId, 12).catch(() => []);
+    }
+    showTeamGameDetail(gameId, teamId);
+}
+
 function _loadFromHash() {
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('players', false); return; }
 
     const playerMatch    = hash.match(/^player-(\d+)$/);
     const teamMatch      = hash.match(/^team-(\d+)$/);
+    const teamGameMatch  = hash.match(/^team-(\d+)-game-(\d+)$/);
     const mlbPlayerMatch = hash.match(/^mlb-player-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
+    } else if (teamGameMatch) {
+        // More specific pattern must be checked before the plain team match
+        _restoreTeamGameDetail(parseInt(teamGameMatch[1]), parseInt(teamGameMatch[2]));
     } else if (teamMatch) {
         _restoreTeamDetail(parseInt(teamMatch[1]));
     } else if (mlbPlayerMatch) {

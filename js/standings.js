@@ -50,8 +50,8 @@ function displayStandings(rows, conf) {
         const logoUrl   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.teamAbbr.toLowerCase()}.png`;
         const pct       = typeof team.pct === 'number' ? team.pct.toFixed(3) : (team.pct ?? '—');
         const gb        = team.gb === 0 || team.gb === '0' || !team.gb ? '—' : team.gb;
-        const streak    = team.streak || '—';
-        const streakWin = streak.startsWith('W');
+        const streak    = team.streak ?? '—';
+        const streakWin = typeof streak === 'string' && streak.startsWith('W');
         const streakCls = streakWin ? 'standings-streak--win' : 'standings-streak--loss';
 
         const clinchBadge = team.clinchedPO

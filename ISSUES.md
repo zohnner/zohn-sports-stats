@@ -39,6 +39,18 @@
 
 ---
 
+## P1 — Newly Found
+
+### [P1-006] Box score stats show for DNP/inactive players — **Fixed**
+- `_boxScoreTable` now filters out rows where `min` is null/`'00'`/`0` and all counting stats are zero.
+- `js/teams.js`
+
+### [P1-007] Team recent-games list empty during off-season — **Fixed**
+- `fetchTeamGamesAPI` now falls back to `CURRENT_SEASON - 1` if the primary fetch returns 0 games.
+- `js/api.js`
+
+---
+
 ## P2 — High Priority (Significant UX Degradation)
 
 ### [P2-001] NBA stats map crash on malformed response shapes
@@ -201,6 +213,26 @@
 ---
 
 ## Closed
+
+### [P1-005] NBA Teams — no drill-down — **Fixed**
+- `showTeamDetail` now fetches roster + recent games + stats map in parallel.
+- Added `_recentGamesCard`: lists last 12 games with W/L, date, opponent, score, click-to-expand.
+- Added `showTeamGameDetail` + `_teamGameDetailHTML` + `_boxScoreTable`: full box score view with both teams' player stats; clicking a player loads their stat page.
+- Navigation: `#team-{id}-game-{id}` hash, `team-game` popstate, and `_restoreTeamGameDetail` in `navigation.js`.
+- `js/teams.js`, `js/api.js`, `js/navigation.js`
+
+### [P2-004] Game status detection fragile — **Fixed**
+- Status regex now handles `Q1–Q4`, `Half`, `:MM`, `OT`, `PPD`/`Postponed` variants.
+- `js/games.js`
+
+### [P2-005] Standings crash on null streak — **Fixed**
+- `streak.startsWith('W')` → `typeof streak === 'string' && streak.startsWith('W')`.
+- `js/standings.js`
+
+### [P2-008] Leaderboard only shows top 8 — **Fixed**
+- Now renders top 10 by default; extracted `_buildLeaderboardRow` helper.
+- Remaining players hidden with `data-extra`; "Show N more / Show less" toggle button appended to each panel.
+- `js/leaderboards.js`
 
 ### [P1-001] MLB ticker scrolls too fast — **Fixed**
 - Both `updateTicker` (NBA) and `updateMLBTicker` (MLB) now measure `ticker.scrollWidth` after render via double-rAF and set `animationDuration` proportionally at 60px/s (min 15s).
