@@ -88,6 +88,14 @@ async function loadStatsForPlayers(players) {
     if (matched === 0 && players.length > 0) {
         ErrorHandler.toast('Season stats unavailable — NBA stats service unreachable', 'warn');
     }
+    // Build PPG rank map once so displayPlayerCards doesn't sort on every keystroke
+    const rankMap = {};
+    [...players]
+        .filter(p => AppState.playerStats[p.id]?.pts != null)
+        .sort((a, b) => AppState.playerStats[b.id].pts - AppState.playerStats[a.id].pts)
+        .forEach((p, i) => { rankMap[p.id] = i + 1; });
+    AppState.ppgRankMap = rankMap;
+
     // Seed IndexedDB for the Q&A engine
     if (typeof StatsDB !== 'undefined') {
         StatsDB.syncPlayers(players, statsMap).catch(() => {});
@@ -116,12 +124,8 @@ function displayPlayerCards(players) {
         return;
     }
 
-    // Build global PPG rank map from ALL players (not just current page)
-    const ppgRankMap = {};
-    [...AppState.allPlayers]
-        .filter(p => AppState.playerStats[p.id]?.pts != null)
-        .sort((a, b) => AppState.playerStats[b.id].pts - AppState.playerStats[a.id].pts)
-        .forEach((p, i) => { ppgRankMap[p.id] = i + 1; });
+    // PPG rank map is built once in loadStatsForPlayers and cached in AppState.ppgRankMap
+    const ppgRankMap = AppState.ppgRankMap;
 
     const fragment = document.createDocumentFragment();
     players.forEach(player => {

@@ -53,6 +53,8 @@ class ApiCache {
      * @param {any}    data   — value to cache (must be JSON-serialisable)
      * @param {number} ttl    — lifetime in ms (default: TTL.MEDIUM)
      */
+    static #cacheWarnFired = false;
+
     static set(raw, data, ttl = this.TTL.MEDIUM) {
         try {
             localStorage.setItem(
@@ -61,6 +63,18 @@ class ApiCache {
             );
         } catch (e) {
             Logger.warn('Cache write failed (quota or disabled)', e.message, 'CACHE');
+            // Fire a one-time toast so the user knows why loads may be slower
+            if (!this.#cacheWarnFired) {
+                this.#cacheWarnFired = true;
+                // Defer until ErrorHandler is guaranteed to exist
+                requestAnimationFrame(() => {
+                    ErrorHandler?.toast(
+                        'Cache unavailable — stats will reload each visit.',
+                        'warn',
+                        { title: 'Storage Disabled', duration: 6000 }
+                    );
+                });
+            }
         }
     }
 

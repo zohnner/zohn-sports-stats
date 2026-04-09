@@ -110,7 +110,7 @@ function _setupBuilder(playersWithStats) {
             runBtn.disabled = true;
             return;
         }
-        const { ok, error } = _tryFormula(formula, playersWithStats[0]);
+        const { ok, error } = _tryFormula(formula, playersWithStats);
         if (ok) {
             statusEl.textContent = 'Valid formula';
             statusEl.className   = 'formula-status formula-ok';
@@ -132,41 +132,59 @@ function _setupBuilder(playersWithStats) {
     });
 }
 
-function _tryFormula(formula, samplePlayer) {
-    if (!samplePlayer) return { ok: false, error: 'No player data loaded' };
-    try {
-        if (typeof math === 'undefined') throw new Error('math.js not loaded');
-        let expr = formula;
-        const stats = AppState.playerStats[samplePlayer.id] || {};
-        Object.entries(stats).forEach(([k, v]) => {
-            if (typeof v === 'number') {
-                expr = expr.replace(new RegExp(`\\b${k}\\b`, 'g'), v);
-            }
-        });
-        const result = math.evaluate(expr);
-        if (!isFinite(result)) throw new Error('Division by zero or invalid result');
-        return { ok: true };
-    } catch (e) {
-        return { ok: false, error: e.message };
+function _tryFormula(formula, playersWithStats) {
+    if (!playersWithStats?.length) return { ok: false, error: 'No player data loaded' };
+    if (typeof math === 'undefined') return { ok: false, error: 'math.js not loaded' };
+    // Try up to 5 sample players — pass as soon as one succeeds.
+    // Avoids false rejections caused by a single player having a zero/null stat.
+    let lastError = 'Formula error';
+    for (const player of playersWithStats.slice(0, 5)) {
+        try {
+            let expr = formula;
+            const stats = AppState.playerStats[player.id] || {};
+            Object.entries(stats).forEach(([k, v]) => {
+                if (typeof v === 'number') {
+                    expr = expr.replace(new RegExp(`\\b${k}\\b`, 'g'), v);
+                }
+            });
+            const result = math.evaluate(expr);
+            if (!isFinite(result)) throw new Error('Division by zero or invalid result');
+            return { ok: true };
+        } catch (e) {
+            lastError = e.message;
+        }
     }
+    return { ok: false, error: lastError };
 }
 
 function _runFormula(formula, name, players) {
     const tableEl = document.getElementById('builderResultsTable');
     const emptyEl = document.getElementById('builderResultsEmpty');
 
+    // Compile the formula AST once; then evaluate with a scope object per player.
+    // This avoids re-parsing the expression string 300+ times.
+    let compiled;
+    try {
+        compiled = math.compile(formula);
+    } catch (e) {
+        ErrorHandler.toast(`Formula parse error: ${e.message}`, 'error');
+        return;
+    }
+
+    // Determine which stat keys appear in the formula (word-bounded)
+    const STAT_KEYS = ['pts','reb','ast','stl','blk','turnover','min',
+                       'fgm','fga','fg_pct','fg3m','fg3a','fg3_pct','ftm','fta','ft_pct',
+                       'oreb','dreb','games_played'];
+    const usedKeys = STAT_KEYS.filter(k => new RegExp(`\\b${k}\\b`).test(formula));
+
     const results = [];
     players.forEach(player => {
         const stats = AppState.playerStats[player.id];
         if (!stats) return;
         try {
-            let expr = formula;
-            Object.entries(stats).forEach(([k, v]) => {
-                if (typeof v === 'number') {
-                    expr = expr.replace(new RegExp(`\\b${k}\\b`, 'g'), v);
-                }
-            });
-            const val = math.evaluate(expr);
+            const scope = {};
+            usedKeys.forEach(k => { if (typeof stats[k] === 'number') scope[k] = stats[k]; });
+            const val = compiled.evaluate(scope);
             if (isFinite(val)) results.push({ player, val });
         } catch (_) {}
     });

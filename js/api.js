@@ -28,6 +28,7 @@ const AppState = {
     _nbaStatsSeason: null,
     nbaStandings: null,     // array of team standing rows from leaguestandingsv3
     _teamRecentGames: {},   // teamId → array of recent games (cached per session)
+    ppgRankMap: {},         // playerId → PPG rank across all loaded players (built once after stats load)
 };
 
 // ============================================================
