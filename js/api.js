@@ -213,6 +213,7 @@ async function fetchPlayerStatsAPI(playerIds, season = CURRENT_SEASON) {
 
     const CHUNK = 25;
     const results = [];
+    let failedChunks = 0;
 
     for (let i = 0; i < playerIds.length; i += CHUNK) {
         const chunk = playerIds.slice(i, i + CHUNK);
@@ -223,8 +224,17 @@ async function fetchPlayerStatsAPI(playerIds, season = CURRENT_SEASON) {
             }, { ttl: ApiCache.TTL.MEDIUM });
             results.push(...(data.data || []));
         } catch (err) {
+            failedChunks++;
             Logger.warn(`Stats chunk ${i}–${i + CHUNK} failed`, err.message, 'API');
         }
+    }
+
+    if (failedChunks > 0) {
+        ErrorHandler.toast(
+            `${failedChunks} stat batch${failedChunks > 1 ? 'es' : ''} failed to load — some players may show incomplete stats.`,
+            'warn',
+            { title: 'Partial Stats', duration: 6000 }
+        );
     }
 
     return results.map(normalizeStats);
@@ -366,9 +376,13 @@ async function fetchNBAStatsMap(season = CURRENT_SEASON) {
         const res = await fetch(url, { headers: { 'Referer': 'https://www.nba.com/' } });
         if (!res.ok) throw new Error(`NBA stats API error ${res.status}`);
 
-        const json     = await res.json();
-        const { headers, rowSet } = json.resultSet;
-        const get      = (row, h) => row[headers.indexOf(h)];
+        const json = await res.json();
+        const resultSet = json?.resultSet;
+        if (!resultSet?.headers || !Array.isArray(resultSet?.rowSet)) {
+            throw new Error('Unexpected NBA stats API response shape — endpoint may have changed');
+        }
+        const { headers, rowSet } = resultSet;
+        const get = (row, h) => row[headers.indexOf(h)];
 
         const map = {};
         rowSet.forEach(row => {

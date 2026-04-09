@@ -50,7 +50,12 @@ async function showPlayerDetail(playerId, push = true) {
 
     try {
         const stats       = AppState.playerStats[playerId];
-        const recentGames = await fetchPlayerGamesAPI(playerId);
+        // Fetch in parallel: game log + stats map (needed for league rank badges).
+        // If nbaStatsMap is already loaded this resolves instantly from cache.
+        const [recentGames] = await Promise.all([
+            fetchPlayerGamesAPI(playerId),
+            AppState.nbaStatsMap ? Promise.resolve() : fetchNBAStatsMap(CURRENT_SEASON),
+        ]);
 
         const teamName = player.team?.full_name || player.team?.name || 'Unknown Team';
         const season   = `${CURRENT_SEASON}–${(CURRENT_SEASON + 1).toString().slice(2)}`;
@@ -122,10 +127,12 @@ let _per36Mode = false;
 
 function togglePer36(stats, season) {
     _per36Mode = !_per36Mode;
-    // Replace the stats card in-place; _seasonStatsCard reads _per36Mode to render correct state
     const card = document.getElementById('seasonStatsCard');
-    if (card) card.outerHTML = _seasonStatsCard(stats, season);
-    // Re-attach listener — outerHTML removes the old node including its event listeners
+    if (!card) return;
+    // Insert new card immediately after the old one, then remove old.
+    // This avoids outerHTML= which detaches the node and can race with chart renders.
+    card.insertAdjacentHTML('afterend', _seasonStatsCard(stats, season));
+    card.remove();
     document.getElementById('per36Btn')?.addEventListener('click', () => togglePer36(stats, season));
 }
 

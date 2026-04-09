@@ -53,20 +53,17 @@
 
 ## P2 — High Priority (Significant UX Degradation)
 
-### [P2-001] NBA stats map crash on malformed response shapes
-- **File:** `js/api.js:307-374` (`fetchNBAStatsMap`)
-- **Detail:** Assumes `json.resultSet.headers` and `rowSet` exist. No null guards. If `stats.nba.com` changes shape, all player season stats fail silently and every card shows "No season stats available".
-- **Fix:** Add optional chaining + a structure validation check before processing.
+### [P2-001] NBA stats map crash on malformed response shapes — **Fixed**
+- Added `resultSet?.headers` + `Array.isArray(resultSet?.rowSet)` validation before destructuring. Throws a descriptive error instead of a TypeError if the NBA.com endpoint changes shape.
+- `js/api.js`
 
-### [P2-002] Player detail — league ranks wrong until page refresh
-- **File:** `js/playerDetail.js:239-259` (`_computeLeagueRanks`)
-- **Detail:** Reads `AppState.nbaStatsMap` synchronously. If called before `fetchNBAStatsMap` resolves, returns empty ranks `{}` and all rank badges are missing. Per-36 toggle hits the same stale map.
-- **Fix:** Await `fetchNBAStatsMap` before computing ranks, or re-compute when the map resolves and the detail page is still open.
+### [P2-002] Player detail — league ranks wrong until page refresh — **Fixed**
+- `showPlayerDetail` now awaits `fetchNBAStatsMap` in parallel with `fetchPlayerGamesAPI` using `Promise.all`. If the map is already cached, resolves instantly.
+- `js/playerDetail.js`
 
-### [P2-003] Per-36 button loses its click handler after first toggle
-- **File:** `js/playerDetail.js:123-130`
-- **Detail:** `outerHTML =` replaces the DOM node, destroying all attached event listeners. The re-attach on line 129 has a race against chart rendering.
-- **Fix:** Update button text/classes without replacing the node (use `textContent` / `classList.toggle`), or re-query and re-attach after the DOM write.
+### [P2-003] Per-36 button loses its click handler after first toggle — **Fixed**
+- Replaced `card.outerHTML =` with `card.insertAdjacentHTML('afterend', ...) + card.remove()`. New node is inserted in the correct DOM position before the old one is removed, eliminating any race with chart renders.
+- `js/playerDetail.js`
 
 ### [P2-004] Game status detection fragile — misses HALFTIME, OT, PPD
 - **File:** `js/games.js:70-72`
@@ -83,10 +80,9 @@
 - **Detail:** `res.json()` is called unconditionally. A 5xx plain-text error body throws a SyntaxError that propagates uncaught.
 - **Fix:** Check `res.ok` first; use `try/catch` around `res.json()` and return a normalized error object.
 
-### [P2-007] db.js team lookup fails on case mismatch
-- **File:** `js/db.js:194`
-- **Detail:** `getTeamByAbbr` uppercases the input but stored abbreviations may be mixed case depending on which API wrote them. Ask engine team lookups silently return null.
-- **Fix:** Normalize to uppercase at write time in `db.js`, or do a case-insensitive index scan.
+### [P2-007] db.js team lookup fails on case mismatch — **Fixed**
+- `syncStandings` and `syncPlayers` now normalize `teamAbbr` to uppercase at write time so all IDB lookups consistently match the uppercase input in `getTeamByAbbr`.
+- `js/db.js`
 
 ### [P2-008] Leaderboard only shows top 8 — no way to see rank 9+
 - **File:** `js/leaderboards.js:71`
@@ -97,10 +93,9 @@
 
 ## P3 — Medium Priority (Correctness / Edge Cases)
 
-### [P3-001] BDL fetch silent partial failure on chunked player loads
-- **File:** `js/api.js:209-230` (`fetchPlayerStatsAPI`)
-- **Detail:** Chunk errors are silently swallowed. Calling code receives partial data with no indication that some players are missing stats.
-- **Fix:** Collect chunk errors; after all chunks complete, if any failed, fire a warning toast: "Some player stats failed to load."
+### [P3-001] BDL fetch silent partial failure on chunked player loads — **Fixed**
+- `fetchPlayerStatsAPI` now counts failed chunks; if any fail, fires a warn toast "X stat batches failed to load — some players may show incomplete stats."
+- `js/api.js`
 
 ### [P3-002] Quarter scores show blank if API shape changes
 - **File:** `js/games.js:83-114`
@@ -112,10 +107,8 @@
 - **Detail:** `ppgRankMap` is rebuilt by sorting all players on every call to `displayPlayerCards`, which is called on every search keystroke.
 - **Fix:** Compute ranks once when player data is loaded; cache in `AppState`.
 
-### [P3-004] Stat Builder formula replacement — collision between similar stat names
-- **File:** `js/statBuilder.js:143-166`
-- **Detail:** String replace order matters. `pts` can match inside `3pts` if the replacement regex isn't bounded. Produces wrong formula evaluations for any formula mixing both.
-- **Fix:** Use word-boundary regex (`\bpts\b`) for all stat key replacements.
+### [P3-004] Stat Builder formula word-boundary — **Non-issue / Already Fixed**
+- Code already uses `new RegExp('\\b' + k + '\\b', 'g')` for all stat replacements. `\b` prevents `pts` from matching inside `3pts` since `3` is `\w`. Audit finding was incorrect.
 
 ### [P3-005] localStorage cache failure is silent
 - **File:** `js/cache.js:58`

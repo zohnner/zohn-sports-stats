@@ -131,7 +131,12 @@ const StatsDB = (() => {
 
     async function syncStandings(rows) {
         if (!rows || rows.length === 0) return;
-        await putMany('standings', rows);
+        // Normalize teamAbbr to uppercase so getTeamByAbbr lookups always match
+        const normalized = rows.map(r => ({
+            ...r,
+            teamAbbr: (r.teamAbbr || '').toUpperCase(),
+        }));
+        await putMany('standings', normalized);
         await setMeta('standings_sync', Date.now());
         Logger.info(`StatsDB: synced ${rows.length} standings rows`, undefined, 'DB');
     }
@@ -145,7 +150,7 @@ const StatsDB = (() => {
             lastName:  p.last_name,
             fullName: `${p.first_name} ${p.last_name}`,
             position: p.position || '',
-            teamAbbr: p.team?.abbreviation || '',
+            teamAbbr: (p.team?.abbreviation || '').toUpperCase(),
             teamId:   p.team?.id,
             teamName: p.team?.full_name || '',
         }));
