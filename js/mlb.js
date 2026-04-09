@@ -465,16 +465,18 @@ function _createMLBPlayerCard(player, stats, group, rank) {
     const statsHtml = stats
         ? (group === 'hitting' ? `
             <div class="detail-row"><span class="detail-label">AVG</span><span class="detail-value" style="color:var(--color-pts)">${stats.avg || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">HR</span><span class="detail-value" style="color:var(--color-reb)">${stats.homeRuns ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">RBI</span><span class="detail-value" style="color:var(--color-ast)">${stats.rbi ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">OBP</span><span class="detail-value" style="color:var(--color-reb)">${stats.obp || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SLG</span><span class="detail-value" style="color:var(--color-ast)">${stats.slg || '—'}</span></div>
             <div class="detail-row"><span class="detail-label">OPS</span><span class="detail-value" style="color:var(--color-stl)">${stats.ops || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">SB</span><span class="detail-value" style="color:var(--color-blk)">${stats.stolenBases ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">HR</span><span class="detail-value" style="color:var(--color-blk)">${stats.homeRuns ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">RBI</span><span class="detail-value" style="color:var(--color-pts)">${stats.rbi ?? '—'}</span></div>
         ` : `
             <div class="detail-row"><span class="detail-label">ERA</span><span class="detail-value" style="color:var(--color-pts)">${stats.era || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">W-L</span><span class="detail-value" style="color:var(--color-reb)">${stats.wins ?? '—'}–${stats.losses ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">SO</span><span class="detail-value" style="color:var(--color-ast)">${stats.strikeOuts ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">WHIP</span><span class="detail-value" style="color:var(--color-stl)">${stats.whip || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">IP</span><span class="detail-value" style="color:var(--color-blk)">${stats.inningsPitched || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">WHIP</span><span class="detail-value" style="color:var(--color-reb)">${stats.whip || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">W-L</span><span class="detail-value" style="color:var(--color-ast)">${stats.wins ?? '—'}–${stats.losses ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SO</span><span class="detail-value" style="color:var(--color-stl)">${stats.strikeOuts ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">K/9</span><span class="detail-value" style="color:var(--color-blk)">${stats.strikeoutsPer9Inn ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1) : '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SV</span><span class="detail-value" style="color:var(--color-pts)">${stats.saves ?? '—'}</span></div>
         `)
         : `<div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">No stats available</div>`;
 
@@ -561,9 +563,9 @@ function _mlbPitchingBars(stats) {
     return [
         eraBar,
         whipBar,
+        _mlbStatBar('K/9',         stats.strikeoutsPer9Inn, 15,  '#fb923c', v => parseFloat(v).toFixed(1)),
         _mlbStatBar('Strikeouts',  stats.strikeOuts,    300, '#818cf8', v => v),
         _mlbStatBar('Wins',        stats.wins,          25,  '#34d399', v => v),
-        _mlbStatBar('Innings Pitched', stats.inningsPitched, 250, '#60a5fa', v => parseFloat(v).toFixed(1)),
         _mlbStatBar('Saves',       stats.saves,         45,  '#fbbf24', v => v),
     ].filter(Boolean).join('');
 }
@@ -938,16 +940,22 @@ async function loadMLBLeaderboards() {
     }
 }
 
-// desc:true = higher value is better (rank #1 = highest); desc:false = lower is better (ERA)
+// desc:true = higher value is better (rank #1 = highest); desc:false = lower is better (ERA/WHIP)
+// decimals: how many decimal places to display for this stat
 const MLB_LEADER_CATS = [
-    { key: 'avg',         label: 'Batting Average', unit: 'AVG',  color: '#fbbf24', group: 'hitting',  desc: true  },
-    { key: 'homeRuns',    label: 'Home Runs',       unit: 'HR',   color: '#ef4444', group: 'hitting',  desc: true  },
-    { key: 'rbi',         label: 'RBI',             unit: 'RBI',  color: '#60a5fa', group: 'hitting',  desc: true  },
-    { key: 'ops',         label: 'OPS',             unit: 'OPS',  color: '#a78bfa', group: 'hitting',  desc: true  },
-    { key: 'stolenBases', label: 'Stolen Bases',    unit: 'SB',   color: '#34d399', group: 'hitting',  desc: true  },
-    { key: 'era',         label: 'ERA',             unit: 'ERA',  color: '#f472b6', group: 'pitching', desc: false },
-    { key: 'strikeOuts',  label: 'Strikeouts',      unit: 'K',    color: '#818cf8', group: 'pitching', desc: true  },
-    { key: 'wins',        label: 'Wins',            unit: 'W',    color: '#38bdf8', group: 'pitching', desc: true  },
+    { key: 'avg',                label: 'Batting Average', unit: 'AVG',  color: '#fbbf24', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'ops',                label: 'OPS',             unit: 'OPS',  color: '#a78bfa', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'obp',                label: 'On-Base %',       unit: 'OBP',  color: '#34d399', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'slg',                label: 'Slugging %',      unit: 'SLG',  color: '#60a5fa', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'homeRuns',           label: 'Home Runs',       unit: 'HR',   color: '#ef4444', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'rbi',                label: 'RBI',             unit: 'RBI',  color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'stolenBases',        label: 'Stolen Bases',    unit: 'SB',   color: '#10b981', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'era',                label: 'ERA',             unit: 'ERA',  color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'whip',               label: 'WHIP',            unit: 'WHIP', color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',  color: '#fb923c', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'strikeOuts',         label: 'Strikeouts',      unit: 'K',    color: '#c084fc', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'wins',               label: 'Wins',            unit: 'W',    color: '#38bdf8', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'saves',              label: 'Saves',           unit: 'SV',   color: '#fbbf24', group: 'pitching', desc: true,  decimals: 0 },
 ];
 
 function displayMLBLeaderboards() {
@@ -989,9 +997,7 @@ function displayMLBLeaderboards() {
                 const rawVal  = split.stat[cat.key];
                 const numVal  = parseFloat(rawVal);
                 const valStr  = isNaN(numVal) ? rawVal :
-                    (cat.key === 'era' || cat.key === 'avg' || cat.key === 'ops')
-                        ? numVal.toFixed(3)
-                        : String(rawVal);
+                    cat.decimals > 0 ? numVal.toFixed(cat.decimals) : String(rawVal);
                 const abbr       = split.team?.abbreviation || '';
                 const colors     = getMLBTeamColors(abbr);
                 const initials   = (split.player?.fullName || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');

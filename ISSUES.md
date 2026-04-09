@@ -224,8 +224,9 @@
 ---
 
 ### [MLB-002] Advanced Stats — Hitters (missing from all views)
-- **Status:** Not started
-- **Currently shown:** AVG, OBP, SLG, OPS, HR, RBI, R, H, SB, BB, SO, GP
+- **Status:** Phase 1 done — OBP, SLG added to player cards; OBP, SLG leaderboard panels added
+- **Currently shown on cards:** AVG, OBP, SLG, OPS, HR, RBI
+- **Currently shown on detail:** AVG, OBP, SLG, OPS, HR, RBI, R, H, SB, BB, SO, GP
 - **Add to player detail stat grid:**
   - `wOBA` — Weighted On-Base Average; the single best rate stat for overall offensive value. Formula: `(0.69×BB + 0.72×HBP + 0.89×1B + 1.27×2B + 1.62×3B + 2.10×HR) / PA`. MLB Stats API returns it as `wOBA` in season splits.
   - `ISO` — Isolated Power = SLG − AVG. Measures raw power, removes AVG noise.
@@ -241,8 +242,9 @@
 ---
 
 ### [MLB-003] Advanced Stats — Pitchers (missing from all views)
-- **Status:** Not started
-- **Currently shown:** ERA, W, L, SO, WHIP, IP, BB, GP, GS, SV, HLD, H
+- **Status:** Phase 1 done — K/9 added to player cards and stat bars; WHIP, K/9, SV leaderboard panels added
+- **Currently shown on cards:** ERA, WHIP, W-L, SO, K/9, SV
+- **Currently shown on detail:** ERA, W, L, SO, WHIP, IP, BB, GP, GS, SV, HLD, H
 - **Add to player detail stat grid:**
   - `FIP` — Fielding Independent Pitching. Removes defense/luck. Formula: `(13×HR + 3×(BB+HBP) − 2×K) / IP + FIP_constant` (~3.10 for 2024). MLB API field: `fieldingIndependentPitching`.
   - `K/9` — Strikeouts per 9 innings = (SO / IP) × 9. MLB API: `strikeoutsPer9Inn`.
