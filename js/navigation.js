@@ -173,10 +173,11 @@ const _NAV_META = {
     games:        { label: 'Games',     icon: '📅' },
     standings:    { label: 'Standings', icon: '📊' },
     builder:      { label: 'Builder',   icon: '🧮' },
-    'mlb-players': { label: 'MLB Players', icon: '⚾' },
-    'mlb-leaders': { label: 'MLB Leaders', icon: '🏆' },
-    'mlb-teams':   { label: 'MLB Teams',   icon: '🏟' },
-    'mlb-games':   { label: 'MLB Games',   icon: '📅' },
+    'mlb-players':   { label: 'MLB Players',   icon: '⚾' },
+    'mlb-leaders':   { label: 'MLB Leaders',   icon: '🏆' },
+    'mlb-teams':     { label: 'MLB Teams',     icon: '🏟' },
+    'mlb-games':     { label: 'MLB Games',     icon: '📅' },
+    'mlb-standings': { label: 'MLB Standings', icon: '📊' },
 };
 
 function setBreadcrumb(root, current) {
@@ -298,6 +299,15 @@ function _renderMLBView(view) {
                 loadMLBGames();
             } else {
                 displayMLBGames(AppState.mlbGames);
+            }
+            break;
+
+        case 'mlb-standings':
+            if (viewCount) viewCount.textContent = 'MLB Standings';
+            if (AppState.mlbStandings) {
+                displayMLBStandings(AppState.mlbStandings, AppState._mlbStandingsLeague || 'AL');
+            } else {
+                loadMLBStandings();
             }
             break;
 

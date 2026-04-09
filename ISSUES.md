@@ -224,9 +224,9 @@
 ---
 
 ### [MLB-002] Advanced Stats — Hitters (missing from all views)
-- **Status:** Phase 1 done — OBP, SLG added to player cards; OBP, SLG leaderboard panels added
+- **Status:** Phase 1+2 done — OBP/SLG on cards; ISO, BABIP, BB%, K%, PA computed and shown on detail; ISO/BABIP bars added
 - **Currently shown on cards:** AVG, OBP, SLG, OPS, HR, RBI
-- **Currently shown on detail:** AVG, OBP, SLG, OPS, HR, RBI, R, H, SB, BB, SO, GP
+- **Currently shown on detail:** AVG, OBP, SLG, OPS, ISO, BABIP, HR, RBI, R, H, SB, BB, SO, BB%, K%, PA, GP
 - **Add to player detail stat grid:**
   - `wOBA` — Weighted On-Base Average; the single best rate stat for overall offensive value. Formula: `(0.69×BB + 0.72×HBP + 0.89×1B + 1.27×2B + 1.62×3B + 2.10×HR) / PA`. MLB Stats API returns it as `wOBA` in season splits.
   - `ISO` — Isolated Power = SLG − AVG. Measures raw power, removes AVG noise.
@@ -242,9 +242,9 @@
 ---
 
 ### [MLB-003] Advanced Stats — Pitchers (missing from all views)
-- **Status:** Phase 1 done — K/9 added to player cards and stat bars; WHIP, K/9, SV leaderboard panels added
+- **Status:** Phase 1+2 done — K/9/SV on cards; FIP, BB/9, K-BB%, QS computed and shown on detail
 - **Currently shown on cards:** ERA, WHIP, W-L, SO, K/9, SV
-- **Currently shown on detail:** ERA, W, L, SO, WHIP, IP, BB, GP, GS, SV, HLD, H
+- **Currently shown on detail:** ERA, FIP, WHIP, K/9, BB/9, K-BB%, W, L, SO, IP, BB, QS, SV, HLD, GS, GP
 - **Add to player detail stat grid:**
   - `FIP` — Fielding Independent Pitching. Removes defense/luck. Formula: `(13×HR + 3×(BB+HBP) − 2×K) / IP + FIP_constant` (~3.10 for 2024). MLB API field: `fieldingIndependentPitching`.
   - `K/9` — Strikeouts per 9 innings = (SO / IP) × 9. MLB API: `strikeoutsPer9Inn`.
@@ -277,8 +277,9 @@
 
 ---
 
-### [MLB-005] MLB Standings — Not Implemented
-- **Status:** Not started
+### [MLB-005] MLB Standings — **Done**
+- **Status:** Implemented — AL/NL tabs, 3-column division grid, W/L/PCT/GB/L10/STRK/HOME/AWAY columns, playoff zone separators, clinch badges
+- `js/mlb.js` (`fetchMLBStandingsFull`, `loadMLBStandings`, `displayMLBStandings`), `js/navigation.js`, `index.html`, `css/components.css`
 - **Problem:** NBA has full standings with playoff zones, win %, GB, last-10, streak, clinch badges. MLB has nothing.
 - **Build:**
   - AL East / AL Central / AL West / NL East / NL Central / NL West division tables

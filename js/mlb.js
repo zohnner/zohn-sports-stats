@@ -502,6 +502,47 @@ function _createMLBPlayerCard(player, stats, group, rank) {
     return card;
 }
 
+// ── Phase 2: computed rate stats ─────────────────────────────
+
+function _computeBattingRates(s) {
+    const pa  = parseFloat(s.plateAppearances) || 0;
+    const ab  = parseFloat(s.atBats)           || 1;
+    const sf  = parseFloat(s.sacFlies)         || 0;
+    const hits = parseFloat(s.hits)            || 0;
+    const hr  = parseFloat(s.homeRuns)         || 0;
+    const so  = parseFloat(s.strikeOuts)       || 0;
+    const bb  = parseFloat(s.baseOnBalls)      || 0;
+    const slg = parseFloat(s.slg);
+    const avg = parseFloat(s.avg);
+
+    const iso   = (!isNaN(slg) && !isNaN(avg)) ? (slg - avg).toFixed(3) : null;
+    const babip = (hits >= 0 && hr >= 0 && so >= 0 && (ab - so - hr + sf) > 0)
+        ? ((hits - hr) / (ab - so - hr + sf)).toFixed(3)
+        : null;
+    const bbPct = pa > 0 ? (bb / pa * 100).toFixed(1) : null;
+    const kPct  = pa > 0 ? (so / pa * 100).toFixed(1) : null;
+
+    return { iso, babip, bbPct, kPct, pa: pa || null };
+}
+
+function _computePitchingRates(s) {
+    const ip  = parseFloat(s.inningsPitched)  || 0;
+    const bf  = parseFloat(s.battersFaced)    || 1;
+    const so  = parseFloat(s.strikeOuts)      || 0;
+    const bb  = parseFloat(s.baseOnBalls)     || 0;
+    const hr  = parseFloat(s.homeRuns)        || 0;
+    const hbp = parseFloat(s.hitBatsmen)      || 0;
+
+    const fip = ip > 0
+        ? ((13 * hr + 3 * (bb + hbp) - 2 * so) / ip + 3.10).toFixed(2)
+        : null;
+    const kBbPct = bf > 0
+        ? (((so - bb) / bf) * 100).toFixed(1)
+        : null;
+
+    return { fip, kBbPct };
+}
+
 // ── MLB stat bar helpers ──────────────────────────────────────
 
 function _mlbStatBar(label, value, max, color, fmt) {
@@ -522,12 +563,14 @@ function _mlbStatBar(label, value, max, color, fmt) {
     `;
 }
 
-function _mlbHittingBars(stats) {
+function _mlbHittingBars(stats, rates = {}) {
     return [
         _mlbStatBar('Batting Average',   stats.avg,         0.400,  '#fbbf24', v => v.toFixed(3)),
         _mlbStatBar('On-Base %',         stats.obp,         0.500,  '#34d399', v => v.toFixed(3)),
         _mlbStatBar('Slugging %',        stats.slg,         0.700,  '#60a5fa', v => v.toFixed(3)),
         _mlbStatBar('OPS',               stats.ops,         1.100,  '#a78bfa', v => v.toFixed(3)),
+        _mlbStatBar('ISO',               rates.iso,         0.400,  '#f472b6', v => v),
+        _mlbStatBar('BABIP',             rates.babip,       0.400,  '#fb923c', v => v),
         _mlbStatBar('Home Runs',         stats.homeRuns,    60,     '#ef4444', v => v),
         _mlbStatBar('RBI',               stats.rbi,         140,    '#f59e0b', v => v),
         _mlbStatBar('Stolen Bases',      stats.stolenBases, 70,     '#10b981', v => v),
@@ -597,43 +640,58 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         : '';
     const logoUrl = getMLBTeamLogoUrl(player.teamId);
 
+    // Computed rate stats (Phase 2 — derived from existing API fields)
+    const batting  = group === 'hitting'  ? _computeBattingRates(stats)  : null;
+    const pitching = group === 'pitching' ? _computePitchingRates(stats) : null;
+
     const statDefs = group === 'hitting' ? [
-        ['AVG',  stats.avg,          'var(--color-pts)'],
-        ['OBP',  stats.obp,          'var(--color-reb)'],
-        ['SLG',  stats.slg,          'var(--color-ast)'],
-        ['OPS',  stats.ops,          'var(--color-stl)'],
-        ['HR',   stats.homeRuns,     'var(--color-blk)'],
-        ['RBI',  stats.rbi,          'var(--color-pts)'],
-        ['R',    stats.runs,         'var(--color-reb)'],
-        ['H',    stats.hits,         'var(--color-ast)'],
-        ['SB',   stats.stolenBases,  'var(--color-stl)'],
-        ['BB',   stats.baseOnBalls,  'var(--color-min)'],
-        ['SO',   stats.strikeOuts,   '#64748b'],
-        ['GP',   stats.gamesPlayed,  '#64748b'],
+        ['AVG',   stats.avg,          'var(--color-pts)'],
+        ['OBP',   stats.obp,          'var(--color-reb)'],
+        ['SLG',   stats.slg,          'var(--color-ast)'],
+        ['OPS',   stats.ops,          'var(--color-stl)'],
+        ['ISO',   batting?.iso,       'var(--color-blk)'],
+        ['BABIP', batting?.babip,     'var(--color-pts)'],
+        ['HR',    stats.homeRuns,     'var(--color-reb)'],
+        ['RBI',   stats.rbi,          'var(--color-ast)'],
+        ['R',     stats.runs,         'var(--color-stl)'],
+        ['H',     stats.hits,         'var(--color-min)'],
+        ['SB',    stats.stolenBases,  'var(--color-blk)'],
+        ['BB',    stats.baseOnBalls,  '#34d399'],
+        ['SO',    stats.strikeOuts,   '#64748b'],
+        ['BB%',   batting?.bbPct != null ? batting.bbPct + '%' : null, '#34d399'],
+        ['K%',    batting?.kPct  != null ? batting.kPct  + '%' : null, '#64748b'],
+        ['PA',    batting?.pa,         '#64748b'],
+        ['GP',    stats.gamesPlayed,   '#64748b'],
     ] : [
-        ['ERA',  stats.era,           'var(--color-pts)'],
-        ['W',    stats.wins,          'var(--color-reb)'],
-        ['L',    stats.losses,        '#64748b'],
-        ['SO',   stats.strikeOuts,    'var(--color-ast)'],
-        ['WHIP', stats.whip,          'var(--color-stl)'],
-        ['IP',   stats.inningsPitched,'var(--color-blk)'],
-        ['BB',   stats.baseOnBalls,   'var(--color-min)'],
-        ['GP',   stats.gamesPlayed,   '#64748b'],
-        ['GS',   stats.gamesStarted,  '#64748b'],
-        ['SV',   stats.saves,         'var(--color-pts)'],
-        ['HLD',  stats.holds,         'var(--color-reb)'],
-        ['H',    stats.hits,          '#64748b'],
+        ['ERA',  stats.era,               'var(--color-pts)'],
+        ['FIP',  pitching?.fip,           'var(--color-reb)'],
+        ['WHIP', stats.whip,              'var(--color-ast)'],
+        ['K/9',  stats.strikeoutsPer9Inn  ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1)  : null, 'var(--color-stl)'],
+        ['BB/9', stats.walksPer9Inn       ? parseFloat(stats.walksPer9Inn).toFixed(1)       : null, 'var(--color-blk)'],
+        ['K-BB%',pitching?.kBbPct != null ? pitching.kBbPct + '%' : null, 'var(--color-min)'],
+        ['W',    stats.wins,              'var(--color-reb)'],
+        ['L',    stats.losses,            '#64748b'],
+        ['SO',   stats.strikeOuts,        'var(--color-ast)'],
+        ['IP',   stats.inningsPitched,    'var(--color-blk)'],
+        ['BB',   stats.baseOnBalls,       '#34d399'],
+        ['QS',   stats.qualityStarts,     '#60a5fa'],
+        ['SV',   stats.saves,             'var(--color-pts)'],
+        ['HLD',  stats.holds,             'var(--color-reb)'],
+        ['GS',   stats.gamesStarted,      '#64748b'],
+        ['GP',   stats.gamesPlayed,        '#64748b'],
     ];
 
-    const statsGrid = statDefs.map(([label, value, color]) => `
-        <div class="stat-item">
-            <div class="stat-value" style="color:${color}">${value ?? '—'}</div>
-            <div class="stat-label">${label}</div>
-        </div>
-    `).join('');
+    const statsGrid = statDefs
+        .filter(([, value]) => value != null)
+        .map(([label, value, color]) => `
+            <div class="stat-item">
+                <div class="stat-value" style="color:${color}">${value}</div>
+                <div class="stat-label">${label}</div>
+            </div>
+        `).join('');
 
     // Stat bars for key metrics
-    const barHtml = group === 'hitting' ? _mlbHittingBars(stats) : _mlbPitchingBars(stats);
+    const barHtml = group === 'hitting' ? _mlbHittingBars(stats, batting) : _mlbPitchingBars(stats);
 
     // Team logo
     const teamLogo = getMLBTeamLogoUrl(player.teamId);
@@ -1142,15 +1200,190 @@ async function fetchMLBStandings(season = MLB_SEASON) {
     return map;
 }
 
+// ── Full Standings (divisional, for Standings view) ──────────
+
+async function fetchMLBStandingsFull(season = MLB_SEASON) {
+    const data = await mlbFetch('/standings', {
+        leagueId:       '103,104',
+        season,
+        standingsTypes: 'regularSeason',
+    }, ApiCache.TTL.SHORT);
+
+    return (data.records || []).map(rec => {
+        const rawName = rec.division?.name || '';
+        const divName = rawName
+            .replace('American League ', 'AL ')
+            .replace('National League ', 'NL ');
+        const league = divName.startsWith('AL') ? 'AL' : 'NL';
+        return {
+            division: divName,
+            league,
+            teams: (rec.teamRecords || []).map(tr => {
+                const findRec = type => (tr.records?.overallRecords || []).find(r => r.type === type);
+                const home   = findRec('home');
+                const away   = findRec('away');
+                const last10 = findRec('lastTen');
+                return {
+                    teamId:   tr.team?.id,
+                    teamName: tr.team?.name    || '',
+                    teamAbbr: tr.team?.abbreviation || '',
+                    wins:     tr.wins   ?? 0,
+                    losses:   tr.losses ?? 0,
+                    pct:      tr.leagueRecord?.pct ?? '.000',
+                    gb:       tr.gamesBack          || '—',
+                    streak:   tr.streak?.streakCode || '',
+                    home:     home   ? `${home.wins}-${home.losses}`     : '—',
+                    away:     away   ? `${away.wins}-${away.losses}`     : '—',
+                    last10:   last10 ? `${last10.wins}-${last10.losses}` : '—',
+                    clinched: tr.clinchIndicator || '',
+                    divRank:  parseInt(tr.divisionRank) || 99,
+                };
+            }).sort((a, b) => a.divRank - b.divRank),
+        };
+    });
+}
+
+let _mlbStandingsLeague = 'AL';
+
+async function loadMLBStandings() {
+    const grid = document.getElementById('playersGrid');
+    const viewCount = document.getElementById('viewResultCount');
+    if (viewCount) viewCount.textContent = 'MLB Standings';
+    if (window.setBreadcrumb) setBreadcrumb('mlb-standings', null);
+
+    grid.className = 'standings-container';
+    grid.innerHTML = Array.from({ length: 18 }, () =>
+        `<div class="skeleton-line" style="height:38px;border-radius:8px;margin-bottom:4px"></div>`
+    ).join('');
+
+    try {
+        if (!AppState.mlbStandings) {
+            AppState.mlbStandings = await fetchMLBStandingsFull();
+        }
+        displayMLBStandings(AppState.mlbStandings, _mlbStandingsLeague);
+    } catch (err) {
+        Logger.error('MLB Standings load failed', err, 'MLB');
+        ErrorHandler.renderErrorState(grid, err, loadMLBStandings);
+        ErrorHandler.toast(err.message, 'error', { title: 'Failed to Load MLB Standings' });
+    }
+}
+
+function displayMLBStandings(divisions, league = 'AL') {
+    _mlbStandingsLeague = league;
+    AppState._mlbStandingsLeague = league;
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'standings-container';
+
+    const DIV_ORDER = {
+        AL: ['AL East', 'AL Central', 'AL West'],
+        NL: ['NL East', 'NL Central', 'NL West'],
+    };
+    const leagueDivs = divisions.filter(d => d.league === league);
+    const ordered = (DIV_ORDER[league] || [])
+        .map(name => leagueDivs.find(d => d.division === name))
+        .filter(Boolean);
+
+    const tabHtml = `
+        <div class="standings-tabs">
+            <button class="standings-tab ${league === 'AL' ? 'active' : ''}"
+                onclick="displayMLBStandings(AppState.mlbStandings,'AL')">American League</button>
+            <button class="standings-tab ${league === 'NL' ? 'active' : ''}"
+                onclick="displayMLBStandings(AppState.mlbStandings,'NL')">National League</button>
+        </div>
+    `;
+
+    const divsHtml = ordered.map(div => {
+        const rowsHtml = div.teams.map((team, idx) => {
+            const rank       = idx + 1;
+            const streakWin  = team.streak.startsWith('W');
+            const streakCls  = team.streak
+                ? (streakWin ? 'standings-streak--win' : 'standings-streak--loss')
+                : '';
+            // Rank 1 = division leader (playoff); ranks 2-3 = WC contenders
+            const rowCls = rank === 1 ? 'standings-row--playoff' : rank <= 3 ? 'standings-row--playin' : '';
+
+            const clinchBadge = team.clinched === 'z'
+                ? `<span class="clinch-badge clinch-badge--div" title="Clinched Division">z</span>`
+                : team.clinched === 'x' || team.clinched === 'y'
+                ? `<span class="clinch-badge clinch-badge--po" title="Clinched Playoff">x</span>`
+                : '';
+
+            const logo = getMLBTeamLogoUrl(team.teamId);
+            // Separator between division leader and rest of division
+            const sepAfterLeader = rank === 1
+                ? `<tr class="standings-sep standings-sep--playoff"><td colspan="10"><span>Wild Card zone</span></td></tr>`
+                : '';
+
+            return `
+                <tr class="standings-row ${rowCls}">
+                    <td class="standings-rank">${rank}</td>
+                    <td class="standings-team-cell">
+                        ${logo ? `<img class="standings-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+                        <span class="standings-team-name">${team.teamName}</span>
+                        ${clinchBadge}
+                    </td>
+                    <td class="standings-num">${team.wins}</td>
+                    <td class="standings-num">${team.losses}</td>
+                    <td class="standings-num standings-pct">${team.pct}</td>
+                    <td class="standings-num standings-gb">${team.gb}</td>
+                    <td class="standings-num">${team.last10}</td>
+                    <td class="standings-num ${streakCls}">${team.streak || '—'}</td>
+                    <td class="standings-num standings-split">${team.home}</td>
+                    <td class="standings-num standings-split">${team.away}</td>
+                </tr>
+                ${sepAfterLeader}
+            `;
+        }).join('');
+
+        return `
+            <div class="mlb-division-panel">
+                <h3 class="mlb-division-title">${div.division}</h3>
+                <div class="standings-table-wrap">
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th class="standings-th-rank">#</th>
+                                <th class="standings-th-team">Team</th>
+                                <th title="Wins">W</th>
+                                <th title="Losses">L</th>
+                                <th title="Win percentage">PCT</th>
+                                <th title="Games behind">GB</th>
+                                <th title="Last 10 games">L10</th>
+                                <th title="Current streak">STRK</th>
+                                <th title="Home record">HOME</th>
+                                <th title="Away record">AWAY</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.innerHTML = `
+        ${tabHtml}
+        <div class="mlb-standings-grid">${divsHtml}</div>
+        <div class="standings-legend">
+            <span class="legend-item"><span class="legend-dot legend-dot--playoff"></span>Division Leader</span>
+            <span class="legend-item"><span class="legend-dot legend-dot--playin"></span>Wild Card Zone</span>
+            <span class="legend-item"><span class="clinch-badge clinch-badge--div">z</span>Clinched Division</span>
+            <span class="legend-item"><span class="clinch-badge clinch-badge--po">x</span>Clinched Playoff</span>
+        </div>
+    `;
+}
+
 // ── State initialisation (runs immediately on script load) ────
 Object.assign(AppState, {
-    currentSport:    'nba',
-    mlbTeams:        [],
-    mlbPlayers:      { hitting: [], pitching: [] },
-    mlbPlayerStats:  { hitting: {}, pitching: {} },
-    mlbGames:        [],
-    mlbStatsGroup:   'hitting',
-    mlbLeaderSplits: null,
+    currentSport:          'nba',
+    mlbTeams:              [],
+    mlbPlayers:            { hitting: [], pitching: [] },
+    mlbPlayerStats:        { hitting: {}, pitching: {} },
+    mlbGames:              [],
+    mlbStatsGroup:         'hitting',
+    mlbLeaderSplits:       null,
+    mlbStandings:          null,
+    _mlbStandingsLeague:   'AL',
 });
 
 if (typeof window !== 'undefined') {
@@ -1168,6 +1401,8 @@ if (typeof window !== 'undefined') {
     window.displayMLBTeams         = displayMLBTeams;
     window.loadMLBLeaderboards     = loadMLBLeaderboards;
     window.displayMLBLeaderboards  = displayMLBLeaderboards;
+    window.loadMLBStandings        = loadMLBStandings;
+    window.displayMLBStandings     = displayMLBStandings;
     window.getMLBTeamColors        = getMLBTeamColors;
     window._renderMLBGroupToggle   = _renderMLBGroupToggle;
 }

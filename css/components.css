@@ -1300,6 +1300,60 @@
     .standings-logo { width: 18px; height: 18px; }
 }
 
+/* ── MLB Standings Grid ───────────────────────────────────── */
+.mlb-standings-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-top: 0;
+}
+
+.mlb-division-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.mlb-division-title {
+    padding: 0.6rem 0.875rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: rgba(6,12,24,0.6);
+    border-bottom: 1px solid var(--border-default);
+    margin: 0;
+}
+
+.mlb-division-panel .standings-table-wrap {
+    border: none;
+    border-radius: 0;
+}
+
+.mlb-division-panel .standings-table {
+    min-width: unset;
+    font-size: 0.8rem;
+}
+
+.mlb-division-panel .standings-team-name {
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+@media (max-width: 900px) {
+    .mlb-standings-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .mlb-standings-grid { grid-template-columns: 1fr; }
+    .mlb-division-panel .standings-table { font-size: 0.75rem; }
+}
+
 /* ── Ticker Live Badge ────────────────────────────────────── */
 .ticker-live-badge {
     display: inline-flex;
