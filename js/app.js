@@ -69,6 +69,24 @@ fetchESPNPlayerMap()
 // Populate the ticker independently so it works on first load
 // (games tab may not have been visited yet)
 (async () => {
+    // Show shimmer skeleton while games are fetching to eliminate empty-ticker flicker
+    const tickerEl = document.getElementById('scoreTicker');
+    if (tickerEl) {
+        tickerEl.innerHTML = Array.from({ length: 6 }, () =>
+            `<div class="ticker__item" style="opacity:0.35">
+                <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
+                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+                <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
+                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                <span class="ticker-divider">–</span>
+                <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
+                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
+                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+            </div>`
+        ).join('');
+    }
+
     try {
         const games = await fetchGamesAPI();
         if (AppState.allGames.length === 0) AppState.allGames = games;
@@ -76,6 +94,7 @@ fetchESPNPlayerMap()
         Logger.info('Ticker initialised', { count: games.length }, 'APP');
     } catch (error) {
         Logger.warn('Ticker init failed', error.message, 'APP');
+        if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
     }
 })();
 

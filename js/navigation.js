@@ -349,7 +349,7 @@ function _loadFromHash() {
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
     } else if (teamGameMatch) {
-        // More specific pattern must be checked before the plain team match
+        // More specific pattern checked before plain team match
         _restoreTeamGameDetail(parseInt(teamGameMatch[1]), parseInt(teamGameMatch[2]));
     } else if (teamMatch) {
         _restoreTeamDetail(parseInt(teamMatch[1]));
@@ -358,6 +358,15 @@ function _loadFromHash() {
         _applySportUI('mlb');
         showMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), 'hitting');
     } else {
+        // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
+        const knownPrefixes = ['player-', 'team-', 'mlb-player-'];
+        if (knownPrefixes.some(p => hash.startsWith(p))) {
+            Logger.warn(`Unrecognised hash: #${hash} — falling back to home`, undefined, 'NAV');
+            ErrorHandler.toast(`Link not found (#${hash}) — showing home view.`, 'warn', { duration: 4000 });
+            navigateTo('players', false);
+            return;
+        }
+
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder'];
         if (mlbViews.includes(hash)) {

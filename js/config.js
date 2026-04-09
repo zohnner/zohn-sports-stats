@@ -42,6 +42,9 @@ const NBA_TEAM_COLORS = {
  * Falls back to a neutral dark colour if the team is not found.
  */
 function getTeamColors(abbreviation) {
+    if (abbreviation && !NBA_TEAM_COLORS[abbreviation]) {
+        Logger.debug(`Unknown team abbreviation: "${abbreviation}"`, undefined, 'CONFIG');
+    }
     return NBA_TEAM_COLORS[abbreviation] || { primary: '#334155', secondary: '#64748b', name: '' };
 }
 
