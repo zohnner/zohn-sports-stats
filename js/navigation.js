@@ -53,6 +53,14 @@ function setupNavigation() {
             showMLBPlayerDetail(s.id, s.group || 'hitting');
             return;
         }
+        if (s.view === 'mlb-team') {
+            if (AppState.currentSport !== 'mlb') {
+                AppState.currentSport = 'mlb';
+                _applySportUI('mlb');
+            }
+            _restoreMLBTeamDetail(s.id);
+            return;
+        }
         // If returning to an mlb- view, ensure sport UI matches
         if (typeof s.view === 'string' && s.view.startsWith('mlb-')) {
             if (AppState.currentSport !== 'mlb') {
@@ -327,6 +335,18 @@ async function _restorePlayerDetail(playerId) {
     showPlayerDetail(playerId, false);
 }
 
+async function _restoreMLBTeamDetail(teamId) {
+    Logger.info(`Restoring MLB team detail ${teamId}`, undefined, 'NAV');
+    if (AppState.currentSport !== 'mlb') {
+        AppState.currentSport = 'mlb';
+        _applySportUI('mlb');
+    }
+    if (AppState.mlbTeams.length === 0) {
+        AppState.mlbTeams = await fetchMLBTeams();
+    }
+    showMLBTeamDetail(teamId, false);
+}
+
 async function _restoreTeamDetail(teamId) {
     Logger.info(`Restoring team detail ${teamId}`, undefined, 'NAV');
     if (AppState.allTeams.length === 0) {
@@ -355,6 +375,7 @@ function _loadFromHash() {
     const teamMatch      = hash.match(/^team-(\d+)$/);
     const teamGameMatch  = hash.match(/^team-(\d+)-game-(\d+)$/);
     const mlbPlayerMatch = hash.match(/^mlb-player-(\d+)$/);
+    const mlbTeamMatch   = hash.match(/^mlb-team-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -367,6 +388,8 @@ function _loadFromHash() {
         AppState.currentSport = 'mlb';
         _applySportUI('mlb');
         showMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), 'hitting');
+    } else if (mlbTeamMatch) {
+        _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
         const knownPrefixes = ['player-', 'team-', 'mlb-player-'];
@@ -377,7 +400,7 @@ function _loadFromHash() {
             return;
         }
 
-        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games'];
+        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';

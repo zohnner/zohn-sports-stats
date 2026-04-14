@@ -119,6 +119,42 @@ async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit
     return data.stats?.[0]?.splits || [];
 }
 
+async function fetchMLBTeamSchedule(teamId, daysBack = 15) {
+    const nowET  = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    const fromET = new Date(nowET.getTime() - daysBack * 24 * 60 * 60 * 1000);
+    const fmt    = d => d.toISOString().split('T')[0];
+    const data   = await mlbFetch('/schedule', {
+        sportId:   1,
+        teamId,
+        startDate: fmt(fromET),
+        endDate:   fmt(nowET),
+    }, ApiCache.TTL.SHORT);
+    return (data.dates || [])
+        .flatMap(d => d.games || [])
+        .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
+}
+
+async function fetchMLBRoster(teamId, season = MLB_SEASON) {
+    const data = await mlbFetch(`/teams/${teamId}/roster`, {
+        rosterType: 'active',
+        season,
+    }, ApiCache.TTL.MEDIUM);
+    const POS_ORDER = { C: 0, '1B': 1, '2B': 2, '3B': 3, SS: 4, LF: 5, CF: 6, RF: 7, DH: 8, SP: 9, RP: 10, CL: 11 };
+    return (data.roster || [])
+        .map(p => ({
+            id:           p.person?.id,
+            fullName:     p.person?.fullName || '',
+            jerseyNumber: p.jerseyNumber || '',
+            position:     p.position?.abbreviation || '',
+            positionType: p.position?.type || '',
+        }))
+        .sort((a, b) => {
+            const ap = POS_ORDER[a.position] ?? 20;
+            const bp = POS_ORDER[b.position] ?? 20;
+            return ap !== bp ? ap - bp : a.fullName.localeCompare(b.fullName);
+        });
+}
+
 // ── MLB player view mode ─────────────────────────────────────
 let mlbPlayerViewMode  = 'cards';
 let mlbTableSortField  = 'avg';
@@ -638,8 +674,6 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     const headshotImg = headshotUrl
         ? `<img class="player-headshot player-headshot--detail" src="${headshotUrl}" alt="${player.fullName}" loading="lazy" onerror="this.style.display='none'">`
         : '';
-    const logoUrl = getMLBTeamLogoUrl(player.teamId);
-
     // Computed rate stats (Phase 2 — derived from existing API fields)
     const batting  = group === 'hitting'  ? _computeBattingRates(stats)  : null;
     const pitching = group === 'pitching' ? _computePitchingRates(stats) : null;
@@ -914,6 +948,8 @@ function displayMLBTeams(teams, standings = {}) {
 
         const card    = document.createElement('div');
         card.className = 'team-card';
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', () => showMLBTeamDetail(team.id));
         card.innerHTML = `
             <div class="team-card-header" style="background:linear-gradient(135deg,${colors.primary}dd,${colors.primary}33)">
                 <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.5rem">
@@ -954,12 +990,280 @@ function displayMLBTeams(teams, standings = {}) {
                     <span>${team.firstYearOfPlay || '—'}</span>
                 </div>
             </div>
+            <div class="card-cta">VIEW DETAILS →</div>
         `;
         fragment.appendChild(card);
     });
 
     grid.innerHTML = '';
     grid.appendChild(fragment);
+}
+
+// ── View: Team Detail ─────────────────────────────────────────
+
+async function showMLBTeamDetail(teamId, push = true) {
+    const grid = document.getElementById('playersGrid');
+
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('[data-view="mlb-teams"]').forEach(t => t.classList.add('active'));
+
+    // Optimistically find the team for the loading screen
+    let team = AppState.mlbTeams.find(t => t.id === teamId);
+    const loadColors = team ? getMLBTeamColors(team.abbreviation) : { primary: '#334155' };
+    const loadLogo   = getMLBTeamLogoUrl(teamId);
+
+    if (window.setBreadcrumb) setBreadcrumb('mlb-teams', team?.name || `Team ${teamId}`);
+    if (push) history.pushState({ view: 'mlb-team', id: teamId }, '', `#mlb-team-${teamId}`);
+
+    grid.className = 'player-detail-container';
+    grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:4rem">
+            <div class="player-detail-avatar" style="background:linear-gradient(135deg,${loadColors.primary}cc,${loadColors.primary}55);margin:0 auto 1.25rem">
+                ${loadLogo ? `<img src="${loadLogo}" style="width:100%;height:100%;object-fit:contain;padding:10px" loading="lazy" onerror="this.style.display='none'">` : (team?.abbreviation || '?')}
+            </div>
+            <p style="color:var(--color-text-secondary);font-size:1.1rem">Loading roster…</p>
+            <div class="loading-spinner" style="margin-top:1.5rem"></div>
+        </div>
+    `;
+
+    try {
+        if (!team) {
+            if (AppState.mlbTeams.length === 0) AppState.mlbTeams = await fetchMLBTeams();
+            team = AppState.mlbTeams.find(t => t.id === teamId);
+        }
+
+        const [roster, recentGames] = await Promise.all([
+            fetchMLBRoster(teamId),
+            fetchMLBTeamSchedule(teamId, 15),
+        ]);
+
+        AppState._mlbTeamRecentGames[teamId] = recentGames;
+        AppState._mlbTeamRosters[teamId]     = roster;
+
+        // Pull standings record if available
+        let rec = null;
+        if (AppState.mlbStandings) {
+            for (const div of AppState.mlbStandings) {
+                const found = div.teams.find(t => t.teamId === teamId);
+                if (found) { rec = found; break; }
+            }
+        }
+
+        const colors = getMLBTeamColors(team?.abbreviation || '');
+        grid.innerHTML = `
+            ${_mlbTeamHeader(team, teamId, colors, rec)}
+            ${_mlbRecentGamesCard(recentGames, teamId)}
+            ${_mlbRosterCard(roster, colors)}
+        `;
+    } catch (err) {
+        Logger.error('Failed to load MLB team detail', err, 'MLB');
+        grid.innerHTML = `
+            <div class="error-state">
+                <div class="error-state-icon">⚠️</div>
+                <h3 class="error-state-title">Failed to Load Team</h3>
+                <p class="error-state-message">${err.message}</p>
+                <button class="retry-btn" onclick="backToMLBTeams()">← Back to Teams</button>
+            </div>
+        `;
+    }
+}
+
+function backToMLBTeams() {
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('[data-view="mlb-teams"]').forEach(t => t.classList.add('active'));
+    history.pushState({ view: 'mlb-teams' }, '', '#mlb-teams');
+    if (window.setBreadcrumb) setBreadcrumb('mlb-teams', null);
+    displayMLBTeams(AppState.mlbTeams);
+}
+
+function _mlbTeamHeader(team, teamId, colors, rec) {
+    const name    = team?.name || `Team ${teamId}`;
+    const abbr    = team?.abbreviation || '?';
+    const logo    = getMLBTeamLogoUrl(teamId);
+    const divName = (team?.division?.name || '')
+        .replace('American League ', 'AL ')
+        .replace('National League ', 'NL ');
+    const lgName  = (team?.league?.name || '')
+        .replace('American League', 'AL')
+        .replace('National League', 'NL');
+
+    const standingsBio = rec ? `
+        <div class="player-bio-grid" style="margin-top:0.75rem">
+            <div class="player-bio-item"><span class="bio-label">Record</span><span class="bio-value" style="font-weight:800">${rec.wins}–${rec.losses}</span></div>
+            <div class="player-bio-item"><span class="bio-label">PCT</span><span class="bio-value">${rec.pct}</span></div>
+            <div class="player-bio-item"><span class="bio-label">GB</span><span class="bio-value">${rec.gb}</span></div>
+            ${rec.streak ? `<div class="player-bio-item"><span class="bio-label">Streak</span><span class="bio-value" style="color:${rec.streak.startsWith('W') ? '#10b981' : '#f87171'};font-weight:700">${rec.streak}</span></div>` : ''}
+            <div class="player-bio-item"><span class="bio-label">Last 10</span><span class="bio-value">${rec.last10}</span></div>
+            <div class="player-bio-item"><span class="bio-label">Home</span><span class="bio-value">${rec.home}</span></div>
+            <div class="player-bio-item"><span class="bio-label">Away</span><span class="bio-value">${rec.away}</span></div>
+        </div>
+    ` : '';
+
+    return `
+        <div class="player-detail-header"
+             style="background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,rgba(15,23,42,0.85) 55%);
+                    border-top:3px solid ${colors.primary}88">
+            <button onclick="backToMLBTeams()" class="back-button">← Teams</button>
+            <div class="player-hero">
+                <div class="player-detail-avatar"
+                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                            color:#fff;font-size:1.75rem;font-weight:800;
+                            box-shadow:0 0 40px ${colors.primary}44">
+                    ${logo ? `<img class="player-headshot player-headshot--detail" src="${logo}" alt="${name}" loading="lazy" style="object-fit:contain;padding:10px" onerror="this.style.display='none'">` : abbr}
+                </div>
+                <div class="player-hero-info">
+                    <div class="player-hero-top">
+                        <h1 class="player-detail-name">${name}</h1>
+                        <span class="player-hero-pos">${abbr}</span>
+                    </div>
+                    <p class="player-detail-meta" style="color:var(--color-text-secondary)">${lgName}${divName ? ' · ' + divName : ''}</p>
+                    ${team?.venue?.name ? `<p class="player-detail-meta" style="color:var(--color-text-muted)">${team.venue.name}${team.firstYearOfPlay ? ' · Est. ' + team.firstYearOfPlay : ''}</p>` : ''}
+                    ${standingsBio}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _mlbRecentGamesCard(games, teamId) {
+    if (!games || games.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title">Recent Games</h2>
+                <p style="color:var(--color-text-muted);text-align:center;padding:2rem">No recent games found.</p>
+            </div>
+        `;
+    }
+
+    const rows = games.slice(0, 12).map(g => {
+        const homeTeam  = g.teams?.home?.team || {};
+        const awayTeam  = g.teams?.away?.team || {};
+        const homeScore = g.teams?.home?.score ?? null;
+        const awayScore = g.teams?.away?.score ?? null;
+        const hasScore  = homeScore != null && awayScore != null;
+
+        const isHome  = homeTeam.id === teamId;
+        const myScore = isHome ? homeScore : awayScore;
+        const opScore = isHome ? awayScore : homeScore;
+        const oppTeam = isHome ? awayTeam : homeTeam;
+        const oppAbbr = oppTeam.abbreviation || '???';
+        const oppLogo = getMLBTeamLogoUrl(oppTeam.id);
+
+        const status   = g.status?.detailedState || '';
+        const isFinal  = status === 'Final';
+        const isLive   = g.status?.abstractGameState === 'Live';
+        const isWin    = isFinal && hasScore && myScore > opScore;
+        const isLoss   = isFinal && hasScore && myScore < opScore;
+        const outcome  = isFinal && hasScore ? (isWin ? 'W' : 'L') : (isLive ? 'LIVE' : '—');
+        const outClr   = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-muted)';
+        const scoreStr = hasScore ? `${myScore}–${opScore}` : '—';
+        const scoreClr = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-secondary)';
+        const ha       = isHome ? 'vs' : '@';
+
+        let dateStr = '—';
+        if (g.gameDate) {
+            try { dateStr = new Date(g.gameDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        }
+
+        return `
+            <div class="roster-row">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                    <span style="font-weight:900;font-size:0.875rem;min-width:26px;color:${outClr}">${outcome}</span>
+                    <span style="color:var(--color-text-muted);font-size:0.75rem;min-width:54px">${dateStr}</span>
+                    <span style="color:var(--color-text-muted);font-size:0.75rem">${ha}</span>
+                    ${oppLogo ? `<img src="${oppLogo}" alt="" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    <span style="font-weight:600;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${oppAbbr}</span>
+                </div>
+                <span style="font-weight:700;font-size:0.95rem;color:${scoreClr};flex-shrink:0">${scoreStr}</span>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Recent Games</h2>
+            <div class="roster-list">${rows}</div>
+        </div>
+    `;
+}
+
+function _mlbRosterCard(roster, colors) {
+    if (!roster || roster.length === 0) {
+        return `
+            <div class="stats-card" style="grid-column:1/-1">
+                <h2 class="detail-section-title">Roster</h2>
+                <p style="color:var(--color-text-muted);text-align:center;padding:2rem">No roster data available.</p>
+            </div>
+        `;
+    }
+
+    const rows = roster.map(p => {
+        const isPitcher  = p.positionType === 'Pitcher';
+        const hitStats   = AppState.mlbPlayerStats.hitting?.[p.id];
+        const pitStats   = AppState.mlbPlayerStats.pitching?.[p.id];
+        const stats      = isPitcher ? (pitStats || hitStats) : (hitStats || pitStats);
+
+        let statsHtml = '';
+        if (stats && isPitcher) {
+            const era  = stats.era  != null ? parseFloat(stats.era).toFixed(2)  : '—';
+            const whip = stats.whip != null ? parseFloat(stats.whip).toFixed(2) : '—';
+            const so   = stats.strikeOuts ?? '—';
+            statsHtml = `
+                <div class="roster-stats">
+                    <span style="color:var(--color-pts)">${era}</span>
+                    <span style="color:var(--color-reb)">${whip}</span>
+                    <span style="color:var(--color-ast)">${so}</span>
+                </div>
+                <div class="roster-labels"><span>ERA</span><span>WHIP</span><span>K</span></div>
+            `;
+        } else if (stats) {
+            const avg = stats.avg || '—';
+            const hr  = stats.homeRuns ?? '—';
+            const rbi = stats.rbi     ?? '—';
+            statsHtml = `
+                <div class="roster-stats">
+                    <span style="color:var(--color-pts)">${avg}</span>
+                    <span style="color:var(--color-reb)">${hr}</span>
+                    <span style="color:var(--color-ast)">${rbi}</span>
+                </div>
+                <div class="roster-labels"><span>AVG</span><span>HR</span><span>RBI</span></div>
+            `;
+        }
+
+        const initials    = (p.fullName || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
+        const headshotUrl = getMLBPlayerHeadshotUrl(p.id);
+        const jersey      = p.jerseyNumber ? `#${p.jerseyNumber}` : '';
+
+        // Link to player detail if stats were loaded for them
+        const group     = isPitcher ? 'pitching' : 'hitting';
+        const inPlayers = AppState.mlbPlayers[group]?.find(pl => pl.id === p.id);
+        const clickAttr = inPlayers ? `onclick="showMLBPlayerDetail(${p.id},'${group}')" style="cursor:pointer"` : '';
+
+        return `
+            <div class="roster-row" ${clickAttr}>
+                <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden">
+                    ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" onerror="this.style.display='none'">` : ''}
+                    <span style="position:relative">${initials}</span>
+                </div>
+                <div class="roster-info">
+                    <span class="roster-name">${p.fullName}</span>
+                    <span class="roster-meta">${p.position || 'N/A'}${jersey ? ' · ' + jersey : ''}</span>
+                </div>
+                ${statsHtml}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Active Roster · ${roster.length} Players</h2>
+            <div class="roster-list">${rows}</div>
+        </div>
+    `;
 }
 
 // ── View: Leaderboards ────────────────────────────────────────
@@ -1384,6 +1688,8 @@ Object.assign(AppState, {
     mlbLeaderSplits:       null,
     mlbStandings:          null,
     _mlbStandingsLeague:   'AL',
+    _mlbTeamRecentGames:   {},
+    _mlbTeamRosters:       {},
 });
 
 if (typeof window !== 'undefined') {
@@ -1399,6 +1705,8 @@ if (typeof window !== 'undefined') {
     window.updateMLBTicker         = updateMLBTicker;
     window.loadMLBTeams            = loadMLBTeams;
     window.displayMLBTeams         = displayMLBTeams;
+    window.showMLBTeamDetail       = showMLBTeamDetail;
+    window.backToMLBTeams          = backToMLBTeams;
     window.loadMLBLeaderboards     = loadMLBLeaderboards;
     window.displayMLBLeaderboards  = displayMLBLeaderboards;
     window.loadMLBStandings        = loadMLBStandings;
