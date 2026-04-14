@@ -103,11 +103,6 @@
             </nav>
         </div>
 
-        <!-- Ask button in header -->
-        <button class="ask-trigger-btn" onclick="AskEngine.togglePanel()" aria-label="Ask a question">
-            <span class="ask-trigger-icon">?</span>
-            <span class="ask-trigger-label">Ask</span>
-        </button>
     </header>
 
     <div class="ticker-wrap">
@@ -117,27 +112,6 @@
         </div>
     </div>
 
-    <!-- Ask / Q&A slide-over panel -->
-    <div id="askPanel" class="ask-panel" role="dialog" aria-label="Ask about NBA stats">
-        <div class="ask-panel-inner">
-            <div class="ask-panel-header">
-                <div>
-                    <h2 class="ask-panel-title">Ask ZohnStats</h2>
-                    <p class="ask-panel-sub">Natural language queries over live NBA data</p>
-                </div>
-                <button class="ask-close-btn" onclick="AskEngine.closePanel()" aria-label="Close">✕</button>
-            </div>
-            <div class="ask-input-row">
-                <input id="askInput" class="ask-input" type="text"
-                       placeholder="Who leads in points? Lakers record? Top 5 rebounders…"
-                       autocomplete="off" spellcheck="false"
-                       onkeydown="if(event.key==='Enter')AskEngine.submit()">
-                <button class="ask-submit-btn" onclick="AskEngine.submit()">Ask</button>
-            </div>
-            <div id="askOutput" class="ask-output"></div>
-        </div>
-    </div>
-    <div class="ask-backdrop" onclick="AskEngine.closePanel()"></div>
 
     <!-- Mobile bottom navigation — visible only on small screens -->
     <nav class="mobile-nav" id="mobile-nba-nav" aria-label="Mobile NBA navigation">
@@ -239,7 +213,6 @@
     <script src="js/standings.js"></script>
     <script src="js/schema.js"></script>
     <script src="js/db.js"></script>
-    <script src="js/ask.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/app.js"></script>
 </body>

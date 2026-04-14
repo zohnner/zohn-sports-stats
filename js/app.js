@@ -88,10 +88,17 @@ fetchESPNPlayerMap()
     }
 
     try {
-        const games = await fetchGamesAPI();
-        if (AppState.allGames.length === 0) AppState.allGames = games;
-        updateTicker(games);
-        Logger.info('Ticker initialised', { count: games.length }, 'APP');
+        if (AppState.currentSport === 'mlb') {
+            const games = await fetchMLBSchedule(7);
+            if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
+            updateMLBTicker(games);
+            Logger.info('MLB ticker initialised', { count: games.length }, 'APP');
+        } else {
+            const games = await fetchGamesAPI();
+            if (AppState.allGames.length === 0) AppState.allGames = games;
+            updateTicker(games);
+            Logger.info('Ticker initialised', { count: games.length }, 'APP');
+        }
     } catch (error) {
         Logger.warn('Ticker init failed', error.message, 'APP');
         if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
