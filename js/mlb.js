@@ -45,6 +45,17 @@ function getMLBTeamColors(abbr) {
     return MLB_TEAM_COLORS[abbr] || { primary: '#334155', secondary: '#64748b' };
 }
 
+// Derive a short abbreviation from a team object when the API omits it
+function _mlbTeamAbbr(team) {
+    if (!team) return '???';
+    if (team.abbreviation) return team.abbreviation;
+    // Fall back to a lookup in the already-loaded teams list
+    const cached = AppState?.mlbTeams?.find(t => t.id === team.id);
+    if (cached?.abbreviation) return cached.abbreviation;
+    // Last resort: initials from team name words ("Kansas City Royals" → "KCR")
+    return (team.name || '').split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase() || '???';
+}
+
 function getMLBTeamLogoUrl(teamId) {
     return teamId ? `https://www.mlbstatic.com/team-logos/${teamId}.svg` : null;
 }
@@ -99,6 +110,7 @@ async function fetchMLBSchedule(daysBack = 7) {
         sportId:   1,
         startDate: fmt(fromET),
         endDate:   fmt(nowET),
+        hydrate:   'team',
     }, ApiCache.TTL.SHORT);
     return (data.dates || [])
         .flatMap(d => d.games || [])
@@ -128,6 +140,7 @@ async function fetchMLBTeamSchedule(teamId, daysBack = 15) {
         teamId,
         startDate: fmt(fromET),
         endDate:   fmt(nowET),
+        hydrate:   'team',
     }, ApiCache.TTL.SHORT);
     return (data.dates || [])
         .flatMap(d => d.games || [])
@@ -859,8 +872,8 @@ function _createMLBGameCard(game) {
 
     const homeLogo = getMLBTeamLogoUrl(homeTeam.id);
     const awayLogo = getMLBTeamLogoUrl(awayTeam.id);
-    const homeAbbr = (homeTeam.abbreviation || '?').slice(0, 3);
-    const awayAbbr = (awayTeam.abbreviation || '?').slice(0, 3);
+    const homeAbbr = _mlbTeamAbbr(homeTeam);
+    const awayAbbr = _mlbTeamAbbr(awayTeam);
 
     card.innerHTML = `
         <div class="game-card-header">
@@ -1150,7 +1163,7 @@ function _mlbRecentGamesCard(games, teamId) {
         const myScore = isHome ? homeScore : awayScore;
         const opScore = isHome ? awayScore : homeScore;
         const oppTeam = isHome ? awayTeam : homeTeam;
-        const oppAbbr = oppTeam.abbreviation || '???';
+        const oppAbbr = _mlbTeamAbbr(oppTeam);
         const oppLogo = getMLBTeamLogoUrl(oppTeam.id);
 
         const status   = g.status?.detailedState || '';
@@ -1440,8 +1453,8 @@ function updateMLBTicker(games) {
     const items = [...scored, ...scored].map(g => {
         const hs      = g.teams?.home?.score ?? 0;
         const vs      = g.teams?.away?.score ?? 0;
-        const ha      = g.teams?.home?.team?.abbreviation || '???';
-        const va      = g.teams?.away?.team?.abbreviation || '???';
+        const ha      = _mlbTeamAbbr(g.teams?.home?.team);
+        const va      = _mlbTeamAbbr(g.teams?.away?.team);
         const homeId  = g.teams?.home?.team?.id;
         const awayId  = g.teams?.away?.team?.id;
         const st      = g.status?.detailedState || 'Final';
