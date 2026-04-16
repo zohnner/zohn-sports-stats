@@ -1740,6 +1740,60 @@
     letter-spacing: 0.4px;
 }
 
+/* ── Career / Multi-season Stats Table ───────────────────────── */
+
+.career-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: var(--space-3);
+}
+.career-table-wrap::-webkit-scrollbar { height: 4px; }
+.career-table-wrap::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 2px; }
+
+.career-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    min-width: 540px;
+}
+.career-table thead th {
+    padding: 0.45rem 0.75rem;
+    text-align: right;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--bg-table-head);
+    border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
+    cursor: default;
+}
+.career-table thead th:first-child { text-align: left; border-radius: var(--radius-sm) 0 0 0; }
+.career-table thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+
+.career-table tbody tr {
+    border-bottom: 1px solid var(--border-default);
+    transition: background var(--transition-fast);
+}
+.career-table tbody tr:last-child { border-bottom: none; }
+.career-table tbody tr:hover { background: var(--bg-interactive); }
+
+.career-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: right;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.career-season {
+    text-align: left !important;
+    font-weight: 700 !important;
+    color: var(--accent-light) !important;
+    white-space: nowrap;
+}
+.career-gp { color: var(--text-muted) !important; font-weight: 400 !important; }
+
 /* ── NBA Advanced Efficiency Card ─────────────────────────────── */
 
 .adv-stats-grid {

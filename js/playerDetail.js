@@ -100,6 +100,11 @@ async function showPlayerDetail(playerId, push = true) {
 
             ${_advancedStatsCard(stats)}
 
+            <div class="stats-card" id="careerStatsCard">
+                <h2 class="detail-section-title">Career / Season History</h2>
+                <div style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">Loading…</div>
+            </div>
+
             ${_chartsCard(recentGames)}
 
             ${hasPlayers ? _compareCard(player) : ''}
@@ -120,6 +125,9 @@ async function showPlayerDetail(playerId, push = true) {
 
             document.getElementById('pd-compare-select')
                 ?.addEventListener('change', e => _onCompareChange(e, player, stats));
+
+            // Career stats — fetch last 4 seasons in background, render when ready
+            _loadCareerStats(player.id, CURRENT_SEASON);
         });
 
     } catch (error) {
@@ -408,6 +416,83 @@ function _shootingCard(stats) {
                     <div style="color:var(--color-text-muted);font-size:0.82rem;margin-top:0.25rem">${sub(stats.ftm, stats.fta)}</div>
                 </div>
             </div>
+        </div>
+    `;
+}
+
+// ── Career / Multi-season Stats ───────────────────────────────
+
+async function _loadCareerStats(playerId, currentSeason) {
+    const card = document.getElementById('careerStatsCard');
+    if (!card) return;
+
+    const seasons = [currentSeason, currentSeason - 1, currentSeason - 2, currentSeason - 3];
+
+    try {
+        // Fetch all seasons in parallel
+        const results = await Promise.all(
+            seasons.map(yr =>
+                fetchPlayerStatsAPI([playerId], yr)
+                    .then(rows => ({ season: yr, stats: rows[0] || null }))
+                    .catch(() => ({ season: yr, stats: null }))
+            )
+        );
+
+        const rows = results.filter(r => r.stats && r.stats.games_played > 0);
+        if (!rows.length) {
+            card.innerHTML = `<h2 class="detail-section-title">Career / Season History</h2>
+                <p style="color:var(--text-muted);font-size:0.85rem">No historical data available.</p>`;
+            return;
+        }
+
+        card.innerHTML = _careerStatsCard(rows);
+    } catch (_) {
+        card.remove();
+    }
+}
+
+function _careerStatsCard(rows) {
+    const p = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+    const r = (v, d = 1) => v != null ? parseFloat(v).toFixed(d) : '—';
+    const seasonLabel = yr => `${yr}–${String(yr + 1).slice(-2)}`;
+
+    const colHtml = rows.map(({ season, stats: s }) => `
+        <td class="career-season">${seasonLabel(season)}</td>
+        <td>${r(s.pts)}</td>
+        <td>${r(s.reb)}</td>
+        <td>${r(s.ast)}</td>
+        <td>${r(s.stl)}</td>
+        <td>${r(s.blk)}</td>
+        <td>${p(s.fg_pct)}</td>
+        <td>${p(s.fg3_pct)}</td>
+        <td>${p(s.ft_pct)}</td>
+        <td>${r(s.min)}</td>
+        <td class="career-gp">${s.games_played ?? '—'}</td>
+    `).join('</tr><tr>');
+
+    return `
+        <h2 class="detail-section-title">Career / Season History</h2>
+        <div class="career-table-wrap">
+            <table class="career-table">
+                <thead>
+                    <tr>
+                        <th>Season</th>
+                        <th title="Points per game">PTS</th>
+                        <th title="Rebounds per game">REB</th>
+                        <th title="Assists per game">AST</th>
+                        <th title="Steals per game">STL</th>
+                        <th title="Blocks per game">BLK</th>
+                        <th title="Field goal percentage">FG%</th>
+                        <th title="Three-point percentage">3P%</th>
+                        <th title="Free throw percentage">FT%</th>
+                        <th title="Minutes per game">MIN</th>
+                        <th title="Games played">GP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>${colHtml}</tr>
+                </tbody>
+            </table>
         </div>
     `;
 }
