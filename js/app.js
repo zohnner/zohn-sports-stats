@@ -1,4 +1,4 @@
-Logger.info('Initializing ZohnStats…', undefined, 'APP');
+Logger.info('Initializing SportsStrata…', undefined, 'APP');
 
 // Sport switcher — toggles between NBA and MLB
 (function setupSportSwitcher() {
@@ -43,16 +43,6 @@ Logger.info('Initializing ZohnStats…', undefined, 'APP');
 
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
-
-// Ticker sits right below the sticky header — keep its top in sync
-(function fixStickyTicker() {
-    const header = document.querySelector('header');
-    const ticker = document.querySelector('.ticker-wrap');
-    if (!header || !ticker) return;
-    const update = () => { ticker.style.top = header.offsetHeight + 'px'; };
-    update();
-    new ResizeObserver(update).observe(header);
-})();
 
 // Fetch ESPN player map — refresh headshots when ready, then sync players to DB
 fetchESPNPlayerMap()
@@ -149,3 +139,143 @@ fetchNBAStandings()
 })();
 
 Logger.info('App bootstrap complete', undefined, 'APP');
+
+// ── Home / Landing page ───────────────────────────────────────
+
+function loadHome() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'home-container';
+
+    const _stat = (target, label, suffix = '+') =>
+        `<div class="home-stat">
+            <div class="home-stat-num" data-target="${target}" data-suffix="${suffix}">0</div>
+            <div class="home-stat-lbl">${label}</div>
+        </div>`;
+
+    grid.innerHTML = `
+        <div class="home-hero">
+            <div class="home-hero-glow"></div>
+            <div class="home-hero-content">
+                <div class="home-hero-badge">⚡ Real-time Sports Analytics</div>
+                <h1 class="home-hero-title">SportsStrata</h1>
+                <p class="home-hero-sub">Serious stats for serious fans</p>
+                <div class="home-stats-strip">
+                    ${_stat(540, 'NBA Players')}
+                    ${_stat(750, 'MLB Players')}
+                    ${_stat(60, 'MLB Teams & Rosters')}
+                    ${_stat(4, 'Arcade Games', '')}
+                </div>
+            </div>
+        </div>
+
+        <div class="home-sports-grid">
+            <button class="home-sport-card home-sport-card--nba" onclick="enterSport('nba')">
+                <div class="home-sport-icon">🏀</div>
+                <div class="home-sport-name">NBA</div>
+                <div class="home-sport-desc">Players · Leaders · Teams · Scores · Standings</div>
+                <div class="home-sport-cta">Explore NBA →</div>
+            </button>
+            <button class="home-sport-card home-sport-card--mlb" onclick="enterSport('mlb')">
+                <div class="home-sport-icon">⚾</div>
+                <div class="home-sport-name">MLB</div>
+                <div class="home-sport-desc">Players · Leaders · Teams · Scores · Standings</div>
+                <div class="home-sport-cta">Explore MLB →</div>
+            </button>
+            <div class="home-sport-card home-sport-card--soon">
+                <div class="home-sport-icon">🏈</div>
+                <div class="home-sport-name">NFL</div>
+                <div class="home-sport-desc">Coming soon</div>
+                <div class="home-sport-badge">Soon</div>
+            </div>
+            <div class="home-sport-card home-sport-card--soon">
+                <div class="home-sport-icon">🏒</div>
+                <div class="home-sport-name">NHL</div>
+                <div class="home-sport-desc">Coming soon</div>
+                <div class="home-sport-badge">Soon</div>
+            </div>
+        </div>
+
+        <div class="home-features">
+            <div class="home-feature-item">
+                <div class="home-feature-icon">📊</div>
+                <div class="home-feature-text">
+                    <div class="home-feature-title">Live Leaderboards</div>
+                    <div class="home-feature-desc">Real-time rankings updated daily across all major stats</div>
+                </div>
+            </div>
+            <div class="home-feature-item">
+                <div class="home-feature-icon">🎮</div>
+                <div class="home-feature-text">
+                    <div class="home-feature-title">Sports Arcade</div>
+                    <div class="home-feature-desc">Four daily mini-games — new puzzles every day</div>
+                </div>
+            </div>
+            <div class="home-feature-item">
+                <div class="home-feature-icon">🧮</div>
+                <div class="home-feature-text">
+                    <div class="home-feature-title">Stat Builder</div>
+                    <div class="home-feature-desc">Build custom formulas and rank players by any metric</div>
+                </div>
+            </div>
+            <div class="home-feature-item">
+                <div class="home-feature-icon">🔍</div>
+                <div class="home-feature-text">
+                    <div class="home-feature-title">Deep Drill-downs</div>
+                    <div class="home-feature-desc">Splits, game logs, box scores, and radar charts</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Animate stat counters
+    grid.querySelectorAll('.home-stat-num').forEach(el => {
+        const target = parseInt(el.dataset.target, 10);
+        const suffix = el.dataset.suffix ?? '+';
+        let cur = 0;
+        const step = Math.max(1, Math.ceil(target / 40));
+        const tick = () => {
+            cur = Math.min(cur + step, target);
+            el.textContent = cur + (cur === target ? suffix : '');
+            if (cur < target) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    });
+}
+
+// Enter a sport from the home page — handles same-sport case
+function enterSport(sport) {
+    if (AppState.currentSport === sport) {
+        navigateTo(sport === 'mlb' ? 'mlb-players' : 'players');
+    } else {
+        switchSport(sport);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.loadHome   = loadHome;
+    window.enterSport = enterSport;
+}
+
+// ── Light / Dark Mode ─────────────────────────────────────────
+
+function _applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('zs_theme', theme); } catch (_) {}
+    const icon  = document.getElementById('themeToggleIcon');
+    const label = document.getElementById('themeToggleLabel');
+    if (icon)  icon.textContent  = theme === 'light' ? '🌙' : '☀️';
+    if (label) label.textContent = theme === 'light' ? 'Dark mode'  : 'Light mode';
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    _applyTheme(current === 'light' ? 'dark' : 'light');
+}
+
+// Sync the toggle button label on load (theme was set by the inline <head> script)
+_applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
+if (typeof window !== 'undefined') {
+    window.toggleTheme = toggleTheme;
+}

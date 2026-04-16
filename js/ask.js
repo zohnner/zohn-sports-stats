@@ -656,16 +656,21 @@ const AskEngine = (() => {
     }
 
     async function _ensureData() {
-        // Push AppState → IndexedDB whenever standings / players are loaded
-        const standings = AppState.nbaStandings;
-        if (standings?.length) {
-            await StatsDB.syncStandings(standings);
-        }
-        if (AppState.allPlayers?.length) {
-            await StatsDB.syncPlayers(AppState.allPlayers, AppState.nbaStatsMap);
-        }
-        if (AppState.allGames?.length) {
-            await StatsDB.syncGames(AppState.allGames);
+        // Push AppState → IndexedDB whenever standings / players are loaded.
+        // Silently skip if IDB is unavailable — queries will still work from AppState.
+        try {
+            const standings = AppState.nbaStandings;
+            if (standings?.length) {
+                await StatsDB.syncStandings(standings);
+            }
+            if (AppState.allPlayers?.length) {
+                await StatsDB.syncPlayers(AppState.allPlayers, AppState.nbaStatsMap);
+            }
+            if (AppState.allGames?.length) {
+                await StatsDB.syncGames(AppState.allGames);
+            }
+        } catch (err) {
+            Logger.warn('Ask: IndexedDB sync skipped', err.message, 'ASK');
         }
     }
 
@@ -681,7 +686,14 @@ const AskEngine = (() => {
 
         out.innerHTML = `<div class="ask-loading"><div class="loading-spinner" style="margin:0 auto"></div><p>Searching…</p></div>`;
 
-        const result = await query(q);
+        let result;
+        try {
+            result = await query(q);
+        } catch (err) {
+            Logger.error('Ask engine query failed', err, 'ASK');
+            out.innerHTML = `<p class="ask-no-result">Could not complete that query — try again.</p>`;
+            return;
+        }
 
         if (!result) {
             out.innerHTML = `

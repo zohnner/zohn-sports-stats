@@ -3,26 +3,14 @@
    Sticky scores strip below the header.
    ============================================================ */
 
-.ticker-wrap {
-    width: 100%;
-    overflow: hidden;
-    background: rgba(4, 9, 20, 0.98);
-    height: var(--ticker-height);
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid var(--border-default);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    position: sticky;
-    top: var(--header-height);
-    z-index: calc(var(--z-sticky) - 2);
-}
+/* Ticker is now embedded inside the header (.header-ticker in main.css) */
 
 /* "SCORES" label pill */
 .ticker-title {
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
     color: #fff;
     padding: 0 14px;
-    height: 100%;
+    align-self: stretch;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -33,6 +21,8 @@
     white-space: nowrap;
     flex-shrink: 0;
     box-shadow: 4px 0 12px rgba(0,0,0,0.4);
+    position: relative;
+    z-index: 1;
 }
 
 /* "N LIVE" badge inside the title pill */

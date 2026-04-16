@@ -55,10 +55,71 @@ async function loadLeaderboards() {
     }
 }
 
+// ── Shared pill-bar control ───────────────────────────────────
+// labelText : string shown before the pills (e.g. "Min GP:" or "Position:")
+// options   : array of { value, label } or plain values (0 = 'All' for GP)
+// current   : currently selected value
+// onSelect  : called with the selected value
+function _buildPillControl(labelText, options, current, onSelect) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;padding:0.05rem 0 0.2rem;';
+
+    const lbl = document.createElement('span');
+    lbl.textContent = labelText;
+    lbl.style.cssText = 'font-size:0.72rem;font-weight:700;color:#475569;letter-spacing:0.4px;margin-right:0.1rem;white-space:nowrap;flex-shrink:0;';
+    wrap.appendChild(lbl);
+
+    options.forEach(opt => {
+        const val   = (typeof opt === 'object') ? opt.value : opt;
+        const text  = (typeof opt === 'object') ? opt.label : (val === 0 ? 'All' : `${val} GP`);
+        const active = val === current || String(val) === String(current);
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.style.cssText = `
+            padding:0.2rem 0.55rem;border-radius:20px;cursor:pointer;font-weight:600;
+            font-size:0.72rem;font-family:inherit;transition:all 0.18s;
+            border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.1)'};
+            background:${active ? 'rgba(99,102,241,0.22)' : 'rgba(255,255,255,0.03)'};
+            color:${active ? '#818cf8' : '#475569'};
+        `;
+        btn.addEventListener('click', () => onSelect(val));
+        wrap.appendChild(btn);
+    });
+
+    return wrap;
+}
+
+// Backwards-compat alias used by mlb.js
+function _buildMinGPControl(options, current, onSelect) {
+    return _buildPillControl('Min GP:', options, current, onSelect);
+}
+
+const NBA_MINGP_OPTIONS = [0, 10, 20, 50, 70];
+const NBA_POS_OPTIONS   = [
+    { value: 'all', label: 'All' },
+    { value: 'G',   label: 'Guard' },
+    { value: 'F',   label: 'Forward' },
+    { value: 'C',   label: 'Center' },
+];
+
 function displayLeaderboards() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'leaderboards-grid';
+
     const fragment = document.createDocumentFragment();
+
+    // Control row 1 — Min GP
+    fragment.appendChild(_buildPillControl('Min GP:', NBA_MINGP_OPTIONS, AppState.nbaLeaderMinGP, val => {
+        AppState.nbaLeaderMinGP = val;
+        displayLeaderboards();
+    }));
+
+    // Control row 2 — Position
+    fragment.appendChild(_buildPillControl('Position:', NBA_POS_OPTIONS, AppState.nbaLeaderPosition, val => {
+        AppState.nbaLeaderPosition = val;
+        displayLeaderboards();
+    }));
+
     LEADERBOARD_CATEGORIES.forEach(cat => fragment.appendChild(_buildPanel(cat)));
     grid.innerHTML = '';
     grid.appendChild(fragment);
@@ -96,8 +157,15 @@ function _buildLeaderboardRow(player, rank, cat, topVal) {
 }
 
 function _buildPanel(cat) {
+    const minGP  = AppState.nbaLeaderMinGP    || 0;
+    const posFilt = AppState.nbaLeaderPosition || 'all';
     const eligible = AppState.allPlayers
-        .filter(p => AppState.playerStats[p.id]?.[cat.key] != null)
+        .filter(p => {
+            if (AppState.playerStats[p.id]?.[cat.key] == null) return false;
+            if (minGP > 0 && (AppState.playerStats[p.id]?.games_played ?? 0) < minGP) return false;
+            if (posFilt !== 'all' && !p.position?.toUpperCase().includes(posFilt)) return false;
+            return true;
+        })
         .sort((a, b) => AppState.playerStats[b.id][cat.key] - AppState.playerStats[a.id][cat.key]);
 
     const panel = document.createElement('div');
@@ -108,7 +176,7 @@ function _buildPanel(cat) {
     header.style.borderLeftColor = cat.color;
     header.innerHTML = `
         <span class="leaderboard-title">${cat.label}</span>
-        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit} · ${eligible.length} players</span>
+        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit}${minGP > 0 ? ` · ${eligible.length} qualifying` : ` · ${eligible.length} players`}</span>
     `;
 
     const list = document.createElement('div');

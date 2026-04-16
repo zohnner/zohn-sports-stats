@@ -3,6 +3,7 @@
 // ============================================================
 
 let _standingsConf = 'East';
+let _standingsView = 'standings'; // 'standings' | 'power'
 
 async function loadStandings() {
     const grid = document.getElementById('playersGrid');
@@ -38,10 +39,12 @@ function displayStandings(rows, conf) {
 
     const tabHtml = `
         <div class="standings-tabs">
-            <button class="standings-tab ${conf === 'East' ? 'active' : ''}"
-                onclick="displayStandings(AppState.nbaStandings, 'East')">Eastern</button>
-            <button class="standings-tab ${conf === 'West' ? 'active' : ''}"
-                onclick="displayStandings(AppState.nbaStandings, 'West')">Western</button>
+            <button class="standings-tab ${conf === 'East' && _standingsView === 'standings' ? 'active' : ''}"
+                onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'East')">Eastern</button>
+            <button class="standings-tab ${conf === 'West' && _standingsView === 'standings' ? 'active' : ''}"
+                onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'West')">Western</button>
+            <button class="standings-tab ${_standingsView === 'power' ? 'active' : ''}"
+                onclick="displayPowerRankings(AppState.nbaStandings)">⚡ Power</button>
         </div>
     `;
 
@@ -121,7 +124,123 @@ function displayStandings(rows, conf) {
     `;
 }
 
+// ── Power Rankings ─────────────────────────────────────────────
+// Combines season win%, recent form (L10), and current streak into
+// a single score. Presented as a ranked league-wide list.
+
+function _parseL10(l10) {
+    if (!l10) return null;
+    const m = String(l10).match(/(\d+)[-–](\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
+function _parseStreak(streak) {
+    if (!streak) return 0;
+    const m = String(streak).match(/([WL])(\d+)/i);
+    if (!m) return 0;
+    const n = Math.min(parseInt(m[2], 10), 10);
+    return m[1].toUpperCase() === 'W' ? n : -n;
+}
+
+function _powerScore(team) {
+    const gp      = (team.wins || 0) + (team.losses || 0);
+    const winPct  = gp > 0 ? team.wins / gp : 0;
+    const l10W    = _parseL10(team.l10);
+    const l10Pct  = l10W != null ? l10W / 10 : winPct;
+    const streak  = _parseStreak(team.streak);
+    const strFact = (streak + 10) / 20; // normalise -10..+10 → 0..1
+    return winPct * 0.50 + l10Pct * 0.35 + strFact * 0.15;
+}
+
+function displayPowerRankings(rows) {
+    _standingsView = 'power';
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'standings-container';
+
+    if (!rows || !rows.length) {
+        grid.innerHTML = '<p style="padding:2rem;color:var(--text-muted);text-align:center">No standings data available</p>';
+        return;
+    }
+
+    // Score every team and sort
+    const scored = rows.map(t => ({ ...t, _score: _powerScore(t) }))
+        .sort((a, b) => b._score - a._score);
+
+    const maxScore = scored[0]._score;
+
+    const tabHtml = `
+        <div class="standings-tabs">
+            <button class="standings-tab" onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'East')">Eastern</button>
+            <button class="standings-tab" onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'West')">Western</button>
+            <button class="standings-tab active">⚡ Power</button>
+        </div>
+    `;
+
+    const rows_html = scored.map((team, idx) => {
+        const rank   = idx + 1;
+        const gp     = (team.wins || 0) + (team.losses || 0);
+        const winPct = gp > 0 ? (team.wins / gp).toFixed(3) : '.000';
+        const l10W   = _parseL10(team.l10);
+        const streak = team.streak ?? '—';
+        const strVal = _parseStreak(team.streak);
+        const streakColor = strVal >= 3 ? 'var(--color-win)' : strVal <= -3 ? 'var(--color-loss)' : 'var(--text-muted)';
+        const logo   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.teamAbbr.toLowerCase()}.png`;
+
+        // Overall win% bar
+        const barW   = (team._score / maxScore * 100).toFixed(1);
+
+        // L10 pip dots (filled = win)
+        const l10Pips = l10W != null
+            ? Array.from({ length: 10 }, (_, i) =>
+                `<span class="power-pip ${i < l10W ? 'power-pip--win' : 'power-pip--loss'}"></span>`
+              ).join('')
+            : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
+
+        // Heat label
+        const heat = team._score >= 0.65 ? { icon: '🔥', label: 'HOT',   cls: 'power-heat--hot'  }
+                   : team._score >= 0.50 ? { icon: '📈', label: 'SOLID', cls: 'power-heat--solid' }
+                   : team._score >= 0.38 ? { icon: '➡️',  label: 'MID',   cls: 'power-heat--mid'  }
+                   :                       { icon: '❄️',  label: 'COLD',  cls: 'power-heat--cold'  };
+
+        const confBadge = team.conference === 'East'
+            ? '<span class="power-conf power-conf--east">E</span>'
+            : '<span class="power-conf power-conf--west">W</span>';
+
+        return `
+            <div class="power-row">
+                <div class="power-rank">${rank}</div>
+                <img class="power-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none'">
+                <div class="power-team">
+                    <div class="power-team-name">${team.teamCity} ${team.teamName} ${confBadge}</div>
+                    <div class="power-bar-wrap">
+                        <div class="power-bar-fill" style="width:${barW}%"></div>
+                    </div>
+                </div>
+                <div class="power-record">${team.wins}–${team.losses}<span class="power-pct">${winPct}</span></div>
+                <div class="power-l10">${l10Pips}</div>
+                <div class="power-streak" style="color:${streakColor}">${streak}</div>
+                <div class="power-heat ${heat.cls}">${heat.icon} ${heat.label}</div>
+            </div>
+        `;
+    }).join('');
+
+    grid.innerHTML = `
+        ${tabHtml}
+        <div class="power-header-row">
+            <div></div><div></div>
+            <div class="power-col-label">Team</div>
+            <div class="power-col-label">Record</div>
+            <div class="power-col-label">L10</div>
+            <div class="power-col-label">Streak</div>
+            <div class="power-col-label">Form</div>
+        </div>
+        <div class="power-list">${rows_html}</div>
+        <p class="power-note">Power score = Win% (50%) + L10 form (35%) + streak (15%)</p>
+    `;
+}
+
 if (typeof window !== 'undefined') {
-    window.loadStandings    = loadStandings;
-    window.displayStandings = displayStandings;
+    window.loadStandings        = loadStandings;
+    window.displayStandings     = displayStandings;
+    window.displayPowerRankings = displayPowerRankings;
 }

@@ -69,7 +69,7 @@ function createGameCard(game) {
     // Status
     const status    = game.status || 'Scheduled';
     const isFinal   = status.includes('Final');
-    const isLive    = status.includes('Q') || status.includes('Half') || status.includes(':');
+    const isLive    = /Q[1-4]|[Hh]alf|:\d|OT\d?/.test(status);
     const statusCls = isFinal ? 'game-status--final' : isLive ? 'game-status--live' : 'game-status--sched';
 
     // Date
@@ -80,8 +80,12 @@ function createGameCard(game) {
         } catch (_) { dateStr = game.date; }
     }
 
+    // Expected BDL fields: home_q1/q2/q3/q4, visitor_q1/q2/q3/q4, home_ot, visitor_ot
     const hasQuarters = hasScore && (game.home_q1 != null || game.visitor_q1 != null);
     const hasOT       = game.home_ot != null || game.visitor_ot != null;
+    if (isFinal && hasScore && !hasQuarters) {
+        Logger.debug(`Game ${game.id}: final score present but no quarter fields — BDL shape may have changed`, undefined, 'GAMES');
+    }
     const homeAbbr    = game.home_team?.abbreviation || '—';
     const awayAbbr    = game.visitor_team?.abbreviation || '—';
 

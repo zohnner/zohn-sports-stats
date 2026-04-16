@@ -1,11 +1,17 @@
 // ============================================================
 // CONFIGURATION
-// Get a free API key at https://www.balldontlie.io
-// Then replace the placeholder below with your key.
+//
+// Development: set BDL_API_KEY directly (fetches from balldontlie.io).
+// Production:  set BDL_PROXY_URL to your Cloudflare Worker URL and
+//              clear BDL_API_KEY — the Worker holds the key server-side.
+//
+// Example:
+//   const BDL_PROXY_URL = 'https://sportsstrata-proxy.your-subdomain.workers.dev';
 // ============================================================
-const BDL_API_KEY = '857bec7d-aada-496f-abb1-79b16926fb37';
+const BDL_API_KEY  = '857bec7d-aada-496f-abb1-79b16926fb37';
+const BDL_PROXY_URL = ''; // Set to Worker URL in production to hide API key
 
-const BDL_BASE_URL = 'https://api.balldontlie.io/v1';
+const BDL_BASE_URL = BDL_PROXY_URL ? `${BDL_PROXY_URL}/bdl` : 'https://api.balldontlie.io/v1';
 let CURRENT_SEASON = 2025; // BDL uses the year the season starts — mutable via season selector
 
 // ============================================================
@@ -29,7 +35,34 @@ const AppState = {
     nbaStandings: null,     // array of team standing rows from leaguestandingsv3
     _teamRecentGames: {},   // teamId → array of recent games (cached per session)
     ppgRankMap: {},         // playerId → PPG rank across all loaded players (built once after stats load)
+    nbaLeaderMinGP: 0,      // minimum games played filter on NBA leaderboards (0 = All)
+    nbaLeaderPosition: 'all', // position filter on NBA leaderboards
+    // Favorites — persisted to localStorage
+    favorites: new Set((() => { try { return JSON.parse(localStorage.getItem('zs_favs') || '[]'); } catch (_) { return []; } })()),
 };
+
+// ── Favorites helpers ─────────────────────────────────────────
+
+function isFavorite(id) {
+    return AppState.favorites.has(id);
+}
+
+function toggleFavorite(id, btnEl) {
+    if (AppState.favorites.has(id)) AppState.favorites.delete(id);
+    else AppState.favorites.add(id);
+    try { localStorage.setItem('zs_favs', JSON.stringify([...AppState.favorites])); } catch (_) {}
+    if (btnEl) {
+        const active = AppState.favorites.has(id);
+        btnEl.classList.toggle('fav-btn--active', active);
+        btnEl.setAttribute('aria-label', active ? 'Remove from favorites' : 'Add to favorites');
+        btnEl.title = active ? 'Remove from favorites' : 'Add to favorites';
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.isFavorite     = isFavorite;
+    window.toggleFavorite = toggleFavorite;
+}
 
 // ============================================================
 // Core fetch helper — with caching and exponential-backoff retry
@@ -74,9 +107,9 @@ async function bdlFetch(endpoint, params = {}, { cache = true, ttl, retries = 2 
             await new Promise(r => setTimeout(r, delay));
         }
 
-        const response = await fetch(url.toString(), {
-            headers: { 'Authorization': BDL_API_KEY }
-        });
+        // When using the proxy the Worker adds Authorization server-side — don't expose the key client-side
+        const fetchHeaders = BDL_PROXY_URL ? {} : { 'Authorization': BDL_API_KEY };
+        const response = await fetch(url.toString(), { headers: fetchHeaders });
 
         // Hard failures — don't retry
         if (response.status === 401) {
@@ -303,7 +336,11 @@ async function fetchESPNPlayerMap() {
         const res = await fetch(
             'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/athletes?limit=1000'
         );
-        if (!res.ok) { AppState.espnPlayerMap = {}; return {}; }
+        if (!res.ok) {
+            Logger.warn(`ESPN athlete map fetch failed — HTTP ${res.status}`, undefined, 'ESPN');
+            AppState.espnPlayerMap = {};
+            return {};
+        }
         const json = await res.json();
         // ESPN API returns athletes under `items`; also try `athletes` as a fallback
         const list = json.items || json.athletes || [];

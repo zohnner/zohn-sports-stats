@@ -16,6 +16,9 @@ function setupNavigation() {
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
     });
 
+    initWaffle();
+    if (typeof initGlobalSearch === 'function') initGlobalSearch();
+
     // Search (debounced) — NBA does live API search; MLB does local filter
     const countEl = document.getElementById('resultCount');
     const handleSearch = debounce(async e => {
@@ -40,7 +43,7 @@ function setupNavigation() {
     // Browser back / forward
     window.addEventListener('popstate', e => {
         const s = e.state;
-        if (!s)                  { navigateTo('players', false); return; }
+        if (!s)                  { navigateTo('home', false); return; }
         if (s.view === 'player')    { _restorePlayerDetail(s.id);             return; }
         if (s.view === 'team')      { _restoreTeamDetail(s.id);              return; }
         if (s.view === 'team-game') { _restoreTeamGameDetail(s.teamId, s.gameId); return; }
@@ -80,24 +83,71 @@ function setupNavigation() {
     _loadFromHash();
 }
 
+// ── Waffle panel ─────────────────────────────────────────────
+
+function initWaffle() {
+    const btn   = document.getElementById('waffleBtn');
+    const panel = document.getElementById('wafflePanel');
+    if (!btn || !panel) return;
+
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const opening = panel.hidden;
+        panel.hidden  = !opening;
+        btn.classList.toggle('waffle-btn--open', opening);
+        btn.setAttribute('aria-expanded', String(opening));
+    });
+
+    // Close on outside click
+    document.addEventListener('click', e => {
+        if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) {
+            _closeWaffle();
+        }
+    });
+
+    // Close when Escape pressed
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !panel.hidden) _closeWaffle();
+    });
+
+    // Close when a waffle nav item is clicked
+    panel.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', _closeWaffle);
+    });
+}
+
+function _closeWaffle() {
+    const btn   = document.getElementById('waffleBtn');
+    const panel = document.getElementById('wafflePanel');
+    if (!panel) return;
+    panel.hidden = true;
+    btn?.classList.remove('waffle-btn--open');
+    btn?.setAttribute('aria-expanded', 'false');
+}
+
 // ── Core navigation function ─────────────────────────────────
 
 function navigateTo(view, push = true) {
     if (window.StatsCharts) StatsCharts.destroyAll();
 
-    // Sync all matching nav tabs (header + mobile)
+    // Sync all matching nav tabs (waffle panel + mobile)
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll(`.nav-tab[data-view="${view}"]`).forEach(t => t.classList.add('active'));
     AppState.currentView = view;
 
-    // Show/hide search bar (only for NBA players view)
+    // Restore playersGrid class for non-home views
+    const grid = document.getElementById('playersGrid');
+    if (grid && view !== 'home') grid.className = 'players-grid';
+
+    // Show/hide search bar and view header
     const isNBAPlayers = view === 'players';
     const isMLBPlayers = view === 'mlb-players';
+    const isHome       = view === 'home';
     document.getElementById('searchBar')?.style.setProperty('display',
         (isNBAPlayers || isMLBPlayers) ? 'block' : 'none'
     );
     document.getElementById('viewHeader')?.style.setProperty('display',
-        (isNBAPlayers || isMLBPlayers) ? 'none' : 'block'
+        (isNBAPlayers || isMLBPlayers || isHome) ? 'none' : 'block'
     );
 
     // Clean up sport-specific filter UI when switching views
@@ -117,6 +167,13 @@ function navigateTo(view, push = true) {
 
     if (push) history.pushState({ view }, '', `#${view}`);
     renderCurrentView(view);
+
+    // Entrance animation — restarts on every navigation
+    const _grid = document.getElementById('playersGrid');
+    if (_grid) {
+        _grid.classList.remove('view-enter');
+        requestAnimationFrame(() => _grid.classList.add('view-enter'));
+    }
 }
 
 // ── Sport switching ───────────────────────────────────────────
@@ -132,19 +189,19 @@ function switchSport(sport) {
         btn.setAttribute('aria-pressed', String(active));
     });
 
-    // Swap nav bars
-    const nbaNav    = document.getElementById('nba-nav');
-    const mlbNav    = document.getElementById('mlb-nav');
-    const mobNbaNav = document.getElementById('mobile-nba-nav');
-    const mobMlbNav = document.getElementById('mobile-mlb-nav');
-    const seasonSel = document.getElementById('seasonSelect');
+    // Swap nav bars and season row visibility
+    const nbaNav         = document.getElementById('nba-nav');
+    const mlbNav         = document.getElementById('mlb-nav');
+    const mobNbaNav      = document.getElementById('mobile-nba-nav');
+    const mobMlbNav      = document.getElementById('mobile-mlb-nav');
+    const seasonRow      = document.getElementById('waffleSeasonRow');
 
     if (sport === 'mlb') {
-        if (nbaNav)    nbaNav.style.display    = 'none';
-        if (mlbNav)    mlbNav.style.display     = '';
-        if (mobNbaNav) mobNbaNav.style.display  = 'none';
-        if (mobMlbNav) mobMlbNav.style.display  = '';
-        if (seasonSel) seasonSel.style.display  = 'none';
+        if (nbaNav)    nbaNav.style.display     = 'none';
+        if (mlbNav)    mlbNav.style.display      = '';
+        if (mobNbaNav) mobNbaNav.style.display   = 'none';
+        if (mobMlbNav) mobMlbNav.style.display   = '';
+        if (seasonRow) seasonRow.style.display   = 'none';
         document.getElementById('brandIcon').textContent = '⚾';
         document.getElementById('brandSub').textContent  = 'MLB Analytics';
         document.getElementById('positionFilters')?.remove();
@@ -156,11 +213,11 @@ function switchSport(sport) {
         }).catch(() => {});
         navigateTo('mlb-players');
     } else {
-        if (nbaNav)    nbaNav.style.display    = '';
-        if (mlbNav)    mlbNav.style.display     = 'none';
-        if (mobNbaNav) mobNbaNav.style.display  = '';
-        if (mobMlbNav) mobMlbNav.style.display  = 'none';
-        if (seasonSel) seasonSel.style.display  = '';
+        if (nbaNav)    nbaNav.style.display     = '';
+        if (mlbNav)    mlbNav.style.display      = 'none';
+        if (mobNbaNav) mobNbaNav.style.display   = '';
+        if (mobMlbNav) mobMlbNav.style.display   = 'none';
+        if (seasonRow) seasonRow.style.display   = '';
         document.getElementById('brandIcon').textContent = '🏀';
         document.getElementById('brandSub').textContent  = 'NBA Analytics';
         document.getElementById('mlbGroupToggle')?.remove();
@@ -175,17 +232,19 @@ function switchSport(sport) {
 // ── Breadcrumb ───────────────────────────────────────────────
 
 const _NAV_META = {
-    players:      { label: 'Players',   icon: '👤' },
-    leaders:      { label: 'Leaders',   icon: '🏆' },
-    teams:        { label: 'Teams',     icon: '🏟' },
-    games:        { label: 'Games',     icon: '📅' },
-    standings:    { label: 'Standings', icon: '📊' },
-    builder:      { label: 'Builder',   icon: '🧮' },
+    home:            { label: 'Home',          icon: '🏠' },
+    players:         { label: 'Players',       icon: '👤' },
+    leaders:         { label: 'Leaders',       icon: '🏆' },
+    teams:           { label: 'Teams',         icon: '🏟' },
+    games:           { label: 'Scores',        icon: '📅' },
+    standings:       { label: 'Standings',     icon: '📊' },
+    builder:         { label: 'Builder',       icon: '🧮' },
     'mlb-players':   { label: 'MLB Players',   icon: '⚾' },
     'mlb-leaders':   { label: 'MLB Leaders',   icon: '🏆' },
     'mlb-teams':     { label: 'MLB Teams',     icon: '🏟' },
-    'mlb-games':     { label: 'MLB Games',     icon: '📅' },
+    'mlb-games':     { label: 'MLB Scores',    icon: '📅' },
     'mlb-standings': { label: 'MLB Standings', icon: '📊' },
+    'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
 
 function setBreadcrumb(root, current) {
@@ -217,6 +276,10 @@ function renderCurrentView(view) {
     // NBA views
     const viewCount = document.getElementById('viewResultCount');
     switch (view) {
+        case 'home':
+            loadHome();
+            break;
+
         case 'players':
             if (AppState.allPlayers.length === 0) {
                 loadPlayers();
@@ -262,6 +325,11 @@ function renderCurrentView(view) {
             displayStatBuilder();
             break;
 
+        case 'arcade':
+            if (viewCount) viewCount.textContent = 'Arcade';
+            loadArcade();
+            break;
+
         default:
             Logger.error(`Unknown view: ${view}`, undefined, 'NAV');
     }
@@ -302,12 +370,8 @@ function _renderMLBView(view) {
             break;
 
         case 'mlb-games':
-            if (viewCount) viewCount.textContent = 'MLB Games';
-            if (AppState.mlbGames.length === 0) {
-                loadMLBGames();
-            } else {
-                displayMLBGames(AppState.mlbGames);
-            }
+            if (viewCount) viewCount.textContent = 'MLB Scores';
+            loadMLBGames();
             break;
 
         case 'mlb-standings':
@@ -369,7 +433,7 @@ async function _restoreTeamGameDetail(teamId, gameId) {
 
 function _loadFromHash() {
     const hash = window.location.hash.slice(1);
-    if (!hash) { navigateTo('players', false); return; }
+    if (!hash) { navigateTo('home', false); return; }
 
     const playerMatch    = hash.match(/^player-(\d+)$/);
     const teamMatch      = hash.match(/^team-(\d+)$/);
@@ -401,13 +465,13 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings'];
-        const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder'];
+        const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
             _applySportUI('mlb');
             navigateTo(hash, false);
         } else {
-            navigateTo(nbaViews.includes(hash) ? hash : 'players', false);
+            navigateTo(nbaViews.includes(hash) ? hash : 'home', false);
         }
     }
 }
@@ -424,7 +488,7 @@ function _applySportUI(sport) {
     document.getElementById('mlb-nav')?.style.setProperty('display', isMLB ? ''     : 'none');
     document.getElementById('mobile-nba-nav')?.style.setProperty('display', isMLB ? 'none' : '');
     document.getElementById('mobile-mlb-nav')?.style.setProperty('display', isMLB ? ''     : 'none');
-    document.getElementById('seasonSelect')?.style.setProperty('display',   isMLB ? 'none' : '');
+    document.getElementById('waffleSeasonRow')?.style.setProperty('display', isMLB ? 'none' : '');
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
     if (brandIcon) brandIcon.textContent = isMLB ? '⚾' : '🏀';
@@ -448,4 +512,5 @@ if (typeof window !== 'undefined') {
     window.renderCurrentView = renderCurrentView;
     window.switchSport       = switchSport;
     window.debounce          = debounce;
+    window.initWaffle        = initWaffle;
 }

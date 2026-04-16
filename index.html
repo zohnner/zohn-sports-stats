@@ -4,10 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#060c18">
-    <meta name="description" content="ZohnStats — Real-time NBA and MLB analytics, standings, player stats, and live scores.">
+    <meta name="description" content="SportsStrata — Serious stats for serious fans. Real-time NBA and MLB analytics, standings, player stats, and live scores.">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
+    <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
-    <title>ZohnStats — Sports Analytics</title>
+    <title>SportsStrata — Serious Stats for Serious Fans</title>
+    <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
+    <script>
+        (function(){
+            var s = localStorage.getItem('zs_theme');
+            if (!s) s = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', s);
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
@@ -17,18 +26,19 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/ticker.css">
+    <link rel="stylesheet" href="css/arcade.css">
 </head>
 <body>
 
     <header>
         <div class="header-inner">
-            <div class="brand">
+            <button class="brand" onclick="navigateTo('home')" aria-label="SportsStrata home">
                 <span class="brand-icon" id="brandIcon">🏀</span>
                 <div class="brand-text">
-                    <span class="brand-name">ZohnStats</span>
+                    <span class="brand-name">SportsStrata</span>
                     <span class="brand-sub" id="brandSub">NBA Analytics</span>
                 </div>
-            </div>
+            </button>
 
             <!-- Sport switcher -->
             <div class="sport-switcher" role="group" aria-label="Select sport">
@@ -38,80 +48,143 @@
                 <button class="sport-btn sport-btn--soon" disabled title="Coming soon">🏒 NHL</button>
             </div>
 
-            <!-- NBA season selector (hidden when MLB is active) -->
-            <select id="seasonSelect" class="season-select" aria-label="Select season">
-                <option value="2025">2025–26</option>
-                <option value="2024">2024–25</option>
-                <option value="2023">2023–24</option>
-                <option value="2022">2022–23</option>
-                <option value="2021">2021–22</option>
-                <option value="2020">2020–21</option>
-                <option value="2019">2019–20</option>
-                <option value="2018">2018–19</option>
-            </select>
+            <!-- Live scores ticker (fills remaining header space) -->
+            <div class="header-ticker">
+                <div class="ticker-title">SCORES</div>
+                <div class="ticker" id="scoreTicker">
+                    <div class="ticker__item">Loading scores…</div>
+                </div>
+            </div>
+
+            <!-- Global search button (⌘K) -->
+            <button class="search-global-btn" id="globalSearchBtn" title="Search (⌘K)" aria-label="Search players and teams">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+
+            <!-- Waffle / nav menu button -->
+            <button class="waffle-btn" id="waffleBtn"
+                    aria-label="Navigation menu" aria-expanded="false" aria-controls="wafflePanel">
+                <span class="waffle-icon"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Waffle navigation panel (sticky below header) -->
+    <div class="waffle-panel" id="wafflePanel" hidden>
+        <div class="waffle-panel-inner">
+
+            <!-- Season selector (NBA only) -->
+            <div class="waffle-season-row" id="waffleSeasonRow">
+                <span class="waffle-season-label">Season</span>
+                <select id="seasonSelect" class="season-select" aria-label="Select season">
+                    <option value="2025">2025–26</option>
+                    <option value="2024">2024–25</option>
+                    <option value="2023">2023–24</option>
+                    <option value="2022">2022–23</option>
+                    <option value="2021">2021–22</option>
+                    <option value="2020">2020–21</option>
+                    <option value="2019">2019–20</option>
+                    <option value="2018">2018–19</option>
+                </select>
+            </div>
 
             <!-- NBA navigation -->
-            <nav class="nav-tabs" id="nba-nav">
-                <button class="nav-tab active" data-view="players">
+            <nav class="waffle-nav" id="nba-nav" aria-label="NBA navigation">
+                <button class="nav-tab waffle-nav-item active" data-view="players">
                     <span class="nav-icon">👤</span>
                     <span>Players</span>
                 </button>
-                <button class="nav-tab" data-view="leaders">
+                <button class="nav-tab waffle-nav-item" data-view="leaders">
                     <span class="nav-icon">🏆</span>
                     <span>Leaders</span>
                 </button>
-                <button class="nav-tab" data-view="teams">
+                <button class="nav-tab waffle-nav-item" data-view="teams">
                     <span class="nav-icon">🏟</span>
                     <span>Teams</span>
                 </button>
-                <button class="nav-tab" data-view="games">
+                <button class="nav-tab waffle-nav-item" data-view="games">
                     <span class="nav-icon">📅</span>
-                    <span>Games</span>
+                    <span>Scores</span>
                 </button>
-                <button class="nav-tab" data-view="standings">
+                <button class="nav-tab waffle-nav-item" data-view="standings">
                     <span class="nav-icon">📊</span>
                     <span>Standings</span>
                 </button>
-                <button class="nav-tab" data-view="builder">
+                <button class="nav-tab waffle-nav-item" data-view="builder">
                     <span class="nav-icon">🧮</span>
                     <span>Builder</span>
+                </button>
+                <button class="nav-tab waffle-nav-item" data-view="arcade">
+                    <span class="nav-icon">🎮</span>
+                    <span>Arcade</span>
                 </button>
             </nav>
 
             <!-- MLB navigation (hidden by default) -->
-            <nav class="nav-tabs" id="mlb-nav" style="display:none">
-                <button class="nav-tab" data-view="mlb-players">
+            <nav class="waffle-nav" id="mlb-nav" style="display:none" aria-label="MLB navigation">
+                <button class="nav-tab waffle-nav-item" data-view="mlb-players">
                     <span class="nav-icon">👤</span>
                     <span>Players</span>
                 </button>
-                <button class="nav-tab" data-view="mlb-leaders">
+                <button class="nav-tab waffle-nav-item" data-view="mlb-leaders">
                     <span class="nav-icon">🏆</span>
                     <span>Leaders</span>
                 </button>
-                <button class="nav-tab" data-view="mlb-teams">
+                <button class="nav-tab waffle-nav-item" data-view="mlb-teams">
                     <span class="nav-icon">🏟</span>
                     <span>Teams</span>
                 </button>
-                <button class="nav-tab" data-view="mlb-games">
+                <button class="nav-tab waffle-nav-item" data-view="mlb-games">
                     <span class="nav-icon">📅</span>
-                    <span>Games</span>
+                    <span>Scores</span>
                 </button>
-                <button class="nav-tab" data-view="mlb-standings">
+                <button class="nav-tab waffle-nav-item" data-view="mlb-standings">
                     <span class="nav-icon">📊</span>
                     <span>Standings</span>
                 </button>
+                <button class="nav-tab waffle-nav-item" data-view="arcade">
+                    <span class="nav-icon">🎮</span>
+                    <span>Arcade</span>
+                </button>
             </nav>
+
         </div>
 
-    </header>
-
-    <div class="ticker-wrap">
-        <div class="ticker-title">SCORES</div>
-        <div class="ticker" id="scoreTicker">
-            <div class="ticker__item">Loading scores…</div>
+        <!-- Footer: theme toggle -->
+        <div class="waffle-panel-footer">
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+                <span class="theme-toggle-icon" id="themeToggleIcon">☀️</span>
+                <span id="themeToggleLabel">Light mode</span>
+            </button>
         </div>
+
     </div>
 
+
+    <!-- Global search overlay — opened by ⌘K or the search button -->
+    <div class="search-overlay" id="searchOverlay" hidden role="dialog" aria-modal="true" aria-label="Search players and teams">
+        <div class="search-modal">
+            <div class="search-modal-bar">
+                <svg class="search-modal-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input class="search-modal-input" id="searchModalInput"
+                       type="text" placeholder="Search players and teams…"
+                       autocomplete="off" spellcheck="false" aria-label="Search">
+                <button class="search-modal-close" id="searchModalClose" aria-label="Close search">✕</button>
+            </div>
+            <div class="search-modal-results" id="searchModalResults"></div>
+            <div class="search-modal-footer">
+                <span><kbd>↑↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> open</span>
+                <span><kbd>Esc</kbd> close</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Mobile bottom navigation — visible only on small screens -->
     <nav class="mobile-nav" id="mobile-nba-nav" aria-label="Mobile NBA navigation">
@@ -123,21 +196,17 @@
             <span class="nav-icon">🏆</span>
             <span class="mobile-nav-label">Leaders</span>
         </button>
-        <button class="nav-tab" data-view="teams">
-            <span class="nav-icon">🏟</span>
-            <span class="mobile-nav-label">Teams</span>
-        </button>
         <button class="nav-tab" data-view="games">
             <span class="nav-icon">📅</span>
-            <span class="mobile-nav-label">Games</span>
+            <span class="mobile-nav-label">Scores</span>
         </button>
         <button class="nav-tab" data-view="standings">
             <span class="nav-icon">📊</span>
             <span class="mobile-nav-label">Standings</span>
         </button>
-        <button class="nav-tab" data-view="builder">
-            <span class="nav-icon">🧮</span>
-            <span class="mobile-nav-label">Builder</span>
+        <button class="nav-tab" data-view="arcade">
+            <span class="nav-icon">🎮</span>
+            <span class="mobile-nav-label">Arcade</span>
         </button>
     </nav>
     <nav class="mobile-nav" id="mobile-mlb-nav" style="display:none" aria-label="Mobile MLB navigation">
@@ -149,17 +218,17 @@
             <span class="nav-icon">🏆</span>
             <span class="mobile-nav-label">Leaders</span>
         </button>
-        <button class="nav-tab" data-view="mlb-teams">
-            <span class="nav-icon">🏟</span>
-            <span class="mobile-nav-label">Teams</span>
-        </button>
         <button class="nav-tab" data-view="mlb-games">
             <span class="nav-icon">📅</span>
-            <span class="mobile-nav-label">Games</span>
+            <span class="mobile-nav-label">Scores</span>
         </button>
         <button class="nav-tab" data-view="mlb-standings">
             <span class="nav-icon">📊</span>
             <span class="mobile-nav-label">Standings</span>
+        </button>
+        <button class="nav-tab" data-view="arcade">
+            <span class="nav-icon">🎮</span>
+            <span class="mobile-nav-label">Arcade</span>
         </button>
     </nav>
 
@@ -174,6 +243,7 @@
             <div class="search-meta">
                 <p id="resultCount">Loading players…</p>
                 <div class="view-toggle">
+                    <button class="fav-filter-btn" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only">♥ Starred</button>
                     <button class="view-toggle-btn active" id="cardViewBtn" onclick="setPlayerView('cards')" title="Card view">⊞</button>
                     <button class="view-toggle-btn" id="tableViewBtn" onclick="setPlayerView('table')" title="Table view">≡</button>
                 </div>
@@ -210,9 +280,11 @@
     <script src="js/playerDetail.js"></script>
     <script src="js/statBuilder.js"></script>
     <script src="js/mlb.js"></script>
+    <script src="js/arcade.js"></script>
     <script src="js/standings.js"></script>
     <script src="js/schema.js"></script>
     <script src="js/db.js"></script>
+    <script src="js/search.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/app.js"></script>
 </body>

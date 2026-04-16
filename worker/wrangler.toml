@@ -1,0 +1,23 @@
+name            = "sportsstrata-proxy"
+main            = "bdl-proxy.js"
+compatibility_date = "2024-09-23"
+
+# ── Secrets (never commit values — set via CLI) ───────────────
+#   wrangler secret put BDL_API_KEY
+#   wrangler secret put KALSHI_API_KEY       (future)
+#   wrangler secret put KALSHI_PRIVATE_KEY   (future)
+
+# ── Routes ────────────────────────────────────────────────────
+# Uncomment and set your Cloudflare Pages domain once deployed:
+#
+# [[routes]]
+# pattern = "sportsstrata.com/bdl/*"
+# zone_name = "sportsstrata.com"
+
+# ── Workers KV (optional future use for rate-limit counters) ──
+# [[kv_namespaces]]
+# binding = "RATE_LIMITER"
+# id      = ""
+
+[observability]
+enabled = true

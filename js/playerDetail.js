@@ -14,6 +14,17 @@ async function showPlayerDetail(playerId, push = true) {
     const grid = document.getElementById('playersGrid');
     const fullName = `${player.first_name} ${player.last_name}`;
 
+    // Record in recently viewed
+    if (typeof addRecent === 'function') addRecent({
+        id:    player.id,
+        sport: 'nba',
+        type:  'player',
+        name:  fullName,
+        sub:   `${player.team?.abbreviation || '—'} · ${player.position || '—'}`,
+        badge: 'NBA',
+        action: null, // rebuilt on access
+    });
+
     // ── Nav state ─────────────────────────────────────────────
     // Keep Players tab active; show breadcrumb instead of search bar
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -86,6 +97,8 @@ async function showPlayerDetail(playerId, push = true) {
             </div>
 
             ${_shootingCard(stats)}
+
+            ${_advancedStatsCard(stats)}
 
             ${_chartsCard(recentGames)}
 
@@ -394,6 +407,63 @@ function _shootingCard(stats) {
                     ${bar(stats.ft_pct, 'var(--color-pct)')}
                     <div style="color:var(--color-text-muted);font-size:0.82rem;margin-top:0.25rem">${sub(stats.ftm, stats.fta)}</div>
                 </div>
+            </div>
+        </div>
+    `;
+}
+
+// ── NBA Advanced Stats ────────────────────────────────────────
+// All metrics derived from existing BDL fields — no extra fetches.
+
+function _advancedStatsCard(stats) {
+    const pts  = parseFloat(stats.pts)      || 0;
+    const fgm  = parseFloat(stats.fgm)      || 0;
+    const fga  = parseFloat(stats.fga)      || 0;
+    const fg3m = parseFloat(stats.fg3m)     || 0;
+    const fg3a = parseFloat(stats.fg3a)     || 0;
+    const ftm  = parseFloat(stats.ftm)      || 0;
+    const fta  = parseFloat(stats.fta)      || 0;
+    const tov  = parseFloat(stats.turnover) || 0;
+    const ast  = parseFloat(stats.ast)      || 0;
+
+    if (fga === 0) return ''; // not enough data
+
+    const tsAttempts = fga + 0.44 * fta;
+    const ts    = tsAttempts > 0 ? pts / (2 * tsAttempts) : null;
+    const efg   = fga > 0 ? (fgm + 0.5 * fg3m) / fga : null;
+    const tovPct = (fga + 0.44 * fta + tov) > 0
+        ? tov / (fga + 0.44 * fta + tov) * 100 : null;
+    const astTo = tov > 0 ? ast / tov : null;
+    const par3  = fga > 0 ? fg3a / fga : null;
+    const ftr   = fga > 0 ? fta / fga : null;
+
+    const pct = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+    const r1  = v => v != null ? v.toFixed(1) : '—';
+
+    const _bar = (val, max, color) => {
+        const w = val != null ? Math.min(val / max, 1) * 100 : 0;
+        return `<div class="adv-bar"><div class="adv-bar-fill" style="width:${w}%;background:${color}"></div></div>`;
+    };
+
+    const _metric = (label, display, bar, tip) => `
+        <div class="adv-metric">
+            <div class="adv-metric-top">
+                <span class="adv-metric-label" title="${tip}">${label}</span>
+                <span class="adv-metric-value">${display}</span>
+            </div>
+            ${bar}
+        </div>`;
+
+    return `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Advanced Efficiency</h2>
+            <div class="adv-stats-grid">
+                ${_metric('TS%',    pct(ts),           _bar(ts,    0.70, 'var(--color-pts)'), 'True Shooting % — pts per shooting attempt incl. free throws')}
+                ${_metric('eFG%',   pct(efg),          _bar(efg,   0.65, 'var(--color-ast)'), 'Effective FG% — weights 3-pointers at 1.5× a 2-pointer')}
+                ${_metric('TOV%',   r1(tovPct) + '%',  _bar(tovPct ? tovPct/100 : 0, 0.25, 'var(--color-loss)'), 'Turnover % — share of possessions ending in a turnover')}
+                ${_metric('AST/TO', r1(astTo),         _bar(astTo, 6,    'var(--color-stl)'), 'Assist-to-turnover ratio')}
+                ${_metric('3PAr',   pct(par3),         _bar(par3,  0.60, 'var(--color-stl)'), '3-Point Attempt Rate — share of FGA that are 3s')}
+                ${_metric('FTr',    pct(ftr),          _bar(ftr,   0.60, 'var(--color-pct)'), 'Free Throw Rate — FTA per FGA')}
             </div>
         </div>
     `;

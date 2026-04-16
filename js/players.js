@@ -3,6 +3,36 @@
 let playerViewMode  = 'cards';   // 'cards' | 'table'
 let tableSortField  = 'pts';
 let tableSortDir    = 'desc';    // 'asc' | 'desc'
+let _showFavOnly    = false;
+
+function toggleFavFilter() {
+    _showFavOnly = !_showFavOnly;
+    document.getElementById('favFilterBtn')?.classList.toggle('active', _showFavOnly);
+    _applyPlayerFilters();
+}
+
+function _applyPlayerFilters() {
+    const searchVal = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
+    let base = _showFavOnly
+        ? AppState.allPlayers.filter(p => AppState.favorites.has(p.id))
+        : AppState.allPlayers;
+    if (searchVal.length >= 2) {
+        base = base.filter(p =>
+            `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchVal) ||
+            (p.team?.abbreviation || '').toLowerCase().includes(searchVal)
+        );
+    }
+    if (AppState.positionFilter && AppState.positionFilter !== 'all') {
+        base = base.filter(p => p.position === AppState.positionFilter);
+    }
+    AppState.filteredPlayers = base;
+    displayPlayers(base);
+    updatePlayerCount();
+}
+
+if (typeof window !== 'undefined') {
+    window.toggleFavFilter = toggleFavFilter;
+}
 
 function setPlayerView(mode) {
     playerViewMode = mode;
@@ -164,9 +194,14 @@ function createPlayerCard(player, stats, ppgRank) {
     const pts    = stats?.pts;
     const ptsClr = pts >= 25 ? '#fbbf24' : pts >= 20 ? '#a78bfa' : pts >= 15 ? 'var(--color-pts)' : 'var(--color-text-primary)';
 
+    const isFav = isFavorite(player.id);
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
+            <button class="fav-btn${isFav ? ' fav-btn--active' : ''}"
+                onclick="event.stopPropagation();toggleFavorite(${player.id},this)"
+                aria-label="${isFav ? 'Remove from favorites' : 'Add to favorites'}"
+                title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">♥</button>
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
                 ${headshotImg}<span class="avatar-text">${initials}</span>
             </div>

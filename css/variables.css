@@ -1,6 +1,7 @@
 /* ============================================================
-   DESIGN TOKENS — ZohnStats v2
+   DESIGN TOKENS — SportsStrata
    Complete token system. All CSS must use variables from here.
+   Light/dark themes driven by [data-theme] on <html>.
    ============================================================ */
 
 :root {
@@ -174,4 +175,87 @@
     --chart-tick:           #5b7497;
     --chart-tooltip-bg:     rgba(6,12,24,0.97);
     --chart-tooltip-border: rgba(255,255,255,0.08);
+
+    /* ── Theme-aware surface tokens (used in place of raw rgba) ── */
+    /* Skeleton shimmer */
+    --skeleton-from:        rgba(255,255,255,0.04);
+    --skeleton-mid:         rgba(255,255,255,0.09);
+
+    --bg-header:            rgba(6, 12, 24, 0.96);
+    --bg-waffle-panel:      rgba(4, 9, 20, 0.98);
+    --bg-table-head:        rgba(6, 12, 24, 0.85);
+    --bg-table-sub:         rgba(6, 12, 24, 0.55);
+    --bg-mobile-nav:        rgba(6, 12, 24, 0.97);
+    --bg-toast:             rgba(6, 12, 24, 0.97);
+    --shadow-header:        0 1px 0 rgba(124,141,240,0.12), 0 4px 24px rgba(0,0,0,0.40);
+    --shadow-mobile-nav:    0 -4px 24px rgba(0,0,0,0.50);
+    --shadow-waffle-panel:  0 8px 32px rgba(0,0,0,0.55);
+}
+
+/* ── Light Theme ──────────────────────────────────────────────
+   All overrides use the same CSS custom property names so every
+   component picks up the new values without any code changes.
+   ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+    /* Backgrounds */
+    --bg-base:              #f0f4f9;
+    --bg-surface:           #ffffff;
+    --bg-raised:            #f8fafc;
+    --bg-card:              rgba(255, 255, 255, 0.92);
+    --bg-card-hover:        rgba(248, 250, 252, 0.98);
+    --bg-overlay:           rgba(248, 250, 252, 0.97);
+    --bg-subtle:            rgba(0, 0, 0, 0.025);
+    --bg-interactive:       rgba(0, 0, 0, 0.04);
+    --bg-interactive-hov:   rgba(0, 0, 0, 0.07);
+
+    /* Borders */
+    --border-default:       rgba(0, 0, 0, 0.08);
+    --border-mid:           rgba(0, 0, 0, 0.13);
+    --border-strong:        rgba(0, 0, 0, 0.22);
+    --border-accent:        rgba(91, 112, 224, 0.32);
+    --border-accent-hov:    rgba(91, 112, 224, 0.58);
+
+    /* Text */
+    --text-primary:         #0f172a;
+    --text-secondary:       #334155;
+    --text-muted:           #64748b;
+    --text-subtle:          #94a3b8;
+    --text-disabled:        #cbd5e1;
+
+    /* Accent — slightly deeper for light-bg contrast */
+    --accent:               #5b70e0;
+    --accent-light:         #818cf8;
+    --accent-dark:          #4338ca;
+    --accent-subtle:        rgba(91, 112, 224, 0.08);
+    --accent-border:        rgba(91, 112, 224, 0.26);
+    --accent-glow:          rgba(91, 112, 224, 0.12);
+
+    /* Shadows (much lighter on white) */
+    --shadow-sm:            0 1px 8px  rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+    --shadow-md:            0 4px 20px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05);
+    --shadow-lg:            0 8px 40px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06);
+    --shadow-accent:        0 8px 32px var(--accent-glow);
+    --shadow-card:          0 2px 12px rgba(0,0,0,0.07), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:      0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--border-accent);
+
+    /* Charts */
+    --chart-grid:           rgba(0, 0, 0, 0.06);
+    --chart-tick:           #64748b;
+    --chart-tooltip-bg:     rgba(255, 255, 255, 0.98);
+    --chart-tooltip-border: rgba(0, 0, 0, 0.10);
+
+    /* Theme-aware surfaces */
+    /* Skeleton shimmer */
+    --skeleton-from:        rgba(0,0,0,0.05);
+    --skeleton-mid:         rgba(0,0,0,0.11);
+
+    --bg-header:            rgba(255, 255, 255, 0.96);
+    --bg-waffle-panel:      rgba(255, 255, 255, 0.98);
+    --bg-table-head:        rgba(248, 250, 252, 0.95);
+    --bg-table-sub:         rgba(241, 245, 249, 0.70);
+    --bg-mobile-nav:        rgba(255, 255, 255, 0.97);
+    --bg-toast:             rgba(255, 255, 255, 0.98);
+    --shadow-header:        0 1px 0 rgba(91,112,224,0.10), 0 4px 24px rgba(0,0,0,0.08);
+    --shadow-mobile-nav:    0 -4px 24px rgba(0,0,0,0.08);
+    --shadow-waffle-panel:  0 8px 32px rgba(0,0,0,0.10);
 }
