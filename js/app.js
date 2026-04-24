@@ -278,8 +278,8 @@ async function _loadHomeTodayGames() {
         const awayWon   = isFinal && awayScore > homeScore;
         const pillCls   = isFinal ? 'final' : isLive ? 'live' : 'sched';
         const pillLabel = isFinal ? 'Final' : isLive ? 'Live' : 'Scheduled';
-        const homeLogo  = homeId ? `https://www.mlbstatic.com/team-logos/${homeId}.svg` : '';
-        const awayLogo  = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : '';
+        const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
+        const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
         const fmt = (n) => hasScore ? n : '–';
         return `
             <div class="home-game-card" data-game-key="${gameKey}" role="button" tabindex="0"
@@ -412,8 +412,8 @@ async function _loadOnThisDay() {
         const awayTeam  = game.teams?.away?.team?.abbreviation || '?';
         const homeScore = game.linescore?.teams?.home?.runs ?? game.teams?.home?.score ?? '?';
         const awayScore = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
-        const homeLogo  = game.teams?.home?.team?.id ? `https://www.mlbstatic.com/team-logos/${game.teams.home.team.id}.svg` : '';
-        const awayLogo  = game.teams?.away?.team?.id ? `https://www.mlbstatic.com/team-logos/${game.teams.away.team.id}.svg` : '';
+        const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeTeam) : '';
+        const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayTeam) : '';
         const month     = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
         let perfLine = '';

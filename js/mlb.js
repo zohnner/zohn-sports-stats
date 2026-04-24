@@ -103,8 +103,27 @@ function _mlbPosMatch(playerPos, filter) {
 const MLB_HITTING_POSITIONS  = ['All', 'C', '1B', '2B', '3B', 'SS', 'OF', 'DH'];
 const MLB_PITCHING_POSITIONS = ['All', 'SP', 'RP', 'CL'];
 
+// MLB Stats API teamId → ESPN abbreviation (lowercase)
+// ESPN PNG logos are reliable and explicitly in our CSP allowlist (a.espncdn.com)
+const _MLB_ID_TO_ESPN = {
+    108:'laa', 109:'ari', 110:'bal', 111:'bos', 112:'chc',
+    113:'cin', 114:'cle', 115:'col', 116:'det', 117:'hou',
+    118:'kc',  119:'lad', 120:'wsh', 121:'nym', 133:'oak',
+    134:'pit', 135:'sd',  136:'sea', 137:'sf',  138:'stl',
+    139:'tb',  140:'tex', 141:'tor', 142:'min', 143:'phi',
+    144:'atl', 145:'cws', 146:'mia', 147:'nyy', 158:'mil',
+};
+
 function getMLBTeamLogoUrl(teamId) {
+    const abbr = _MLB_ID_TO_ESPN[teamId];
+    if (abbr) return `https://a.espncdn.com/i/teamlogos/mlb/500/${abbr}.png`;
     return teamId ? `https://www.mlbstatic.com/team-logos/${teamId}.svg` : null;
+}
+
+function getMLBTeamLogoByAbbr(abbr) {
+    if (!abbr) return null;
+    const key = abbr.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/mlb/500/${key}.png`;
 }
 
 function getMLBPlayerHeadshotUrl(playerId) {
