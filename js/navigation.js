@@ -219,7 +219,7 @@ function switchSport(sport) {
         nfl: { icon: '🏈',  sub: 'NFL Analytics',  nav: nflNav,    mobNav: mobNflNav, defaultView: 'nfl-players' },
         nhl: { icon: '🏒',  sub: 'NHL Analytics',  nav: nhlNav,    mobNav: mobNhlNav, defaultView: 'nhl-players' },
     };
-    const cfg = brandConfig[sport] || brandConfig.nba;
+    const cfg = brandConfig[sport] || brandConfig.mlb;
 
     if (cfg.nav)    cfg.nav.style.display    = '';
     if (cfg.mobNav) cfg.mobNav.style.display = '';
@@ -609,7 +609,7 @@ function _applySportUI(sport) {
     mobIds.forEach(id => document.getElementById(id)?.style.setProperty('display', id === `mobile-${suffix}-nav` ? '' : 'none'));
     document.getElementById('waffleSeasonRow')?.style.setProperty('display', sport === 'nba' ? '' : 'none');
 
-    const [icon, sub] = brands[sport] || brands.nba;
+    const [icon, sub] = brands[sport] || brands.mlb;
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
     if (brandIcon) brandIcon.textContent = icon;

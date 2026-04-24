@@ -137,20 +137,6 @@ setupNavigation();
         } else if (sport === 'nhl') {
             if (AppState.currentSport !== 'nhl') switchSport('nhl');
             else navigateTo('nhl-games');
-        } else {
-            const gameId = parseInt(item.dataset.gameId, 10);
-            if (!gameId) return;
-            if (AppState.currentSport !== 'nba') switchSport('nba');
-            navigateTo('games');
-            // After games render, scroll to and highlight the target card
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                const card = document.querySelector(`.game-card[data-game-id="${gameId}"]`);
-                if (card) {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    card.classList.add('game-card--highlight');
-                    setTimeout(() => card.classList.remove('game-card--highlight'), 1800);
-                }
-            }));
         }
     });
 })();
@@ -526,10 +512,13 @@ if (typeof window !== 'undefined') {
 function _applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('zs_theme', theme); } catch (_) {}
-    const icon  = document.getElementById('themeToggleIcon');
-    const label = document.getElementById('themeToggleLabel');
-    if (icon)  icon.textContent  = theme === 'light' ? '🌙' : '☀️';
-    if (label) label.textContent = theme === 'light' ? 'Dark mode'  : 'Light mode';
+    const icon       = document.getElementById('themeToggleIcon');
+    const label      = document.getElementById('themeToggleLabel');
+    const headerIcon = document.getElementById('themeToggleHeaderIcon');
+    const emoji      = theme === 'light' ? '🌙' : '☀️';
+    if (icon)       icon.textContent       = emoji;
+    if (headerIcon) headerIcon.textContent = emoji;
+    if (label)      label.textContent      = theme === 'light' ? 'Dark mode' : 'Light mode';
 }
 
 function toggleTheme() {

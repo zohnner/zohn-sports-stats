@@ -154,6 +154,66 @@ header {
     font-weight: 700;
 }
 
+/* ── Sub-nav: persistent horizontal nav bar inside header ──── */
+.sub-nav {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-8);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-top: 1px solid var(--border-subtle, var(--border-default));
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.sub-nav::-webkit-scrollbar { display: none; }
+
+.sub-nav-item {
+    padding: 0.42rem 0.8rem;
+    font-size: 0.78rem;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    white-space: nowrap;
+}
+.sub-nav-item:hover {
+    background: var(--bg-interactive) !important;
+    border-radius: var(--radius-sm) !important;
+    border-bottom-color: transparent !important;
+}
+.sub-nav-item.active {
+    background: transparent !important;
+    color: var(--accent) !important;
+    border-bottom-color: var(--accent) !important;
+    font-weight: 700;
+}
+
+/* Theme toggle button in header */
+.theme-btn-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+.theme-btn-header:hover {
+    background: var(--bg-interactive);
+    border-color: var(--border-default);
+}
+
+/* On desktop hide waffle button (sub-nav + theme btn handle everything) */
+@media (min-width: 769px) {
+    .waffle-btn { display: none !important; }
+}
+
 /* ── Header ticker (fills space between sport switcher and waffle btn) ─ */
 .header-ticker {
     flex: 1;
@@ -1584,8 +1644,8 @@ main {
 .mobile-nav-label { display: none; }
 
 @media (max-width: 768px) {
-    /* On mobile, hide the waffle button — bottom nav handles navigation */
-    .waffle-btn { display: none; }
+    /* On mobile, sub-nav is hidden — waffle button and bottom nav handle navigation */
+    .sub-nav { display: none; }
     /* Also hide the sport-btn labels so only icons show */
     .sport-btn { font-size: 0; letter-spacing: 0; }
     .sport-btn::first-letter { font-size: var(--text-base); }

@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
     <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com https://assets.nhle.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportsStrata — Serious Stats for Serious Fans</title>
     <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
     <script>
@@ -61,12 +61,29 @@
                 </svg>
             </button>
 
-            <!-- Waffle / nav menu button -->
+            <!-- Theme toggle (always visible in header) -->
+            <button class="theme-btn-header" id="themeToggleHeaderBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark mode">
+                <span id="themeToggleHeaderIcon">☀️</span>
+            </button>
+
+            <!-- Waffle / nav menu button (mobile only) -->
             <button class="waffle-btn" id="waffleBtn"
                     aria-label="Navigation menu" aria-expanded="false" aria-controls="wafflePanel">
                 <span class="waffle-icon"></span>
             </button>
         </div>
+
+        <!-- Sub-nav: persistent horizontal nav bar (desktop) -->
+        <nav class="sub-nav" id="subNav" aria-label="MLB navigation">
+            <button class="nav-tab sub-nav-item" data-view="mlb-players">👤 Players</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-leaders">🏆 Leaders</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-teams">🏟 Teams</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-games">📅 Scores</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-standings">📊 Standings</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-builder">🧮 Builder</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-prep">📋 Prep</button>
+            <button class="nav-tab sub-nav-item" data-view="arcade">🎮 Arcade</button>
+        </nav>
     </header>
 
     <!-- Waffle navigation panel (sticky below header) -->
