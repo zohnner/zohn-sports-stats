@@ -116,6 +116,19 @@ function getMLBPlayerHeadshotUrl(playerId) {
 // ── Core fetch helper ─────────────────────────────────────────
 const MLB_BASE_URL = 'https://statsapi.mlb.com/api/v1';
 
+// On Cloudflare Pages, route MLB API calls through the /api/mlb Pages Function
+// so responses are cached in D1 and the MLB API domain is never hit from the browser.
+// Direct fetch is used in local development where the Pages Function doesn't exist.
+const MLB_USE_PROXY = (
+    typeof location !== 'undefined' &&
+    location.hostname !== 'localhost' &&
+    location.hostname !== '127.0.0.1'
+);
+
+function _mlbProxyUrl(targetUrl) {
+    return `/api/mlb?url=${encodeURIComponent(targetUrl)}`;
+}
+
 async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM) {
     const url = new URL(`${MLB_BASE_URL}${endpoint}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -125,11 +138,12 @@ async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM) {
     if (hit) return hit;
 
     Logger.debug(`MLB → ${url.pathname}${url.search}`, undefined, 'MLB');
+    const fetchUrl = MLB_USE_PROXY ? _mlbProxyUrl(url.toString()) : url.toString();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await fetch(fetchUrl, { signal: controller.signal });
     } finally {
         clearTimeout(timeoutId);
     }
@@ -157,10 +171,8 @@ async function fetchStatcast(playerId, type = 'batter') {
     if (hit) return hit;
 
     const params = new URLSearchParams({ type, year, mlbamId: playerId });
-    const directUrl  = `${SAVANT_BASE_URL}/percentile-rankings?${params}`;
-    const proxyUrl   = BDL_PROXY_URL ? `${BDL_PROXY_URL}/savant/percentile-rankings?${params}` : null;
-
-    const fetchUrl = proxyUrl || directUrl;
+    const directUrl = `${SAVANT_BASE_URL}/percentile-rankings?${params}`;
+    const fetchUrl  = MLB_USE_PROXY ? _mlbProxyUrl(directUrl) : directUrl;
     let json;
     try {
         const res = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
