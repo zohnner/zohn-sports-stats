@@ -88,8 +88,14 @@ function _escHtml(str) {
 // Mark any <img> with data-hide-on-error to opt in.
 if (typeof window !== 'undefined') {
     document.addEventListener('error', e => {
-        if (e.target.tagName === 'IMG' && 'hideOnError' in e.target.dataset) {
+        if (e.target.tagName !== 'IMG') return;
+        if ('hideOnError' in e.target.dataset) {
             e.target.style.display = 'none';
+        } else if ('logoFallback' in e.target.dataset) {
+            const span = document.createElement('span');
+            span.style.cssText = 'font-size:1.4rem;font-weight:800;color:#fff';
+            span.textContent = e.target.dataset.logoFallback;
+            e.target.replaceWith(span);
         }
     }, true);
 

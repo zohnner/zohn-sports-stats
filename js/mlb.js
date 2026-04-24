@@ -2094,7 +2094,7 @@ function displayMLBTeams(teams, standings = {}) {
             <div class="team-card-header" style="background:linear-gradient(135deg,${colors.primary}dd,${colors.primary}33)">
                 <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.5rem">
                     ${logo
-                        ? `<img src="${logo}" style="width:100%;height:100%;object-fit:contain" loading="lazy" onerror="this.outerHTML='<span style=font-size:1.4rem;font-weight:800;color:#fff>${abbr}</span>'">`
+                        ? `<img src="${logo}" style="width:100%;height:100%;object-fit:contain" loading="lazy" data-logo-fallback="${_escHtml(abbr)}">`
                         : `<span style="font-size:1.4rem;font-weight:800;color:#fff">${abbr}</span>`}
                 </div>
                 <h3 class="team-name">${team.name}</h3>
@@ -2484,10 +2484,11 @@ async function loadMLBLeaderboards() {
     `).join('');
 
     try {
+        const season = AppState.mlbLeaderSeason || MLB_SEASON;
         if (!AppState.mlbLeaderSplits) {
             const [hitSplits, pitSplits] = await Promise.all([
-                fetchMLBLeagueStats('hitting',  MLB_SEASON, 300),
-                fetchMLBLeagueStats('pitching', MLB_SEASON, 300),
+                fetchMLBLeagueStats('hitting',  season, 300),
+                fetchMLBLeagueStats('pitching', season, 300),
             ]);
             AppState.mlbLeaderSplits = { hitting: hitSplits, pitching: pitSplits };
         }
@@ -2544,15 +2545,26 @@ function displayMLBLeaderboards() {
     const splits   = AppState.mlbLeaderSplits || { hitting: [], pitching: [] };
     const minGP    = AppState.mlbLeaderMinGP    || 0;
     const posFilt  = AppState.mlbLeaderPosition || 'all';
+    const season   = AppState.mlbLeaderSeason   || MLB_SEASON;
     const fragment = document.createDocumentFragment();
 
-    // Control row 1 — Min GP
+    const MLB_SEASON_OPTIONS = [2023, 2024, 2025].map(y => ({ value: y, label: String(y) }));
+
+    // Control row 1 — Season
+    fragment.appendChild(_buildPillControl('Season:', MLB_SEASON_OPTIONS, season, val => {
+        if (val === season) return;
+        AppState.mlbLeaderSeason = val;
+        AppState.mlbLeaderSplits = null;
+        loadMLBLeaderboards();
+    }));
+
+    // Control row 2 — Min GP
     fragment.appendChild(_buildPillControl('Min GP:', MLB_MINGP_OPTIONS, minGP, val => {
         AppState.mlbLeaderMinGP = val;
         displayMLBLeaderboards();
     }));
 
-    // Control row 2 — Position
+    // Control row 3 — Position
     fragment.appendChild(_buildPillControl('Position:', MLB_POS_OPTIONS, posFilt, val => {
         AppState.mlbLeaderPosition = val;
         displayMLBLeaderboards();
@@ -2600,7 +2612,7 @@ function displayMLBLeaderboards() {
         header.title = `Click to sort ${dir ? 'ascending' : 'descending'}`;
         header.innerHTML = `
             <span class="leaderboard-title">${cat.label}</span>
-            <span class="leaderboard-unit" style="color:${cat.color}">${MLB_SEASON} MLB · ${unitTipMlb}${(minGP > 0 || applyPosFilt) ? ` · ${sorted.length} qualifying` : ''}</span>
+            <span class="leaderboard-unit" style="color:${cat.color}">${season} MLB · ${unitTipMlb}${(minGP > 0 || applyPosFilt) ? ` · ${sorted.length} qualifying` : ''}</span>
             <button class="lb-export-btn" aria-label="Export ${cat.label} as CSV" title="Download CSV" onclick="event.stopPropagation()">↓CSV</button>
             <span class="leaderboard-sort-arrow">${dir ? '▼' : '▲'}</span>
         `;
@@ -2625,7 +2637,7 @@ function displayMLBLeaderboards() {
                             cat.decimals > 0 ? numVal.toFixed(cat.decimals) : String(rawVal);
                         return [i+1, s.player?.fullName||'', s.team?.abbreviation||'', s.position?.abbreviation||'', s.stat?.gamesPlayed??'', display];
                     });
-                    exportCSV(`mlb-${cat.key}-${MLB_SEASON}.csv`, headers, rows);
+                    exportCSV(`mlb-${cat.key}-${season}.csv`, headers, rows);
                 });
             }
         }, 0);
@@ -3683,8 +3695,9 @@ Object.assign(AppState, {
     mlbStatsGroup:         'hitting',
     mlbPositionFilter:     'all',
     mlbSearchQuery:        '',
-    mlbLeaderMinGP:        0,      // minimum games played filter on MLB leaderboards (0 = All)
-    mlbLeaderPosition:     'all', // position filter on MLB leaderboards
+    mlbLeaderMinGP:        0,
+    mlbLeaderPosition:     'all',
+    mlbLeaderSeason:       null,   // null = use MLB_SEASON default
     mlbLeaderSplits:       null,
     mlbStandings:          null,
     _mlbStandingsLeague:   'AL',
