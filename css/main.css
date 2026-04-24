@@ -158,33 +158,31 @@ header {
 .sub-nav {
     max-width: var(--max-width);
     margin: 0 auto;
-    padding: 0 var(--space-8);
+    padding: 0.25rem var(--space-8);
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 2px;
     border-top: 1px solid var(--border-subtle, var(--border-default));
     overflow-x: auto;
     scrollbar-width: none;
 }
 .sub-nav::-webkit-scrollbar { display: none; }
 
-.sub-nav-item {
-    padding: 0.42rem 0.8rem;
-    font-size: 0.78rem;
-    border-radius: 0 !important;
-    border: none !important;
-    border-bottom: 2px solid transparent !important;
-    white-space: nowrap;
+/* Higher specificity beats .nav-tab base — no !important needed */
+.sub-nav .nav-tab {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.01em;
 }
-.sub-nav-item:hover {
-    background: var(--bg-interactive) !important;
-    border-radius: var(--radius-sm) !important;
-    border-bottom-color: transparent !important;
+.sub-nav .nav-tab:hover {
+    background: var(--bg-interactive);
+    color: var(--text-secondary);
+    border-color: var(--border-default);
 }
-.sub-nav-item.active {
-    background: transparent !important;
-    color: var(--accent) !important;
-    border-bottom-color: var(--accent) !important;
+.sub-nav .nav-tab.active {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border-color: var(--accent-border);
     font-weight: 700;
 }
 
