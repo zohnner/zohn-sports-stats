@@ -159,123 +159,77 @@ function loadHome() {
     if (!grid) return;
     grid.className = 'home-container';
 
-    const _stat = (target, label, suffix = '+') =>
-        `<div class="home-stat">
-            <div class="home-stat-num" data-target="${target}" data-suffix="${suffix}">0</div>
-            <div class="home-stat-lbl">${label}</div>
-        </div>`;
+    const dateStr = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+    });
 
-    grid.innerHTML = `
-        <div class="home-hero">
-            <div class="home-hero-glow"></div>
-            <div class="home-hero-content">
-                <div class="home-hero-badge">⚾ MLB Broadcast & Analytics</div>
-                <h1 class="home-hero-title">SportsStrata</h1>
-                <p class="home-hero-sub">Serious stats for serious fans</p>
-                <div class="home-stats-strip">
-                    ${_stat(750, 'MLB Players')}
-                    ${_stat(30, 'MLB Teams')}
-                    ${_stat(162, 'Games Per Season')}
-                    ${_stat(3, 'Seasons of Data', '')}
-                </div>
+    // Structured skeleton cards that match the real game card layout
+    const skelCards = Array.from({length: 6}, () => `
+        <div class="home-game-card home-game-card--skeleton" aria-hidden="true">
+            <div class="hgc-row">
+                <span class="skeleton-line" style="width:28px;height:28px;border-radius:50%;flex-shrink:0"></span>
+                <span class="skeleton-line" style="width:36px;height:13px"></span>
+                <span class="skeleton-line" style="width:18px;height:16px;margin-left:auto"></span>
+            </div>
+            <div class="hgc-row">
+                <span class="skeleton-line" style="width:28px;height:28px;border-radius:50%;flex-shrink:0"></span>
+                <span class="skeleton-line" style="width:36px;height:13px"></span>
+                <span class="skeleton-line" style="width:18px;height:16px;margin-left:auto"></span>
+            </div>
+            <div class="hgc-card-footer">
+                <span class="skeleton-line" style="width:48px;height:11px"></span>
             </div>
         </div>
+    `).join('');
 
-        <!-- MLB nav shortcuts -->
-        <div class="home-mlb-shortcuts">
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-players')">
-                <span class="home-shortcut-icon">👤</span>
-                <span>Players</span>
-            </button>
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-leaders')">
-                <span class="home-shortcut-icon">🏆</span>
-                <span>Leaders</span>
-            </button>
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-standings')">
-                <span class="home-shortcut-icon">📊</span>
-                <span>Standings</span>
-            </button>
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-games')">
-                <span class="home-shortcut-icon">📅</span>
-                <span>Scores</span>
-            </button>
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-teams')">
-                <span class="home-shortcut-icon">🏟</span>
-                <span>Teams</span>
-            </button>
-            <button class="home-shortcut-btn" onclick="navigateTo('mlb-prep')">
-                <span class="home-shortcut-icon">📋</span>
-                <span>Game Prep</span>
-            </button>
+    grid.innerHTML = `
+        <!-- Today's Games — dominant first module -->
+        <div class="home-today" id="homeTodayGames">
+            <div class="home-section-hdr">
+                <span class="home-section-title">Today's Games</span>
+                <span class="home-section-date">${dateStr}</span>
+            </div>
+            <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
         </div>
 
         <div class="home-recents" id="homeRecents"></div>
-
         <div class="home-on-this-day" id="homeOnThisDay" style="display:none"></div>
 
-        <div class="home-today" id="homeTodayGames">
-            <div class="home-section-hdr">
-                <span class="home-section-title">⚾ Today's MLB Games</span>
-                <span class="home-section-date">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
-            </div>
-            <div class="home-today-grid" id="homeTodayGrid">
-                ${Array.from({length:4},()=>`<div class="skeleton-card" style="height:72px;border-radius:12px"></div>`).join('')}
-            </div>
-        </div>
-
+        <!-- Feature strip — each card navigates to its tool -->
         <div class="home-features">
-            <div class="home-feature-item">
+            <button class="home-feature-item" onclick="navigateTo('mlb-leaders')">
                 <div class="home-feature-icon">📊</div>
                 <div class="home-feature-text">
-                    <div class="home-feature-title">MLB Leaderboards</div>
-                    <div class="home-feature-desc">Daily rankings across AVG, HR, ERA, WHIP, FIP, xFIP, and more</div>
+                    <div class="home-feature-title">Leaderboards</div>
+                    <div class="home-feature-desc">Daily rankings — AVG, HR, ERA, WHIP, FIP, xFIP and more</div>
                 </div>
-            </div>
-            <div class="home-feature-item">
+            </button>
+            <button class="home-feature-item" onclick="navigateTo('mlb-prep')">
                 <div class="home-feature-icon">📋</div>
                 <div class="home-feature-text">
-                    <div class="home-feature-title">Broadcast Game Prep</div>
+                    <div class="home-feature-title">Game Prep</div>
                     <div class="home-feature-desc">Pitcher matchups, lineup context, and team form — ready for air</div>
                 </div>
-            </div>
-            <div class="home-feature-item">
+            </button>
+            <button class="home-feature-item" onclick="navigateTo('mlb-players')">
                 <div class="home-feature-icon">🔬</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Statcast & Splits</div>
                     <div class="home-feature-desc">Exit velocity, barrel %, vs. L/R, home/away splits per player</div>
                 </div>
-            </div>
-            <div class="home-feature-item">
+            </button>
+            <button class="home-feature-item" onclick="navigateTo('mlb-builder')">
                 <div class="home-feature-icon">🧮</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Stat Builder</div>
                     <div class="home-feature-desc">Custom formulas — rank any player by any metric combination</div>
                 </div>
-            </div>
+            </button>
         </div>
     `;
 
-    // Animate stat counters
-    grid.querySelectorAll('.home-stat-num').forEach(el => {
-        const target = parseInt(el.dataset.target, 10);
-        const suffix = el.dataset.suffix ?? '+';
-        let cur = 0;
-        const step = Math.max(1, Math.ceil(target / 40));
-        const tick = () => {
-            cur = Math.min(cur + step, target);
-            el.textContent = cur + (cur === target ? suffix : '');
-            if (cur < target) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-    });
-
-    // Recently viewed players
     _renderHomeRecents();
-
-    // "On This Day" historical trivia card
     _loadOnThisDay();
-
-    // Populate today's games — fire and forget, renders into #homeTodayGrid
     _loadHomeTodayGames();
 }
 
@@ -316,75 +270,76 @@ async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
 
-    const _gameChip = (sport, homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey) => {
-        const isFinal = /final|^f$/i.test(status);
-        const isLive  = !isFinal && (homeScore > 0 || awayScore > 0);
-        const statusPill = isFinal ? 'F' : isLive ? 'LIVE' : 'SCH';
-        const pillCls    = isFinal ? 'final' : isLive ? 'live' : 'sched';
-        const homeLogo = homeId ? `https://www.mlbstatic.com/team-logos/${homeId}.svg` : '';
-        const awayLogo = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : '';
-        const hasScore = homeScore > 0 || awayScore > 0;
-        const homeWon  = isFinal && homeScore > awayScore;
-        const awayWon  = isFinal && awayScore > homeScore;
+    const _gameCard = (homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey) => {
+        const isFinal   = /final|^f$/i.test(status);
+        const isLive    = !isFinal && /in progress|live/i.test(status);
+        const hasScore  = isFinal || isLive || homeScore > 0 || awayScore > 0;
+        const homeWon   = isFinal && homeScore > awayScore;
+        const awayWon   = isFinal && awayScore > homeScore;
+        const pillCls   = isFinal ? 'final' : isLive ? 'live' : 'sched';
+        const pillLabel = isFinal ? 'Final' : isLive ? 'Live' : 'Scheduled';
+        const homeLogo  = homeId ? `https://www.mlbstatic.com/team-logos/${homeId}.svg` : '';
+        const awayLogo  = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : '';
+        const fmt = (n) => hasScore ? n : '–';
         return `
-            <div class="home-game-chip" data-sport="${sport}" data-game-key="${gameKey}" role="button" tabindex="0">
-                <span class="hgc-sport-dot hgc-sport-dot--${sport}"></span>
-                <img class="hgc-logo" src="${awayLogo}" alt="" data-hide-on-error>
-                <span class="hgc-team ${awayWon?'hgc-team--win':''}">${awayAbbr}</span>
-                <span class="hgc-score ${awayWon?'hgc-score--win':''}">${hasScore?awayScore:'—'}</span>
-                <span class="hgc-sep">:</span>
-                <span class="hgc-score ${homeWon?'hgc-score--win':''}">${hasScore?homeScore:'—'}</span>
-                <span class="hgc-team ${homeWon?'hgc-team--win':''}">${homeAbbr}</span>
-                <img class="hgc-logo" src="${homeLogo}" alt="" data-hide-on-error>
-                <span class="hgc-pill ticker-status-pill--${pillCls}">${statusPill}</span>
-            </div>
-        `;
+            <div class="home-game-card" data-game-key="${gameKey}" role="button" tabindex="0"
+                 aria-label="${awayAbbr} ${fmt(awayScore)} at ${homeAbbr} ${fmt(homeScore)}, ${pillLabel}">
+                <div class="hgc-row">
+                    ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}">${awayAbbr}</span>
+                    <span class="hgc-score${awayWon ? ' hgc-score--win' : ''}">${fmt(awayScore)}</span>
+                </div>
+                <div class="hgc-row">
+                    ${homeLogo ? `<img class="hgc-team-logo" src="${homeLogo}" alt="" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}">${homeAbbr}</span>
+                    <span class="hgc-score${homeWon ? ' hgc-score--win' : ''}">${fmt(homeScore)}</span>
+                </div>
+                <div class="hgc-card-footer">
+                    <span class="hgc-pill hgc-pill--${pillCls}">${pillLabel}</span>
+                </div>
+            </div>`;
     };
 
     try {
         const mlbResult = await fetchMLBSchedule(2).catch(() => null);
-        const chips = [];
+        const cards = [];
 
         if (mlbResult) {
-            const todayMLB = (mlbResult || []).slice(0, 10);
-            todayMLB.forEach(g => chips.push(_gameChip(
-                'mlb',
-                g.teams?.home?.team?.abbreviation || (typeof _mlbTeamAbbr === 'function' ? _mlbTeamAbbr(g.teams?.home?.team) : '?'),
-                g.teams?.away?.team?.abbreviation || (typeof _mlbTeamAbbr === 'function' ? _mlbTeamAbbr(g.teams?.away?.team) : '?'),
+            mlbResult.slice(0, 15).forEach(g => cards.push(_gameCard(
+                g.teams?.home?.team?.abbreviation ?? '?',
+                g.teams?.away?.team?.abbreviation ?? '?',
                 g.teams?.home?.score ?? 0,
                 g.teams?.away?.score ?? 0,
-                g.status?.detailedState || 'SCH',
+                g.status?.detailedState || '',
                 g.teams?.home?.team?.id,
                 g.teams?.away?.team?.id,
                 `mlb-${g.gamePk}`,
             )));
         }
 
-        if (!gridEl.isConnected) return; // user navigated away
+        if (!gridEl.isConnected) return;
 
-        if (chips.length === 0) {
-            gridEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">No games scheduled today.</p>';
+        if (cards.length === 0) {
+            gridEl.innerHTML = `<p class="home-no-games">No games scheduled today.</p>`;
             return;
         }
 
-        gridEl.innerHTML = chips.join('');
+        gridEl.innerHTML = cards.join('');
 
-        // Click handlers — navigate to game detail
-        gridEl.querySelectorAll('.home-game-chip').forEach(chip => {
-            const handler = () => {
-                const key = chip.dataset.gameKey || '';
-                const dashIdx = key.indexOf('-');
-                const id = key.slice(dashIdx + 1);
+        gridEl.querySelectorAll('.home-game-card').forEach(card => {
+            const open = () => {
+                const id = parseInt((card.dataset.gameKey || '').replace('mlb-', ''), 10);
+                if (!id) return;
                 if (AppState.currentSport !== 'mlb') switchSport('mlb');
-                if (typeof showMLBGameDetail === 'function') showMLBGameDetail(parseInt(id));
+                if (typeof showMLBGameDetail === 'function') showMLBGameDetail(id);
             };
-            chip.addEventListener('click', handler);
-            chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') handler(); });
+            card.addEventListener('click', open);
+            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
         });
 
     } catch (_) {
         if (gridEl.isConnected) {
-            gridEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">Scores unavailable.</p>';
+            gridEl.innerHTML = `<p class="home-no-games">Scores unavailable.</p>`;
         }
     }
 }
