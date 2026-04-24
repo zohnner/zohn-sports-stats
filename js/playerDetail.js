@@ -108,6 +108,8 @@ async function showPlayerDetail(playerId, push = true) {
             ${_chartsCard(recentGames)}
 
             ${hasPlayers ? _compareCard(player) : ''}
+
+            ${_playerNotesCard(player.id)}
         `;
 
         // ── Initialise charts ─────────────────────────────────
@@ -124,10 +126,15 @@ async function showPlayerDetail(playerId, push = true) {
                 ?.addEventListener('click', () => togglePer36(stats, season));
 
             document.getElementById('pd-compare-select')
-                ?.addEventListener('change', e => _onCompareChange(e, player, stats));
+                ?.addEventListener('change', () => _onCompareChange(player, stats));
+            document.getElementById('pd-compare-select-c')
+                ?.addEventListener('change', () => _onCompareChange(player, stats));
 
             // Career stats — fetch last 4 seasons in background, render when ready
             _loadCareerStats(player.id, CURRENT_SEASON);
+
+            // Announcer notes
+            _initPlayerNotes(player.id);
         });
 
     } catch (error) {
@@ -157,50 +164,105 @@ function togglePer36(stats, season) {
     document.getElementById('per36Btn')?.addEventListener('click', () => togglePer36(stats, season));
 }
 
-// ── Comparison handler ────────────────────────────────────────
+// ── Comparison handler (supports 2–3 players) ─────────────────
 
-async function _onCompareChange(e, player, stats) {
-    const cid  = parseInt(e.target.value);
-    const wrap = document.getElementById('pd-compare-chart-wrap');
-    if (!wrap) return;
+const _NBA_COMPARE_STATS = [
+    { key: 'pts',      label: 'PPG', d: 1 },
+    { key: 'reb',      label: 'RPG', d: 1 },
+    { key: 'ast',      label: 'APG', d: 1 },
+    { key: 'stl',      label: 'SPG', d: 1 },
+    { key: 'blk',      label: 'BPG', d: 1 },
+    { key: 'fg_pct',   label: 'FG%', d: 1, pct: true },
+    { key: 'fg3_pct',  label: '3P%', d: 1, pct: true },
+    { key: 'ft_pct',   label: 'FT%', d: 1, pct: true },
+    { key: 'turnover', label: 'TOV', d: 1, lower: true },
+    { key: 'min',      label: 'MIN', d: 1 },
+];
 
-    if (!cid) {
+const _NBA_CMP_COLORS = ['#818cf8', '#34d399', '#f472b6'];
+
+async function _onCompareChange(playerA, statsA) {
+    const selB  = document.getElementById('pd-compare-select');
+    const selC  = document.getElementById('pd-compare-select-c');
+    const wrap  = document.getElementById('pd-compare-chart-wrap');
+    if (!selB || !wrap) return;
+
+    const idB = parseInt(selB.value) || null;
+    const idC = parseInt(selC?.value) || null;
+
+    if (!idB) {
         wrap.style.display = 'none';
         StatsCharts.destroy('pd-compare-radar');
         return;
     }
 
-    const cPlayer = AppState.allPlayers.find(p => p.id === cid);
-    if (!cPlayer) return;
+    const playerB = AppState.allPlayers.find(p => p.id === idB);
+    if (!playerB) return;
 
-    let cStats = AppState.playerStats[cid];
-    if (!cStats) {
+    let statsB = AppState.playerStats[idB];
+    if (!statsB) {
         wrap.innerHTML = '<p style="color:var(--color-text-muted);padding:1rem;text-align:center">Loading…</p>';
         wrap.style.display = 'block';
         const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
-        const key = `${cPlayer.first_name} ${cPlayer.last_name}`.toLowerCase();
+        const key = _normName(`${playerB.first_name} ${playerB.last_name}`);
         const stat = statsMap[key];
-        if (stat) {
-            cStats = { ...stat, player_id: cid };
-            AppState.playerStats[cid] = cStats;
-        }
+        if (stat) { statsB = { ...stat, player_id: idB }; AppState.playerStats[idB] = statsB; }
     }
 
-    if (!cStats) {
-        wrap.innerHTML = `<p style="color:var(--color-text-muted);padding:1rem;text-align:center">No stats for ${cPlayer.first_name} ${cPlayer.last_name}</p>`;
+    if (!statsB) {
+        wrap.innerHTML = `<p style="color:var(--color-text-muted);padding:1rem;text-align:center">No stats for ${playerB.first_name} ${playerB.last_name}</p>`;
         wrap.style.display = 'block';
         return;
     }
 
-    wrap.innerHTML = '<canvas id="pd-compare-radar"></canvas>';
+    const playerC = idC ? AppState.allPlayers.find(p => p.id === idC) : null;
+    const statsC  = playerC ? (AppState.playerStats[idC] || null) : null;
+
+    wrap.innerHTML = `
+        <canvas id="pd-compare-radar"></canvas>
+        <div class="compare-table-wrap" id="pd-compare-table"></div>
+    `;
     wrap.style.display = 'block';
 
-    requestAnimationFrame(() => {
-        StatsCharts.radar('pd-compare-radar', [
-            { label: `${player.first_name} ${player.last_name}`,  data: stats,  color: '#818cf8' },
-            { label: `${cPlayer.first_name} ${cPlayer.last_name}`, data: cStats, color: '#34d399' },
-        ]);
-    });
+    const nameA = `${playerA.first_name} ${playerA.last_name}`;
+    const nameB = `${playerB.first_name} ${playerB.last_name}`;
+    const nameC = playerC ? `${playerC.first_name} ${playerC.last_name}` : null;
+
+    const datasets = [
+        { label: nameA, data: statsA, color: _NBA_CMP_COLORS[0] },
+        { label: nameB, data: statsB, color: _NBA_CMP_COLORS[1] },
+    ];
+    if (statsC) datasets.push({ label: nameC, data: statsC, color: _NBA_CMP_COLORS[2] });
+
+    requestAnimationFrame(() => { StatsCharts.radar('pd-compare-radar', datasets); });
+
+    // Multi-player stat table — stat label first column, then one column per player
+    const players = [{ name: nameA, s: statsA, clr: _NBA_CMP_COLORS[0] }, { name: nameB, s: statsB, clr: _NBA_CMP_COLORS[1] }];
+    if (statsC) players.push({ name: nameC, s: statsC, clr: _NBA_CMP_COLORS[2] });
+
+    const thead = `<tr>
+        <th class="cmp-stat-lbl-cell">Stat</th>
+        ${players.map(p => `<th class="cmp-th-b" style="color:${p.clr}">${p.name}</th>`).join('')}
+    </tr>`;
+
+    const tbody = _NBA_COMPARE_STATS.map(s => {
+        const raws = players.map(p => parseFloat(p.s?.[s.key]));
+        const best = raws.reduce((bi, v, i) => {
+            if (isNaN(v)) return bi;
+            if (bi === -1) return i;
+            return (s.lower ? v < raws[bi] : v > raws[bi]) ? i : bi;
+        }, -1);
+        const cells = players.map(({ s: ps, clr }, i) => {
+            const raw  = parseFloat(ps?.[s.key]);
+            const disp = isNaN(raw) ? '—' : s.pct ? (raw * 100).toFixed(s.d) + '%' : raw.toFixed(s.d);
+            const win  = i === best && !isNaN(raw);
+            return `<td class="cmp-val-a ${win ? 'cmp-winner' : ''}" style="${win ? `color:${clr}` : ''}">${disp}</td>`;
+        }).join('');
+        return `<tr class="cmp-row"><td class="cmp-stat-lbl-cell">${s.label}</td>${cells}</tr>`;
+    }).join('');
+
+    const tableEl = document.getElementById('pd-compare-table');
+    if (tableEl) tableEl.innerHTML = `<table class="cmp-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
 }
 
 // ── HTML fragment builders ────────────────────────────────────
@@ -213,7 +275,7 @@ function _playerHero(player, teamName, stats) {
     const initials    = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
     const headshotUrl = getESPNHeadshotUrl(player);
     const headshotImg = headshotUrl
-        ? `<img class="player-headshot player-headshot--detail" src="${headshotUrl}" alt="${player.first_name} ${player.last_name}" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
+        ? `<img class="player-headshot" src="${headshotUrl}" alt="${player.first_name} ${player.last_name}" loading="lazy" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
         : '';
 
     // Bio attributes available from BDL player object
@@ -229,20 +291,29 @@ function _playerHero(player, teamName, stats) {
     const gp = stats?.games_played;
 
     const bioItems = [
-        jersey  && `<div class="player-bio-item"><span class="bio-label">Jersey</span><span class="bio-value">${jersey}</span></div>`,
-        height  && `<div class="player-bio-item"><span class="bio-label">Height</span><span class="bio-value">${height}</span></div>`,
-        weight  && `<div class="player-bio-item"><span class="bio-label">Weight</span><span class="bio-value">${weight}</span></div>`,
-        college && `<div class="player-bio-item"><span class="bio-label">College</span><span class="bio-value">${college}</span></div>`,
-        country && `<div class="player-bio-item"><span class="bio-label">Country</span><span class="bio-value">${country}</span></div>`,
-        draftStr && `<div class="player-bio-item"><span class="bio-label">Draft</span><span class="bio-value">${draftStr}</span></div>`,
-        gp != null && `<div class="player-bio-item"><span class="bio-label">Games</span><span class="bio-value">${gp} GP</span></div>`,
+        jersey  && `<div class="player-bio-item"><span class="bio-label">Jersey</span><span class="bio-value">${_escHtml(jersey)}</span></div>`,
+        height  && `<div class="player-bio-item"><span class="bio-label">Height</span><span class="bio-value">${_escHtml(height)}</span></div>`,
+        weight  && `<div class="player-bio-item"><span class="bio-label">Weight</span><span class="bio-value">${_escHtml(weight)}</span></div>`,
+        college && `<div class="player-bio-item"><span class="bio-label">College</span><span class="bio-value">${_escHtml(college)}</span></div>`,
+        country && `<div class="player-bio-item"><span class="bio-label">Country</span><span class="bio-value">${_escHtml(country)}</span></div>`,
+        draftStr && `<div class="player-bio-item"><span class="bio-label">Draft</span><span class="bio-value">${_escHtml(draftStr)}</span></div>`,
+        gp != null && `<div class="player-bio-item"><span class="bio-label">Games</span><span class="bio-value">${_escHtml(gp)} GP</span></div>`,
     ].filter(Boolean).join('');
 
     return `
         <div class="player-detail-header"
              style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
                     border-top:3px solid ${colors.primary}88">
-            <button onclick="backToPlayers()" class="back-button">← Players</button>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+                <button onclick="backToPlayers()" class="back-button">← Players</button>
+                <div style="display:flex;gap:0.5rem;align-items:center">
+                    <button class="share-btn" onclick="_downloadNBACard(${player.id})" title="Download stat card PNG">↓ Card</button>
+                    <button class="share-btn" onclick="_shareCurrentPage()" title="Copy link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        Share
+                    </button>
+                </div>
+            </div>
             <div class="player-hero">
                 <div class="player-detail-avatar"
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
@@ -252,10 +323,14 @@ function _playerHero(player, teamName, stats) {
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
-                        <h1 class="player-detail-name">${player.first_name} ${player.last_name}</h1>
-                        <span class="player-hero-pos">${player.position || 'N/A'}</span>
+                        <h1 class="player-detail-name">${_escHtml(player.first_name)} ${_escHtml(player.last_name)}</h1>
+                        <span class="player-hero-pos">${_escHtml(player.position || 'N/A')}</span>
                     </div>
-                    <p class="player-detail-meta" style="color:var(--color-text-secondary)">${teamName}</p>
+                    <p class="player-detail-meta" style="color:var(--color-text-secondary)">
+                        ${player.team?.id
+                            ? `<button onclick="showTeamDetail(${player.team.id})" style="background:none;border:none;padding:0;color:inherit;cursor:pointer;font-size:inherit;font-family:inherit;text-decoration:underline;text-underline-offset:3px">${teamName}</button>`
+                            : teamName}
+                    </p>
                     ${conf ? `<p class="player-detail-meta">${conf} Conference · ${div} Division</p>` : ''}
                     ${bioItems ? `<div class="player-bio-grid">${bioItems}</div>` : ''}
                 </div>
@@ -310,28 +385,31 @@ function _seasonStatsCard(stats, season) {
     const total = AppState.nbaStatsMap ? Object.keys(AppState.nbaStatsMap).length : 0;
     const rk    = f => _rankTag(ranks[f], total);
 
+    const gl  = typeof StatGlossary !== 'undefined' ? StatGlossary : null;
+    const tip = lbl => gl ? gl.auto(lbl) : lbl;
+
     return `
         <div class="stats-card" id="seasonStatsCard">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5)">
                 <h2 class="detail-section-title" style="margin-bottom:0">${modeLabel}</h2>
-                <button id="per36Btn" class="per36-btn"
+                <button id="per36Btn" class="per36-btn" aria-label="Toggle Per-36 minutes normalisation"
                     style="${_per36Mode ? 'background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.5);color:#818cf8' : ''}">
                     ${_per36Mode ? 'Per 36 ON' : 'Per 36'}
                 </button>
             </div>
             <div class="stats-grid">
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-pts)">${r(stats.pts)}</div>${rk('pts')}<div class="stat-label">PTS</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-reb)">${r(stats.reb)}</div>${rk('reb')}<div class="stat-label">REB</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-ast)">${r(stats.ast)}</div>${rk('ast')}<div class="stat-label">AST</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-blk)">${p(stats.fg_pct)}</div>${rk('fg_pct')}<div class="stat-label">FG%</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-stl)">${p(stats.fg3_pct)}</div>${rk('fg3_pct')}<div class="stat-label">3P%</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-pct)">${p(stats.ft_pct)}</div>${rk('ft_pct')}<div class="stat-label">FT%</div></div>
-                <div class="stat-item"><div class="stat-value">${r(stats.stl)}</div>${rk('stl')}<div class="stat-label">STL</div></div>
-                <div class="stat-item"><div class="stat-value">${r(stats.blk)}</div>${rk('blk')}<div class="stat-label">BLK</div></div>
-                <div class="stat-item"><div class="stat-value">${r(stats.turnover)}</div><div class="stat-label">TOV</div></div>
-                <div class="stat-item"><div class="stat-value" style="color:var(--color-min)">${s(stats.min)}</div>${rk('min')}<div class="stat-label">MIN</div></div>
-                ${stats.oreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.oreb)}</div>${rk('oreb')}<div class="stat-label">OREB</div></div>` : ''}
-                ${stats.dreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.dreb)}</div>${rk('dreb')}<div class="stat-label">DREB</div></div>` : ''}
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-pts)">${r(stats.pts)}</div>${rk('pts')}<div class="stat-label">${tip('PTS')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-reb)">${r(stats.reb)}</div>${rk('reb')}<div class="stat-label">${tip('REB')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-ast)">${r(stats.ast)}</div>${rk('ast')}<div class="stat-label">${tip('AST')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-blk)">${p(stats.fg_pct)}</div>${rk('fg_pct')}<div class="stat-label">${tip('FG%')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-stl)">${p(stats.fg3_pct)}</div>${rk('fg3_pct')}<div class="stat-label">${tip('3P%')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-pct)">${p(stats.ft_pct)}</div>${rk('ft_pct')}<div class="stat-label">${tip('FT%')}</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.stl)}</div>${rk('stl')}<div class="stat-label">${tip('STL')}</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.blk)}</div>${rk('blk')}<div class="stat-label">${tip('BLK')}</div></div>
+                <div class="stat-item"><div class="stat-value">${r(stats.turnover)}</div><div class="stat-label">${tip('TOV')}</div></div>
+                <div class="stat-item"><div class="stat-value" style="color:var(--color-min)">${s(stats.min)}</div>${rk('min')}<div class="stat-label">${tip('MIN')}</div></div>
+                ${stats.oreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.oreb)}</div>${rk('oreb')}<div class="stat-label">${tip('OREB')}</div></div>` : ''}
+                ${stats.dreb != null ? `<div class="stat-item"><div class="stat-value">${r(stats.dreb)}</div>${rk('dreb')}<div class="stat-label">${tip('DREB')}</div></div>` : ''}
             </div>
         </div>
     `;
@@ -446,15 +524,30 @@ async function _loadCareerStats(playerId, currentSeason) {
         }
 
         card.innerHTML = _careerStatsCard(rows);
+        _wireCareerCSV(rows);
+        _wireCareerTrend(rows);
     } catch (_) {
         card.remove();
     }
 }
 
+const _CAREER_TREND_STATS = [
+    { key: 'pts',     label: 'PTS',  color: '#fbbf24' },
+    { key: 'reb',     label: 'REB',  color: '#34d399' },
+    { key: 'ast',     label: 'AST',  color: '#60a5fa' },
+    { key: 'stl',     label: 'STL',  color: '#a78bfa' },
+    { key: 'blk',     label: 'BLK',  color: '#f87171' },
+    { key: 'fg_pct',  label: 'FG%',  color: '#f472b6' },
+    { key: 'fg3_pct', label: '3P%',  color: '#818cf8' },
+    { key: 'min',     label: 'MIN',  color: '#94a3b8' },
+];
+
 function _careerStatsCard(rows) {
     const p = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
     const r = (v, d = 1) => v != null ? parseFloat(v).toFixed(d) : '—';
     const seasonLabel = yr => `${yr}–${String(yr + 1).slice(-2)}`;
+    const gl = typeof StatGlossary !== 'undefined' ? StatGlossary : null;
+    const th = lbl => gl ? `<th>${gl.auto(lbl)}</th>` : `<th>${lbl}</th>`;
 
     const colHtml = rows.map(({ season, stats: s }) => `
         <td class="career-season">${seasonLabel(season)}</td>
@@ -470,23 +563,22 @@ function _careerStatsCard(rows) {
         <td class="career-gp">${s.games_played ?? '—'}</td>
     `).join('</tr><tr>');
 
+    const trendBtns = _CAREER_TREND_STATS.map((s, i) =>
+        `<button class="career-stat-btn${i === 0 ? ' active' : ''}" data-stat="${s.key}" data-color="${s.color}">${s.label}</button>`
+    ).join('');
+
     return `
-        <h2 class="detail-section-title">Career / Season History</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)">
+            <h2 class="detail-section-title" style="margin-bottom:0">Career / Season History</h2>
+            <button class="lb-export-btn" id="career-csv-btn" aria-label="Export career stats as CSV" title="Download CSV">↓CSV</button>
+        </div>
         <div class="career-table-wrap">
             <table class="career-table">
                 <thead>
                     <tr>
                         <th>Season</th>
-                        <th title="Points per game">PTS</th>
-                        <th title="Rebounds per game">REB</th>
-                        <th title="Assists per game">AST</th>
-                        <th title="Steals per game">STL</th>
-                        <th title="Blocks per game">BLK</th>
-                        <th title="Field goal percentage">FG%</th>
-                        <th title="Three-point percentage">3P%</th>
-                        <th title="Free throw percentage">FT%</th>
-                        <th title="Minutes per game">MIN</th>
-                        <th title="Games played">GP</th>
+                        ${th('PTS')}${th('REB')}${th('AST')}${th('STL')}${th('BLK')}
+                        ${th('FG%')}${th('3P%')}${th('FT%')}${th('MIN')}${th('GP')}
                     </tr>
                 </thead>
                 <tbody>
@@ -494,7 +586,59 @@ function _careerStatsCard(rows) {
                 </tbody>
             </table>
         </div>
+        <div class="career-trend-section">
+            <div class="career-trend-controls" id="career-trend-controls">${trendBtns}</div>
+            <div class="chart-wrap chart-wrap--tall" style="margin-top:0.75rem">
+                <canvas id="pd-career-trend"></canvas>
+            </div>
+        </div>
     `;
+}
+
+function _wireCareerCSV(rows) {
+    const btn = document.getElementById('career-csv-btn');
+    if (!btn || typeof exportCSV !== 'function') return;
+    const seasonLabel = yr => `${yr}–${String(yr + 1).slice(-2)}`;
+    btn.addEventListener('click', () => {
+        const headers = ['Season','PTS','REB','AST','STL','BLK','FG%','3P%','FT%','MIN','GP'];
+        const csvRows = rows.map(({ season, stats: s }) => [
+            seasonLabel(season),
+            s.pts != null ? parseFloat(s.pts).toFixed(1) : '',
+            s.reb != null ? parseFloat(s.reb).toFixed(1) : '',
+            s.ast != null ? parseFloat(s.ast).toFixed(1) : '',
+            s.stl != null ? parseFloat(s.stl).toFixed(1) : '',
+            s.blk != null ? parseFloat(s.blk).toFixed(1) : '',
+            s.fg_pct  != null ? (s.fg_pct*100).toFixed(1)+'%'  : '',
+            s.fg3_pct != null ? (s.fg3_pct*100).toFixed(1)+'%' : '',
+            s.ft_pct  != null ? (s.ft_pct*100).toFixed(1)+'%'  : '',
+            s.min != null ? parseFloat(s.min).toFixed(1) : '',
+            s.games_played ?? '',
+        ]);
+        exportCSV(`nba-career-stats.csv`, headers, csvRows);
+    });
+}
+
+function _wireCareerTrend(rows) {
+    if (!window.StatsCharts || rows.length < 2) return;
+
+    // Rows come newest-first from the API — reverse for oldest→newest chart
+    const chronRows = [...rows].reverse();
+
+    const renderTrend = (statKey, color) => {
+        StatsCharts.careerTrend('pd-career-trend', chronRows, statKey, color);
+    };
+
+    // Initial render with PTS
+    const firstStat = _CAREER_TREND_STATS[0];
+    renderTrend(firstStat.key, firstStat.color);
+
+    document.getElementById('career-trend-controls')?.addEventListener('click', e => {
+        const btn = e.target.closest('.career-stat-btn');
+        if (!btn) return;
+        document.querySelectorAll('.career-stat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTrend(btn.dataset.stat, btn.dataset.color);
+    });
 }
 
 // ── NBA Advanced Stats ────────────────────────────────────────
@@ -530,10 +674,13 @@ function _advancedStatsCard(stats) {
         return `<div class="adv-bar"><div class="adv-bar-fill" style="width:${w}%;background:${color}"></div></div>`;
     };
 
-    const _metric = (label, display, bar, tip) => `
+    const _tip = (lbl, key) => typeof StatGlossary !== 'undefined'
+        ? StatGlossary.auto(key || lbl) : lbl;
+
+    const _metric = (label, display, bar, key) => `
         <div class="adv-metric">
             <div class="adv-metric-top">
-                <span class="adv-metric-label" title="${tip}">${label}</span>
+                <span class="adv-metric-label">${_tip(label, key)}</span>
                 <span class="adv-metric-value">${display}</span>
             </div>
             ${bar}
@@ -543,12 +690,12 @@ function _advancedStatsCard(stats) {
         <div class="stats-card">
             <h2 class="detail-section-title">Advanced Efficiency</h2>
             <div class="adv-stats-grid">
-                ${_metric('TS%',    pct(ts),           _bar(ts,    0.70, 'var(--color-pts)'), 'True Shooting % — pts per shooting attempt incl. free throws')}
-                ${_metric('eFG%',   pct(efg),          _bar(efg,   0.65, 'var(--color-ast)'), 'Effective FG% — weights 3-pointers at 1.5× a 2-pointer')}
-                ${_metric('TOV%',   r1(tovPct) + '%',  _bar(tovPct ? tovPct/100 : 0, 0.25, 'var(--color-loss)'), 'Turnover % — share of possessions ending in a turnover')}
-                ${_metric('AST/TO', r1(astTo),         _bar(astTo, 6,    'var(--color-stl)'), 'Assist-to-turnover ratio')}
-                ${_metric('3PAr',   pct(par3),         _bar(par3,  0.60, 'var(--color-stl)'), '3-Point Attempt Rate — share of FGA that are 3s')}
-                ${_metric('FTr',    pct(ftr),          _bar(ftr,   0.60, 'var(--color-pct)'), 'Free Throw Rate — FTA per FGA')}
+                ${_metric('TS%',    pct(ts),           _bar(ts,    0.70, 'var(--color-pts)'), 'TS%')}
+                ${_metric('eFG%',   pct(efg),          _bar(efg,   0.65, 'var(--color-ast)'), 'eFG%')}
+                ${_metric('TOV%',   r1(tovPct) + '%',  _bar(tovPct ? tovPct/100 : 0, 0.25, 'var(--color-loss)'), 'TOV%')}
+                ${_metric('AST/TO', r1(astTo),         _bar(astTo, 6,    'var(--color-stl)'), 'AST/TO')}
+                ${_metric('3PAr',   pct(par3),         _bar(par3,  0.60, 'var(--color-stl)'), '3PAr')}
+                ${_metric('FTr',    pct(ftr),          _bar(ftr,   0.60, 'var(--color-pct)'), 'FTr')}
             </div>
         </div>
     `;
@@ -593,14 +740,74 @@ function _compareCard(currentPlayer) {
     return `
         <div class="stats-card">
             <h2 class="detail-section-title">Compare Players</h2>
-            <select id="pd-compare-select" class="compare-select">
-                <option value="">— Select a player to compare —</option>
-                ${options}
-            </select>
+            <div class="mlb-cmp-selects">
+                <select id="pd-compare-select" class="compare-select">
+                    <option value="">— Add player 2 —</option>
+                    ${options}
+                </select>
+                <select id="pd-compare-select-c" class="compare-select">
+                    <option value="">— Add player 3 —</option>
+                    ${options}
+                </select>
+            </div>
             <div id="pd-compare-chart-wrap" class="chart-wrap chart-wrap--tall" style="display:none;margin-top:var(--space-5)">
             </div>
         </div>
     `;
+}
+
+// ── Player Notes (ANN-003) ────────────────────────────────────
+
+function _playerNotesCard(playerId) {
+    return `
+        <div class="stats-card player-notes-card" id="playerNotesCard">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)">
+                <h2 class="detail-section-title" style="margin-bottom:0">Announcer Notes</h2>
+                <span class="player-notes-saved" id="playerNotesSaved" style="display:none">Saved</span>
+            </div>
+            <textarea
+                id="playerNotesTextarea"
+                class="player-notes-textarea"
+                placeholder="Private notes visible only in this browser — storylines, talking points, game-prep reminders…"
+                rows="4"
+                data-player-id="${playerId}"
+            ></textarea>
+        </div>
+    `;
+}
+
+function _initPlayerNotes(playerId) {
+    const ta   = document.getElementById('playerNotesTextarea');
+    const saved = document.getElementById('playerNotesSaved');
+    if (!ta) return;
+
+    const key = `ss_notes_${playerId}`;
+    try { ta.value = localStorage.getItem(key) || ''; } catch (_) {}
+
+    let timer;
+    ta.addEventListener('input', () => {
+        clearTimeout(timer);
+        if (saved) saved.style.display = 'none';
+        timer = setTimeout(() => {
+            try { localStorage.setItem(key, ta.value); } catch (_) {}
+            if (saved) { saved.style.display = ''; setTimeout(() => { saved.style.display = 'none'; }, 2000); }
+        }, 800);
+    });
+}
+
+// ── Share ─────────────────────────────────────────────────────
+
+function _shareCurrentPage() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ url, title: document.title }).catch(() => {});
+    } else {
+        navigator.clipboard?.writeText(url).then(() => {
+            if (typeof ErrorHandler !== 'undefined') {
+                ErrorHandler.toast('Link copied to clipboard', 'success');
+            }
+        }).catch(() => {});
+    }
 }
 
 // ── Back to players ───────────────────────────────────────────
@@ -622,8 +829,19 @@ function backToPlayers() {
     updatePlayerCount();
 }
 
+function _downloadNBACard(playerId) {
+    const player = AppState.allPlayers?.find(p => p.id === playerId);
+    const stats  = AppState.playerStats?.[playerId];
+    if (!player || !stats) return;
+    const abbr   = player.team?.abbreviation;
+    const colors = typeof getTeamColors === 'function' ? getTeamColors(abbr) : { primary: '#6366f1' };
+    StatsCharts.downloadShareCard(player, stats, 'nba', colors);
+}
+
 if (typeof window !== 'undefined') {
-    window.showPlayerDetail = showPlayerDetail;
-    window.backToPlayers    = backToPlayers;
-    window.togglePer36      = togglePer36;
+    window.showPlayerDetail   = showPlayerDetail;
+    window.backToPlayers      = backToPlayers;
+    window.togglePer36        = togglePer36;
+    window._shareCurrentPage  = _shareCurrentPage;
+    window._downloadNBACard   = _downloadNBACard;
 }

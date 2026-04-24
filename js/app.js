@@ -1,11 +1,13 @@
 Logger.info('Initializing SportsStrata…', undefined, 'APP');
 
-// Sport switcher — toggles between NBA and MLB
-(function setupSportSwitcher() {
-    document.querySelectorAll('.sport-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchSport(btn.dataset.sport));
+// Ticker — SCORES button navigates to scores for the active sport
+(function setupTickerNav() {
+    document.getElementById('tickerScoresBtn')?.addEventListener('click', () => {
+        const sportViews = { nba: 'games', mlb: 'mlb-games', nfl: 'nfl-games', nhl: 'nhl-games' };
+        navigateTo(sportViews[AppState.currentSport] || 'games');
     });
 })();
+
 
 // Season selector — switches CURRENT_SEASON and reloads the current view
 (function setupSeasonSelector() {
@@ -23,6 +25,15 @@ Logger.info('Initializing SportsStrata…', undefined, 'APP');
         AppState.allGames        = [];
         AppState.nbaStatsMap     = null;
         AppState._nbaStatsSeason = null;
+        // MLB season state
+        AppState.mlbPlayers      = { hitting: [], pitching: [] };
+        AppState.mlbPlayerStats  = { hitting: {}, pitching: {} };
+        AppState.mlbTeams        = [];
+        AppState.mlbGames        = [];
+        AppState.mlbStandings    = null;
+        AppState.mlbLeaderSplits = null;
+        // Sync the MLB module's own season variable
+        if (typeof setMLBSeason === 'function') setMLBSeason(year);
         // Teams data is season-independent; keep allTeams
         Logger.info(`Season → ${year}–${String(year + 1).slice(-2)}`, undefined, 'APP');
         renderCurrentView(AppState.currentView);
@@ -44,17 +55,6 @@ Logger.info('Initializing SportsStrata…', undefined, 'APP');
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
 
-// Fetch ESPN player map — refresh headshots when ready, then sync players to DB
-fetchESPNPlayerMap()
-    .then(() => {
-        if (AppState.currentView === 'players' && AppState.filteredPlayers.length > 0) {
-            displayPlayers(AppState.filteredPlayers);
-        }
-        if (AppState.allPlayers.length && AppState.nbaStatsMap) {
-            StatsDB.syncPlayers(AppState.allPlayers, AppState.nbaStatsMap).catch(() => {});
-        }
-    })
-    .catch(() => {});
 
 // Populate the ticker independently so it works on first load
 // (games tab may not have been visited yet)
@@ -78,67 +78,93 @@ fetchESPNPlayerMap()
     }
 
     try {
-        if (AppState.currentSport === 'mlb') {
-            const games = await fetchMLBSchedule(7);
-            if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
-            updateMLBTicker(games);
-            Logger.info('MLB ticker initialised', { count: games.length }, 'APP');
-        } else {
-            const games = await fetchGamesAPI();
-            if (AppState.allGames.length === 0) AppState.allGames = games;
-            updateTicker(games);
-            Logger.info('Ticker initialised', { count: games.length }, 'APP');
-        }
+        const games = await fetchMLBSchedule(7);
+        if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
+        updateMLBTicker(games);
+        Logger.info('MLB ticker initialised', { count: games.length }, 'APP');
     } catch (error) {
         Logger.warn('Ticker init failed', error.message, 'APP');
         if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
     }
 })();
 
-// Pre-fetch standings — feeds team/player cards AND the Q&A engine's IndexedDB
-fetchNBAStandings()
-    .then(rows => {
-        if (rows.length) {
-            AppState.nbaStandings = rows;
-            StatsDB.syncStandings(rows).catch(() => {});
-            const v = AppState.currentView;
-            if (v === 'players' && AppState.filteredPlayers.length > 0) displayPlayers(AppState.filteredPlayers);
-            if (v === 'teams'   && AppState.allTeams.length > 0)        displayTeams(AppState.allTeams);
-        }
-    })
-    .catch(() => {});
 
-// Live score polling — re-fetches NBA games every 30s when live games are present
-(function setupLivePolling() {
-    const INTERVAL = 30_000;
 
-    function _isLive(g) {
-        const st = g.status || '';
-        return st.includes('Q') || st.includes('Half') || st.includes(':');
-    }
+// Live score polling — MLB (60s; same pattern as NBA above)
+(function setupMLBLivePolling() {
+    const INTERVAL = 60_000;
 
     async function _poll() {
         try {
-            if (AppState.currentSport !== 'nba') return;
-            // Only keep polling while there are (or may be) live games
-            const cached = AppState.allGames;
-            if (cached.length > 0 && !cached.some(_isLive)) return;
-            ApiCache.invalidate('/games');
-            const games = await fetchGamesAPI();
-            AppState.allGames = games;
-            updateTicker(games);
-            if (AppState.currentView === 'games') displayGames(games);
-            const liveCount = games.filter(_isLive).length;
-            if (liveCount > 0) Logger.info(`Live poll: ${liveCount} live games`, undefined, 'POLL');
+            if (AppState.currentSport !== 'mlb') return;
+            const cached = AppState.mlbGames || [];
+            const hasLive = cached.some(g => g.status?.abstractGameState === 'Live');
+            if (cached.length > 0 && !hasLive) return;
+            ApiCache.invalidate('/schedule');
+            const games = await fetchMLBSchedule(7);
+            AppState.mlbGames = games;
+            updateMLBTicker(games);
+            // If user is on the games view, refresh via loadMLBGames so date nav stays intact
+            if (AppState.currentView === 'mlb-games' && typeof loadMLBGames === 'function') {
+                loadMLBGames();
+            }
+            const liveCount = games.filter(g => g.status?.abstractGameState === 'Live').length;
+            if (liveCount > 0) Logger.info(`MLB live poll: ${liveCount} live`, undefined, 'POLL');
         } catch (err) {
-            Logger.warn('Live poll failed', err.message, 'POLL');
+            Logger.warn('MLB live poll failed', err.message, 'POLL');
         }
     }
 
     setInterval(_poll, INTERVAL);
 })();
 
+// ── Ticker click → game detail ────────────────────────────────
+(function setupTickerClicks() {
+    const tickerEl = document.getElementById('scoreTicker');
+    if (!tickerEl) return;
+    tickerEl.addEventListener('click', e => {
+        const item = e.target.closest('[data-game-id],[data-game-pk]');
+        if (!item) return;
+        const sport = item.dataset.sport;
+        if (sport === 'mlb') {
+            const gamePk = parseInt(item.dataset.gamePk, 10);
+            if (!gamePk) return;
+            if (AppState.currentSport !== 'mlb') switchSport('mlb');
+            if (typeof showMLBGameDetail === 'function') showMLBGameDetail(gamePk);
+        } else if (sport === 'nfl') {
+            if (AppState.currentSport !== 'nfl') switchSport('nfl');
+            else navigateTo('nfl-games');
+        } else if (sport === 'nhl') {
+            if (AppState.currentSport !== 'nhl') switchSport('nhl');
+            else navigateTo('nhl-games');
+        } else {
+            const gameId = parseInt(item.dataset.gameId, 10);
+            if (!gameId) return;
+            if (AppState.currentSport !== 'nba') switchSport('nba');
+            navigateTo('games');
+            // After games render, scroll to and highlight the target card
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const card = document.querySelector(`.game-card[data-game-id="${gameId}"]`);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('game-card--highlight');
+                    setTimeout(() => card.classList.remove('game-card--highlight'), 1800);
+                }
+            }));
+        }
+    });
+})();
+
 Logger.info('App bootstrap complete', undefined, 'APP');
+
+// Back-to-top button — show after 400px scroll
+(function setupBackToTop() {
+    const btn = document.getElementById('backToTop');
+    if (!btn) return;
+    window.addEventListener('scroll', () => {
+        btn.classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+})();
 
 // ── Home / Landing page ───────────────────────────────────────
 
@@ -157,42 +183,57 @@ function loadHome() {
         <div class="home-hero">
             <div class="home-hero-glow"></div>
             <div class="home-hero-content">
-                <div class="home-hero-badge">⚡ Real-time Sports Analytics</div>
+                <div class="home-hero-badge">⚾ MLB Broadcast & Analytics</div>
                 <h1 class="home-hero-title">SportsStrata</h1>
                 <p class="home-hero-sub">Serious stats for serious fans</p>
                 <div class="home-stats-strip">
-                    ${_stat(540, 'NBA Players')}
                     ${_stat(750, 'MLB Players')}
-                    ${_stat(60, 'MLB Teams & Rosters')}
-                    ${_stat(4, 'Arcade Games', '')}
+                    ${_stat(30, 'MLB Teams')}
+                    ${_stat(162, 'Games Per Season')}
+                    ${_stat(3, 'Seasons of Data', '')}
                 </div>
             </div>
         </div>
 
-        <div class="home-sports-grid">
-            <button class="home-sport-card home-sport-card--nba" onclick="enterSport('nba')">
-                <div class="home-sport-icon">🏀</div>
-                <div class="home-sport-name">NBA</div>
-                <div class="home-sport-desc">Players · Leaders · Teams · Scores · Standings</div>
-                <div class="home-sport-cta">Explore NBA →</div>
+        <!-- MLB nav shortcuts -->
+        <div class="home-mlb-shortcuts">
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-players')">
+                <span class="home-shortcut-icon">👤</span>
+                <span>Players</span>
             </button>
-            <button class="home-sport-card home-sport-card--mlb" onclick="enterSport('mlb')">
-                <div class="home-sport-icon">⚾</div>
-                <div class="home-sport-name">MLB</div>
-                <div class="home-sport-desc">Players · Leaders · Teams · Scores · Standings</div>
-                <div class="home-sport-cta">Explore MLB →</div>
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-leaders')">
+                <span class="home-shortcut-icon">🏆</span>
+                <span>Leaders</span>
             </button>
-            <div class="home-sport-card home-sport-card--soon">
-                <div class="home-sport-icon">🏈</div>
-                <div class="home-sport-name">NFL</div>
-                <div class="home-sport-desc">Coming soon</div>
-                <div class="home-sport-badge">Soon</div>
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-standings')">
+                <span class="home-shortcut-icon">📊</span>
+                <span>Standings</span>
+            </button>
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-games')">
+                <span class="home-shortcut-icon">📅</span>
+                <span>Scores</span>
+            </button>
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-teams')">
+                <span class="home-shortcut-icon">🏟</span>
+                <span>Teams</span>
+            </button>
+            <button class="home-shortcut-btn" onclick="navigateTo('mlb-prep')">
+                <span class="home-shortcut-icon">📋</span>
+                <span>Game Prep</span>
+            </button>
+        </div>
+
+        <div class="home-recents" id="homeRecents"></div>
+
+        <div class="home-on-this-day" id="homeOnThisDay" style="display:none"></div>
+
+        <div class="home-today" id="homeTodayGames">
+            <div class="home-section-hdr">
+                <span class="home-section-title">⚾ Today's MLB Games</span>
+                <span class="home-section-date">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span>
             </div>
-            <div class="home-sport-card home-sport-card--soon">
-                <div class="home-sport-icon">🏒</div>
-                <div class="home-sport-name">NHL</div>
-                <div class="home-sport-desc">Coming soon</div>
-                <div class="home-sport-badge">Soon</div>
+            <div class="home-today-grid" id="homeTodayGrid">
+                ${Array.from({length:4},()=>`<div class="skeleton-card" style="height:72px;border-radius:12px"></div>`).join('')}
             </div>
         </div>
 
@@ -200,29 +241,29 @@ function loadHome() {
             <div class="home-feature-item">
                 <div class="home-feature-icon">📊</div>
                 <div class="home-feature-text">
-                    <div class="home-feature-title">Live Leaderboards</div>
-                    <div class="home-feature-desc">Real-time rankings updated daily across all major stats</div>
+                    <div class="home-feature-title">MLB Leaderboards</div>
+                    <div class="home-feature-desc">Daily rankings across AVG, HR, ERA, WHIP, FIP, xFIP, and more</div>
                 </div>
             </div>
             <div class="home-feature-item">
-                <div class="home-feature-icon">🎮</div>
+                <div class="home-feature-icon">📋</div>
                 <div class="home-feature-text">
-                    <div class="home-feature-title">Sports Arcade</div>
-                    <div class="home-feature-desc">Four daily mini-games — new puzzles every day</div>
+                    <div class="home-feature-title">Broadcast Game Prep</div>
+                    <div class="home-feature-desc">Pitcher matchups, lineup context, and team form — ready for air</div>
+                </div>
+            </div>
+            <div class="home-feature-item">
+                <div class="home-feature-icon">🔬</div>
+                <div class="home-feature-text">
+                    <div class="home-feature-title">Statcast & Splits</div>
+                    <div class="home-feature-desc">Exit velocity, barrel %, vs. L/R, home/away splits per player</div>
                 </div>
             </div>
             <div class="home-feature-item">
                 <div class="home-feature-icon">🧮</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Stat Builder</div>
-                    <div class="home-feature-desc">Build custom formulas and rank players by any metric</div>
-                </div>
-            </div>
-            <div class="home-feature-item">
-                <div class="home-feature-icon">🔍</div>
-                <div class="home-feature-text">
-                    <div class="home-feature-title">Deep Drill-downs</div>
-                    <div class="home-feature-desc">Splits, game logs, box scores, and radar charts</div>
+                    <div class="home-feature-desc">Custom formulas — rank any player by any metric combination</div>
                 </div>
             </div>
         </div>
@@ -241,12 +282,235 @@ function loadHome() {
         };
         requestAnimationFrame(tick);
     });
+
+    // Recently viewed players
+    _renderHomeRecents();
+
+    // "On This Day" historical trivia card
+    _loadOnThisDay();
+
+    // Populate today's games — fire and forget, renders into #homeTodayGrid
+    _loadHomeTodayGames();
+}
+
+function _renderHomeRecents() {
+    const el = document.getElementById('homeRecents');
+    if (!el) return;
+    let recents = [];
+    try { recents = JSON.parse(localStorage.getItem('zs_recents') || '[]'); } catch (_) {}
+    recents = recents.filter(r => r.sport === 'mlb');
+    if (!recents.length) { el.innerHTML = ''; return; }
+
+    const chips = recents.slice(0, 8).map(r => `
+            <button class="home-recent-chip" data-id="${r.id}" data-sport="${r.sport}" data-type="${r.type || 'player'}">
+                <span class="home-recent-badge home-recent-badge--mlb">${r.badge || '⚾'}</span>
+                <span class="home-recent-name">${r.name}</span>
+                <span class="home-recent-sub">${r.sub || ''}</span>
+            </button>
+        `).join('');
+
+    el.innerHTML = `
+        <div class="home-section-hdr">
+            <span class="home-section-title">Recently Viewed</span>
+        </div>
+        <div class="home-recents-grid">${chips}</div>
+    `;
+
+    el.querySelectorAll('.home-recent-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const id   = parseInt(chip.dataset.id);
+            const type = chip.dataset.type;
+            if (type === 'player' && typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(id);
+            else if (type === 'team' && typeof showMLBTeamDetail === 'function') showMLBTeamDetail(id);
+        });
+    });
+}
+
+async function _loadHomeTodayGames() {
+    const gridEl = document.getElementById('homeTodayGrid');
+    if (!gridEl) return;
+
+    const _gameChip = (sport, homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey) => {
+        const isFinal = /final|^f$/i.test(status);
+        const isLive  = !isFinal && (homeScore > 0 || awayScore > 0);
+        const statusPill = isFinal ? 'F' : isLive ? 'LIVE' : 'SCH';
+        const pillCls    = isFinal ? 'final' : isLive ? 'live' : 'sched';
+        const homeLogo = homeId ? `https://www.mlbstatic.com/team-logos/${homeId}.svg` : '';
+        const awayLogo = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : '';
+        const hasScore = homeScore > 0 || awayScore > 0;
+        const homeWon  = isFinal && homeScore > awayScore;
+        const awayWon  = isFinal && awayScore > homeScore;
+        return `
+            <div class="home-game-chip" data-sport="${sport}" data-game-key="${gameKey}" role="button" tabindex="0">
+                <span class="hgc-sport-dot hgc-sport-dot--${sport}"></span>
+                <img class="hgc-logo" src="${awayLogo}" alt="" data-hide-on-error>
+                <span class="hgc-team ${awayWon?'hgc-team--win':''}">${awayAbbr}</span>
+                <span class="hgc-score ${awayWon?'hgc-score--win':''}">${hasScore?awayScore:'—'}</span>
+                <span class="hgc-sep">:</span>
+                <span class="hgc-score ${homeWon?'hgc-score--win':''}">${hasScore?homeScore:'—'}</span>
+                <span class="hgc-team ${homeWon?'hgc-team--win':''}">${homeAbbr}</span>
+                <img class="hgc-logo" src="${homeLogo}" alt="" data-hide-on-error>
+                <span class="hgc-pill ticker-status-pill--${pillCls}">${statusPill}</span>
+            </div>
+        `;
+    };
+
+    try {
+        const mlbResult = await fetchMLBSchedule(2).catch(() => null);
+        const chips = [];
+
+        if (mlbResult) {
+            const todayMLB = (mlbResult || []).slice(0, 10);
+            todayMLB.forEach(g => chips.push(_gameChip(
+                'mlb',
+                g.teams?.home?.team?.abbreviation || (typeof _mlbTeamAbbr === 'function' ? _mlbTeamAbbr(g.teams?.home?.team) : '?'),
+                g.teams?.away?.team?.abbreviation || (typeof _mlbTeamAbbr === 'function' ? _mlbTeamAbbr(g.teams?.away?.team) : '?'),
+                g.teams?.home?.score ?? 0,
+                g.teams?.away?.score ?? 0,
+                g.status?.detailedState || 'SCH',
+                g.teams?.home?.team?.id,
+                g.teams?.away?.team?.id,
+                `mlb-${g.gamePk}`,
+            )));
+        }
+
+        if (!gridEl.isConnected) return; // user navigated away
+
+        if (chips.length === 0) {
+            gridEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">No games scheduled today.</p>';
+            return;
+        }
+
+        gridEl.innerHTML = chips.join('');
+
+        // Click handlers — navigate to game detail
+        gridEl.querySelectorAll('.home-game-chip').forEach(chip => {
+            const handler = () => {
+                const key = chip.dataset.gameKey || '';
+                const dashIdx = key.indexOf('-');
+                const id = key.slice(dashIdx + 1);
+                if (AppState.currentSport !== 'mlb') switchSport('mlb');
+                if (typeof showMLBGameDetail === 'function') showMLBGameDetail(parseInt(id));
+            };
+            chip.addEventListener('click', handler);
+            chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') handler(); });
+        });
+
+    } catch (_) {
+        if (gridEl.isConnected) {
+            gridEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">Scores unavailable.</p>';
+        }
+    }
+}
+
+// ── On This Day (ANN-005) ─────────────────────────────────────
+// Fetches MLB games from today's date in the last 3 seasons,
+// picks a completed game, grabs the box score, surfaces top performer.
+
+async function _loadOnThisDay() {
+    const container = document.getElementById('homeOnThisDay');
+    if (!container) return;
+
+    const today  = new Date();
+    const mm     = String(today.getMonth() + 1).padStart(2, '0');
+    const dd     = String(today.getDate()).padStart(2, '0');
+    const curYear = today.getFullYear();
+
+    // Try up to 3 past years, newest first
+    for (let offset = 1; offset <= 3; offset++) {
+        const year = curYear - offset;
+        const dateStr = `${year}-${mm}-${dd}`;
+
+        let sched;
+        try {
+            sched = await mlbFetch('/schedule', {
+                sportId: 1, startDate: dateStr, endDate: dateStr, hydrate: 'linescore',
+            }, ApiCache.TTL.LONG);
+        } catch (_) { continue; }
+
+        const games = sched?.dates?.[0]?.games || [];
+        // Only care about final games
+        const finished = games.filter(g => g.status?.abstractGameState === 'Final');
+        if (finished.length === 0) continue;
+
+        // Pick the game with the most runs (most exciting)
+        const game = finished.reduce((best, g) => {
+            const runs = (g.linescore?.teams?.home?.runs ?? 0) + (g.linescore?.teams?.away?.runs ?? 0);
+            const bRuns = (best.linescore?.teams?.home?.runs ?? 0) + (best.linescore?.teams?.away?.runs ?? 0);
+            return runs > bRuns ? g : best;
+        });
+
+        // Fetch box score to find top performer
+        let top = null;
+        try {
+            const bs = await mlbFetch(`/game/${game.gamePk}/boxscore`, {}, ApiCache.TTL.LONG);
+            if (bs) {
+                const allBatters = [
+                    ...Object.values(bs.teams?.home?.players || {}),
+                    ...Object.values(bs.teams?.away?.players || {}),
+                ].filter(p => p.stats?.batting);
+
+                // Top by RBI first, then hits
+                const sorted = allBatters
+                    .map(p => ({
+                        name: p.person?.fullName || '?',
+                        h:    p.stats.batting.hits         ?? 0,
+                        ab:   p.stats.batting.atBats       ?? 0,
+                        hr:   p.stats.batting.homeRuns     ?? 0,
+                        rbi:  p.stats.batting.rbi          ?? 0,
+                        k:    p.stats.batting.strikeOuts   ?? 0,
+                    }))
+                    .filter(p => p.ab >= 2)
+                    .sort((a, b) => (b.rbi - a.rbi) || (b.h - a.h) || (b.hr - a.hr));
+
+                top = sorted[0] || null;
+            }
+        } catch (_) {}
+
+        const homeTeam  = game.teams?.home?.team?.abbreviation || '?';
+        const awayTeam  = game.teams?.away?.team?.abbreviation || '?';
+        const homeScore = game.linescore?.teams?.home?.runs ?? game.teams?.home?.score ?? '?';
+        const awayScore = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
+        const homeLogo  = game.teams?.home?.team?.id ? `https://www.mlbstatic.com/team-logos/${game.teams.home.team.id}.svg` : '';
+        const awayLogo  = game.teams?.away?.team?.id ? `https://www.mlbstatic.com/team-logos/${game.teams.away.team.id}.svg` : '';
+        const month     = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+        let perfLine = '';
+        if (top) {
+            const parts = [`${top.h}/${top.ab}`];
+            if (top.hr  > 0) parts.push(`${top.hr} HR`);
+            if (top.rbi > 0) parts.push(`${top.rbi} RBI`);
+            perfLine = `<div class="otd-perf"><strong>${_escHtml(top.name)}</strong> · ${parts.join(' · ')}</div>`;
+        }
+
+        container.innerHTML = `
+            <div class="home-section-hdr">
+                <span class="home-section-title">On This Day</span>
+                <span class="home-section-date">${month}, ${year}</span>
+            </div>
+            <div class="otd-card">
+                <div class="otd-matchup">
+                    ${awayLogo ? `<img class="otd-logo" src="${awayLogo}" alt="${awayTeam}" data-hide-on-error>` : ''}
+                    <span class="otd-team">${awayTeam}</span>
+                    <span class="otd-score">${awayScore}</span>
+                    <span class="otd-sep">–</span>
+                    <span class="otd-score">${homeScore}</span>
+                    <span class="otd-team">${homeTeam}</span>
+                    ${homeLogo ? `<img class="otd-logo" src="${homeLogo}" alt="${homeTeam}" data-hide-on-error>` : ''}
+                </div>
+                ${perfLine}
+            </div>
+        `;
+        container.style.display = '';
+        return; // found one — stop
+    }
 }
 
 // Enter a sport from the home page — handles same-sport case
 function enterSport(sport) {
+    const defaultViews = { nba: 'players', mlb: 'mlb-players', nfl: 'nfl-players', nhl: 'nhl-players' };
     if (AppState.currentSport === sport) {
-        navigateTo(sport === 'mlb' ? 'mlb-players' : 'players');
+        navigateTo(defaultViews[sport] || 'players');
     } else {
         switchSport(sport);
     }

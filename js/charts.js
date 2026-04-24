@@ -711,6 +711,254 @@ class StatsCharts {
             },
         });
     }
+    /**
+     * Career trend line — one stat across multiple seasons.
+     *
+     * @param {string} canvasId
+     * @param {Array<{season: number, stats: object}>} rows  oldest→newest
+     * @param {string} statKey  e.g. 'pts', 'reb', 'fg_pct'
+     * @param {string} [color]
+     * @returns {Chart|null}
+     */
+    static careerTrend(canvasId, rows, statKey, color = '#818cf8') {
+        if (!rows || rows.length < 2) return null;
+        const t = this.#getTheme();
+
+        const isPct = statKey.endsWith('_pct');
+        const seasonLabel = yr => `${yr}–${String(yr + 1).slice(-2)}`;
+
+        const labels = rows.map(r => seasonLabel(r.season));
+        const values = rows.map(r => {
+            const v = parseFloat(r.stats?.[statKey]);
+            if (isNaN(v)) return null;
+            return isPct ? +(v * 100).toFixed(1) : +v.toFixed(1);
+        });
+
+        const statLabels = {
+            // NBA
+            pts: 'PTS', reb: 'REB', ast: 'AST', stl: 'STL', blk: 'BLK',
+            fg_pct: 'FG%', fg3_pct: '3P%', ft_pct: 'FT%', min: 'MIN',
+            // MLB hitting
+            avg: 'AVG', obp: 'OBP', slg: 'SLG', ops: 'OPS',
+            homeRuns: 'HR', rbi: 'RBI', stolenBases: 'SB',
+            hits: 'H', runs: 'R', atBats: 'AB',
+            // MLB pitching
+            era: 'ERA', whip: 'WHIP', wins: 'W', losses: 'L',
+            strikeOuts: 'K', inningsPitched: 'IP', saves: 'SV',
+        };
+        const label = statLabels[statKey] || statKey.toUpperCase();
+
+        return this.#create(canvasId, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data: values,
+                    borderColor: color,
+                    backgroundColor: color + '18',
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: color,
+                    borderWidth: 2.5,
+                    fill: true,
+                    spanGaps: true,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        ticks: { color: t.tick, font: { family: t.font, size: 11, weight: '600' } },
+                        grid: { color: 'rgba(255,255,255,0.04)' },
+                    },
+                    y: {
+                        min: 0,
+                        ticks: {
+                            color: t.tick,
+                            font: { family: t.font, size: 11 },
+                            callback: v => isPct ? v + '%' : v,
+                            maxTicksLimit: 6,
+                        },
+                        grid: { color: t.grid },
+                    },
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: t.tooltipBg,
+                        borderColor: t.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#94a3b8',
+                        padding: 10,
+                        callbacks: {
+                            label: ctx => {
+                                const v = ctx.parsed.y;
+                                return ` ${label}: ${v != null ? (isPct ? v.toFixed(1) + '%' : v.toFixed(1)) : '—'}`;
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    // ── Share Card (ANN-002) ─────────────────────────────────────
+    // Draws a 720×400 stat card on a canvas element.
+    // stats: [{label, value, color}] — up to 6 shown (2 rows × 3 cols)
+    static drawShareCard(canvas, { name, position, teamName, teamAbbr, primaryColor, secondaryColor, season, stats }) {
+        const W = 720, H = 400;
+        canvas.width  = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const pc  = primaryColor || '#6366f1';
+
+        // Background gradient
+        const bg = ctx.createLinearGradient(0, 0, W, H);
+        bg.addColorStop(0, '#0f172a');
+        bg.addColorStop(1, '#1a2744');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        // Subtle diagonal team-color wash
+        ctx.save();
+        ctx.globalAlpha = 0.07;
+        ctx.fillStyle = pc;
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(W * 0.6, 0); ctx.lineTo(W * 0.3, H); ctx.lineTo(0, H);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Left accent bar
+        ctx.fillStyle = pc;
+        ctx.fillRect(0, 0, 7, H);
+
+        // Team abbreviation watermark
+        ctx.save();
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 180px system-ui,-apple-system,sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(teamAbbr || '', W - 10, H / 2);
+        ctx.restore();
+
+        // Avatar circle
+        const initials = name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase();
+        ctx.beginPath();
+        ctx.arc(80, H / 2, 50, 0, Math.PI * 2);
+        ctx.fillStyle = pc + '28';
+        ctx.fill();
+        ctx.strokeStyle = pc;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = pc;
+        ctx.font = 'bold 26px system-ui,-apple-system,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initials, 80, H / 2);
+
+        // Player name
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 30px system-ui,-apple-system,sans-serif';
+        ctx.fillText(name, 148, 108);
+
+        // Position · team · season
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px system-ui,-apple-system,sans-serif';
+        const meta = [position, teamName || teamAbbr, season ? `${season} Season` : ''].filter(Boolean).join(' · ');
+        ctx.fillText(meta, 148, 136);
+
+        // Divider
+        ctx.fillStyle = '#1e3a5f';
+        ctx.fillRect(22, 160, W - 44, 1);
+
+        // Stats grid (2 rows × 3 cols)
+        const colXs  = [180, 360, 540];
+        const rowYs  = [225, 310];
+        const show   = (stats || []).slice(0, 6);
+        show.forEach(({ label, value, color }, i) => {
+            const x   = colXs[i % 3];
+            const y   = rowYs[Math.floor(i / 3)];
+            const clr = color || '#f1f5f9';
+
+            ctx.fillStyle = clr;
+            ctx.font = 'bold 28px system-ui,-apple-system,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(String(value ?? '—'), x, y);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '11px system-ui,-apple-system,sans-serif';
+            ctx.fillText(label.toUpperCase(), x, y + 20);
+        });
+
+        // Footer
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#475569';
+        ctx.font = '12px system-ui,-apple-system,sans-serif';
+        ctx.fillText('SportsStrata', 28, H - 18);
+
+        ctx.textAlign = 'right';
+        ctx.fillText('Serious stats for serious fans', W - 24, H - 18);
+    }
+
+    static downloadShareCard(player, stats, group, colors) {
+        const canvas = document.createElement('canvas');
+
+        const lead = v => v != null ? parseFloat(v).toFixed(3).replace(/^0\./, '.') : '—';
+        const f1   = v => v != null ? parseFloat(v).toFixed(1) : '—';
+        const f2   = v => v != null ? parseFloat(v).toFixed(2) : '—';
+        const pct  = v => v != null ? (parseFloat(v) * 100).toFixed(1) + '%' : '—';
+
+        const statDefs = group === 'pitching' ? [
+            { label: 'ERA',  value: f2(stats.era),              color: '#f87171' },
+            { label: 'WHIP', value: f2(stats.whip),             color: '#fb923c' },
+            { label: 'K',    value: stats.strikeOuts ?? '—',    color: '#a78bfa' },
+            { label: 'W',    value: stats.wins ?? '—',          color: '#34d399' },
+            { label: 'IP',   value: stats.inningsPitched ?? '—',color: '#60a5fa' },
+            { label: 'K/9',  value: f1(stats.strikeoutsPer9Inn),color: '#94a3b8' },
+        ] : group === 'hitting' ? [
+            { label: 'AVG',  value: lead(stats.avg),             color: '#fbbf24' },
+            { label: 'OBP',  value: lead(stats.obp),             color: '#34d399' },
+            { label: 'SLG',  value: lead(stats.slg),             color: '#60a5fa' },
+            { label: 'HR',   value: stats.homeRuns ?? '—',       color: '#f87171' },
+            { label: 'RBI',  value: stats.rbi ?? '—',            color: '#fb923c' },
+            { label: 'OPS',  value: lead(stats.ops),             color: '#a78bfa' },
+        ] : [
+            { label: 'PTS',  value: f1(stats.pts),     color: '#fbbf24' },
+            { label: 'REB',  value: f1(stats.reb),     color: '#34d399' },
+            { label: 'AST',  value: f1(stats.ast),     color: '#60a5fa' },
+            { label: 'FG%',  value: pct(stats.fg_pct), color: '#f472b6' },
+            { label: '3P%',  value: pct(stats.fg3_pct),color: '#818cf8' },
+            { label: 'STL',  value: f1(stats.stl),     color: '#a78bfa' },
+        ];
+
+        StatsCharts.drawShareCard(canvas, {
+            name:         player.fullName || `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+            position:     player.position || '',
+            teamName:     player.teamName || player.team?.full_name || '',
+            teamAbbr:     player.teamAbbr || player.team?.abbreviation || '',
+            primaryColor: colors?.primary,
+            season:       typeof MLB_SEASON !== 'undefined' ? MLB_SEASON : new Date().getFullYear(),
+            stats:        statDefs,
+        });
+
+        const link     = document.createElement('a');
+        const safeName = (player.fullName || player.last_name || 'player').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        link.download  = `sportsstr-${safeName}.png`;
+        link.href      = canvas.toDataURL('image/png');
+        link.click();
+    }
 }
 
 window.StatsCharts = StatsCharts;

@@ -4,12 +4,37 @@
 
 ---
 
-## Open — Active Bugs
+## Open — Active Bugs (Analysis Pass — 2026-04-17)
 
-### [P3-002] MLB Standings — L10 column always shows `—`
-- **File:** `js/mlb.js` — `fetchMLBStandingsFull`
-- **Detail:** MLB Stats API `overallRecords` only returns `home` and `away` types — `lastTen` is not present in either 2025 or 2026 seasons. API data gap, not a code bug.
-- **Options:** Remove column, compute from game log, or leave `—` with tooltip.
+### [P1-006] API key hardcoded in source — `js/api.js:11`
+- **Status:** Open
+- **Severity:** CRITICAL / Security
+- **Issue:** `BDL_API_KEY` is a plaintext string in `api.js`. Any public GitHub push leaks it.
+- **Fix:** Deploy `worker/bdl-proxy.js` (already written), set `BDL_PROXY_URL` in `api.js`, remove the raw key. Rotate the key at balldontlie.io immediately after.
+
+~~### [P2-003] Season change doesn't clear MLB state — `js/app.js:34-42`~~
+- **Status:** ✅ Fixed — clears `mlbPlayers`, `mlbPlayerStats`, `mlbTeams`, `mlbGames`, `mlbStandings`, `mlbLeaderSplits` on season change; also calls `setMLBSeason(year)` to update the MLB module variable.
+
+~~### [P2-004] No fetch timeout — `js/api.js` (`bdlFetch`, `mlbFetch`)~~
+- **Status:** ✅ Fixed — both fetch helpers now wrap `fetch()` with a 10-second `AbortController` timeout.
+
+~~### [P2-005] Inline `onerror` image handlers — across 10 JS files~~
+- **Status:** ✅ Fixed — replaced all `onerror="this.style.display='none'"` with `data-hide-on-error` attribute. Single capture-phase listener in `config.js` handles all images. `onload` in `games.js` moved to post-processing block.
+
+~~### [P3-004] Player name mismatch — `js/players.js:110`, `js/playerDetail.js:181`~~
+- **Status:** ✅ Fixed — added `_normName()` to `config.js`: strips dots, strips Jr/Sr/II/III/IV suffixes, collapses whitespace, lowercases. Applied at the NBA.com map-build site (`api.js`) and all three lookup sites (`players.js` ×2, `playerDetail.js`).
+
+~~### [P3-005] `localStorage` reads not validated — `js/search.js:20`~~
+- **Status:** ✅ Fixed — `_loadRecents()` now validates the parsed value is an array and filters out malformed entries; `addRecent()` guards against malformed input.
+
+~~### [P3-006] `innerHTML +=` in search results — `js/search.js:176`~~
+- **Status:** ✅ Non-issue confirmed — was a string variable (`html +=`), not a DOM mutation. `container.innerHTML` is set once after building the full string.
+
+~~### [P4-004] Disabled NFL/NHL buttons have no explanation~~
+- **Status:** ✅ Fixed — removed `disabled` attr; replaced with `aria-disabled` + `data-coming-soon`. Clicking now fires an info toast: "NFL support is in progress — check back soon." CSS styling (opacity, cursor, "soon" badge) unchanged.
+
+~~### [P3-002] MLB Standings — L10 column always shows `—`~~
+- **Status:** ✅ Fixed — replaced L10 with **RDIFF** (run differential). Uses `runsScored − runsAllowed` from the standings API. Color-coded green/red.
 
 ---
 
@@ -72,17 +97,17 @@ Ballpark Blueprint, Statline Shuffle, Trade Tree all shipped.
 | UX-002 | Favorites / Watchlist (NBA + MLB) | S | ✅ Done |
 | UX-003 | Home page animated stats strip | XS | ✅ Done |
 | UX-004 | "Who Am I?" NBA daily arcade game | M | ✅ Done |
-| UX-005 | Player head-to-head comparison view | M | Backlog |
+| UX-005 | Player head-to-head comparison view | M | ✅ Done (radar + butterfly stat table) |
 | UX-006 | Recently viewed players (localStorage) | S | ✅ Done |
 | UX-007 | Global search from header (⌘K) | M | ✅ Done |
-| UX-008 | Skeleton loaders for all views | S | Backlog |
+| UX-008 | Skeleton loaders for all views | S | ✅ Done — all views have skeletons; standings upgraded to table-shaped skeleton |
 
 ### T2 — Analytics Depth
 | ID | Task | Effort | Status |
 |---|---|---|---|
 | STAT-001 | NBA advanced stats: TS%, eFG%, TOV%, AST/TO, 3PAr, FTr | M | ✅ Done |
 | STAT-002 | MLB advanced: ISO, BABIP, K%, BB%, FIP, K-BB% | M | ✅ Done |
-| STAT-003 | Career multi-season player view | L | Backlog |
+| STAT-003 | Career multi-season player view | L | ✅ Done (NBA + MLB year-by-year) |
 | STAT-004 | Power rankings (streak-weighted standings) | M | ✅ Done |
 | STAT-005 | Head-to-head player comparison radar | M | ✅ Done (Compare card in NBA detail) |
 
@@ -101,15 +126,19 @@ Ballpark Blueprint, Statline Shuffle, Trade Tree all shipped.
 | PLAN-001 | Division winner % on Standings | S |
 | PLAN-004 | Move BDL API key to Worker | S |
 | FEAT-001 | Light/Dark mode toggle | S | ✅ Done |
-| INFRA-001 | PWA manifest + service worker (offline) | M |
+| INFRA-001 | PWA manifest + service worker (offline) | M | ✅ Done |
 
 ### T5 — Premium Analytics
-| Task | Notes |
-|---|---|
-| NBA shot zone chart | Canvas-based court diagram |
-| MLB spray chart | Batted ball direction overlay |
-| Game simulation / what-if | Adjust box score, see scoreline impact |
-| Fantasy scoring overlay | Configure league scoring, rank players |
+| Task | Notes | Status |
+|---|---|---|
+| NBA shot zone chart | Canvas-based court diagram | Backlog |
+| MLB spray chart | Batted ball direction overlay | Backlog |
+| Game simulation / what-if | Adjust box score, see scoreline impact | Backlog |
+| Fantasy scoring overlay | DK scoring toggle + FP panel on NBA leaderboards | ✅ Done |
+| Stats Glossary tooltips | Hover/tap stat labels for definition (NBA + MLB) | ✅ Done |
+| CSV export | Download leaderboard + career stats tables as CSV | ✅ Done |
+| Global search (⌘K) | Search NBA/MLB players + teams, keyboard nav | ✅ Done |
+| Accessibility pass | focus-visible rings, aria-labels, keyboard nav on leaderboard rows | ✅ Done |
 
 ---
 
@@ -153,3 +182,13 @@ Ballpark Blueprint, Statline Shuffle, Trade Tree all shipped.
 | Arcade-003 | Trade Tree data bugs (trades #5, #13) | `data/trades.json` — fixed `fromTeamAbbr`, flipped Sandberg trade framing |
 | Arcade-004 | Arcade raw `fetch()` bypassing cache | `js/arcade.js` — replaced with `mlbFetch()` |
 | Various | P2 through P4 stats/UI bugs | See git log — `d7f7e1f` through current |
+| P3-003 | Player headshots not centered (face cropped out) | `css/components.css` — added `object-position: top center` to `.player-headshot` and `.lb-avatar img`; removed redundant `--detail` modifier |
+| NAV-001 | NBA/MLB standings rows not clickable | `js/standings.js` + `js/mlb.js` — added `onclick` to `<tr>` rows; NBA uses `_nbaStandingsTeamClick(abbr)` helper with lazy team load |
+| NAV-002 | NBA/MLB power ranking rows not clickable | `js/standings.js` + `js/mlb.js` — added `onclick` to `.power-row` divs |
+| NAV-003 | NBA game cards — no navigation from team sections | `js/games.js` — team divs get `data-team-id` + `showTeamDetail` click; score area → `showTeamGameDetail` |
+| NAV-004 | MLB game cards — team sections not clickable | `js/mlb.js` — added `data-team-id` + `showMLBTeamDetail` click with stopPropagation |
+| NAV-005 | MLB game detail header — team logos not clickable | `js/mlb.js` — added `onclick="showMLBTeamDetail(id)"` to `.mlb-gh-team` divs |
+| NAV-006 | NBA/MLB player detail — team name plain text | `js/playerDetail.js` + `js/mlb.js` — team name rendered as clickable `<button>` → team detail |
+| NAV-007 | Team logo `object-position: top center` regression | `js/teams.js` — added `object-position:center` to all `object-fit:contain` logo inline styles |
+| NAV-008 | Roster headshots missing `object-position` | `js/teams.js` + `js/mlb.js` — added `object-position:top center` to roster row headshot inline styles |
+| NAV-009 | NBA box score — opponent team logo not clickable | `js/teams.js` — added `onclick="showTeamDetail(opp.id)"` to opponent avatar in game detail header |

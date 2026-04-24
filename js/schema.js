@@ -160,9 +160,52 @@ const STAT_ALIASES = {
     'offense':'pointsPg','defense':'oppPointsPg','allow':'oppPointsPg',
 };
 
+// ── API shape validators ─────────────────────────────────────
+// Each validator returns true if the API response matches the expected shape.
+// Call these after fetching; log a warning and degrade gracefully on false.
+const ApiShape = {
+    /**
+     * BDL /players or /teams data[] entry.
+     * Minimum: id, first_name, last_name present.
+     */
+    bdlPlayer: p => p && typeof p.id === 'number' && typeof p.first_name === 'string' && typeof p.last_name === 'string',
+
+    /**
+     * BDL /season_averages data[] entry.
+     * Minimum: player_id, pts present.
+     */
+    bdlStats: s => s && (typeof s.player_id === 'number') && ('pts' in s),
+
+    /**
+     * BDL /games data[] entry.
+     * Minimum: id, home_team/visitor_team objects, date present.
+     */
+    bdlGame: g => g && typeof g.id === 'number' && g.home_team && g.visitor_team && typeof g.date === 'string',
+
+    /**
+     * Validate an array of response items; logs a warning if any fail.
+     * Returns the original array for chaining.
+     * @param {any[]} items
+     * @param {Function} validator — one of the above
+     * @param {string} tag — log tag (e.g. 'players', 'games')
+     */
+    check(items, validator, tag) {
+        if (!Array.isArray(items) || items.length === 0) return items;
+        const bad = items.filter(x => !validator(x));
+        if (bad.length > 0) {
+            Logger.warn(
+                `ApiShape(${tag}): ${bad.length}/${items.length} items failed shape check — API may have changed`,
+                undefined, 'SCHEMA'
+            );
+        }
+        return items;
+    },
+};
+
 if (typeof window !== 'undefined') {
     window.TEAM_ALIASES         = TEAM_ALIASES;
     window.STANDINGS_SCHEMA     = STANDINGS_SCHEMA;
     window.PLAYER_STATS_SCHEMA  = PLAYER_STATS_SCHEMA;
     window.STAT_ALIASES         = STAT_ALIASES;
+    window.ApiShape             = ApiShape;
 }

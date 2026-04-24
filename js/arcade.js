@@ -49,69 +49,81 @@ function loadArcade() {
                 <h1 class="arcade-hub-title">Arcade</h1>
                 <p class="arcade-hub-sub">Daily sports mini-games · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
             </div>
-            <div class="arcade-game-grid">
 
-                <div class="arcade-game-card arcade-game-card--whoami ${whoamiSave ? 'arcade-game-card--done' : ''}">
-                    <div class="arcade-game-badge arcade-badge--nba">NBA</div>
-                    ${_badge(whoamiSave, _starScore(whoamiSave))}
-                    <div class="arcade-game-icon">🕵️</div>
-                    <h2 class="arcade-game-title">Who Am I?</h2>
-                    <p class="arcade-game-desc">Five clues. One NBA player. Guess with fewer clues for a higher score.</p>
-                    <div class="arcade-game-meta">
-                        <span>⏱ ~1 min</span>
-                        <span>⚡ Medium</span>
-                    </div>
-                    <button class="arcade-play-btn" onclick="startWhoAmI()">
-                        ${whoamiSave ? 'Play Again' : 'Play Now'}
-                    </button>
+            <div class="arcade-sport-section">
+                <div class="arcade-sport-header">
+                    <span class="arcade-sport-icon">🏀</span>
+                    <span class="arcade-sport-name">NBA</span>
+                    <span class="arcade-sport-count">1 game</span>
                 </div>
-
-                <div class="arcade-game-card arcade-game-card--shuffle ${shuffleSave ? 'arcade-game-card--done' : ''}">
-                    <div class="arcade-game-badge arcade-badge--mlb">MLB</div>
-                    ${_badge(shuffleSave, shuffleSave ? `${shuffleSave.score}/3 ${['😬','😅','👍','🎉'][shuffleSave.score]}` : '')}
-                    <div class="arcade-game-icon">📊</div>
-                    <h2 class="arcade-game-title">Statline Shuffle</h2>
-                    <p class="arcade-game-desc">Match yesterday's anonymous statlines to the right player. New puzzle every day.</p>
-                    <div class="arcade-game-meta">
-                        <span>⏱ ~2 min</span>
-                        <span>⚡ Easy–Hard</span>
+                <div class="arcade-game-grid">
+                    <div class="arcade-game-card arcade-game-card--whoami ${whoamiSave ? 'arcade-game-card--done' : ''}">
+                        ${_badge(whoamiSave, _starScore(whoamiSave))}
+                        <div class="arcade-game-icon">🕵️</div>
+                        <h2 class="arcade-game-title">Who Am I?</h2>
+                        <p class="arcade-game-desc">Five clues. One NBA player. Guess with fewer clues for a higher score.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~1 min</span>
+                            <span>⚡ Medium</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startWhoAmI()">
+                            ${whoamiSave ? 'Play Again' : 'Play Now'}
+                        </button>
                     </div>
-                    <button class="arcade-play-btn" onclick="startStatlineShuffle()">
-                        ${shuffleSave ? 'Play Again' : 'Play Now'}
-                    </button>
                 </div>
-
-                <div class="arcade-game-card arcade-game-card--trade ${tradeSave ? 'arcade-game-card--done' : ''}">
-                    <div class="arcade-game-badge arcade-badge--mlb">MLB</div>
-                    ${_badge(tradeSave, tradeSave?.correct ? 'Correct 🟩' : 'Missed 🟥')}
-                    <div class="arcade-game-icon">🔀</div>
-                    <h2 class="arcade-game-title">Trade Tree Tracker</h2>
-                    <p class="arcade-game-desc">Fill in the missing player from a famous MLB trade. Deep baseball knowledge rewarded.</p>
-                    <div class="arcade-game-meta">
-                        <span>⏱ ~2 min</span>
-                        <span>⚡ Hard</span>
-                    </div>
-                    <button class="arcade-play-btn" onclick="startTradeTree()">
-                        ${tradeSave ? 'Play Again' : 'Play Now'}
-                    </button>
-                </div>
-
-                <div class="arcade-game-card arcade-game-card--blueprint ${blueprintSave ? 'arcade-game-card--done' : ''}">
-                    <div class="arcade-game-badge arcade-badge--mlb">MLB</div>
-                    ${_badge(blueprintSave, blueprintSave ? `${blueprintSave.score}/3 ${['😬','😅','👍','🎉'][blueprintSave.score]}` : '')}
-                    <div class="arcade-game-icon">🏟</div>
-                    <h2 class="arcade-game-title">Ballpark Blueprint</h2>
-                    <p class="arcade-game-desc">Identify the MLB stadium from its field dimensions. Use fewer clues for a better score.</p>
-                    <div class="arcade-game-meta">
-                        <span>⏱ ~1 min</span>
-                        <span>⚡ Medium</span>
-                    </div>
-                    <button class="arcade-play-btn" onclick="startBallparkBlueprint()">
-                        ${blueprintSave ? 'Play Again' : 'Play Now'}
-                    </button>
-                </div>
-
             </div>
+
+            <div class="arcade-sport-section">
+                <div class="arcade-sport-header">
+                    <span class="arcade-sport-icon">⚾</span>
+                    <span class="arcade-sport-name">MLB</span>
+                    <span class="arcade-sport-count">3 games</span>
+                </div>
+                <div class="arcade-game-grid">
+                    <div class="arcade-game-card arcade-game-card--shuffle ${shuffleSave ? 'arcade-game-card--done' : ''}">
+                        ${_badge(shuffleSave, shuffleSave ? `${shuffleSave.score}/3 ${['😬','😅','👍','🎉'][shuffleSave.score]}` : '')}
+                        <div class="arcade-game-icon">📊</div>
+                        <h2 class="arcade-game-title">Statline Shuffle</h2>
+                        <p class="arcade-game-desc">Match yesterday's anonymous statlines to the right player. New puzzle every day.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~2 min</span>
+                            <span>⚡ Easy–Hard</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startStatlineShuffle()">
+                            ${shuffleSave ? 'Play Again' : 'Play Now'}
+                        </button>
+                    </div>
+
+                    <div class="arcade-game-card arcade-game-card--trade ${tradeSave ? 'arcade-game-card--done' : ''}">
+                        ${_badge(tradeSave, tradeSave?.correct ? 'Correct 🟩' : 'Missed 🟥')}
+                        <div class="arcade-game-icon">🔀</div>
+                        <h2 class="arcade-game-title">Trade Tree Tracker</h2>
+                        <p class="arcade-game-desc">Fill in the missing player from a famous MLB trade. Deep baseball knowledge rewarded.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~2 min</span>
+                            <span>⚡ Hard</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startTradeTree()">
+                            ${tradeSave ? 'Play Again' : 'Play Now'}
+                        </button>
+                    </div>
+
+                    <div class="arcade-game-card arcade-game-card--blueprint ${blueprintSave ? 'arcade-game-card--done' : ''}">
+                        ${_badge(blueprintSave, blueprintSave ? `${blueprintSave.score}/3 ${['😬','😅','👍','🎉'][blueprintSave.score]}` : '')}
+                        <div class="arcade-game-icon">🏟</div>
+                        <h2 class="arcade-game-title">Ballpark Blueprint</h2>
+                        <p class="arcade-game-desc">Identify the MLB stadium from its field dimensions. Use fewer clues for a better score.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~1 min</span>
+                            <span>⚡ Medium</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startBallparkBlueprint()">
+                            ${blueprintSave ? 'Play Again' : 'Play Now'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     `;
 }
@@ -616,7 +628,7 @@ function _renderTradeGame() {
     ` : `<p class="trade-pick-hint">Select your answer above</p>`);
 
     const logoImg = (logo, abbr) => logo
-        ? `<img src="${logo}" class="trade-team-logo" alt="${abbr}" onerror="this.style.display='none'">`
+        ? `<img src="${logo}" class="trade-team-logo" alt="${abbr}" data-hide-on-error>`
         : `<span class="trade-team-logo-fallback">${abbr}</span>`;
 
     grid.innerHTML = `
@@ -836,7 +848,7 @@ function _renderBlueprintGame() {
         <div class="bp-score-row">
             ${'⭐'.repeat(score)}${'☆'.repeat(3 - score)} &nbsp; ${score}/3 clues
         </div>
-        ${logoUrl ? `<img src="${logoUrl}" class="bp-reveal-logo" alt="${stadium.teamAbbr}" onerror="this.style.display='none'">` : ''}
+        ${logoUrl ? `<img src="${logoUrl}" class="bp-reveal-logo" alt="${stadium.teamAbbr}" data-hide-on-error>` : ''}
         <div class="trade-context">${stadium.knownFor}</div>
         <div class="trade-end-actions">
             <button class="arcade-play-btn" onclick="startBallparkBlueprint(${sessionOffset + 1})">Another Ballpark</button>
@@ -1052,7 +1064,7 @@ function _renderWhoAmI() {
     if (st.answered) {
         const correct = st.selected?.id === st.target.id;
         const abbr    = st.target.team?.abbreviation || '';
-        const logoUrl = `https://a.espncdn.com/i/teamlogos/nba/500/${abbr.toLowerCase()}.png`;
+        const logoUrl = getNBATeamLogoUrl(abbr);
         resultHTML = `
             <div class="wam-result ${correct ? 'wam-result--correct' : 'wam-result--wrong'}">
                 <div class="wam-result-icon">${correct ? '🎉' : '❌'}</div>

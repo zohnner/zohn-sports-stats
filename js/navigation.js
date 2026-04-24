@@ -64,20 +64,22 @@ function setupNavigation() {
             _restoreMLBTeamDetail(s.id);
             return;
         }
-        // If returning to an mlb- view, ensure sport UI matches
-        if (typeof s.view === 'string' && s.view.startsWith('mlb-')) {
-            if (AppState.currentSport !== 'mlb') {
-                AppState.currentSport = 'mlb';
-                _applySportUI('mlb');
-            }
-        } else if (typeof s.view === 'string' && !s.view.startsWith('mlb-')) {
-            if (AppState.currentSport !== 'nba') {
-                AppState.currentSport = 'nba';
-                _applySportUI('nba');
+        // Ensure sport UI matches the restored view's sport prefix
+        if (typeof s.view === 'string') {
+            const sportFromView = s.view.startsWith('mlb-') ? 'mlb'
+                : s.view.startsWith('nfl-') ? 'nfl'
+                : s.view.startsWith('nhl-') ? 'nhl'
+                : 'nba';
+            if (AppState.currentSport !== sportFromView) {
+                AppState.currentSport = sportFromView;
+                _applySportUI(sportFromView);
             }
         }
         navigateTo(s.view, false);
     });
+
+    // Apply correct sport UI before hash routing (default sport is mlb)
+    _applySportUI(AppState.currentSport);
 
     // Load from URL hash on first visit
     _loadFromHash();
@@ -129,6 +131,9 @@ function _closeWaffle() {
 
 function navigateTo(view, push = true) {
     if (window.StatsCharts) StatsCharts.destroyAll();
+
+    // Scroll to top on every navigation
+    window.scrollTo({ top: 0, behavior: 'instant' });
 
     // Sync all matching nav tabs (waffle panel + mobile)
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -196,37 +201,54 @@ function switchSport(sport) {
     const mobMlbNav      = document.getElementById('mobile-mlb-nav');
     const seasonRow      = document.getElementById('waffleSeasonRow');
 
+    const nflNav    = document.getElementById('nfl-nav');
+    const nhlNav    = document.getElementById('nhl-nav');
+    const mobNflNav = document.getElementById('mobile-nfl-nav');
+    const mobNhlNav = document.getElementById('mobile-nhl-nav');
+
+    // Hide all sport navs, then show the active one
+    [nbaNav, mlbNav, nflNav, nhlNav].forEach(n => n && (n.style.display = 'none'));
+    [mobNbaNav, mobMlbNav, mobNflNav, mobNhlNav].forEach(n => n && (n.style.display = 'none'));
+    if (seasonRow) seasonRow.style.display = (sport === 'nba') ? '' : 'none';
+    document.getElementById('positionFilters')?.remove();
+    document.getElementById('mlbGroupToggle')?.remove();
+
+    const brandConfig = {
+        nba: { icon: '🏀', sub: 'NBA Analytics',  nav: nbaNav,    mobNav: mobNbaNav, defaultView: 'players'     },
+        mlb: { icon: '⚾',  sub: 'MLB Analytics',  nav: mlbNav,    mobNav: mobMlbNav, defaultView: 'mlb-players' },
+        nfl: { icon: '🏈',  sub: 'NFL Analytics',  nav: nflNav,    mobNav: mobNflNav, defaultView: 'nfl-players' },
+        nhl: { icon: '🏒',  sub: 'NHL Analytics',  nav: nhlNav,    mobNav: mobNhlNav, defaultView: 'nhl-players' },
+    };
+    const cfg = brandConfig[sport] || brandConfig.nba;
+
+    if (cfg.nav)    cfg.nav.style.display    = '';
+    if (cfg.mobNav) cfg.mobNav.style.display = '';
+    document.getElementById('brandIcon').textContent = cfg.icon;
+    document.getElementById('brandSub').textContent  = cfg.sub;
+
+    // Refresh ticker for the new sport
     if (sport === 'mlb') {
-        if (nbaNav)    nbaNav.style.display     = 'none';
-        if (mlbNav)    mlbNav.style.display      = '';
-        if (mobNbaNav) mobNbaNav.style.display   = 'none';
-        if (mobMlbNav) mobMlbNav.style.display   = '';
-        if (seasonRow) seasonRow.style.display   = 'none';
-        document.getElementById('brandIcon').textContent = '⚾';
-        document.getElementById('brandSub').textContent  = 'MLB Analytics';
-        document.getElementById('positionFilters')?.remove();
-        document.getElementById('mlbGroupToggle')?.remove();
-        // Refresh ticker with MLB scores
         fetchMLBSchedule(7).then(games => {
             AppState.mlbGames = AppState.mlbGames.length ? AppState.mlbGames : games;
             updateMLBTicker(games);
         }).catch(() => {});
-        navigateTo('mlb-players');
-    } else {
-        if (nbaNav)    nbaNav.style.display     = '';
-        if (mlbNav)    mlbNav.style.display      = 'none';
-        if (mobNbaNav) mobNbaNav.style.display   = '';
-        if (mobMlbNav) mobMlbNav.style.display   = 'none';
-        if (seasonRow) seasonRow.style.display   = '';
-        document.getElementById('brandIcon').textContent = '🏀';
-        document.getElementById('brandSub').textContent  = 'NBA Analytics';
-        document.getElementById('mlbGroupToggle')?.remove();
-        // Restore NBA ticker
-        const nbaGames = AppState.allGames;
-        if (nbaGames.length) updateTicker(nbaGames);
-        else fetchGamesAPI().then(games => updateTicker(games)).catch(() => {});
-        navigateTo('players');
+    } else if (sport === 'nfl') {
+        if (typeof fetchNFLScoreboard === 'function') {
+            fetchNFLScoreboard().then(games => {
+                AppState.nflGames = games;
+                updateNFLTicker(games);
+            }).catch(() => {});
+        }
+    } else if (sport === 'nhl') {
+        if (typeof fetchNHLScoreboard === 'function') {
+            fetchNHLScoreboard().then(data => {
+                AppState.nhlGames = data.games;
+                updateNHLTicker(data.games);
+            }).catch(() => {});
+        }
     }
+
+    navigateTo(cfg.defaultView);
 }
 
 // ── Breadcrumb ───────────────────────────────────────────────
@@ -244,6 +266,18 @@ const _NAV_META = {
     'mlb-teams':     { label: 'MLB Teams',     icon: '🏟' },
     'mlb-games':     { label: 'MLB Scores',    icon: '📅' },
     'mlb-standings': { label: 'MLB Standings', icon: '📊' },
+    'mlb-builder':   { label: 'Stat Builder',  icon: '🧮' },
+    'mlb-prep':      { label: 'Game Prep',     icon: '📋' },
+    'nfl-players':   { label: 'NFL Leaders',   icon: '🏈' },
+    'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
+    'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
+    'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
+    'nfl-standings': { label: 'NFL Standings', icon: '📊' },
+    'nhl-players':   { label: 'NHL Leaders',   icon: '🏒' },
+    'nhl-leaders':   { label: 'NHL Leaders',   icon: '🏒' },
+    'nhl-teams':     { label: 'NHL Teams',     icon: '🏒' },
+    'nhl-games':     { label: 'NHL Scores',    icon: '📅' },
+    'nhl-standings': { label: 'NHL Standings', icon: '📊' },
     'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
 
@@ -257,8 +291,11 @@ function setBreadcrumb(root, current) {
             <span class="breadcrumb-sep">›</span>
             <span class="breadcrumb-current">${current}</span>
         `;
+        document.title = `${current} — SportsStrata`;
     } else {
         el.innerHTML = `<span class="breadcrumb-root">${meta.icon} ${meta.label}</span>`;
+        const label = meta.label || root;
+        document.title = label === 'Home' ? 'SportsStrata — MLB Analytics' : `${label} — SportsStrata`;
     }
 }
 
@@ -267,11 +304,10 @@ function setBreadcrumb(root, current) {
 function renderCurrentView(view) {
     Logger.info(`View → ${view}`, undefined, 'NAV');
 
-    // MLB views
-    if (view.startsWith('mlb-')) {
-        _renderMLBView(view);
-        return;
-    }
+    // Sport-specific views
+    if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
+    if (view.startsWith('nfl-')) { _renderNFLView(view); return; }
+    if (view.startsWith('nhl-')) { _renderNHLView(view); return; }
 
     // NBA views
     const viewCount = document.getElementById('viewResultCount');
@@ -374,6 +410,16 @@ function _renderMLBView(view) {
             loadMLBGames();
             break;
 
+        case 'mlb-builder':
+            if (viewCount) viewCount.textContent = 'Stat Builder';
+            displayStatBuilder();
+            break;
+
+        case 'mlb-prep':
+            if (viewCount) viewCount.textContent = 'Game Prep';
+            displayGamePrep();
+            break;
+
         case 'mlb-standings':
             if (viewCount) viewCount.textContent = 'MLB Standings';
             if (AppState.mlbStandings) {
@@ -385,6 +431,66 @@ function _renderMLBView(view) {
 
         default:
             Logger.error(`Unknown MLB view: ${view}`, undefined, 'NAV');
+    }
+}
+
+function _renderNFLView(view) {
+    const viewCount = document.getElementById('viewResultCount');
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+
+    switch (view) {
+        case 'nfl-players':
+        case 'nfl-leaders':
+            if (viewCount) viewCount.textContent = 'NFL Leaders';
+            loadNFLLeaderboards();
+            break;
+        case 'nfl-teams':
+            if (viewCount) viewCount.textContent = 'NFL Teams';
+            if (AppState.nflTeams.length) displayNFLTeams(AppState.nflTeams);
+            else loadNFLTeams();
+            break;
+        case 'nfl-games':
+            if (viewCount) viewCount.textContent = 'NFL Scores';
+            loadNFLGames();
+            break;
+        case 'nfl-standings':
+            if (viewCount) viewCount.textContent = 'NFL Standings';
+            if (AppState.nflStandings?.length) displayNFLStandings(AppState.nflStandings);
+            else loadNFLStandings();
+            break;
+        default:
+            Logger.error(`Unknown NFL view: ${view}`, undefined, 'NAV');
+    }
+}
+
+function _renderNHLView(view) {
+    const viewCount = document.getElementById('viewResultCount');
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+
+    switch (view) {
+        case 'nhl-players':
+        case 'nhl-leaders':
+            if (viewCount) viewCount.textContent = 'NHL Leaders';
+            loadNHLLeaderboards();
+            break;
+        case 'nhl-teams':
+            if (viewCount) viewCount.textContent = 'NHL Teams';
+            if (AppState.nhlTeams.length) displayNHLTeams(AppState.nhlTeams);
+            else loadNHLTeams();
+            break;
+        case 'nhl-games':
+            if (viewCount) viewCount.textContent = 'NHL Scores';
+            loadNHLGames();
+            break;
+        case 'nhl-standings':
+            if (viewCount) viewCount.textContent = 'NHL Standings';
+            if (AppState.nhlStandings?.length) displayNHLStandings(AppState.nhlStandings);
+            else loadNHLStandings();
+            break;
+        default:
+            Logger.error(`Unknown NHL view: ${view}`, undefined, 'NAV');
     }
 }
 
@@ -464,11 +570,21 @@ function _loadFromHash() {
             return;
         }
 
-        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings'];
+        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep'];
+        const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-teams', 'nfl-games', 'nfl-standings'];
+        const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
             _applySportUI('mlb');
+            navigateTo(hash, false);
+        } else if (nflViews.includes(hash)) {
+            AppState.currentSport = 'nfl';
+            _applySportUI('nfl');
+            navigateTo(hash, false);
+        } else if (nhlViews.includes(hash)) {
+            AppState.currentSport = 'nhl';
+            _applySportUI('nhl');
             navigateTo(hash, false);
         } else {
             navigateTo(nbaViews.includes(hash) ? hash : 'home', false);
@@ -483,16 +599,21 @@ function _applySportUI(sport) {
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-pressed', String(active));
     });
-    const isMLB = sport === 'mlb';
-    document.getElementById('nba-nav')?.style.setProperty('display', isMLB ? 'none' : '');
-    document.getElementById('mlb-nav')?.style.setProperty('display', isMLB ? ''     : 'none');
-    document.getElementById('mobile-nba-nav')?.style.setProperty('display', isMLB ? 'none' : '');
-    document.getElementById('mobile-mlb-nav')?.style.setProperty('display', isMLB ? ''     : 'none');
-    document.getElementById('waffleSeasonRow')?.style.setProperty('display', isMLB ? 'none' : '');
+
+    const navIds  = ['nba-nav', 'mlb-nav', 'nfl-nav', 'nhl-nav'];
+    const mobIds  = ['mobile-nba-nav', 'mobile-mlb-nav', 'mobile-nfl-nav', 'mobile-nhl-nav'];
+    const brands  = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
+    const suffix  = { nba: 'nba', mlb: 'mlb', nfl: 'nfl', nhl: 'nhl' }[sport] || 'nba';
+
+    navIds.forEach(id => document.getElementById(id)?.style.setProperty('display', id === `${suffix}-nav` ? '' : 'none'));
+    mobIds.forEach(id => document.getElementById(id)?.style.setProperty('display', id === `mobile-${suffix}-nav` ? '' : 'none'));
+    document.getElementById('waffleSeasonRow')?.style.setProperty('display', sport === 'nba' ? '' : 'none');
+
+    const [icon, sub] = brands[sport] || brands.nba;
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
-    if (brandIcon) brandIcon.textContent = isMLB ? '⚾' : '🏀';
-    if (brandSub)  brandSub.textContent  = isMLB ? 'MLB Analytics' : 'NBA Analytics';
+    if (brandIcon) brandIcon.textContent = icon;
+    if (brandSub)  brandSub.textContent  = sub;
 }
 
 // ── Utility ──────────────────────────────────────────────────

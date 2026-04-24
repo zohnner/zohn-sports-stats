@@ -57,8 +57,46 @@ function getAvatarStyle(abbreviation) {
     return `background: linear-gradient(135deg, ${primary}cc, ${primary}66);`;
 }
 
+function getNBATeamLogoUrl(abbr) {
+    return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr.toLowerCase()}.png` : null;
+}
+
+// Normalize a player name for cross-source matching (BDL vs NBA.com).
+// Strips dots, Jr./Sr./I/II/III/IV suffixes, and extra whitespace.
+// "P.J. Washington Jr." → "pj washington"  |  "PJ Washington" → "pj washington"
+function _normName(name) {
+    return String(name || '')
+        .toLowerCase()
+        .replace(/\./g, '')
+        .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// Escape user-facing API text before inserting into innerHTML.
+function _escHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Single capture-phase listener replaces all inline onerror="this.style.display='none'" handlers.
+// Mark any <img> with data-hide-on-error to opt in.
 if (typeof window !== 'undefined') {
-    window.NBA_TEAM_COLORS = NBA_TEAM_COLORS;
-    window.getTeamColors   = getTeamColors;
-    window.getAvatarStyle  = getAvatarStyle;
+    document.addEventListener('error', e => {
+        if (e.target.tagName === 'IMG' && 'hideOnError' in e.target.dataset) {
+            e.target.style.display = 'none';
+        }
+    }, true);
+
+    window.NBA_TEAM_COLORS    = NBA_TEAM_COLORS;
+    window.getTeamColors      = getTeamColors;
+    window.getAvatarStyle     = getAvatarStyle;
+    window._escHtml           = _escHtml;
+    window._normName          = _normName;
+    window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
 }

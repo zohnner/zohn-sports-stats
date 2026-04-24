@@ -95,10 +95,8 @@ async function loadPlayers() {
         updatePlayerCount();
 
     } catch (error) {
-        Logger.error('Failed to load players', error, 'PLAYERS');
         resultCount.textContent = 'Error loading players';
-        ErrorHandler.renderErrorState(grid, error, loadPlayers);
-        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Players' });
+        ErrorHandler.handle(grid, error, loadPlayers, { tag: 'PLAYERS', title: 'Failed to Load Players' });
     }
 }
 
@@ -107,7 +105,7 @@ async function loadStatsForPlayers(players) {
     const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
     let matched = 0;
     players.forEach(player => {
-        const key  = `${player.first_name} ${player.last_name}`.toLowerCase();
+        const key  = _normName(`${player.first_name} ${player.last_name}`);
         const stat = statsMap[key];
         if (stat) {
             AppState.playerStats[player.id] = { ...stat, player_id: player.id };
@@ -181,7 +179,7 @@ function createPlayerCard(player, stats, ppgRank) {
     const initials    = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
     const headshotUrl = getESPNHeadshotUrl(player);
     const headshotImg = headshotUrl
-        ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
+        ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.visibility='hidden'">`
         : '';
 
     const rankBadge = ppgRank != null ? `<span class="player-rank-badge ${ppgRank <= 10 ? 'player-rank-badge--top' : ''}">#${ppgRank} PPG</span>` : '';
@@ -310,7 +308,7 @@ function displayPlayersTable(players) {
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
                             <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
-                                ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">` : ''}
+                                ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>` : ''}
                                 <span>${inits}</span>
                             </div>
                             <div>
@@ -449,7 +447,7 @@ async function searchPlayers(term) {
         // Look up stats for new players from the NBA map (already fetched)
         const statsMap = await fetchNBAStatsMap(CURRENT_SEASON);
         newPlayers.forEach(p => {
-            const key  = `${p.first_name} ${p.last_name}`.toLowerCase();
+            const key  = _normName(`${p.first_name} ${p.last_name}`);
             const stat = statsMap[key];
             if (stat) AppState.playerStats[p.id] = { ...stat, player_id: p.id };
         });

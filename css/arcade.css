@@ -29,6 +29,43 @@
     margin: 0;
 }
 
+/* ── Sport sections ──────────────────────────────────────── */
+
+.arcade-sport-section {
+    margin-bottom: 2.5rem;
+}
+
+.arcade-sport-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.arcade-sport-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.arcade-sport-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.03em;
+}
+
+.arcade-sport-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: auto;
+    background: var(--bg-interactive);
+    border: 1px solid var(--border-default);
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+}
+
 .arcade-game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

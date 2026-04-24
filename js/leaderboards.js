@@ -13,6 +13,12 @@ const LEADERBOARD_CATEGORIES = [
     { key: 'ft_pct',   label: 'Free Throw %',    unit: 'FT%',  color: '#38bdf8', decimals: 1, pct: true },
     { key: 'turnover', label: 'Turnovers',        unit: 'TOV',  color: '#f87171', decimals: 1 },
     { key: 'min',      label: 'Minutes',          unit: 'MIN',  color: '#94a3b8', decimals: 1 },
+    {
+        key: '__fp', label: 'Fantasy Score', unit: 'FP (DK)', color: '#10b981', decimals: 1,
+        computed: s => (parseFloat(s.pts)||0)*1 + (parseFloat(s.reb)||0)*1.25 + (parseFloat(s.ast)||0)*1.5
+                     + (parseFloat(s.stl)||0)*3 + (parseFloat(s.blk)||0)*3 - (parseFloat(s.turnover)||0)*1,
+        tip: 'DraftKings fantasy points: PTS×1 + REB×1.25 + AST×1.5 + STL×3 + BLK×3 − TOV×1',
+    },
 ];
 
 // Computed at render time so it reflects the selected season
@@ -49,9 +55,7 @@ async function loadLeaderboards() {
         }
         displayLeaderboards();
     } catch (error) {
-        Logger.error('Failed to load leaderboards', error, 'LEADERS');
-        ErrorHandler.renderErrorState(grid, error, loadLeaderboards);
-        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Leaders' });
+        ErrorHandler.handle(grid, error, loadLeaderboards, { tag: 'LEADERS', title: 'Failed to Load Leaders' });
     }
 }
 
@@ -101,6 +105,10 @@ const NBA_POS_OPTIONS   = [
     { value: 'F',   label: 'Forward' },
     { value: 'C',   label: 'Center' },
 ];
+const NBA_FANTASY_OPTIONS = [
+    { value: false, label: 'Off' },
+    { value: true,  label: 'FP (DK)' },
+];
 
 function displayLeaderboards() {
     const grid = document.getElementById('playersGrid');
@@ -120,15 +128,31 @@ function displayLeaderboards() {
         displayLeaderboards();
     }));
 
-    LEADERBOARD_CATEGORIES.forEach(cat => fragment.appendChild(_buildPanel(cat)));
+    // Control row 3 — Fantasy overlay
+    fragment.appendChild(_buildPillControl('Fantasy:', NBA_FANTASY_OPTIONS, AppState.nbaFantasyOverlay || false, val => {
+        AppState.nbaFantasyOverlay = val;
+        displayLeaderboards();
+    }));
+
+    const cats = AppState.nbaFantasyOverlay
+        ? LEADERBOARD_CATEGORIES   // include the FP panel when overlay is on
+        : LEADERBOARD_CATEGORIES.filter(c => c.key !== '__fp');
+
+    cats.forEach(cat => fragment.appendChild(_buildPanel(cat)));
     grid.innerHTML = '';
     grid.appendChild(fragment);
 }
 
 const LB_INIT_COUNT = 10;
 
+function _nbaFP(s) {
+    return (parseFloat(s.pts)||0)*1 + (parseFloat(s.reb)||0)*1.25 + (parseFloat(s.ast)||0)*1.5
+         + (parseFloat(s.stl)||0)*3 + (parseFloat(s.blk)||0)*3 - (parseFloat(s.turnover)||0)*1;
+}
+
 function _buildLeaderboardRow(player, rank, cat, topVal) {
-    const val     = AppState.playerStats[player.id][cat.key];
+    const s   = AppState.playerStats[player.id];
+    const val = cat.computed ? cat.computed(s) : s[cat.key];
     const display = cat.pct ? (val * 100).toFixed(cat.decimals) + '%' : val.toFixed(cat.decimals);
     const barPct  = topVal > 0 ? Math.round((val / topVal) * 100) : 0;
     const abbr    = player.team?.abbreviation || '';
@@ -136,19 +160,26 @@ function _buildLeaderboardRow(player, rank, cat, topVal) {
     const initials = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
     const headshotUrl = getESPNHeadshotUrl(player);
 
+    // Fantasy overlay badge (skip for the dedicated FP panel itself)
+    const fpBadge = AppState.nbaFantasyOverlay && cat.key !== '__fp'
+        ? `<span class="lb-fp-badge">${_nbaFP(s).toFixed(1)} FP</span>` : '';
+
     const row = document.createElement('div');
     row.className = 'leaderboard-row';
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
     row.addEventListener('click', () => showPlayerDetail(player.id));
+    row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showPlayerDetail(player.id); });
 
     row.innerHTML = `
         <span class="lb-rank ${rank < 3 ? `lb-rank-${rank + 1}` : ''}">${rank + 1}</span>
         <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
-            ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.lb-avatar-initials');if(s)s.style.visibility='hidden'">` : ''}
+            ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error onload="var s=this.parentElement.querySelector('.lb-avatar-initials');if(s)s.style.visibility='hidden'">` : ''}
             <span class="lb-avatar-initials">${initials}</span>
         </div>
         <div class="lb-player">
             <span class="lb-name">${player.first_name} ${player.last_name}</span>
-            <span class="lb-team">${abbr}${player.position ? ' · ' + player.position : ''}</span>
+            <span class="lb-team">${abbr}${player.position ? ' · ' + player.position : ''}${fpBadge}</span>
             <div class="lb-bar"><div class="lb-bar-fill" style="width:${barPct}%;background:${cat.color}22;border-right:2px solid ${cat.color}88"></div></div>
         </div>
         <span class="lb-value" style="color:${cat.color}">${display}</span>
@@ -156,28 +187,70 @@ function _buildLeaderboardRow(player, rank, cat, topVal) {
     return row;
 }
 
+// Per-panel sort direction: key → 'desc' | 'asc' (default desc = highest first)
+const _lbSortDir = {};
+
 function _buildPanel(cat) {
     const minGP  = AppState.nbaLeaderMinGP    || 0;
     const posFilt = AppState.nbaLeaderPosition || 'all';
+    const dir    = _lbSortDir[cat.key] || 'desc';
     const eligible = AppState.allPlayers
         .filter(p => {
-            if (AppState.playerStats[p.id]?.[cat.key] == null) return false;
-            if (minGP > 0 && (AppState.playerStats[p.id]?.games_played ?? 0) < minGP) return false;
+            const s = AppState.playerStats[p.id];
+            if (!s) return false;
+            if (!cat.computed && s[cat.key] == null) return false;
+            if (minGP > 0 && (s?.games_played ?? 0) < minGP) return false;
             if (posFilt !== 'all' && !p.position?.toUpperCase().includes(posFilt)) return false;
             return true;
         })
-        .sort((a, b) => AppState.playerStats[b.id][cat.key] - AppState.playerStats[a.id][cat.key]);
+        .sort((a, b) => {
+            const sa = AppState.playerStats[a.id];
+            const sb = AppState.playerStats[b.id];
+            const av = cat.computed ? cat.computed(sa) : sa[cat.key];
+            const bv = cat.computed ? cat.computed(sb) : sb[cat.key];
+            const diff = bv - av;
+            return dir === 'desc' ? diff : -diff;
+        });
 
     const panel = document.createElement('div');
     panel.className = 'leaderboard-panel';
 
+    const unitTip = cat.tip
+        ? `<span class="stat-tip" data-tip="${cat.tip.replace(/"/g,'&quot;')}" tabindex="0">${cat.unit}</span>`
+        : cat.unit;
+
     const header = document.createElement('div');
-    header.className = 'leaderboard-header';
+    header.className = 'leaderboard-header leaderboard-header--sortable';
     header.style.borderLeftColor = cat.color;
+    header.title = `Click to sort ${dir === 'desc' ? 'ascending' : 'descending'}`;
     header.innerHTML = `
         <span class="leaderboard-title">${cat.label}</span>
-        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${cat.unit}${minGP > 0 ? ` · ${eligible.length} qualifying` : ` · ${eligible.length} players`}</span>
+        <span class="leaderboard-unit" style="color:${cat.color}">${_seasonLabel()} · ${unitTip}${minGP > 0 ? ` · ${eligible.length} qualifying` : ` · ${eligible.length} players`}</span>
+        <button class="lb-export-btn" aria-label="Export ${cat.label} as CSV" title="Download CSV" onclick="event.stopPropagation()">↓CSV</button>
+        <span class="leaderboard-sort-arrow">${dir === 'desc' ? '▼' : '▲'}</span>
     `;
+    header.addEventListener('click', () => {
+        _lbSortDir[cat.key] = dir === 'desc' ? 'asc' : 'desc';
+        displayLeaderboards();
+    });
+
+    // Wire CSV export — runs after the button is in DOM
+    setTimeout(() => {
+        const exportBtn = panel.querySelector('.lb-export-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                const headers = ['Rank', 'Player', 'Team', 'Position', 'GP', cat.unit];
+                const rows = eligible.map((p, i) => {
+                    const s = AppState.playerStats[p.id];
+                    const val = cat.computed ? cat.computed(s) : s[cat.key];
+                    const display = cat.pct ? (val * 100).toFixed(cat.decimals) + '%' : val.toFixed(cat.decimals);
+                    return [i + 1, `${p.first_name} ${p.last_name}`, p.team?.abbreviation || '', p.position || '', s.games_played ?? '', display];
+                });
+                if (typeof exportCSV === 'function') exportCSV(`sportsstr-${cat.key}-${_seasonLabel()}.csv`, headers, rows);
+            });
+        }
+    }, 0);
 
     const list = document.createElement('div');
     list.className = 'leaderboard-list';
@@ -185,7 +258,8 @@ function _buildPanel(cat) {
     if (eligible.length === 0) {
         list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
     } else {
-        const topVal = AppState.playerStats[eligible[0].id][cat.key];
+        const topPlayerStats = AppState.playerStats[eligible[0].id];
+        const topVal = cat.computed ? cat.computed(topPlayerStats) : topPlayerStats[cat.key];
 
         // Always render the first LB_INIT_COUNT rows visible
         eligible.slice(0, LB_INIT_COUNT).forEach((player, i) => {

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SportsStrata — Offline</title>
+<style>
+  :root { --bg: #060c18; --surface: #0d1526; --border: #1e2d4a; --text: #e8eaf0; --muted: #8892a4; --accent: #3b82f6; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+  .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+  p { color: var(--muted); font-size: 0.95rem; max-width: 320px; line-height: 1.6; margin-bottom: 2rem; }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0.75rem 1.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .status { margin-top: 1.5rem; font-size: 0.8rem; color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="icon">⚡</div>
+<h1>You're offline</h1>
+<p>SportsStrata needs a connection to fetch live scores and stats. Check your network and try again.</p>
+<a class="btn" href="/" onclick="location.reload(); return false;">Try again</a>
+<div class="status"><span class="dot"></span>No network connection</div>
+</body>
+</html>

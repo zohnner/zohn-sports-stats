@@ -47,15 +47,12 @@ function displayTeams(teams) {
     grid.appendChild(fragment);
 }
 
-function _espnTeamLogoUrl(abbr) {
-    return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr.toLowerCase()}.png` : null;
-}
 
 function _createTeamCard(team) {
     const colors   = getTeamColors(team.abbreviation);
     const confCls  = team.conference === 'East' ? 'conference-east' : 'conference-west';
     const initials = _teamInitials(team);
-    const logoUrl  = _espnTeamLogoUrl(team.abbreviation);
+    const logoUrl  = getNBATeamLogoUrl(team.abbreviation);
 
     const card = document.createElement('div');
     card.className = `player-card team-card ${confCls}`;
@@ -74,7 +71,7 @@ function _createTeamCard(team) {
     card.innerHTML = `
         <div class="player-card-top">
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);color:#fff;font-weight:800;font-size:1.4rem;letter-spacing:0.02em">
-                ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;padding:4px" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
+                ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;object-position:center;padding:4px" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
                 <span class="avatar-text">${initials}</span>
             </div>
             <div class="player-name">${team.full_name}</div>
@@ -190,7 +187,7 @@ async function showTeamDetail(teamId, push = true) {
 
 function _teamHeader(team, colors) {
     const initials  = _teamInitials(team);
-    const logoUrl   = _espnTeamLogoUrl(team.abbreviation);
+    const logoUrl   = getNBATeamLogoUrl(team.abbreviation);
     const confLabel = `${team.conference}ern Conference · ${team.division} Division`;
 
     const standing   = AppState.nbaStandings?.find(s => s.teamAbbr === team.abbreviation);
@@ -219,7 +216,7 @@ function _teamHeader(team, colors) {
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
                             color:#fff;font-size:2rem;font-weight:800;letter-spacing:0.02em;
                             box-shadow:0 0 40px ${colors.primary}44">
-                    ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;padding:8px" onerror="this.style.display='none'" onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
+                    ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;object-position:center;padding:8px" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
                     <span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">
@@ -280,7 +277,7 @@ function _rosterCard(roster, colors) {
             return `
                 <div class="roster-row" onclick="showPlayerDetail(${p.id})" style="cursor:pointer">
                     <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden">
-                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" onerror="this.style.display='none'">` : ''}
+                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
                         <span style="position:relative">${initials}</span>
                     </div>
                     <div class="roster-info">
@@ -326,7 +323,7 @@ function _recentGamesCard(games, teamId) {
         const oppScore   = isHome ? (g.visitor_team_score ?? 0) : (g.home_team_score ?? 0);
         const opp        = isHome ? g.visitor_team : g.home_team;
         const oppAbbr    = opp?.abbreviation || '???';
-        const oppLogo    = `https://a.espncdn.com/i/teamlogos/nba/500/${oppAbbr.toLowerCase()}.png`;
+        const oppLogo    = getNBATeamLogoUrl(oppAbbr);
         const status     = g.status || '';
         const isFinal    = /final|^f$/i.test(status);
         const hasScores  = teamScore > 0 || oppScore > 0;
@@ -348,7 +345,7 @@ function _recentGamesCard(games, teamId) {
                     <span style="color:var(--text-muted);font-size:0.75rem;min-width:52px">${dateStr}</span>
                     <span style="color:var(--text-subtle);font-size:0.75rem;margin-right:2px">${homeAway}</span>
                     <img src="${oppLogo}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0"
-                         loading="lazy" onerror="this.style.display='none'">
+                         loading="lazy" data-hide-on-error>
                     <span style="font-weight:700;font-size:0.85rem">${oppAbbr}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
@@ -417,8 +414,8 @@ function _teamGameDetailHTML(game, playerStats, team, teamId) {
         const opp        = isHome ? game.visitor_team : game.home_team;
         const oppAbbr    = opp?.abbreviation || '???';
         const oppColors  = getTeamColors(oppAbbr);
-        const oppLogo    = `https://a.espncdn.com/i/teamlogos/nba/500/${oppAbbr.toLowerCase()}.png`;
-        const teamLogo   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.abbreviation.toLowerCase()}.png`;
+        const oppLogo    = getNBATeamLogoUrl(oppAbbr);
+        const teamLogo   = getNBATeamLogoUrl(team.abbreviation);
         const dateStr    = game.date
             ? new Date(game.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
             : '';
@@ -437,7 +434,7 @@ function _teamGameDetailHTML(game, playerStats, team, teamId) {
                              style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
                                     box-shadow:0 0 40px ${colors.primary}44">
                             <img class="player-headshot" src="${teamLogo}" alt="" loading="lazy"
-                                 style="object-fit:contain;padding:8px" onerror="this.style.display='none'">
+                                 style="object-fit:contain;object-position:center;padding:8px" data-hide-on-error>
                             <span class="avatar-text">${_teamInitials(team)}</span>
                         </div>
                         <div style="text-align:center">
@@ -456,10 +453,10 @@ function _teamGameDetailHTML(game, playerStats, team, teamId) {
                             <div style="font-size:0.65rem;color:var(--text-muted);letter-spacing:0.8px;
                                         text-transform:uppercase;margin-top:2px">${oppAbbr}</div>
                         </div>
-                        <div class="player-detail-avatar"
-                             style="background:linear-gradient(135deg,${oppColors.primary}cc,${oppColors.primary}55)">
+                        <div class="player-detail-avatar" ${opp?.id ? `onclick="showTeamDetail(${opp.id})"` : ''}
+                             style="background:linear-gradient(135deg,${oppColors.primary}cc,${oppColors.primary}55);${opp?.id ? 'cursor:pointer' : ''}">
                             <img class="player-headshot" src="${oppLogo}" alt="" loading="lazy"
-                                 style="object-fit:contain;padding:8px" onerror="this.style.display='none'">
+                                 style="object-fit:contain;object-position:center;padding:8px" data-hide-on-error>
                         </div>
                     </div>
                     <div class="player-hero-info">

@@ -26,11 +26,8 @@ async function loadGames() {
         AppState.allGames = games;
         Logger.info(`Loaded ${games.length} games`, undefined, 'GAMES');
         displayGames(games);
-        updateTicker(games);
     } catch (error) {
-        Logger.error('Failed to load games', error, 'GAMES');
-        ErrorHandler.renderErrorState(grid, error, loadGames);
-        ErrorHandler.toast(error.message, 'error', { title: 'Failed to Load Games' });
+        ErrorHandler.handle(grid, error, loadGames, { tag: 'GAMES', title: 'Failed to Load Games' });
     }
 }
 
@@ -52,6 +49,7 @@ function displayGames(games) {
 function createGameCard(game) {
     const card = document.createElement('div');
     card.className = 'game-card';
+    card.dataset.gameId = game.id;
 
     const homeScore = game.home_team_score    ?? 0;
     const awayScore = game.visitor_team_score ?? 0;
@@ -121,6 +119,9 @@ function createGameCard(game) {
     const margin    = isFinal && hasScore ? Math.abs(homeScore - awayScore) : null;
     const marginStr = margin != null ? `<span class="game-margin">by ${margin}</span>` : '';
 
+    const homeTeamId = game.home_team?.id;
+    const awayTeamId = game.visitor_team?.id;
+
     card.innerHTML = `
         <div class="game-card-header">
             <span class="game-date">${dateStr}</span>
@@ -130,22 +131,22 @@ function createGameCard(game) {
             </div>
         </div>
         <div class="game-matchup">
-            <div class="game-team ${homeWon ? 'game-team--winner' : ''}">
+            <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeamId}" style="cursor:pointer">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
-                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png" loading="lazy" onerror="this.style.display='none'" onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">
+                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png" loading="lazy" data-hide-on-error data-hides-sibling-text>
                     <span class="game-logo-text">${homeInitials}</span>
                 </div>
                 <div class="game-team-abbr">${homeAbbr}</div>
                 <div class="game-team-name">${game.home_team?.full_name || ''}</div>
             </div>
-            <div class="game-scores">
+            <div class="game-scores" style="cursor:pointer" data-score-click>
                 <span class="game-score ${homeWon ? 'game-score--win' : hasScore && !homeWon ? 'game-score--loss' : ''}">${hasScore ? homeScore : '—'}</span>
                 <span class="game-scores-sep">:</span>
                 <span class="game-score ${awayWon ? 'game-score--win' : hasScore && !awayWon ? 'game-score--loss' : ''}">${hasScore ? awayScore : '—'}</span>
             </div>
-            <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}">
+            <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}" data-team-id="${awayTeamId}" style="cursor:pointer">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
-                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${awayAbbr.toLowerCase()}.png" loading="lazy" onerror="this.style.display='none'" onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">
+                    <img class="game-logo-img" src="https://a.espncdn.com/i/teamlogos/nba/500/${awayAbbr.toLowerCase()}.png" loading="lazy" data-hide-on-error data-hides-sibling-text>
                     <span class="game-logo-text">${awayInitials}</span>
                 </div>
                 <div class="game-team-abbr">${awayAbbr}</div>
@@ -154,6 +155,36 @@ function createGameCard(game) {
         </div>
         ${quartersHtml}
     `;
+
+    // Hide fallback initials text when logo loads successfully
+    card.querySelectorAll('img[data-hides-sibling-text]').forEach(img => {
+        img.addEventListener('load', () => {
+            img.parentElement.querySelector('.game-logo-text')?.style.setProperty('display', 'none');
+        }, { once: true });
+    });
+
+    // Team sections → team detail; score area → box score
+    card.querySelectorAll('.game-team[data-team-id]').forEach(el => {
+        el.addEventListener('click', e => {
+            e.stopPropagation();
+            const tid = parseInt(el.dataset.teamId, 10);
+            if (tid) showTeamDetail(tid);
+        });
+    });
+    if (hasScore && homeTeamId) {
+        card.querySelector('[data-score-click]')?.addEventListener('click', e => {
+            e.stopPropagation();
+            showTeamGameDetail(game.id, homeTeamId);
+        });
+        card.querySelector('.game-card-header')?.addEventListener('click', () => {
+            showTeamGameDetail(game.id, homeTeamId);
+        });
+        card.querySelector(`${quartersHtml ? '.game-quarters' : '.game-matchup'}`)?.addEventListener('click', e => {
+            if (!e.target.closest('[data-team-id]') && !e.target.closest('[data-score-click]')) {
+                showTeamGameDetail(game.id, homeTeamId);
+            }
+        });
+    }
 
     return card;
 }
@@ -164,6 +195,7 @@ function _teamAbbrInitials(abbr) {
 }
 
 function updateTicker(games) {
+    if (AppState.currentSport !== 'nba') return;
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) {
         Logger.warn('Ticker container not found', undefined, 'GAMES');
@@ -201,19 +233,19 @@ function updateTicker(games) {
         const pillLbl  = isFinal ? 'F' : isPostponed ? 'PPD' : isLive ? st : 'SCH';
         const homeAbbr = g.home_team?.abbreviation || '?';
         const awayAbbr = g.visitor_team?.abbreviation || '?';
-        const homeLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr.toLowerCase()}.png`;
-        const awayLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${awayAbbr.toLowerCase()}.png`;
+        const homeLogo = getNBATeamLogoUrl(homeAbbr);
+        const awayLogo = getNBATeamLogoUrl(awayAbbr);
         const homeWon  = hs > vs;
         const awayWon  = vs > hs;
         return `
-            <div class="ticker__item">
-                <img class="ticker-logo" src="${homeLogo}" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="ticker__item" data-game-id="${g.id}" data-sport="nba" style="cursor:pointer">
+                <img class="ticker-logo" src="${homeLogo}" alt="" loading="lazy" data-hide-on-error>
                 <span class="ticker-team">${homeAbbr}</span>
                 <span class="ticker-score ${homeWon && isFinal ? 'ticker-score--win' : ''}">${hs}</span>
                 <span class="ticker-divider">–</span>
                 <span class="ticker-score ${awayWon && isFinal ? 'ticker-score--win' : ''}">${vs}</span>
                 <span class="ticker-team">${awayAbbr}</span>
-                <img class="ticker-logo" src="${awayLogo}" alt="" loading="lazy" onerror="this.style.display='none'">
+                <img class="ticker-logo" src="${awayLogo}" alt="" loading="lazy" data-hide-on-error>
                 <span class="ticker-status-pill ticker-status-pill--${pillCls}">${pillLbl}</span>
             </div>
         `;

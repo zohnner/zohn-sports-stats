@@ -12,9 +12,21 @@ async function loadStandings() {
     if (window.setBreadcrumb) setBreadcrumb('standings', null);
 
     grid.className = 'standings-container';
-    grid.innerHTML = Array.from({ length: 15 }, () => `
-        <div class="skeleton-line" style="height:40px;border-radius:8px;margin-bottom:4px"></div>
-    `).join('');
+    grid.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);overflow:hidden">
+            <div class="skeleton-line" style="height:36px;border-radius:0;margin:0;opacity:0.5"></div>
+            ${Array.from({ length: 15 }, () => `
+                <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1.25rem;border-top:1px solid var(--border-default)">
+                    <div class="skeleton-line" style="width:24px;height:24px;border-radius:50%;flex-shrink:0"></div>
+                    <div class="skeleton-line" style="flex:1;height:12px;max-width:160px"></div>
+                    <div class="skeleton-line" style="width:28px;height:12px"></div>
+                    <div class="skeleton-line" style="width:28px;height:12px"></div>
+                    <div class="skeleton-line" style="width:36px;height:12px"></div>
+                    <div class="skeleton-line" style="width:40px;height:12px"></div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 
     try {
         Logger.info('Fetching NBA standings…', undefined, 'STANDINGS');
@@ -50,7 +62,7 @@ function displayStandings(rows, conf) {
 
     const rowsHtml = confRows.map((team, idx) => {
         const rank      = idx + 1;
-        const logoUrl   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.teamAbbr.toLowerCase()}.png`;
+        const logoUrl   = getNBATeamLogoUrl(team.teamAbbr);
         const pct       = typeof team.pct === 'number' ? team.pct.toFixed(3) : (team.pct ?? '—');
         const gb        = team.gb === 0 || team.gb === '0' || !team.gb ? '—' : team.gb;
         const streak    = team.streak ?? '—';
@@ -73,11 +85,11 @@ function displayStandings(rows, conf) {
         const sepAfter10 = rank === 10 ? `<tr class="standings-sep standings-sep--eliminated"><td colspan="10"><span>Eliminated</span></td></tr>` : '';
 
         return `
-            <tr class="standings-row ${rowCls}">
+            <tr class="standings-row ${rowCls}" style="cursor:pointer" onclick="_nbaStandingsTeamClick('${team.teamAbbr}')">
                 <td class="standings-rank">${rank}</td>
                 <td class="standings-team-cell">
                     <img class="standings-logo" src="${logoUrl}" alt=""
-                         loading="lazy" onerror="this.style.display='none'">
+                         loading="lazy" data-hide-on-error>
                     <span class="standings-team-name">${team.teamCity} ${team.teamName}</span>
                     ${clinchBadge}
                 </td>
@@ -184,7 +196,7 @@ function displayPowerRankings(rows) {
         const streak = team.streak ?? '—';
         const strVal = _parseStreak(team.streak);
         const streakColor = strVal >= 3 ? 'var(--color-win)' : strVal <= -3 ? 'var(--color-loss)' : 'var(--text-muted)';
-        const logo   = `https://a.espncdn.com/i/teamlogos/nba/500/${team.teamAbbr.toLowerCase()}.png`;
+        const logo   = getNBATeamLogoUrl(team.teamAbbr);
 
         // Overall win% bar
         const barW   = (team._score / maxScore * 100).toFixed(1);
@@ -207,9 +219,9 @@ function displayPowerRankings(rows) {
             : '<span class="power-conf power-conf--west">W</span>';
 
         return `
-            <div class="power-row">
+            <div class="power-row" style="cursor:pointer" onclick="_nbaStandingsTeamClick('${team.teamAbbr}')">
                 <div class="power-rank">${rank}</div>
-                <img class="power-logo" src="${logo}" alt="" loading="lazy" onerror="this.style.display='none'">
+                <img class="power-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>
                 <div class="power-team">
                     <div class="power-team-name">${team.teamCity} ${team.teamName} ${confBadge}</div>
                     <div class="power-bar-wrap">
@@ -239,8 +251,15 @@ function displayPowerRankings(rows) {
     `;
 }
 
+async function _nbaStandingsTeamClick(abbr) {
+    if (!AppState.allTeams.length) AppState.allTeams = await fetchTeamsAPI();
+    const team = AppState.allTeams.find(t => t.abbreviation === abbr);
+    if (team) showTeamDetail(team.id);
+}
+
 if (typeof window !== 'undefined') {
-    window.loadStandings        = loadStandings;
-    window.displayStandings     = displayStandings;
-    window.displayPowerRankings = displayPowerRankings;
+    window.loadStandings             = loadStandings;
+    window.displayStandings          = displayStandings;
+    window.displayPowerRankings      = displayPowerRankings;
+    window._nbaStandingsTeamClick    = _nbaStandingsTeamClick;
 }

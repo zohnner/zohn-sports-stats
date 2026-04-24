@@ -146,6 +146,19 @@ class ErrorHandler {
         `;
     }
 
+    /**
+     * One-call handler for async load failures: logs + renders error state + shows toast.
+     * @param {HTMLElement} container
+     * @param {Error} error
+     * @param {Function} retryFn
+     * @param {{ tag?: string, title?: string }} opts
+     */
+    static handle(container, error, retryFn, { tag = 'APP', title = 'Failed to Load' } = {}) {
+        Logger.error(title, error, tag);
+        this.renderErrorState(container, error, retryFn);
+        this.toast(error.message, 'error', { title });
+    }
+
     // Backwards compatibility with old API
     static log(error, ctx = '')         { Logger.error(String(error), error, ctx || 'LEGACY'); }
     static showUserError(msg, title)    { this.toast(msg, 'error', { title }); }

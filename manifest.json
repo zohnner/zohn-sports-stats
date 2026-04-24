@@ -1,0 +1,52 @@
+{
+  "name": "SportsStrata",
+  "short_name": "SportsStrata",
+  "description": "Serious stats for serious fans. Real-time NBA, MLB, NFL and NHL analytics.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060c18",
+  "theme_color": "#060c18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23060c18'/%3E%3Ctext x='50%25' y='58%25' font-size='110' text-anchor='middle' dominant-baseline='middle' font-family='system-ui,sans-serif'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23060c18'/%3E%3Ctext x='50%25' y='58%25' font-size='300' text-anchor='middle' dominant-baseline='middle' font-family='system-ui,sans-serif'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "shortcuts": [
+    {
+      "name": "NBA Players",
+      "url": "/#players",
+      "description": "Browse NBA players and stats"
+    },
+    {
+      "name": "MLB Players",
+      "url": "/#mlb-players",
+      "description": "Browse MLB players and stats"
+    },
+    {
+      "name": "NFL Leaders",
+      "url": "/#nfl-players",
+      "description": "NFL stat leaders by category"
+    },
+    {
+      "name": "NHL Leaders",
+      "url": "/#nhl-players",
+      "description": "NHL skater and goalie leaders"
+    },
+    {
+      "name": "Arcade",
+      "url": "/#arcade",
+      "description": "Daily sports mini-games"
+    }
+  ]
+}

@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#060c18">
-    <meta name="description" content="SportsStrata — Serious stats for serious fans. Real-time NBA and MLB analytics, standings, player stats, and live scores.">
+    <meta name="description" content="SportsStrata — Serious stats for serious fans. Real-time MLB analytics, standings, player stats, splits, and live scores.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SportsStrata">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
     <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://www.mlbstatic.com https://img.mlbstatic.com https://assets.nhle.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportsStrata — Serious Stats for Serious Fans</title>
     <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
     <script>
@@ -33,24 +38,16 @@
     <header>
         <div class="header-inner">
             <button class="brand" onclick="navigateTo('home')" aria-label="SportsStrata home">
-                <span class="brand-icon" id="brandIcon">🏀</span>
+                <span class="brand-icon" id="brandIcon">⚾</span>
                 <div class="brand-text">
                     <span class="brand-name">SportsStrata</span>
-                    <span class="brand-sub" id="brandSub">NBA Analytics</span>
+                    <span class="brand-sub" id="brandSub">MLB Analytics</span>
                 </div>
             </button>
 
-            <!-- Sport switcher -->
-            <div class="sport-switcher" role="group" aria-label="Select sport">
-                <button class="sport-btn active" data-sport="nba" aria-pressed="true">🏀 NBA</button>
-                <button class="sport-btn" data-sport="mlb" aria-pressed="false">⚾ MLB</button>
-                <button class="sport-btn sport-btn--soon" disabled title="Coming soon">🏈 NFL</button>
-                <button class="sport-btn sport-btn--soon" disabled title="Coming soon">🏒 NHL</button>
-            </div>
-
             <!-- Live scores ticker (fills remaining header space) -->
             <div class="header-ticker">
-                <div class="ticker-title">SCORES</div>
+                <button class="ticker-title" id="tickerScoresBtn" title="View all scores">SCORES</button>
                 <div class="ticker" id="scoreTicker">
                     <div class="ticker__item">Loading scores…</div>
                 </div>
@@ -76,55 +73,16 @@
     <div class="waffle-panel" id="wafflePanel" hidden>
         <div class="waffle-panel-inner">
 
-            <!-- Season selector (NBA only) -->
-            <div class="waffle-season-row" id="waffleSeasonRow">
-                <span class="waffle-season-label">Season</span>
-                <select id="seasonSelect" class="season-select" aria-label="Select season">
-                    <option value="2025">2025–26</option>
-                    <option value="2024">2024–25</option>
-                    <option value="2023">2023–24</option>
-                    <option value="2022">2022–23</option>
-                    <option value="2021">2021–22</option>
-                    <option value="2020">2020–21</option>
-                    <option value="2019">2019–20</option>
-                    <option value="2018">2018–19</option>
-                </select>
-            </div>
+            <!-- Hidden stubs so JS sport-switcher logic doesn't error -->
+            <nav id="nba-nav" style="display:none" hidden aria-hidden="true"></nav>
+            <nav id="nfl-nav" style="display:none" hidden aria-hidden="true"></nav>
+            <nav id="nhl-nav" style="display:none" hidden aria-hidden="true"></nav>
+            <div id="waffleSeasonRow" style="display:none" hidden></div>
+            <select id="seasonSelect" style="display:none" hidden></select>
 
-            <!-- NBA navigation -->
-            <nav class="waffle-nav" id="nba-nav" aria-label="NBA navigation">
-                <button class="nav-tab waffle-nav-item active" data-view="players">
-                    <span class="nav-icon">👤</span>
-                    <span>Players</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="leaders">
-                    <span class="nav-icon">🏆</span>
-                    <span>Leaders</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="teams">
-                    <span class="nav-icon">🏟</span>
-                    <span>Teams</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="games">
-                    <span class="nav-icon">📅</span>
-                    <span>Scores</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="standings">
-                    <span class="nav-icon">📊</span>
-                    <span>Standings</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="builder">
-                    <span class="nav-icon">🧮</span>
-                    <span>Builder</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="arcade">
-                    <span class="nav-icon">🎮</span>
-                    <span>Arcade</span>
-                </button>
-            </nav>
-
-            <!-- MLB navigation (hidden by default) -->
-            <nav class="waffle-nav" id="mlb-nav" style="display:none" aria-label="MLB navigation">
+            <!-- MLB navigation -->
+            <div class="waffle-section-label">⚾ MLB</div>
+            <nav class="waffle-nav" id="mlb-nav" aria-label="MLB navigation">
                 <button class="nav-tab waffle-nav-item" data-view="mlb-players">
                     <span class="nav-icon">👤</span>
                     <span>Players</span>
@@ -145,11 +103,26 @@
                     <span class="nav-icon">📊</span>
                     <span>Standings</span>
                 </button>
-                <button class="nav-tab waffle-nav-item" data-view="arcade">
-                    <span class="nav-icon">🎮</span>
-                    <span>Arcade</span>
+                <button class="nav-tab waffle-nav-item" data-view="mlb-builder">
+                    <span class="nav-icon">🧮</span>
+                    <span>Builder</span>
+                </button>
+                <button class="nav-tab waffle-nav-item" data-view="mlb-prep">
+                    <span class="nav-icon">📋</span>
+                    <span>Game Prep</span>
                 </button>
             </nav>
+
+            <!-- Universal navigation (always visible) -->
+            <div class="waffle-universal-section">
+                <div class="waffle-section-label">Platform</div>
+                <nav class="waffle-nav waffle-nav--universal" aria-label="Platform navigation">
+                    <button class="nav-tab waffle-nav-item" data-view="arcade">
+                        <span class="nav-icon">🎮</span>
+                        <span>Arcade</span>
+                    </button>
+                </nav>
+            </div>
 
         </div>
 
@@ -186,30 +159,11 @@
         </div>
     </div>
 
-    <!-- Mobile bottom navigation — visible only on small screens -->
-    <nav class="mobile-nav" id="mobile-nba-nav" aria-label="Mobile NBA navigation">
-        <button class="nav-tab active" data-view="players">
-            <span class="nav-icon">👤</span>
-            <span class="mobile-nav-label">Players</span>
-        </button>
-        <button class="nav-tab" data-view="leaders">
-            <span class="nav-icon">🏆</span>
-            <span class="mobile-nav-label">Leaders</span>
-        </button>
-        <button class="nav-tab" data-view="games">
-            <span class="nav-icon">📅</span>
-            <span class="mobile-nav-label">Scores</span>
-        </button>
-        <button class="nav-tab" data-view="standings">
-            <span class="nav-icon">📊</span>
-            <span class="mobile-nav-label">Standings</span>
-        </button>
-        <button class="nav-tab" data-view="arcade">
-            <span class="nav-icon">🎮</span>
-            <span class="mobile-nav-label">Arcade</span>
-        </button>
-    </nav>
-    <nav class="mobile-nav" id="mobile-mlb-nav" style="display:none" aria-label="Mobile MLB navigation">
+    <!-- Hidden stubs so JS nav-switching logic doesn't error -->
+    <nav id="mobile-nba-nav" style="display:none" hidden aria-hidden="true"></nav>
+    <nav id="mobile-nfl-nav" style="display:none" hidden aria-hidden="true"></nav>
+    <nav id="mobile-nhl-nav" style="display:none" hidden aria-hidden="true"></nav>
+    <nav class="mobile-nav" id="mobile-mlb-nav" aria-label="Mobile MLB navigation">
         <button class="nav-tab" data-view="mlb-players">
             <span class="nav-icon">👤</span>
             <span class="mobile-nav-label">Players</span>
@@ -226,11 +180,18 @@
             <span class="nav-icon">📊</span>
             <span class="mobile-nav-label">Standings</span>
         </button>
-        <button class="nav-tab" data-view="arcade">
-            <span class="nav-icon">🎮</span>
-            <span class="mobile-nav-label">Arcade</span>
+        <button class="nav-tab" data-view="mlb-builder">
+            <span class="nav-icon">🧮</span>
+            <span class="mobile-nav-label">Builder</span>
+        </button>
+        <button class="nav-tab" data-view="mlb-prep">
+            <span class="nav-icon">📋</span>
+            <span class="mobile-nav-label">Prep</span>
         </button>
     </nav>
+
+    <!-- Back to top button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
     <main>
         <!-- Search + filters — shown only on Players view -->
@@ -272,6 +233,7 @@
     <script src="js/errorHandler.js"></script>
     <script src="js/cache.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/glossary.js"></script>
     <script src="js/players.js"></script>
     <script src="js/leaderboards.js"></script>
     <script src="js/teams.js"></script>
@@ -280,6 +242,8 @@
     <script src="js/playerDetail.js"></script>
     <script src="js/statBuilder.js"></script>
     <script src="js/mlb.js"></script>
+    <script src="js/nfl.js"></script>
+    <script src="js/nhl.js"></script>
     <script src="js/arcade.js"></script>
     <script src="js/standings.js"></script>
     <script src="js/schema.js"></script>
@@ -287,5 +251,12 @@
     <script src="js/search.js"></script>
     <script src="js/navigation.js"></script>
     <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>

@@ -24,8 +24,8 @@ const AppState = {
     allGames: [],
     playerStats: {},        // keyed by player id
     filteredPlayers: [],
-    currentView: 'players',
-    currentSport: 'nba',
+    currentView: 'mlb-players',
+    currentSport: 'mlb',
     savedStats: [],
     selectedPlayer: null,
     positionFilter: 'all',
@@ -37,6 +37,15 @@ const AppState = {
     ppgRankMap: {},         // playerId → PPG rank across all loaded players (built once after stats load)
     nbaLeaderMinGP: 0,      // minimum games played filter on NBA leaderboards (0 = All)
     nbaLeaderPosition: 'all', // position filter on NBA leaderboards
+    nbaFantasyOverlay: false, // show DraftKings FP badges and fantasy score panel
+    // NFL
+    nflTeams:     [],
+    nflGames:     [],
+    nflStandings: null,
+    // NHL
+    nhlTeams:     [],
+    nhlGames:     [],
+    nhlStandings: null,
     // Favorites — persisted to localStorage
     favorites: new Set((() => { try { return JSON.parse(localStorage.getItem('zs_favs') || '[]'); } catch (_) { return []; } })()),
 };
@@ -109,7 +118,14 @@ async function bdlFetch(endpoint, params = {}, { cache = true, ttl, retries = 2 
 
         // When using the proxy the Worker adds Authorization server-side — don't expose the key client-side
         const fetchHeaders = BDL_PROXY_URL ? {} : { 'Authorization': BDL_API_KEY };
-        const response = await fetch(url.toString(), { headers: fetchHeaders });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10_000);
+        let response;
+        try {
+            response = await fetch(url.toString(), { headers: fetchHeaders, signal: controller.signal });
+        } finally {
+            clearTimeout(timeoutId);
+        }
 
         // Hard failures — don't retry
         if (response.status === 401) {
@@ -180,7 +196,9 @@ async function fetchAllPlayers(searchQuery = '') {
         if (searchQuery.length >= 3) params.search = searchQuery;
 
         const data = await bdlFetch('/players', params, { ttl: ApiCache.TTL.MEDIUM });
-        return data.data.filter(p => p.team && p.team.id);
+        const players = data.data.filter(p => p.team && p.team.id);
+        ApiShape.check(players, ApiShape.bdlPlayer, 'players');
+        return players;
     }, 'API');
 }
 
@@ -232,7 +250,9 @@ async function fetchGamesAPI() {
             data = await bdlFetch('/games', { per_page: 15, seasons: [CURRENT_SEASON] }, { ttl: ApiCache.TTL.SHORT });
         }
 
-        return (data.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const games = (data.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+        ApiShape.check(games, ApiShape.bdlGame, 'games');
+        return games;
     }, 'API');
 }
 
@@ -271,6 +291,7 @@ async function fetchPlayerStatsAPI(playerIds, season = CURRENT_SEASON) {
         );
     }
 
+    ApiShape.check(results, ApiShape.bdlStats, 'season_averages');
     return results.map(normalizeStats);
 }
 
@@ -397,7 +418,7 @@ async function fetchNBAStatsMap(season = CURRENT_SEASON) {
     }
 
     const nbaSeasonStr = `${season}-${String(season + 1).slice(-2)}`;
-    const cacheKey     = `/nba_stats/${nbaSeasonStr}`;
+    const cacheKey     = `/nba_stats/${nbaSeasonStr}/v2`; // v2 = _normName keys
 
     const hit = ApiCache.get(cacheKey);
     if (hit) {
@@ -424,7 +445,7 @@ async function fetchNBAStatsMap(season = CURRENT_SEASON) {
 
         const map = {};
         rowSet.forEach(row => {
-            const name = String(get(row, 'PLAYER') || '').toLowerCase();
+            const name = _normName(get(row, 'PLAYER') || '');
             if (!name) return;
             map[name] = {
                 pts:          get(row, 'PTS'),
@@ -571,9 +592,14 @@ async function fetchPlayerGamesAPI(playerId, season = CURRENT_SEASON) {
                 (a, b) => new Date(b.game?.date || 0) - new Date(a.game?.date || 0)
             );
         } catch (err) {
-            if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+            if (
+                err.message.includes('401') ||
+                err.message.includes('Unauthorized') ||
+                err.name === 'AbortError' ||
+                err.message.includes('abort')
+            ) {
                 Logger.warn(
-                    'fetchPlayerGamesAPI: /stats requires a paid BDL plan — game log unavailable',
+                    'fetchPlayerGamesAPI: game log unavailable (paid tier or timeout)',
                     undefined, 'API'
                 );
                 return [];

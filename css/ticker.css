@@ -5,7 +5,7 @@
 
 /* Ticker is now embedded inside the header (.header-ticker in main.css) */
 
-/* "SCORES" label pill */
+/* "SCORES" label pill — now a button linking to the scores page */
 .ticker-title {
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
     color: #fff;
@@ -23,7 +23,13 @@
     box-shadow: 4px 0 12px rgba(0,0,0,0.4);
     position: relative;
     z-index: 1;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.15s;
 }
+.ticker-title:hover { filter: brightness(1.15); }
+.ticker-title:active { filter: brightness(0.9); }
 
 /* "N LIVE" badge inside the title pill */
 .ticker-live-badge {
@@ -58,7 +64,9 @@
     color: var(--text-secondary);
     font-family: var(--font-sans);
     border-right: 1px solid var(--border-default);
+    transition: background 0.12s;
 }
+.ticker__item:hover { background: var(--bg-subtle); }
 
 /* Team logos inside ticker */
 .ticker-logo {

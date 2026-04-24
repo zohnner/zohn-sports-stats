@@ -12,11 +12,17 @@ const _RECENTS_KEY = 'zs_recents';
 const _RECENTS_MAX = 10;
 
 function _loadRecents() {
-    try { return JSON.parse(localStorage.getItem(_RECENTS_KEY) || '[]'); } catch (_) { return []; }
+    try {
+        const parsed = JSON.parse(localStorage.getItem(_RECENTS_KEY) || '[]');
+        if (!Array.isArray(parsed)) return [];
+        // Drop malformed entries (must have at minimum id, sport, type, name)
+        return parsed.filter(r => r && r.id != null && r.sport && r.type && r.name);
+    } catch (_) { return []; }
 }
 
 // entry: { id, sport, type: 'player'|'team', name, sub, badge }
 function addRecent(entry) {
+    if (!entry || entry.id == null || !entry.sport || !entry.type || !entry.name) return;
     const list = _loadRecents().filter(r => !(r.id === entry.id && r.sport === entry.sport));
     list.unshift(entry);
     if (list.length > _RECENTS_MAX) list.length = _RECENTS_MAX;
