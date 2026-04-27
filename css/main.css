@@ -711,6 +711,7 @@ main {
     font-weight: 700;
     color: var(--text-secondary);
     font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
 }
 
 /* ── Stats Table (player list table view) ─────────────────── */
@@ -762,6 +763,7 @@ main {
     border-bottom: 1px solid var(--border-default);
     color: var(--text-secondary);
     vertical-align: middle;
+    font-variant-numeric: tabular-nums;
 }
 
 .stats-table tbody tr {
@@ -890,7 +892,7 @@ main {
 .lb-player { flex: 1; min-width: 0; }
 .lb-name   { display: block; font-weight: 700; color: var(--text-primary); font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-team   { font-size: 0.72rem; color: var(--text-subtle); font-weight: 600; margin-top: 1px; }
-.lb-value  { font-size: 1rem; font-weight: 900; flex-shrink: 0; font-family: var(--font-mono); }
+.lb-value  { font-size: 1rem; font-weight: 900; flex-shrink: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* ── Games Grid ───────────────────────────────────────────── */
 .games-grid {
@@ -1708,6 +1710,7 @@ main {
     margin-bottom: 0.4rem;
     line-height: 1;
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-label {

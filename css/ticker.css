@@ -91,10 +91,36 @@
     font-size: 0.85rem;
     color: var(--text-primary);
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     min-width: 1.4ch;
     text-align: center;
 }
 .ticker-score--win { color: var(--color-win); }
+
+/* Live game: pulsing dot before the item */
+.ticker__item--live::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-live);
+    animation: liveDot 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+    margin-right: 6px;
+    align-self: center;
+}
+
+/* Muted color for final scores */
+.ticker__item--final .ticker-score {
+    color: var(--text-muted);
+}
+.ticker__item--final .ticker-team {
+    color: var(--text-muted);
+}
+.ticker__item--final .ticker-logo {
+    opacity: 0.55;
+}
 
 /* Divider between scores */
 .ticker-divider {

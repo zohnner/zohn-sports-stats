@@ -2983,8 +2983,9 @@ function updateMLBTicker(games) {
         const awayLogo = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : null;
         const homeWon  = hs > vs;
         const awayWon  = vs > hs;
+        const itemCls = isLive ? 'ticker__item--live' : isFinal ? 'ticker__item--final' : '';
         return `
-            <div class="ticker__item" data-game-pk="${g.gamePk}" data-sport="mlb" style="cursor:pointer">
+            <div class="ticker__item${itemCls ? ' ' + itemCls : ''}" data-game-pk="${g.gamePk}" data-sport="mlb" style="cursor:pointer">
                 ${homeLogo ? `<img class="ticker-logo" src="${homeLogo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="ticker-team">${ha}</span>
                 <span class="ticker-score ${homeWon && isFinal ? 'ticker-score--win' : ''}">${hs}</span>
