@@ -348,6 +348,31 @@ Always use `getMLBTeamColors(abbr)` — it handles aliases via a `Proxy`.
 
 ---
 
+## Agent Usage Guide
+
+This is a small vanilla JS/CSS SPA. Most tasks are well-scoped enough to handle inline with Grep, Read, and Edit. Only spawn an agent when the task genuinely needs it — agents start cold and re-derive context, so they're expensive for narrow lookups.
+
+| Task | Best tool | Notes |
+|---|---|---|
+| Find where a function/symbol is defined | `Grep` directly | Single-file or known-area lookups don't need an agent |
+| Open-ended search (unsure of file or name) | `Explore` agent (quick) | Let it range wider than a single grep |
+| Search spanning many files or naming variants | `Explore` (very thorough) | E.g. "find every call to mlbFetch" |
+| Architectural plan before a non-trivial feature | `Plan` agent | Use before implementing; not during |
+| Multi-step research across multiple files | `general-purpose` | E.g. "trace the full standings data pipeline" |
+| Questions about Claude Code CLI/SDK/API | `claude-code-guide` | |
+
+**When NOT to spawn an agent:**
+- Adding a stat to `MLB_LEADER_CATS` → edit `js/mlb.js` directly
+- Fixing a bug in a known file → Grep + Read + Edit
+- Checking whether a CSS selector already exists → `Grep` on `css/`
+- Reading the nav/routing logic → `Read` the file directly
+- Screenshots → use `/screenshot` slash command
+- Syntax checks → use `/syntax-check` slash command
+
+**Project-specific heuristic:** because all JS shares global scope through flat `<script>` tags, cross-file symbol lookups are cheap and targeted. A single `Grep` call almost always finds it — save agents for genuinely open-ended investigation.
+
+---
+
 ## What NOT to Do
 
 - Do not propose NBA, NFL, or NHL feature work unprompted

@@ -1422,6 +1422,11 @@
     border-color: #818cf8;
     color: #818cf8;
 }
+.mlb-date-nav-btn--today {
+    border-color: var(--accent-border);
+    color: var(--accent);
+    background: var(--accent-subtle);
+}
 
 .standings-tabs {
     display: flex;
@@ -2256,10 +2261,18 @@
     padding: 0.35rem 1rem 0.35rem 0.75rem;
     align-items: center;
 }
-/* MLB power rankings — no L10 pip column */
+/* MLB power rankings — includes L10 column */
 .power-header-row--mlb,
 .power-row--mlb {
-    grid-template-columns: 32px 36px 1fr 90px 56px 80px;
+    grid-template-columns: 32px 36px 1fr 90px 56px 56px 80px;
+}
+
+.power-l10 {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 .power-col-label {
     font-size: 0.62rem;

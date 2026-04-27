@@ -1704,12 +1704,18 @@ function displayMLBGames(games, dateStr, offset) {
 
     const navRow = document.createElement('div');
     navRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0 1rem;max-width:900px;margin:0 auto;';
+    const todayBtn = offset < 0
+        ? `<button class="mlb-date-nav-btn mlb-date-nav-btn--today" onclick="_mlbGamesGoTo(0)">Today</button>`
+        : '';
     navRow.innerHTML = `
         <button class="mlb-date-nav-btn" onclick="_mlbGamesGoTo(${offset - 1})">← Prev</button>
         <span style="font-weight:700;font-size:0.95rem;color:var(--text-primary)">${label}
             <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);margin-left:0.4rem">${dateStr}</span>
         </span>
-        <button class="mlb-date-nav-btn" onclick="_mlbGamesGoTo(${offset + 1})" ${offset >= 0 ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>Next →</button>
+        <div style="display:flex;gap:0.4rem;align-items:center">
+            ${todayBtn}
+            <button class="mlb-date-nav-btn" onclick="_mlbGamesGoTo(${offset + 1})" ${offset >= 0 ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>Next →</button>
+        </div>
     `;
 
     const gamesWrap = document.createElement('div');
@@ -2244,6 +2250,14 @@ async function showMLBTeamDetail(teamId, push = true) {
         }
 
         const colors = getMLBTeamColors(team?.abbreviation || '');
+        if (team && typeof addRecent === 'function') addRecent({
+            id:    team.id,
+            sport: 'mlb',
+            type:  'team',
+            name:  team.name || team.abbreviation || `Team ${teamId}`,
+            sub:   rec ? `${rec.wins}–${rec.losses}` : 'MLB',
+            badge: '🏟',
+        });
         grid.innerHTML = `
             ${_mlbTeamHeader(team, teamId, colors, rec)}
             ${_mlbRecentGamesCard(recentGames, teamId)}
@@ -2981,8 +2995,9 @@ async function fetchMLBStandingsFull(season = MLB_SEASON) {
             league,
             teams: (rec.teamRecords || []).map(tr => {
                 const findRec = type => (tr.records?.overallRecords || []).find(r => r.type === type);
-                const home   = findRec('home');
-                const away   = findRec('away');
+                const home    = findRec('home');
+                const away    = findRec('away');
+                const last10  = findRec('lastTen');
                 const teamAbbr = tr.team?.abbreviation || '';
                 const rs     = tr.runsScored  ?? tr.runs ?? null;
                 const ra     = tr.runsAllowed ?? null;
@@ -2998,6 +3013,7 @@ async function fetchMLBStandingsFull(season = MLB_SEASON) {
                     streak:   tr.streak?.streakCode || '',
                     home:     home   ? `${home.wins}-${home.losses}` : '—',
                     away:     away   ? `${away.wins}-${away.losses}` : '—',
+                    l10:      last10 ? `${last10.wins}-${last10.losses}` : '—',
                     rdiff:    rdiff != null ? (rdiff > 0 ? `+${rdiff}` : String(rdiff)) : '—',
                     clinched: tr.clinchIndicator || '',
                     divRank:  parseInt(tr.divisionRank) || 99,
@@ -3075,7 +3091,7 @@ function displayMLBStandings(divisions, league = 'AL') {
             const logo = getMLBTeamLogoUrl(team.teamId);
             // Separator between division leader and rest of division
             const sepAfterLeader = rank === 1
-                ? `<tr class="standings-sep standings-sep--playoff"><td colspan="10"><span>Wild Card zone</span></td></tr>`
+                ? `<tr class="standings-sep standings-sep--playoff"><td colspan="11"><span>Wild Card zone</span></td></tr>`
                 : '';
 
             return `
@@ -3092,6 +3108,7 @@ function displayMLBStandings(divisions, league = 'AL') {
                     <td class="standings-num standings-gb">${team.gb}</td>
                     <td class="standings-num standings-rdiff ${team.rdiff?.startsWith?.('+') ? 'standings-rdiff--pos' : team.rdiff !== '—' && !team.rdiff?.startsWith?.('+') && team.rdiff !== '0' ? 'standings-rdiff--neg' : ''}">${team.rdiff}</td>
                     <td class="standings-num ${streakCls}">${team.streak || '—'}</td>
+                    <td class="standings-num standings-split">${team.l10 || '—'}</td>
                     <td class="standings-num standings-split">${team.home}</td>
                     <td class="standings-num standings-split">${team.away}</td>
                 </tr>
@@ -3114,6 +3131,7 @@ function displayMLBStandings(divisions, league = 'AL') {
                                 <th title="Games behind">GB</th>
                                 <th title="Run differential (runs scored minus runs allowed)">RDIFF</th>
                                 <th title="Current streak">STRK</th>
+                                <th title="Record in last 10 games">L10</th>
                                 <th title="Home record">HOME</th>
                                 <th title="Away record">AWAY</th>
                             </tr>
@@ -3166,7 +3184,12 @@ function displayMLBPowerRankings(divisions) {
             : rdiffMax !== rdiffMin ? (rd - rdiffMin) / (rdiffMax - rdiffMin) : 0.5;
         const strNum  = typeof _parseStreak === 'function' ? _parseStreak(t.streak) : 0;
         const strFact = (strNum + 10) / 20;
-        return winPct * 0.60 + rdFact * 0.25 + strFact * 0.15;
+        // L10 form factor: parse "W-L" string → recent win rate
+        const l10Parts = (t.l10 || '').split('-').map(Number);
+        const l10Fact  = l10Parts.length === 2 && !isNaN(l10Parts[0]) && (l10Parts[0] + l10Parts[1]) > 0
+            ? l10Parts[0] / (l10Parts[0] + l10Parts[1])
+            : winPct;
+        return winPct * 0.50 + rdFact * 0.20 + strFact * 0.10 + l10Fact * 0.20;
     };
 
     const scored = allTeams
@@ -3212,6 +3235,7 @@ function displayMLBPowerRankings(divisions) {
                 </div>
                 <div class="power-record">${team.wins}–${team.losses}<span class="power-pct">${winPct}</span></div>
                 <div class="power-streak" style="color:${streakClr}">${team.streak || '—'}</div>
+                <div class="power-l10">${team.l10 || '—'}</div>
                 <div class="power-heat ${heat.cls}">${heat.icon} ${heat.label}</div>
             </div>
         `;
@@ -3224,10 +3248,11 @@ function displayMLBPowerRankings(divisions) {
             <div class="power-col-label">Team</div>
             <div class="power-col-label">Record</div>
             <div class="power-col-label">Streak</div>
+            <div class="power-col-label">L10</div>
             <div class="power-col-label">Form</div>
         </div>
         <div class="power-list">${rowsHtml}</div>
-        <p class="power-note">Power score = Win% (60%) + Run Differential (25%) + Streak (15%)</p>
+        <p class="power-note">Power score = Win% (50%) + L10 Form (20%) + Run Differential (20%) + Streak (10%)</p>
     `;
 }
 

@@ -109,15 +109,25 @@ function _buildGroups(q) {
         return (p.fullName || '').toLowerCase().includes(q)
             || (p.teamName || '').toLowerCase().includes(q)
             || (p.teamAbbr || '').toLowerCase().startsWith(q);
-    }).slice(0, 6).map(p => ({
-        id:     p.id,
-        sport:  'mlb',
-        type:   'player',
-        name:   p.fullName || `Player ${p.id}`,
-        sub:    `${p.teamAbbr || '—'} · ${p.position || '—'}`,
-        badge:  'MLB',
-        action: () => { closeGlobalSearch(); showMLBPlayerDetail(p.id); },
-    }));
+    }).slice(0, 6).map(p => {
+        const hitStats = AppState.mlbPlayerStats?.hitting?.[p.id];
+        const pitStats = AppState.mlbPlayerStats?.pitching?.[p.id];
+        let statHint = '';
+        if (hitStats?.avg)              statHint = `AVG ${hitStats.avg}`;
+        else if (pitStats?.era)         statHint = `ERA ${pitStats.era}`;
+        const sub = statHint
+            ? `${p.teamAbbr || '—'} · ${p.position || '—'} · ${statHint}`
+            : `${p.teamAbbr || '—'} · ${p.position || '—'}`;
+        return {
+            id:     p.id,
+            sport:  'mlb',
+            type:   'player',
+            name:   p.fullName || `Player ${p.id}`,
+            sub,
+            badge:  'MLB',
+            action: () => { closeGlobalSearch(); showMLBPlayerDetail(p.id); },
+        };
+    });
     if (mlbHits.length) groups.push({ label: 'MLB Players', items: mlbHits });
 
     // ── Teams ────────────────────────────────────────────────

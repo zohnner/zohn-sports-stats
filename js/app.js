@@ -108,6 +108,10 @@ setupNavigation();
             if (AppState.currentView === 'mlb-games' && typeof loadMLBGames === 'function') {
                 loadMLBGames();
             }
+            // If user is on the home view, refresh today's game cards
+            if (AppState.currentView === 'home' && document.getElementById('homeTodayGrid')) {
+                _loadHomeTodayGames();
+            }
             const liveCount = games.filter(g => g.status?.abstractGameState === 'Live').length;
             if (liveCount > 0) Logger.info(`MLB live poll: ${liveCount} live`, undefined, 'POLL');
         } catch (err) {
@@ -355,16 +359,21 @@ async function _loadHomeTodayGames() {
 
         gridEl.innerHTML = cards.join('');
 
-        // Update section header with live count badge + filter pills
+        // Update section header with live count badge + filter pills (idempotent)
         const liveCount = mlbResult ? mlbResult.filter(g => /in progress|live/i.test(g.status?.detailedState || '')).length : 0;
         const hdrEl = document.querySelector('#homeTodayGames .home-section-hdr');
         if (hdrEl) {
-            const liveBadge = liveCount > 0
-                ? `<span class="home-live-badge">${liveCount} Live</span>`
-                : '';
-            hdrEl.innerHTML = hdrEl.innerHTML + liveBadge;
+            // Strip stale live badge before re-inserting
+            hdrEl.querySelectorAll('.home-live-badge').forEach(el => el.remove());
+            if (liveCount > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'home-live-badge';
+                badge.textContent = `${liveCount} Live`;
+                hdrEl.appendChild(badge);
+            }
 
-            // Insert filter pills between header and grid
+            // Remove stale filter bar before re-inserting
+            gridEl.parentNode.querySelectorAll('.home-filter-bar').forEach(el => el.remove());
             const filterBar = document.createElement('div');
             filterBar.className = 'home-filter-bar';
             filterBar.innerHTML = `
