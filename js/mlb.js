@@ -228,7 +228,7 @@ async function fetchMLBSchedule(daysBack = 7) {
         sportId:   1,
         startDate: fmt(fromET),
         endDate:   fmt(nowET),
-        hydrate:   'team',
+        hydrate:   'team,probablePitcher',
     }, ApiCache.TTL.SHORT);
     return (data.dates || [])
         .flatMap(d => d.games || [])
@@ -1684,7 +1684,7 @@ async function _fetchMLBGamesForDate(dateStr) {
     const data = await mlbFetch('/schedule', {
         sportId:   1,
         date:      dateStr,
-        hydrate:   'team,linescore',
+        hydrate:   'team,linescore,probablePitcher',
         gameType:  'R,F,D,L,W',
     }, ApiCache.TTL.SHORT);
     const games = [];
@@ -1760,6 +1760,18 @@ function _createMLBGameCard(game) {
     const isLive    = game.status?.abstractGameState === 'Live';
     const statusCls = isFinal ? 'game-status--final' : isLive ? 'game-status--live' : 'game-status--sched';
 
+    // Enrich status label: inning for live, ET time for scheduled
+    let statusLabel = status;
+    if (isLive && game.linescore?.currentInning) {
+        const half = game.linescore.isTopInning ? '▲' : '▼';
+        statusLabel = `${half}${game.linescore.currentInning}`;
+    } else if (!isFinal && !isLive && game.gameDate) {
+        const d = new Date(game.gameDate);
+        const etH = (d.getUTCHours() - 4 + 24) % 24;
+        const etM = d.getUTCMinutes();
+        statusLabel = `${etH % 12 || 12}:${String(etM).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
+    }
+
     let dateStr = '';
     if (game.gameDate) {
         try {
@@ -1774,10 +1786,17 @@ function _createMLBGameCard(game) {
     const homeAbbr = _mlbTeamAbbr(homeTeam);
     const awayAbbr = _mlbTeamAbbr(awayTeam);
 
+    const awayPP = game.teams?.away?.probablePitcher?.fullName;
+    const homePP = game.teams?.home?.probablePitcher?.fullName;
+    const ppLastName = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
+    const ppLine = !isFinal && (awayPP || homePP)
+        ? `<div class="game-card-pitchers">${ppLastName(awayPP)} vs ${ppLastName(homePP)}</div>`
+        : '';
+
     card.innerHTML = `
         <div class="game-card-header">
             <span class="game-date">${dateStr}</span>
-            <span class="game-status ${statusCls}">${isLive ? '<span class="live-dot"></span>' : ''}${status}</span>
+            <span class="game-status ${statusCls}">${isLive ? '<span class="live-dot"></span>' : ''}${statusLabel}</span>
         </div>
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeam.id}" style="cursor:pointer">
@@ -1802,6 +1821,7 @@ function _createMLBGameCard(game) {
                 <div class="game-team-name">${awayTeam.name || ''}</div>
             </div>
         </div>
+        ${ppLine}
     `;
 
     card.querySelectorAll('.game-team[data-team-id]').forEach(el => {
@@ -2521,6 +2541,8 @@ async function loadMLBLeaderboards() {
                 fetchMLBLeagueStats('hitting',  season, 300),
                 fetchMLBLeagueStats('pitching', season, 300),
             ]);
+            hitSplits.forEach(s => { if (s.stat) Object.assign(s.stat, _computeBattingRates(s.stat)); });
+            pitSplits.forEach(s => { if (s.stat) Object.assign(s.stat, _computePitchingRates(s.stat)); });
             AppState.mlbLeaderSplits = { hitting: hitSplits, pitching: pitSplits };
         }
         displayMLBLeaderboards();
@@ -2532,19 +2554,32 @@ async function loadMLBLeaderboards() {
 // desc:true = higher value is better (rank #1 = highest); desc:false = lower is better (ERA/WHIP)
 // decimals: how many decimal places to display for this stat
 const MLB_LEADER_CATS = [
-    { key: 'avg',                label: 'Batting Average', unit: 'AVG',  color: '#fbbf24', group: 'hitting',  desc: true,  decimals: 3 },
-    { key: 'ops',                label: 'OPS',             unit: 'OPS',  color: '#a78bfa', group: 'hitting',  desc: true,  decimals: 3 },
-    { key: 'obp',                label: 'On-Base %',       unit: 'OBP',  color: '#34d399', group: 'hitting',  desc: true,  decimals: 3 },
-    { key: 'slg',                label: 'Slugging %',      unit: 'SLG',  color: '#60a5fa', group: 'hitting',  desc: true,  decimals: 3 },
-    { key: 'homeRuns',           label: 'Home Runs',       unit: 'HR',   color: '#ef4444', group: 'hitting',  desc: true,  decimals: 0 },
-    { key: 'rbi',                label: 'RBI',             unit: 'RBI',  color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
-    { key: 'stolenBases',        label: 'Stolen Bases',    unit: 'SB',   color: '#10b981', group: 'hitting',  desc: true,  decimals: 0 },
-    { key: 'era',                label: 'ERA',             unit: 'ERA',  color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
-    { key: 'whip',               label: 'WHIP',            unit: 'WHIP', color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
-    { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',  color: '#fb923c', group: 'pitching', desc: true,  decimals: 1 },
-    { key: 'strikeOuts',         label: 'Strikeouts',      unit: 'K',    color: '#c084fc', group: 'pitching', desc: true,  decimals: 0 },
-    { key: 'wins',               label: 'Wins',            unit: 'W',    color: '#38bdf8', group: 'pitching', desc: true,  decimals: 0 },
-    { key: 'saves',              label: 'Saves',           unit: 'SV',   color: '#fbbf24', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'avg',                label: 'Batting Average', unit: 'AVG',   color: '#fbbf24', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'ops',                label: 'OPS',             unit: 'OPS',   color: '#a78bfa', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'obp',                label: 'On-Base %',       unit: 'OBP',   color: '#34d399', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'slg',                label: 'Slugging %',      unit: 'SLG',   color: '#60a5fa', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'iso',                label: 'Iso Power',       unit: 'ISO',   color: '#c4b5fd', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'babip',              label: 'BABIP',           unit: 'BABIP', color: '#fcd34d', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'homeRuns',           label: 'Home Runs',       unit: 'HR',    color: '#ef4444', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'rbi',                label: 'RBI',             unit: 'RBI',   color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'hits',               label: 'Hits',            unit: 'H',     color: '#fdba74', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'runs',               label: 'Runs',            unit: 'R',     color: '#86efac', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'doubles',            label: 'Doubles',         unit: '2B',    color: '#67e8f9', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'baseOnBalls',        label: 'Walks',           unit: 'BB',    color: '#22d3ee', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'stolenBases',        label: 'Stolen Bases',    unit: 'SB',    color: '#10b981', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'bbPct',              label: 'Walk Rate',       unit: 'BB%',   color: '#5eead4', group: 'hitting',  desc: true,  decimals: 1 },
+    { key: 'kPct',               label: 'Strikeout Rate',  unit: 'K%',    color: '#f87171', group: 'hitting',  desc: false, decimals: 1 },
+    { key: 'era',                label: 'ERA',             unit: 'ERA',   color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'whip',               label: 'WHIP',            unit: 'WHIP',  color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'fip',                label: 'FIP',             unit: 'FIP',   color: '#e879f9', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',   color: '#fb923c', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'kBbPct',             label: 'K-BB%',           unit: 'K-BB%', color: '#a3e635', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'strikeOuts',         label: 'Strikeouts',      unit: 'K',     color: '#c084fc', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'wins',               label: 'Wins',            unit: 'W',     color: '#38bdf8', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'qualityStarts',      label: 'Quality Starts',  unit: 'QS',    color: '#4ade80', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'saves',              label: 'Saves',           unit: 'SV',    color: '#fbbf24', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'holds',              label: 'Holds',           unit: 'HLD',   color: '#94a3b8', group: 'pitching', desc: true,  decimals: 0 },
+    { key: 'blownSaves',         label: 'Blown Saves',     unit: 'BSV',   color: '#fca5a5', group: 'pitching', desc: false, decimals: 0 },
 ];
 
 const MLB_MINGP_OPTIONS = [0, 10, 20, 50, 100];

@@ -45,15 +45,7 @@
                 </div>
             </button>
 
-            <!-- Live scores ticker (fills remaining header space) -->
-            <div class="header-ticker">
-                <button class="ticker-title" id="tickerScoresBtn" title="View all scores">SCORES</button>
-                <div class="ticker" id="scoreTicker">
-                    <div class="ticker__item">Loading scores…</div>
-                </div>
-            </div>
-
-            <!-- Global search button (⌘K) -->
+            <!-- Global search button (⌘K) — expands on desktop -->
             <button class="search-global-btn" id="globalSearchBtn" title="Search (⌘K)" aria-label="Search players and teams">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -61,16 +53,26 @@
                 </svg>
             </button>
 
-            <!-- Theme toggle (always visible in header) -->
+            <!-- Theme toggle -->
             <button class="theme-btn-header" id="themeToggleHeaderBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark mode">
-                <span id="themeToggleHeaderIcon">☀️</span>
+                <span id="themeToggleHeaderIcon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </span>
             </button>
 
-            <!-- Waffle / nav menu button (mobile only) -->
-            <button class="waffle-btn" id="waffleBtn"
-                    aria-label="Navigation menu" aria-expanded="false" aria-controls="wafflePanel">
-                <span class="waffle-icon"></span>
+            <!-- Menu button (mobile only) -->
+            <button class="menu-btn" id="menuBtn"
+                    aria-label="Navigation menu" aria-expanded="false" aria-controls="menuPanel">
+                <span class="menu-icon"></span>
             </button>
+        </div>
+
+        <!-- Live scores ticker — own row between top bar and sub-nav -->
+        <div class="header-ticker">
+            <button class="ticker-title" id="tickerScoresBtn" title="View all scores">SCORES</button>
+            <div class="ticker" id="scoreTicker">
+                <div class="ticker__item">Loading scores…</div>
+            </div>
         </div>
 
         <!-- Sub-nav: persistent horizontal nav bar (desktop) -->
@@ -87,72 +89,51 @@
         </nav>
     </header>
 
-    <!-- Waffle navigation panel (sticky below header) -->
-    <div class="waffle-panel" id="wafflePanel" hidden>
-        <div class="waffle-panel-inner">
-
-            <!-- Hidden stubs so JS sport-switcher logic doesn't error -->
-            <nav id="nba-nav" style="display:none" hidden aria-hidden="true"></nav>
-            <nav id="nfl-nav" style="display:none" hidden aria-hidden="true"></nav>
-            <nav id="nhl-nav" style="display:none" hidden aria-hidden="true"></nav>
-            <div id="waffleSeasonRow" style="display:none" hidden></div>
-            <select id="seasonSelect" style="display:none" hidden></select>
-
-            <!-- MLB navigation -->
-            <div class="waffle-section-label">⚾ MLB</div>
-            <nav class="waffle-nav" id="mlb-nav" aria-label="MLB navigation">
-                <button class="nav-tab waffle-nav-item" data-view="mlb-players">
-                    <span class="nav-icon">👤</span>
-                    <span>Players</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-leaders">
-                    <span class="nav-icon">🏆</span>
-                    <span>Leaders</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-teams">
-                    <span class="nav-icon">🏟</span>
-                    <span>Teams</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-games">
-                    <span class="nav-icon">📅</span>
-                    <span>Scores</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-standings">
-                    <span class="nav-icon">📊</span>
-                    <span>Standings</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-builder">
-                    <span class="nav-icon">🧮</span>
-                    <span>Builder</span>
-                </button>
-                <button class="nav-tab waffle-nav-item" data-view="mlb-prep">
-                    <span class="nav-icon">📋</span>
-                    <span>Game Prep</span>
-                </button>
-            </nav>
-
-            <!-- Universal navigation (always visible) -->
-            <div class="waffle-universal-section">
-                <div class="waffle-section-label">Platform</div>
-                <nav class="waffle-nav waffle-nav--universal" aria-label="Platform navigation">
-                    <button class="nav-tab waffle-nav-item" data-view="arcade">
-                        <span class="nav-icon">🎮</span>
-                        <span>Arcade</span>
-                    </button>
-                </nav>
-            </div>
-
-        </div>
-
-        <!-- Footer: theme toggle -->
-        <div class="waffle-panel-footer">
+    <!-- Menu panel (mobile dropdown, fixed below header + ticker) -->
+    <div class="menu-panel" id="menuPanel" hidden aria-label="Navigation menu">
+        <nav class="menu-grid" aria-label="MLB navigation">
+            <button class="nav-tab menu-item" data-view="mlb-players">
+                <span class="nav-icon">👤</span>
+                <span>Players</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-leaders">
+                <span class="nav-icon">🏆</span>
+                <span>Leaders</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-teams">
+                <span class="nav-icon">🏟</span>
+                <span>Teams</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-games">
+                <span class="nav-icon">📅</span>
+                <span>Scores</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-standings">
+                <span class="nav-icon">📊</span>
+                <span>Standings</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-builder">
+                <span class="nav-icon">🧮</span>
+                <span>Builder</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-prep">
+                <span class="nav-icon">📋</span>
+                <span>Prep</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="arcade">
+                <span class="nav-icon">🎮</span>
+                <span>Arcade</span>
+            </button>
+        </nav>
+        <div class="menu-panel-footer">
             <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
                 <span class="theme-toggle-icon" id="themeToggleIcon">☀️</span>
                 <span id="themeToggleLabel">Light mode</span>
             </button>
         </div>
-
     </div>
+    <!-- Keep for app.js season logic compatibility -->
+    <select id="seasonSelect" style="display:none" hidden></select>
 
 
     <!-- Global search overlay — opened by ⌘K or the search button -->
@@ -177,34 +158,27 @@
         </div>
     </div>
 
-    <!-- Hidden stubs so JS nav-switching logic doesn't error -->
-    <nav id="mobile-nba-nav" style="display:none" hidden aria-hidden="true"></nav>
-    <nav id="mobile-nfl-nav" style="display:none" hidden aria-hidden="true"></nav>
-    <nav id="mobile-nhl-nav" style="display:none" hidden aria-hidden="true"></nav>
-    <nav class="mobile-nav" id="mobile-mlb-nav" aria-label="Mobile MLB navigation">
+    <!-- Bottom tab bar (mobile only, 5 primary destinations) -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="Mobile navigation">
         <button class="nav-tab" data-view="mlb-players">
             <span class="nav-icon">👤</span>
-            <span class="mobile-nav-label">Players</span>
+            <span class="bottom-nav-label">Players</span>
         </button>
         <button class="nav-tab" data-view="mlb-leaders">
             <span class="nav-icon">🏆</span>
-            <span class="mobile-nav-label">Leaders</span>
+            <span class="bottom-nav-label">Leaders</span>
         </button>
         <button class="nav-tab" data-view="mlb-games">
             <span class="nav-icon">📅</span>
-            <span class="mobile-nav-label">Scores</span>
+            <span class="bottom-nav-label">Scores</span>
         </button>
         <button class="nav-tab" data-view="mlb-standings">
             <span class="nav-icon">📊</span>
-            <span class="mobile-nav-label">Standings</span>
+            <span class="bottom-nav-label">Standings</span>
         </button>
         <button class="nav-tab" data-view="mlb-builder">
             <span class="nav-icon">🧮</span>
-            <span class="mobile-nav-label">Builder</span>
-        </button>
-        <button class="nav-tab" data-view="mlb-prep">
-            <span class="nav-icon">📋</span>
-            <span class="mobile-nav-label">Prep</span>
+            <span class="bottom-nav-label">Builder</span>
         </button>
     </nav>
 

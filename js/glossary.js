@@ -62,6 +62,7 @@ const StatGlossary = (() => {
         'BB/9':'Walks per 9 Innings — walks allowed per 9 innings pitched',
         'K-BB%': 'K minus BB % — strikeout rate minus walk rate (command + stuff composite)',
         HLD:   'Holds — pitcher enters in a save situation, records at least 1 out, leaves with the lead',
+        BSV:   'Blown Saves — save opportunities in which the pitcher fails to preserve the lead',
         QS:    'Quality Starts — starts with ≥6 IP and ≤3 earned runs',
         PA:    'Plate Appearances — total times at the plate (includes walks, HBP, sac flies)',
         AB:    'At-Bats — plate appearances excluding walks, HBP, sac flies, and sac bunts',

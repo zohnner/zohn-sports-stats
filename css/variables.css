@@ -25,10 +25,10 @@
 
     /* ── Text ── */
     --text-primary:       #eef2f8;
-    --text-secondary:     #9fb3cc;
-    --text-muted:         #6d89a8;
-    --text-subtle:        #3d5470;
-    --text-disabled:      #253347;
+    --text-secondary:     #adc3d9;
+    --text-muted:         #7fa5c8;
+    --text-subtle:        #556d8f;
+    --text-disabled:      #2e4260;
 
     /* ── Brand (indigo-violet) ── */
     --accent:             #7c8df0;
@@ -41,7 +41,8 @@
     /* ── Semantic ── */
     --color-win:          #22d3a0;
     --color-loss:         #f26b6b;
-    --color-live:         #f5a623;
+    --color-live:         #f59e0b;
+    --shadow-live:        0 0 0 1px rgba(245,158,11,0.45), 0 0 16px rgba(245,158,11,0.18);
     --color-error:        #ef4444;
     --color-warn:         #f59e0b;
     --color-info:         #38bdf8;
@@ -160,6 +161,7 @@
     --content-width:  1200px;
     --header-height:  60px;
     --ticker-height:  38px;
+    --header-sub-h:   36px;   /* sub-nav row height */
     --mobile-nav-h:   58px;
     --sidebar-w:      280px;
     --card-min-w:     280px;

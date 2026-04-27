@@ -16,7 +16,7 @@ function setupNavigation() {
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
     });
 
-    initWaffle();
+    initMenu();
     if (typeof initGlobalSearch === 'function') initGlobalSearch();
 
     // Search (debounced) — NBA does live API search; MLB does local filter
@@ -85,45 +85,43 @@ function setupNavigation() {
     _loadFromHash();
 }
 
-// ── Waffle panel ─────────────────────────────────────────────
+// ── Menu panel ───────────────────────────────────────────────
 
-function initWaffle() {
-    const btn   = document.getElementById('waffleBtn');
-    const panel = document.getElementById('wafflePanel');
+function initMenu() {
+    const btn   = document.getElementById('menuBtn');
+    const panel = document.getElementById('menuPanel');
     if (!btn || !panel) return;
 
     btn.addEventListener('click', e => {
         e.stopPropagation();
         const opening = panel.hidden;
         panel.hidden  = !opening;
-        btn.classList.toggle('waffle-btn--open', opening);
+        btn.classList.toggle('menu-btn--open', opening);
         btn.setAttribute('aria-expanded', String(opening));
     });
 
-    // Close on outside click
     document.addEventListener('click', e => {
         if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) {
-            _closeWaffle();
+            _closeMenu();
         }
     });
 
-    // Close when Escape pressed
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && !panel.hidden) _closeWaffle();
+        if (e.key === 'Escape' && !panel.hidden) _closeMenu();
     });
 
-    // Close when a waffle nav item is clicked
+    // Close when a menu item is tapped
     panel.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.addEventListener('click', _closeWaffle);
+        tab.addEventListener('click', _closeMenu);
     });
 }
 
-function _closeWaffle() {
-    const btn   = document.getElementById('waffleBtn');
-    const panel = document.getElementById('wafflePanel');
+function _closeMenu() {
+    const btn   = document.getElementById('menuBtn');
+    const panel = document.getElementById('menuPanel');
     if (!panel) return;
     panel.hidden = true;
-    btn?.classList.remove('waffle-btn--open');
+    btn?.classList.remove('menu-btn--open');
     btn?.setAttribute('aria-expanded', 'false');
 }
 
@@ -187,46 +185,19 @@ function switchSport(sport) {
     if (sport === AppState.currentSport) return;
     AppState.currentSport = sport;
 
-    // Update sport switcher button states
-    document.querySelectorAll('.sport-btn').forEach(btn => {
-        const active = btn.dataset.sport === sport;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', String(active));
-    });
-
-    // Swap nav bars and season row visibility
-    const nbaNav         = document.getElementById('nba-nav');
-    const mlbNav         = document.getElementById('mlb-nav');
-    const mobNbaNav      = document.getElementById('mobile-nba-nav');
-    const mobMlbNav      = document.getElementById('mobile-mlb-nav');
-    const seasonRow      = document.getElementById('waffleSeasonRow');
-
-    const nflNav    = document.getElementById('nfl-nav');
-    const nhlNav    = document.getElementById('nhl-nav');
-    const mobNflNav = document.getElementById('mobile-nfl-nav');
-    const mobNhlNav = document.getElementById('mobile-nhl-nav');
-
-    // Hide all sport navs, then show the active one
-    [nbaNav, mlbNav, nflNav, nhlNav].forEach(n => n && (n.style.display = 'none'));
-    [mobNbaNav, mobMlbNav, mobNflNav, mobNhlNav].forEach(n => n && (n.style.display = 'none'));
-    if (seasonRow) seasonRow.style.display = (sport === 'nba') ? '' : 'none';
     document.getElementById('positionFilters')?.remove();
     document.getElementById('mlbGroupToggle')?.remove();
 
     const brandConfig = {
-        nba: { icon: '🏀', sub: 'NBA Analytics',  nav: nbaNav,    mobNav: mobNbaNav, defaultView: 'players'     },
-        mlb: { icon: '⚾',  sub: 'MLB Analytics',  nav: mlbNav,    mobNav: mobMlbNav, defaultView: 'mlb-players' },
-        nfl: { icon: '🏈',  sub: 'NFL Analytics',  nav: nflNav,    mobNav: mobNflNav, defaultView: 'nfl-players' },
-        nhl: { icon: '🏒',  sub: 'NHL Analytics',  nav: nhlNav,    mobNav: mobNhlNav, defaultView: 'nhl-players' },
+        nba: { icon: '🏀', sub: 'NBA Analytics',  defaultView: 'players'     },
+        mlb: { icon: '⚾',  sub: 'MLB Analytics',  defaultView: 'mlb-players' },
+        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-players' },
+        nhl: { icon: '🏒',  sub: 'NHL Analytics',  defaultView: 'nhl-players' },
     };
     const cfg = brandConfig[sport] || brandConfig.mlb;
 
-    if (cfg.nav)    cfg.nav.style.display    = '';
-    if (cfg.mobNav) cfg.mobNav.style.display = '';
-    document.getElementById('brandIcon').textContent = cfg.icon;
-    document.getElementById('brandSub').textContent  = cfg.sub;
+    _applySportUI(sport);
 
-    // Refresh ticker for the new sport
     if (sport === 'mlb') {
         fetchMLBSchedule(7).then(games => {
             AppState.mlbGames = AppState.mlbGames.length ? AppState.mlbGames : games;
@@ -592,23 +563,9 @@ function _loadFromHash() {
     }
 }
 
-// Applies sport-specific UI without triggering navigation
+// Updates brand text/icon for the active sport
 function _applySportUI(sport) {
-    document.querySelectorAll('.sport-btn').forEach(btn => {
-        const active = btn.dataset.sport === sport;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', String(active));
-    });
-
-    const navIds  = ['nba-nav', 'mlb-nav', 'nfl-nav', 'nhl-nav'];
-    const mobIds  = ['mobile-nba-nav', 'mobile-mlb-nav', 'mobile-nfl-nav', 'mobile-nhl-nav'];
-    const brands  = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
-    const suffix  = { nba: 'nba', mlb: 'mlb', nfl: 'nfl', nhl: 'nhl' }[sport] || 'nba';
-
-    navIds.forEach(id => document.getElementById(id)?.style.setProperty('display', id === `${suffix}-nav` ? '' : 'none'));
-    mobIds.forEach(id => document.getElementById(id)?.style.setProperty('display', id === `mobile-${suffix}-nav` ? '' : 'none'));
-    document.getElementById('waffleSeasonRow')?.style.setProperty('display', sport === 'nba' ? '' : 'none');
-
+    const brands = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
     const [icon, sub] = brands[sport] || brands.mlb;
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
@@ -633,5 +590,5 @@ if (typeof window !== 'undefined') {
     window.renderCurrentView = renderCurrentView;
     window.switchSport       = switchSport;
     window.debounce          = debounce;
-    window.initWaffle        = initWaffle;
+    window.initMenu          = initMenu;
 }

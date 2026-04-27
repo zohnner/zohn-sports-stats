@@ -155,6 +155,7 @@ Logger.info('App bootstrap complete', undefined, 'APP');
 // ── Home / Landing page ───────────────────────────────────────
 
 function loadHome() {
+    if (typeof _applySportUI === 'function') _applySportUI('mlb');
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -201,7 +202,7 @@ function loadHome() {
                 <div class="home-feature-icon">📊</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Leaderboards</div>
-                    <div class="home-feature-desc">Daily rankings — AVG, HR, ERA, WHIP, FIP, xFIP and more</div>
+                    <div class="home-feature-desc">Daily rankings — AVG, OPS, ISO, HR, ERA, WHIP, FIP, K-BB% and more</div>
                 </div>
             </button>
             <button class="home-feature-item" onclick="navigateTo('mlb-prep')">
@@ -270,30 +271,55 @@ async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
 
-    const _gameCard = (homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey) => {
+    const _teamFullName = (abbr) => {
+        const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr) : null;
+        return colors?.name || abbr;
+    };
+
+    const _gameCard = (homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey, gameDate, awayPP, homePP) => {
         const isFinal   = /final|^f$/i.test(status);
         const isLive    = !isFinal && /in progress|live/i.test(status);
         const hasScore  = isFinal || isLive || homeScore > 0 || awayScore > 0;
         const homeWon   = isFinal && homeScore > awayScore;
         const awayWon   = isFinal && awayScore > homeScore;
         const pillCls   = isFinal ? 'final' : isLive ? 'live' : 'sched';
-        const pillLabel = isFinal ? 'Final' : isLive ? 'Live' : 'Scheduled';
+        let pillLabel;
+        if (isFinal) {
+            pillLabel = 'Final';
+        } else if (isLive) {
+            pillLabel = 'Live';
+        } else if (gameDate) {
+            const d = new Date(gameDate);
+            const etH = (d.getUTCHours() - 4 + 24) % 24;
+            const etM = d.getUTCMinutes();
+            pillLabel = `${etH % 12 || 12}:${String(etM).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
+        } else {
+            pillLabel = 'Scheduled';
+        }
         const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
         const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
-        const fmt = (n) => hasScore ? n : '–';
+        const homeName  = _teamFullName(homeAbbr);
+        const awayName  = _teamFullName(awayAbbr);
+        const fmt       = (n) => hasScore ? n : '–';
+        const liveCls   = isLive ? ' home-game-card--live' : '';
+        const lastName  = n => n ? n.split(' ').slice(-1)[0] : '?';
+        const ppLine    = !isFinal && (awayPP || homePP)
+            ? `<div class="hgc-pitchers">${lastName(awayPP)} vs ${lastName(homePP)}</div>`
+            : '';
         return `
-            <div class="home-game-card" data-game-key="${gameKey}" role="button" tabindex="0"
-                 aria-label="${awayAbbr} ${fmt(awayScore)} at ${homeAbbr} ${fmt(homeScore)}, ${pillLabel}">
+            <div class="home-game-card${liveCls}" data-game-key="${gameKey}" data-game-status="${pillCls}" role="button" tabindex="0"
+                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}">
                 <div class="hgc-row">
-                    ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
-                    <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}">${awayAbbr}</span>
+                    ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="${awayAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}" title="${awayName}">${awayAbbr}</span>
                     <span class="hgc-score${awayWon ? ' hgc-score--win' : ''}">${fmt(awayScore)}</span>
                 </div>
                 <div class="hgc-row">
-                    ${homeLogo ? `<img class="hgc-team-logo" src="${homeLogo}" alt="" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
-                    <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}">${homeAbbr}</span>
+                    ${homeLogo ? `<img class="hgc-team-logo" src="${homeLogo}" alt="${homeAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}" title="${homeName}">${homeAbbr}</span>
                     <span class="hgc-score${homeWon ? ' hgc-score--win' : ''}">${fmt(homeScore)}</span>
                 </div>
+                ${ppLine}
                 <div class="hgc-card-footer">
                     <span class="hgc-pill hgc-pill--${pillCls}">${pillLabel}</span>
                 </div>
@@ -314,6 +340,9 @@ async function _loadHomeTodayGames() {
                 g.teams?.home?.team?.id,
                 g.teams?.away?.team?.id,
                 `mlb-${g.gamePk}`,
+                g.gameDate,
+                g.teams?.away?.probablePitcher?.fullName,
+                g.teams?.home?.probablePitcher?.fullName,
             )));
         }
 
@@ -325,6 +354,39 @@ async function _loadHomeTodayGames() {
         }
 
         gridEl.innerHTML = cards.join('');
+
+        // Update section header with live count badge + filter pills
+        const liveCount = mlbResult ? mlbResult.filter(g => /in progress|live/i.test(g.status?.detailedState || '')).length : 0;
+        const hdrEl = document.querySelector('#homeTodayGames .home-section-hdr');
+        if (hdrEl) {
+            const liveBadge = liveCount > 0
+                ? `<span class="home-live-badge">${liveCount} Live</span>`
+                : '';
+            hdrEl.innerHTML = hdrEl.innerHTML + liveBadge;
+
+            // Insert filter pills between header and grid
+            const filterBar = document.createElement('div');
+            filterBar.className = 'home-filter-bar';
+            filterBar.innerHTML = `
+                <button class="home-filter-pill active" data-filter="all">All</button>
+                ${liveCount > 0 ? '<button class="home-filter-pill home-filter-pill--live" data-filter="live">Live</button>' : ''}
+                <button class="home-filter-pill" data-filter="final">Final</button>
+                <button class="home-filter-pill" data-filter="sched">Upcoming</button>
+            `;
+            gridEl.parentNode.insertBefore(filterBar, gridEl);
+
+            filterBar.addEventListener('click', e => {
+                const pill = e.target.closest('.home-filter-pill');
+                if (!pill) return;
+                filterBar.querySelectorAll('.home-filter-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const filter = pill.dataset.filter;
+                gridEl.querySelectorAll('.home-game-card').forEach(card => {
+                    const visible = filter === 'all' || card.dataset.gameStatus === filter;
+                    card.style.display = visible ? '' : 'none';
+                });
+            });
+        }
 
         gridEl.querySelectorAll('.home-game-card').forEach(card => {
             const open = () => {
@@ -464,16 +526,19 @@ if (typeof window !== 'undefined') {
 
 // ── Light / Dark Mode ─────────────────────────────────────────
 
+const _ICON_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const _ICON_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
 function _applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('zs_theme', theme); } catch (_) {}
     const icon       = document.getElementById('themeToggleIcon');
     const label      = document.getElementById('themeToggleLabel');
     const headerIcon = document.getElementById('themeToggleHeaderIcon');
-    const emoji      = theme === 'light' ? '🌙' : '☀️';
-    if (icon)       icon.textContent       = emoji;
-    if (headerIcon) headerIcon.textContent = emoji;
-    if (label)      label.textContent      = theme === 'light' ? 'Dark mode' : 'Light mode';
+    const isLight    = theme === 'light';
+    if (icon)       icon.textContent  = isLight ? '🌙' : '☀️';
+    if (headerIcon) headerIcon.innerHTML = isLight ? _ICON_MOON : _ICON_SUN;
+    if (label)      label.textContent = isLight ? 'Dark mode' : 'Light mode';
 }
 
 function toggleTheme() {
