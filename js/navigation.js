@@ -169,6 +169,7 @@ function navigateTo(view, push = true) {
     setBreadcrumb(view, null);
 
     if (push) history.pushState({ view }, '', `#${view}`);
+    _updatePageMeta(view);
     renderCurrentView(view);
 
     // Entrance animation — restarts on every navigation
@@ -616,6 +617,31 @@ function _applySportUI(sport) {
 }
 
 // ── Utility ──────────────────────────────────────────────────
+
+// ── SEO meta tag updates on each route change ─────────────────
+
+const _PAGE_META = {
+    'home':          { title: 'SportStrata — Serious Stats for Serious Fans', desc: 'Real-time MLB analytics, standings, player stats, splits, and live scores.' },
+    'mlb-players':   { title: 'SportStrata — MLB Players',    desc: 'Browse MLB player stats for hitting and pitching. Sortable, filterable, shareable.' },
+    'mlb-leaders':   { title: 'SportStrata — MLB Leaders',    desc: 'MLB statistical leaders in batting average, ERA, home runs, and more.' },
+    'mlb-teams':     { title: 'SportStrata — MLB Teams',      desc: 'MLB team rosters, stats, and recent results for all 30 teams.' },
+    'mlb-games':     { title: 'SportStrata — MLB Scores',     desc: 'Live MLB scores, game results, and upcoming schedule.' },
+    'mlb-standings': { title: 'SportStrata — MLB Standings',  desc: 'Current MLB standings by division and league.' },
+    'mlb-builder':   { title: 'SportStrata — Stat Builder',   desc: 'Build custom MLB stats with any formula. Save and compare.' },
+    'mlb-prep':      { title: 'SportStrata — Game Prep',      desc: 'Broadcast-ready MLB game prep sheets with pitcher matchups and key stats.' },
+    'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
+};
+
+function _updatePageMeta(view) {
+    const m = _PAGE_META[view] || _PAGE_META['home'];
+    document.title = m.title;
+    const descEl = document.querySelector('meta[name="description"]');
+    if (descEl) descEl.setAttribute('content', m.desc);
+    document.getElementById('ogTitle')?.setAttribute('content', m.title);
+    document.getElementById('ogDescription')?.setAttribute('content', m.desc);
+    document.getElementById('ogUrl')?.setAttribute('content', location.href);
+    document.getElementById('canonicalLink')?.setAttribute('href', location.href);
+}
 
 function debounce(func, timeout = 300) {
     let timer;

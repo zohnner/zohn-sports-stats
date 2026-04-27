@@ -557,6 +557,22 @@
     text-overflow: ellipsis;
 }
 
+.game-weather {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    padding-top: 0.4rem;
+    margin-top: 0.1rem;
+    border-top: 1px solid var(--border-default);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.game-weather:empty  { display: none; }
+.game-weather--dome  { color: var(--text-subtle); }
+.game-weather--outdoor { color: var(--text-muted); }
+
 .game-margin {
     font-size: 0.68rem;
     font-weight: 700;

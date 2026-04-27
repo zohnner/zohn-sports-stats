@@ -88,6 +88,102 @@ const _MLB_ABBR_ALIASES = {
     'AZ':  'ARI',  // Arizona Diamondbacks (ESPN abbr)
 };
 
+// ── Stadium weather lookup (Open-Meteo, keyed by MLB team ID) ─
+// dome: true → show "Dome" instead of fetching weather
+const _MLB_STADIUMS = {
+    108: { lat: 33.8003,  lon: -117.8827, dome: false }, // Angels — Angel Stadium
+    109: { lat: 33.4453,  lon: -112.0668, dome: true  }, // D-backs — Chase Field (retractable)
+    110: { lat: 39.2839,  lon: -76.6218,  dome: false }, // Orioles — Camden Yards
+    111: { lat: 42.3467,  lon: -71.0972,  dome: false }, // Red Sox — Fenway Park
+    112: { lat: 41.9484,  lon: -87.6553,  dome: false }, // Cubs — Wrigley Field
+    113: { lat: 39.0979,  lon: -84.5076,  dome: false }, // Reds — Great American Ball Park
+    114: { lat: 41.4962,  lon: -81.6852,  dome: false }, // Guardians — Progressive Field
+    115: { lat: 39.7559,  lon: -104.9942, dome: false }, // Rockies — Coors Field
+    116: { lat: 42.3390,  lon: -83.0485,  dome: false }, // Tigers — Comerica Park
+    117: { lat: 29.7572,  lon: -95.3555,  dome: true  }, // Astros — Minute Maid Park (retractable)
+    118: { lat: 39.0517,  lon: -94.4803,  dome: false }, // Royals — Kauffman Stadium
+    119: { lat: 34.0739,  lon: -118.2400, dome: false }, // Dodgers — Dodger Stadium
+    120: { lat: 38.8730,  lon: -77.0074,  dome: false }, // Nationals — Nationals Park
+    121: { lat: 40.7571,  lon: -73.8458,  dome: false }, // Mets — Citi Field
+    133: { lat: 38.5803,  lon: -121.5009, dome: false }, // Athletics — Sutter Health Park
+    134: { lat: 40.4469,  lon: -80.0057,  dome: false }, // Pirates — PNC Park
+    135: { lat: 32.7076,  lon: -117.1570, dome: false }, // Padres — Petco Park
+    136: { lat: 47.5914,  lon: -122.3325, dome: false }, // Mariners — T-Mobile Park
+    137: { lat: 37.7786,  lon: -122.3893, dome: false }, // Giants — Oracle Park
+    138: { lat: 38.6226,  lon: -90.1928,  dome: false }, // Cardinals — Busch Stadium
+    139: { lat: 27.7683,  lon: -82.6534,  dome: true  }, // Rays — Tropicana Field
+    140: { lat: 32.7512,  lon: -97.0832,  dome: true  }, // Rangers — Globe Life Field (retractable)
+    141: { lat: 43.6414,  lon: -79.3894,  dome: true  }, // Blue Jays — Rogers Centre
+    142: { lat: 44.9817,  lon: -93.2777,  dome: false }, // Twins — Target Field
+    143: { lat: 39.9057,  lon: -75.1665,  dome: false }, // Phillies — Citizens Bank Park
+    144: { lat: 33.8908,  lon: -84.4678,  dome: false }, // Braves — Truist Park
+    145: { lat: 41.8299,  lon: -87.6338,  dome: false }, // White Sox — Guaranteed Rate Field
+    146: { lat: 25.7780,  lon: -80.2196,  dome: true  }, // Marlins — loanDepot park (retractable)
+    147: { lat: 40.8296,  lon: -73.9262,  dome: false }, // Yankees — Yankee Stadium
+    158: { lat: 43.0280,  lon: -87.9712,  dome: true  }, // Brewers — American Family Field (retractable)
+};
+
+function _windDegToCompass(deg) {
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(deg / 45) % 8];
+}
+
+async function _fetchStadiumWeather(teamId) {
+    const stadium = _MLB_STADIUMS[teamId];
+    if (!stadium) return null;
+    if (stadium.dome) return { dome: true };
+
+    const cacheKey = `ss_weather_${teamId}`;
+    try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            const { ts, data } = JSON.parse(cached);
+            if (Date.now() - ts < 30 * 60 * 1000) return data;
+        }
+    } catch (_) {}
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const cur = json.current;
+        if (!cur) return null;
+        const data = {
+            temp: Math.round(cur.temperature_2m),
+            wind: Math.round(cur.wind_speed_10m),
+            dir:  _windDegToCompass(cur.wind_direction_10m),
+        };
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function _injectGameWeather(wrap) {
+    const slots = wrap.querySelectorAll('[data-weather-team]');
+    if (!slots.length) return;
+
+    const teamIds = [...new Set([...slots].map(s => +s.dataset.weatherTeam))];
+    const results = await Promise.all(teamIds.map(id =>
+        _fetchStadiumWeather(id).then(w => [id, w])
+    ));
+    const map = Object.fromEntries(results);
+
+    slots.forEach(slot => {
+        const w = map[+slot.dataset.weatherTeam];
+        if (!w) { slot.style.display = 'none'; return; }
+        if (w.dome) {
+            slot.textContent = '🏟 Dome';
+            slot.classList.add('game-weather--dome');
+        } else {
+            slot.innerHTML = `🌡 ${w.temp}°F · 💨 ${w.wind} mph ${w.dir}`;
+            slot.classList.add('game-weather--outdoor');
+        }
+    });
+}
+
 const MLB_TEAM_COLORS = new Proxy(_MLB_COLORS_BASE, {
     get(target, abbr) {
         if (typeof abbr !== 'string') return undefined;
@@ -1787,6 +1883,8 @@ function displayMLBGames(games, dateStr, offset) {
     grid.innerHTML = '';
     grid.appendChild(navRow);
     grid.appendChild(gamesWrap);
+
+    _injectGameWeather(gamesWrap);
 }
 
 function _mlbGamesGoTo(offset) {
@@ -1884,6 +1982,7 @@ function _createMLBGameCard(game) {
             </div>
         </div>
         ${ppLine}
+        <div class="game-weather" data-weather-team="${homeTeam.id}"></div>
     `;
 
     card.querySelectorAll('.game-team[data-team-id]').forEach(el => {

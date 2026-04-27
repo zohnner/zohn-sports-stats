@@ -12,8 +12,15 @@
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
     <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportStrata — Serious Stats for Serious Fans</title>
+    <!-- OG / SEO — updated dynamically by navigation.js on each route change -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SportStrata">
+    <meta id="ogTitle"       property="og:title"       content="SportStrata — Serious Stats for Serious Fans">
+    <meta id="ogDescription" property="og:description" content="Real-time MLB analytics, standings, player stats, splits, and live scores.">
+    <meta id="ogUrl"         property="og:url"         content="">
+    <link id="canonicalLink" rel="canonical"            href="">
     <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
     <script>
         (function(){
