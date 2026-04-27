@@ -955,7 +955,7 @@ class StatsCharts {
 
         const link     = document.createElement('a');
         const safeName = (player.fullName || player.last_name || 'player').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        link.download  = `sportsstr-${safeName}.png`;
+        link.download  = `sportstrata-${safeName}.png`;
         link.href      = canvas.toDataURL('image/png');
         link.click();
     }

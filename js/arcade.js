@@ -34,6 +34,7 @@ function loadArcade() {
     const tradeSave     = _arcLoad('trade');
     const blueprintSave = _arcLoad('blueprint');
     const whoamiSave    = _arcLoad('whoami');
+    const statdleSave   = _arcLoad('statdle');
 
     const _badge = (save, scoreText) => save
         ? `<div class="arcade-completed-badge">✓ Played — ${scoreText}</div>`
@@ -77,9 +78,23 @@ function loadArcade() {
                 <div class="arcade-sport-header">
                     <span class="arcade-sport-icon">⚾</span>
                     <span class="arcade-sport-name">MLB</span>
-                    <span class="arcade-sport-count">3 games</span>
+                    <span class="arcade-sport-count">4 games</span>
                 </div>
                 <div class="arcade-game-grid">
+                    <div class="arcade-game-card arcade-game-card--statdle ${statdleSave?.answered ? 'arcade-game-card--done' : ''}">
+                        ${statdleSave?.answered ? `<div class="arcade-completed-badge">✓ Played — ${statdleSave.won ? '🟩 Got it' : '🟥 Missed'}</div>` : ''}
+                        <div class="arcade-game-icon">⚾</div>
+                        <h2 class="arcade-game-title">Statdle</h2>
+                        <p class="arcade-game-desc">Guess the mystery MLB hitter from their per-game statlines. One new clue per guess.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~2 min</span>
+                            <span>⚡ Medium</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startStatdle()">
+                            ${statdleSave?.answered ? 'Play Again' : 'Play Now'}
+                        </button>
+                    </div>
+
                     <div class="arcade-game-card arcade-game-card--shuffle ${shuffleSave ? 'arcade-game-card--done' : ''}">
                         ${_badge(shuffleSave, shuffleSave ? `${shuffleSave.score}/3 ${['😬','😅','👍','🎉'][shuffleSave.score]}` : '')}
                         <div class="arcade-game-icon">📊</div>
@@ -1139,6 +1154,183 @@ function _wamSubmit() {
     _renderWhoAmI();
 }
 
+// ── Statdle — Daily MLB Hitter Guesser ───────────────────────
+//
+// 5 per-game statlines revealed one at a time.
+// Guess earlier = used fewer clues.
+
+let _statdleState = null;
+
+async function startStatdle(sessionOffset = 0) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = 'display:block;';
+    grid.innerHTML = `<div class="arcade-loading"><div class="arcade-loading-spinner"></div><p>Loading lineup…</p></div>`;
+
+    if (!AppState.mlbPlayers?.hitting?.length) {
+        try { await loadMLBPlayers(); } catch (_) {
+            grid.innerHTML = `<div class="arcade-loading"><p style="color:var(--color-error)">Failed to load MLB players. Visit the Players view first.</p><button class="arcade-play-btn" onclick="loadArcade()">← Back</button></div>`;
+            return;
+        }
+    }
+
+    const hitters = AppState.mlbPlayers.hitting || [];
+    const pool = hitters
+        .filter(p => (AppState.mlbPlayerStats?.hitting?.[p.id]?.plateAppearances || 0) >= 80)
+        .sort((a, b) => (AppState.mlbPlayerStats?.hitting?.[b.id]?.plateAppearances || 0) - (AppState.mlbPlayerStats?.hitting?.[a.id]?.plateAppearances || 0))
+        .slice(0, 150);
+
+    if (pool.length < 5) {
+        grid.innerHTML = `<div class="arcade-loading"><p style="color:var(--color-error)">Not enough MLB data loaded.</p><button class="arcade-play-btn" onclick="loadArcade()">← Back</button></div>`;
+        return;
+    }
+
+    const seed   = _todaySeed() + sessionOffset * 7919;
+    const rng    = _seededRandom(seed);
+    const target = pool[Math.floor(rng() * pool.length)];
+
+    let rawLogs;
+    try { rawLogs = await _fetchMLBGameLog(target.id, 'hitting'); } catch (_) { rawLogs = []; }
+    const clues = rawLogs.filter(g => (g.atBats || 0) > 0).slice(-5);
+
+    if (clues.length < 3) return startStatdle(sessionOffset + 1);
+
+    const saved = _arcLoad('statdle');
+    _statdleState = {
+        target, clues,
+        revealed:  (saved?.seed === seed && saved.revealed)  ? saved.revealed  : 1,
+        guesses:   (saved?.seed === seed && saved.guesses)   ? saved.guesses   : [],
+        answered:  (saved?.seed === seed && saved.answered)  ? true             : false,
+        won:       (saved?.seed === seed && saved.won)       ? true             : false,
+        sessionOffset, seed,
+    };
+    _renderStatdle();
+}
+
+function _renderStatdle() {
+    const grid = document.getElementById('playersGrid');
+    const st   = _statdleState;
+    if (!st) return;
+
+    const allNames   = (AppState.mlbPlayers?.hitting || []).map(p => p.fullName).filter(Boolean);
+    const datalistId = 'statdle-names-list';
+
+    const clueRows = st.clues.map((g, i) => {
+        if (i >= st.revealed) {
+            return `<div class="statdle-row statdle-row--locked"><span>?</span><span>?</span><span>?</span><span>?</span><span>?</span><span class="statdle-num">${i + 1}</span></div>`;
+        }
+        const avg = g.atBats ? (g.hits / g.atBats).toFixed(3).replace(/^0\./, '.') : '.000';
+        return `<div class="statdle-row statdle-row--live"><span>${g.atBats}</span><span>${g.hits}</span><span>${g.homeRuns}</span><span>${g.rbi}</span><span>${avg}</span><span class="statdle-num">${i + 1}</span></div>`;
+    }).join('');
+
+    const guessRows = st.guesses.map(g => {
+        const ok = g === '(skip)' ? null : g.toLowerCase() === st.target.fullName.toLowerCase();
+        const icon = g === '(skip)' ? '⬛' : ok ? '✅' : '❌';
+        return `<div class="statdle-guess ${g === '(skip)' ? 'statdle-guess--skip' : ok ? 'statdle-guess--ok' : 'statdle-guess--bad'}">${icon} ${_escHtml(g === '(skip)' ? 'Skipped' : g)}</div>`;
+    }).join('');
+
+    let resultHtml = '';
+    if (st.answered) {
+        const hs     = typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(st.target.id) : '';
+        const emojis = st.guesses.map(g => g === '(skip)' ? '⬛' : g.toLowerCase() === st.target.fullName.toLowerCase() ? '✅' : '❌');
+        while (emojis.length < st.clues.length) emojis.push('⬛');
+        const emojiStr  = emojis.slice(0, st.clues.length).join('');
+        const dateStr   = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const scoreStr  = st.won ? `${st.guesses.findIndex(g => g.toLowerCase() === st.target.fullName.toLowerCase()) + 1}/${st.clues.length}` : `X/${st.clues.length}`;
+        const shareText = `Statdle ${dateStr} ${scoreStr}\n${emojiStr}\nsportstrata.gg`;
+        resultHtml = `
+            <div class="statdle-result">
+                <p class="statdle-result-title ${st.won ? 'statdle-result-title--win' : 'statdle-result-title--loss'}">${st.won ? '🎉 Got it!' : '💔 Better luck tomorrow!'}</p>
+                <div class="statdle-result-player">
+                    ${hs ? `<img src="${hs}" class="statdle-hs" alt="" loading="lazy" data-hide-on-error>` : ''}
+                    <div>
+                        <div class="statdle-result-name">${_escHtml(st.target.fullName)}</div>
+                        <div class="statdle-result-meta">${_escHtml(st.target.teamAbbr || '')} · ${_escHtml(st.target.position || '')}</div>
+                    </div>
+                </div>
+                <div class="statdle-emoji-row">${emojiStr}</div>
+                <button class="statdle-share-btn" onclick="navigator.clipboard?.writeText(${JSON.stringify(shareText)}).then(()=>{this.textContent='Copied!✓';setTimeout(()=>this.textContent='📋 Copy Result',1600)})">📋 Copy Result</button>
+            </div>`;
+    }
+
+    const inputHtml = st.answered ? '' : `
+        <div class="statdle-input-section">
+            <p class="statdle-prompt">Clue ${st.revealed}/${st.clues.length} shown · Guess ${st.guesses.length + 1} of 5</p>
+            <div class="statdle-input-row">
+                <input id="statdleInput" class="statdle-input" type="text" list="${datalistId}" placeholder="Player name…" autocomplete="off" spellcheck="false">
+                <datalist id="${datalistId}">${allNames.map(n => `<option value="${_escHtml(n)}">`).join('')}</datalist>
+                <button class="statdle-guess-btn" onclick="_submitStatdleGuess()">Guess</button>
+            </div>
+            ${st.guesses.length < 4 && st.revealed < st.clues.length
+                ? `<button class="statdle-skip-btn" onclick="_skipStatdle()">Skip → reveal clue ${st.revealed + 1}</button>`
+                : ''}
+        </div>`;
+
+    grid.innerHTML = `
+        <div class="arcade-game-wrap">
+            <div class="arcade-back-row">
+                <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
+                <span class="arcade-game-title-inline">⚾ Statdle</span>
+            </div>
+            <div class="statdle-wrap">
+                <p class="statdle-sub">Guess the mystery MLB hitter from their per-game statlines</p>
+                <div class="statdle-table">
+                    <div class="statdle-hdr"><span>AB</span><span>H</span><span>HR</span><span>RBI</span><span>AVG</span><span></span></div>
+                    ${clueRows}
+                </div>
+                ${guessRows ? `<div class="statdle-guesses">${guessRows}</div>` : ''}
+                ${inputHtml}
+                ${resultHtml}
+            </div>
+        </div>`;
+
+    if (!st.answered) {
+        const inp = document.getElementById('statdleInput');
+        requestAnimationFrame(() => inp?.focus());
+        inp?.addEventListener('keydown', e => { if (e.key === 'Enter') _submitStatdleGuess(); });
+    }
+}
+
+function _submitStatdleGuess() {
+    const st  = _statdleState;
+    if (!st || st.answered) return;
+    const inp   = document.getElementById('statdleInput');
+    const guess = (inp?.value || '').trim();
+    if (!guess) return;
+
+    st.guesses.push(guess);
+    const correct = guess.toLowerCase() === st.target.fullName.toLowerCase();
+
+    if (correct || st.guesses.length >= 5) {
+        st.answered = true;
+        st.won      = correct;
+        const streakKey = 'ss_statdle_streak';
+        try {
+            const streak = JSON.parse(localStorage.getItem(streakKey) || '{"wins":0,"total":0}');
+            if (correct) streak.wins++;
+            streak.total++;
+            localStorage.setItem(streakKey, JSON.stringify(streak));
+        } catch (_) {}
+    } else {
+        st.revealed = Math.min(st.revealed + 1, st.clues.length);
+    }
+    _arcSave('statdle', { seed: st.seed, guesses: st.guesses, revealed: st.revealed, answered: st.answered, won: st.won });
+    _renderStatdle();
+}
+
+function _skipStatdle() {
+    const st = _statdleState;
+    if (!st || st.answered) return;
+    st.guesses.push('(skip)');
+    if (st.guesses.length >= 5) {
+        st.answered = true; st.won = false;
+    } else {
+        st.revealed = Math.min(st.revealed + 1, st.clues.length);
+    }
+    _arcSave('statdle', { seed: st.seed, guesses: st.guesses, revealed: st.revealed, answered: st.answered, won: st.won });
+    _renderStatdle();
+}
+
 // ── Global exposure ───────────────────────────────────────────
 
 if (typeof window !== 'undefined') {
@@ -1158,4 +1350,7 @@ if (typeof window !== 'undefined') {
     window._wamSelect   = _wamSelect;
     window._wamReveal   = _wamReveal;
     window._wamSubmit   = _wamSubmit;
+    window.startStatdle          = startStatdle;
+    window._submitStatdleGuess   = _submitStatdleGuess;
+    window._skipStatdle          = _skipStatdle;
 }
