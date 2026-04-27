@@ -1,10 +1,10 @@
 // ============================================================
-// SportsStrata — Service Worker  v2
+// SportStrata — Service Worker  v2
 // Strategy: Cache-first for static assets, network-first for API calls
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportsstrata-v2';
+const CACHE_NAME    = 'sportstrata-v2';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

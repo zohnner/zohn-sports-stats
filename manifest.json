@@ -1,6 +1,6 @@
 {
-  "name": "SportsStrata",
-  "short_name": "SportsStrata",
+  "name": "SportStrata",
+  "short_name": "SportStrata",
   "description": "Serious stats for serious fans. Real-time NBA, MLB, NFL and NHL analytics.",
   "start_url": "/",
   "display": "standalone",

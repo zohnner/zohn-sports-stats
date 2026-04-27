@@ -1,7 +1,7 @@
 /**
  * Pages Function: /api/mlb
  * Proxies requests to MLB Stats API and Baseball Savant, caching responses in D1.
- * Binding required: DB → sportsStrata-db (set in Pages > Settings > Functions > D1 bindings)
+ * Binding required: DB → sportStrata-db (set in Pages > Settings > Functions > D1 bindings)
  */
 
 const ALLOWED_ORIGINS = [
@@ -70,7 +70,7 @@ export async function onRequest(context) {
     let resp;
     try {
         resp = await fetch(target, {
-            headers: { 'User-Agent': 'SportsStrata/1.0' },
+            headers: { 'User-Agent': 'SportStrata/1.0' },
         });
     } catch (err) {
         return json({ error: 'Upstream unreachable', detail: String(err) }, 502);

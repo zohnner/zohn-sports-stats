@@ -1,9 +1,9 @@
-# SportsStrata — Claude Code Instructions
+# SportStrata — Claude Code Instructions
 
 ## Identity
-**Brand:** SportsStrata | **Tagline:** "Serious stats for serious fans"
+**Brand:** SportStrata | **Tagline:** "Serious stats for serious fans"
 **Product:** Free, no-login MLB analytics dashboard for broadcast professionals, fantasy players, and data fans.
-All user-facing text uses "SportsStrata". Never revert to "ZohnStats".
+All user-facing text uses "SportStrata". Never revert to "ZohnStats".
 
 ---
 

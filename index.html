@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#060c18">
-    <meta name="description" content="SportsStrata — Serious stats for serious fans. Real-time MLB analytics, standings, player stats, splits, and live scores.">
+    <meta name="description" content="SportStrata — Serious stats for serious fans. Real-time MLB analytics, standings, player stats, splits, and live scores.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SportsStrata">
+    <meta name="apple-mobile-web-app-title" content="SportStrata">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
     <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
-    <title>SportsStrata — Serious Stats for Serious Fans</title>
+    <title>SportStrata — Serious Stats for Serious Fans</title>
     <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
     <script>
         (function(){
@@ -37,11 +37,11 @@
 
     <header>
         <div class="header-inner">
-            <button class="brand" onclick="navigateTo('home')" aria-label="SportsStrata home">
-                <img class="brand-logo-img" src="assets/Icon.PNG" alt="SportsStrata">
+            <button class="brand" onclick="navigateTo('home')" aria-label="SportStrata home">
+                <img class="brand-logo-img" src="assets/Icon.PNG" alt="SportStrata">
                 <span id="brandIcon" hidden></span>
                 <div class="brand-text">
-                    <span class="brand-name">SportsStrata</span>
+                    <span class="brand-name">SportStrata</span>
                     <span class="brand-sub" id="brandSub">MLB Analytics</span>
                 </div>
             </button>
@@ -212,10 +212,8 @@
         <div id="playersGrid" class="players-grid"></div>
     </main>
 
-    <!-- math.js: safe formula evaluation in Stat Builder (never use eval()) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"
-            integrity="sha512-VMIzok05yICztVJ0Pu2ZXHHz6Pe+fNONIcepOD3kzgL0SJG3GH4IO3DmBRO766hIWUOHIS/IWdSqRGWWzgzqRw=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- math.js 13: safe formula evaluation in Stat Builder (never use eval()) -->
+    <script src="js/math.min.js"></script>
     <!-- Chart.js: data visualisation — loaded before charts.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
             integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"

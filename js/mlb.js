@@ -3624,7 +3624,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
 
     // Parallel fetches — include probable pitcher stats if not already in AppState
     const _needsPP = id => id && !AppState.mlbPlayerStats?.pitching?.[id];
-    const [gameRes, awayBatRes, awayPitRes, homeBatRes, homePitRes, awayPPRes, homePPRes] = await Promise.allSettled([
+    const [gameRes, awayBatRes, awayPitRes, homeBatRes, homePitRes, awayPPRes, homePPRes, awayPlayersRes, homePlayersRes] = await Promise.allSettled([
         mlbFetch(`/game/${gamePk}/feed/live`, {}, ApiCache.TTL.SHORT),
         mlbFetch(`/teams/${awayTeamId}/stats`, { stats: 'season', group: 'hitting',  season: MLB_SEASON }, ApiCache.TTL.MEDIUM),
         mlbFetch(`/teams/${awayTeamId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM),
@@ -3632,6 +3632,8 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
         mlbFetch(`/teams/${homeTeamId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM),
         _needsPP(awayPitcherId) ? mlbFetch(`/people/${awayPitcherId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
         _needsPP(homePitcherId) ? mlbFetch(`/people/${homePitcherId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
+        mlbFetch('/stats', { stats: 'season', group: 'hitting', sportId: 1, season: MLB_SEASON, teamId: awayTeamId }, ApiCache.TTL.MEDIUM),
+        mlbFetch('/stats', { stats: 'season', group: 'hitting', sportId: 1, season: MLB_SEASON, teamId: homeTeamId }, ApiCache.TTL.MEDIUM),
     ]);
 
     // Cache fetched pitcher stats into AppState so _pitcherCard can find them
@@ -3664,10 +3666,13 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
     const homePPInfo = gameInfo?.probablePitchers?.home;
 
     const _teamStat = res => (res.status === 'fulfilled' ? res.value?.stats?.[0]?.splits?.[0]?.stat : null) || {};
+    const _playerSplits = res => (res.status === 'fulfilled' ? res.value?.stats?.[0]?.splits || [] : []);
     const awayBat = _teamStat(awayBatRes);
     const homeBat = _teamStat(homeBatRes);
     const awayPit = _teamStat(awayPitRes);
     const homePit = _teamStat(homePitRes);
+    const awayPlayerSplits = _playerSplits(awayPlayersRes);
+    const homePlayerSplits = _playerSplits(homePlayersRes);
 
     const _fmt  = (v, d = 2) => v != null ? parseFloat(v).toFixed(d) : '—';
     const _lead = v => v != null ? parseFloat(v).toFixed(3).replace(/^0\./, '.') : '—';
@@ -3684,6 +3689,14 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
         const wins   = pStats.wins   ?? '—';
         const losses = pStats.losses ?? '—';
         const rec    = wins !== '—' ? `${wins}-${losses}` : '';
+        const ip     = parseFloat(pStats.inningsPitched || 0);
+        const fip    = ip > 0 && pStats.homeRuns != null
+            ? ((13 * (pStats.homeRuns || 0) + 3 * (pStats.baseOnBalls || 0) - 2 * (pStats.strikeOuts || 0)) / ip + 3.10).toFixed(2)
+            : '—';
+        const bb9    = ip > 0 && pStats.baseOnBalls != null
+            ? ((pStats.baseOnBalls || 0) / ip * 9).toFixed(1)
+            : '—';
+        const qs     = pStats.qualityStarts ?? '—';
         return `
             <div class="prep-pp-card">
                 <div class="prep-pp-top">
@@ -3695,53 +3708,60 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                 </div>
                 <div class="prep-pp-stats">
                     <div class="prep-pp-stat"><span class="prep-pp-val">${_fmt(pStats.era, 2)}</span><span class="prep-pp-lbl">ERA</span></div>
+                    <div class="prep-pp-stat"><span class="prep-pp-val">${fip}</span><span class="prep-pp-lbl">FIP</span></div>
                     <div class="prep-pp-stat"><span class="prep-pp-val">${_fmt(pStats.whip, 2)}</span><span class="prep-pp-lbl">WHIP</span></div>
                     <div class="prep-pp-stat"><span class="prep-pp-val">${pStats.strikeoutsPer9Inn ? _fmt(pStats.strikeoutsPer9Inn, 1) : '—'}</span><span class="prep-pp-lbl">K/9</span></div>
+                    <div class="prep-pp-stat"><span class="prep-pp-val">${bb9}</span><span class="prep-pp-lbl">BB/9</span></div>
                     <div class="prep-pp-stat"><span class="prep-pp-val">${pStats.strikeOuts ?? '—'}</span><span class="prep-pp-lbl">K</span></div>
                     <div class="prep-pp-stat"><span class="prep-pp-val">${pStats.inningsPitched ?? '—'}</span><span class="prep-pp-lbl">IP</span></div>
+                    ${qs !== '—' ? `<div class="prep-pp-stat"><span class="prep-pp-val">${qs}</span><span class="prep-pp-lbl">QS</span></div>` : ''}
                 </div>
             </div>
         `;
     };
 
-    const _cmpRow = (awayVal, lbl, homeVal, highlight = false) => {
+    const _cmpRow = (awayVal, lbl, homeVal, highlight = false, lowerBetter = false) => {
         const cls = highlight ? ' prep-cmp-row--highlight' : '';
+        const av  = parseFloat(awayVal);
+        const hv  = parseFloat(homeVal);
+        const valid = !isNaN(av) && !isNaN(hv) && av !== hv;
+        const awayWin = valid && (lowerBetter ? av < hv : av > hv);
+        const homeWin = valid && (lowerBetter ? hv < av : hv > av);
         return `
             <div class="prep-cmp-row${cls}">
-                <span class="prep-cmp-val">${awayVal}</span>
+                <span class="prep-cmp-val${awayWin ? ' prep-cmp-winner' : ''}">${awayVal}</span>
                 <span class="prep-cmp-lbl">${lbl}</span>
-                <span class="prep-cmp-val">${homeVal}</span>
+                <span class="prep-cmp-val${homeWin ? ' prep-cmp-winner' : ''}">${homeVal}</span>
             </div>
         `;
     };
 
-    const _keyHitters = teamId => {
-        const top = (AppState.mlbPlayers?.hitting || [])
-            .filter(p => p.teamId === teamId)
-            .map(p => ({ ...p, _ops: parseFloat(AppState.mlbPlayerStats?.hitting?.[p.id]?.ops || 0) }))
-            .filter(p => p._ops > 0)
-            .sort((a, b) => b._ops - a._ops)
-            .slice(0, 4);
+    const _keyHitters = (splits) => {
+        const top = (splits || [])
+            .filter(s => s.player?.id && parseFloat(s.stat?.ops || 0) > 0 && (s.stat?.atBats || 0) >= 20)
+            .sort((a, b) => parseFloat(b.stat?.ops || 0) - parseFloat(a.stat?.ops || 0))
+            .slice(0, 5);
 
-        if (!top.length) return `<p class="prep-no-hitters">Open Players view to populate key hitters</p>`;
+        if (!top.length) return `<p class="prep-no-hitters">Stats unavailable</p>`;
 
-        return top.map(p => {
-            const s   = AppState.mlbPlayerStats?.hitting?.[p.id] || {};
+        return top.map(({ player: p, stat: s, position: pos }) => {
             const hs  = getMLBPlayerHeadshotUrl(p.id);
             const img = hs
                 ? `<img src="${hs}" alt="" class="prep-hitter-hs" loading="lazy" data-hide-on-error>`
                 : `<div class="prep-hitter-init">${_escHtml((p.fullName || '?')[0])}</div>`;
+            const iso = s.slg && s.avg ? (parseFloat(s.slg) - parseFloat(s.avg)).toFixed(3).replace(/^0\./, '.') : '—';
             return `
                 <div class="prep-hitter-row" onclick="showMLBPlayerDetail(${p.id},'hitting')" role="button" tabindex="0">
                     ${img}
                     <div class="prep-hitter-info">
                         <span class="prep-hitter-name">${_escHtml(p.fullName || '—')}</span>
-                        <span class="prep-hitter-pos">${p.position || ''}</span>
+                        <span class="prep-hitter-pos">${_escHtml(pos?.abbreviation || '')}</span>
                     </div>
                     <div class="prep-hitter-stats">
-                        <span>${_lead(s.avg)}</span>
+                        <span>${s.avg || '.000'}</span>
                         <span>${s.homeRuns ?? '—'} HR</span>
-                        <span>${_lead(s.ops)} OPS</span>
+                        <span>${s.ops || '.000'} OPS</span>
+                        <span class="prep-hitter-iso">${iso} ISO</span>
                     </div>
                 </div>
             `;
@@ -3821,13 +3841,15 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                     <span class="prep-cmp-team-lbl" style="color:${homeClr.primary}">${homeAbbr}</span>
                 </div>
                 ${_cmpRow(_lead(awayBat.avg),  'AVG',  _lead(homeBat.avg),  true)}
-                ${_cmpRow(_lead(awayBat.obp),  'OBP',  _lead(homeBat.obp))}
-                ${_cmpRow(_lead(awayBat.slg),  'SLG',  _lead(homeBat.slg))}
+                ${_cmpRow(_lead(awayBat.obp),  'OBP',  _lead(homeBat.obp),  false)}
+                ${_cmpRow(_lead(awayBat.slg),  'SLG',  _lead(homeBat.slg),  false)}
                 ${_cmpRow(_lead(awayBat.ops),  'OPS',  _lead(homeBat.ops),  true)}
-                ${_cmpRow(awayBat.homeRuns ?? '—', 'HR',  homeBat.homeRuns ?? '—')}
-                ${_cmpRow(awayBat.runs ?? '—',     'R',   homeBat.runs ?? '—')}
-                ${_cmpRow(awayBat.stolenBases ?? '—', 'SB', homeBat.stolenBases ?? '—')}
-                ${_cmpRow(awayBat.strikeOuts ?? '—', 'K',  homeBat.strikeOuts ?? '—')}
+                ${(()=>{ const ai=awayBat.slg&&awayBat.avg?(parseFloat(awayBat.slg)-parseFloat(awayBat.avg)).toFixed(3).replace(/^0\./,'.'):'—'; const hi=homeBat.slg&&homeBat.avg?(parseFloat(homeBat.slg)-parseFloat(homeBat.avg)).toFixed(3).replace(/^0\./,'.'):'—'; return _cmpRow(ai,'ISO',hi); })()}
+                ${_cmpRow(awayBat.babip || '—',       'BABIP', homeBat.babip || '—')}
+                ${_cmpRow(awayBat.homeRuns ?? '—',    'HR',    homeBat.homeRuns ?? '—')}
+                ${_cmpRow(awayBat.runs ?? '—',        'R',     homeBat.runs ?? '—')}
+                ${_cmpRow(awayBat.stolenBases ?? '—', 'SB',    homeBat.stolenBases ?? '—')}
+                ${_cmpRow(awayBat.strikeOuts ?? '—',  'K',     homeBat.strikeOuts ?? '—', false, true)}
             </div>
 
             <div class="prep-section">
@@ -3837,9 +3859,11 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                     <span></span>
                     <span class="prep-cmp-team-lbl" style="color:${homeClr.primary}">${homeAbbr}</span>
                 </div>
-                ${_cmpRow(_fmt(awayPit.era, 2),  'ERA',  _fmt(homePit.era, 2),  true)}
-                ${_cmpRow(_fmt(awayPit.whip, 2), 'WHIP', _fmt(homePit.whip, 2))}
+                ${_cmpRow(_fmt(awayPit.era, 2),  'ERA',  _fmt(homePit.era, 2),  true, true)}
+                ${(()=>{ const _fip = pit => { const ip=parseFloat(pit.inningsPitched||0); return ip>0&&pit.homeRuns!=null ? ((13*(pit.homeRuns||0)+3*(pit.baseOnBalls||0)-2*(pit.strikeOuts||0))/ip+3.10).toFixed(2) : '—'; }; return _cmpRow(_fip(awayPit),'FIP',_fip(homePit),false,true); })()}
+                ${_cmpRow(_fmt(awayPit.whip, 2), 'WHIP', _fmt(homePit.whip, 2), false, true)}
                 ${_cmpRow(awayPit.strikeoutsPer9Inn ? _fmt(awayPit.strikeoutsPer9Inn, 1) : '—', 'K/9', homePit.strikeoutsPer9Inn ? _fmt(homePit.strikeoutsPer9Inn, 1) : '—')}
+                ${(()=>{ const _bb9 = pit => { const ip=parseFloat(pit.inningsPitched||0); return ip>0&&pit.baseOnBalls!=null ? ((pit.baseOnBalls||0)/ip*9).toFixed(1) : '—'; }; return _cmpRow(_bb9(awayPit),'BB/9',_bb9(homePit),false,true); })()}
                 ${_cmpRow(awayPit.strikeOuts ?? '—', 'K',  homePit.strikeOuts ?? '—')}
                 ${_cmpRow(awayPit.saves ?? '—',      'SV', homePit.saves ?? '—')}
             </div>
@@ -3852,7 +3876,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                             ${awayLogo ? `<img src="${awayLogo}" alt="" style="width:16px;height:16px;object-fit:contain" loading="lazy" data-hide-on-error>` : ''}
                             ${awayAbbr}
                         </div>
-                        ${_keyHitters(awayTeamId)}
+                        ${_keyHitters(awayPlayerSplits)}
                     </div>
                     <div class="prep-divider"></div>
                     <div class="prep-hitters-col">
@@ -3860,7 +3884,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                             ${homeLogo ? `<img src="${homeLogo}" alt="" style="width:16px;height:16px;object-fit:contain" loading="lazy" data-hide-on-error>` : ''}
                             ${homeAbbr}
                         </div>
-                        ${_keyHitters(homeTeamId)}
+                        ${_keyHitters(homePlayerSplits)}
                     </div>
                 </div>
             </div>

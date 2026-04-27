@@ -262,11 +262,11 @@ function setBreadcrumb(root, current) {
             <span class="breadcrumb-sep">›</span>
             <span class="breadcrumb-current">${current}</span>
         `;
-        document.title = `${current} — SportsStrata`;
+        document.title = `${current} — SportStrata`;
     } else {
         el.innerHTML = `<span class="breadcrumb-root">${meta.icon} ${meta.label}</span>`;
         const label = meta.label || root;
-        document.title = label === 'Home' ? 'SportsStrata — MLB Analytics' : `${label} — SportsStrata`;
+        document.title = label === 'Home' ? 'SportStrata — MLB Analytics' : `${label} — SportStrata`;
     }
 }
 

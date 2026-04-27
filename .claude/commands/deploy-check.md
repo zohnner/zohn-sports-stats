@@ -1,4 +1,4 @@
-Run a pre-deployment checklist for SportsStrata (Cloudflare Pages). Check each item and report pass/fail.
+Run a pre-deployment checklist for SportStrata (Cloudflare Pages). Check each item and report pass/fail.
 
 ## Checks to perform
 

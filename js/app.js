@@ -1,4 +1,4 @@
-Logger.info('Initializing SportsStrata…', undefined, 'APP');
+Logger.info('Initializing SportStrata…', undefined, 'APP');
 
 // Ticker — SCORES button navigates to scores for the active sport
 (function setupTickerNav() {

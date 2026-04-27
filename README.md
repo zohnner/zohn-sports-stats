@@ -1,4 +1,4 @@
-# SportsStrata
+# SportStrata
 
 **Serious stats for serious fans.**
 

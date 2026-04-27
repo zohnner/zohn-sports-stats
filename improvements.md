@@ -1,4 +1,4 @@
-# SportsStrata — Improvements & Feature Roadmap
+# SportStrata — Improvements & Feature Roadmap
 > **Claude Code Working Document** — Cross-reference with `CLAUDE.md` for project schema, file structure, and agent conventions before executing any task.
 
 ---
@@ -143,7 +143,7 @@ function renderError(container, message, retryFn) {
 
 ```js
 // wrangler.toml
-name = "sportsstrata-proxy"
+name = "sportstrata-proxy"
 main = "worker.js"
 
 // worker.js
@@ -161,7 +161,7 @@ export default {
 }
 ```
 
-Deploy at `sportsstrata-proxy.{account}.workers.dev` and update all fetch URLs to point to the Worker instead of directly to APIs. API keys move from client JS into Worker `env` secrets.
+Deploy at `sportstrata-proxy.{account}.workers.dev` and update all fetch URLs to point to the Worker instead of directly to APIs. API keys move from client JS into Worker `env` secrets.
 
 **Agent:** Infrastructure task. Instruct Claude Code to scaffold a `worker/` directory, write `worker.js` and `wrangler.toml`, and update all fetch base URLs in the main JS.
 
@@ -352,7 +352,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // sw.js
-const CACHE = 'sportsstrata-v1';
+const CACHE = 'sportstrata-v1';
 const STATIC = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
@@ -477,7 +477,7 @@ function addToCompare(player) {
 - Injury status flag (pull from free API or manual override)
 - A simple recommendation badge: 🟢 Start / 🟡 Flex / 🔴 Sit
 
-This differentiates SportsStrata from every generic stats site — it gives an *action* recommendation, not just raw data.
+This differentiates SportStrata from every generic stats site — it gives an *action* recommendation, not just raw data.
 
 **Agent:** Medium complexity. Requires aggregating multiple API calls per player. Build a `matchup-analyzer.js` module. Keep it stateless — input goes in, analysis comes out.
 
@@ -501,13 +501,13 @@ All of these use existing API data — no additional data sources needed.
 
 ## Section 4 — Differentiation (What Makes It Stand Out)
 
-These are the features that separate SportsStrata from ESPN, Basketball Reference, and every other stats site.
+These are the features that separate SportStrata from ESPN, Basketball Reference, and every other stats site.
 
 ---
 
 ### DIFF-01 · AI-Powered Stat Summaries (Claude API Integration)
 
-SportsStrata already has access to the Anthropic ecosystem. Use it.
+SportStrata already has access to the Anthropic ecosystem. Use it.
 
 When a player profile opens, add an **"AI Analysis"** section:
 

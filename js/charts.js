@@ -906,7 +906,7 @@ class StatsCharts {
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = '#475569';
         ctx.font = '12px system-ui,-apple-system,sans-serif';
-        ctx.fillText('SportsStrata', 28, H - 18);
+        ctx.fillText('SportStrata', 28, H - 18);
 
         ctx.textAlign = 'right';
         ctx.fillText('Serious stats for serious fans', W - 24, H - 18);

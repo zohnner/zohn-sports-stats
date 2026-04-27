@@ -1,7 +1,7 @@
-# SportsStrata — Vision, Goals & Principles
+# SportStrata — Vision, Goals & Principles
 
 > **"Serious stats for serious fans."**
-> SportsStrata is a free, fast, no-login **MLB analytics dashboard** built for broadcast professionals, fantasy players, and data-obsessed baseball fans.
+> SportStrata is a free, fast, no-login **MLB analytics dashboard** built for broadcast professionals, fantasy players, and data-obsessed baseball fans.
 
 ---
 
@@ -37,7 +37,7 @@ MLB must reach **full feature parity** before other sports expand.
 **Completed:** players, leaderboards (36 categories), teams, scores (with pitcher matchups), standings (with L10 + power rankings), stat builder, player detail, game prep sheet, starred favorites, live ticker.  
 **Remaining:** Statcast metrics (exit velocity, barrel%, xBA, xSLG via Savant proxy), multi-season career charts, player head-to-head comparison.  
 
-Advanced computed stats (FIP, BABIP, ISO, WHIP, FIP, K-BB%, LOB%, RC, SB%) differentiate SportsStrata from ESPN's surface-level scoreboard.
+Advanced computed stats (FIP, BABIP, ISO, WHIP, FIP, K-BB%, LOB%, RC, SB%) differentiate SportStrata from ESPN's surface-level scoreboard.
 
 ### G3 — Announcer-Ready
 Every key fact should be surfaceable in **3 clicks or fewer**.  
@@ -87,7 +87,7 @@ Free tier stays fully functional for current-season standard stats — never bai
 Target: sell 10 enterprise seats at launch = $5K MRR on day 1.
 
 ### R3 — Developer Data API
-**$99/month for 100K requests** to a versioned REST API wrapping the SportsStrata stat engine:
+**$99/month for 100K requests** to a versioned REST API wrapping the SportStrata stat engine:
 - Returns computed stats (FIP, BABIP, ISO, LOB%, RC, etc.) not available directly from MLB Stats API
 - JSON responses with league rank, percentile, and rolling averages
 - Powers fantasy app integrations, sports betting research tools, custom dashboards
@@ -96,11 +96,11 @@ Target: sell 10 enterprise seats at launch = $5K MRR on day 1.
 Affiliate agreements with **DraftKings, FanDuel, Yahoo Fantasy** for contextual referral links:
 - "Build a lineup" button on player cards that deep-links to the platform with the player pre-selected
 - Commission per signup: target $15–30 CPA
-- DFS lineup optimizer page (Pro feature): optimal 8-man slate using SportsStrata's stat model
+- DFS lineup optimizer page (Pro feature): optimal 8-man slate using SportStrata's stat model
 
 ### R5 — Shareable Stat Cards (Viral Growth)
 Auto-generated **branded PNG/SVG cards** shareable to Twitter, Instagram, and iMessage:
-- "Share this stat" button on any leaderboard entry → generates a SportsStrata-watermarked graphic
+- "Share this stat" button on any leaderboard entry → generates a SportStrata-watermarked graphic
 - Cards show: player photo, stat rank (#1 in MLB), sparkline of last 30 days
 - Each shared card links back to the live view — organic acquisition funnel
 
@@ -114,7 +114,7 @@ Use Claude API to generate a **2-sentence broadcast blurb** for any player on de
 
 Trigger: "Broadcast Blurb" button on player detail page → streams response inline.  
 Infrastructure: Cloudflare Worker calling Anthropic API with stat context injected as system prompt.  
-This is the single feature that makes SportsStrata irreplaceable for announcers.
+This is the single feature that makes SportStrata irreplaceable for announcers.
 
 ### F2 — Real-Time Statcast Layer
 Full **Baseball Savant integration** via Cloudflare Worker proxy:
@@ -123,7 +123,7 @@ Full **Baseball Savant integration** via Cloudflare Worker proxy:
 - Statcast leaderboards alongside standard stat leaderboards (12 new categories)
 - Heat-map zone charts: where each hitter hits the ball, where pitchers locate their fastball
 
-This bridges the gap between SportsStrata and Fangraphs/Baseball Savant — in one UI.
+This bridges the gap between SportStrata and Fangraphs/Baseball Savant — in one UI.
 
 ### F3 — Predictive Analytics Engine
 A **regression/breakout model** surfaced as a badge on player cards:
@@ -141,7 +141,7 @@ Store multi-season data in **Cloudflare D1** and surface it in the UI:
 - "Player Comparison" with career arcs side-by-side for any two players
 - All-time single-season leaderboards: "Greatest HR seasons since 2015"
 
-This makes SportsStrata useful 365 days a year, not just in-season.
+This makes SportStrata useful 365 days a year, not just in-season.
 
 ### F5 — Installable PWA with Push Notifications
 Convert to a **Progressive Web App** with:
@@ -181,7 +181,7 @@ Unified player search across all sports — type any name, get any sport.
 | Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |
 | Starred favorites system | ✅ Heart on cards, home page chip section, localStorage | |
 | Live scores + ticker | ✅ Header ticker + live polling home page | |
-| Brand identity | ✅ Orange/gold palette, SportsStrata icon in header | |
+| Brand identity | ✅ Orange/gold palette, SportStrata icon in header | |
 | API key in source code | ⚠️ BDL key hardcoded (P1-006) | Worker proxy — blocks public launch |
 | Lighthouse Performance | Unknown | ≥ 90 |
 | WCAG AA accessibility | Partial | Full pass on MLB views |

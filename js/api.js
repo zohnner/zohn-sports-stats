@@ -6,7 +6,7 @@
 //              clear BDL_API_KEY — the Worker holds the key server-side.
 //
 // Example:
-//   const BDL_PROXY_URL = 'https://sportsstrata-proxy.your-subdomain.workers.dev';
+//   const BDL_PROXY_URL = 'https://sportstrata-proxy.your-subdomain.workers.dev';
 // ============================================================
 const BDL_API_KEY  = '857bec7d-aada-496f-abb1-79b16926fb37';
 const BDL_PROXY_URL = ''; // Set to Worker URL in production to hide API key

@@ -1,5 +1,5 @@
 // ============================================================
-// SportsStrata — Global Search (UX-007) + Recently Viewed (UX-006)
+// SportStrata — Global Search (UX-007) + Recently Viewed (UX-006)
 //
 // Cmd/Ctrl+K opens overlay. Searches NBA/MLB players + teams
 // across already-loaded AppState data (no extra fetches).

@@ -1,4 +1,4 @@
-# SportsStrata — Roadmap
+# SportStrata — Roadmap
 
 > **Focus: MLB broadcast & analytics.** NBA/NFL/NHL are preview features — no new investment until MLB depth goals are met.  
 > Priority order: MLB depth → Security → Announcer tools → Infrastructure.
@@ -116,7 +116,7 @@ img-src: added assets.nhle.com
 | ID | Task | Effort | Notes |
 |---|---|---|---|
 | ANN-001 | "Game Prep" view: pre-populated comparison + key stats for tonight's matchup | M | ✅ Today's schedule → game select → matchup header, probable pitchers, team batting/pitching compare, key hitters |
-| ANN-002 | Shareable stat snapshot image (canvas → PNG download) | M | ✅ "↓ Card" button on MLB + NBA player detail — 720×400 canvas card with team colors, stats grid, SportsStrata brand |
+| ANN-002 | Shareable stat snapshot image (canvas → PNG download) | M | ✅ "↓ Card" button on MLB + NBA player detail — 720×400 canvas card with team colors, stats grid, SportStrata brand |
 | ANN-003 | Player notes / annotation field (localStorage) | S | ✅ "Announcer Notes" textarea at bottom of player detail, auto-saves to `ss_notes_{id}` with debounce + "Saved" flash |
 | ANN-004 | Print-friendly layout (`@media print`) | S | ✅ `@media print` in main.css: hides nav/charts/chrome, single-column layout, white/black palette, page-break hints |
 | ANN-005 | "On This Day" historical stat trivia on home page | M | ✅ MLB Stats API — fetches completed games from today's date in past 3 seasons, surfaces top performer (H/HR/RBI), displayed above Today's Games |
@@ -129,7 +129,7 @@ img-src: added assets.nhle.com
 - **Custom leagues** — private leaderboards based on a subset of players
 - **Trade machine** — drag-and-drop roster editor with salary/cap data
 - **Multi-sport leaderboard** — cross-sport efficiency comparisons (gimmick but fun)
-- **API endpoint** — expose SportsStrata data as a public JSON API for fan developers
+- **API endpoint** — expose SportStrata data as a public JSON API for fan developers
 - **Dark mode schedule** — auto-switch at local sunset time
 
 ---
