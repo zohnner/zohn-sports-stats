@@ -38,6 +38,22 @@ const AppState = {
     nbaLeaderMinGP: 0,      // minimum games played filter on NBA leaderboards (0 = All)
     nbaLeaderPosition: 'all', // position filter on NBA leaderboards
     nbaFantasyOverlay: false, // show DraftKings FP badges and fantasy score panel
+    // MLB — seeded here so fields exist before mlb.js loads
+    mlbTeams:              [],
+    mlbPlayers:            { hitting: [], pitching: [] },
+    mlbPlayerStats:        { hitting: {}, pitching: {} },
+    mlbGames:              [],
+    mlbStatsGroup:         'hitting',
+    mlbPositionFilter:     'all',
+    mlbSearchQuery:        '',
+    mlbLeaderMinGP:        0,
+    mlbLeaderPosition:     'all',
+    mlbLeaderSeason:       null,
+    mlbLeaderSplits:       null,
+    mlbStandings:          null,
+    _mlbStandingsLeague:   'AL',
+    _mlbTeamRecentGames:   {},
+    _mlbTeamRosters:       {},
     // NFL
     nflTeams:     [],
     nflGames:     [],
