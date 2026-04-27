@@ -34,6 +34,8 @@ const _MLB_PITCHING_VARS = [
     { key: 'inningsPitched',  label: 'IP'   },
     { key: 'earnedRuns',      label: 'ER'   },
     { key: 'homeRuns',        label: 'HR'   },
+    { key: 'hits',            label: 'H'    },
+    { key: 'battersFaced',    label: 'BF'   },
     { key: 'saves',           label: 'SV'   },
     { key: 'gamesStarted',    label: 'GS'   },
     { key: 'gamesPlayed',     label: 'G'    },
@@ -104,10 +106,14 @@ function _getBuilderConfig(mlbGroup) {
             filterOpts: _MLB_HITTING_FILTER,
             positions:  ['All', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'OF'],
             examples: [
-                { name: 'Isolated Power',  formula: 'slg - avg',                                          label: 'ISO (SLG − AVG)' },
-                { name: 'BABIP',           formula: '(hits - homeRuns) / (atBats - strikeOuts - homeRuns + 1)', label: 'BABIP' },
-                { name: 'Scoring Value',   formula: 'runs + rbi - homeRuns',                               label: 'Runs + RBI − HR' },
-                { name: 'Contact Rate',    formula: '(atBats - strikeOuts) / atBats',                     label: 'Contact %' },
+                { name: 'Isolated Power',  formula: 'slg - avg',                                                                              label: 'ISO (SLG − AVG)' },
+                { name: 'BABIP',           formula: '(hits - homeRuns) / (atBats - strikeOuts - homeRuns + 1)',                                label: 'BABIP' },
+                { name: 'OPS+ Proxy',      formula: '(obp / 0.320 + slg / 0.395 - 1) * 100',                                                  label: 'OPS+ (vs avg)' },
+                { name: 'Runs Created',    formula: '(hits + baseOnBalls) * (hits + doubles + 2 * triples + 3 * homeRuns) / (atBats + baseOnBalls + 0.001)', label: 'RC (Bill James)' },
+                { name: 'BB%',             formula: 'baseOnBalls / (atBats + baseOnBalls + 0.001) * 100',                                      label: 'Walk Rate %' },
+                { name: 'K%',             formula: 'strikeOuts / (atBats + baseOnBalls + 0.001) * 100',                                       label: 'Strikeout Rate %' },
+                { name: 'Power-Speed #',   formula: 'homeRuns * stolenBases * 2 / (homeRuns + stolenBases + 0.001)',                           label: 'Power-Speed Number' },
+                { name: 'Contact Rate',    formula: '(atBats - strikeOuts) / atBats',                                                          label: 'Contact %' },
             ],
         };
     }
@@ -124,10 +130,14 @@ function _getBuilderConfig(mlbGroup) {
             filterOpts: _MLB_PITCHING_FILTER,
             positions:  ['All', 'SP', 'RP', 'CP'],
             examples: [
-                { name: 'K/9',       formula: 'strikeOuts / inningsPitched * 9',                                         label: 'K per 9 innings' },
-                { name: 'BB/9',      formula: 'baseOnBalls / inningsPitched * 9',                                        label: 'BB per 9 innings' },
-                { name: 'K:BB',      formula: 'strikeOuts / (baseOnBalls + 0.001)',                                      label: 'Strikeout-to-Walk' },
-                { name: 'FIP',       formula: '(13 * homeRuns + 3 * baseOnBalls - 2 * strikeOuts) / inningsPitched + 3.2', label: 'FIP (approx)' },
+                { name: 'K/9',       formula: 'strikeOuts / inningsPitched * 9',                                            label: 'K per 9 innings' },
+                { name: 'BB/9',      formula: 'baseOnBalls / inningsPitched * 9',                                           label: 'BB per 9 innings' },
+                { name: 'FIP',       formula: '(13 * homeRuns + 3 * baseOnBalls - 2 * strikeOuts) / inningsPitched + 3.2',  label: 'FIP (approx)' },
+                { name: 'K-BB%',     formula: '(strikeOuts - baseOnBalls) / (battersFaced + 0.001) * 100',                  label: 'K-BB% (strikeout-walk rate)' },
+                { name: 'K:BB',      formula: 'strikeOuts / (baseOnBalls + 0.001)',                                         label: 'Strikeout-to-Walk' },
+                { name: 'HR/9',      formula: 'homeRuns / inningsPitched * 9',                                              label: 'Home Runs per 9' },
+                { name: 'H/9',       formula: 'hits / inningsPitched * 9',                                                  label: 'Hits per 9' },
+                { name: 'Win %',     formula: 'wins / (wins + losses + 0.001) * 100',                                      label: 'Win Percentage' },
             ],
         };
     }

@@ -488,6 +488,47 @@ async function _restoreMLBTeamDetail(teamId) {
     showMLBTeamDetail(teamId, false);
 }
 
+async function _restoreMLBPlayerDetail(playerId, group) {
+    Logger.info(`Restoring MLB player detail ${playerId} (${group})`, undefined, 'NAV');
+    if (AppState.currentSport !== 'mlb') {
+        AppState.currentSport = 'mlb';
+        _applySportUI('mlb');
+    }
+    if (!AppState.mlbPlayers?.[group]?.length) {
+        const splits = await fetchMLBLeagueStats(group, MLB_SEASON).catch(() => []);
+        if (!AppState.mlbPlayers) AppState.mlbPlayers = {};
+        if (!AppState.mlbPlayerStats) AppState.mlbPlayerStats = {};
+        AppState.mlbPlayers[group]    = [];
+        AppState.mlbPlayerStats[group] = {};
+        splits.forEach(split => {
+            const id = split.player?.id;
+            if (!id) return;
+            AppState.mlbPlayerStats[group][id] = { ...split.stat, player_id: id };
+            AppState.mlbPlayers[group].push({
+                id,
+                fullName: split.player.fullName || '—',
+                teamId:   split.team?.id,
+                teamName: split.team?.name,
+                teamAbbr: split.team?.abbreviation,
+                position: split.position?.abbreviation,
+            });
+        });
+    }
+    AppState.mlbStatsGroup = group;
+    showMLBPlayerDetail(playerId, group);
+}
+
+async function _restoreMLBComparison(group, id1, id2) {
+    Logger.info(`Restoring MLB comparison ${id1} vs ${id2} (${group})`, undefined, 'NAV');
+    await _restoreMLBPlayerDetail(id1, group);
+    requestAnimationFrame(() => {
+        const sel = document.getElementById('mlb-cmp-select-b');
+        if (!sel) return;
+        sel.value = String(id2);
+        sel.dispatchEvent(new Event('change'));
+    });
+}
+
 async function _restoreTeamDetail(teamId) {
     Logger.info(`Restoring team detail ${teamId}`, undefined, 'NAV');
     if (AppState.allTeams.length === 0) {
@@ -515,8 +556,9 @@ function _loadFromHash() {
     const playerMatch    = hash.match(/^player-(\d+)$/);
     const teamMatch      = hash.match(/^team-(\d+)$/);
     const teamGameMatch  = hash.match(/^team-(\d+)-game-(\d+)$/);
-    const mlbPlayerMatch = hash.match(/^mlb-player-(\d+)$/);
-    const mlbTeamMatch   = hash.match(/^mlb-team-(\d+)$/);
+    const mlbPlayerMatch  = hash.match(/^mlb-player-(\d+)(?:-(hitting|pitching))?$/);
+    const mlbTeamMatch    = hash.match(/^mlb-team-(\d+)$/);
+    const mlbCompareMatch = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -525,15 +567,15 @@ function _loadFromHash() {
         _restoreTeamGameDetail(parseInt(teamGameMatch[1]), parseInt(teamGameMatch[2]));
     } else if (teamMatch) {
         _restoreTeamDetail(parseInt(teamMatch[1]));
+    } else if (mlbCompareMatch) {
+        _restoreMLBComparison(mlbCompareMatch[1], parseInt(mlbCompareMatch[2]), parseInt(mlbCompareMatch[3]));
     } else if (mlbPlayerMatch) {
-        AppState.currentSport = 'mlb';
-        _applySportUI('mlb');
-        showMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), 'hitting');
+        _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
-        const knownPrefixes = ['player-', 'team-', 'mlb-player-'];
+        const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-'];
         if (knownPrefixes.some(p => hash.startsWith(p))) {
             Logger.warn(`Unrecognised hash: #${hash} — falling back to home`, undefined, 'NAV');
             ErrorHandler.toast(`Link not found (#${hash}) — showing home view.`, 'warn', { duration: 4000 });

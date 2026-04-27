@@ -965,7 +965,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
     if (window.setBreadcrumb) setBreadcrumb('mlb-players', player.fullName);
 
-    history.pushState({ view: 'mlb-player', id: playerId, group }, '', `#mlb-player-${playerId}`);
+    history.pushState({ view: 'mlb-player', id: playerId, group }, '', `#mlb-player-${playerId}-${group}`);
 
     const headshotUrl = getMLBPlayerHeadshotUrl(playerId);
     const headshotImg = headshotUrl
@@ -3374,6 +3374,12 @@ function _mlbCompareCard(currentPlayer, group) {
                 </select>
             </div>
             <div id="mlb-cmp-wrap" style="display:none;margin-top:1rem">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem">
+                    <button class="share-btn" id="mlb-cmp-share-btn" style="display:none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        Share Comparison
+                    </button>
+                </div>
                 <div style="position:relative;height:280px"><canvas id="mlb-cmp-radar"></canvas></div>
                 <div id="mlb-cmp-table" class="compare-table-wrap"></div>
             </div>
@@ -3390,7 +3396,12 @@ function _onMLBCompareChange(playerA, statsA, group, colorsA) {
     const idB = parseInt(selB.value) || null;
     const idC = parseInt(selC?.value) || null;
 
-    if (!idB) { wrap.style.display = 'none'; return; }
+    if (!idB) {
+        wrap.style.display = 'none';
+        const sb = document.getElementById('mlb-cmp-share-btn');
+        if (sb) sb.style.display = 'none';
+        return;
+    }
 
     const playerB  = (AppState.mlbPlayers?.[group] || []).find(p => p.id === idB);
     const statsB   = AppState.mlbPlayerStats?.[group]?.[idB];
@@ -3400,6 +3411,21 @@ function _onMLBCompareChange(playerA, statsA, group, colorsA) {
     if (!playerB || !statsB) { wrap.style.display = 'none'; return; }
 
     wrap.style.display = 'block';
+
+    const shareBtn = document.getElementById('mlb-cmp-share-btn');
+    if (shareBtn) {
+        shareBtn.style.display = '';
+        const cmpUrl = `${window.location.href.split('#')[0]}#mlb-compare-${group}-${playerA.id}-${idB}`;
+        shareBtn.onclick = () => {
+            if (navigator.share) {
+                navigator.share({ url: cmpUrl, title: `${playerA.fullName} vs ${playerB.fullName}` }).catch(() => {});
+            } else {
+                navigator.clipboard?.writeText(cmpUrl).then(() => {
+                    ErrorHandler.toast('Comparison link copied', 'success');
+                }).catch(() => {});
+            }
+        };
+    }
 
     const colorsB = getMLBTeamColors(playerB.teamAbbr);
     const colorsC = playerC ? getMLBTeamColors(playerC.teamAbbr) : null;
