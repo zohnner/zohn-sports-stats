@@ -24,7 +24,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <!-- Design tokens first so all stylesheets can reference variables -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/animations.css">
@@ -38,7 +38,8 @@
     <header>
         <div class="header-inner">
             <button class="brand" onclick="navigateTo('home')" aria-label="SportsStrata home">
-                <span class="brand-icon" id="brandIcon">⚾</span>
+                <img class="brand-logo-img" src="assets/Icon.PNG" alt="SportsStrata">
+                <span id="brandIcon" hidden></span>
                 <div class="brand-text">
                     <span class="brand-name">SportsStrata</span>
                     <span class="brand-sub" id="brandSub">MLB Analytics</span>

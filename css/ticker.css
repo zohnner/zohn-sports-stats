@@ -90,6 +90,7 @@
     font-weight: 900;
     font-size: 0.85rem;
     color: var(--text-primary);
+    font-family: var(--font-mono);
     min-width: 1.4ch;
     text-align: center;
 }

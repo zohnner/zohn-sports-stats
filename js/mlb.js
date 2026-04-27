@@ -7,6 +7,33 @@ let MLB_SEASON = new Date().getMonth() >= 2 && new Date().getMonth() <= 9  // Ma
     ? new Date().getFullYear()
     : new Date().getFullYear() - 1;   // Nov–Feb = previous completed season
 
+// ── MLB Favorites (starred players) ──────────────────────────
+const _MLB_FAVS_KEY = 'zs_mlb_favs';
+// Initialise from localStorage into AppState (AppState is defined later in navigation.js,
+// so we defer the Set population to _initMLBFavs() called at the end of this file).
+function _initMLBFavs() {
+    try {
+        const ids = JSON.parse(localStorage.getItem(_MLB_FAVS_KEY) || '[]');
+        AppState.mlbFavorites = new Set(ids.map(Number));
+    } catch (_) { AppState.mlbFavorites = new Set(); }
+}
+function _toggleMLBFav(playerId) {
+    if (!AppState.mlbFavorites) AppState.mlbFavorites = new Set();
+    if (AppState.mlbFavorites.has(playerId)) {
+        AppState.mlbFavorites.delete(playerId);
+    } else {
+        AppState.mlbFavorites.add(playerId);
+    }
+    try { localStorage.setItem(_MLB_FAVS_KEY, JSON.stringify([...AppState.mlbFavorites])); } catch (_) {}
+    // Re-render star button(s) in the DOM without re-building the whole card
+    document.querySelectorAll(`.mlb-fav-btn[data-player-id="${playerId}"]`).forEach(btn => {
+        const isNow = AppState.mlbFavorites.has(playerId);
+        btn.classList.toggle('mlb-fav-btn--active', isNow);
+        btn.title = isNow ? 'Remove from starred' : 'Star player';
+        btn.setAttribute('aria-label', isNow ? 'Remove from starred' : 'Star player');
+    });
+}
+
 // ── Team colours ─────────────────────────────────────────────
 // Keys use the abbreviation returned by the MLB Stats API.
 // Alternate spellings (BBREF/Fangraphs style) are aliased below the main table.
@@ -740,10 +767,17 @@ function _createMLBPlayerCard(player, stats, group, rank) {
     const rankBadge  = rank != null
         ? `<span class="player-rank-badge ${rank <= 10 ? 'player-rank-badge--top' : ''}">#${rank} ${rankLabel}</span>`
         : '';
+    const isFav  = AppState.mlbFavorites?.has(player.id) ?? false;
+    const favBtn = `<button class="mlb-fav-btn ${isFav ? 'mlb-fav-btn--active' : ''}"
+        data-player-id="${player.id}"
+        title="${isFav ? 'Remove from starred' : 'Star player'}"
+        aria-label="${isFav ? 'Remove from starred' : 'Star player'}"
+        onclick="event.stopPropagation();_toggleMLBFav(${player.id})">♥</button>`;
 
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
+            ${favBtn}
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
                 ${headshotUrl ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
@@ -768,6 +802,9 @@ function _computeBattingRates(s) {
     const hr  = parseFloat(s.homeRuns)         || 0;
     const so  = parseFloat(s.strikeOuts)       || 0;
     const bb  = parseFloat(s.baseOnBalls)      || 0;
+    const tb  = parseFloat(s.totalBases)       || 0;
+    const sb  = parseFloat(s.stolenBases)      || 0;
+    const cs  = parseFloat(s.caughtStealing)   || 0;
     const slg = parseFloat(s.slg);
     const avg = parseFloat(s.avg);
 
@@ -777,8 +814,12 @@ function _computeBattingRates(s) {
         : null;
     const bbPct = pa > 0 ? (bb / pa * 100).toFixed(1) : null;
     const kPct  = pa > 0 ? (so / pa * 100).toFixed(1) : null;
+    // Bill James Runs Created: (H + BB) × TB ÷ (AB + BB)
+    const rc    = (ab + bb) > 0 ? String(Math.round((hits + bb) * tb / (ab + bb))) : null;
+    // Stolen base efficiency
+    const sbPct = (sb + cs) > 0 ? (sb / (sb + cs) * 100).toFixed(1) : null;
 
-    return { iso, babip, bbPct, kPct, pa: pa || null };
+    return { iso, babip, bbPct, kPct, pa: pa || null, rc, sbPct };
 }
 
 function _computePitchingRates(s) {
@@ -788,6 +829,8 @@ function _computePitchingRates(s) {
     const bb  = parseFloat(s.baseOnBalls)     || 0;
     const hr  = parseFloat(s.homeRuns)        || 0;
     const hbp = parseFloat(s.hitBatsmen)      || 0;
+    const h   = parseFloat(s.hits)            || 0;
+    const r   = parseFloat(s.runs)            || 0;
 
     const fip = ip > 0
         ? ((13 * hr + 3 * (bb + hbp) - 2 * so) / ip + 3.10).toFixed(2)
@@ -795,8 +838,13 @@ function _computePitchingRates(s) {
     const kBbPct = bf > 0
         ? (((so - bb) / bf) * 100).toFixed(1)
         : null;
+    // FanGraphs LOB%: (H + BB + HBP − R) ÷ (H + BB + HBP − 1.4 × HR) × 100
+    const lobDenom = h + bb + hbp - 1.4 * hr;
+    const lobPct = lobDenom > 0
+        ? Math.min(100, (h + bb + hbp - r) / lobDenom * 100).toFixed(1)
+        : null;
 
-    return { fip, kBbPct };
+    return { fip, kBbPct, lobPct };
 }
 
 // ── MLB formatting helpers ────────────────────────────────────
@@ -837,7 +885,11 @@ function _mlbHittingBars(stats, rates = {}) {
         _mlbStatBar('BABIP',             rates.babip,       0.400,  '#fb923c', v => v),
         _mlbStatBar('Home Runs',         stats.homeRuns,    60,     '#ef4444', v => v),
         _mlbStatBar('RBI',               stats.rbi,         140,    '#f59e0b', v => v),
+        _mlbStatBar('Total Bases',       stats.totalBases,  350,    '#fb923c', v => v),
+        _mlbStatBar('Runs Created',      rates.rc,          150,    '#f59e0b', v => v),
+        _mlbStatBar('Triples',           stats.triples,     20,     '#a3e635', v => v),
         _mlbStatBar('Stolen Bases',      stats.stolenBases, 70,     '#10b981', v => v),
+        _mlbStatBar('SB%',               rates.sbPct,       100,    '#10b981', v => `${v}%`),
     ].filter(Boolean).join('');
 }
 
@@ -870,10 +922,14 @@ function _mlbPitchingBars(stats) {
     return [
         eraBar,
         whipBar,
-        _mlbStatBar('K/9',         stats.strikeoutsPer9Inn, 15,  '#fb923c', v => parseFloat(v).toFixed(1)),
-        _mlbStatBar('Strikeouts',  stats.strikeOuts,    300, '#818cf8', v => v),
-        _mlbStatBar('Wins',        stats.wins,          25,  '#34d399', v => v),
-        _mlbStatBar('Saves',       stats.saves,         45,  '#fbbf24', v => v),
+        _mlbStatBar('K/9',         stats.strikeoutsPer9Inn,     15,  '#fb923c', v => parseFloat(v).toFixed(1)),
+        _mlbStatBar('BB/9',        stats.walksPer9Inn,          10,  '#fcd34d', v => parseFloat(v).toFixed(2)),
+        _mlbStatBar('H/9',         stats.hitsPer9Inn,           12,  '#38bdf8', v => parseFloat(v).toFixed(2)),
+        _mlbStatBar('HR/9',        stats.homeRunsPer9,           3,  '#fca5a5', v => parseFloat(v).toFixed(2)),
+        _mlbStatBar('K/BB',        stats.strikeoutWalkRatio,    10,  '#c084fc', v => parseFloat(v).toFixed(2)),
+        _mlbStatBar('Strikeouts',  stats.strikeOuts,           300,  '#818cf8', v => v),
+        _mlbStatBar('Wins',        stats.wins,                  25,  '#34d399', v => v),
+        _mlbStatBar('Saves',       stats.saves,                 45,  '#fbbf24', v => v),
     ].filter(Boolean).join('');
 }
 
@@ -2583,11 +2639,21 @@ const MLB_LEADER_CATS = [
     { key: 'stolenBases',        label: 'Stolen Bases',    unit: 'SB',    color: '#10b981', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'bbPct',              label: 'Walk Rate',       unit: 'BB%',   color: '#5eead4', group: 'hitting',  desc: true,  decimals: 1 },
     { key: 'kPct',               label: 'Strikeout Rate',  unit: 'K%',    color: '#f87171', group: 'hitting',  desc: false, decimals: 1 },
+    { key: 'totalBases',         label: 'Total Bases',     unit: 'TB',    color: '#fb923c', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'triples',            label: 'Triples',         unit: '3B',    color: '#a3e635', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'groundIntoDoublePlay',label:'Grounded Into DP',unit: 'GIDP',  color: '#94a3b8', group: 'hitting',  desc: false, decimals: 0 },
+    { key: 'rc',                 label: 'Runs Created',    unit: 'RC',    color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'sbPct',              label: 'Stolen Base %',   unit: 'SB%',   color: '#10b981', group: 'hitting',  desc: true,  decimals: 1 },
     { key: 'era',                label: 'ERA',             unit: 'ERA',   color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
     { key: 'whip',               label: 'WHIP',            unit: 'WHIP',  color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
     { key: 'fip',                label: 'FIP',             unit: 'FIP',   color: '#e879f9', group: 'pitching', desc: false, decimals: 2 },
     { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',   color: '#fb923c', group: 'pitching', desc: true,  decimals: 1 },
     { key: 'kBbPct',             label: 'K-BB%',           unit: 'K-BB%', color: '#a3e635', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'walksPer9Inn',       label: 'Walks per 9',     unit: 'BB/9',  color: '#fcd34d', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'hitsPer9Inn',        label: 'Hits per 9',      unit: 'H/9',   color: '#38bdf8', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'homeRunsPer9',       label: 'HR per 9',        unit: 'HR/9',  color: '#fca5a5', group: 'pitching', desc: false, decimals: 2 },
+    { key: 'strikeoutWalkRatio', label: 'K/BB Ratio',      unit: 'K/BB',  color: '#c084fc', group: 'pitching', desc: true,  decimals: 2 },
+    { key: 'lobPct',             label: 'Left on Base %',  unit: 'LOB%',  color: '#67e8f9', group: 'pitching', desc: true,  decimals: 1 },
     { key: 'strikeOuts',         label: 'Strikeouts',      unit: 'K',     color: '#c084fc', group: 'pitching', desc: true,  decimals: 0 },
     { key: 'wins',               label: 'Wins',            unit: 'W',     color: '#38bdf8', group: 'pitching', desc: true,  decimals: 0 },
     { key: 'qualityStarts',      label: 'Quality Starts',  unit: 'QS',    color: '#4ade80', group: 'pitching', desc: true,  decimals: 0 },
@@ -3778,7 +3844,6 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
 
 // ── State initialisation (runs immediately on script load) ────
 Object.assign(AppState, {
-    currentSport:          'nba',
     mlbTeams:              [],
     mlbPlayers:            { hitting: [], pitching: [] },
     mlbPlayerStats:        { hitting: {}, pitching: {} },
@@ -3825,4 +3890,8 @@ if (typeof window !== 'undefined') {
     window.displayGamePrep         = displayGamePrep;
     window._openGamePrepSheet      = _openGamePrepSheet;
     window._downloadMLBCard        = _downloadMLBCard;
+    window._toggleMLBFav           = _toggleMLBFav;
 }
+
+// Init MLB favorites after AppState is available (mlb.js loads after navigation.js)
+_initMLBFavs();

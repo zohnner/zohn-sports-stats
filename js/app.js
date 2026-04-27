@@ -198,6 +198,7 @@ function loadHome() {
         </div>
 
         <div class="home-recents" id="homeRecents"></div>
+        <div class="home-starred" id="homeStarred"></div>
         <div class="home-on-this-day" id="homeOnThisDay" style="display:none"></div>
 
         <!-- Feature strip — each card navigates to its tool -->
@@ -234,6 +235,7 @@ function loadHome() {
     `;
 
     _renderHomeRecents();
+    _renderHomeStarred();
     _loadOnThisDay();
     _loadHomeTodayGames();
 }
@@ -267,6 +269,44 @@ function _renderHomeRecents() {
             const type = chip.dataset.type;
             if (type === 'player' && typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(id);
             else if (type === 'team' && typeof showMLBTeamDetail === 'function') showMLBTeamDetail(id);
+        });
+    });
+}
+
+function _renderHomeStarred() {
+    const el = document.getElementById('homeStarred');
+    if (!el) return;
+    const favIds = AppState.mlbFavorites;
+    if (!favIds || favIds.size === 0) { el.innerHTML = ''; return; }
+
+    const chips = [...favIds].map(id => {
+        const player = [...(AppState.mlbPlayers?.hitting || []), ...(AppState.mlbPlayers?.pitching || [])]
+            .find(p => p.id === id);
+        if (!player) return null;
+        const hitSt = AppState.mlbPlayerStats?.hitting?.[id];
+        const pitSt = AppState.mlbPlayerStats?.pitching?.[id];
+        const stat  = hitSt?.avg ? `AVG ${hitSt.avg}` : pitSt?.era ? `ERA ${pitSt.era}` : '';
+        return `
+            <button class="home-recent-chip" data-id="${id}">
+                <span class="home-recent-badge home-recent-badge--mlb">♥</span>
+                <span class="home-recent-name">${_escHtml(player.fullName)}</span>
+                <span class="home-recent-sub">${_escHtml(player.teamAbbr || '')}${stat ? ' · ' + stat : ''}</span>
+            </button>`;
+    }).filter(Boolean);
+
+    if (!chips.length) { el.innerHTML = ''; return; }
+
+    el.innerHTML = `
+        <div class="home-section-hdr">
+            <span class="home-section-title">Starred Players</span>
+        </div>
+        <div class="home-recents-grid">${chips.join('')}</div>
+    `;
+
+    el.querySelectorAll('.home-recent-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const id = parseInt(chip.dataset.id, 10);
+            if (typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(id);
         });
     });
 }

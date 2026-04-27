@@ -6,15 +6,15 @@
 
 ---
 
-## Current State
+## Current State (as of 2026-04-27)
 
-The MLB section currently pulls from two endpoints:
+Both stat groups fully fetched and augmented with computed rates. All Phase 1 and 2 stats are live in leaderboards and player detail.
 
 | Endpoint | What we use |
 |---|---|
-| `/stats?stats=season&group=hitting` | BA, HR, RBI, R, H, 2B, 3B, SB |
-| `/stats?stats=season&group=pitching` | ERA, W, L, SO, BB, IP |
-| `/schedule` | Game scores, status, inning indicator |
+| `/stats?stats=season&group=hitting` | AVG, OBP, SLG, OPS, HR, RBI, R, H, 2B, 3B, SB, BB, TB, GIDP + computed ISO, BABIP, BB%, K%, RC, SB% |
+| `/stats?stats=season&group=pitching` | ERA, WHIP, W, SO, BB, IP, SV, HLD, BSV, QS, K/9, BB/9, H/9, HR/9, K/BB + computed FIP, K-BB%, LOB% |
+| `/schedule` | Game scores, status, inning indicator, pitcher matchups |
 
 ---
 

@@ -537,7 +537,7 @@ function _loadFromHash() {
         if (knownPrefixes.some(p => hash.startsWith(p))) {
             Logger.warn(`Unrecognised hash: #${hash} — falling back to home`, undefined, 'NAV');
             ErrorHandler.toast(`Link not found (#${hash}) — showing home view.`, 'warn', { duration: 4000 });
-            navigateTo('players', false);
+            navigateTo('home', false);
             return;
         }
 

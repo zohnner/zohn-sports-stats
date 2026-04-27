@@ -27,13 +27,38 @@ body::before {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(ellipse 70% 50% at 15% 15%, rgba(124,141,240,0.13) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 70% at 85% 85%, rgba(118,75,162,0.10) 0%, transparent 65%);
+        radial-gradient(ellipse 70% 50% at 15% 15%, rgba(255,129,0,0.08) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 70% at 85% 85%, rgba(255,60,0,0.06) 0%, transparent 65%);
     pointer-events: none;
     z-index: 0;
 }
 
 body > * { position: relative; z-index: 1; }
+
+/* Subtle scanline texture — "war room" aesthetic */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(255,255,255,0.016) 3px,
+        rgba(255,255,255,0.016) 4px
+    );
+    pointer-events: none;
+    z-index: 500;
+}
+[data-theme="light"] body::after {
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.012) 3px,
+        rgba(0,0,0,0.012) 4px
+    );
+}
 
 /* ── Header ───────────────────────────────────────────────── */
 header {
@@ -79,7 +104,15 @@ header {
     border-radius: var(--radius-sm);
 }
 
-.brand-icon { font-size: 1.75rem; line-height: 1; }
+.brand-icon { display: none; }
+
+.brand-logo-img {
+    height: 40px;
+    width: 40px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+    flex-shrink: 0;
+}
 
 .brand-text {
     display: flex;
@@ -90,7 +123,7 @@ header {
 .brand-name {
     font-size: var(--text-xl);
     font-weight: 900;
-    background: linear-gradient(135deg, var(--accent-light) 0%, #c084fc 100%);
+    background: linear-gradient(135deg, #ffd200 0%, #ff8100 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -857,7 +890,7 @@ main {
 .lb-player { flex: 1; min-width: 0; }
 .lb-name   { display: block; font-weight: 700; color: var(--text-primary); font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-team   { font-size: 0.72rem; color: var(--text-subtle); font-weight: 600; margin-top: 1px; }
-.lb-value  { font-size: 1rem; font-weight: 900; flex-shrink: 0; }
+.lb-value  { font-size: 1rem; font-weight: 900; flex-shrink: 0; font-family: var(--font-mono); }
 
 /* ── Games Grid ───────────────────────────────────────────── */
 .games-grid {
@@ -1227,7 +1260,8 @@ main {
 }
 
 /* Recently viewed section */
-.home-recents { margin-bottom: 1.75rem; }
+.home-recents,
+.home-starred { margin-bottom: 1.75rem; }
 
 .home-recents-grid {
     display: flex;
@@ -1411,7 +1445,7 @@ main {
     font-size: 1rem;
     font-weight: 800;
     color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
     min-width: 1.6ch;
     text-align: right;
 }
@@ -1673,6 +1707,7 @@ main {
     font-weight: 900;
     margin-bottom: 0.4rem;
     line-height: 1;
+    font-family: var(--font-mono);
 }
 
 .stat-label {
