@@ -2635,6 +2635,53 @@
 .prep-hitter-iso { color: var(--text-muted); }
 .prep-no-hitters { font-size: 0.75rem; color: var(--text-muted); text-align: center; padding: 0.75rem 0; font-style: italic; }
 
+/* Park factor badge — inline next to player name in Prep sheet */
+.prep-park-badge {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs);
+    margin-left: 0.35rem;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+    cursor: help;
+}
+.prep-park-badge--hit {
+    background: rgba(16, 185, 129, 0.14);
+    color: var(--color-win);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.prep-park-badge--pit {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--color-loss);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Sparkline widget — inline in stats card header */
+.detail-section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+.detail-section-hdr .detail-section-title { margin-bottom: 0; }
+
+.sparkline-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: help;
+}
+.sparkline-lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
 @media (max-width: 680px) {
     .prep-matchup-hdr { grid-template-columns: 1fr; text-align: center; gap: 0.5rem; }
     .prep-mh-team { justify-content: center; border: none !important; padding: 0; }

@@ -88,6 +88,41 @@ const _MLB_ABBR_ALIASES = {
     'AZ':  'ARI',  // Arizona Diamondbacks (ESPN abbr)
 };
 
+// ── Park factors by home team ID (2024 run-scoring environment) ─
+// 1.00 = league avg; >1.05 hitter-friendly; <0.95 pitcher-friendly
+const _PARK_FACTORS = {
+    115: 1.15, // Rockies — Coors Field
+    113: 1.08, // Reds — Great American Ball Park
+    109: 1.07, // D-backs — Chase Field
+    146: 1.06, // Marlins — loanDepot park
+    147: 1.05, // Yankees — Yankee Stadium
+    143: 1.05, // Phillies — Citizens Bank Park
+    111: 1.04, // Red Sox — Fenway Park
+    112: 1.03, // Cubs — Wrigley Field
+    121: 1.02, // Mets — Citi Field
+    145: 1.01, // White Sox — Guaranteed Rate Field
+    134: 1.00, // Pirates — PNC Park
+    118: 0.99, // Royals — Kauffman Stadium
+    144: 0.99, // Braves — Truist Park
+    108: 0.98, // Angels — Angel Stadium
+    133: 0.97, // Athletics — Sutter Health Park
+    137: 0.97, // Giants — Oracle Park
+    117: 0.97, // Astros — Minute Maid Park
+    116: 0.97, // Tigers — Comerica Park
+    138: 0.96, // Cardinals — Busch Stadium
+    142: 0.96, // Twins — Target Field
+    135: 0.95, // Padres — Petco Park
+    120: 0.95, // Nationals — Nationals Park
+    141: 0.95, // Blue Jays — Rogers Centre
+    110: 0.95, // Orioles — Camden Yards
+    119: 0.94, // Dodgers — Dodger Stadium
+    140: 0.94, // Rangers — Globe Life Field
+    114: 0.93, // Guardians — Progressive Field
+    139: 0.93, // Rays — Tropicana Field
+    136: 0.92, // Mariners — T-Mobile Park
+    158: 0.91, // Brewers — American Family Field
+};
+
 // ── Stadium weather lookup (Open-Meteo, keyed by MLB team ID) ─
 // dome: true → show "Dome" instead of fetching weather
 const _MLB_STADIUMS = {
@@ -1170,7 +1205,10 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         </div>
 
         <div class="stats-card">
-            <h2 class="detail-section-title">${MLB_SEASON} ${group === 'hitting' ? 'Batting' : 'Pitching'} Stats</h2>
+            <div class="detail-section-hdr">
+                <h2 class="detail-section-title">${MLB_SEASON} ${group === 'hitting' ? 'Batting' : 'Pitching'} Stats</h2>
+                <div id="mlb-sparkline-row"></div>
+            </div>
             <div class="stats-grid">${statsGrid}</div>
         </div>
 
@@ -1279,6 +1317,23 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             if (startsCard) {
                 const html = _renderLastNStarts(logs, colors.primary);
                 startsCard.innerHTML = html || '';
+            }
+        }
+
+        // Sparkline — last 7 entries shown inline in the stats card header
+        const sparkEl = document.getElementById('mlb-sparkline-row');
+        if (sparkEl && logs.length >= 2) {
+            const last7 = logs.slice(-7);
+            const vals = group === 'hitting'
+                ? last7.map(g => parseFloat(g.avg) || 0)
+                : last7.map(g => {
+                    const ip = parseFloat(g.inningsPitched || 0);
+                    return ip > 0 ? Math.min((g.earnedRuns / ip) * 9, 20) : 0;
+                });
+            const stat = group === 'hitting' ? 'AVG' : 'ERA';
+            const svg  = _buildSparklineSVG(vals);
+            if (svg) {
+                sparkEl.innerHTML = `<div class="sparkline-widget" title="Last ${last7.length} games — ${stat} trend">${svg}<span class="sparkline-lbl">L${last7.length} ${stat}</span></div>`;
             }
         }
 
@@ -1713,6 +1768,29 @@ async function _fetchMLBGameLog(playerId, group) {
         if (group === 'hitting') return (e.atBats ?? 0) > 0;
         return parseFloat(e.inningsPitched || 0) > 0;
     });
+}
+
+function _buildSparklineSVG(values) {
+    const W = 60, H = 24, PAD = 2;
+    if (!values || values.length < 2) return '';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const pts = values.map((v, i) => {
+        const x = (i / (values.length - 1)) * W;
+        const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const first = values[0], last = values[values.length - 1];
+    const trend = (last - first) / (Math.abs(max - min) + 0.001);
+    const col = trend > 0.1 ? 'var(--color-win)' : trend < -0.1 ? 'var(--color-loss)' : 'var(--text-muted)';
+    const [lx, ly] = pts[pts.length - 1].split(',');
+    const [fx]     = pts[0].split(',');
+    const area = `M ${pts.join(' L ')} L ${lx},${H} L ${fx},${H} Z`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true" style="overflow:visible;display:block">
+        <path d="${area}" fill="${col}" opacity="0.14"/>
+        <polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
 }
 
 function _renderLastNStarts(logs, primaryColor) {
@@ -3836,6 +3914,14 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
         `;
     };
 
+    // Park factor badge for the home venue
+    const pf = _PARK_FACTORS[homeTeamId];
+    const pfBadge = pf > 1.05
+        ? `<span class="prep-park-badge prep-park-badge--hit" title="Hitter-friendly park (PF ${pf.toFixed(2)})">🏟 +</span>`
+        : pf < 0.95
+        ? `<span class="prep-park-badge prep-park-badge--pit" title="Pitcher-friendly park (PF ${pf.toFixed(2)})">🏟 −</span>`
+        : '';
+
     const _keyHitters = (splits) => {
         const top = (splits || [])
             .filter(s => s.player?.id && parseFloat(s.stat?.ops || 0) > 0 && (s.stat?.atBats || 0) >= 20)
@@ -3854,7 +3940,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                 <div class="prep-hitter-row" onclick="showMLBPlayerDetail(${p.id},'hitting')" role="button" tabindex="0">
                     ${img}
                     <div class="prep-hitter-info">
-                        <span class="prep-hitter-name">${_escHtml(p.fullName || '—')}</span>
+                        <span class="prep-hitter-name">${_escHtml(p.fullName || '—')}${pfBadge}</span>
                         <span class="prep-hitter-pos">${_escHtml(pos?.abbreviation || '')}</span>
                     </div>
                     <div class="prep-hitter-stats">
