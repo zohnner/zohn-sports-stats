@@ -10,7 +10,7 @@
 // ============================================================
 const BDL_API_KEY  = '857bec7d-aada-496f-abb1-79b16926fb37';
 const BDL_PROXY_URL       = ''; // Set to Worker URL in production to hide API key
-const BROADCAST_BLURB_URL = ''; // Set to broadcast-blurb Worker URL to enable AI blurbs
+const BROADCAST_BLURB_URL = 'https://sportsstrata-blurb.zohnwheeler.workers.dev'; // broadcast-blurb Worker
 
 const BDL_BASE_URL = BDL_PROXY_URL ? `${BDL_PROXY_URL}/bdl` : 'https://api.balldontlie.io/v1';
 let CURRENT_SEASON = 2025; // BDL uses the year the season starts — mutable via season selector
