@@ -24,7 +24,7 @@ Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts s
 
 ## Global State
 
-`AppState` in `navigation.js` holds all runtime state. Key fields:
+`AppState` in `api.js` holds all runtime state. Key fields:
 
 ```js
 AppState.currentSport   // 'nba' | 'mlb' | 'nfl' | 'nhl'  (default: 'mlb')
@@ -60,7 +60,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/config.js` | Shared utilities: `_escHtml()`, `_normName()` + NBA team colors, `getTeamColors()`, `getNBATeamLogoUrl()` |
 | `js/mlb.js` | All MLB logic: team colors/logos, API calls, all MLB view renderers, `MLB_SEASON`, `MLB_LEADER_CATS`, `_computeBattingRates`, `_computePitchingRates` |
 | `js/api.js` | BDL API + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. **⚠ BDL_API_KEY hardcoded — see P1-006 below** |
-| `js/navigation.js` | `AppState`, `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |
+| `js/navigation.js` | `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |
 | `js/app.js` | Bootstrap: ticker, season selector, cache-bust on season change, `setupNavigation()`, `loadHome()` (landing page) |
 | `js/cache.js` | `ApiCache` — localStorage cache with TTL buckets (SHORT 5m, MEDIUM 30m, LONG 60m) |
 | `js/players.js` | NBA player list/cards; `loadStatsForPlayers()` uses `fetchNBAStatsMap` |

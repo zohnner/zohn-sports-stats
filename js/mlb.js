@@ -818,7 +818,7 @@ function displayMLBPlayersTable(group) {
                                 <span>${inits}</span>
                             </div>
                             <div>
-                                <div class="tbl-player-name">${player.fullName}</div>
+                                <div class="tbl-player-name">${_escHtml(player.fullName)}</div>
                                 <div class="tbl-player-pos">${player.position || ''}</div>
                             </div>
                         </div>
@@ -913,7 +913,7 @@ function _createMLBPlayerCard(player, stats, group, rank) {
                 ${headshotUrl ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
             </div>
-            <div class="player-name">${player.fullName}</div>
+            <div class="player-name">${_escHtml(player.fullName)}</div>
             <div class="player-team">${player.teamAbbr ? player.teamAbbr + ' · ' : ''}${player.position || 'N/A'}</div>
         </div>
         <div class="player-details">${statsHtml}</div>
@@ -1100,7 +1100,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
 
     const headshotUrl = getMLBPlayerHeadshotUrl(playerId);
     const headshotImg = headshotUrl
-        ? `<img class="player-headshot player-headshot--detail" src="${headshotUrl}" alt="${player.fullName}" loading="lazy" data-hide-on-error>`
+        ? `<img class="player-headshot player-headshot--detail" src="${headshotUrl}" alt="${_escHtml(player.fullName)}" loading="lazy" data-hide-on-error>`
         : '';
     // Computed rate stats (Phase 2 — derived from existing API fields)
     const batting  = group === 'hitting'  ? _computeBattingRates(stats)  : null;
@@ -1170,6 +1170,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                         Share
                     </button>
+                    <button class="share-btn" onclick="_triggerBroadcastBlurb(${playerId},'${group}')" title="Generate AI broadcast blurb (requires Blurb Worker)">📢 Blurb</button>
                 </div>
             </div>
             <div class="player-hero">
@@ -1181,7 +1182,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
-                        <h1 class="player-detail-name">${player.fullName}</h1>
+                        <h1 class="player-detail-name">${_escHtml(player.fullName)}</h1>
                         <span class="player-hero-pos">${player.position || 'N/A'}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.2rem">
@@ -1193,9 +1194,12 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                     <p class="player-detail-meta" style="color:var(--color-text-muted)">
                         ${MLB_SEASON} MLB Season · ${group === 'hitting' ? 'Batting' : 'Pitching'}
                     </p>
+                    <div id="mlb-analytics-badge"></div>
                 </div>
             </div>
         </div>
+
+        <div class="stats-card" id="mlb-blurb-card" style="display:none"></div>
 
         <div class="stats-card">
             <h2 class="detail-section-title">Stat Profile</h2>
@@ -1369,6 +1373,11 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             <h2 class="detail-section-title">⚡ Statcast <span class="statcast-badge">via Baseball Savant</span></h2>
             ${_renderStatcastCard(data, group)}
         `;
+        const badge   = _computeMLBAnalyticsBadge(stats, data, group);
+        const badgeEl = document.getElementById('mlb-analytics-badge');
+        if (badgeEl) badgeEl.innerHTML = badge
+            ? `<span class="analytics-badge ${badge.cls}" title="${_escHtml(badge.desc)}">${badge.label}</span>`
+            : '';
     }).catch(() => {
         const card = document.getElementById('mlb-statcast-card');
         if (card) card.innerHTML = '';
@@ -2166,7 +2175,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
     const linescoreHtml = `
         <div class="mlb-linescore-wrap">
             <div class="mlb-game-header">
-                <div class="mlb-gh-team ${awayWon ? 'mlb-gh-team--winner' : ''}" style="cursor:pointer" onclick="showMLBTeamDetail(${awayTeam.id})">
+                <div class="mlb-gh-team ${awayWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${awayTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
                     <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}44)">
                         ${awayLogo ? `<img src="${awayLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${awayAbbr}</span>
@@ -2179,7 +2188,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
                     <span class="mlb-gh-sep">–</span>
                     <span class="${homeWon ? 'mlb-gh-score-val--win' : ''}">${homeScore}</span>
                 </div>
-                <div class="mlb-gh-team ${homeWon ? 'mlb-gh-team--winner' : ''}" style="cursor:pointer;text-align:right" onclick="showMLBTeamDetail(${homeTeam.id})">
+                <div class="mlb-gh-team ${homeWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer;text-align:right" onclick="showMLBTeamDetail(${homeTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
                     <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}44)">
                         ${homeLogo ? `<img src="${homeLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${homeAbbr}</span>
@@ -2228,13 +2237,13 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
             const s = p.stats?.batting;
             if (!s) return null;
             const pos = p.position?.abbreviation || '';
-            return { name: p.person?.fullName || '—', id, pos, s };
+            return { name: _escHtml(p.person?.fullName || '—'), id, pos, s };
         }).filter(Boolean);
 
         if (!batters.length) return '';
         const teamLabel = sideKey === 'home' ? homeAbbr : awayAbbr;
         const rows = batters.map(({ name, id, pos, s }) => `
-            <tr class="mlb-box-row" style="cursor:pointer" onclick="showMLBPlayerDetail(${id}, 'hitting')">
+            <tr class="mlb-box-row" tabindex="0" style="cursor:pointer" onclick="showMLBPlayerDetail(${id}, 'hitting')" onkeydown="if(event.key==='Enter')this.click()">
                 <td class="mlb-box-name"><span class="mlb-box-pos">${pos}</span>${name}</td>
                 <td>${s.atBats ?? '—'}</td>
                 <td>${s.runs ?? '—'}</td>
@@ -2275,13 +2284,13 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
             if (!p) return null;
             const s = p.stats?.pitching;
             if (!s || parseFloat(s.inningsPitched ?? 0) === 0) return null;
-            return { name: p.person?.fullName || '—', id, s };
+            return { name: _escHtml(p.person?.fullName || '—'), id, s };
         }).filter(Boolean);
 
         if (!pitchers.length) return '';
         const teamLabel = sideKey === 'home' ? homeAbbr : awayAbbr;
         const rows = pitchers.map(({ name, id, s }) => `
-            <tr class="mlb-box-row" style="cursor:pointer" onclick="showMLBPlayerDetail(${id}, 'pitching')">
+            <tr class="mlb-box-row" tabindex="0" style="cursor:pointer" onclick="showMLBPlayerDetail(${id}, 'pitching')" onkeydown="if(event.key==='Enter')this.click()">
                 <td class="mlb-box-name">${name}</td>
                 <td>${s.inningsPitched ?? '—'}</td>
                 <td>${s.hits ?? '—'}</td>
@@ -2736,7 +2745,7 @@ function _mlbRosterCard(roster, colors) {
         // Link to player detail if stats were loaded for them
         const group     = isPitcher ? 'pitching' : 'hitting';
         const inPlayers = AppState.mlbPlayers[group]?.find(pl => pl.id === p.id);
-        const clickAttr = inPlayers ? `onclick="showMLBPlayerDetail(${p.id},'${group}')" style="cursor:pointer"` : '';
+        const clickAttr = inPlayers ? `role="button" tabindex="0" onclick="showMLBPlayerDetail(${p.id},'${group}')" onkeydown="if(event.key==='Enter')this.click()" style="cursor:pointer"` : '';
 
         return `
             <div class="roster-row" ${clickAttr}>
@@ -2745,7 +2754,7 @@ function _mlbRosterCard(roster, colors) {
                     <span style="position:relative">${initials}</span>
                 </div>
                 <div class="roster-info">
-                    <span class="roster-name">${p.fullName}</span>
+                    <span class="roster-name">${_escHtml(p.fullName)}</span>
                     <span class="roster-meta">${p.position || 'N/A'}${jersey ? ' · ' + jersey : ''}</span>
                 </div>
                 ${statsHtml}
@@ -3339,7 +3348,7 @@ function displayMLBStandings(divisions, league = 'AL') {
                 : '';
 
             return `
-                <tr class="standings-row ${rowCls}" style="cursor:pointer" onclick="showMLBTeamDetail(${team.teamId})">
+                <tr class="standings-row ${rowCls}" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${team.teamId})" onkeydown="if(event.key==='Enter')this.click()">
                     <td class="standings-rank">${rank}</td>
                     <td class="standings-team-cell">
                         ${logo ? `<img class="standings-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
@@ -3468,7 +3477,7 @@ function displayMLBPowerRankings(divisions) {
         const leagueCls = divShort.startsWith('AL') ? 'power-conf--east' : 'power-conf--west';
 
         return `
-            <div class="power-row power-row--mlb" style="cursor:pointer" onclick="showMLBTeamDetail(${team.teamId})">
+            <div class="power-row power-row--mlb" role="button" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${team.teamId})" onkeydown="if(event.key==='Enter')this.click()">
                 <div class="power-rank">${rank}</div>
                 ${logo ? `<img class="power-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>` : '<div class="power-logo"></div>'}
                 <div class="power-team">
@@ -3685,6 +3694,142 @@ function _standingsTeam(teamId) {
     }
     return null;
 }
+
+// ── Predictive Analytics badge (F3) ──────────────────────────
+
+function _computeMLBAnalyticsBadge(stats, statcast, group) {
+    if (!statcast) return null;
+
+    if (group === 'hitting') {
+        const babip     = parseFloat(stats.babip)              || 0;
+        const xbaPct    = statcast.p_xba            ?? null;
+        const evPct     = statcast.p_avg_hit_speed   ?? null;
+        const barrelPct = statcast.p_barrels_per_bbe ?? null;
+        const computed  = _computeBattingRates(stats);
+        const kPct      = parseFloat(computed.kPct)  || 0;
+        const bbPct     = parseFloat(computed.bbPct) || 0;
+
+        if (xbaPct === null && evPct === null) return null;
+
+        let breakout = 0, regress = 0;
+        if (babip < 0.275 && xbaPct >= 55)               breakout += 2;
+        if (evPct !== null && evPct >= 65)                breakout += 1;
+        if (barrelPct !== null && barrelPct >= 60)        breakout += 1;
+        if (kPct < 22 && bbPct >= 7)                     breakout += 1;
+
+        if (babip > 0.345 && xbaPct < 45)                regress  += 2;
+        if (evPct !== null && evPct < 40)                 regress  += 1;
+        if (barrelPct !== null && barrelPct < 35)         regress  += 1;
+        if (kPct > 27)                                    regress  += 1;
+
+        if (breakout >= 3) return { label: 'Breakout Candidate', desc: 'Contact quality outpacing results — expected stats point higher', cls: 'badge--breakout' };
+        if (regress  >= 3) return { label: 'Regression Risk',    desc: 'Results outpacing contact quality — expected stats point lower',  cls: 'badge--regress'  };
+        if (breakout >= 2 && regress <= 1) return { label: 'Buy Low',    desc: 'Underperforming expected metrics — potential upside',   cls: 'badge--buy'  };
+        if (regress  >= 2 && breakout <= 1) return { label: 'Sell High', desc: 'Overperforming expected metrics — potential downside', cls: 'badge--sell' };
+    } else {
+        const eraRaw  = parseFloat(stats.era)       || 0;
+        const xEraRaw = parseFloat(statcast.xera)   || 0;
+        const xEraPct = statcast.p_xera             ?? null;
+        const computed = _computePitchingRates(stats);
+        const kPct    = parseFloat(computed.kBbPct !== undefined ? 0 : 0) || 0;
+        const bbPct   = 0;
+        void kPct; void bbPct;
+
+        if (!xEraRaw || !eraRaw) return null;
+        const diff = eraRaw - xEraRaw;
+
+        let breakout = 0, regress = 0;
+        if (diff > 0.75 && (xEraPct ?? 50) >= 55)  breakout += 2;
+        if (parseFloat(stats.strikeoutsPer9Inn) > 9) breakout += 1;
+        if (parseFloat(stats.walksPer9Inn) < 2.5)   breakout += 1;
+
+        if (diff < -0.75 && (xEraPct ?? 50) < 45)  regress  += 2;
+        if (parseFloat(stats.walksPer9Inn) > 3.5)   regress  += 1;
+        if (parseFloat(stats.strikeoutsPer9Inn) < 6) regress += 1;
+
+        if (breakout >= 3) return { label: 'Breakout Candidate', desc: 'ERA running above xERA — underlying stuff points to improvement', cls: 'badge--breakout' };
+        if (regress  >= 3) return { label: 'Regression Risk',    desc: 'ERA running below xERA — results likely to reverse',             cls: 'badge--regress'  };
+        if (breakout >= 2 && regress <= 1) return { label: 'Buy Low',    desc: 'ERA overstating struggles — underlying metrics are solid',     cls: 'badge--buy'  };
+        if (regress  >= 2 && breakout <= 1) return { label: 'Sell High', desc: 'ERA understating risk — underlying metrics are concerning',   cls: 'badge--sell' };
+    }
+    return null;
+}
+
+// ── Broadcast Blurb (F1 — AI Stat Narratives) ────────────────
+
+async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
+    const blurbCard = document.getElementById('mlb-blurb-card');
+    if (!blurbCard) return;
+
+    if (!BROADCAST_BLURB_URL) {
+        blurbCard.style.display = '';
+        blurbCard.innerHTML = `
+            <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem">
+                Deploy <code>worker/broadcast-blurb.js</code> and set <code>BROADCAST_BLURB_URL</code> in <code>api.js</code> to enable AI blurbs.
+            </p>`;
+        return;
+    }
+
+    blurbCard.style.display = '';
+    blurbCard.innerHTML = `
+        <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+        <div>
+            <div class="skeleton-line" style="width:100%;height:18px;border-radius:6px"></div>
+            <div class="skeleton-line" style="width:88%;height:18px;border-radius:6px;margin-top:8px"></div>
+        </div>`;
+
+    const computed = group === 'hitting' ? _computeBattingRates(stats) : _computePitchingRates(stats);
+    const payload  = {
+        name: player.fullName, team: player.teamName || player.teamAbbr,
+        position: player.position, group, season: MLB_SEASON,
+        stats: group === 'hitting' ? {
+            avg: stats.avg, obp: stats.obp, slg: stats.slg, ops: stats.ops,
+            homeRuns: stats.homeRuns, rbi: stats.rbi, stolenBases: stats.stolenBases,
+            babip: stats.babip, kPct: computed.kPct, bbPct: computed.bbPct,
+        } : {
+            era: stats.era, whip: stats.whip, wins: stats.wins,
+            strikeOuts: stats.strikeOuts, inningsPitched: stats.inningsPitched,
+            fip: computed.fip,
+        },
+        statcast: statcast ? {
+            xba: statcast.xba, xslg: statcast.xslg, xwoba: statcast.xwoba,
+            avg_hit_speed: statcast.avg_hit_speed, barrels_per_bbe: statcast.barrels_per_bbe,
+        } : null,
+    };
+
+    try {
+        const res  = await fetch(BROADCAST_BLURB_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`Blurb API ${res.status}`);
+        const { blurb } = await res.json();
+        blurbCard.innerHTML = `
+            <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+            <div class="blurb-text" style="border-left-color:${colors.primary}">
+                <p>${_escHtml(blurb)}</p>
+            </div>
+            <button class="share-btn" data-blurb="${_escHtml(blurb)}"
+                onclick="navigator.clipboard?.writeText(this.dataset.blurb).then(()=>ErrorHandler.toast('Blurb copied','success'))">Copy</button>`;
+    } catch (err) {
+        Logger.warn('Broadcast blurb failed', err, 'MLB');
+        blurbCard.innerHTML = '';
+        blurbCard.style.display = 'none';
+    }
+}
+
+async function _triggerBroadcastBlurb(playerId, group) {
+    const player = (AppState.mlbPlayers?.[group] || []).find(p => p.id === playerId);
+    const stats  = AppState.mlbPlayerStats?.[group]?.[playerId];
+    if (!player || !stats) return;
+    const colors      = getMLBTeamColors(player.teamAbbr);
+    const savantType  = group === 'pitching' ? 'pitcher' : 'batter';
+    const statcast    = await fetchStatcast(playerId, savantType).catch(() => null);
+    await _fetchBroadcastBlurb(player, stats, statcast, group, colors);
+}
+window._triggerBroadcastBlurb = _triggerBroadcastBlurb;
 
 // ── Share Card download helper ────────────────────────────────
 

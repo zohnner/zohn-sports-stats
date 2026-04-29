@@ -1,0 +1,12 @@
+name               = "sportsstrata-blurb"
+main               = "broadcast-blurb.js"
+compatibility_date = "2024-09-23"
+
+# ── Secrets (set via CLI, never commit values) ────────────────
+#   wrangler secret put ANTHROPIC_API_KEY --config worker/wrangler-blurb.toml
+
+# ── After deploy, set BROADCAST_BLURB_URL in api.js ──────────
+#   const BROADCAST_BLURB_URL = 'https://sportsstrata-blurb.<subdomain>.workers.dev';
+
+[observability]
+enabled = true
