@@ -340,11 +340,24 @@ Always use `getMLBTeamColors(abbr)` — it handles aliases via a `Proxy`.
 
 ---
 
+## Deployment
+
+Hosted on **Cloudflare Pages**. Key deployment artifacts:
+
+- **`functions/api/mlb.js`** — Cloudflare Pages Function; D1-backed edge cache proxy for `statsapi.mlb.com`. Required for production performance.
+- **`_headers`** — Cloudflare Pages headers file; sets CSP and security headers. Must stay in sync with the `<meta http-equiv="Content-Security-Policy">` tag in `index.html`. Adding any new external domain to a fetch or `<img>` requires updating **both**.
+- **`worker/`** — Cloudflare Worker for the BDL proxy (P1-006 fix target).
+
+**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically.
+
+---
+
 ## Known Critical Bug — DO NOT IGNORE
 
 **P1-006:** `js/api.js:11` — `BDL_API_KEY` is a plaintext string in source. Any public push leaks it.
 - Fix: deploy `worker/bdl-proxy.js`, set `BDL_PROXY_URL` in `api.js`, remove the raw key.
 - Always flag this if working in `api.js` or reviewing commits.
+- Run `/deploy-check` before any push — it automates this check.
 
 ---
 
@@ -361,13 +374,27 @@ This is a small vanilla JS/CSS SPA. Most tasks are well-scoped enough to handle 
 | Multi-step research across multiple files | `general-purpose` | E.g. "trace the full standings data pipeline" |
 | Questions about Claude Code CLI/SDK/API | `claude-code-guide` | |
 
+**Available slash commands — use these before doing things manually:**
+
+| Command | When to use |
+|---|---|
+| `/screenshot` | Visually verify layout after any UI change |
+| `/syntax-check` | Verify no JS syntax errors before committing |
+| `/deploy-check` | Pre-deployment checklist before any push |
+| `/mlb-health` | Verify MLB Stats API endpoints are reachable |
+| `/new-mlb-stat` | Add a new stat category to MLB leaderboards |
+| `/simplify` | Review changed code for quality, reuse, and efficiency |
+| `/security-review` | Full security review of pending changes on current branch |
+
 **When NOT to spawn an agent:**
-- Adding a stat to `MLB_LEADER_CATS` → edit `js/mlb.js` directly
+- Adding a stat to `MLB_LEADER_CATS` → use `/new-mlb-stat` slash command
 - Fixing a bug in a known file → Grep + Read + Edit
 - Checking whether a CSS selector already exists → `Grep` on `css/`
 - Reading the nav/routing logic → `Read` the file directly
 - Screenshots → use `/screenshot` slash command
 - Syntax checks → use `/syntax-check` slash command
+- Pre-deployment validation → use `/deploy-check` slash command
+- MLB API health check → use `/mlb-health` slash command
 
 **Project-specific heuristic:** because all JS shares global scope through flat `<script>` tags, cross-file symbol lookups are cheap and targeted. A single `Grep` call almost always finds it — save agents for genuinely open-ended investigation.
 

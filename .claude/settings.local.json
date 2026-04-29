@@ -6,11 +6,15 @@
       "Bash(curl -s https://baseballsavant.mlb.com/*)",
       "Bash(curl -s https://site.api.espn.com/*)",
       "Bash(curl -s https://api-web.nhle.com/*)",
+      "Bash(curl -s -o /dev/null -w *)",
       "Bash(node --check *)",
       "Bash(node -e *)",
+      "Bash(date *)",
+      "Bash(SEASON=*)",
       "Bash(python -m http.server *)",
       "Bash(python3 -m http.server *)",
-      "Bash(for f in js/*.js*)",
+      "Bash(for f in js/*.js functions/api/*.js data/*.js*)",
+      "Bash(grep *)",
       "Bash(ls *)"
     ]
   }

@@ -19,3 +19,6 @@ Thumbs.db
 # Editor
 .vscode/settings.json
 *.swp
+
+# Meta / prompting files — not project code
+reflection.md

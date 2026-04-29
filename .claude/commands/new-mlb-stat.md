@@ -26,9 +26,7 @@ Insert at a logical position in the array (group hitting stats together, pitchin
 The stat key must exist on `AppState.mlbPlayerStats[id]` after `_initMLBStatsCache()` runs. If it's a computed stat, confirm `_computeBattingRates` / `_computePitchingRates` is called and its result is merged in.
 
 **4. Run syntax check**
-```bash
-node --check js/mlb.js
-```
+Run `/syntax-check` to validate all JS files, not just `mlb.js`.
 
 **5. Report**
 State the new category object added and whether it uses an existing API field or a computed value.
