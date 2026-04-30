@@ -1389,8 +1389,10 @@ main {
 
 /* ── Home game card (dominant tile format) ─────────────────── */
 .home-game-card {
+    --hgc-team-color: var(--accent);
     background: var(--bg-card);
     border: 1px solid var(--border-default);
+    border-left: 3px solid var(--hgc-team-color);
     border-radius: var(--radius-lg);
     padding: 0.85rem 0.9rem 0.7rem;
     display: flex;
@@ -1399,9 +1401,18 @@ main {
     cursor: pointer;
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
     box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+.home-game-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--hgc-team-color) 8%, transparent) 0%, transparent 55%);
+    pointer-events: none;
 }
 .home-game-card:hover {
-    border-color: var(--border-accent);
+    border-color: var(--hgc-team-color);
     box-shadow: var(--shadow-card-hov);
     transform: translateY(-2px);
 }
@@ -1411,6 +1422,7 @@ main {
 }
 .home-game-card--live {
     border-color: rgba(245, 158, 11, 0.45);
+    border-left-color: var(--color-live);
     box-shadow: var(--shadow-live);
 }
 
@@ -1517,7 +1529,171 @@ main {
     grid-column: 1 / -1;
 }
 
-/* Feature strip */
+/* ── Home search bar (P2-004) ──────────────────────────────── */
+.home-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    text-align: left;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+.home-search-bar:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-card-hov);
+    color: var(--text-secondary);
+}
+.home-search-bar-text { flex: 1; }
+.home-search-kbd {
+    font-size: 0.72rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    padding: 0.15rem 0.4rem;
+    color: var(--text-subtle);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+@media (max-width: 640px) { .home-search-kbd { display: none; } }
+
+/* ── Home section header "See all" link ────────────────────── */
+.home-section-link {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    white-space: nowrap;
+}
+.home-section-link:hover { color: var(--accent-light); }
+
+/* ── Hot Right Now strip (P2-002) ──────────────────────────── */
+.home-hot-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem;
+}
+@media (max-width: 700px) { .home-hot-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.home-hot-tile {
+    --hot-color: var(--accent);
+    --team-color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--hot-color);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 0.85rem;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    text-align: left;
+    transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    position: relative;
+}
+.home-hot-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--hot-color) 6%, transparent), transparent 60%);
+    pointer-events: none;
+}
+.home-hot-tile:hover {
+    border-color: var(--hot-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hov);
+}
+.home-hot-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.home-hot-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+}
+.home-hot-initials {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.03em;
+    position: relative;
+    z-index: 1;
+}
+.home-hot-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+.home-hot-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.home-hot-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.home-hot-team {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+.home-hot-stat {
+    font-size: 1.15rem;
+    font-weight: 900;
+    font-family: var(--font-mono);
+    letter-spacing: -0.03em;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1;
+}
+.home-hot-unit {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+/* Feature strip (P2-005) */
 .home-features {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1525,13 +1701,15 @@ main {
 }
 
 .home-feature-item {
+    --feat-color: var(--accent);
     background: var(--bg-card);
     border: 1px solid var(--border-default);
+    border-top: 3px solid var(--feat-color);
     border-radius: var(--radius-lg);
-    padding: 1.25rem;
+    padding: 1.1rem 1.1rem 1rem;
     display: flex;
     align-items: flex-start;
-    gap: 0.875rem;
+    gap: 0.75rem;
     transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
     box-shadow: var(--shadow-sm);
     animation: fadeUp 0.4s var(--ease-out) both;
@@ -1539,8 +1717,12 @@ main {
     font-family: var(--font-sans);
     text-align: left;
 }
+.home-feature-item--leaders { --feat-color: #a78bfa; }
+.home-feature-item--prep    { --feat-color: #34d399; }
+.home-feature-item--statcast{ --feat-color: #f97316; }
+.home-feature-item--builder { --feat-color: #60a5fa; }
 .home-feature-item:hover {
-    border-color: var(--border-accent);
+    border-color: var(--feat-color);
     transform: translateY(-2px);
     box-shadow: var(--shadow-card-hov);
 }
@@ -1548,30 +1730,30 @@ main {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
-
 .home-feature-icon {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     flex-shrink: 0;
     line-height: 1;
-    margin-top: 1px;
+    margin-top: 2px;
 }
 .home-feature-title {
     font-size: var(--text-sm);
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.25rem;
 }
 .home-feature-desc {
-    font-size: var(--text-xs);
+    font-size: 0.7rem;
     color: var(--text-muted);
     font-weight: 500;
-    line-height: 1.45;
+    line-height: 1.4;
 }
 
 @media (max-width: 900px) {
     .home-sports-grid { grid-template-columns: repeat(2, 1fr); }
     .home-dev-grid    { grid-template-columns: repeat(2, 1fr); }
     .home-features    { grid-template-columns: repeat(2, 1fr); }
+    .home-hot-grid    { grid-template-columns: repeat(2, 1fr); }
     .home-hero { padding: 3rem 1.75rem 2.5rem; }
     .home-sport-card--featured { flex-direction: column; text-align: center; }
     .home-sport-card--featured .home-sport-desc { max-width: 100%; }
@@ -1586,8 +1768,11 @@ main {
     .home-sport-card { padding: 1.5rem 0.875rem 1.25rem; }
     .home-sport-icon { font-size: 2.25rem; }
     .home-features { gap: 0.75rem; }
+    .home-hot-grid  { gap: 0.5rem; }
     .home-dev-grid { grid-template-columns: 1fr; }
     .home-sport-card--featured { padding: 1.5rem 1.25rem; gap: 0.75rem; }
+    .home-hot-tile { padding: 0.6rem 0.7rem; }
+    .home-hot-stat { font-size: 1rem; }
 }
 
 /* ── Player Detail ────────────────────────────────────────── */

@@ -2819,3 +2819,69 @@
     border-left: 3px solid var(--accent);
 }
 .blurb-text p { margin: 0; }
+
+/* ── PWA install toast ───────────────────────────────────── */
+.install-toast {
+    position: fixed;
+    bottom: calc(var(--bottom-nav-h, 0px) + 1rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+    padding: 0.65rem 0.9rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.install-toast--visible { transform: translateX(-50%) translateY(0); }
+.install-toast-msg { flex: 1; }
+.install-toast-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.install-toast-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    line-height: 1;
+}
+@media (max-width: 480px) {
+    .install-toast { font-size: 0.78rem; padding: 0.55rem 0.75rem; }
+}
+
+/* ── Statcast leaderboard section divider ────────────────── */
+.leaderboard-section-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.leaderboard-section-divider::before,
+.leaderboard-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-default);
+}

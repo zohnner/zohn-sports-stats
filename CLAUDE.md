@@ -167,7 +167,7 @@ Total header height on desktop: `calc(var(--header-height) + var(--ticker-height
 All three surfaces use `.nav-tab` + `data-view` on every button. `navigateTo()` syncs `.active` across all of them automatically.
 
 ### 1. Sub-nav (`#subNav`, `.sub-nav`) — desktop only (hidden ≤768px)
-Sticky row in header. 9 items: Players | Leaders | Teams | Scores | Standings | [divider] | Builder | Prep | Arcade.
+Sticky row in header. 8 items: Players | Leaders | Teams | Standings | [divider] | Builder | Prep | Arcade. (Scores was removed — the ticker SCORES button handles that nav destination with `class="nav-tab" data-view="mlb-games"`.)
 
 ### 2. Menu panel (`#menuPanel`, `.menu-panel`) — mobile only (`display:none` ≥769px)
 `position: fixed; top: calc(var(--header-height) + var(--ticker-height))` — drops from under the header+ticker. 4-column grid of 8 tile buttons (all MLB views + Arcade). Opened/closed by `#menuBtn` (`.menu-btn`). JS: `initMenu()` / `_closeMenu()` in `navigation.js`.

@@ -188,47 +188,66 @@ function loadHome() {
     `).join('');
 
     grid.innerHTML = `
+        <!-- Search prompt bar (P2-004) -->
+        <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
+            <kbd class="home-search-kbd">⌘K</kbd>
+        </button>
+
         <!-- Today's Games — dominant first module -->
         <div class="home-today" id="homeTodayGames">
             <div class="home-section-hdr">
                 <span class="home-section-title">Today's Games</span>
                 <span class="home-section-date">${dateStr}</span>
+                <button class="home-section-link" onclick="navigateTo('mlb-games')">All scores →</button>
             </div>
             <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
         </div>
 
+        <!-- Hot Right Now (P2-002) — populated by _renderHotStrip() -->
+        <div id="homeHotStrip" style="display:none">
+            <div class="home-section-hdr">
+                <span class="home-section-title">Hot Right Now</span>
+                <button class="home-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button>
+            </div>
+            <div class="home-hot-grid" id="homeHotGrid"></div>
+        </div>
+
         <div class="home-recents" id="homeRecents"></div>
         <div class="home-starred" id="homeStarred"></div>
+
+        <!-- On This Day (P2-003) — moved above feature strip -->
         <div class="home-on-this-day" id="homeOnThisDay" style="display:none"></div>
 
-        <!-- Feature strip — each card navigates to its tool -->
+        <!-- Feature strip (P2-005) -->
         <div class="home-features">
-            <button class="home-feature-item" onclick="navigateTo('mlb-leaders')">
+            <button class="home-feature-item home-feature-item--leaders" onclick="navigateTo('mlb-leaders')">
                 <div class="home-feature-icon">📊</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Leaderboards</div>
-                    <div class="home-feature-desc">Daily rankings — AVG, OPS, ISO, HR, ERA, WHIP, FIP, K-BB% and more</div>
+                    <div class="home-feature-desc">AVG · OPS · ERA · FIP · EV · xBA</div>
                 </div>
             </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-prep')">
+            <button class="home-feature-item home-feature-item--prep" onclick="navigateTo('mlb-prep')">
                 <div class="home-feature-icon">📋</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Game Prep</div>
-                    <div class="home-feature-desc">Pitcher matchups, lineup context, and team form — ready for air</div>
+                    <div class="home-feature-desc">Matchups · lineups · print-ready</div>
                 </div>
             </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-players')">
-                <div class="home-feature-icon">🔬</div>
+            <button class="home-feature-item home-feature-item--statcast" onclick="navigateTo('mlb-players')">
+                <div class="home-feature-icon">⚡</div>
                 <div class="home-feature-text">
-                    <div class="home-feature-title">Statcast & Splits</div>
-                    <div class="home-feature-desc">Exit velocity, barrel %, vs. L/R, home/away splits per player</div>
+                    <div class="home-feature-title">Statcast</div>
+                    <div class="home-feature-desc">Exit velo · barrel% · xBA per player</div>
                 </div>
             </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-builder')">
+            <button class="home-feature-item home-feature-item--builder" onclick="navigateTo('mlb-builder')">
                 <div class="home-feature-icon">🧮</div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Stat Builder</div>
-                    <div class="home-feature-desc">Custom formulas — rank any player by any metric combination</div>
+                    <div class="home-feature-desc">Custom formulas · rank any metric</div>
                 </div>
             </button>
         </div>
@@ -236,6 +255,7 @@ function loadHome() {
 
     _renderHomeRecents();
     _renderHomeStarred();
+    _renderHotStrip();
     _loadOnThisDay();
     _loadHomeTodayGames();
 }
@@ -311,6 +331,69 @@ function _renderHomeStarred() {
     });
 }
 
+function _renderHotStrip() {
+    const container = document.getElementById('homeHotStrip');
+    const grid      = document.getElementById('homeHotGrid');
+    if (!container || !grid) return;
+
+    const hitting  = AppState.mlbLeaderSplits?.hitting  || [];
+    const pitching = AppState.mlbLeaderSplits?.pitching || [];
+    if (!hitting.length && !pitching.length) return;
+
+    const _fmtAvgLocal = v => v >= 1 ? v.toFixed(2) : ('.' + String(Math.round(v * 1000)).padStart(3, '0'));
+    const _top = (splits, sortKey, desc = true) => {
+        const sorted = [...splits]
+            .filter(s => s.stat?.[sortKey] != null && !isNaN(parseFloat(s.stat[sortKey])))
+            .sort((a, b) => {
+                const av = parseFloat(a.stat[sortKey]), bv = parseFloat(b.stat[sortKey]);
+                return desc ? bv - av : av - bv;
+            });
+        return sorted[0] || null;
+    };
+
+    const spots = [
+        { split: _top(hitting, 'homeRuns'),  key: 'homeRuns',  label: 'Home Runs',  unit: 'HR',  color: '#ef4444', fmt: v => String(v) },
+        { split: _top(hitting, 'avg'),        key: 'avg',       label: 'Batting Avg', unit: 'AVG', color: '#fbbf24', fmt: v => _fmtAvgLocal(v) },
+        { split: _top(pitching, 'era', false),key: 'era',       label: 'ERA Leader',  unit: 'ERA', color: '#f472b6', fmt: v => parseFloat(v).toFixed(2) },
+        { split: _top(hitting, 'ops'),        key: 'ops',       label: 'OPS Leader',  unit: 'OPS', color: '#a78bfa', fmt: v => _fmtAvgLocal(v) },
+    ].filter(s => s.split);
+
+    if (!spots.length) return;
+
+    grid.innerHTML = spots.map(({ split, key, label, unit, color, fmt }) => {
+        const val    = fmt(parseFloat(split.stat[key]));
+        const name   = split.player?.fullName || '—';
+        const abbr   = split.team?.abbreviation || '';
+        const pid    = split.player?.id;
+        const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr) : { primary: '#7c8df0' };
+        const headshot = pid && typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(pid) : null;
+        const initials = name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
+        return `
+            <button class="home-hot-tile" data-pid="${pid || ''}" style="--hot-color:${color};--team-color:${colors.primary}">
+                <div class="home-hot-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                    <span class="home-hot-initials">${initials}</span>
+                </div>
+                <div class="home-hot-body">
+                    <span class="home-hot-label">${label}</span>
+                    <span class="home-hot-name">${_escHtml(name)}</span>
+                    <span class="home-hot-team">${_escHtml(abbr)}</span>
+                </div>
+                <div class="home-hot-stat" style="color:${color}">${val}<span class="home-hot-unit">${unit}</span></div>
+            </button>`;
+    }).join('');
+
+    grid.querySelectorAll('.home-hot-tile[data-pid]').forEach(tile => {
+        const pid = parseInt(tile.dataset.pid, 10);
+        if (!pid) return;
+        tile.addEventListener('click', () => {
+            if (typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(pid);
+        });
+    });
+
+    container.style.display = '';
+}
+
 async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
@@ -340,19 +423,21 @@ async function _loadHomeTodayGames() {
         } else {
             pillLabel = 'Scheduled';
         }
-        const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
-        const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
-        const homeName  = _teamFullName(homeAbbr);
-        const awayName  = _teamFullName(awayAbbr);
-        const fmt       = (n) => hasScore ? n : '–';
-        const liveCls   = isLive ? ' home-game-card--live' : '';
-        const lastName  = n => n ? n.split(' ').slice(-1)[0] : '?';
-        const ppLine    = !isFinal && (awayPP || homePP)
+        const homeLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
+        const awayLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
+        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeAbbr) : { primary: '#7c8df0' };
+        const homeName   = _teamFullName(homeAbbr);
+        const awayName   = _teamFullName(awayAbbr);
+        const fmt        = (n) => hasScore ? n : '–';
+        const liveCls    = isLive ? ' home-game-card--live' : '';
+        const lastName   = n => n ? n.split(' ').slice(-1)[0] : '?';
+        const ppLine     = !isFinal && (awayPP || homePP)
             ? `<div class="hgc-pitchers">${lastName(awayPP)} vs ${lastName(homePP)}</div>`
             : '';
         return `
             <div class="home-game-card${liveCls}" data-game-key="${gameKey}" data-game-status="${pillCls}" role="button" tabindex="0"
-                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}">
+                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}"
+                 style="--hgc-team-color:${homeColors.primary}">
                 <div class="hgc-row">
                     ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="${awayAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
                     <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}" title="${awayName}">${awayAbbr}</span>
@@ -460,17 +545,14 @@ async function _loadHomeTodayGames() {
 // picks a completed game, grabs the box score, surfaces top performer.
 
 async function _loadOnThisDay() {
-    const container = document.getElementById('homeOnThisDay');
-    if (!container) return;
-
-    const today  = new Date();
-    const mm     = String(today.getMonth() + 1).padStart(2, '0');
-    const dd     = String(today.getDate()).padStart(2, '0');
+    const today   = new Date();
+    const mm      = String(today.getMonth() + 1).padStart(2, '0');
+    const dd      = String(today.getDate()).padStart(2, '0');
     const curYear = today.getFullYear();
+    const month   = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
-    // Try up to 3 past years, newest first
     for (let offset = 1; offset <= 3; offset++) {
-        const year = curYear - offset;
+        const year    = curYear - offset;
         const dateStr = `${year}-${mm}-${dd}`;
 
         let sched;
@@ -478,46 +560,51 @@ async function _loadOnThisDay() {
             sched = await mlbFetch('/schedule', {
                 sportId: 1, startDate: dateStr, endDate: dateStr, hydrate: 'linescore',
             }, ApiCache.TTL.LONG);
-        } catch (_) { continue; }
+        } catch (err) {
+            Logger.warn(`OnThisDay: schedule fetch failed for ${dateStr}`, err?.message, 'APP');
+            continue;
+        }
 
-        const games = sched?.dates?.[0]?.games || [];
-        // Only care about final games
+        // Re-fetch container after await — may have been replaced by navigation
+        const container = document.getElementById('homeOnThisDay');
+        if (!container || !container.isConnected) return;
+
+        const games    = sched?.dates?.[0]?.games || [];
         const finished = games.filter(g => g.status?.abstractGameState === 'Final');
         if (finished.length === 0) continue;
 
-        // Pick the game with the most runs (most exciting)
         const game = finished.reduce((best, g) => {
-            const runs = (g.linescore?.teams?.home?.runs ?? 0) + (g.linescore?.teams?.away?.runs ?? 0);
+            const runs  = (g.linescore?.teams?.home?.runs ?? 0) + (g.linescore?.teams?.away?.runs ?? 0);
             const bRuns = (best.linescore?.teams?.home?.runs ?? 0) + (best.linescore?.teams?.away?.runs ?? 0);
             return runs > bRuns ? g : best;
         });
 
-        // Fetch box score to find top performer
         let top = null;
         try {
             const bs = await mlbFetch(`/game/${game.gamePk}/boxscore`, {}, ApiCache.TTL.LONG);
             if (bs) {
-                const allBatters = [
+                const sorted = [
                     ...Object.values(bs.teams?.home?.players || {}),
                     ...Object.values(bs.teams?.away?.players || {}),
-                ].filter(p => p.stats?.batting);
-
-                // Top by RBI first, then hits
-                const sorted = allBatters
+                ]
+                    .filter(p => p.stats?.batting?.atBats >= 2)
                     .map(p => ({
                         name: p.person?.fullName || '?',
-                        h:    p.stats.batting.hits         ?? 0,
-                        ab:   p.stats.batting.atBats       ?? 0,
-                        hr:   p.stats.batting.homeRuns     ?? 0,
-                        rbi:  p.stats.batting.rbi          ?? 0,
-                        k:    p.stats.batting.strikeOuts   ?? 0,
+                        h:   p.stats.batting.hits      ?? 0,
+                        ab:  p.stats.batting.atBats    ?? 0,
+                        hr:  p.stats.batting.homeRuns  ?? 0,
+                        rbi: p.stats.batting.rbi       ?? 0,
                     }))
-                    .filter(p => p.ab >= 2)
                     .sort((a, b) => (b.rbi - a.rbi) || (b.h - a.h) || (b.hr - a.hr));
-
                 top = sorted[0] || null;
             }
-        } catch (_) {}
+        } catch (err) {
+            Logger.warn(`OnThisDay: boxscore fetch failed for ${game.gamePk}`, err?.message, 'APP');
+        }
+
+        // Re-fetch container again after second await
+        const el = document.getElementById('homeOnThisDay');
+        if (!el || !el.isConnected) return;
 
         const homeTeam  = game.teams?.home?.team?.abbreviation || '?';
         const awayTeam  = game.teams?.away?.team?.abbreviation || '?';
@@ -525,7 +612,7 @@ async function _loadOnThisDay() {
         const awayScore = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
         const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeTeam) : '';
         const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayTeam) : '';
-        const month     = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeTeam) : { primary: '#7c8df0' };
 
         let perfLine = '';
         if (top) {
@@ -535,12 +622,12 @@ async function _loadOnThisDay() {
             perfLine = `<div class="otd-perf"><strong>${_escHtml(top.name)}</strong> · ${parts.join(' · ')}</div>`;
         }
 
-        container.innerHTML = `
+        el.innerHTML = `
             <div class="home-section-hdr">
                 <span class="home-section-title">On This Day</span>
                 <span class="home-section-date">${month}, ${year}</span>
             </div>
-            <div class="otd-card">
+            <div class="otd-card" style="border-left: 3px solid ${homeColors.primary}">
                 <div class="otd-matchup">
                     ${awayLogo ? `<img class="otd-logo" src="${awayLogo}" alt="${awayTeam}" data-hide-on-error>` : ''}
                     <span class="otd-team">${awayTeam}</span>
@@ -553,9 +640,10 @@ async function _loadOnThisDay() {
                 ${perfLine}
             </div>
         `;
-        container.style.display = '';
-        return; // found one — stop
+        el.style.display = '';
+        return;
     }
+    Logger.debug('OnThisDay: no finished games found in last 3 years for this date', undefined, 'APP');
 }
 
 // Enter a sport from the home page — handles same-sport case
@@ -601,3 +689,52 @@ _applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 if (typeof window !== 'undefined') {
     window.toggleTheme = toggleTheme;
 }
+
+// ── PWA Install Prompt ────────────────────────────────────────
+// Captures the beforeinstallprompt event so we can trigger it on demand.
+// After a short delay on the second+ visit, surfaces a non-intrusive toast.
+(function setupInstallPrompt() {
+    let _deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        _deferredPrompt = e;
+
+        const visits = parseInt(localStorage.getItem('zs_visits') || '0', 10) + 1;
+        localStorage.setItem('zs_visits', String(visits));
+
+        if (visits < 2) return; // only prompt from 2nd visit onward
+        if (localStorage.getItem('zs_install_dismissed')) return;
+
+        setTimeout(() => {
+            if (!_deferredPrompt) return;
+            const toast = document.createElement('div');
+            toast.className = 'install-toast';
+            toast.setAttribute('role', 'dialog');
+            toast.setAttribute('aria-label', 'Install SportStrata');
+            toast.innerHTML = `
+                <span class="install-toast-msg">⚡ Add SportStrata to your home screen</span>
+                <button class="install-toast-btn" id="installAcceptBtn">Install</button>
+                <button class="install-toast-dismiss" aria-label="Dismiss">✕</button>
+            `;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('install-toast--visible'));
+
+            document.getElementById('installAcceptBtn')?.addEventListener('click', () => {
+                _deferredPrompt.prompt();
+                _deferredPrompt.userChoice.then(() => { _deferredPrompt = null; toast.remove(); });
+            });
+            toast.querySelector('.install-toast-dismiss')?.addEventListener('click', () => {
+                localStorage.setItem('zs_install_dismissed', '1');
+                toast.classList.remove('install-toast--visible');
+                setTimeout(() => toast.remove(), 300);
+            });
+        }, 4000);
+    });
+
+    window.addEventListener('appinstalled', () => {
+        _deferredPrompt = null;
+        document.querySelector('.install-toast')?.remove();
+        Logger.info('PWA installed', undefined, 'APP');
+    });
+})();

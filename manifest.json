@@ -1,7 +1,7 @@
 {
   "name": "SportStrata",
   "short_name": "SportStrata",
-  "description": "Serious stats for serious fans. Real-time NBA, MLB, NFL and NHL analytics.",
+  "description": "Serious stats for serious fans. Free MLB analytics dashboard for broadcast professionals and data fans.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#060c18",
@@ -24,24 +24,24 @@
   "categories": ["sports", "utilities"],
   "shortcuts": [
     {
-      "name": "NBA Players",
-      "url": "/#players",
-      "description": "Browse NBA players and stats"
-    },
-    {
       "name": "MLB Players",
       "url": "/#mlb-players",
       "description": "Browse MLB players and stats"
     },
     {
-      "name": "NFL Leaders",
-      "url": "/#nfl-players",
-      "description": "NFL stat leaders by category"
+      "name": "MLB Leaders",
+      "url": "/#mlb-leaders",
+      "description": "MLB stat leaderboards by category"
     },
     {
-      "name": "NHL Leaders",
-      "url": "/#nhl-players",
-      "description": "NHL skater and goalie leaders"
+      "name": "MLB Scores",
+      "url": "/#mlb-games",
+      "description": "Today's MLB scores and schedules"
+    },
+    {
+      "name": "MLB Standings",
+      "url": "/#mlb-standings",
+      "description": "MLB standings by division"
     },
     {
       "name": "Arcade",
