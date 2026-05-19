@@ -1878,6 +1878,9 @@
     margin: 0 auto;
     padding: 0 1rem 3rem;
 }
+@media (max-width: 768px) {
+    .mlb-game-detail-wrap { padding-left: 0; padding-right: 0; }
+}
 
 /* Game header — away score home */
 
@@ -3726,11 +3729,19 @@
 .txn-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .txn-row--skeleton { cursor: default; }
 .txn-emoji {
-    font-size: 0.95rem;
-    width: 20px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    width: 32px;
     text-align: center;
     flex-shrink: 0;
     line-height: 1;
+    color: var(--text-muted);
+    padding: 0.2rem 0.15rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    background: var(--bg-interactive);
 }
 .txn-avatar {
     width: 32px;

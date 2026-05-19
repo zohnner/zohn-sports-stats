@@ -210,10 +210,10 @@ async function _injectGameWeather(wrap) {
         const w = map[+slot.dataset.weatherTeam];
         if (!w) { slot.style.display = 'none'; return; }
         if (w.dome) {
-            slot.textContent = '🏟 Dome';
+            slot.textContent = 'Dome';
             slot.classList.add('game-weather--dome');
         } else {
-            slot.innerHTML = `🌡 ${w.temp}°F · 💨 ${w.wind} mph ${w.dir}`;
+            slot.innerHTML = `${w.temp}°F · ${w.wind} mph ${w.dir}`;
             slot.classList.add('game-weather--outdoor');
         }
     });
@@ -921,7 +921,7 @@ function _styleMLBViewBtn(btn, active) {
 
 function _styleMLBGroupBtn(btn, active) {
     btn.style.cssText = `
-        padding:0.3rem 0.75rem;border-radius:20px;cursor:pointer;font-weight:700;
+        padding:0.45rem 0.875rem;border-radius:20px;cursor:pointer;font-weight:700;
         font-size:0.8rem;transition:all 0.2s;font-family:inherit;
         border:1px solid ${active ? 'var(--accent-border)' : 'var(--border-default)'};
         background:${active ? 'var(--accent-subtle)' : 'var(--bg-interactive)'};
@@ -931,7 +931,7 @@ function _styleMLBGroupBtn(btn, active) {
 
 function _styleMLBPosBtn(btn, active) {
     btn.style.cssText = `
-        padding:0.2rem 0.55rem;border-radius:20px;cursor:pointer;font-weight:600;
+        padding:0.35rem 0.65rem;border-radius:20px;cursor:pointer;font-weight:600;
         font-size:0.72rem;transition:all 0.2s;font-family:inherit;
         border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.1)'};
         background:${active ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)'};
@@ -1595,8 +1595,8 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                         Share
                     </button>
-                    <button class="share-btn" onclick="_triggerBroadcastBlurb(${playerId},'${group}')" title="Generate AI broadcast blurb (requires Blurb Worker)">📢 Blurb</button>
-                    <button class="share-btn" onclick="_showMLBScoutReport(${playerId},'${group}')" title="Generate scouting report">📋 Scout</button>
+                    <button class="share-btn" onclick="_triggerBroadcastBlurb(${playerId},'${group}')" title="Generate AI broadcast blurb (requires Blurb Worker)">Blurb</button>
+                    <button class="share-btn" onclick="_showMLBScoutReport(${playerId},'${group}')" title="Generate scouting report">Scout</button>
                 </div>
             </div>
             <div class="player-hero">
@@ -1674,7 +1674,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         </div>
 
         <div class="stats-card" id="mlb-statcast-card">
-            <h2 class="detail-section-title">⚡ Statcast</h2>
+            <h2 class="detail-section-title">Statcast</h2>
             <div style="height:48px;display:flex;align-items:center;padding:0 0.5rem">
                 <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
             </div>
@@ -1682,7 +1682,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
 
         ${group === 'pitching' ? `
         <div class="stats-card" id="mlb-arsenal-card">
-            <h2 class="detail-section-title">⚾ Pitch Arsenal</h2>
+            <h2 class="detail-section-title">Pitch Arsenal</h2>
             <div style="height:80px;display:flex;align-items:center;padding:0 0.5rem">
                 <div class="skeleton-line" style="width:100%;height:60px;border-radius:6px"></div>
             </div>
@@ -1815,7 +1815,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         if (!card) return;
         if (!data) { card.innerHTML = ''; return; }
         card.innerHTML = `
-            <h2 class="detail-section-title">⚡ Statcast <span class="statcast-badge">via Baseball Savant</span></h2>
+            <h2 class="detail-section-title">Statcast <span class="statcast-badge">via Baseball Savant</span></h2>
             ${_renderStatcastCard(data, group)}
         `;
         const badge   = _computeMLBAnalyticsBadge(stats, data, group);
@@ -1850,7 +1850,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             if (!card) return;
             if (!rows || !rows.length) { card.innerHTML = ''; return; }
             card.innerHTML = `
-                <h2 class="detail-section-title">⚾ Pitch Arsenal <span class="statcast-badge">via Baseball Savant</span></h2>
+                <h2 class="detail-section-title">Pitch Arsenal <span class="statcast-badge">via Baseball Savant</span></h2>
                 ${_renderPitchArsenal(rows)}
             `;
         }).catch(() => {
@@ -2655,7 +2655,7 @@ function _createMLBGameCard(game) {
         ? `<button class="game-card-scorecard-btn${isLive ? ' game-card-scorecard-btn--live' : ''}"
                onclick="event.stopPropagation();if(typeof loadMLBScorecard==='function')loadMLBScorecard(${game.gamePk},null)"
                aria-label="${isLive ? 'Live s' : 'S'}corecard for this game">
-               ${isLive ? '🔴 Live Scorecard' : 'Scorecard →'}
+               ${isLive ? 'Live Scorecard' : 'Scorecard →'}
            </button>`
         : '';
 
@@ -3126,7 +3126,7 @@ async function showMLBTeamDetail(teamId, push = true) {
             type:  'team',
             name:  team.name || team.abbreviation || `Team ${teamId}`,
             sub:   rec ? `${rec.wins}–${rec.losses}` : 'MLB',
-            badge: '🏟',
+            badge: 'TEAM',
         });
         grid.innerHTML = `
             ${_mlbTeamHeader(team, teamId, colors, rec)}
@@ -3189,7 +3189,7 @@ async function showMLBTeamDetail(teamId, push = true) {
         Logger.error('Failed to load MLB team detail', err, 'MLB');
         grid.innerHTML = `
             <div class="error-state">
-                <div class="error-state-icon">⚠️</div>
+                <div class="error-state-icon">!</div>
                 <h3 class="error-state-title">Failed to Load Team</h3>
                 <p class="error-state-message">${err.message}</p>
                 <button class="retry-btn" onclick="backToMLBTeams()">← Back to Teams</button>
@@ -3267,11 +3267,11 @@ function _mlbTeamStatsCard(bat, pit, colors) {
     return `
         <div class="stats-card">
             ${bat ? `
-            <h3 class="detail-section-title" style="margin-bottom:0.5rem">🏏 Team Batting</h3>
+            <h3 class="detail-section-title" style="margin-bottom:0.5rem">Team Batting</h3>
             <div class="player-bio-grid" style="margin-top:0">${bioChip(batItems)}</div>
             ` : ''}
             ${pit ? `
-            <h3 class="detail-section-title" style="margin-top:${bat ? '1rem' : '0'};margin-bottom:0.5rem">⚾ Team Pitching</h3>
+            <h3 class="detail-section-title" style="margin-top:${bat ? '1rem' : '0'};margin-bottom:0.5rem">Team Pitching</h3>
             <div class="player-bio-grid" style="margin-top:0">${bioChip(pitItems)}</div>
             ` : ''}
         </div>
@@ -3321,7 +3321,7 @@ function _mlbTeamUpcomingCard(games, teamId, colors) {
 
     return `
         <div class="stats-card">
-            <h2 class="detail-section-title">📅 Upcoming</h2>
+            <h2 class="detail-section-title">Upcoming</h2>
             <div class="roster-list">${rows}</div>
         </div>`;
 }
@@ -3817,7 +3817,7 @@ function _appendMLBStreakPanel(fragment, splits, season) {
 
     const divider = document.createElement('div');
     divider.className = 'leaderboard-section-divider';
-    divider.innerHTML = `<span>🔥 Active Hitting Streaks · ${season}</span>`;
+    divider.innerHTML = `<span>Active Hitting Streaks · ${season}</span>`;
     fragment.appendChild(divider);
 
     const panel = document.createElement('div');
@@ -3894,7 +3894,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
 
     const divider = document.createElement('div');
     divider.className = 'leaderboard-section-divider';
-    divider.innerHTML = `<span>🔥 Hot Right Now · Last 7 Days · ${season}</span>`;
+    divider.innerHTML = `<span>Hot Right Now · Last 7 Days · ${season}</span>`;
     fragment.appendChild(divider);
 
     HOT_CATS.forEach(cat => {
@@ -4245,7 +4245,7 @@ function displayMLBLeaderboards() {
     if (savantRows && savantRows.length > 0) {
         const divider = document.createElement('div');
         divider.className = 'leaderboard-section-divider';
-        divider.innerHTML = `<span>⚡ Statcast Leaders · ${season} · min 50 batted balls</span>`;
+        divider.innerHTML = `<span>Statcast Leaders · ${season} · min 50 batted balls</span>`;
         fragment.appendChild(divider);
 
         // Build player_id → team/position lookup from already-loaded hitting splits
@@ -4408,7 +4408,7 @@ function _displayMLBSearchResults(results, q) {
     const el = document.getElementById('resultCount');
 
     if (results.length === 0) {
-        ErrorHandler.renderEmptyState(grid, `No players found matching "${q}"`, '🔍');
+        ErrorHandler.renderEmptyState(grid, `No players found matching "${q}"`, '⚾');
         if (el) el.textContent = '0 players found';
         return;
     }
@@ -4617,11 +4617,11 @@ function displayMLBStandings(divisions, league = 'AL') {
             <button class="standings-tab ${league === 'NL' ? 'active' : ''}"
                 onclick="displayMLBStandings(AppState.mlbStandings,'NL')">NL</button>
             <button class="standings-tab"
-                onclick="displayMLBWildCard(AppState.mlbStandings)">🏆 Wild Card</button>
+                onclick="displayMLBWildCard(AppState.mlbStandings)">Wild Card</button>
             <button class="standings-tab"
-                onclick="displayMLBPowerRankings(AppState.mlbStandings)">⚡ Power</button>
+                onclick="displayMLBPowerRankings(AppState.mlbStandings)">Power</button>
             <button class="standings-tab"
-                onclick="displayMLBTransactions()">📰 Moves</button>
+                onclick="displayMLBTransactions()">Moves</button>
         </div>
     `;
 
@@ -4756,9 +4756,9 @@ function displayMLBWildCard(divisions) {
         <div class="standings-tabs">
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'AL')">AL</button>
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'NL')">NL</button>
-            <button class="standings-tab active">🏆 Wild Card</button>
-            <button class="standings-tab" onclick="displayMLBPowerRankings(AppState.mlbStandings)">⚡ Power</button>
-            <button class="standings-tab" onclick="displayMLBTransactions()">📰 Moves</button>
+            <button class="standings-tab active">Wild Card</button>
+            <button class="standings-tab" onclick="displayMLBPowerRankings(AppState.mlbStandings)">Power</button>
+            <button class="standings-tab" onclick="displayMLBTransactions()">Moves</button>
         </div>
     `;
 
@@ -4924,9 +4924,9 @@ function displayMLBPowerRankings(divisions) {
         <div class="standings-tabs">
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'AL')">AL</button>
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'NL')">NL</button>
-            <button class="standings-tab" onclick="displayMLBWildCard(AppState.mlbStandings)">🏆 Wild Card</button>
-            <button class="standings-tab active">⚡ Power</button>
-            <button class="standings-tab" onclick="displayMLBTransactions()">📰 Moves</button>
+            <button class="standings-tab" onclick="displayMLBWildCard(AppState.mlbStandings)">Wild Card</button>
+            <button class="standings-tab active">Power</button>
+            <button class="standings-tab" onclick="displayMLBTransactions()">Moves</button>
         </div>
     `;
 
@@ -4939,10 +4939,10 @@ function displayMLBPowerRankings(divisions) {
         const logo      = getMLBTeamLogoUrl(team.teamId);
         const barW      = (team._score / maxScore * 100).toFixed(1);
 
-        const heat = team._score >= 0.65 ? { icon: '🔥', label: 'HOT',   cls: 'power-heat--hot'  }
-                   : team._score >= 0.52 ? { icon: '📈', label: 'SOLID', cls: 'power-heat--solid' }
-                   : team._score >= 0.40 ? { icon: '➡️',  label: 'MID',   cls: 'power-heat--mid'  }
-                   :                       { icon: '❄️',  label: 'COLD',  cls: 'power-heat--cold'  };
+        const heat = team._score >= 0.65 ? { label: 'HOT',   cls: 'power-heat--hot'  }
+                   : team._score >= 0.52 ? { label: 'SOLID', cls: 'power-heat--solid' }
+                   : team._score >= 0.40 ? { label: 'MID',   cls: 'power-heat--mid'  }
+                   :                       { label: 'COLD',  cls: 'power-heat--cold'  };
 
         const divShort = team.division.replace('American League ', 'AL ').replace('National League ', 'NL ');
         const leagueCls = divShort.startsWith('AL') ? 'power-conf--east' : 'power-conf--west';
@@ -4960,7 +4960,7 @@ function displayMLBPowerRankings(divisions) {
                 <div class="power-record">${team.wins}–${team.losses}<span class="power-pct">${winPct}</span></div>
                 <div class="power-streak" style="color:${streakClr}">${team.streak || '—'}</div>
                 <div class="power-l10">${team.l10 || '—'}</div>
-                <div class="power-heat ${heat.cls}">${heat.icon} ${heat.label}</div>
+                <div class="power-heat ${heat.cls}">${heat.label}</div>
             </div>
         `;
     }).join('');
@@ -4990,9 +4990,9 @@ async function displayMLBTransactions() {
         <div class="standings-tabs">
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'AL')">AL</button>
             <button class="standings-tab" onclick="displayMLBStandings(AppState.mlbStandings,'NL')">NL</button>
-            <button class="standings-tab" onclick="displayMLBWildCard(AppState.mlbStandings)">🏆 Wild Card</button>
-            <button class="standings-tab" onclick="displayMLBPowerRankings(AppState.mlbStandings)">⚡ Power</button>
-            <button class="standings-tab active">📰 Moves</button>
+            <button class="standings-tab" onclick="displayMLBWildCard(AppState.mlbStandings)">Wild Card</button>
+            <button class="standings-tab" onclick="displayMLBPowerRankings(AppState.mlbStandings)">Power</button>
+            <button class="standings-tab active">Moves</button>
         </div>
     `;
 
@@ -5028,16 +5028,16 @@ function _renderMLBTransactions(transactions) {
 
     const _emoji = desc => {
         const d = (desc || '').toLowerCase();
-        if (d.includes('trade'))                                              return '🔀';
-        if (d.includes('recalled') || d.includes('called up') || d.includes('selected')) return '⬆️';
-        if (d.includes('optioned') || (d.includes('assigned to') && !d.includes('outright'))) return '⬇️';
-        if (d.includes('designated for assignment'))                           return '❌';
-        if (d.includes('released'))                                           return '🚪';
-        if (d.includes('placed on') && (d.includes(' il') || d.includes('injured list'))) return '🩹';
-        if (d.includes('activated') && (d.includes(' il') || d.includes('injured list'))) return '✅';
-        if (d.includes('signed'))                                             return '✍️';
-        if (d.includes('claimed') || d.includes('waiver'))                   return '🏷️';
-        return '📋';
+        if (d.includes('trade'))                                                          return 'TRD';
+        if (d.includes('recalled') || d.includes('called up') || d.includes('selected')) return 'UP';
+        if (d.includes('optioned') || (d.includes('assigned to') && !d.includes('outright'))) return 'DN';
+        if (d.includes('designated for assignment'))                                       return 'DFA';
+        if (d.includes('released'))                                                        return 'REL';
+        if (d.includes('placed on') && (d.includes(' il') || d.includes('injured list'))) return 'IL';
+        if (d.includes('activated') && (d.includes(' il') || d.includes('injured list'))) return 'ACT';
+        if (d.includes('signed'))                                                          return 'SIG';
+        if (d.includes('claimed') || d.includes('waiver'))                                return 'CLM';
+        return 'MOV';
     };
 
     // Exclude purely minor-league-to-minor-league moves that aren't promotions
@@ -5151,7 +5151,7 @@ function _mlbH2HCard(player, group) {
 
     const placeholder = group === 'hitting' ? '— Select a pitcher —' : '— Select a batter —';
     return `
-        <h2 class="detail-section-title">⚔ Career Matchup</h2>
+        <h2 class="detail-section-title">Career Matchup</h2>
         <div class="h2h-select-row">
             <select id="mlb-h2h-select" class="compare-select" style="flex:1">
                 <option value="">${placeholder}</option>
@@ -5395,7 +5395,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
     if (!BROADCAST_BLURB_URL) {
         blurbCard.style.display = '';
         blurbCard.innerHTML = `
-            <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+            <h2 class="detail-section-title">Broadcast Blurb</h2>
             <p style="color:var(--text-muted);font-size:0.85rem">
                 Deploy <code>worker/broadcast-blurb.js</code> and set <code>BROADCAST_BLURB_URL</code> in <code>api.js</code> to enable AI blurbs.
             </p>`;
@@ -5404,7 +5404,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
 
     blurbCard.style.display = '';
     blurbCard.innerHTML = `
-        <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+        <h2 class="detail-section-title">Broadcast Blurb</h2>
         <div>
             <div class="skeleton-line" style="width:100%;height:18px;border-radius:6px"></div>
             <div class="skeleton-line" style="width:88%;height:18px;border-radius:6px;margin-top:8px"></div>
@@ -5438,7 +5438,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
         if (!res.ok) throw new Error(`Blurb API ${res.status}`);
         const { blurb } = await res.json();
         blurbCard.innerHTML = `
-            <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+            <h2 class="detail-section-title">Broadcast Blurb</h2>
             <div class="blurb-text" style="border-left-color:${colors.primary}">
                 <p>${_escHtml(blurb)}</p>
             </div>
@@ -5447,7 +5447,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
     } catch (err) {
         Logger.warn('Broadcast blurb failed', err, 'MLB');
         blurbCard.innerHTML = `
-            <h2 class="detail-section-title">📢 Broadcast Blurb</h2>
+            <h2 class="detail-section-title">Broadcast Blurb</h2>
             <p style="color:var(--color-error);font-size:0.85rem">
                 Blurb service unavailable — deploy <code>worker/broadcast-blurb.js</code> to enable AI blurbs.
             </p>`;
@@ -5601,7 +5601,7 @@ function _buildScoutReportHTML(playerId, group) {
     return `
         <div class="scout-report">
             <div class="scout-hdr">
-                <span class="scout-title">📋 Scouting Report</span>
+                <span class="scout-title">Scouting Report</span>
                 <span class="scout-meta">${_escHtml(player.teamAbbr || '')} · ${group === 'hitting' ? 'Batter' : 'Pitcher'} · ${MLB_SEASON}${sampleWarn}</span>
             </div>
             <div class="scout-col-hdr">
@@ -5687,7 +5687,7 @@ async function displayGamePrep() {
         const homeRec   = home?.leagueRecord ? `${home.leagueRecord.wins}-${home.leagueRecord.losses}` : '';
         const status    = g.status?.abstractGameState;
         const gameTime  = g.gameDate ? new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' }) : '';
-        const statusTxt = status === 'Live' ? '🔴 LIVE' : status === 'Final' ? 'Final' : gameTime;
+        const statusTxt = status === 'Live' ? 'LIVE' : status === 'Final' ? 'Final' : gameTime;
 
         return `
             <button class="prep-game-card" onclick="_openGamePrepSheet(${g.gamePk},${away?.team?.id},${home?.team?.id},${awayPP?.id || 'null'},${homePP?.id || 'null'})">
@@ -5827,7 +5827,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             </div>`;
         return `
             <div class="prep-section">
-                <div class="prep-section-title">🎯 Handedness Splits</div>
+                <div class="prep-section-title">Handedness Splits</div>
                 <div class="prep-cmp-header">
                     <span class="prep-cmp-team-lbl" style="color:${awayClr.primary}">${awayAbbr} <span class="prep-hand-badge">${awayLabel}</span></span>
                     <span></span>
@@ -5905,9 +5905,9 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
     // Park factor badge for the home venue
     const pf = _PARK_FACTORS[homeTeamId];
     const pfBadge = pf > 1.05
-        ? `<span class="prep-park-badge prep-park-badge--hit" title="Hitter-friendly park (PF ${pf.toFixed(2)})">🏟 +</span>`
+        ? `<span class="prep-park-badge prep-park-badge--hit" title="Hitter-friendly park (PF ${pf.toFixed(2)})">Park +</span>`
         : pf < 0.95
-        ? `<span class="prep-park-badge prep-park-badge--pit" title="Pitcher-friendly park (PF ${pf.toFixed(2)})">🏟 −</span>`
+        ? `<span class="prep-park-badge prep-park-badge--pit" title="Pitcher-friendly park (PF ${pf.toFixed(2)})">Park −</span>`
         : '';
 
     const _keyHitters = (splits) => {
@@ -5959,8 +5959,8 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             const pos = st.rdiff.startsWith('+');
             parts.push(`<span class="prep-form-badge prep-form-badge--${pos ? 'pos' : 'neg'}" title="Run differential">${_escHtml(st.rdiff)} R</span>`);
         }
-        if (st.home) parts.push(`<span class="prep-form-tag" title="Home record">🏠 ${st.home}</span>`);
-        if (st.away) parts.push(`<span class="prep-form-tag" title="Away record">✈ ${st.away}</span>`);
+        if (st.home) parts.push(`<span class="prep-form-tag" title="Home record">Home ${st.home}</span>`);
+        if (st.away) parts.push(`<span class="prep-form-tag" title="Away record">Away ${st.away}</span>`);
         return parts.length ? `<div class="prep-form-strip">${parts.join('')}</div>` : '';
     };
 
@@ -5968,7 +5968,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
         <div class="prep-sheet">
             <div class="prep-sheet-toolbar no-print">
                 <button class="back-button" onclick="displayGamePrep()">← All Games</button>
-                <button class="prep-print-btn" onclick="window.print()">🖨 Print</button>
+                <button class="prep-print-btn" onclick="window.print()">Print</button>
             </div>
 
             <div class="prep-matchup-hdr">
@@ -6000,7 +6000,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             </div>
 
             <div class="prep-section">
-                <div class="prep-section-title">⚾ Probable Pitchers</div>
+                <div class="prep-section-title">Probable Pitchers</div>
                 <div class="prep-two-col">
                     ${_pitcherCard(awayPPInfo, awayPitcherId)}
                     <div class="prep-divider"></div>
@@ -6009,7 +6009,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             </div>
 
             <div class="prep-section">
-                <div class="prep-section-title">🏏 Team Batting</div>
+                <div class="prep-section-title">Team Batting</div>
                 <div class="prep-cmp-header">
                     <span class="prep-cmp-team-lbl" style="color:${awayClr.primary}">${awayAbbr}</span>
                     <span></span>
@@ -6028,7 +6028,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             </div>
 
             <div class="prep-section">
-                <div class="prep-section-title">⚡ Team Pitching</div>
+                <div class="prep-section-title">Team Pitching</div>
                 <div class="prep-cmp-header">
                     <span class="prep-cmp-team-lbl" style="color:${awayClr.primary}">${awayAbbr}</span>
                     <span></span>
@@ -6044,7 +6044,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             </div>
 
             <div class="prep-section">
-                <div class="prep-section-title">⭐ Key Hitters</div>
+                <div class="prep-section-title">Key Hitters</div>
                 <div class="prep-two-col">
                     <div class="prep-hitters-col">
                         <div class="prep-hitters-lbl" style="color:${awayClr.primary}">

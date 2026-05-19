@@ -873,7 +873,7 @@ function _applyTheme(theme) {
     const label      = document.getElementById('themeToggleLabel');
     const headerIcon = document.getElementById('themeToggleHeaderIcon');
     const isLight    = theme === 'light';
-    if (icon)       icon.textContent  = isLight ? '🌙' : '☀️';
+    if (icon)       icon.innerHTML    = isLight ? _ICON_MOON : _ICON_SUN;
     if (headerIcon) headerIcon.innerHTML = isLight ? _ICON_MOON : _ICON_SUN;
     if (label)      label.textContent = isLight ? 'Dark mode' : 'Light mode';
 }
@@ -913,7 +913,7 @@ if (typeof window !== 'undefined') {
             toast.setAttribute('role', 'dialog');
             toast.setAttribute('aria-label', 'Install SportStrata');
             toast.innerHTML = `
-                <span class="install-toast-msg">⚡ Add SportStrata to your home screen</span>
+                <span class="install-toast-msg">Add SportStrata to your home screen</span>
                 <button class="install-toast-btn" id="installAcceptBtn">Install</button>
                 <button class="install-toast-dismiss" aria-label="Dismiss">✕</button>
             `;
