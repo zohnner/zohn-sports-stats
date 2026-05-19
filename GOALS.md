@@ -14,6 +14,22 @@ MLB is the core product. NBA, NFL, and NHL exist as preview features and will ex
 
 ---
 
+## Current Milestone — Public Beta
+
+**Definition of done:** the product is ready for a public repo and public link without risk or embarrassment.
+
+| Gate | Status | Owner |
+|---|---|---|
+| P1-006 resolved — BDL key out of source, Worker deployed | ⚠️ Open | Axiom |
+| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ⚠️ Open | Axiom + Vera |
+| Data freshness timestamp visible on players and leaders views | ⚠️ Open | Finn |
+| First-visit value statement on home page (renders once for new visitors) | ⚠️ Open | Finn |
+| Scorecard Phase 1 shipped and smoke-tested | ⚠️ Open | Finn |
+
+Everything else is post-beta. No new feature work starts until all five gates are closed.
+
+---
+
 ## Target Audience
 
 | Persona | What they need |
@@ -150,6 +166,19 @@ Convert to a **Progressive Web App** with:
 - Offline mode: last-fetched standings/leaderboards available without network
 - App-store-quality experience without app store distribution
 
+### F7 — Interactive Baseball Scorecard
+A **play-by-play scorecard view** for any MLB game — historical or live:
+- 9×9 CSS Grid with inline SVG diamonds per cell, notation symbols, and base progression fill states
+- Historical mode: completed game loads pre-filled from `/game/{gameId}/playByPlay`
+- Live mode: 20s polling, active at-bat cell pulses, pitch count updates in real time
+- Cell hover shows full pitch sequence; player name links to player detail
+- Share card: completed scorecard exported as a branded PNG (team colors, game date, SportStrata watermark)
+- Printable via jsPDF if html2canvas spike validates viability
+
+This is the highest-engagement depth feature for the broadcaster audience — a completed scorecard is a shareable artifact with social distribution value that no other stat surface produces.
+
+Implementation is phase-gated. See `DECISIONS.md D-007` and full roadmap in `ISSUES.md`.
+
 ### F6 — Multi-Sport Full Parity
 Once MLB goals are met, bring **NBA, NFL, and NHL** to the same depth:
 - NBA: play-by-play splits, lineup net ratings, shot charts, advanced box scores
@@ -196,3 +225,95 @@ Unified player search across all sports — type any name, get any sport.
 4. **Fail gracefully** — every view has a skeleton, an error state, and a retry button
 5. **No magic strings** — all team names, abbreviations, and IDs live in `config.js`
 6. **Cache aggressively, invalidate clearly** — TTL buckets (5m/30m/60m) documented in `cache.js`
+
+---
+
+## Design Direction Notes
+
+### Design System Overhaul Must Precede Feature Expansion
+**Contributor:** Kael | **Date:** 2026-05-17
+
+The 2026 initiative pairs a design system overhaul with feature gap closure (spray charts, H2H matchups, team leaderboard filters). These two goals are in direct tension and need a sequencing decision before work begins.
+
+The overhaul goes first. Adding spray charts and matchup views onto a partially inconsistent visual system means those components will inherit the inconsistency and need to be revisited when the overhaul eventually lands. That's rework. Do the system once, then build features into it.
+
+What "design system overhaul" concretely means here: audit every component against the `variables.css` token set, eliminate any hardcoded values or one-off color choices that don't map to a token, and establish explicit rules for where each stat-color token applies and where it doesn't. The token system is solid; the discipline of applying it consistently is what's missing.
+
+### Broadcast-Grade Posture Is the North Star — Protect It
+**Contributor:** Kael | **Date:** 2026-05-17
+
+SportStrata's intended posture is broadcast-grade authority: dense, legible, trustworthy. The reference point is Baseball Savant crossed with a broadcast lower-third system — not a fantasy sports app, not a consumer scoreboard.
+
+The stat-color palette (amber, emerald, sky, violet, pink per stat category) is a sound semantic system when applied with restraint. The risk is that as the feature set grows, color gets used decoratively rather than categorically — every new component reaching for the palette to "look alive." That's the point where a semantic system becomes a gamification palette, and the product's posture shifts in a direction that undermines its credibility with the broadcast audience.
+
+The rule to hold: stat colors mark category, not importance. Everything else uses the surface and text token hierarchy. No exceptions without a documented rationale.
+
+---
+
+## UX Direction Notes
+
+### Mobile Nav Must Reflect the Announcer's Workflow — Not Implementation Order
+**Contributor:** Vera | **Date:** 2026-05-17
+
+The five slots in the bottom tab bar are the most valuable real estate on mobile. Every design decision about what occupies them is a statement about which users and which tasks matter most. The current lineup (Players | Leaders | Scores | Standings | Builder) was assembled by convention, not by audience analysis.
+
+Game Prep is the product's primary differentiator for the broadcast professional persona — it is the feature that delivers on G3 ("every key fact in 3 clicks or fewer") for the audience segment targeted by the Enterprise tier at $499/month. It is currently absent from the tab bar and requires 3 taps to reach on mobile. Builder — a power-user stat-formula tool that most users encounter only after extended product exploration — occupies the tab bar slot that Prep should have.
+
+The principle to hold going forward: the mobile tab bar is ordered by the primary audience's actual workflow, not by feature recency or implementation sequence. Before any new feature is considered for the tab bar, compare it against the announcer workflow: does an announcer need it in real-time conditions? If no, it goes in the menu panel. The tab bar is for what an announcer needs in the booth — not what a developer thought was important when they added it.
+
+---
+
+### Data Freshness Is a Trust Feature, Not a Nice-to-Have
+**Contributor:** Vera | **Date:** 2026-05-17
+
+The Enterprise tier (R2) targets broadcast professionals who will cite SportStrata stats on-air. A broadcaster needs to know not just what the stat is, but whether it reflects last night's performance or data from two days ago. Without a freshness signal, SportStrata is asking broadcast professionals to trust the product on faith — which is not how professionals in high-stakes, live environments operate.
+
+"Stats updated [time]" is the minimum viable trust signal. It is also the explanation for stat discrepancies: when a broadcaster sees a different number on SportStrata than on another source, a timestamp tells them whether the difference is a calculation question or a timing question. Without it, the question becomes "is SportStrata wrong?" — which is the worst possible framing.
+
+This feature should be implemented before Enterprise marketing begins. The data is already computed — the cache stores write timestamps. Surfacing it is a display problem, not a data problem. The implementation is small; the trust value is large. For the R2 pitch, being able to say "SportStrata shows when its data was last updated" is a concrete differentiator from tools that do not.
+
+---
+
+### First-Visit Orientation Is Required Before Pro Tier Launch
+**Contributor:** Vera | **Date:** 2026-05-17
+
+The home page today is designed for returning users who already understand what SportStrata is. For a first-time visitor arriving via a shared link, a search result, or a referral, the page offers game cards, shortcut tiles, and a hot strip — with no framing that explains the product or its value proposition.
+
+For the free-tier user acquisition that precedes R1 (Pro at $9.99/month), the first-visit experience becomes a conversion variable. A broadcaster who arrives via a Google search for "baseball game prep stats" and sees the home page cold has roughly 10 seconds to answer one question: "Is this worth my time?" Nothing on the current home page answers that question within 10 seconds.
+
+The fix does not need to be a tour or an onboarding flow. It can be as simple as a conditional value statement above the game cards — one or two sentences that render for users with no prior interaction history (detectable via localStorage) and disappear after the user's first navigation. The content: who this is for and why it is better than ESPN. It does not need to be permanent or prominent — it needs to exist for the user who needs it.
+
+This is a pre-Pro-tier launch requirement, not a backlog item. Acquisition-at-scale without a first-visit hook is a funnel with a large hole at the top.
+
+---
+
+## Engineering Direction Notes
+
+### P1-006 Is a Launch Prerequisite, Not a Backlog Item
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+The BDL API key at `js/api.js:11` is plaintext in source. That's the single item that has to be resolved before any public push — full stop. The fix is already written: `worker/bdl-proxy.js` exists, the deployment path is documented in `ISSUES.md`. This isn't a complex engineering problem. It's an execution gap. It needs to be treated with the same urgency as a production incident, because the moment this repo goes public it becomes one.
+
+Until it's fixed, no other launch-readiness work matters. Lighthouse scores don't matter. WCAG audits don't matter. A live API key in a public repo is an incident waiting for a timestamp.
+
+### Scorecard Feature — Architecture Constraints and Risk Flags
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+The scorecard introduces the first DOM-heavy, stateful, multi-phase feature we've built on this stack. Three architectural decisions are locked before Finn touches any code.
+
+First: the play-by-play data model. The MLB Stats API `allPlays` array is more complex than it looks — mid-inning base advances (stolen bases, wild pitches during an active at-bat) are embedded as `playEvents` within the enclosing play object, not as separate play entries. The diamond fill state for any given batter is derived from the accumulated `runners` array across all events in the half-inning, not just the batter's outcome. Phase 0 exists to map this precisely. Skipping it produces incorrect base state rendering on anything more complex than a strikeout or clean hit.
+
+Second: live mode interval lifecycle. `setInterval()` in a hash-based SPA without a cleanup hook is a background-polling leak. The interval handle lives in `scorecard.js` module scope. The cleanup lives in `navigateTo()` in `navigation.js` as a pre-navigation check against `AppState.mlbLiveGameId`. This is a shared-routing-logic touch — Axiom reviews that specific change before it ships.
+
+Third: html2canvas is unproven in our rendering context. The scorecard design uses CSS `transform: rotate(45deg)` on the diamond, inline SVG, and CSS custom properties throughout. html2canvas has documented issues with all three. The spike in Phase 4 is not optional — it gates whether the export feature ships at all and in what form.
+
+D3 is not entering this codebase. Diamond animations are CSS. Any proposal to add D3 for base-path animations gets declined without further discussion.
+
+### AppState Is Load-Bearing — Treat Its Growth as a Structural Decision
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+`AppState` in `api.js` is the entire runtime data model. It's working well and the pattern is sound: fields are populated lazily, views check for existing data before fetching, `mlbFetch()` centralizes caching. The architecture earns its simplicity.
+
+The risk going into the 2026 feature push is that AppState grows by accretion rather than by design. Each new feature adds a field, and the "check if populated, fetch if not, then render" pattern gets repeated across more views against more interdependent fields. That's fine until two views race to populate the same field and either double-fetch or render on stale data. No confirmed incidents yet — but `mlbLeaderSplits`, `mlbHotStats`, and `mlbSavantLeaderboard` are already three heavyweight async dependencies that several views share. Adding more without auditing the fetch coordination will eventually produce a timing bug that's hard to reproduce.
+
+The goal before the feature push: document which AppState fields each view depends on, identify any fields that multiple views independently fetch, and consolidate those fetches to a single call site. This doesn't require a rewrite — it requires deliberate accounting.

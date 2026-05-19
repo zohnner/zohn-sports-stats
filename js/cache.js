@@ -48,6 +48,23 @@ class ApiCache {
     }
 
     /**
+     * Return the write timestamp (ms since epoch) for a cache entry, or null on miss.
+     * @param {string} raw
+     * @returns {number|null}
+     */
+    static getTimestamp(raw) {
+        try {
+            const stored = localStorage.getItem(this.#key(raw));
+            if (!stored) return null;
+            const { ts, exp } = JSON.parse(stored);
+            if (Date.now() > exp) return null;
+            return ts ?? null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
      * Write a value to the cache.
      * @param {string} raw    — cache key
      * @param {any}    data   — value to cache (must be JSON-serialisable)
@@ -59,7 +76,7 @@ class ApiCache {
         try {
             localStorage.setItem(
                 this.#key(raw),
-                JSON.stringify({ data, exp: Date.now() + ttl })
+                JSON.stringify({ data, exp: Date.now() + ttl, ts: Date.now() })
             );
         } catch (e) {
             Logger.warn('Cache write failed (quota or disabled)', e.message, 'CACHE');

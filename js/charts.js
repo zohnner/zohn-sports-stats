@@ -816,6 +816,8 @@ class StatsCharts {
         canvas.height = H;
         const ctx = canvas.getContext('2d');
         const pc  = primaryColor || '#6366f1';
+        const fontFace = getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim().split(',')[0].replace(/['"]/g, '').trim() || 'Inter';
+        const f = (style, px) => `${style} ${px}px ${fontFace}, sans-serif`;
 
         // Background gradient
         const bg = ctx.createLinearGradient(0, 0, W, H);
@@ -842,7 +844,7 @@ class StatsCharts {
         ctx.save();
         ctx.globalAlpha = 0.05;
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 180px system-ui,-apple-system,sans-serif';
+        ctx.font = f('bold', 180);
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         ctx.fillText(teamAbbr || '', W - 10, H / 2);
@@ -859,7 +861,7 @@ class StatsCharts {
         ctx.stroke();
 
         ctx.fillStyle = pc;
-        ctx.font = 'bold 26px system-ui,-apple-system,sans-serif';
+        ctx.font = f('bold', 26);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(initials, 80, H / 2);
@@ -868,12 +870,12 @@ class StatsCharts {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 30px system-ui,-apple-system,sans-serif';
+        ctx.font = f('bold', 30);
         ctx.fillText(name, 148, 108);
 
         // Position · team · season
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '15px system-ui,-apple-system,sans-serif';
+        ctx.font = f('normal', 15);
         const meta = [position, teamName || teamAbbr, season ? `${season} Season` : ''].filter(Boolean).join(' · ');
         ctx.fillText(meta, 148, 136);
 
@@ -891,13 +893,13 @@ class StatsCharts {
             const clr = color || '#f1f5f9';
 
             ctx.fillStyle = clr;
-            ctx.font = 'bold 28px system-ui,-apple-system,sans-serif';
+            ctx.font = f('bold', 28);
             ctx.textAlign = 'center';
             ctx.textBaseline = 'alphabetic';
             ctx.fillText(String(value ?? '—'), x, y);
 
             ctx.fillStyle = '#64748b';
-            ctx.font = '11px system-ui,-apple-system,sans-serif';
+            ctx.font = f('normal', 11);
             ctx.fillText(label.toUpperCase(), x, y + 20);
         });
 
@@ -905,7 +907,7 @@ class StatsCharts {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = '#475569';
-        ctx.font = '12px system-ui,-apple-system,sans-serif';
+        ctx.font = f('normal', 12);
         ctx.fillText('SportStrata', 28, H - 18);
 
         ctx.textAlign = 'right';

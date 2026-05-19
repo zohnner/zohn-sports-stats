@@ -7,8 +7,8 @@
 
 /* "SCORES" label pill — now a button linking to the scores page */
 .ticker-title {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-    color: #fff;
+    background: var(--bg-raised);
+    color: var(--accent);
     padding: 0 14px;
     align-self: stretch;
     display: flex;
@@ -20,16 +20,19 @@
     text-transform: uppercase;
     white-space: nowrap;
     flex-shrink: 0;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.4);
+    box-shadow: inset -1px 0 0 var(--border-mid);
     position: relative;
     z-index: 1;
     border: none;
     cursor: pointer;
     font-family: inherit;
-    transition: filter 0.15s;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
-.ticker-title:hover { filter: brightness(1.15); }
-.ticker-title:active { filter: brightness(0.9); }
+.ticker-title:hover {
+    background: var(--accent-subtle);
+    color: var(--accent-light);
+}
+.ticker-title:active { background: var(--bg-surface); }
 
 /* "N LIVE" badge inside the title pill */
 .ticker-live-badge {

@@ -2,9 +2,1050 @@
 
 Active issues in priority order. When fixed, delete the row — the fix lives in the code and the git message.
 
+---
+
 ## P1 — Critical
 
 | ID | File | Description |
 |---|---|---|
 | P1-006 | [`js/api.js:11`](js/api.js#L11) | `BDL_API_KEY` is plaintext in source — any public push leaks it. Fix: deploy `worker/bdl-proxy.js`, set `BDL_PROXY_URL` in `api.js`, remove the raw key. |
 
+---
+
+## P2 — Bugs
+
+| ID | File | Description |
+|---|---|---|
+| P2-005 | [`worker/wrangler-blurb.toml`](worker/wrangler-blurb.toml) | Broadcast Blurb worker not deployed — `sportsstrata-blurb.zohnwheeler.workers.dev` returns errors. Fix: `cd worker && wrangler secret put ANTHROPIC_API_KEY --config wrangler-blurb.toml && wrangler deploy --config wrangler-blurb.toml`. |
+
+---
+
+## P3 — Feature Backlog
+
+High-value MLB features consistent with the broadcast/fantasy/data-fan audience. In rough priority order.
+
+### Recently shipped
+
+| ID | Area | What shipped |
+|---|---|---|
+| P3-001 | Player Detail | Standalone `mlb-compare` view. Two-player dropdowns, side-by-side stat bars, radar overlay, shareable URL. |
+| P3-003 | Player Detail | Career H2H matchup card. Statcast play-by-play CSV, last 5 seasons, PA/AB/H/HR/K/BB/AVG/OBP. |
+| P3-004 | Player Detail | Savant visual card — spray chart (hitters) and pitch zone (pitchers) iframe tabs. |
+| P3-006 | Arcade | Daily Quest. 10 rotating stat-challenge templates, seeded by date, streak counter. |
+| P3-007 | Game Prep | Handedness Splits section — AVG/OBP/SLG/OPS/K vs. opposing starter's hand. |
+| P3-008 | Game Prep | Weather card in prep sheet header — temp + wind for outdoor parks, "Dome" for covered. |
+| P3-009 | Player Detail | Pitch arsenal card on pitcher pages — type badge, usage % bar, velo, spin, BAA. |
+| P3-010 | Player Detail | Player bio strip — age, bat/throw, height/weight, hometown, debut year. |
+| P3-011 | Team Detail | Team aggregate stats card (AVG/OBP/SLG/OPS/ERA/FIP/WHIP/K9…) + upcoming 7-day schedule with probable pitchers. |
+| P3-012 | Team Detail | IL status on team roster — red badges, "N Active · M IL" title, reduced-opacity IL rows. |
+| P3-013 | Search | Headshots and team logos in ⌘K search results, with team-color gradient background and initials fallback. |
+| P3-014 | Standings | "📰 Moves" tab on standings page — last 7 days of MLB transactions (trades, IL, call-ups, DFAs, releases) grouped by date with headshots and team badges. |
+| P3-015 | Player Detail | League rank badges on player stats — `#N MLB` shown on stats where the player ranks ≤ 30 in the league; green for top 5, accent for top 15. `_mlbPlayerLeagueRanks()` uses cached `mlbLeaderSplits`. |
+| P3-016 | Leaders | Active hitting streak leaderboard panel on leaders page. Fetches `stats=streak` type; players on ≥ 5-game streaks shown ranked, orange ≥ 10, red ≥ 15. Graceful fallback if endpoint unavailable. |
+| P3-017 | Player Detail | Monthly splits toggle. Month tabs (Apr–Oct) appended after L7/L14/L30 on both hitting and pitching splits cards. Green tint distinguishes month tabs from amber (recent) and default (situational). |
+| P3-020 | Home | "Tonight's Starters" section on home page. Shows each scheduled game's probable SPs side-by-side with ERA/WHIP/K9/W-L. Headshot + team color, clickable → pitcher detail. Renders when both games and `mlbLeaderSplits` are available (two trigger points). Hidden when no SPs announced or no games today. |
+
+### Upcoming
+
+| ID | Area | Description |
+|---|---|---|
+| P3-018 | Game Detail | **Pitcher vs. team historical line.** On the game box score page, show each starting pitcher's career ERA/WHIP/IP against the opposing team (via `/people/{id}?hydrate=stats(type=vsTeam,...)`). Broadcast-essential pre-game context. |
+| P3-019 | Leaders | **Position-adjusted leaderboard view.** A "By Position" tab on the leaders page — top 3 for each position (C, 1B, 2B, 3B, SS, LF, CF, RF, DH, SP, RP, CL) in OPS or ERA, formatted as a grid. Fantasy positional reference. |
+| P3-021 | Home | **"Tonight's starters" deeper stats.** Extend the SP cards to also show the pitcher's home/away ERA split and vs-this-opponent career ERA (from `/people/{id}?hydrate=stats(type=vsTeam,...)`). Currently only season stats shown. |
+| P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** Interactive play-by-play scorecard view for completed and live games. Full roadmap in "Scorecard Feature" section below. See `DECISIONS.md D-007`. Blocked on D-001 + D-003. |
+
+---
+
+## Design Issues
+
+### Hitters/Pitchers Toggle — Inline Style Bypasses Token System
+**Contributor:** Kael | **Date:** 2026-05-17 | **Assigned to:** Axiom
+
+`_styleMLBGroupBtn()` in `js/mlb.js:914` sets button appearance via `btn.style.cssText`, writing raw color values that bypass the CSS token system entirely. Active state uses `rgba(16,185,129,0.2)` background and `#34d399` text — this is emerald, which maps to `--color-reb` (a stat category token), not a UI state token. An active navigation toggle showing emerald tells users "this is a rebound/win-adjacent state," not "this is selected." Violates the stat-color discipline rule established in the design system overhaul.
+
+Fix (Axiom executes): replace inline `style.cssText` with CSS class toggling. Add `.mlb-group-btn` and `.mlb-group-btn--active` classes. Active state should use `var(--accent-subtle)` / `var(--accent)` to match every other active navigation element in the product. Position button (`_styleMLBPosBtn`) may keep indigo (`--color-chip` / `--color-chip-bg`) — that token is designated for selection/chip context and is semantically appropriate there.
+
+**Not a blocker for Phase 1.** P2 priority — fix before 2026 feature push.
+
+---
+
+### Color Semantic Drift Risk
+**Contributor:** Kael | **Date:** 2026-05-17
+
+The stat-color palette (`--color-pts` amber, `--color-reb` emerald, `--color-ast` sky, `--color-stl` violet, `--color-blk` pink) is functioning as a categorical system today. The risk is incremental drift: each new component added during the 2026 feature push reaches for these colors to signal activity or emphasis rather than category, and over time the palette stops meaning anything specific.
+
+No single instance of this has become a problem yet — this is an early flag. The fix is an explicit rule enforced during the design system overhaul: stat colors mark category only. They do not signal importance, highlight states, or decorate new components that don't map to those exact stat types. Any proposed use of a stat-color token outside its defined category should be documented and justified, not defaulted to.
+
+---
+
+### WCAG Accessibility — No Audit Run
+**Contributor:** Kael | **Date:** 2026-05-17
+
+The success metrics table marks WCAG AA compliance as "Partial" but there has been no structured audit. This means the gap is unknown. Color contrast for text on `--bg-card` surfaces, keyboard navigation through the leaderboard tables, and focus visibility on the ⌘K search overlay are the highest-probability failure points based on a visual read of the current UI.
+
+This needs a real audit before any Pro or Enterprise tier launch — a broadcast professional or production assistant using keyboard shortcuts will hit gaps immediately if focus states are missing or contrast ratios fail on mid-weight text. Recommend running axe-core or Lighthouse accessibility pass against the MLB players, leaders, and player detail views as the first three targets.
+
+---
+
+### Loading State Verification — Throttled Network Not Confirmed
+**Contributor:** Kael | **Date:** 2026-05-17
+
+Skeleton states exist and the shimmer keyframe is implemented. What hasn't been confirmed is how every view behaves under realistic network conditions — a mobile connection at 3G speeds, a cold cache on first visit, or a partial API failure where some endpoints return and others time out.
+
+The skeleton pattern is only as good as the coverage. If a view defaults to a blank container when its specific data fails rather than showing a skeleton and a graceful error, the user sees a broken layout with no explanation. Every view needs to be walked in Chrome DevTools with network throttled to "Slow 3G" before the 2026 feature push adds more async data dependencies on top of the existing ones.
+
+---
+
+### Game Prep Absent from Mobile Bottom Tab Bar
+**Contributor:** Vera | **Date:** 2026-05-17
+
+Current bottom tab bar: Players | Leaders | Scores | Standings | Builder. Game Prep is not in it.
+
+Game Prep is the highest-value feature for the announcer persona — it is the one view that addresses G3 ("every key fact in 3 clicks or fewer") for the primary paying audience. On mobile, reaching it requires three interactions: tap the menu button, wait for the panel to appear, tap the Prep tile. That is two interactions more than any item in the tab bar. For a broadcaster opening SportStrata on a phone in the booth, that friction is a product failure at the moment it matters most.
+
+Builder is the feature currently occupying the tab bar slot that Prep should have. Builder is a power-user tool — it requires composing custom stat formulas, which is not a live-broadcast workflow. It belongs in the menu panel, not the bottom tab bar. Swapping Builder out and Prep in aligns the tab bar with actual audience priority for the first time.
+
+This is a P2 UX issue. It is a behavioral change, not a visual one, and it is small: change `data-view="mlb-builder"` to `data-view="mlb-prep"` in the bottom tab bar markup, update the label and icon, confirm the active state syncs correctly via `.nav-tab`. Prep still remains accessible from the menu panel — no feature is removed. Builder is only deprioritized from the primary mobile surface.
+
+**Recommended fix:** swap Builder ↔ Prep in `#bottomNav` in `index.html`. Update icon to clipboard or checklist glyph. Confirm active state with `navigateTo('mlb-prep')`.
+
+---
+
+### Home Search Bar False Affordance
+**Contributor:** Vera | **Date:** 2026-05-17
+
+The search element on the home page is styled as an input field — rounded corners, placeholder text "Search players, teams…", magnifier icon — but clicking it does not accept direct input. It opens the ⌘K overlay, which is a separate full-screen element that does accept input. The visual language says "type here" and the behavior says "I'll open something else."
+
+This is a textbook false affordance. The gap between what the element looks like (a text field) and what it does (a button that opens a modal) creates a moment of confusion that is disproportionate for such a small surface. Users who tap it on mobile expecting a keyboard to appear will be disoriented when a search overlay drops down instead.
+
+The fix is a reframe, not a rework: style the home search element as a button. It can still have a magnifier icon and placeholder-style text, but the element shape, cursor, and ARIA role should signal "click to search" rather than "type here." This removes no functionality — the ⌘K overlay is still the search mechanism. It just doesn't pretend the home element is something it isn't.
+
+**Recommended fix:** convert the home search trigger to a `<button>` with `role="button"` rather than an `<input>`. Style it as a call-to-action chip. Keep the "Search players, teams…" text as a label inside the button. Add keyboard shortcut hint `⌘K` at the trailing edge.
+
+---
+
+### Data Freshness — No Last-Updated Timestamp
+**Contributor:** Vera | **Date:** 2026-05-17 | **Priority:** P2 for Enterprise tier launch
+
+There is no indication anywhere in the UI of when stats were last fetched or what date the data reflects. For a broadcast professional citing SportStrata stats on-air, data freshness is not a UX nicety — it is a trust prerequisite. An announcer who quotes a slugging percentage that is two days stale, or who misses a player's performance from last night's game because the cache hasn't been invalidated, has a credibility problem with their audience that SportStrata created.
+
+This is also the explanation for stat discrepancies: a user who compares a SportStrata number to another source and finds a difference has no way to determine whether it is a calculation difference or a data timing difference. A timestamp resolves that ambiguity immediately.
+
+The implementation is lightweight because the timestamp exists: `ApiCache` stores a write timestamp with every entry. Surfacing it requires reading the cache metadata for the key stat endpoints and rendering it as a small "Stats as of [time]" label near the data. This is not a new data source — it is making visible data that is already computed.
+
+**Recommended fix:** Add a `data-freshness` attribute or a small `.freshness-label` element near the stat header in the players, leaders, and player detail views. Populate it from `ApiCache.getTimestamp(key)` if such a method exists, or from the response `Date` header captured at fetch time. Target format: "Updated 14 min ago" or "Updated today at 2:34 PM". P2 — required before Enterprise marketing begins.
+
+---
+
+### Sub-nav Ordering Misalignment with Primary Audience
+**Contributor:** Vera | **Date:** 2026-05-17
+
+Current sub-nav order: Players | Leaders | Teams | Standings | [divider] | Builder | Prep | Arcade.
+
+Game Prep sits 7th of 8 items. Builder sits 6th. This order does not reflect the announcer persona's workflow — it reflects implementation history. The broadcaster who opens SportStrata before a game has one immediate destination: Prep. The user who wants to build a custom stat formula is a power user who will find Builder regardless of its position. Listing Builder before Prep on a surface designed for announcers is a category error.
+
+The fix is a two-item swap: Prep before Builder. No new nav items, no restructuring, no changes to click routing.
+
+**Recommended fix:** in `#subNav` in `index.html`, move the Prep `<button>` before the Builder `<button>`. Confirm `data-view` values and `.nav-tab` classes are unchanged.
+
+---
+
+### Card CTA Hover-Reveal Invisible to Touch Users
+**Contributor:** Vera | **Date:** 2026-05-17
+
+`.card-cta` is styled with `color: var(--text-subtle)` and becomes visible only on `.player-card:hover .card-cta`. Touch devices do not emit hover events. This means the CTA — which signals that the card is tappable and navigates somewhere meaningful — is effectively invisible to every mobile user until after they have already committed to tapping the card.
+
+If the CTA's role is to provide an affordance signal (this card does something), it fails on touch. If its role is purely decorative post-tap, it adds no value on touch either. Either way, the behavior on mobile is wrong.
+
+**Recommended fix:** within the `≤768px` breakpoint, add a rule that renders `.card-cta` at full opacity without hover dependency. Example: `@media (max-width: 768px) { .card-cta { color: var(--accent); opacity: 1; } }`. The hover interaction on desktop can remain unchanged.
+
+---
+
+### `detail-value` at 11.5px — Readability at Production Distances
+**Contributor:** Vera | **Date:** 2026-05-17
+
+After Kael's card-density pass, `.detail-value` renders at `var(--text-xs)` = 11.5px. On a Retina laptop at normal laptop distance this is readable. On a 1080p or 1440p monitor at desk distance — the typical environment for a production assistant or broadcast technician — 11.5px is at the lower threshold of comfortable sustained reading. The stat values are the primary information in a player card; they should not require the user to lean in.
+
+This is not a P1 item. It is a watch item: if readability complaints arrive from production-environment users, the fix is bumping `.detail-value` from `var(--text-xs)` to `var(--text-sm)` (13px). The card density trade-off Kael made was correct for visual hierarchy; the concern is whether 11.5px holds at non-Retina viewing distances. Monitor in real usage before acting.
+
+---
+
+### Game Prep — Team Color as Sole Differentiator for League/Side Context
+**Contributor:** Vera | **Date:** 2026-05-17
+
+Screenshots of the Game Prep view confirm that home/away and AL/NL context is signaled primarily via team color bands. Color is the fastest differentiator for this context and is appropriate. The WCAG concern is that color is the _only_ differentiator — no text label ("Home", "Away", "AL", "NL") accompanies the color block for users who cannot distinguish the colors reliably.
+
+For the broadcast professional audience, a color-blind announcer using this view during game prep cannot confirm league context without already knowing which team is which. That is a use case that exists and that the Enterprise tier cannot afford to fail.
+
+**Recommended fix:** add a small text label ("Home" / "Away", or "AL" / "NL" where applicable) adjacent to the team color band in the game selector and prep sheet header. Text accompanies color — never color alone. This is a WCAG 1.4.1 (Use of Color) requirement and is trivial to implement.
+
+---
+
+## Engineering Issues
+
+### AppState Race Condition Risk — Shared Fields, Multiple Fetch Sites
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+Several AppState fields (`mlbLeaderSplits`, `mlbHotStats`, `mlbSavantLeaderboard`) are fetched on-demand by whichever view needs them first. The pattern works in isolation but creates a race when two views load in rapid succession — both check the field, both find it empty, both dispatch a fetch, and the second one either overwrites in-flight data or renders before the first resolves. No confirmed incident, but the conditions for it are present and the 2026 feature push adds more shared async fields.
+
+The fix isn't a rewrite. It's fetch deduplication: a pending-promise registry so the second caller awaits the in-flight request rather than dispatching a new one. This is a small, targeted change to `mlbFetch()` or a thin wrapper around the shared-field fetches. Should be resolved before the next feature adds another shared async dependency to the pile.
+
+### `mlbLeaderSplits` Race Condition — Three Independent Fetch Sites Confirmed
+**Contributor:** Finn | **Date:** 2026-05-17
+
+Grep follow-up on Axiom's race condition entry above. `mlbLeaderSplits` is the highest-exposure field: it has three independent `if (!AppState.mlbLeaderSplits)` / fetch / set sites, not two.
+
+The three sites:
+1. [`js/app.js:282`](js/app.js#L282) — `loadHome()`. Fires when home page loads. Fire-and-forget `Promise.all().then()` — no `await`. Does not enrich team abbreviations.
+2. [`js/mlb.js:3508`](js/mlb.js#L3508) — `loadMLBLeaderboards()`. Fires when leaders view loads. Adds a team-abbreviation enrichment step via `abbrById` map that the other two sites do not perform.
+3. [`js/mlb.js:5407`](js/mlb.js#L5407) — `_showMLBScoutReport()`. Fires when the scout report card is triggered on player detail. Does not enrich team abbreviations.
+
+The race path: user lands on home (site 1 fires, non-blocking) → navigates immediately to leaders (site 2 fires, both checks pass `null`, two fetches in flight simultaneously). Site 2 may also produce a `mlbLeaderSplits` with team abbreviations populated while site 1 produces one without — meaning whichever resolves last wins and the result depends on network timing.
+
+`mlbHotStats` and `mlbSavantLeaderboard` each have only one fetch site (both in `loadMLBLeaderboards()`) — lower exposure.
+
+Escalation: Axiom. This is a confirmed version of the D-003 issue with the specific call sites mapped. No fix attempted.
+
+---
+
+### `schema.js` Loads Late — `ApiShape` Availability Not Verified Upstream
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+`schema.js` is positioned near the end of the `<script>` load chain in `index.html` (after `standings.js`, before `db.js`). `ApiShape`, defined there, is a validation helper that any file loaded before it cannot safely reference. The load order is documented but not enforced — there's no runtime check and no build step to catch violations.
+
+The risk is a silent failure: a file that calls `ApiShape.validate()` before `schema.js` has executed gets `undefined` rather than an error, validation is skipped, and malformed API data flows into the render path undetected. Needs a grep across all JS files to confirm nothing upstream references `ApiShape`, and if any do, either move the reference or move `schema.js` earlier in the chain.
+
+### `ApiShape` Upstream Violation Confirmed — `api.js` Calls It, Loads 4th in Chain
+**Contributor:** Finn | **Date:** 2026-05-17
+
+Grep follow-up on Axiom's `schema.js` entry above. Three calls to `ApiShape.check()` in `api.js`, which loads 4th in the script chain — 14 positions before `schema.js`:
+
+- [`js/api.js:217`](js/api.js#L217) — `fetchAllPlayers()` — `ApiShape.check(players, ApiShape.bdlPlayer, 'players')`
+- [`js/api.js:271`](js/api.js#L271) — `fetchBDLGames()` — `ApiShape.check(games, ApiShape.bdlGame, 'games')`
+- [`js/api.js:311`](js/api.js#L311) — `fetchNBASeasonAverages()` — `ApiShape.check(results, ApiShape.bdlStats, 'season_averages')`
+
+All three calls are inside async function bodies, not top-level — so they don't execute at parse time. By the time any BDL fetch is triggered (through user navigation via `app.js`, which loads last), `schema.js` has already executed and `ApiShape` is defined. No live runtime error today.
+
+The fragility: there is no guard. If `ApiShape` is ever undefined at call time — due to a future script order change, a removed script tag, or a preload context — the call fails silently and malformed BDL data proceeds to the render path unchecked. No other JS files upstream of `schema.js` reference `ApiShape`.
+
+Resolution options for Axiom: (a) add a `typeof ApiShape !== 'undefined'` guard inside each call site in `api.js`, or (b) move `schema.js` to load before `api.js` in `index.html`. Option (b) is cleaner but requires verifying `schema.js` has no dependencies that load after it.
+
+Escalation: Axiom.
+
+---
+
+### P2-005 — Broadcast Blurb Worker Is Undeployed, No Blocker Identified
+**Contributor:** Axiom | **Date:** 2026-05-17
+
+`worker/wrangler-blurb.toml` is committed and the worker code exists. The endpoint is referenced in the UI. It isn't deployed. The documented fix is two commands: set the `ANTHROPIC_API_KEY` secret via `wrangler secret put`, then `wrangler deploy`. There's no technical blocker recorded — this appears to be an execution gap, not an engineering problem.
+
+This matters because F1 (AI Stat Narratives) is listed as the single feature that makes SportStrata irreplaceable for announcers. Leaving the worker undeployed means that feature is inert in production indefinitely. If there's a reason it hasn't shipped — cost concern, API key not available, rate limit question — that reason should be documented here so it doesn't look like an oversight.
+
+---
+
+### D-005 Skeleton Coverage Audit — All MLB Views
+**Contributor:** Finn | **Date:** 2026-05-17
+
+Code-level verification of skeleton and error-state coverage for all MLB views, per D-005 requirement. Method: read each view entry function and its restore path in `navigation.js` for cold deep-link behaviour. Three categories: solid (skeleton + ErrorHandler), gap (blank or inconsistent), style-only (loading state exists but uses spinner instead of skeleton pattern).
+
+| View | Entry Function | Skeleton? | Error State? | Verdict |
+|---|---|---|---|---|
+| Players | [`js/mlb.js:747`](js/mlb.js#L747) `loadMLBPlayers()` | ✅ 9 skeleton cards | ✅ `ErrorHandler.handle` | Solid |
+| Scores | [`js/mlb.js:2459`](js/mlb.js#L2459) `_loadMLBGamesForOffset()` | ✅ 6 skeleton cards | ✅ `ErrorHandler.handle` | Solid |
+| Teams | [`js/mlb.js:2917`](js/mlb.js#L2917) `loadMLBTeams()` | ✅ 6 skeleton cards | ✅ `ErrorHandler.handle` | Solid |
+| Leaders | [`js/mlb.js:3487`](js/mlb.js#L3487) `loadMLBLeaderboards()` | ✅ 8 skeleton cards | ✅ `ErrorHandler.handle` | Solid |
+| Standings | [`js/mlb.js:4507`](js/mlb.js#L4507) `loadMLBStandings()` | ✅ 18 skeleton rows | ✅ `ErrorHandler.handle` | Solid |
+| Game Prep | [`js/mlb.js:5576`](js/mlb.js#L5576) `displayGamePrep()` | ✅ 3 skeleton lines | ⚠️ Custom emoji empty state — not `ErrorHandler.handle` | Minor |
+| Stat Builder | [`js/statBuilder.js:168`](js/statBuilder.js#L168) `displayStatBuilder()` | ⚠️ Loading spinner, not skeleton-card pattern | Not confirmed | Style gap |
+| Arcade | [`js/arcade.js:28`](js/arcade.js#L28) `loadArcade()` | N/A — synchronous, no async | N/A | No issue |
+| Player Detail — async sub-cards | [`js/mlb.js:1617`](js/mlb.js#L1617) inline in `showMLBPlayerDetail()` | ✅ All 6 async sub-cards have individual skeleton placeholders | — | Solid |
+| Player Detail — **cold deep-link** | [`js/navigation.js:498`](js/navigation.js#L498) `_restoreMLBPlayerDetail()` | ❌ **No skeleton** — grid is blank during `fetchMLBLeagueStats` call | ❌ Silent blank grid if fetch fails | **P2 bug** |
+| Team Detail — loading | [`js/mlb.js:3019`](js/mlb.js#L3019) `showMLBTeamDetail()` | ⚠️ Team logo + spinner — not skeleton-card pattern | Need to verify error path | Style gap |
+| Team Detail — **cold deep-link** | [`js/navigation.js:486`](js/navigation.js#L486) `_restoreMLBTeamDetail()` | ❌ Grid blank during `fetchMLBTeams()` call | ❌ No error state | Minor gap |
+| Home — Hot Strip | [`js/app.js:282`](js/app.js#L282) fire-and-forget | ❌ Blank section — no skeleton, no loading indicator | ❌ Silent on failure | **P2 bug** |
+| Home — Tonight's Starters | [`js/app.js:282`](js/app.js#L282) fire-and-forget | ❌ Blank section — no skeleton, no loading indicator | ❌ Silent on failure | **P2 bug** |
+
+**Three confirmed P2 bugs (per D-005 definition: blank container on pending/failed data):**
+
+1. **Player detail cold deep-link** — `_restoreMLBPlayerDetail()` at [`navigation.js:498`](js/navigation.js#L498) calls `await fetchMLBLeagueStats()` with no loading state set beforehand. The grid holds whatever was previously rendered (or empty). If the fetch fails, `showMLBPlayerDetail()` is called with an empty players array, hits `if (!player) return` at [`mlb.js:1451`](js/mlb.js#L1451), and exits silently — blank grid, no error, no retry. A user who bookmarks a player URL and returns on a cold cache sees nothing.
+
+2. **Home Hot Strip** — blank section between game cards and feature tiles while `mlbLeaderSplits` loads. Confirmed by screenshot. Fire-and-forget `Promise.all().then()` at [`app.js:282`](js/app.js#L282) — the hot strip simply doesn't exist in the DOM until the promise resolves.
+
+3. **Home Tonight's Starters** — same root cause and same blank section as Hot Strip. Both depend on `mlbLeaderSplits` and render in the same callback.
+
+**Style inconsistencies (route to Kael + Vera — pattern question, not P2 bugs):**
+- `displayStatBuilder()` and `showMLBTeamDetail()` use a `loading-spinner` div rather than the `skeleton-card`/`skeleton-line` pattern used by all other views. Whether this should be unified is a design/UX decision — flagging for Kael (visual consistency) and Vera (whether spinner vs skeleton is intentional per interaction spec).
+- `displayGamePrep()` error state uses a custom emoji icon empty state rather than `ErrorHandler.handle()`. Flagging for Vera — is this intentional for the prep view specifically?
+
+Escalation: P2 bugs → Axiom (implementation) and Vera (UX spec for loading states). Style gaps → Kael + Vera.
+
+---
+
+### Home Page — Hot Strip and Tonight's Starters Render Nothing on Cold Load (No Skeleton)
+**Contributor:** Finn | **Date:** 2026-05-17
+
+Observed via headless screenshot (desktop, 1280×900). On cold load, the section between "Today's Games" game cards and the four feature tiles (Leaderboards / Game Prep / Statcast / Builder) is completely empty — a large dark blank area. No skeleton, no loading indicator, no error message.
+
+Both Hot Strip and Tonight's Starters depend on `AppState.mlbLeaderSplits`, which is fetched in a non-blocking `Promise.all().then()` in `loadHome()` ([`js/app.js:282`](js/app.js#L282)). Until that resolves, both sections are invisible — not loading, not skeletal, just absent. This is exactly the scenario D-005 describes: a view showing a blank container on partial/pending data rather than a skeleton + graceful state.
+
+Context from CLAUDE.md: Tonight's Starters is "Hidden when no SPs announced or no games today." There are games today (game card skeletons visible), so this blank is not the intentional "no games" path — it's a missing loading state.
+
+Escalation: Kael (visual — blank section posture) and Vera (UX — should this section show a skeleton while `mlbLeaderSplits` loads, or is empty acceptable?). Related to D-005.
+
+---
+
+## UX Specs
+
+---
+
+### Loading State Specs — P2 Bug Fixes (Finn's Audit Findings)
+**Contributor:** Vera | **Date:** 2026-05-17
+**Addresses:** Finn's D-005 audit — three P2 gaps and two style questions. Axiom implements; these specs define required behavior.
+
+---
+
+#### Spec 1 — Player Detail Cold Deep-Link
+**File:** [`js/navigation.js:498`](js/navigation.js#L498) `_restoreMLBPlayerDetail()`
+
+The user job here is: *"I bookmarked this player, I'm returning to check their stats."* A blank screen violates that job completely. Three states required, all missing today.
+
+**State: Loading** (while `fetchMLBLeagueStats` resolves)
+
+Immediately before the `await` call, set the grid to a skeleton that matches the player detail page structure — not a generic shimmer, a layout-shaped skeleton. Specifically:
+
+- Hero row: circular avatar placeholder (64px), name line (180px wide), position/team line (100px wide)
+- Stats section: 4 rows of 4 skeleton stat blocks (matching the stats-grid layout)
+- Three stacked skeleton cards at the same heights as the splits card, trend card, and statcast card
+
+This skeleton must be injected synchronously before any `await`. It replaces whatever the grid currently holds.
+
+**State: Error** (fetch fails or returns empty)
+
+Do not silently return. Call `ErrorHandler.handle(grid, error, retryFn, { tag: 'MLB', title: 'Could not load player stats' })` where `retryFn` is `() => _restoreMLBPlayerDetail(playerId, group)`. The user sees the standard error card with a retry button. Never blank.
+
+**State: Not found** (fetch succeeds but `player` is undefined — ID not in dataset)
+
+The current `if (!player) return` at [`mlb.js:1451`](js/mlb.js#L1451) is a silent blank. Replace with an explicit empty state:
+
+```
+Player not found
+This player may not have stats recorded for the current season,
+or the link may be outdated.
+[Browse all players →]  ← navigates to mlb-players
+```
+
+Use `ErrorHandler.renderEmptyState(grid, message)` or an equivalent structure. Never blank.
+
+---
+
+#### Spec 2 — Home Hot Strip and Tonight's Starters
+**File:** [`js/app.js:282`](js/app.js#L282) `loadHome()` fire-and-forget block
+
+The user job here is: *"What's happening in MLB today?"* The home page's blank mid-section during load is a layout-shift problem and a trust problem. Users who land on a slow connection see the game cards skeleton above, nothing in the middle, then feature tiles below — it looks broken.
+
+**Decision: both sections show DOM-present skeleton placeholders immediately.**
+
+The sections must exist in the DOM as soon as `loadHome()` runs, before any async resolves. Implement as inline skeleton markup rendered synchronously in `loadHome()`, in the same position where Hot Strip and Tonight's Starters will eventually render. The async callback replaces the skeleton with real content when `mlbLeaderSplits` resolves.
+
+**Hot Strip skeleton:** A single horizontal shimmer row, full width, at the height of the real hot strip (`~56px`). Three skeleton pill shapes (matching the hot-player pill shape) at roughly equal spacing. No player names or stats in the skeleton — just the shape.
+
+**Tonight's Starters skeleton:** Three SP-card-shaped skeleton blocks in a horizontal scroll container. Each card: circular avatar skeleton (48px), team color block placeholder (12px wide), two stat-line skeletons. Height must match a real SP card exactly — prevents layout shift when real cards render.
+
+**State: API failure** (fetch resolves but both splits arrays are empty, or the Promise rejects)
+
+Both sections are removed from the DOM silently. No error message on the home page for these secondary sections — a "Failed to load hot players" error card in the middle of the home page is disproportionate. Log the failure with `Logger.warn()`. The home page functions without these sections.
+
+**What does NOT change:** The "Hidden when no SPs announced or no games today" behavior for Tonight's Starters stays. After real data loads, the section still hides itself if there are no announced starters. The skeleton is not a commitment to show content — it's a layout placeholder that gets replaced with either real content or nothing.
+
+---
+
+#### Spec 3 — Style Inconsistency Rulings (Spinner vs. Skeleton)
+
+**Team Detail loading state** (`showMLBTeamDetail` — [`js/mlb.js:3019`](js/mlb.js#L3019)):
+**Permitted as a named exception.** The team logo + spinner is contextually appropriate: the user navigated to a specific team, and showing that team's logo while data loads gives meaningful visual feedback. This is not a generic loading pattern — it's entity-first loading, which is justified here. No change required.
+
+**Stat Builder loading state** (`displayStatBuilder` — [`js/statBuilder.js:168`](js/statBuilder.js#L168)):
+**Not approved for MLB.** The emoji icon + spinner tells the user nothing about the structure they're waiting for. Replace with a skeleton: one builder-panel outline block with two skeleton lines (palette header + formula input area). Height must match the real builder panel so the layout doesn't shift on load.
+
+**Game Prep error state** (`displayGamePrep` — [`js/mlb.js:5602`](js/mlb.js#L5602)):
+**Permitted with one addition.** The editorial emoji empty state ("Could not load today's schedule") fits the Game Prep view's tone — warmer than the standard error card. What's missing is a retry affordance. Add a "Try again" button to the existing markup that calls `displayGamePrep()`. Without it the user has no recovery path except navigating away and back. One button, no other changes.
+
+---
+
+### WCAG Accessibility Audit Scope
+**Contributor:** Vera | **Date:** 2026-05-17
+**Addresses:** D-004. Finn runs tooling; this entry defines what to run, what to check, and what failure means.
+
+**Tool:** Chrome DevTools Lighthouse → Accessibility tab. Run in incognito with no extensions. Record the score for each view and paste results into ISSUES.md as a follow-up entry.
+
+**Priority 1 — must pass before Pro tier launch. Target: ≥90 Lighthouse accessibility score on all three.**
+
+| View | URL hash | What to check manually beyond Lighthouse |
+|---|---|---|
+| `mlb-players` | `#mlb-players` | Keyboard: can Tab reach every player card? Does each card have a focusable affordance? Contrast: stat value text on `--bg-card`. |
+| `mlb-leaders` | `#mlb-leaders` | Keyboard: can Tab navigate the leaderboard entries? Do rank badges have sufficient contrast (colored background + white text)? |
+| `mlb-player-{id}` | `#mlb-player-{any valid id}` | Keyboard: tab order through stat bars, splits toggle, month tabs. Focus ring visibility on toggle buttons. |
+
+**Priority 2 — must pass before Enterprise tier launch.**
+
+| View | URL hash | Key risk |
+|---|---|---|
+| `mlb-games` | `#mlb-games` | Live game status pill — amber `--color-live` with dark text. Confirm AA contrast. |
+| `mlb-standings` | `#mlb-standings` | Win/loss columns — color + text label both present? `--color-win`/`--color-loss` on dark surfaces. |
+| `mlb-prep` | `#mlb-prep` | Game selector — keyboard accessible? Print button has visible focus? |
+
+**Specific items Finn must check manually regardless of Lighthouse score:**
+
+1. **`prefers-reduced-motion`** — does the skeleton shimmer animation stop when the OS has reduced motion enabled? Check `css/components.css` or `css/animations.css` for the shimmer keyframe and confirm it has a `@media (prefers-reduced-motion: reduce)` override.
+
+2. **⌘K search overlay focus trap** — open the overlay, then Tab through every element inside it. Focus must not escape to the page behind. Close with Escape; confirm focus returns to the element that triggered the overlay (the search button in the header).
+
+3. **Icon-only buttons** — the theme toggle, the search button, and the menu button (mobile) are icon-only. Each must have an `aria-label`. Grep for `aria-label` in `index.html` and confirm all three are present.
+
+4. **Color-only state signals** — confirm that live game status, win/loss records, and streak indicators all have text labels alongside color. Color must not be the sole differentiator.
+
+**What constitutes a pass:** Lighthouse score ≥90 AND all four manual checks confirmed. Finn documents the score, any flagged items, and the manual check results in a follow-up ISSUES.md entry titled "WCAG Audit Results — [view name]". Vera reviews findings and assigns owners per the routing matrix before the audit is considered complete.
+
+---
+
+### Scorecard Behavioral Spec — Phase 1 and Phase 2
+**Contributor:** Vera | **Date:** 2026-05-17
+**Gates:** Phase 1 and Phase 2 implementation. Finn does not start either phase without this spec. Axiom reviews for feasibility before Finn is assigned work.
+
+---
+
+#### Entry Point and Navigation Model
+
+The scorecard is a drill-down view, not a primary nav destination. It is not exposed in the sub-nav, menu panel, or bottom tab bar. Entry is always via a game card in the `mlb-games` (Scores) view.
+
+**On a completed game card:** an additional action — "Scorecard" text link or icon button — appears below the score line. Clicking navigates to `mlb-scorecard-{gameId}`. Visual design of this entry point is Kael's call; behaviorally it must be a clearly labeled affordance, not a tap-anywhere-on-the-card behavior (that tap target belongs to the game detail flow).
+
+**On a live game card:** same "Scorecard" affordance, labeled "Live Scorecard" with the `--color-live` amber dot. Makes the live-mode intent unambiguous before the user commits to the view.
+
+**Hash pattern:** `#mlb-scorecard-{gameId}` — consistent with the existing `mlb-player-{id}` and `mlb-team-{id}` patterns. A cold deep-link to this hash must be handled by `_loadFromHash()` in `navigation.js`, requiring a new `_restoreMLBScorecard(gameId)` restore function (Axiom's design).
+
+**Back navigation:** browser back button returns to `mlb-games`. History entry is pushed on scorecard entry. If the scorecard was opened from player detail (Phase 2 — clicking a player name), back returns to the scorecard, not to player detail.
+
+---
+
+#### State Map — Historical Mode (Phase 1)
+
+**State 1: Loading**
+
+Triggered immediately on entry before any data fetch resolves.
+
+The scorecard outer chrome renders synchronously from context already available: team names and team colors (from `AppState.mlbTeams` if loaded, or greyed fallback if not). The grid area fills with skeleton cells — a 9-column header row (inning numbers shimmer) and enough batter-row skeletons to suggest a full lineup (show 9 rows). Each cell contains a small skeleton diamond outline and a skeleton line for the notation area. Player name column shows skeleton lines at roster-name widths.
+
+This skeleton uses the scorecard's paper-texture background and grid structure so the user immediately understands the layout they're waiting for.
+
+**State 2: Loaded**
+
+All cells populated. Notation labels top-left, diamond fill state per runner progression. Inning R/H/E footer row visible. Game totals bar at bottom. Surplus innings (extra-inning games) extend the grid horizontally — the header row grows, cells are added. The grid scrolls horizontally if it overflows the viewport width.
+
+**State 3: Error**
+
+The outer chrome (team names, colors, game date) remains visible. The grid area — not the whole page — shows the error state: "Could not load play data for this game." with a "Try again" button. The error is contained to the grid, not a full-page error. The user can still see which game they were trying to view.
+
+**State 4: Game not started** (reached via a direct URL to a future game)
+
+Not reachable from Phase 1's entry point (only completed games show the scorecard affordance). If reached via old bookmark: "This game hasn't started yet." with the scheduled start time. Link: "View today's scores →" navigates to `mlb-games`. Not a skeleton, not an error — an informational state.
+
+**State 5: No plays** (game in progress but 0 plays recorded yet — extremely rare edge)
+
+Render the grid structure with all cells empty. A status line below the team headers reads "Waiting for first pitch…" No error, no skeleton — the grid is the correct empty state here.
+
+---
+
+#### Cell Interaction States — Phase 2
+
+**Default (no interaction):**
+Cell shows notation label (top-left) and diamond fill. No hover affordance visible. Cursor: default.
+
+**Hover (desktop) / Focus (keyboard):**
+Trigger: `mouseenter` or `:focus-visible` on the cell element. Delay: 150ms debounce before tooltip appears (prevents flicker on fast cursor movement across the grid).
+
+Tooltip content:
+- Batter name and final outcome (already visible in cell, shown for mobile context)
+- Pitch sequence: each pitch as a row — `Pitch N: [type] [velocity] mph — [call]`. Example: "Pitch 3: Slider 87 mph — Called Strike". Use `details.type.description` for type, `pitchData.startSpeed` rounded to integer for velocity, `details.description` for call.
+- Count at end of at-bat: balls / strikes shown as the closing line
+
+Tooltip positioning: appears above the cell. If the cell is in the top two rows, appears below instead. Never overlaps adjacent cells. Tooltip is `role="tooltip"` with `aria-describedby` wired to the cell element.
+
+Dismiss: on `mouseleave` (desktop) or Escape (keyboard). Tooltip has no interactive elements — it is read-only.
+
+**Click / Enter (player name in row header):**
+Player name in the left-column header is a `<button>` (not a link — there is no standalone URL for a player name within the scorecard context). On activate: calls `showMLBPlayerDetail(batterId, group)` and pushes history state so back returns to the scorecard. `group` is `'hitting'` for all position players, `'pitching'` for pitchers appearing in the batting lineup (rare — DH-off games). Default to `'hitting'` if uncertain.
+
+**Run scored animation (Phase 1, on historical render):**
+When a cell's diamond fill reaches home (all four segments filled — representing a run scored), the home-plate segment has a `.segment--scored` CSS class that applies a brief glow animation (`box-shadow` pulse, 600ms ease-out). Applied once at render time for historical mode, not re-triggered on subsequent renders. CSS only — no JS animation loop.
+
+---
+
+#### Live Mode States — Phase 3 (spec in advance)
+
+**Active at-bat cell:**
+Current batter's cell has class `.pa--active`. A 2px amber border (`--color-live`) pulses via CSS `@keyframes` at a 1.5s cycle. Inside the cell: pitch count shown as `B•S` (e.g., `2•1` for 2 balls 1 strike). The notation label area is blank until the at-bat resolves. Diamond fill reflects any mid-PA base advances already recorded.
+
+**LIVE badge:**
+Positioned in the scorecard header row alongside the game status. Amber dot + "LIVE" text, using the same pill pattern as live game status pills in the score ticker. Updates to "FINAL" text (no dot, no pulse) when the game ends.
+
+**Paused / updating state:**
+When the tab regains visibility after being backgrounded (visibilitychange event), polling resumes and the LIVE badge briefly reads "UPDATING…" (plain text, no animation) during the re-sync fetch. Returns to "LIVE" once the new plays have been rendered.
+
+**Game over:**
+LIVE badge becomes "FINAL". `.pa--active` class removed from all cells. Pulse animation stops. No further network calls. The completed scorecard is now in the same visual state as a historically-loaded scorecard.
+
+---
+
+#### Mobile Layout
+
+**Orientation: vertical phone (primary case)**
+
+The scorecard grid does not reflow — it scrolls horizontally within the viewport. The player name column is `position: sticky; left: 0` so it remains visible during horizontal scroll. This is the "sticky column" pattern standard in mobile data tables. The horizontal scroll container gets `-webkit-overflow-scrolling: touch` for momentum scrolling on iOS.
+
+Cell size: on mobile, each cell shrinks to a minimum of `44px × 44px` (Apple/Google tap target minimum). At 9 innings × 44px, the full grid is `396px` wide plus the name column — this requires horizontal scroll on all phones, which is expected and acceptable.
+
+**Cell tap (mobile):**
+Tap on a cell opens a bottom sheet (not a positional tooltip — mobile cannot reliably position relative to small cells). Bottom sheet slides up from the bottom edge, overlays the lower portion of the scorecard. Contains identical pitch sequence content as desktop tooltip. Dismiss by tapping outside the sheet or swiping down. The bottom sheet is `role="dialog"` with a focus trap while open.
+
+**Player name tap (mobile):**
+Same behavior as desktop click — navigates to player detail. Back gesture returns to scorecard.
+
+---
+
+#### Keyboard Navigation (all modes)
+
+| Key | Behavior |
+|---|---|
+| `Tab` | Move to next interactive element (player name buttons and focusable cells) |
+| Arrow keys | Within the grid, move between adjacent cells in any direction |
+| `Enter` / `Space` on cell | Open tooltip (show pitch sequence) |
+| `Enter` / `Space` on player name | Navigate to player detail |
+| `Escape` | Close tooltip if open; otherwise does nothing |
+
+All interactive elements in the scorecard must be reachable by Tab and operable by Enter. The grid cells must have `tabindex="0"` to be keyboard-focusable. Focus ring uses the standard `--accent-border` outline color already defined in `variables.css`.
+
+---
+
+#### What Is Not Specced (Phase 1 and 2 only)
+
+- Export / share card (Phase 4 — awaits html2canvas spike)
+- Freehand annotation (Phase 5 — parked)
+- Custom notation mode (Phase 5 — parked)
+- Pitch location visualization within cell (beyond Phase 2 scope — tooltip shows pitch type and velocity; spatial coordinates are available in the data but zone visualization is a future enhancement)
+
+---
+
+## Scorecard Feature — Phased Implementation Roadmap
+
+**Architecture lead:** Axiom | **Date:** 2026-05-17
+**Reference:** `Documentation/baseball-scorecard-docs.md` | **Decision:** `DECISIONS.md D-007`
+
+**Hard blockers — no implementation starts until both are closed:**
+- ✅ D-001: Design system overhaul complete — **resolved 2026-05-17**
+- ✅ D-003: Fetch deduplication complete — `_fetchMLBLeaderSplits()` pending-promise registry in `mlb.js`, smoke-tested 2026-05-17
+
+**Spec gates — Finn does not start Phase 1 until all four exist:**
+- ✅ Kael visual design: grid layout, diamond SVG proportions, new CSS tokens, typography decision — **complete, see Visual Design section below**
+- ✅ Vera behavioral spec: all states — active PA, cell hover, scorecard empty, API error mid-game, mobile layout, keyboard nav — **complete, see UX Specs section**
+- ✅ Axiom API verification: Phase 0 complete — see findings below
+- ❌ Axiom AppState review: Phase 3 field additions approved before Finn touches AppState — **pending**
+
+---
+
+### Kael Visual Design — Scorecard Phase 1
+**Contributor:** Kael | **Date:** 2026-05-17
+**Status:** Complete. All four design gates delivered. Finn may implement Phase 1 once D-003 closes.
+
+---
+
+#### Posture
+
+The scorecard is a physical artifact dropped into a digital context. It should feel like a real paper scorecard sitting on a production desk — warm, legible, slightly worn — not a sleek dark-UI data table. This means the scorecard has its own surface tokens that intentionally break from the app's dark-mode palette. The island of warm paper in dark chrome is the design intention, not an inconsistency.
+
+The broadcast audience will recognize this immediately as "a scorecard." That recognition is the primary visual goal. The hierarchy inside the card is: team names and score → inning columns → diamond fill states → notation labels. Nothing decorative should compete with this hierarchy.
+
+---
+
+#### CSS Tokens (already added to `css/variables.css`)
+
+```css
+--scorecard-paper:         #f5f0e6;   /* warm off-white — primary card background */
+--scorecard-ink:           #1a1209;   /* near-black brown — notation text */
+--scorecard-border:        #c4a882;   /* aged tan — major grid lines */
+--scorecard-border-light:  #ddd0b8;   /* lighter — inning subdivision lines */
+--scorecard-highlight:     #e8a830;   /* amber-gold — filled base segments */
+--scorecard-run:           #d4380d;   /* terra cotta — run scored glow */
+--scorecard-active-border: rgba(245,158,11,0.90); /* live at-bat pulse */
+--scorecard-shadow:        0 4px 24px rgba(0,0,0,0.30), 0 0 0 1px rgba(180,160,130,0.25);
+```
+
+These tokens apply **only** within `.scorecard-*` selectors in `css/scorecard.css`. Do not reference them elsewhere.
+
+---
+
+#### Typography
+
+Header row (team names, inning numbers): `var(--font-display)` (Barlow Semi Condensed) — condensed for density, authoritative weight. Font weight 700. All-caps for inning numbers.
+
+Notation labels inside cells: `var(--font-mono)` (JetBrains Mono) — typewriter precision, aligns horizontally across rows. Font weight 400. 11px / `var(--text-xs)`.
+
+Player names (left column): `var(--font-sans)` (Inter) — readable at small size, weight 600. 13px / `var(--text-sm)`.
+
+Inning R/H/E footer and game totals bar: `var(--font-mono)`, weight 700, tabular-nums. Color: `var(--scorecard-ink)` at 80% opacity.
+
+No external typeface additions. All three fonts are already loaded via existing CSS.
+
+---
+
+#### Grid Layout
+
+```css
+.scorecard-grid {
+    display: grid;
+    grid-template-columns: 180px repeat(var(--scorecard-innings, 9), minmax(60px, 1fr));
+    grid-template-rows: 40px repeat(var(--scorecard-batters, 9), 88px) 32px;
+    /* rows: header | batter rows | R/H/E footer */
+    background: var(--scorecard-paper);
+    border: 2px solid var(--scorecard-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--scorecard-shadow);
+    font-family: var(--font-mono);
+    overflow: hidden;
+}
+```
+
+`--scorecard-innings` and `--scorecard-batters` are CSS custom properties set inline by JS to handle extra-inning games and lineup depth beyond 9. Default 9 for both.
+
+At the 180px name column + 9 innings at minimum 60px each: minimum total width is `180 + (9 × 60) = 720px`. This fits a 768px breakpoint with scrolling allowed. On desktop at 1280px, each inning column is approximately `(1280 - 180 - 32px padding) / 9 ≈ 119px`.
+
+On mobile: horizontal scroll via `overflow-x: auto` on a `.scorecard-wrapper` container. The name column is `position: sticky; left: 0` with `z-index: 2` and the same `--scorecard-paper` background so it covers scrolling cells behind it.
+
+---
+
+#### Cell Structure
+
+Each plate-appearance cell:
+
+```html
+<div class="sc-cell" role="gridcell" tabindex="0" aria-label="[batter] [inning] [notation]">
+    <span class="sc-notation">K</span>       <!-- top-left: outcome symbol -->
+    <span class="sc-count">1-2</span>        <!-- top-right: final count (optional, Phase 2) -->
+    <svg class="sc-diamond" viewBox="0 0 60 60" aria-hidden="true">
+        <path class="sc-seg sc-seg--first"  d="M30,30 L60,30 L30,60 Z"/>
+        <path class="sc-seg sc-seg--second" d="M30,30 L30,0  L60,30 Z"/>
+        <path class="sc-seg sc-seg--third"  d="M30,30 L0,30  L30,0  Z"/>
+        <path class="sc-seg sc-seg--home"   d="M30,30 L30,60 L0,30  Z"/>
+        <!-- outer diamond outline -->
+        <path class="sc-diamond-border" d="M30,0 L60,30 L30,60 L0,30 Z"
+              fill="none" stroke="var(--scorecard-border)" stroke-width="1.5"/>
+    </svg>
+</div>
+```
+
+**Diamond SVG geometry — exact coordinates:**
+- ViewBox: `0 0 60 60`, rendered at 44px × 44px in cell
+- Center point: `(30, 30)`
+- Four corners: top `(30,0)` = 2B, right `(60,30)` = 1B, bottom `(30,60)` = home, left `(0,30)` = 3B
+- First base segment (bottom-right triangle): `M30,30 L60,30 L30,60 Z`
+- Second base segment (top-right triangle): `M30,30 L30,0 L60,30 Z`
+- Third base segment (top-left triangle): `M30,30 L0,30 L30,0 Z`
+- Home segment (bottom-left triangle): `M30,30 L30,60 L0,30 Z`
+
+**Segment fill states via CSS class on `<svg>`:**
+
+```css
+.sc-diamond .sc-seg { fill: none; }
+.sc-diamond.reached-1 .sc-seg--first  { fill: var(--scorecard-highlight); }
+.sc-diamond.reached-2 .sc-seg--second { fill: var(--scorecard-highlight); }
+.sc-diamond.reached-3 .sc-seg--third  { fill: var(--scorecard-highlight); }
+.sc-diamond.scored    .sc-seg--home   { fill: var(--scorecard-highlight); }
+```
+
+JS adds classes `reached-1`, `reached-2`, `reached-3`, `scored` directly to the `<svg>` element based on `resolveBaseProgression()` output. No inline styles, no D3.
+
+**Run-scored glow animation** — applied to the home segment only:
+
+```css
+@keyframes scoredPulse {
+    0%, 100% { filter: drop-shadow(0 0 0px var(--scorecard-run)); }
+    50%       { filter: drop-shadow(0 0 6px var(--scorecard-run)); }
+}
+.sc-diamond.scored .sc-seg--home {
+    fill: var(--scorecard-highlight);
+    animation: scoredPulse 600ms ease-out 1 forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sc-diamond.scored .sc-seg--home { animation: none; }
+}
+```
+
+One-shot animation (`1 forwards`) — fires at render time for historical mode, does not loop.
+
+---
+
+#### Header Row
+
+Left cell (name column header): team abbreviations stacked — home team above, away team below, separated by `var(--scorecard-border)`. Background `var(--scorecard-paper)`. Font: `var(--font-display)` 700.
+
+Inning number cells: centered, `var(--font-display)` all-caps, `var(--text-xs)`, `var(--scorecard-ink)` at 70% opacity. Column dividers: `1px solid var(--scorecard-border-light)`.
+
+---
+
+#### Name Column
+
+Each player name row: `var(--font-sans)` 600, 13px, left-padded `8px`. The player name is a `<button>` element (per Vera's spec) with `cursor: pointer` and no default button styling. Focus ring uses `outline: 2px solid var(--scorecard-active-border); outline-offset: -2px`.
+
+Name column has `background: var(--scorecard-paper)` and `border-right: 2px solid var(--scorecard-border)`. On mobile, `position: sticky; left: 0; z-index: 2`.
+
+---
+
+#### Footer Row (R/H/E per inning)
+
+Row height: 32px. Background: `rgba(196,168,130,0.15)` — a subtle step down from the paper white to visually separate totals from at-bat cells. Font: `var(--font-mono)` 700, 11px, tabular-nums. Three sub-rows (R/H/E) are stacked within the 32px height using `display: flex; flex-direction: column`. 
+
+Abbreviation labels (R/H/E) appear in the left column (name column footer) in `var(--text-xs)` weight 700.
+
+---
+
+#### Wrapper and Chrome
+
+```css
+.scorecard-wrapper {
+    background: var(--scorecard-paper);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--scorecard-shadow);
+    /* Subtle fold line at vertical midpoint */
+    position: relative;
+}
+.scorecard-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: rgba(196,168,130,0.25);
+    pointer-events: none;
+}
+```
+
+The scorecard header (team names, game date, final score) sits above the `.scorecard-grid` in a `.scorecard-header` div. Background: `var(--scorecard-paper)`. Bottom border: `2px solid var(--scorecard-border)`. Padding: `16px 20px`.
+
+---
+
+#### Active At-Bat Cell (Phase 3 — visual spec in advance)
+
+```css
+.sc-cell.pa--active {
+    outline: 2px solid var(--scorecard-active-border);
+    outline-offset: -2px;
+}
+@keyframes activeAtBatPulse {
+    0%, 100% { outline-color: rgba(245,158,11,0.90); }
+    50%       { outline-color: rgba(245,158,11,0.35); }
+}
+.sc-cell.pa--active {
+    animation: activeAtBatPulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sc-cell.pa--active { animation: none; }
+}
+```
+
+---
+
+#### What Finn Must Not Do
+
+- No `transform: rotate(45deg)` on the diamond — use the SVG path geometry above instead. Rotation creates html2canvas rendering issues flagged in D-007.
+- No hardcoded color values in `scorecard.css` — all values from `--scorecard-*` tokens or existing `variables.css` tokens.
+- No D3. No third-party animation libraries. CSS keyframes only.
+- No `innerHTML +=` — build the full scorecard HTML string and inject once.
+- Diamond segment fill via CSS class on the `<svg>` element — not inline style, not per-path class manipulation.
+
+---
+
+### Phase 0 — API Shape Verification (Finn, no code)
+**Assigned to:** Finn | **Blocks:** Phase 1 | **Status:** Complete — see findings below
+
+Fetch the play-by-play payload from `/game/{gameId}/playByPlay` for two completed 2025 games: one with clean outcomes only, one with complex base states (stolen base mid-at-bat, wild pitch with runners on, double play). Use `mlbFetch('/game/{gameId}/playByPlay', {}, ApiCache.TTL.LONG)` — never call the endpoint directly.
+
+Document the following and file results as a follow-up entry in ISSUES.md:
+
+1. The exact shape of `allPlays[n]` — which fields are always present, which are conditional
+2. How `runners` array within each play encodes base advances (including mid-PA advances that happen before the batter's outcome resolves)
+3. Whether stolen bases and wild pitches mid-at-bat appear as separate play objects or as embedded `playEvents` within the active at-bat's object
+4. Which `result.eventType` strings map to the notation symbols in the doc (K, Kc, BB, 1B, 2B, 3B, HR, FC, E#, DP, etc.) — produce the full mapping table
+5. How `about.halfInning` and `about.inning` are structured (confirm "top"/"bottom" string values, confirm inning numbering starts at 1)
+
+Research and documentation only. No rendering code, no UI work. Route findings to Axiom before Phase 1 begins.
+
+### Phase 0 Findings — Play-by-Play API Shape
+**Contributor:** Finn | **Date:** 2026-05-17
+**Games examined:** 823384 (PHI 11 @ PIT 9, 10 innings — complex), 824194 (TEX 0 @ HOU 2 — clean)
+
+---
+
+**allPlays[n] — always-present top-level keys:**
+
+| Key | Type | Notes |
+|---|---|---|
+| `result` | object | `type`, `event`, `eventType`, `description`, `rbi`, `awayScore`, `homeScore`, `isOut` |
+| `about` | object | `atBatIndex`, `halfInning`, `isTopInning`, `inning`, `startTime`, `endTime`, `isComplete`, `isScoringPlay`, `hasReview`, `hasOut`, `captivatingIndex` |
+| `count` | object | `balls`, `strikes`, `outs` — count at END of play |
+| `matchup` | object | `batter` (`id`, `fullName`, `link`), `batSide`, `pitcher` (`id`, `fullName`, `link`), `pitchHand`, `splits` |
+| `pitchIndex` | int[] | Indices into `playEvents` for pitch-type events |
+| `actionIndex` | int[] | Indices into `playEvents` for non-pitch actions (SB, WP, subs, etc.) — empty array when no mid-PA actions |
+| `runnerIndex` | int[] | Redundant with `runners` — do not use |
+| `runners` | object[] | All runner movements for the play — both mid-PA and final batter outcome |
+| `playEvents` | object[] | Chronological pitch-by-pitch events, interleaved with action events |
+| `playEndTime` | string | ISO 8601 |
+| `atBatIndex` | int | Sequential 0-based index across entire game — same value as `about.atBatIndex` |
+
+---
+
+**`about` field details:**
+- `halfInning`: always `"top"` or `"bottom"` (lowercase)
+- `inning`: integer, 1-based (`1` = first inning)
+- `isScoringPlay`: `true` if any runner scores in this play
+- Games that end in the top of an inning have no `allPlays` entries for the bottom of that inning — the scorecard must render the missing half as a blank column. Confirmed: TEX @ HOU game ends with last play in `top` of inning 9; no bottom-of-9th entries.
+
+---
+
+**`runners` array — full shape per entry:**
+
+```js
+{
+  movement: {
+    originBase: null | '1B' | '2B' | '3B',   // where runner was when pitch was delivered
+    start:      null | '1B' | '2B' | '3B',   // base at start of this movement segment
+    end:        null | '1B' | '2B' | '3B' | 'score', // base after movement; null = out
+    outBase:    null | '1B' | '2B' | '3B',   // base where put out; null if safe or batter
+    isOut:      boolean,
+    outNumber:  null | 1 | 2 | 3             // which out in the inning
+  },
+  details: {
+    event:            string,    // human-readable event name
+    eventType:        string,    // machine-readable event type (same vocabulary as result.eventType)
+    movementReason:   null | string,
+    runner:           { id, fullName, link },
+    responsiblePitcher: null | { id, fullName, link },
+    isScoringEvent:   boolean,
+    rbi:              boolean,
+    earned:           boolean,
+    teamUnearned:     boolean,
+    playIndex:        int        // index into playEvents this movement corresponds to
+  },
+  credits: [ { player, position, credit } ]  // fielding credits (assists, putouts)
+}
+```
+
+**Critical encoding rules for `resolveBaseProgression()`:**
+
+1. `start: null` = the batter coming to plate (not a baserunner)
+2. `end: 'score'` = runner scored a run (NOT `end: null`)
+3. `end: null` + `isOut: true` = runner put out; `outBase` tells you where
+4. A single runner can appear **multiple times** in the `runners` array when they advance in stages during one play. Example: on a single, a runner goes from 1B → 3B — this produces two entries: `'1B' -> '2B'` and `'2B' -> '3B'`. To derive a runner's final base, follow their entries in `playIndex` order and take the `end` of the last one.
+5. Mid-PA movements (SB, WP, CS) appear in the **same `runners` array** as the batter's final outcome. Distinguish by `details.eventType` — mid-PA entries will have event types like `stolen_base_2b`, `wild_pitch`, etc., while the batter's entry will have the plate-appearance event type.
+6. To determine diamond fill state for a batter's cell: find the batter's runner entry where `movement.start === null`, then trace forward through any additional entries with the same `runner.id` to get their final `end` value.
+
+---
+
+**Mid-PA actions — how they appear in `playEvents`:**
+
+Mid-PA events are `type: 'action'` entries in `playEvents` at the positions listed in `actionIndex`. They are interleaved chronologically between pitch entries. The at-bat continues after them — `pitchIndex` entries resume after.
+
+Known `actionIndex` eventType values (confirmed across both games + known API vocabulary):
+
+| eventType | Scorecard meaning |
+|---|---|
+| `stolen_base_2b` / `stolen_base_3b` / `stolen_base_home` | SB — annotate on baserunner's previous cell |
+| `caught_stealing_2b` / `caught_stealing_3b` | CS — runner out mid-PA |
+| `wild_pitch` | WP — advances shown in runners array |
+| `passed_ball` | PB — advances shown in runners array |
+| `pickoff_1b` / `pickoff_2b` / `pickoff_3b` | PO — runner out |
+| `runner_placed` | Extra-innings automatic runner — treat as baserunner, no plate appearance |
+| `pitching_substitution` / `offensive_substitution` / `defensive_substitution` / `defensive_switch` | Roster move — no baserunner effect; safe to ignore for diamond rendering |
+| `game_advisory` / `batter_timeout` | Administrative — ignore for rendering |
+
+---
+
+**`result.eventType` → scorecard notation mapping:**
+
+| eventType | result.event examples | Notation | Distinguish how |
+|---|---|---|---|
+| `strikeout` | Strikeout | `K` or `Kc` | Last pitch `details.call.code`: `'C'` = looking (Kc); `'S'`, `'W'`, `'T'` = swinging (K) |
+| `walk` | Walk | `BB` | — |
+| `hit_by_pitch` | Hit By Pitch | `HBP` | — |
+| `single` | Single | `1B` | — |
+| `double` | Double | `2B` | — |
+| `home_run` | Home Run | `HR` | — |
+| `field_out` | Groundout / Flyout / Lineout / Pop Out | `G`, `F`, `L`, `F` | Use `result.event`: `'Groundout'` → `G`, `'Flyout'` → `F`, `'Lineout'` → `L`, `'Pop Out'` → `F` |
+| `grounded_into_double_play` | Grounded Into DP | `DP` | Can append fielding positions from credits if needed |
+| `double_play` | Double Play | `DP` | Non-groundball DP (e.g., line-drive DP) |
+| `force_out` | Forceout | `FC` | Batter reaches safely; another runner forced out |
+| `field_error` | Field Error | `E#` | `#` = position code from `runners[n].credits[n].position.code` |
+| `sac_bunt` | Sac Bunt | `SAC` | — |
+| `sac_fly` | Sac Fly | `SF` | — |
+
+**Note on `field_out` fielding positions:** The fielder position for notation (e.g., `G6-3` = shortstop to first) can be derived from `runners[n].credits` — entries with `credit: 'f_assist'` are the throwing fielders, `credit: 'f_putout'` is the fielder recording the out. The `position.code` is the standard scorecard number (1=P, 2=C, 3=1B, 4=2B, 5=3B, 6=SS, 7=LF, 8=CF, 9=RF). For Phase 1, abbreviated notation (`G`, `F`, `L`) is sufficient; detailed position notation is an enhancement.
+
+---
+
+**Pitch event shape (for Phase 2 hover tooltips):**
+
+```js
+{
+  type: 'pitch',
+  isPitch: true,
+  pitchNumber: int,           // 1-based pitch number within at-bat
+  count: { balls, strikes, outs },  // count AFTER this pitch
+  details: {
+    call: { code: string, description: string },  // 'B'=ball, 'S'=swinging, 'C'=called, 'X'=in-play, 'T'=foul-tip, 'W'=blocked
+    description: string,      // 'Ball', 'Called Strike', 'Swinging Strike', 'In play, out(s)', etc.
+    type: { code: string, description: string },  // pitch type: 'FF'=4-seam, 'SI'=sinker, 'SL'=slider, 'CH'=changeup, 'CU'=curveball, 'FS'=splitter, etc.
+    isInPlay: boolean,
+    isStrike: boolean,
+    isBall: boolean,
+  },
+  pitchData: {
+    startSpeed: number,       // release velocity (mph)
+    endSpeed: number,         // plate velocity (mph)
+    coordinates: {
+      pX: number,             // horizontal plate location (-1.7 to 1.7 ft from center; negative = catcher's left)
+      pZ: number,             // vertical plate location (feet above ground; ~1.6–3.5 ft is typical strike zone)
+    },
+    breaks: {
+      spinRate: number,       // RPM
+      breakVerticalInduced: number,  // IVB in inches
+      breakHorizontal: number,       // HB in inches
+    },
+    zone: number,             // Statcast zone (1-9 = in-zone, 11-14 = out-of-zone)
+    strikeZoneTop: number,    // batter-specific top of strike zone (feet)
+    strikeZoneBottom: number, // batter-specific bottom of strike zone (feet)
+  }
+}
+```
+
+---
+
+**Escalation to Axiom:** Phase 0 complete. All five questions from the task brief are answered above. The multi-entry runner pattern (a single runner appearing multiple times when advancing in stages) is the non-obvious piece most likely to produce incorrect diamond fills if not handled — flagging this specifically for Axiom's review of `resolveBaseProgression()` before Phase 1 integrates it.
+
+---
+
+### Phase 1 — Historical Static Render
+**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** In progress — core implementation shipped 2026-05-18
+
+**New files — both require Axiom review on load order placement before Finn creates them:**
+- `js/scorecard.js` — load position: after `mlb.js`, before `nfl.js` in `index.html`
+- `css/scorecard.css` — loaded via `<link>` in `index.html`; scoped to scorecard only
+
+**New view:** `mlb-scorecard` registered in `renderCurrentView()` in `navigation.js`. Entry point: clicking a completed game card in the Scores view passes the `gameId` and opens the scorecard.
+
+**Deliverables Finn is responsible for:**
+
+`buildScorecardData(gameId)` — fetches `/game/{gameId}/playByPlay` via `mlbFetch()`, maps `allPlays` to PA objects. Must handle mid-PA base advances using the `runners` array findings from Phase 0. This is the most technically precise piece of Phase 1 — do not write it until Phase 0 results are documented.
+
+`resolveNotation(eventType)` — maps MLB API `result.eventType` strings to display symbols. Use the mapping table produced in Phase 0. Pure function, no side effects.
+
+`resolveBaseProgression(play)` — derives diamond fill state (which of the four base segments are filled) from the `runners` array. Returns `{ first, second, third, home }` boolean object per batter.
+
+Grid render — CSS Grid, `grid-template-columns: 180px repeat(9, 1fr)`. Rows expand to fit the actual lineup depth (not hardcoded to 9). Player name column links to player detail. Header row shows inning numbers.
+
+Diamond SVG — inline SVG per cell, four `<path>` segments (first/second/third/home). Fill state applied via CSS class (`segment--filled`), not inline style. SVG dimensions and segment geometry from Kael's design. No D3, no clipped divs.
+
+Inning summary footer — R/H/E tallied per inning automatically from the play data. Appended as a footer row below each half-inning block.
+
+Game totals row — cumulative R/H/E and LOB calculation. LOB = (runners who reached base) − (runs scored) − (caught stealing / picked off).
+
+**Rules Finn must not break in Phase 1:**
+- All play-by-play fetches via `mlbFetch()` — never `fetch(statsapi.mlb.com...)` directly
+- All API strings going into `innerHTML` via `_escHtml()`
+- Diamond is inline SVG — not clipped divs, not D3
+- New CSS tokens only from Kael's approved additions to `variables.css` — no hardcoded color values
+- No `html2canvas`, `jsPDF`, or `D3` loaded or referenced in Phase 1
+- `Logger` everywhere — no bare `console.log`
+- Build full HTML string, inject once — no `innerHTML +=`
+
+**Axiom review gate:** Axiom reviews `buildScorecardData()` and `resolveBaseProgression()` for correctness against the Phase 0 findings before Finn integrates them into the render path. Incorrect base state logic will silently produce wrong diamonds.
+
+---
+
+### Phase 2 — Interactive Layer
+**Assigned to:** Finn | **Estimated:** 1–2 weeks | **Status:** Blocked (Phase 1 must ship and be reviewed)
+**Requires Vera behavioral spec for hover/tooltip states before starting.**
+
+**Deliverables:**
+
+Cell hover/tap tooltip — shows pitch sequence for that PA: pitch types, count progression, pitch locations if available in the `playEvents` array. Tooltip is pure CSS/HTML positioned relative to the cell — no third-party tooltip library. Keyboard-accessible (focus triggers tooltip, Escape dismisses).
+
+Player name click — calls `showMLBPlayerDetail(playerId)` via the existing player detail routing. Back button must return to the scorecard view, not reset to home. Finn verifies this with Axiom before wiring it up — the routing implications touch `navigation.js`.
+
+Run scoring visual — when a run scores, the home-plate diamond segment gets a CSS class that applies a brief fill animation (`@keyframes` in `css/animations.css` or `css/scorecard.css`). CSS transition only, no JS animation loop.
+
+---
+
+### Phase 3 — Live Mode
+**Assigned to:** Finn | **Estimated:** 2–3 weeks | **Status:** Blocked (Phase 2 must ship; D-003 must be resolved; Vera spec required for active-PA state)
+
+**New AppState fields (Axiom approves shape before Finn writes anything):**
+- `mlbLiveGameId` — string, the gameId currently being polled. Null when no live scorecard is active.
+- `mlbLiveScorecardPlays` — array, accumulated plays for the live game. Reset when `mlbLiveGameId` changes.
+
+**Deliverables:**
+
+`startLiveScorecard(gameId)` — sets `mlbLiveGameId`, initializes `mlbLiveScorecardPlays`, starts polling at 20s interval. Interval handle stored in a module-scoped variable in `scorecard.js`.
+
+Cleanup hook — interval is cleared when the user navigates away from `mlb-scorecard`. Finn wires this into `navigateTo()` in `navigation.js` as a pre-navigation hook: before rendering the new view, check if `mlbLiveGameId` is set and clear the interval. Axiom reviews this navigation.js change specifically — it touches shared routing logic.
+
+Game-over detection — poll response includes game status. When status === `'Final'`, clear the interval and set `mlbLiveGameId` to null. No orphaned intervals.
+
+Active PA cell — current batter's cell gets a `.pa--active` CSS class while the at-bat is in progress. Pulse animation via CSS (`@keyframes`), not JS. Pitch count (balls/strikes) displayed and updated within the cell on each poll cycle.
+
+State recovery — if the user navigates away mid-game and returns to `mlb-scorecard`, the card re-renders from `mlbLiveScorecardPlays` (already accumulated in AppState) rather than showing a blank grid. No re-fetch from scratch.
+
+---
+
+### Phase 4 — Export / Share Card
+**Assigned to:** Axiom (spike) → Finn (if spike passes) | **Estimated:** 2–4 weeks | **Status:** Blocked (Phase 3 must ship; spike must pass)
+
+**Axiom spike (before any Finn work):**
+
+Render a prototype scorecard cell — inline SVG diamond with fill state, notation label, CSS custom properties applied — and run html2canvas against it. Specifically test: CSS `transform: rotate(45deg)` on the diamond, CSS custom property resolution, inline SVG rendering. Document the output quality in ISSUES.md. If the output matches the live DOM acceptably, Phase 4 proceeds with html2canvas. If it does not, Axiom documents the Cloudflare Worker + Puppeteer screenshot alternative and escalates to the project owner for a scope decision before any Phase 4 implementation begins.
+
+**If spike passes — Finn implements:**
+
+Share card flow — "Share This Game" button on a completed scorecard. `html2canvas` captures the scorecard DOM node to a `<canvas>`. A team-color gradient header (using existing `getMLBTeamColors()`) and game date are composited onto the canvas. User downloads PNG or copies to clipboard.
+
+CSP update — both `index.html` `<meta http-equiv="Content-Security-Policy">` and the `_headers` file must be updated with the html2canvas CDN domain before the script tag is added. Finn does not add the `<script>` tag until the CSP is updated in both places.
+
+jsPDF (printable scorecard PDF) — evaluated after html2canvas output is validated. Similar CDN + CSP update required. Parked until html2canvas work proves out.
+
+---
+
+### Phase 5 — Annotation Mode & Custom Notation (Parked)
+**Status: Parked indefinitely. No spec, no implementation until Phases 1–4 ship and adoption is validated.**
+
+Annotation mode (freehand notes per cell) is effectively a mini drawing canvas and requires a full Vera spec before any implementation discussion. Custom notation mode requires maintaining parallel notation-mapping tables. Neither is core to the scorecard value proposition. These entries exist to prevent scope creep — if someone proposes implementing them before Phase 1–4 are done, this is the documented decision that blocks it.
+
+---
+
+## Architecture notes
+
+**Stack:** Vanilla JS/CSS/HTML. No bundler, no framework. All files share global scope via `<script>` tags in `index.html`. Script load order is documented in `CLAUDE.md`.
+
+**Primary data sources:**
+- MLB Stats API (`statsapi.mlb.com/api/v1`) — players, stats, schedule, standings, transactions, game logs, splits
+- Baseball Savant (`baseballsavant.mlb.com`) — Statcast percentiles, pitch arsenal CSV, spray charts
+- Open-Meteo — game-day weather for outdoor parks
+
+**Edge cache:** Cloudflare Pages Function at `functions/api/mlb.js` proxies and D1-caches MLB Stats API + Savant calls. TTL varies by endpoint (schedule: 60s, standings: 30m, people/teams: 1h, Savant: 1h).
+
+**Key AppState fields in play:**
+- `mlbLeaderSplits` — full season hitting + pitching splits for all players; powers league-rank badges and hot strip
+- `mlbHotStats` — last-7-days splits; powers hot strip
+- `mlbSavantLeaderboard` — Statcast bulk CSV; powers Statcast leaderboard section
+- `mlbPlayers` — `{ hitting: [], pitching: [] }` — main player pool
+- `mlbPlayerStats` — `{ hitting: { [id]: statsObj }, pitching: { [id]: statsObj } }`
+
+**Before any push:** run `/deploy-check`. It validates BDL key exposure, CSP sync, and committed state of critical files.

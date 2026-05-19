@@ -1,15 +1,15 @@
 // ============================================================
 // CONFIGURATION
 //
-// Development: set BDL_API_KEY directly (fetches from balldontlie.io).
-// Production:  set BDL_PROXY_URL to your Cloudflare Worker URL and
-//              clear BDL_API_KEY — the Worker holds the key server-side.
-//
-// Example:
-//   const BDL_PROXY_URL = 'https://sportstrata-proxy.your-subdomain.workers.dev';
+// BDL_API_KEY must NOT be set in committed source.
+// Deploy the Cloudflare Worker (worker/wrangler.toml) first:
+//   cd worker
+//   wrangler secret put BDL_API_KEY
+//   wrangler deploy
+// Then paste the deployed Worker URL below as BDL_PROXY_URL.
 // ============================================================
-const BDL_API_KEY  = '857bec7d-aada-496f-abb1-79b16926fb37';
-const BDL_PROXY_URL       = ''; // Set to Worker URL in production to hide API key
+const BDL_API_KEY  = ''; // KEY REMOVED — use BDL_PROXY_URL
+const BDL_PROXY_URL       = ''; // TODO: set to deployed Worker URL, e.g. 'https://sportsstrata-proxy.{account}.workers.dev'
 const BROADCAST_BLURB_URL = 'https://sportsstrata-blurb.zohnwheeler.workers.dev'; // broadcast-blurb Worker
 
 const BDL_BASE_URL = BDL_PROXY_URL ? `${BDL_PROXY_URL}/bdl` : 'https://api.balldontlie.io/v1';

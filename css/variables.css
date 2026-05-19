@@ -61,6 +61,71 @@
     --color-min:          #7c8df0;   /* Minutes   — indigo      */
     --color-tov:          #f87171;   /* Turnovers — red-light   */
 
+    /* ── Semantic tints ──
+       Tinted backgrounds and borders derived from semantic colors.
+       Rule: never write raw rgba() variations of semantic colors in component files —
+       use these tokens instead. Component files must not compute opacity. ── */
+    --color-win-subtle:       rgba(34,211,160,0.10);
+    --color-win-border:       rgba(34,211,160,0.25);
+    --color-loss-subtle:      rgba(242,107,107,0.08);
+    --color-loss-border:      rgba(242,107,107,0.25);
+    --color-error-subtle:     rgba(239,68,68,0.05);
+    --color-error-border:     rgba(239,68,68,0.20);
+    --color-live-subtle:      rgba(245,158,11,0.12);
+    --color-live-border:      rgba(245,158,11,0.30);
+    /* Stat-category tints: use ONLY on elements labeled with that stat type */
+    --color-pts-subtle:       rgba(251,191,36,0.08);
+    --color-pts-border:       rgba(251,191,36,0.22);
+    --color-reb-subtle:       rgba(52,211,153,0.08);
+    --color-reb-border:       rgba(52,211,153,0.25);
+
+    /* ── League distinction (AL / NL) ── */
+    --color-al:               #60a5fa;
+    --color-nl:               #f87171;
+    --color-al-subtle:        rgba(96,165,250,0.15);
+    --color-nl-subtle:        rgba(239,68,68,0.12);
+    --color-al-border:        rgba(96,165,250,0.30);
+    --color-nl-border:        rgba(239,68,68,0.25);
+
+    /* ── Performance tiers ──
+       For power rankings, scout grades, and any badge that scores performance
+       along an elite→poor axis.
+       Rule: do NOT use stat-category tokens (--color-pts through --color-tov)
+       for performance grading — those tokens mark category, not quality. ── */
+    --color-tier-elite:        #4ade80;
+    --color-tier-good:         #34d399;
+    --color-tier-avg:          #60a5fa;
+    --color-tier-below:        #fbbf24;
+    --color-tier-poor:         #f87171;
+    --color-tier-elite-subtle: rgba(74,222,128,0.12);
+    --color-tier-good-subtle:  rgba(52,211,153,0.10);
+    --color-tier-avg-subtle:   rgba(96,165,250,0.10);
+    --color-tier-below-subtle: rgba(251,191,36,0.10);
+    --color-tier-poor-subtle:  rgba(248,113,113,0.10);
+
+    /* ── Comparison bars ──
+       Rule: in any two-player comparison layout, amber = Player A, emerald = Player B.
+       Categorical — not a quality signal. ── */
+    --color-cmp-a:             rgba(129,140,248,0.35);
+    --color-cmp-b:             rgba(52,211,153,0.35);
+
+    /* ── UI state (not stat categories, not semantic status) ── */
+    --color-fav:               #f472b6;   /* favorite/heart icon */
+    --color-fav-subtle:        rgba(244,114,182,0.12);
+    --color-fav-border:        rgba(244,114,182,0.40);
+
+    /* ── Scorecard surface ──
+       Paper-physical aesthetic — intentional break from dark-mode surface.
+       Rule: these tokens apply only within .scorecard-* selectors in scorecard.css. ── */
+    --scorecard-paper:         #f5f0e6;
+    --scorecard-ink:           #1a1209;
+    --scorecard-border:        #c4a882;
+    --scorecard-border-light:  #ddd0b8;
+    --scorecard-highlight:     #e8a830;
+    --scorecard-run:           #d4380d;
+    --scorecard-active-border: rgba(245,158,11,0.90);
+    --scorecard-shadow:        0 4px 24px rgba(0,0,0,0.30), 0 0 0 1px rgba(180,160,130,0.25);
+
     /* Back-compat aliases */
     --color-bg:           var(--bg-base);
     --color-surface:      var(--bg-card);
@@ -133,8 +198,14 @@
     --blur-md: blur(20px);
 
     /* ── Typography ── */
-    --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-display: 'Barlow Semi Condensed', var(--font-sans);
+
+    /* ── Selection / chip accent (indigo — secondary interactive, distinct from orange nav) ── */
+    --color-chip:        #818cf8;
+    --color-chip-bg:     rgba(99,102,241,0.12);
+    --color-chip-border: rgba(99,102,241,0.45);
 
     /* Fluid type: clamp(min, preferred, max) */
     --text-xs:   0.72rem;    /* 11.5px */
@@ -164,7 +235,7 @@
     --header-sub-h:   36px;   /* sub-nav row height */
     --mobile-nav-h:   58px;
     --sidebar-w:      280px;
-    --card-min-w:     280px;
+    --card-min-w:     240px;
     --card-lb-min-w:  300px;
     --card-game-min-w:360px;
 
@@ -245,6 +316,29 @@
     --chart-tick:           #64748b;
     --chart-tooltip-bg:     rgba(255, 255, 255, 0.98);
     --chart-tooltip-border: rgba(0, 0, 0, 0.10);
+
+    /* Semantic tints — light theme (slightly higher opacity for light-bg readability) */
+    --color-win-subtle:       rgba(16,185,129,0.10);
+    --color-win-border:       rgba(16,185,129,0.28);
+    --color-loss-subtle:      rgba(239,68,68,0.08);
+    --color-loss-border:      rgba(239,68,68,0.25);
+    --color-error-subtle:     rgba(239,68,68,0.06);
+    --color-error-border:     rgba(239,68,68,0.20);
+    --color-live-subtle:      rgba(217,119,6,0.10);
+    --color-live-border:      rgba(217,119,6,0.28);
+    --color-pts-subtle:       rgba(217,119,6,0.08);
+    --color-pts-border:       rgba(217,119,6,0.22);
+    --color-reb-subtle:       rgba(16,185,129,0.08);
+    --color-reb-border:       rgba(16,185,129,0.25);
+    --color-al-subtle:        rgba(59,130,246,0.12);
+    --color-nl-subtle:        rgba(239,68,68,0.10);
+    --color-al-border:        rgba(59,130,246,0.28);
+    --color-nl-border:        rgba(239,68,68,0.22);
+    --color-tier-elite-subtle: rgba(74,222,128,0.14);
+    --color-tier-good-subtle:  rgba(52,211,153,0.12);
+    --color-tier-avg-subtle:   rgba(96,165,250,0.12);
+    --color-tier-below-subtle: rgba(251,191,36,0.12);
+    --color-tier-poor-subtle:  rgba(248,113,113,0.12);
 
     /* Theme-aware surfaces */
     /* Skeleton shimmer */

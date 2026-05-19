@@ -113,11 +113,13 @@ function _buildGroups(q) {
         const hitStats = AppState.mlbPlayerStats?.hitting?.[p.id];
         const pitStats = AppState.mlbPlayerStats?.pitching?.[p.id];
         let statHint = '';
-        if (hitStats?.avg)              statHint = `AVG ${hitStats.avg}`;
-        else if (pitStats?.era)         statHint = `ERA ${pitStats.era}`;
+        if (hitStats?.avg)      statHint = `AVG ${hitStats.avg}`;
+        else if (pitStats?.era) statHint = `ERA ${parseFloat(pitStats.era).toFixed(2)}`;
         const sub = statHint
             ? `${p.teamAbbr || '—'} · ${p.position || '—'} · ${statHint}`
             : `${p.teamAbbr || '—'} · ${p.position || '—'}`;
+        const avatarUrl = typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(p.id) : '';
+        const teamColor = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(p.teamAbbr)?.primary : '';
         return {
             id:     p.id,
             sport:  'mlb',
@@ -125,6 +127,8 @@ function _buildGroups(q) {
             name:   p.fullName || `Player ${p.id}`,
             sub,
             badge:  'MLB',
+            avatarUrl,
+            teamColor,
             action: () => { closeGlobalSearch(); showMLBPlayerDetail(p.id); },
         };
     });
@@ -147,15 +151,22 @@ function _buildGroups(q) {
         ...(AppState.mlbTeams || []).filter(t => {
             const n = (t.name || '').toLowerCase();
             return n.includes(q) || (t.abbrev || t.abbreviation || '').toLowerCase().startsWith(q);
-        }).slice(0, 3).map(t => ({
-            id:     t.id,
-            sport:  'mlb',
-            type:   'team',
-            name:   t.name,
-            sub:    `MLB · ${t.abbrev || t.abbreviation || ''}`,
-            badge:  'MLB',
-            action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'mlb') switchSport('mlb'); showMLBTeamDetail(t.id); },
-        })),
+        }).slice(0, 3).map(t => {
+            const abbr = t.abbrev || t.abbreviation || '';
+            const logoUrl = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(abbr) : '';
+            const teamColor = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr)?.primary : '';
+            return {
+                id:     t.id,
+                sport:  'mlb',
+                type:   'team',
+                name:   t.name,
+                sub:    `MLB · ${abbr}`,
+                badge:  'MLB',
+                avatarUrl: logoUrl,
+                teamColor,
+                action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'mlb') switchSport('mlb'); showMLBTeamDetail(t.id); },
+            };
+        }),
     ];
     if (teamHits.length) groups.push({ label: 'Teams', items: teamHits });
 
@@ -204,13 +215,24 @@ function _groupHtml(label, rows) {
 }
 
 function _itemHtml(item, idx) {
-    const initials = (item.name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase();
-    const isTeam   = item.type === 'team';
-    const icon     = isTeam ? (item.sport === 'nba' ? '🏀' : '⚾') : '';
-    const avatar   = icon
-        ? `<span class="search-result-avatar search-result-avatar--team">${icon}</span>`
-        : `<span class="search-result-avatar">${_esc(initials)}</span>`;
-    const bc       = item.sport === 'nba' ? 'search-badge--nba' : 'search-badge--mlb';
+    const initials  = (item.name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase();
+    const isTeam    = item.type === 'team';
+    const bgStyle   = item.teamColor ? `background:linear-gradient(135deg,${item.teamColor}cc,${item.teamColor}44)` : '';
+    const imgStyle  = isTeam ? 'object-fit:contain;padding:3px' : 'object-fit:cover';
+    let avatar;
+    if (item.avatarUrl) {
+        avatar = `<span class="search-result-avatar search-result-avatar--img" style="${bgStyle}">
+            <img src="${_esc(item.avatarUrl)}" alt="" loading="lazy" data-hide-on-error
+                 style="width:100%;height:100%;border-radius:50%;${imgStyle}">
+            <span class="search-avatar-fallback">${_esc(initials)}</span>
+        </span>`;
+    } else if (isTeam) {
+        const icon = item.sport === 'nba' ? '🏀' : '⚾';
+        avatar = `<span class="search-result-avatar search-result-avatar--team">${icon}</span>`;
+    } else {
+        avatar = `<span class="search-result-avatar" style="${bgStyle}">${_esc(initials)}</span>`;
+    }
+    const bc = item.sport === 'nba' ? 'search-badge--nba' : 'search-badge--mlb';
     return `<button class="search-result-item" data-idx="${idx}">
         ${avatar}
         <span class="search-result-name">${_esc(item.name)}</span>

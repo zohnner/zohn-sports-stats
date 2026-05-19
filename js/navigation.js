@@ -64,6 +64,14 @@ function setupNavigation() {
             _restoreMLBTeamDetail(s.id);
             return;
         }
+        if (s.view === 'mlb-scorecard') {
+            if (AppState.currentSport !== 'mlb') {
+                AppState.currentSport = 'mlb';
+                _applySportUI('mlb');
+            }
+            if (typeof _restoreMLBScorecard === 'function') _restoreMLBScorecard(s.gameId);
+            return;
+        }
         // Ensure sport UI matches the restored view's sport prefix
         if (typeof s.view === 'string') {
             const sportFromView = s.view.startsWith('mlb-') ? 'mlb'
@@ -240,6 +248,8 @@ const _NAV_META = {
     'mlb-standings': { label: 'MLB Standings', icon: '📊' },
     'mlb-builder':   { label: 'Stat Builder',  icon: '🧮' },
     'mlb-prep':      { label: 'Game Prep',     icon: '📋' },
+    'mlb-compare':   { label: 'Compare',       icon: '⚡' },
+    'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Leaders',   icon: '🏈' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
@@ -344,6 +354,16 @@ function renderCurrentView(view) {
 }
 
 function _renderMLBView(view) {
+    // Dynamic scorecard route — entry is normally via loadMLBScorecard() directly,
+    // but handle the case where navigateTo receives the full view string.
+    if (view.startsWith('mlb-scorecard-')) {
+        const gameId = parseInt(view.slice('mlb-scorecard-'.length), 10);
+        if (!isNaN(gameId) && typeof _restoreMLBScorecard === 'function') {
+            _restoreMLBScorecard(gameId);
+        }
+        return;
+    }
+
     const viewCount = document.getElementById('viewResultCount');
     // Hide search bar for all MLB views except players
     const isPlayersView = view === 'mlb-players';
@@ -390,6 +410,11 @@ function _renderMLBView(view) {
         case 'mlb-prep':
             if (viewCount) viewCount.textContent = 'Game Prep';
             displayGamePrep();
+            break;
+
+        case 'mlb-compare':
+            if (viewCount) viewCount.textContent = 'Compare Players';
+            loadMLBCompare();
             break;
 
         case 'mlb-standings':
@@ -554,12 +579,13 @@ function _loadFromHash() {
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('home', false); return; }
 
-    const playerMatch    = hash.match(/^player-(\d+)$/);
-    const teamMatch      = hash.match(/^team-(\d+)$/);
-    const teamGameMatch  = hash.match(/^team-(\d+)-game-(\d+)$/);
-    const mlbPlayerMatch  = hash.match(/^mlb-player-(\d+)(?:-(hitting|pitching))?$/);
-    const mlbTeamMatch    = hash.match(/^mlb-team-(\d+)$/);
-    const mlbCompareMatch = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
+    const playerMatch        = hash.match(/^player-(\d+)$/);
+    const teamMatch          = hash.match(/^team-(\d+)$/);
+    const teamGameMatch      = hash.match(/^team-(\d+)-game-(\d+)$/);
+    const mlbPlayerMatch     = hash.match(/^mlb-player-(\d+)(?:-(hitting|pitching))?$/);
+    const mlbTeamMatch       = hash.match(/^mlb-team-(\d+)$/);
+    const mlbCompareMatch    = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
+    const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -570,6 +596,12 @@ function _loadFromHash() {
         _restoreTeamDetail(parseInt(teamMatch[1]));
     } else if (mlbCompareMatch) {
         _restoreMLBComparison(mlbCompareMatch[1], parseInt(mlbCompareMatch[2]), parseInt(mlbCompareMatch[3]));
+    } else if (mlbScorecardMatch) {
+        AppState.currentSport = 'mlb';
+        _applySportUI('mlb');
+        if (typeof _restoreMLBScorecard === 'function') {
+            _restoreMLBScorecard(parseInt(mlbScorecardMatch[1]));
+        }
     } else if (mlbPlayerMatch) {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
@@ -584,7 +616,7 @@ function _loadFromHash() {
             return;
         }
 
-        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep'];
+        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
         const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-teams', 'nfl-games', 'nfl-standings'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
@@ -629,6 +661,8 @@ const _PAGE_META = {
     'mlb-standings': { title: 'SportStrata — MLB Standings',  desc: 'Current MLB standings by division and league.' },
     'mlb-builder':   { title: 'SportStrata — Stat Builder',   desc: 'Build custom MLB stats with any formula. Save and compare.' },
     'mlb-prep':      { title: 'SportStrata — Game Prep',      desc: 'Broadcast-ready MLB game prep sheets with pitcher matchups and key stats.' },
+    'mlb-compare':   { title: 'SportStrata — Compare Players', desc: 'Side-by-side MLB player comparison with stat bars and percentile rings.' },
+    'mlb-scorecard': { title: 'SportStrata — Game Scorecard',  desc: 'Play-by-play baseball scorecard for any MLB game.' },
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
 };
 

@@ -1,0 +1,408 @@
+/* ============================================================
+   scorecard.css — MLB Play-by-Play Scorecard (Phase 1)
+   All selectors scoped to .scorecard-* or .sc-* to avoid
+   collisions with existing components.
+   Color values: --scorecard-* tokens from variables.css only.
+   ============================================================ */
+
+/* ── Outer view container ────────────────────────────────────── */
+.scorecard-view {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + 60px);
+}
+
+/* ── Back nav bar ────────────────────────────────────────────── */
+.sc-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+.sc-back-btn {
+    background: none;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-family: inherit;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.sc-back-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.sc-back-btn:focus-visible {
+    outline: 2px solid var(--accent-border);
+    outline-offset: 2px;
+}
+.sc-nav-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+}
+
+/* ── Paper wrapper ───────────────────────────────────────────── */
+.scorecard-wrapper {
+    background: var(--scorecard-paper);
+    border-radius: var(--radius-md);
+    box-shadow: var(--scorecard-shadow);
+    position: relative;
+    margin-bottom: var(--space-6);
+    /* fold-line decoration */
+}
+.scorecard-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(196, 168, 130, 0.25);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Game chrome header ──────────────────────────────────────── */
+.scorecard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 2px solid var(--scorecard-border);
+    background: var(--scorecard-paper);
+    gap: var(--space-3);
+    position: relative;
+    z-index: 1;
+}
+.sc-team-side {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1;
+}
+.sc-team-side--home {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+.sc-header-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.sc-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.sc-header-info--right { align-items: flex-end; }
+.sc-header-abbr {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--scorecard-ink);
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+.sc-header-name {
+    font-size: var(--text-xs);
+    color: var(--scorecard-ink);
+    opacity: 0.6;
+    line-height: 1;
+}
+.sc-header-score {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--scorecard-ink);
+    opacity: 0.35;
+    line-height: 1;
+    min-width: 2ch;
+    text-align: center;
+    transition: opacity 0.15s;
+}
+.sc-header-score--win { opacity: 1; }
+.sc-header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+.sc-header-status {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--scorecard-ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.sc-header-date {
+    font-size: var(--text-xs);
+    color: var(--scorecard-ink);
+    opacity: 0.5;
+    text-align: center;
+}
+
+/* ── Section labels (AWAY / HOME) ────────────────────────────── */
+.sc-section-label {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--scorecard-ink);
+    opacity: 0.55;
+    padding: 6px 16px 5px;
+    border-bottom: 1px solid var(--scorecard-border-light);
+    background: var(--scorecard-paper);
+    position: relative;
+    z-index: 1;
+}
+.sc-section-label--home {
+    border-top: 2px solid var(--scorecard-border);
+}
+
+/* ── Horizontal scroll container ─────────────────────────────── */
+.sc-scroll-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Scorecard CSS grid ──────────────────────────────────────── */
+.scorecard-grid {
+    display: grid;
+    grid-template-columns: 180px repeat(var(--scorecard-innings, 9), minmax(60px, 1fr));
+    grid-template-rows: 40px repeat(var(--scorecard-batters, 9), 88px) 32px;
+    background: var(--scorecard-paper);
+    font-family: var(--font-mono);
+    min-width: max-content;
+}
+
+/* ── Header row cells ────────────────────────────────────────── */
+.sc-header-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--scorecard-border-light);
+    border-bottom: 2px solid var(--scorecard-border);
+    background: var(--scorecard-paper);
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--scorecard-ink);
+    opacity: 0.65;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.sc-header-cell.sc-name-col {
+    justify-content: flex-start;
+    padding-left: 10px;
+    letter-spacing: 0.06em;
+    border-right: 2px solid var(--scorecard-border);
+}
+
+/* ── Sticky name column (desktop + mobile scroll) ────────────── */
+.sc-name-col {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--scorecard-paper);
+}
+
+/* ── Batter name cells ───────────────────────────────────────── */
+.sc-name-cell {
+    display: flex;
+    align-items: center;
+    padding: 0 6px 0 10px;
+    border-right: 2px solid var(--scorecard-border);
+    border-bottom: 1px solid var(--scorecard-border-light);
+    background: var(--scorecard-paper);
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+.sc-player-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--scorecard-ink);
+    padding: 0;
+    text-align: left;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 158px;
+    transition: color 0.15s;
+}
+.sc-player-btn:hover { color: #5c3a10; text-decoration: underline; }
+.sc-player-btn:focus-visible {
+    outline: 2px solid var(--scorecard-active-border);
+    outline-offset: 1px;
+    border-radius: 2px;
+}
+
+/* ── Plate appearance cells ──────────────────────────────────── */
+.sc-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 4px 4px 6px;
+    border-right: 1px solid var(--scorecard-border-light);
+    border-bottom: 1px solid var(--scorecard-border-light);
+    background: var(--scorecard-paper);
+    min-width: 60px;
+    min-height: 88px;
+}
+.sc-cell:focus-visible {
+    outline: 2px solid var(--scorecard-active-border);
+    outline-offset: -2px;
+    z-index: 1;
+}
+.sc-cell--empty {
+    background: rgba(196, 168, 130, 0.06);
+}
+
+/* ── Notation label (top-left of cell) ───────────────────────── */
+.sc-notation {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--scorecard-ink);
+    line-height: 1;
+    z-index: 1;
+}
+
+/* ── Diamond SVG ─────────────────────────────────────────────── */
+.sc-diamond {
+    width: 44px;
+    height: 44px;
+    display: block;
+    flex-shrink: 0;
+}
+.sc-diamond .sc-seg {
+    fill: none;
+}
+.sc-diamond .sc-diamond-border {
+    stroke: var(--scorecard-border);
+    fill: none;
+}
+
+/* Base fill states — classes added by JS to the <svg> element */
+.sc-diamond.reached-1 .sc-seg--first  { fill: var(--scorecard-highlight); }
+.sc-diamond.reached-2 .sc-seg--second { fill: var(--scorecard-highlight); }
+.sc-diamond.reached-3 .sc-seg--third  { fill: var(--scorecard-highlight); }
+.sc-diamond.scored    .sc-seg--home   { fill: var(--scorecard-highlight); }
+
+/* Run-scored glow — one-shot at render time */
+@keyframes scoredPulse {
+    0%, 100% { filter: drop-shadow(0 0 0px var(--scorecard-run)); }
+    50%       { filter: drop-shadow(0 0 6px var(--scorecard-run)); }
+}
+.sc-diamond.scored .sc-seg--home {
+    fill: var(--scorecard-highlight);
+    animation: scoredPulse 600ms ease-out 1 forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sc-diamond.scored .sc-seg--home { animation: none; }
+}
+
+/* ── Footer row (R / H per inning) ───────────────────────────── */
+.sc-footer-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-right: 1px solid var(--scorecard-border-light);
+    border-top: 1px solid var(--scorecard-border);
+    background: rgba(196, 168, 130, 0.12);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--scorecard-ink);
+    opacity: 0.8;
+    padding: 2px 0;
+}
+.sc-footer-cell.sc-name-col {
+    align-items: flex-start;
+    padding-left: 10px;
+    gap: 3px;
+    border-right: 2px solid var(--scorecard-border);
+}
+.sc-footer-h { opacity: 0.6; }
+
+/* ── Scorecard entry button on game cards ────────────────────── */
+.game-card-scorecard-btn {
+    display: block;
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: 0.3rem;
+    background: none;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-subtle);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+    letter-spacing: 0.02em;
+}
+.game-card-scorecard-btn:hover {
+    border-color: var(--scorecard-border);
+    color: var(--scorecard-ink);
+    background: rgba(245, 240, 230, 0.08);
+}
+.game-card-scorecard-btn--live {
+    border-color: var(--color-live);
+    color: var(--color-live);
+}
+.game-card-scorecard-btn--live:hover {
+    background: rgba(245, 158, 11, 0.08);
+}
+
+/* ── Phase 3 placeholder: active at-bat pulse (live mode) ─────── */
+@keyframes activeAtBatPulse {
+    0%, 100% { outline-color: rgba(245, 158, 11, 0.90); }
+    50%       { outline-color: rgba(245, 158, 11, 0.30); }
+}
+.sc-cell.pa--active {
+    outline: 2px solid var(--scorecard-active-border);
+    outline-offset: -2px;
+    animation: activeAtBatPulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sc-cell.pa--active { animation: none; }
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .scorecard-view {
+        padding: var(--space-3) var(--space-2) calc(var(--space-3) + 70px);
+    }
+    .sc-header-logo { width: 36px; height: 36px; }
+    .sc-header-score { font-size: 2rem; }
+    .scorecard-header { padding: 12px 14px; gap: var(--space-2); }
+    .sc-player-btn { max-width: 148px; font-size: 12px; }
+    .scorecard-grid {
+        grid-template-columns: 160px repeat(var(--scorecard-innings, 9), minmax(44px, 1fr));
+        grid-template-rows: 36px repeat(var(--scorecard-batters, 9), 80px) 28px;
+    }
+    .sc-diamond { width: 38px; height: 38px; }
+    .sc-cell { min-width: 44px; min-height: 80px; }
+}

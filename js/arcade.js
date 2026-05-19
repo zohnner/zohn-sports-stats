@@ -35,6 +35,8 @@ function loadArcade() {
     const blueprintSave = _arcLoad('blueprint');
     const whoamiSave    = _arcLoad('whoami');
     const statdleSave   = _arcLoad('statdle');
+    const questSave     = _arcLoad('quest');
+    const questStreak   = _questStreak();
 
     const _badge = (save, scoreText) => save
         ? `<div class="arcade-completed-badge">✓ Played — ${scoreText}</div>`
@@ -43,6 +45,8 @@ function loadArcade() {
     const _starScore = s => s
         ? `${'★'.repeat(s.score)}${'☆'.repeat(5 - s.score)} (${s.score}/5)`
         : '';
+
+    const otdSave = _arcLoad('otd');
 
     grid.innerHTML = `
         <div class="arcade-hub">
@@ -53,34 +57,25 @@ function loadArcade() {
 
             <div class="arcade-sport-section">
                 <div class="arcade-sport-header">
-                    <span class="arcade-sport-icon">🏀</span>
-                    <span class="arcade-sport-name">NBA</span>
-                    <span class="arcade-sport-count">1 game</span>
-                </div>
-                <div class="arcade-game-grid">
-                    <div class="arcade-game-card arcade-game-card--whoami ${whoamiSave ? 'arcade-game-card--done' : ''}">
-                        ${_badge(whoamiSave, _starScore(whoamiSave))}
-                        <div class="arcade-game-icon">🕵️</div>
-                        <h2 class="arcade-game-title">Who Am I?</h2>
-                        <p class="arcade-game-desc">Five clues. One NBA player. Guess with fewer clues for a higher score.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~1 min</span>
-                            <span>⚡ Medium</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startWhoAmI()">
-                            ${whoamiSave ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="arcade-sport-section">
-                <div class="arcade-sport-header">
                     <span class="arcade-sport-icon">⚾</span>
                     <span class="arcade-sport-name">MLB</span>
-                    <span class="arcade-sport-count">4 games</span>
+                    <span class="arcade-sport-count">5 games</span>
                 </div>
                 <div class="arcade-game-grid">
+                    <div class="arcade-game-card arcade-game-card--otd ${otdSave ? 'arcade-game-card--done' : ''}">
+                        ${otdSave ? `<div class="arcade-completed-badge">✓ ${otdSave.correct ? 'Correct 🟩' : 'Missed 🟥'}</div>` : ''}
+                        <div class="arcade-game-icon">📅</div>
+                        <h2 class="arcade-game-title">On This Day</h2>
+                        <p class="arcade-game-desc">Guess the standout player from a game played on this date in MLB history.</p>
+                        <div class="arcade-game-meta">
+                            <span>⏱ ~1 min</span>
+                            <span>⚡ Easy</span>
+                        </div>
+                        <button class="arcade-play-btn" onclick="startOnThisDay()">
+                            ${otdSave ? 'Play Again' : 'Play Now'}
+                        </button>
+                    </div>
+
                     <div class="arcade-game-card arcade-game-card--statdle ${statdleSave?.answered ? 'arcade-game-card--done' : ''}">
                         ${statdleSave?.answered ? `<div class="arcade-completed-badge">✓ Played — ${statdleSave.won ? '🟩 Got it' : '🟥 Missed'}</div>` : ''}
                         <div class="arcade-game-icon">⚾</div>
@@ -142,6 +137,158 @@ function loadArcade() {
         </div>
     `;
 }
+
+// ── On This Day ───────────────────────────────────────────────
+
+async function startOnThisDay() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = 'display:block;padding:1.5rem 0;';
+
+    const _wrap = content => `
+        <div class="arcade-game-wrap">
+            <div class="arcade-back-row">
+                <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
+                <span class="arcade-game-title-inline">📅 On This Day</span>
+            </div>
+            ${content}
+        </div>`;
+
+    grid.innerHTML = _wrap(`<div class="arcade-loading"><div class="loading-spinner"></div></div>`);
+
+    const today   = new Date();
+    const mm      = String(today.getMonth() + 1).padStart(2, '0');
+    const dd      = String(today.getDate()).padStart(2, '0');
+    const curYear = today.getFullYear();
+    const month   = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+    for (let offset = 1; offset <= 3; offset++) {
+        const year    = curYear - offset;
+        const dateStr = `${year}-${mm}-${dd}`;
+
+        let sched;
+        try {
+            sched = await mlbFetch('/schedule', {
+                sportId: 1, startDate: dateStr, endDate: dateStr, hydrate: 'linescore',
+            }, ApiCache.TTL.LONG);
+        } catch (_) { continue; }
+
+        const finished = (sched?.dates?.[0]?.games || []).filter(g => g.status?.abstractGameState === 'Final');
+        if (!finished.length) continue;
+
+        const game = finished.reduce((best, g) => {
+            const r = (g.linescore?.teams?.home?.runs ?? 0) + (g.linescore?.teams?.away?.runs ?? 0);
+            const b = (best.linescore?.teams?.home?.runs ?? 0) + (best.linescore?.teams?.away?.runs ?? 0);
+            return r > b ? g : best;
+        });
+
+        let players = [];
+        try {
+            const bs = await mlbFetch(`/game/${game.gamePk}/boxscore`, {}, ApiCache.TTL.LONG);
+            if (bs) {
+                players = [
+                    ...Object.values(bs.teams?.home?.players || {}),
+                    ...Object.values(bs.teams?.away?.players || {}),
+                ]
+                    .filter(p => p.stats?.batting?.atBats >= 2)
+                    .map(p => ({
+                        name: p.person?.fullName || '?',
+                        h:   p.stats.batting.hits      ?? 0,
+                        ab:  p.stats.batting.atBats    ?? 0,
+                        hr:  p.stats.batting.homeRuns  ?? 0,
+                        rbi: p.stats.batting.rbi       ?? 0,
+                    }))
+                    .sort((a, b) => (b.rbi - a.rbi) || (b.h - a.h) || (b.hr - a.hr));
+            }
+        } catch (_) { continue; }
+
+        const homeTeam   = game.teams?.home?.team?.abbreviation || '?';
+        const awayTeam   = game.teams?.away?.team?.abbreviation || '?';
+        const homeScore  = game.linescore?.teams?.home?.runs ?? game.teams?.home?.score ?? '?';
+        const awayScore  = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
+        const homeLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeTeam) : '';
+        const awayLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayTeam) : '';
+        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeTeam) : { primary: 'var(--accent)' };
+
+        const top        = players[0] || null;
+        const otdSave    = _arcLoad('otd');
+        let challengeHTML = '';
+
+        if (top) {
+            const parts = [`${top.h}-for-${top.ab}`];
+            if (top.hr  > 0) parts.push(`${top.hr} HR`);
+            if (top.rbi > 0) parts.push(`${top.rbi} RBI`);
+            const clueLine = parts.join(' · ');
+
+            const distractors = players.slice(1, 4);
+
+            if (distractors.length >= 1) {
+                const pool = [{ ...top, correct: true }, ...distractors.map(p => ({ ...p, correct: false }))];
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                window._otdChoices = pool;
+                const alreadyDone  = !!otdSave;
+                const choiceBtns   = pool.map((c, i) => {
+                    let cls = 'otd-choice';
+                    if (alreadyDone) cls += c.correct ? ' otd-choice--correct' : ' otd-choice--dim';
+                    const handler = alreadyDone ? '' : `onclick="_otdArcadeReveal(${i})"`;
+                    return `<button class="${cls}" ${alreadyDone ? 'disabled' : handler}>${_escHtml(c.name)}</button>`;
+                }).join('');
+                const resultHTML = alreadyDone
+                    ? (otdSave.correct
+                        ? `<span class="otd-result--right">&#10003; Correct!</span>`
+                        : `<span class="otd-result--wrong">&#10007; It was <strong>${_escHtml(top.name)}</strong></span>`)
+                    : '';
+                challengeHTML = `
+                    <div class="otd-challenge">
+                        <p class="otd-prompt">Who had this game?</p>
+                        <p class="otd-clue">${clueLine}</p>
+                        <div class="otd-choices" id="otdChoices">${choiceBtns}</div>
+                        <p class="otd-result" id="otdResult" ${alreadyDone ? '' : 'hidden'}>${resultHTML}</p>
+                    </div>`;
+            } else {
+                window._otdChoices = [{ ...top, correct: true }];
+                challengeHTML = `
+                    <div class="otd-challenge">
+                        <p class="otd-prompt">Star of the game</p>
+                        <p class="otd-clue">${clueLine}</p>
+                        <div class="otd-choices" id="otdChoices">
+                            <button class="otd-choice otd-choice--reveal" onclick="_otdReveal(0)">Reveal player</button>
+                        </div>
+                        <p class="otd-result" id="otdResult" hidden></p>
+                    </div>`;
+            }
+        }
+
+        grid.innerHTML = _wrap(`
+            <div style="max-width:480px;margin:0 auto">
+                <p class="arcade-game-sub" style="text-align:center;margin-bottom:1rem">${month}, ${year}</p>
+                <div class="otd-card" style="border-left:3px solid ${homeColors.primary}">
+                    <div class="otd-matchup">
+                        ${awayLogo ? `<img class="otd-logo" src="${awayLogo}" alt="${_escHtml(awayTeam)}" data-hide-on-error>` : ''}
+                        <span class="otd-team">${_escHtml(awayTeam)}</span>
+                        <span class="otd-score">${awayScore}</span>
+                        <span class="otd-sep">–</span>
+                        <span class="otd-score">${homeScore}</span>
+                        <span class="otd-team">${_escHtml(homeTeam)}</span>
+                        ${homeLogo ? `<img class="otd-logo" src="${homeLogo}" alt="${_escHtml(homeTeam)}" data-hide-on-error>` : ''}
+                    </div>
+                    ${challengeHTML}
+                </div>
+            </div>`);
+        return;
+    }
+
+    grid.innerHTML = _wrap(`<p style="color:var(--text-muted);text-align:center;padding:2rem 1rem">No historical game found for today's date.</p>`);
+}
+
+window._otdArcadeReveal = function(idx) {
+    if (typeof window._otdReveal === 'function') window._otdReveal(idx);
+    const chosen = window._otdChoices?.[idx];
+    if (chosen !== undefined) _arcSave('otd', { answered: true, correct: !!chosen.correct });
+};
 
 // ── Shared RNG ────────────────────────────────────────────────
 
@@ -1331,6 +1478,290 @@ function _skipStatdle() {
     _renderStatdle();
 }
 
+// ── Daily Quest ───────────────────────────────────────────────
+
+const _QUEST_TEMPLATES = [
+    {
+        id:    1,
+        text:  'Find a hitter with OPS above .900 and strikeout rate below 18%',
+        hint:  'Elite contact + power — sort leaders by OPS, watch the K%',
+        group: 'hitting',
+        minPA: 150,
+        check: s => { const c = typeof _computeBattingRates === 'function' ? _computeBattingRates(s) : {}; return parseFloat(s.ops) > 0.900 && parseFloat(c.kPct) < 18; },
+    },
+    {
+        id:    2,
+        text:  'Find a starting pitcher with ERA under 3.00 and WHIP under 1.15',
+        hint:  'Elite SP — sort pitching leaders by ERA',
+        group: 'pitching',
+        minIP: 30,
+        check: s => parseFloat(s.era) < 3.00 && parseFloat(s.whip) < 1.15,
+    },
+    {
+        id:    3,
+        text:  'Find a hitter with ISO above .200 and walk rate above 10%',
+        hint:  'Power + patience — ISO = SLG minus AVG',
+        group: 'hitting',
+        minPA: 150,
+        check: s => { const c = typeof _computeBattingRates === 'function' ? _computeBattingRates(s) : {}; return (parseFloat(s.slg) - parseFloat(s.avg)) > 0.200 && parseFloat(c.bbPct) > 10; },
+    },
+    {
+        id:    4,
+        text:  'Find a pitcher with K/9 above 10.0 and BB/9 below 2.5',
+        hint:  'Strikeout machine with control — check pitching leaders',
+        group: 'pitching',
+        minIP: 30,
+        check: s => parseFloat(s.strikeoutsPer9Inn) > 10.0 && parseFloat(s.walksPer9Inn) < 2.5,
+    },
+    {
+        id:    5,
+        text:  'Find a hitter with a stolen base success rate above 85% with at least 10 attempts',
+        hint:  'Speed merchant — look at SB and CS totals',
+        group: 'hitting',
+        minPA: 100,
+        check: s => { const sb = s.stolenBases || 0; const cs = s.caughtStealing || 0; return (sb + cs) >= 10 && sb / (sb + cs) > 0.85; },
+    },
+    {
+        id:    6,
+        text:  'Find a pitcher with FIP below 3.20 and at least 40 innings pitched',
+        hint:  'True talent arm — FIP strips out defense',
+        group: 'pitching',
+        minIP: 40,
+        check: s => { const ip = parseFloat(s.inningsPitched) || 0; const fip = ip > 0 ? (13*(s.homeRuns||0)+3*(s.baseOnBalls||0)-2*(s.strikeOuts||0))/ip+3.10 : 99; return fip < 3.20 && ip >= 40; },
+    },
+    {
+        id:    7,
+        text:  'Find a hitter with BABIP above .340 and at least 100 plate appearances',
+        hint:  'Running hot — could be a true contact monster or due for regression',
+        group: 'hitting',
+        minPA: 100,
+        check: s => parseFloat(s.babip) > 0.340,
+    },
+    {
+        id:    8,
+        text:  'Find a hitter with 15+ home runs and a strikeout rate below 20%',
+        hint:  'Power without the whiffs — rare combination',
+        group: 'hitting',
+        minPA: 150,
+        check: s => { const c = typeof _computeBattingRates === 'function' ? _computeBattingRates(s) : {}; return (s.homeRuns || 0) >= 15 && parseFloat(c.kPct) < 20; },
+    },
+    {
+        id:    9,
+        text:  'Find a pitcher with a quality start percentage above 65%',
+        hint:  'Consistency is king — at least 6 IP, 3 ER or fewer',
+        group: 'pitching',
+        minIP: 30,
+        check: s => { const gs = s.gamesStarted || 0; const qs = s.qualityStarts || 0; return gs >= 8 && (qs / gs) > 0.65; },
+    },
+    {
+        id:   10,
+        text: 'Find a hitter batting above .300 with an OBP above .380',
+        hint: 'Old-school batting title contender',
+        group: 'hitting',
+        minPA: 150,
+        check: s => parseFloat(s.avg) > 0.300 && parseFloat(s.obp) > 0.380,
+    },
+];
+
+function _todayQuest() {
+    const rng = _seededRandom(_todaySeed());
+    const idx = Math.floor(rng() * _QUEST_TEMPLATES.length);
+    return _QUEST_TEMPLATES[idx];
+}
+
+function _questStreak() {
+    try {
+        const raw = JSON.parse(localStorage.getItem('zs_quest_streak') || '{}');
+        return { count: raw.count || 0, lastDate: raw.lastDate || '' };
+    } catch (_) { return { count: 0, lastDate: '' }; }
+}
+
+function _questSaveStreak(won) {
+    try {
+        const today   = _arcToday();
+        const current = _questStreak();
+        const newCount = won
+            ? (current.lastDate === _arcToday() ? current.count : current.count + 1)
+            : 0;
+        localStorage.setItem('zs_quest_streak', JSON.stringify({ count: newCount, lastDate: today }));
+    } catch (_) {}
+}
+
+function startDailyQuest() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = 'display:block;';
+
+    const quest  = _todayQuest();
+    const save   = _arcLoad('quest');
+    const streak = _questStreak();
+
+    const pool = AppState.mlbPlayers?.[quest.group] || [];
+    if (!pool.length) {
+        grid.innerHTML = `
+            <div class="quest-wrap">
+                <button class="back-button" onclick="loadArcade()">← Back</button>
+                <div class="quest-card">
+                    <p style="color:var(--text-muted);text-align:center;padding:2rem">
+                        MLB player data not loaded yet — visit the Players tab first, then return.
+                    </p>
+                </div>
+            </div>`;
+        return;
+    }
+
+    // Build autocomplete pool sorted by display name
+    const sortedPool = [...pool].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+    const optHtml = sortedPool.map(p =>
+        `<option value="${p.id}">${_escHtml(p.fullName || '—')} · ${_escHtml(p.teamAbbr || '')}</option>`
+    ).join('');
+
+    const streakBadge = streak.count >= 2
+        ? `<span class="quest-streak">🔥 ${streak.count}-day streak</span>`
+        : '';
+
+    const completedHtml = save?.completed ? _renderQuestResult(quest, save) : '';
+
+    grid.innerHTML = `
+        <div class="quest-wrap">
+            <button class="back-button" onclick="loadArcade()">← Back</button>
+
+            <div class="quest-card">
+                <div class="quest-hdr">
+                    <span class="quest-label">⚡ Daily Quest · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    ${streakBadge}
+                </div>
+
+                <p class="quest-text">${_escHtml(quest.text)}</p>
+                <p class="quest-hint">💡 ${_escHtml(quest.hint)}</p>
+
+                ${completedHtml || `
+                <div class="quest-search-row">
+                    <select id="quest-player-sel" class="cmp-select" style="flex:1">
+                        <option value="">— Search for a player —</option>
+                        ${optHtml}
+                    </select>
+                    <button class="arcade-play-btn" style="margin:0;flex-shrink:0" onclick="_submitQuestAnswer('${quest.id}')">Submit</button>
+                </div>
+                <div id="quest-feedback" class="quest-feedback" style="display:none"></div>
+                `}
+            </div>
+
+            <div class="quest-qualifiers-card">
+                <div class="quest-qual-hdr">
+                    <span class="quest-qual-title">Players who qualify</span>
+                    <span class="quest-qual-note">${quest.group === 'hitting' ? `min ${quest.minPA || 100} PA` : `min ${quest.minIP || 30} IP`}</span>
+                </div>
+                <div id="quest-qual-list" class="quest-qual-list">
+                    ${_buildQuestQualifiers(quest)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _buildQuestQualifiers(quest) {
+    const stats = AppState.mlbPlayerStats?.[quest.group] || {};
+    const pool  = AppState.mlbPlayers?.[quest.group] || [];
+
+    const qualifying = pool.filter(p => {
+        const s = stats[p.id];
+        if (!s) return false;
+        const ip = parseFloat(s.inningsPitched) || 0;
+        const pa = s.plateAppearances || 0;
+        if (quest.group === 'pitching' && ip < (quest.minIP || 30)) return false;
+        if (quest.group === 'hitting'  && pa < (quest.minPA || 100)) return false;
+        try { return quest.check(s); } catch (_) { return false; }
+    });
+
+    if (!qualifying.length) return `<p class="quest-no-qual">No qualifying players yet this season.</p>`;
+
+    const sorted = qualifying.sort((a, b) => {
+        const sA = stats[a.id];
+        const sB = stats[b.id];
+        const key = quest.group === 'hitting' ? 'ops' : 'era';
+        const vA  = parseFloat(sA?.[key]) || (quest.group === 'hitting' ? 0 : 99);
+        const vB  = parseFloat(sB?.[key]) || (quest.group === 'hitting' ? 0 : 99);
+        return quest.group === 'hitting' ? vB - vA : vA - vB;
+    });
+
+    return sorted.map((p, i) => {
+        const s     = stats[p.id];
+        const clr   = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(p.teamAbbr) : { primary: '#7c8df0' };
+        const hs    = typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(p.id) : '';
+        const init  = (p.fullName || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
+        const key   = quest.group === 'hitting' ? 'ops' : 'era';
+        const val   = parseFloat(s?.[key]);
+        const disp  = isNaN(val) ? '—' : (quest.group === 'hitting' ? val.toFixed(3).replace(/^0\./, '.') : val.toFixed(2));
+        const unit  = quest.group === 'hitting' ? 'OPS' : 'ERA';
+        return `
+            <div class="quest-qual-row" onclick="showMLBPlayerDetail(${p.id},'${quest.group}')" role="button" tabindex="0"
+                onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${p.id},'${quest.group}')">
+                <span class="quest-qual-rank">${i + 1}</span>
+                <div class="quest-qual-hs" style="background:${clr.primary}22">
+                    ${hs ? `<img src="${hs}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="font-size:0.7rem;font-weight:700;color:${clr.primary}">${init}</span>`}
+                </div>
+                <div class="quest-qual-info">
+                    <span class="quest-qual-name">${_escHtml(p.fullName || '—')}</span>
+                    <span class="quest-qual-team">${_escHtml(p.teamAbbr || '')}</span>
+                </div>
+                <span class="quest-qual-val" style="color:${clr.primary}">${disp} <span class="quest-qual-unit">${unit}</span></span>
+            </div>`;
+    }).join('');
+}
+
+function _renderQuestResult(quest, save) {
+    const won = save?.won;
+    return `
+        <div class="quest-result quest-result--${won ? 'win' : 'miss'}">
+            <span class="quest-result-icon">${won ? '✅' : '❌'}</span>
+            <span>${won ? 'Correct! That player qualifies.' : `${_escHtml(save.guessName || 'That player')} doesn't meet all the criteria.`}</span>
+        </div>`;
+}
+
+window._submitQuestAnswer = function(questId) {
+    const sel  = document.getElementById('quest-player-sel');
+    const fb   = document.getElementById('quest-feedback');
+    if (!sel || !fb || !sel.value) return;
+
+    const quest    = _QUEST_TEMPLATES.find(q => q.id === parseInt(questId));
+    if (!quest) return;
+
+    const playerId = parseInt(sel.value);
+    const player   = (AppState.mlbPlayers?.[quest.group] || []).find(p => p.id === playerId);
+    const stats    = AppState.mlbPlayerStats?.[quest.group]?.[playerId];
+
+    if (!player || !stats) {
+        fb.style.display = 'block';
+        fb.className = 'quest-feedback quest-feedback--miss';
+        fb.textContent = 'Player data unavailable — try another.';
+        return;
+    }
+
+    let won = false;
+    try { won = quest.check(stats); } catch (_) {}
+
+    _arcSave('quest', { questId, won, guessId: playerId, guessName: player.fullName, completed: true });
+    _questSaveStreak(won);
+
+    fb.style.display  = 'block';
+    fb.className      = `quest-feedback quest-feedback--${won ? 'win' : 'miss'}`;
+    fb.innerHTML      = won
+        ? `✅ <strong>${_escHtml(player.fullName)}</strong> qualifies! Quest complete.`
+        : `❌ <strong>${_escHtml(player.fullName)}</strong> doesn't meet all criteria. Check the qualifying players list below.`;
+
+    // Reveal streak update
+    if (won) {
+        const streak = _questStreak();
+        const streakEl = document.querySelector('.quest-streak');
+        if (streakEl) streakEl.textContent = `🔥 ${streak.count}-day streak`;
+        else {
+            const hdr = document.querySelector('.quest-hdr');
+            if (hdr) hdr.insertAdjacentHTML('beforeend', `<span class="quest-streak">🔥 ${streak.count}-day streak</span>`);
+        }
+    }
+};
+
 // ── Global exposure ───────────────────────────────────────────
 
 if (typeof window !== 'undefined') {
@@ -1353,4 +1784,5 @@ if (typeof window !== 'undefined') {
     window.startStatdle          = startStatdle;
     window._submitStatdleGuess   = _submitStatdleGuess;
     window._skipStatdle          = _skipStatdle;
+    window.startDailyQuest       = startDailyQuest;
 }

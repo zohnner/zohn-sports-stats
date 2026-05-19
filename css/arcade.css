@@ -1574,3 +1574,119 @@
     background: rgba(249, 115, 22, 0.08);
     color: #fdba74;
 }
+
+/* ── Daily Quest ─────────────────────────────────────────────── */
+
+.quest-wrap { max-width: 720px; margin: 0 auto; padding: 1.25rem 0; display: flex; flex-direction: column; gap: 1rem; }
+
+.quest-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+.quest-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.quest-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+.quest-streak {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f97316;
+    background: #f9731618;
+    border: 1px solid #f9731630;
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+}
+.quest-text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin: 0 0 0.5rem;
+}
+.quest-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0 0 1.1rem;
+}
+.quest-search-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.quest-feedback {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.quest-feedback--win  { background: #14532d22; color: #4ade80; border: 1px solid #4ade8040; }
+.quest-feedback--miss { background: #450a0a22; color: #f87171; border: 1px solid #f8717140; }
+
+.quest-result {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.quest-result--win  { background: #14532d22; color: #4ade80; border: 1px solid #4ade8040; }
+.quest-result--miss { background: #450a0a22; color: #f87171; border: 1px solid #f8717140; }
+.quest-result-icon  { font-size: 1.1rem; flex-shrink: 0; }
+
+/* Qualifying players */
+.quest-qualifiers-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.quest-qual-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-default);
+}
+.quest-qual-title { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); }
+.quest-qual-note  { font-size: 0.68rem; color: var(--text-muted); }
+
+.quest-qual-list { display: flex; flex-direction: column; }
+.quest-no-qual   { padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
+
+.quest-qual-row {
+    display: grid;
+    grid-template-columns: 1.5rem 32px 1fr auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1.25rem;
+    border-bottom: 1px solid var(--border-default);
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.quest-qual-row:last-child { border-bottom: none; }
+.quest-qual-row:hover { background: var(--bg-elevated); }
+.quest-qual-rank  { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-align: center; }
+.quest-qual-hs    { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.quest-qual-info  { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.quest-qual-name  { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quest-qual-team  { font-size: 0.65rem; color: var(--text-muted); }
+.quest-qual-val   { font-size: 0.88rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quest-qual-unit  { font-size: 0.62rem; font-weight: 600; color: var(--text-muted); margin-left: 0.15rem; }

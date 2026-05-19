@@ -32,6 +32,7 @@ Logger.info('Initializing SportStrata…', undefined, 'APP');
         AppState.mlbGames        = [];
         AppState.mlbStandings    = null;
         AppState.mlbLeaderSplits = null;
+        if (typeof _clearMLBLeaderSplitsCache === 'function') _clearMLBLeaderSplitsCache();
         // Sync the MLB module's own season variable
         if (typeof setMLBSeason === 'function') setMLBSeason(year);
         // Teams data is season-independent; keep allTeams
@@ -187,7 +188,15 @@ function loadHome() {
         </div>
     `).join('');
 
+    const isFirstVisit = !localStorage.getItem('zs_seen_welcome');
+    if (isFirstVisit) localStorage.setItem('zs_seen_welcome', '1');
+
     grid.innerHTML = `
+        ${isFirstVisit ? `
+        <div class="home-welcome">
+            <strong class="home-welcome-headline">Advanced MLB stats for announcers, fantasy players, and data fans.</strong>
+            <span class="home-welcome-sub">FIP, BABIP, ISO, Statcast percentiles, and 36 leaderboard categories — free, no account, no paywall.</span>
+        </div>` : ''}
         <!-- Search prompt bar (P2-004) -->
         <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -204,6 +213,9 @@ function loadHome() {
             </div>
             <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
         </div>
+
+        <!-- Tonight's Starting Pitchers — populated by _renderTonightSPSection() -->
+        <div id="homeTonightSP" style="display:none"></div>
 
         <!-- Hot Right Now (P2-002) — populated by _renderHotStrip() -->
         <div id="homeHotStrip" style="display:none">
@@ -222,29 +234,45 @@ function loadHome() {
 
         <!-- Feature strip (P2-005) -->
         <div class="home-features">
-            <button class="home-feature-item home-feature-item--leaders" onclick="navigateTo('mlb-leaders')">
-                <div class="home-feature-icon">📊</div>
+            <button class="home-feature-item" onclick="navigateTo('mlb-leaders')">
+                <div class="home-feature-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M2 14V9M7 14V6M12 14V2"/><path d="M1 14h14" stroke-width="1" opacity=".5"/>
+                    </svg>
+                </div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Leaderboards</div>
                     <div class="home-feature-desc">AVG · OPS · ERA · FIP · EV · xBA</div>
                 </div>
             </button>
-            <button class="home-feature-item home-feature-item--prep" onclick="navigateTo('mlb-prep')">
-                <div class="home-feature-icon">📋</div>
+            <button class="home-feature-item" onclick="navigateTo('mlb-prep')">
+                <div class="home-feature-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="12" height="12" rx="1.5"/><path d="M5 3V2a2 2 0 0 1 6 0v1"/><path d="M5 8h6M5 11h4"/>
+                    </svg>
+                </div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Game Prep</div>
                     <div class="home-feature-desc">Matchups · lineups · print-ready</div>
                 </div>
             </button>
-            <button class="home-feature-item home-feature-item--statcast" onclick="navigateTo('mlb-players')">
-                <div class="home-feature-icon">⚡</div>
+            <button class="home-feature-item" onclick="navigateTo('mlb-players')">
+                <div class="home-feature-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none"/><path d="M8 2V1M8 15v-1M2 8H1M15 8h-1"/>
+                    </svg>
+                </div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Statcast</div>
                     <div class="home-feature-desc">Exit velo · barrel% · xBA per player</div>
                 </div>
             </button>
-            <button class="home-feature-item home-feature-item--builder" onclick="navigateTo('mlb-builder')">
-                <div class="home-feature-icon">🧮</div>
+            <button class="home-feature-item" onclick="navigateTo('mlb-builder')">
+                <div class="home-feature-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2H4l4 6-4 6h8"/>
+                    </svg>
+                </div>
                 <div class="home-feature-text">
                     <div class="home-feature-title">Stat Builder</div>
                     <div class="home-feature-desc">Custom formulas · rank any metric</div>
@@ -258,6 +286,15 @@ function loadHome() {
     _renderHotStrip();
     _loadOnThisDay();
     _loadHomeTodayGames();
+
+    // Background-load leaderboard data for Hot Strip if not yet cached
+    if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
+        _fetchMLBLeaderSplits(MLB_SEASON)
+            .then(() => {
+                _renderHotStrip();
+                _renderTonightSPSection();
+            }).catch(() => {});
+    }
 }
 
 function _renderHomeRecents() {
@@ -394,6 +431,100 @@ function _renderHotStrip() {
     container.style.display = '';
 }
 
+function _renderTonightSPSection() {
+    const el = document.getElementById('homeTonightSP');
+    if (!el) return;
+
+    const games    = AppState._homeGames || [];
+    const pitSplits = AppState.mlbLeaderSplits?.pitching || [];
+    if (!games.length || !pitSplits.length) return;
+
+    // Index pitching splits by player ID for O(1) lookup
+    const statsById = {};
+    pitSplits.forEach(s => { if (s.player?.id) statsById[s.player.id] = s.stat; });
+
+    // Only scheduled/live today's games that have at least one probable pitcher
+    const todayET = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const upcoming = games.filter(g => {
+        if ((g.gameDate || '').slice(0, 10) !== todayET) return false;
+        if (g.status?.abstractGameState === 'Final') return false;
+        return g.teams?.away?.probablePitcher?.id || g.teams?.home?.probablePitcher?.id;
+    }).slice(0, 8);
+
+    if (!upcoming.length) { el.style.display = 'none'; return; }
+
+    const _fmt = (val, dec) => val != null && !isNaN(parseFloat(val)) ? parseFloat(val).toFixed(dec) : '—';
+    const _fmtAvgLocal = v => { const n = parseFloat(v); return isNaN(n) ? '—' : n >= 1 ? n.toFixed(2) : '.' + String(Math.round(n * 1000)).padStart(3, '0'); };
+
+    const _spCard = (pp, teamAbbr, align) => {
+        if (!pp?.id) {
+            return `<div class="sp-pitcher sp-pitcher--${align} sp-pitcher--tbd"><span class="sp-tbd">TBD</span></div>`;
+        }
+        const s       = statsById[pp.id] || {};
+        const colors  = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(teamAbbr) : { primary: '#7c8df0' };
+        const headshot = typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(pp.id) : '';
+        const initials = (pp.fullName || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
+        const wl      = (s.wins != null && s.losses != null) ? `${s.wins}–${s.losses}` : '';
+        const era     = _fmt(s.era, 2);
+        const whip    = _fmt(s.whip, 2);
+        const k9      = _fmt(s.strikeoutsPer9Inn, 1);
+        const pid     = pp.id;
+
+        const lastName = (pp.fullName || '').split(' ').slice(1).join(' ') || pp.fullName || '?';
+
+        return `
+            <div class="sp-pitcher sp-pitcher--${align}" role="button" tabindex="0"
+                 onclick="showMLBPlayerDetail(${pid},'pitching')"
+                 onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${pid},'pitching')"
+                 title="${_escHtml(pp.fullName || '')}">
+                <div class="sp-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                    <span class="sp-avatar-initials">${_escHtml(initials)}</span>
+                </div>
+                <div class="sp-info">
+                    <span class="sp-name">${_escHtml(lastName)}</span>
+                    <span class="sp-team" style="color:${colors.primary}">${_escHtml(teamAbbr)}</span>
+                    <div class="sp-statline">
+                        <span>${era} ERA</span>
+                        <span>${whip} WHIP</span>
+                        <span>${k9} K/9</span>
+                        ${wl ? `<span>${wl}</span>` : ''}
+                    </div>
+                </div>
+            </div>`;
+    };
+
+    const cards = upcoming.map(g => {
+        const awayAbbr = g.teams?.away?.team?.abbreviation || '';
+        const homeAbbr = g.teams?.home?.team?.abbreviation || '';
+        const awayPP   = g.teams?.away?.probablePitcher;
+        const homePP   = g.teams?.home?.probablePitcher;
+        const d        = new Date(g.gameDate || '');
+        const etH      = (d.getUTCHours() - 4 + 24) % 24;
+        const etM      = d.getUTCMinutes();
+        const timeStr  = isNaN(etH) ? '' : `${etH % 12 || 12}:${String(etM).padStart(2,'0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
+
+        return `
+            <div class="sp-card">
+                ${_spCard(awayPP, awayAbbr, 'away')}
+                <div class="sp-vs">
+                    <span class="sp-vs-text">vs</span>
+                    ${timeStr ? `<span class="sp-time">${timeStr}</span>` : ''}
+                </div>
+                ${_spCard(homePP, homeAbbr, 'home')}
+            </div>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="home-section-hdr">
+            <span class="home-section-title">Tonight's Starters</span>
+            <button class="home-section-link" onclick="navigateTo('mlb-prep')">Game Prep →</button>
+        </div>
+        <div class="sp-grid">${cards}</div>
+    `;
+    el.style.display = '';
+}
+
 async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
@@ -457,6 +588,7 @@ async function _loadHomeTodayGames() {
 
     try {
         const mlbResult = await fetchMLBSchedule(2).catch(() => null);
+        if (mlbResult) AppState._homeGames = mlbResult;
         const cards = [];
 
         if (mlbResult) {
@@ -533,6 +665,8 @@ async function _loadHomeTodayGames() {
             card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
         });
 
+        _renderTonightSPSection();
+
     } catch (_) {
         if (gridEl.isConnected) {
             gridEl.innerHTML = `<p class="home-no-games">Scores unavailable.</p>`;
@@ -565,7 +699,6 @@ async function _loadOnThisDay() {
             continue;
         }
 
-        // Re-fetch container after await — may have been replaced by navigation
         const container = document.getElementById('homeOnThisDay');
         if (!container || !container.isConnected) return;
 
@@ -579,11 +712,11 @@ async function _loadOnThisDay() {
             return runs > bRuns ? g : best;
         });
 
-        let top = null;
+        let players = [];
         try {
             const bs = await mlbFetch(`/game/${game.gamePk}/boxscore`, {}, ApiCache.TTL.LONG);
             if (bs) {
-                const sorted = [
+                players = [
                     ...Object.values(bs.teams?.home?.players || {}),
                     ...Object.values(bs.teams?.away?.players || {}),
                 ]
@@ -596,30 +729,64 @@ async function _loadOnThisDay() {
                         rbi: p.stats.batting.rbi       ?? 0,
                     }))
                     .sort((a, b) => (b.rbi - a.rbi) || (b.h - a.h) || (b.hr - a.hr));
-                top = sorted[0] || null;
             }
         } catch (err) {
             Logger.warn(`OnThisDay: boxscore fetch failed for ${game.gamePk}`, err?.message, 'APP');
         }
 
-        // Re-fetch container again after second await
         const el = document.getElementById('homeOnThisDay');
         if (!el || !el.isConnected) return;
 
-        const homeTeam  = game.teams?.home?.team?.abbreviation || '?';
-        const awayTeam  = game.teams?.away?.team?.abbreviation || '?';
-        const homeScore = game.linescore?.teams?.home?.runs ?? game.teams?.home?.score ?? '?';
-        const awayScore = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
-        const homeLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeTeam) : '';
-        const awayLogo  = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayTeam) : '';
-        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeTeam) : { primary: '#7c8df0' };
+        const homeTeam   = game.teams?.home?.team?.abbreviation || '?';
+        const awayTeam   = game.teams?.away?.team?.abbreviation || '?';
+        const homeScore  = game.linescore?.teams?.home?.runs ?? game.teams?.home?.score ?? '?';
+        const awayScore  = game.linescore?.teams?.away?.runs ?? game.teams?.away?.score ?? '?';
+        const homeLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeTeam) : '';
+        const awayLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayTeam) : '';
+        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeTeam) : { primary: 'var(--accent)' };
 
-        let perfLine = '';
+        const top = players[0] || null;
+        let challengeHTML = '';
+
         if (top) {
-            const parts = [`${top.h}/${top.ab}`];
+            const parts = [`${top.h}-for-${top.ab}`];
             if (top.hr  > 0) parts.push(`${top.hr} HR`);
             if (top.rbi > 0) parts.push(`${top.rbi} RBI`);
-            perfLine = `<div class="otd-perf"><strong>${_escHtml(top.name)}</strong> · ${parts.join(' · ')}</div>`;
+            const clueLine = parts.join(' · ');
+
+            const distractors = players.slice(1, 4);
+
+            if (distractors.length >= 1) {
+                // Multiple-choice mode: shuffle answer + distractors
+                const pool = [{ ...top, correct: true }, ...distractors.map(p => ({ ...p, correct: false }))];
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                window._otdChoices = pool;
+                const choiceBtns = pool.map((c, i) =>
+                    `<button class="otd-choice" onclick="_otdReveal(${i})">${_escHtml(c.name)}</button>`
+                ).join('');
+                challengeHTML = `
+                    <div class="otd-challenge">
+                        <p class="otd-prompt">Who had this game?</p>
+                        <p class="otd-clue">${clueLine}</p>
+                        <div class="otd-choices" id="otdChoices">${choiceBtns}</div>
+                        <p class="otd-result" id="otdResult" hidden></p>
+                    </div>`;
+            } else {
+                // Fallback: single reveal button
+                window._otdChoices = [{ ...top, correct: true }];
+                challengeHTML = `
+                    <div class="otd-challenge">
+                        <p class="otd-prompt">Star of the game</p>
+                        <p class="otd-clue">${clueLine}</p>
+                        <div class="otd-choices" id="otdChoices">
+                            <button class="otd-choice otd-choice--reveal" onclick="_otdReveal(0)">Reveal player</button>
+                        </div>
+                        <p class="otd-result" id="otdResult" hidden></p>
+                    </div>`;
+            }
         }
 
         el.innerHTML = `
@@ -629,22 +796,55 @@ async function _loadOnThisDay() {
             </div>
             <div class="otd-card" style="border-left: 3px solid ${homeColors.primary}">
                 <div class="otd-matchup">
-                    ${awayLogo ? `<img class="otd-logo" src="${awayLogo}" alt="${awayTeam}" data-hide-on-error>` : ''}
-                    <span class="otd-team">${awayTeam}</span>
+                    ${awayLogo ? `<img class="otd-logo" src="${awayLogo}" alt="${_escHtml(awayTeam)}" data-hide-on-error>` : ''}
+                    <span class="otd-team">${_escHtml(awayTeam)}</span>
                     <span class="otd-score">${awayScore}</span>
                     <span class="otd-sep">–</span>
                     <span class="otd-score">${homeScore}</span>
-                    <span class="otd-team">${homeTeam}</span>
-                    ${homeLogo ? `<img class="otd-logo" src="${homeLogo}" alt="${homeTeam}" data-hide-on-error>` : ''}
+                    <span class="otd-team">${_escHtml(homeTeam)}</span>
+                    ${homeLogo ? `<img class="otd-logo" src="${homeLogo}" alt="${_escHtml(homeTeam)}" data-hide-on-error>` : ''}
                 </div>
-                ${perfLine}
+                ${challengeHTML}
             </div>
+            <button class="otd-arcade-link" onclick="navigateTo('arcade')">
+                Play more games in Arcade
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5h9M8 3 11 6.5 8 10"/></svg>
+            </button>
         `;
         el.style.display = '';
         return;
     }
     Logger.debug('OnThisDay: no finished games found in last 3 years for this date', undefined, 'APP');
 }
+
+window._otdReveal = function(idx) {
+    const choices   = window._otdChoices;
+    if (!choices) return;
+    const chosen    = choices[idx];
+    const choicesEl = document.getElementById('otdChoices');
+    const resultEl  = document.getElementById('otdResult');
+    if (!choicesEl || !resultEl) return;
+
+    const correct = choices.find(c => c.correct);
+
+    if (choices.length === 1) {
+        // Reveal-only mode: replace button with name
+        choicesEl.innerHTML = `<span class="otd-revealed">${_escHtml(correct?.name || '?')}</span>`;
+        return;
+    }
+
+    choicesEl.querySelectorAll('.otd-choice').forEach((btn, i) => {
+        btn.disabled = true;
+        if (choices[i].correct)   btn.classList.add('otd-choice--correct');
+        else if (i === idx)       btn.classList.add('otd-choice--wrong');
+        else                      btn.classList.add('otd-choice--dim');
+    });
+
+    resultEl.innerHTML = chosen.correct
+        ? `<span class="otd-result--right">&#10003; Correct!</span>`
+        : `<span class="otd-result--wrong">&#10007; It was <strong>${_escHtml(correct?.name || '?')}</strong></span>`;
+    resultEl.hidden = false;
+};
 
 // Enter a sport from the home page — handles same-sport case
 function enterSport(sport) {

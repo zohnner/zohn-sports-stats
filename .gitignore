@@ -22,3 +22,4 @@ Thumbs.db
 
 # Meta / prompting files — not project code
 reflection.md
+.claude/

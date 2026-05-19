@@ -70,7 +70,7 @@ function _buildPillControl(labelText, options, current, onSelect) {
 
     const lbl = document.createElement('span');
     lbl.textContent = labelText;
-    lbl.style.cssText = 'font-size:0.72rem;font-weight:700;color:#475569;letter-spacing:0.4px;margin-right:0.1rem;white-space:nowrap;flex-shrink:0;';
+    lbl.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text-subtle);letter-spacing:0.4px;margin-right:0.1rem;white-space:nowrap;flex-shrink:0;';
     wrap.appendChild(lbl);
 
     options.forEach(opt => {
@@ -82,9 +82,9 @@ function _buildPillControl(labelText, options, current, onSelect) {
         btn.style.cssText = `
             padding:0.2rem 0.55rem;border-radius:20px;cursor:pointer;font-weight:600;
             font-size:0.72rem;font-family:inherit;transition:all 0.18s;
-            border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.1)'};
-            background:${active ? 'rgba(99,102,241,0.22)' : 'rgba(255,255,255,0.03)'};
-            color:${active ? '#818cf8' : '#475569'};
+            border:1px solid ${active ? 'var(--color-chip-border)' : 'var(--border-default)'};
+            background:${active ? 'var(--color-chip-bg)' : 'transparent'};
+            color:${active ? 'var(--color-chip)' : 'var(--text-subtle)'};
         `;
         btn.addEventListener('click', () => onSelect(val));
         wrap.appendChild(btn);

@@ -31,7 +31,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <!-- Design tokens first so all stylesheets can reference variables -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/animations.css">
@@ -39,6 +39,7 @@
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/ticker.css">
     <link rel="stylesheet" href="css/arcade.css">
+    <link rel="stylesheet" href="css/scorecard.css">
 </head>
 <body>
 
@@ -90,8 +91,9 @@
             <button class="nav-tab sub-nav-item" data-view="mlb-teams">Teams</button>
             <button class="nav-tab sub-nav-item" data-view="mlb-standings">Standings</button>
             <span class="sub-nav-divider" aria-hidden="true"></span>
-            <button class="nav-tab sub-nav-item" data-view="mlb-builder">Builder</button>
             <button class="nav-tab sub-nav-item" data-view="mlb-prep">Prep</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-builder">Builder</button>
+            <button class="nav-tab sub-nav-item" data-view="mlb-compare">Compare</button>
             <button class="nav-tab sub-nav-item" data-view="arcade">Arcade</button>
         </nav>
     </header>
@@ -126,6 +128,10 @@
             <button class="nav-tab menu-item" data-view="mlb-prep">
                 <span class="nav-icon">📋</span>
                 <span>Prep</span>
+            </button>
+            <button class="nav-tab menu-item" data-view="mlb-compare">
+                <span class="nav-icon">⚡</span>
+                <span>Compare</span>
             </button>
             <button class="nav-tab menu-item" data-view="arcade">
                 <span class="nav-icon">🎮</span>
@@ -183,9 +189,9 @@
             <span class="nav-icon">📊</span>
             <span class="bottom-nav-label">Standings</span>
         </button>
-        <button class="nav-tab" data-view="mlb-builder">
-            <span class="nav-icon">🧮</span>
-            <span class="bottom-nav-label">Builder</span>
+        <button class="nav-tab" data-view="mlb-prep">
+            <span class="nav-icon">📋</span>
+            <span class="bottom-nav-label">Prep</span>
         </button>
     </nav>
 
@@ -239,6 +245,7 @@
     <script src="js/playerDetail.js"></script>
     <script src="js/statBuilder.js"></script>
     <script src="js/mlb.js"></script>
+    <script src="js/scorecard.js"></script>
     <script src="js/nfl.js"></script>
     <script src="js/nhl.js"></script>
     <script src="js/arcade.js"></script>
