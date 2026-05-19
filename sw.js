@@ -67,20 +67,11 @@ self.addEventListener('fetch', e => {
     const url = new URL(e.request.url);
     const isNavigation = e.request.mode === 'navigate';
 
-    // Network-first for cross-origin API calls (always want fresh data)
-    const isAPI = url.hostname !== self.location.hostname;
-    if (isAPI) {
-        e.respondWith(
-            fetch(e.request).catch(() => {
-                // No offline fallback for API calls — callers handle empty state
-                return new Response(JSON.stringify({ error: 'offline' }), {
-                    status: 503,
-                    headers: { 'Content-Type': 'application/json' },
-                });
-            })
-        );
-        return;
-    }
+    // Don't intercept cross-origin requests — let the browser handle them directly.
+    // fetch() from a service worker is subject to connect-src, but images/fonts/CDN
+    // scripts are permitted via img-src/style-src/script-src. Intercepting here would
+    // cause the browser to block those fetches and return 503 for all external assets.
+    if (url.hostname !== self.location.hostname) return;
 
     // Navigation requests (full page loads) — network first, fall back to offline.html
     if (isNavigation) {
