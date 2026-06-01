@@ -2910,9 +2910,20 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
 
         if (!pitchers.length) return '';
         const teamLabel = sideKey === 'home' ? homeAbbr : awayAbbr;
-        const rows = pitchers.map(({ name, id, s }) => `
-            <tr class="mlb-box-row" tabindex="0" style="cursor:pointer" onclick="showMLBPlayerDetail(${id}, 'pitching')" onkeydown="if(event.key==='Enter')this.click()">
-                <td class="mlb-box-name">${name}</td>
+        const oppTeamId = sideKey === 'home' ? awayTeam.id : homeTeam.id;
+        const oppAbbr   = sideKey === 'home' ? awayAbbr : homeAbbr;
+
+        const rows = pitchers.map(({ name, id, s }, idx) => {
+            const isStarter = idx === 0 && oppTeamId;
+            const vsPlaceholder = isStarter
+                ? `<div class="vs-opp-row" data-vs-placeholder="1" style="margin-top:2px"><span class="skeleton-line" style="height:8px;width:110px;display:inline-block"></span></div>`
+                : '';
+            const dataAttrs = isStarter
+                ? `data-pitcher-id="${id}" data-opp-team-id="${oppTeamId}"`
+                : '';
+            return `
+            <tr class="mlb-box-row" tabindex="0" style="cursor:pointer" ${dataAttrs} onclick="showMLBPlayerDetail(${id}, 'pitching')" onkeydown="if(event.key==='Enter')this.click()">
+                <td class="mlb-box-name">${name}${vsPlaceholder}</td>
                 <td>${s.inningsPitched ?? '—'}</td>
                 <td>${s.hits ?? '—'}</td>
                 <td>${s.runs ?? '—'}</td>
@@ -2920,8 +2931,8 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
                 <td>${s.baseOnBalls ?? '—'}</td>
                 <td>${s.strikeOuts ?? '—'}</td>
                 <td class="mlb-box-avg">${s.era || '—'}</td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
 
         return `
             <div class="mlb-box-section">
@@ -2955,6 +2966,44 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
             </div>
         </div>
     `;
+
+    // Async enrichment: populate career vs-opponent context for each SP
+    grid.querySelectorAll('tr[data-pitcher-id][data-opp-team-id]').forEach(async row => {
+        const pid   = parseInt(row.dataset.pitcherId);
+        const oppId = parseInt(row.dataset.oppTeamId);
+        const rowEl = row.querySelector('[data-vs-placeholder]');
+        if (!pid || !oppId || !rowEl) return;
+
+        try {
+            const data  = await mlbFetch(`/people/${pid}`, {
+                hydrate: `stats(group=[pitching],type=vsTeamTotal,opposingTeamId=${oppId})`
+            }, ApiCache.TTL.LONG);
+
+            const split = data.people?.[0]?.stats?.[0]?.splits?.[0]?.stat;
+            if (!split || !split.gamesPlayed) { rowEl.remove(); return; }
+
+            const opp    = data.people?.[0]?.stats?.[0]?.splits?.[0]?.opponent?.abbreviation || '';
+            const baa    = split.avg ? split.avg.replace(/^0/, '') : null;
+            const k      = split.strikeOuts;
+            const bb     = split.baseOnBalls;
+            const starts = split.gamesPlayed;
+            const qual   = starts < 3 ? '(small sample)' : `(${starts} starts)`;
+
+            if (!baa) { rowEl.remove(); return; }
+
+            rowEl.removeAttribute('data-vs-placeholder');
+            rowEl.innerHTML =
+                `<span class="vs-opp-row__label">${_escHtml(opp)} career</span> ` +
+                `<span class="vs-opp-row__val">${_escHtml(baa)} BAA</span>` +
+                `<span class="vs-opp-row__sep"> · </span>` +
+                `<span class="vs-opp-row__val">${k} K</span>` +
+                `<span class="vs-opp-row__sep"> · </span>` +
+                `<span class="vs-opp-row__val">${bb} BB</span>` +
+                `<span class="vs-opp-row__caveat"> ${_escHtml(qual)}</span>`;
+        } catch (_) {
+            rowEl.remove();
+        }
+    });
 }
 
 // ── View: Teams ───────────────────────────────────────────────

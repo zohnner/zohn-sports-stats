@@ -490,7 +490,7 @@ function _renderTonightSPSection() {
     const _fmt = (val, dec) => val != null && !isNaN(parseFloat(val)) ? parseFloat(val).toFixed(dec) : '—';
     const _fmtAvgLocal = v => { const n = parseFloat(v); return isNaN(n) ? '—' : n >= 1 ? n.toFixed(2) : '.' + String(Math.round(n * 1000)).padStart(3, '0'); };
 
-    const _spCard = (pp, teamAbbr, align) => {
+    const _spCard = (pp, teamAbbr, align, oppTeamId) => {
         if (!pp?.id) {
             return `<div class="sp-pitcher sp-pitcher--${align} sp-pitcher--tbd"><span class="sp-tbd">TBD</span></div>`;
         }
@@ -508,6 +508,7 @@ function _renderTonightSPSection() {
 
         return `
             <div class="sp-pitcher sp-pitcher--${align}" role="button" tabindex="0"
+                 data-pitcher-id="${pid}" data-opp-team-id="${oppTeamId || ''}"
                  onclick="showMLBPlayerDetail(${pid},'pitching')"
                  onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${pid},'pitching')"
                  title="${_escHtml(pp.fullName || '')}">
@@ -524,6 +525,7 @@ function _renderTonightSPSection() {
                         <span>${k9} K/9</span>
                         ${wl ? `<span>${wl}</span>` : ''}
                     </div>
+                    ${oppTeamId ? `<div class="vs-opp-row" data-vs-placeholder="1"><span class="skeleton-line" style="height:9px;width:120px;display:inline-block"></span></div>` : ''}
                 </div>
             </div>`;
     };
@@ -538,14 +540,17 @@ function _renderTonightSPSection() {
         const etM      = d.getUTCMinutes();
         const timeStr  = isNaN(etH) ? '' : `${etH % 12 || 12}:${String(etM).padStart(2,'0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
 
+        const awayTeamId = g.teams?.away?.team?.id;
+        const homeTeamId = g.teams?.home?.team?.id;
+
         return `
             <div class="sp-card">
-                ${_spCard(awayPP, awayAbbr, 'away')}
+                ${_spCard(awayPP, awayAbbr, 'away', homeTeamId)}
                 <div class="sp-vs">
                     <span class="sp-vs-text">vs</span>
                     ${timeStr ? `<span class="sp-time">${timeStr}</span>` : ''}
                 </div>
-                ${_spCard(homePP, homeAbbr, 'home')}
+                ${_spCard(homePP, homeAbbr, 'home', awayTeamId)}
             </div>`;
     }).join('');
 
@@ -557,6 +562,44 @@ function _renderTonightSPSection() {
         <div class="sp-grid">${cards}</div>
     `;
     el.style.display = '';
+
+    // Async enrichment: populate vs-opponent career stats for each SP
+    el.querySelectorAll('[data-pitcher-id][data-opp-team-id]').forEach(async pitcherEl => {
+        const pid    = parseInt(pitcherEl.dataset.pitcherId);
+        const oppId  = parseInt(pitcherEl.dataset.oppTeamId);
+        const rowEl  = pitcherEl.querySelector('[data-vs-placeholder]');
+        if (!pid || !oppId || !rowEl) return;
+
+        try {
+            const data = await mlbFetch(`/people/${pid}`, {
+                hydrate: `stats(group=[pitching],type=vsTeamTotal,opposingTeamId=${oppId})`
+            }, ApiCache.TTL.LONG);
+
+            const split = data.people?.[0]?.stats?.[0]?.splits?.[0]?.stat;
+            if (!split || !split.gamesPlayed) { rowEl.remove(); return; }
+
+            const opp    = data.people?.[0]?.stats?.[0]?.splits?.[0]?.opponent?.abbreviation || '';
+            const baa    = split.avg ? split.avg.replace(/^0/, '') : null;
+            const k      = split.strikeOuts;
+            const bb     = split.baseOnBalls;
+            const starts = split.gamesPlayed;
+            const qual   = starts < 3 ? '(small sample)' : `(${starts} starts)`;
+
+            if (!baa) { rowEl.remove(); return; }
+
+            rowEl.removeAttribute('data-vs-placeholder');
+            rowEl.innerHTML =
+                `<span class="vs-opp-row__label">${_escHtml(opp)} career</span>` +
+                `<span class="vs-opp-row__val">${_escHtml(baa)} BAA</span>` +
+                `<span class="vs-opp-row__sep">·</span>` +
+                `<span class="vs-opp-row__val">${k} K</span>` +
+                `<span class="vs-opp-row__sep">·</span>` +
+                `<span class="vs-opp-row__val">${bb} BB</span>` +
+                `<span class="vs-opp-row__caveat">${_escHtml(qual)}</span>`;
+        } catch (_) {
+            rowEl.remove();
+        }
+    });
 }
 
 async function _loadHomeTodayGames() {

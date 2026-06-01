@@ -20,7 +20,7 @@ MLB is the core product. NBA, NFL, and NHL exist as preview features and will ex
 
 | Gate | Status | Owner |
 |---|---|---|
-| P1-006 resolved — BDL key out of source, Worker deployed | ⚠️ Open — key was in public git history (incident); fix path documented in ISSUES.md; waiting on owner to rotate key + authorize history scrub | Axiom |
+| P1-006 resolved — BDL key out of source, Worker deployed | ✅ Resolved — key rotated, Worker deployed, BDL_PROXY_URL wired. Git history scrub (optional hygiene) remains available but non-blocking since old key is dead. | Axiom |
 | Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ✅ Code complete — needs browser verification (Kael visual review, Vera behavior check) | Axiom + Vera |
 | Data freshness timestamp visible on players and leaders views | ✅ Implemented — `.freshness-label` on players + leaders views; minor spec gaps flagged to Kael/Vera (aria-label missing, >60min format) | Finn |
 | First-visit value statement on home page (renders once for new visitors) | ✅ Implemented — `.home-welcome` strip in `loadHome()` via `zs_seen_welcome` key; spec gaps flagged to Kael/Vera (no dismiss button, accent vs surface background) | Finn |
