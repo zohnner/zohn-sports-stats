@@ -1,0 +1,82 @@
+name: MLB Statistical Bot
+
+on:
+  schedule:
+    - cron: '0 9 * * *'    # 5 AM ET (UTC-4) — overnight recap
+    - cron: '0 16 * * *'   # Noon ET — drought check
+  workflow_dispatch:        # Manual trigger for testing
+    inputs:
+      mode:
+        description: 'Run mode'
+        required: true
+        default: 'dryrun'
+        type: choice
+        options: [recap, drought, dryrun, seed]
+      date:
+        description: 'Target date (YYYY-MM-DD), leave blank for yesterday'
+        required: false
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: bot/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r bot/requirements.txt
+
+      - name: Restore database
+        uses: actions/cache@v4
+        with:
+          path: bot/bot.db
+          key: mlb-bot-db-${{ github.run_id }}
+          restore-keys: mlb-bot-db-
+
+      - name: Run overnight recap
+        if: github.event_name == 'schedule' && github.event.schedule == '0 9 * * *'
+        working-directory: bot
+        env:
+          X_API_KEY:             ${{ secrets.X_API_KEY }}
+          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
+        run: python main.py --mode recap
+
+      - name: Run drought check
+        if: github.event_name == 'schedule' && github.event.schedule == '0 16 * * *'
+        working-directory: bot
+        env:
+          X_API_KEY:             ${{ secrets.X_API_KEY }}
+          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
+        run: python main.py --mode drought
+
+      - name: Run manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: bot
+        env:
+          X_API_KEY:             ${{ secrets.X_API_KEY }}
+          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
+        run: |
+          python main.py --mode ${{ github.event.inputs.mode }} \
+            ${{ github.event.inputs.date && format('--date {0}', github.event.inputs.date) || '' }}
+
+      - name: Save database
+        uses: actions/cache@v4
+        with:
+          path: bot/bot.db
+          key: mlb-bot-db-${{ github.run_id }}

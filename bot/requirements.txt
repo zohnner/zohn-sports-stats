@@ -1,0 +1,5 @@
+mlb-statsapi==1.8.0
+tweepy==4.15.0
+python-dotenv==1.0.1
+requests==2.32.3
+schedule==1.2.2
