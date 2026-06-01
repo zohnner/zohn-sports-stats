@@ -521,24 +521,49 @@ async function _restoreMLBPlayerDetail(playerId, group) {
         _applySportUI('mlb');
     }
     if (!AppState.mlbPlayers?.[group]?.length) {
-        const splits = await fetchMLBLeagueStats(group, MLB_SEASON).catch(() => []);
-        if (!AppState.mlbPlayers) AppState.mlbPlayers = {};
-        if (!AppState.mlbPlayerStats) AppState.mlbPlayerStats = {};
-        AppState.mlbPlayers[group]    = [];
-        AppState.mlbPlayerStats[group] = {};
-        splits.forEach(split => {
-            const id = split.player?.id;
-            if (!id) return;
-            AppState.mlbPlayerStats[group][id] = { ...split.stat, player_id: id };
-            AppState.mlbPlayers[group].push({
-                id,
-                fullName: split.player.fullName || '—',
-                teamId:   split.team?.id,
-                teamName: split.team?.name,
-                teamAbbr: split.team?.abbreviation,
-                position: split.position?.abbreviation,
+        const grid = document.getElementById('playersGrid');
+        if (grid) {
+            grid.className = '';
+            grid.style.cssText = 'display:block';
+            grid.innerHTML = `
+                <div class="player-detail-skeleton" style="padding:1.5rem;max-width:900px;margin:0 auto">
+                    <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem">
+                        <div class="skeleton-line" style="width:64px;height:64px;border-radius:50%;flex-shrink:0"></div>
+                        <div style="flex:1;display:flex;flex-direction:column;gap:0.5rem">
+                            <div class="skeleton-line" style="height:18px;width:180px"></div>
+                            <div class="skeleton-line" style="height:13px;width:100px"></div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.25rem">
+                        ${Array(16).fill('<div class="skeleton-line" style="height:48px;border-radius:var(--radius-md)"></div>').join('')}
+                    </div>
+                    ${Array(3).fill('<div class="skeleton-card" style="margin-bottom:0.75rem;height:80px"></div>').join('')}
+                </div>`;
+        }
+        try {
+            const splits = await fetchMLBLeagueStats(group, MLB_SEASON);
+            if (!AppState.mlbPlayers) AppState.mlbPlayers = {};
+            if (!AppState.mlbPlayerStats) AppState.mlbPlayerStats = {};
+            AppState.mlbPlayers[group]    = [];
+            AppState.mlbPlayerStats[group] = {};
+            splits.forEach(split => {
+                const id = split.player?.id;
+                if (!id) return;
+                AppState.mlbPlayerStats[group][id] = { ...split.stat, player_id: id };
+                AppState.mlbPlayers[group].push({
+                    id,
+                    fullName: split.player.fullName || '—',
+                    teamId:   split.team?.id,
+                    teamName: split.team?.name,
+                    teamAbbr: split.team?.abbreviation,
+                    position: split.position?.abbreviation,
+                });
             });
-        });
+        } catch (err) {
+            const g = document.getElementById('playersGrid');
+            if (g) ErrorHandler.handle(g, err, () => _restoreMLBPlayerDetail(playerId, group), { tag: 'MLB', title: 'Could not load player stats' });
+            return;
+        }
     }
     AppState.mlbStatsGroup = group;
     showMLBPlayerDetail(playerId, group);

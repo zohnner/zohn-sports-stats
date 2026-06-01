@@ -11,8 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
-    <!-- connect-src: swap https://api.balldontlie.io → Worker URL once deployed -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportStrata — Serious Stats for Serious Fans</title>
     <!-- OG / SEO — updated dynamically by navigation.js on each route change -->
     <meta property="og:type" content="website">
@@ -62,11 +61,9 @@
                 </svg>
             </button>
 
-            <!-- Theme toggle -->
-            <button class="theme-btn-header" id="themeToggleHeaderBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle light/dark mode">
-                <span id="themeToggleHeaderIcon">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                </span>
+            <!-- Settings -->
+            <button class="settings-btn" id="settingsBtn" onclick="openSettingsPanel()" title="Settings" aria-label="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             </button>
 
             <!-- Menu button (mobile only) -->
@@ -139,12 +136,72 @@
             </button>
         </nav>
         <div class="menu-panel-footer">
-            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
-                <span class="theme-toggle-icon" id="themeToggleIcon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
-                <span id="themeToggleLabel">Light mode</span>
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="openSettingsPanel()">
+                <span class="theme-toggle-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+                <span>Settings</span>
             </button>
         </div>
     </div>
+    <!-- Settings panel — right-side drawer -->
+    <div class="settings-panel" id="settingsPanel" hidden role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="settings-panel-backdrop" id="settingsPanelBackdrop"></div>
+        <div class="settings-panel-drawer">
+            <div class="settings-panel-header">
+                <span class="settings-panel-title">Settings</span>
+                <button class="settings-panel-close" id="settingsPanelClose" aria-label="Close settings">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="settings-panel-body">
+                <section class="settings-section">
+                    <p class="settings-section-label">Appearance</p>
+                    <div class="theme-swatch-grid">
+                        <button class="theme-swatch" data-theme-set="dark" aria-pressed="false" aria-label="Dark theme">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Dark</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="light" aria-pressed="false" aria-label="Light theme">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Light</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-braves" aria-pressed="false" aria-label="Atlanta Braves City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Atlanta</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-orioles" aria-pressed="false" aria-label="Baltimore Orioles City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Baltimore</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-reds" aria-pressed="false" aria-label="Cincinnati Reds City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Cincinnati</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-royals" aria-pressed="false" aria-label="Kansas City Royals City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Kansas City</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-brewers" aria-pressed="false" aria-label="Milwaukee Brewers City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Milwaukee</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-pirates" aria-pressed="false" aria-label="Pittsburgh Pirates City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Pittsburgh</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-padres" aria-pressed="false" aria-label="San Diego Padres City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">San Diego</span>
+                        </button>
+                        <button class="theme-swatch" data-theme-set="cc-rangers" aria-pressed="false" aria-label="Texas Rangers City Connect">
+                            <div class="swatch-preview"></div>
+                            <span class="swatch-label">Texas</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <!-- Keep for app.js season logic compatibility -->
     <select id="seasonSelect" style="display:none" hidden></select>
 

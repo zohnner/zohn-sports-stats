@@ -9,7 +9,7 @@
 // Then paste the deployed Worker URL below as BDL_PROXY_URL.
 // ============================================================
 const BDL_API_KEY  = ''; // KEY REMOVED — use BDL_PROXY_URL
-const BDL_PROXY_URL       = ''; // TODO: set to deployed Worker URL, e.g. 'https://sportsstrata-proxy.{account}.workers.dev'
+const BDL_PROXY_URL       = 'https://sportsstrata-proxy.zohnwheeler.workers.dev';
 const BROADCAST_BLURB_URL = 'https://sportsstrata-blurb.zohnwheeler.workers.dev'; // broadcast-blurb Worker
 
 const BDL_BASE_URL = BDL_PROXY_URL ? `${BDL_PROXY_URL}/bdl` : 'https://api.balldontlie.io/v1';
@@ -99,10 +99,10 @@ if (typeof window !== 'undefined') {
 //   retries {number}  — max retries on 429 / network error (default: 2)
 // ============================================================
 async function bdlFetch(endpoint, params = {}, { cache = true, ttl, retries = 2 } = {}) {
-    if (!BDL_API_KEY || BDL_API_KEY === 'YOUR_API_KEY_HERE') {
+    if ((!BDL_API_KEY || BDL_API_KEY === 'YOUR_API_KEY_HERE') && !BDL_PROXY_URL) {
         throw new Error(
-            'API key not configured. ' +
-            'Get a free key at balldontlie.io and add it to js/api.js'
+            'BDL not configured. Deploy the Worker proxy (worker/wrangler.toml) ' +
+            'and set BDL_PROXY_URL in api.js.'
         );
     }
 

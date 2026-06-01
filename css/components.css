@@ -80,6 +80,110 @@
 }
 .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── MLB Player View Toggle (Cards / Table) ───────────────── */
+/* Replaces _styleMLBViewBtn inline styles. Active uses accent,
+   not emerald — stat colors do not signal UI state. */
+.mlb-view-btn {
+    padding: 0.3rem 0.65rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    font-weight: 500;
+    border: 1px solid var(--border-default);
+    background: var(--bg-interactive);
+    color: var(--text-muted);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.mlb-view-btn--active,
+.mlb-view-btn.active {
+    border-color: var(--accent-border);
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
+.mlb-view-btn:hover:not(.mlb-view-btn--active):not(.active) {
+    background: var(--bg-interactive-hov);
+    color: var(--text-secondary);
+    border-color: var(--border-mid);
+}
+
+/* ── MLB Hitters / Pitchers Group Toggle ─────────────────── */
+/* Replaces _styleMLBGroupBtn inline styles. */
+.mlb-group-toggle-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.875rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.mlb-group-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border-default);
+    margin: 0 0.25rem;
+    flex-shrink: 0;
+}
+.mlb-group-btn {
+    padding: 0.45rem 0.875rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    border: 1px solid var(--border-default);
+    background: var(--bg-interactive);
+    color: var(--text-subtle);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    white-space: nowrap;
+}
+.mlb-group-btn--active {
+    border-color: var(--accent-border);
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
+.mlb-group-btn:hover:not(.mlb-group-btn--active) {
+    background: var(--bg-interactive-hov);
+    color: var(--text-secondary);
+    border-color: var(--border-mid);
+}
+
+/* ── MLB Position Filter Row ─────────────────────────────── */
+/* Replaces posWrap.style.cssText inline style in mlb.js */
+.mlb-pos-row {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.45rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* ── MLB Position Filter Chips ───────────────────────────── */
+/* Replaces _styleMLBPosBtn inline styles.
+   Indigo chip tokens are semantically correct here — position
+   selection is a chip/filter context, not a navigation state. */
+.mlb-pos-btn {
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    border: 1px solid transparent;
+    background: var(--bg-interactive);
+    color: var(--text-subtle);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    white-space: nowrap;
+}
+.mlb-pos-btn--active {
+    border-color: var(--color-chip-border);
+    background: var(--color-chip-bg);
+    color: var(--color-chip);
+}
+.mlb-pos-btn:hover:not(.mlb-pos-btn--active) {
+    background: var(--bg-interactive-hov);
+    color: var(--text-secondary);
+}
+
 /* ── Loading Spinner ──────────────────────────────────────── */
 .loading-spinner {
     width: 44px;

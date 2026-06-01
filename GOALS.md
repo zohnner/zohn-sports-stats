@@ -20,11 +20,11 @@ MLB is the core product. NBA, NFL, and NHL exist as preview features and will ex
 
 | Gate | Status | Owner |
 |---|---|---|
-| P1-006 resolved — BDL key out of source, Worker deployed | ⚠️ Open | Axiom |
-| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ⚠️ Open | Axiom + Vera |
-| Data freshness timestamp visible on players and leaders views | ⚠️ Open | Finn |
-| First-visit value statement on home page (renders once for new visitors) | ⚠️ Open | Finn |
-| Scorecard Phase 1 shipped and smoke-tested | ⚠️ Open | Finn |
+| P1-006 resolved — BDL key out of source, Worker deployed | ⚠️ Open — key was in public git history (incident); fix path documented in ISSUES.md; waiting on owner to rotate key + authorize history scrub | Axiom |
+| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ✅ Code complete — needs browser verification (Kael visual review, Vera behavior check) | Axiom + Vera |
+| Data freshness timestamp visible on players and leaders views | ✅ Implemented — `.freshness-label` on players + leaders views; minor spec gaps flagged to Kael/Vera (aria-label missing, >60min format) | Finn |
+| First-visit value statement on home page (renders once for new visitors) | ✅ Implemented — `.home-welcome` strip in `loadHome()` via `zs_seen_welcome` key; spec gaps flagged to Kael/Vera (no dismiss button, accent vs surface background) | Finn |
+| Scorecard Phase 1 shipped and smoke-tested | ⚠️ Open — implementation in progress | Finn |
 
 Everything else is post-beta. No new feature work starts until all five gates are closed.
 
@@ -238,6 +238,33 @@ The 2026 initiative pairs a design system overhaul with feature gap closure (spr
 The overhaul goes first. Adding spray charts and matchup views onto a partially inconsistent visual system means those components will inherit the inconsistency and need to be revisited when the overhaul eventually lands. That's rework. Do the system once, then build features into it.
 
 What "design system overhaul" concretely means here: audit every component against the `variables.css` token set, eliminate any hardcoded values or one-off color choices that don't map to a token, and establish explicit rules for where each stat-color token applies and where it doesn't. The token system is solid; the discipline of applying it consistently is what's missing.
+
+### Design System Overhaul — Current Status
+**Contributor:** Kael | **Date:** 2026-05-29
+
+**Complete:**
+- Hero gradient clean — `.home-hero-glow` uses `color-mix` + token vars only, no hardcoded purple/indigo. Confirmed 2026-05-29.
+- Three-button system defined: `.btn-primary`, `.btn-secondary`, `.btn-ghost` in `css/components.css`. All token-based, disabled states included.
+- Feature card colors unified — single orange accent, SVG icons, no arbitrary per-card border colors.
+- Brand gradient fixed — uses `var(--accent-light)` → `var(--accent)` only.
+- `--font-display` (Barlow Semi Condensed) applied to feature card titles, leaderboard values, game scores.
+- `--color-chip` / `--color-chip-bg` / `--color-chip-border` tokens defined and applied; 8 hardcoded `#818cf8` values eliminated.
+
+**CSS classes written, waiting on Axiom JS wiring:**
+- `.mlb-view-btn` / `.mlb-view-btn--active` — Cards/Table toggle. Replaces `_styleMLBViewBtn` inline styles, fixes emerald active-state semantic bug.
+- `.mlb-group-btn` / `.mlb-group-btn--active` + `.mlb-group-toggle-row` + `.mlb-group-sep` — Hitters/Pitchers toggle. Replaces `_styleMLBGroupBtn` inline styles.
+- `.mlb-pos-btn` / `.mlb-pos-btn--active` — Position filter chips. Replaces `_styleMLBPosBtn` inline styles, promotes hardcoded rgba values to `var(--color-chip-*)` tokens.
+- Full implementation spec in ISSUES.md under "Player View Toggles."
+
+**SVG specs written, waiting on Axiom JS update:**
+- Three text-only leaderboard section dividers ("Active Hitting Streaks," "Hot Right Now," "Statcast Leaders") need SVG icons added to match the two existing icon-bearing dividers.
+- Exact `innerHTML` strings documented in ISSUES.md under "Leaderboard Section Dividers."
+
+**Remaining after Axiom delivers the above:**
+- Audit all remaining views for inline `style=` attribute usage on interactive elements — any that survive outside the three toggle functions above.
+- Verify light-mode rendering of new toggle classes (`--accent-subtle`, `--color-chip-bg`, `--bg-interactive` all have correct light-mode values in `variables.css` already — verify on screen before marking done).
+
+---
 
 ### Broadcast-Grade Posture Is the North Star — Protect It
 **Contributor:** Kael | **Date:** 2026-05-17

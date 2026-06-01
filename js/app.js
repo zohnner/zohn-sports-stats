@@ -215,15 +215,45 @@ function loadHome() {
         </div>
 
         <!-- Tonight's Starting Pitchers — populated by _renderTonightSPSection() -->
-        <div id="homeTonightSP" style="display:none"></div>
+        <div id="homeTonightSP">
+            <div class="home-section-hdr">
+                <span class="home-section-title">Tonight's Starters</span>
+                <button class="home-section-link" onclick="navigateTo('mlb-prep')">Game Prep →</button>
+            </div>
+            <div class="sp-grid">
+                ${[0,1,2].map(() => `
+                <div class="sp-card">
+                    <div class="sp-pitcher sp-pitcher--away" style="cursor:default">
+                        <div class="skeleton-line" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.35rem">
+                            <div class="skeleton-line" style="height:11px;width:75%"></div>
+                            <div class="skeleton-line" style="height:9px;width:50%"></div>
+                        </div>
+                    </div>
+                    <div class="sp-vs"><div class="skeleton-line" style="height:9px;width:20px"></div></div>
+                    <div class="sp-pitcher sp-pitcher--home" style="cursor:default">
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.35rem;align-items:flex-end">
+                            <div class="skeleton-line" style="height:11px;width:75%"></div>
+                            <div class="skeleton-line" style="height:9px;width:50%"></div>
+                        </div>
+                        <div class="skeleton-line" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+                    </div>
+                </div>`).join('')}
+            </div>
+        </div>
 
         <!-- Hot Right Now (P2-002) — populated by _renderHotStrip() -->
-        <div id="homeHotStrip" style="display:none">
+        <div id="homeHotStrip">
             <div class="home-section-hdr">
                 <span class="home-section-title">Hot Right Now</span>
                 <button class="home-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button>
             </div>
-            <div class="home-hot-grid" id="homeHotGrid"></div>
+            <div class="home-hot-grid" id="homeHotGrid">
+                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
+            </div>
         </div>
 
         <div class="home-recents" id="homeRecents"></div>
@@ -293,7 +323,11 @@ function loadHome() {
             .then(() => {
                 _renderHotStrip();
                 _renderTonightSPSection();
-            }).catch(() => {});
+            }).catch(err => {
+                Logger.warn('Leader splits failed — removing home async sections', err, 'APP');
+                document.getElementById('homeHotStrip')?.remove();
+                document.getElementById('homeTonightSP')?.remove();
+            });
     }
 }
 
@@ -861,33 +895,67 @@ if (typeof window !== 'undefined') {
     window.enterSport = enterSport;
 }
 
-// ── Light / Dark Mode ─────────────────────────────────────────
+// ── Theme & Settings Panel ────────────────────────────────────
 
-const _ICON_SUN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
-const _ICON_MOON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const _CC_TEAM_LOGOS = {
+    'cc-braves':  'https://www.mlbstatic.com/team-logos/144.svg',
+    'cc-orioles': 'https://www.mlbstatic.com/team-logos/110.svg',
+    'cc-reds':    'https://www.mlbstatic.com/team-logos/113.svg',
+    'cc-royals':  'https://www.mlbstatic.com/team-logos/118.svg',
+    'cc-brewers': 'https://www.mlbstatic.com/team-logos/158.svg',
+    'cc-pirates': 'https://www.mlbstatic.com/team-logos/134.svg',
+    'cc-padres':  'https://www.mlbstatic.com/team-logos/135.svg',
+    'cc-rangers': 'https://www.mlbstatic.com/team-logos/140.svg',
+};
 
 function _applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('zs_theme', theme); } catch (_) {}
-    const icon       = document.getElementById('themeToggleIcon');
-    const label      = document.getElementById('themeToggleLabel');
-    const headerIcon = document.getElementById('themeToggleHeaderIcon');
-    const isLight    = theme === 'light';
-    if (icon)       icon.innerHTML    = isLight ? _ICON_MOON : _ICON_SUN;
-    if (headerIcon) headerIcon.innerHTML = isLight ? _ICON_MOON : _ICON_SUN;
-    if (label)      label.textContent = isLight ? 'Dark mode' : 'Light mode';
+    document.querySelectorAll('.theme-swatch').forEach(btn => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.themeSet === theme));
+    });
+    const logoEl = document.querySelector('.brand-logo-img');
+    if (logoEl) {
+        const ccLogo = _CC_TEAM_LOGOS[theme];
+        logoEl.src = ccLogo || 'assets/Icon.PNG';
+        logoEl.alt = ccLogo ? theme.replace('cc-', '') + ' City Connect' : 'SportStrata';
+    }
 }
 
-function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    _applyTheme(current === 'light' ? 'dark' : 'light');
+function openSettingsPanel() {
+    const panel = document.getElementById('settingsPanel');
+    if (!panel) return;
+    panel.hidden = false;
+    _applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+    requestAnimationFrame(() => panel.classList.add('settings-panel--open'));
+    document.addEventListener('keydown', _settingsPanelKeyHandler);
 }
 
-// Sync the toggle button label on load (theme was set by the inline <head> script)
+function _closeSettingsPanel() {
+    const panel = document.getElementById('settingsPanel');
+    if (!panel) return;
+    panel.classList.remove('settings-panel--open');
+    panel.addEventListener('transitionend', () => { panel.hidden = true; }, { once: true });
+    document.removeEventListener('keydown', _settingsPanelKeyHandler);
+}
+
+function _settingsPanelKeyHandler(e) {
+    if (e.key === 'Escape') _closeSettingsPanel();
+}
+
+(function _initSettingsPanel() {
+    document.getElementById('settingsPanelClose')?.addEventListener('click', _closeSettingsPanel);
+    document.getElementById('settingsPanelBackdrop')?.addEventListener('click', _closeSettingsPanel);
+    document.querySelectorAll('.theme-swatch').forEach(btn => {
+        btn.addEventListener('click', () => _applyTheme(btn.dataset.themeSet));
+    });
+})();
+
+// Sync swatch active state on load (theme was set by the inline <head> script)
 _applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 
 if (typeof window !== 'undefined') {
-    window.toggleTheme = toggleTheme;
+    window.openSettingsPanel = openSettingsPanel;
 }
 
 // ── PWA Install Prompt ────────────────────────────────────────

@@ -177,11 +177,9 @@ async function displayStatBuilder(mlbGroup) {
         grid.className = 'builder-container';
         grid.innerHTML = `
             <div class="builder-panel">
-                <div style="text-align:center;padding:3rem 1rem">
-                    <div style="font-size:2.5rem;margin-bottom:1rem">⚾</div>
-                    <p style="color:var(--text-muted);margin-bottom:1.5rem">Loading MLB ${group} stats…</p>
-                    <div class="loading-spinner"></div>
-                </div>
+                <div class="skeleton-line" style="height:20px;width:160px;margin-bottom:1.5rem"></div>
+                <div class="skeleton-line" style="height:120px;margin-bottom:1rem;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:40px;width:65%;border-radius:var(--radius-md)"></div>
             </div>
         `;
         try {

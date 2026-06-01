@@ -10,6 +10,25 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 |---|---|---|
 | P1-006 | [`js/api.js:11`](js/api.js#L11) | `BDL_API_KEY` is plaintext in source — any public push leaks it. Fix: deploy `worker/bdl-proxy.js`, set `BDL_PROXY_URL` in `api.js`, remove the raw key. |
 
+### P1-006 — Active Incident Detail
+**Contributor:** Cipher (finding), Axiom (fix plan) | **Date:** 2026-05-31
+
+**Confirmed:** Commit `4082a90` contains the live BDL key. The repo is public on GitHub (`github.com/zohnner/zohn-sports-stats`). Local and remote are fully synced. The key is readable by anyone right now. This is not a future risk — it is an active credential exposure.
+
+**Partially resolved:** `BDL_API_KEY` has been removed from current source (`api.js:11` is now `''`). The guard bug that would have caused all BDL calls to throw even after proxy deployment has been fixed — guard at `api.js:102` now checks `!BDL_PROXY_URL` before throwing.
+
+**Remaining steps — authorization required from project owner:**
+
+1. **Rotate the BDL key at `balldontlie.io` dashboard.** Invalidate `857bec7d...`. This kills the risk regardless of git history state. Do this first — nothing else matters until the old key is dead.
+
+2. **Git history scrub — owner must authorize.** Run `git filter-repo --literal-string "{old-key}" --replace-text /dev/null` then `git push origin main --force`. This rewrites commit SHAs from `4082a90` forward — destructive and irreversible. Axiom executes once owner confirms. Follow with a GitHub support request for cache purge.
+
+3. **Deploy Worker proxy — Axiom executes after Step 1.** `cd worker && wrangler secret put BDL_API_KEY && wrangler deploy`. Paste the deployed Worker URL into `BDL_PROXY_URL` in `api.js`. Commit and push. Cipher reviews before push.
+
+**Post-deployment hardening (non-blocking):** Lock `ALLOWED_ORIGIN` in `worker/bdl-proxy.js` from `'*'` to `'https://sportsstrata.com'` to prevent the Worker URL from being used as a free BDL relay by external actors.
+
+**NBA features are currently non-functional** (all BDL calls throw — by design given key removal). This resolves when `BDL_PROXY_URL` is wired up in Step 3.
+
 ---
 
 ## P2 — Bugs
@@ -58,14 +77,19 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 
 ## Design Issues
 
-### Hitters/Pitchers Toggle — Inline Style Bypasses Token System
-**Contributor:** Kael | **Date:** 2026-05-17 | **Assigned to:** Axiom
+### Player View Toggles — COMPLETE
+**Contributor:** Kael (spec) | **Date:** 2026-05-29 | **Resolved by:** Axiom | **Date resolved:** 2026-05-31
 
-`_styleMLBGroupBtn()` in `js/mlb.js:914` sets button appearance via `btn.style.cssText`, writing raw color values that bypass the CSS token system entirely. Active state uses `rgba(16,185,129,0.2)` background and `#34d399` text — this is emerald, which maps to `--color-reb` (a stat category token), not a UI state token. An active navigation toggle showing emerald tells users "this is a rebound/win-adjacent state," not "this is selected." Violates the stat-color discipline rule established in the design system overhaul.
+All three toggle functions (`_styleMLBViewBtn`, `_styleMLBGroupBtn`, `_styleMLBPosBtn`) confirmed using `classList.toggle` with correct base classes assigned on element creation. Wrapper uses `mlb-group-toggle-row`, separator uses `mlb-group-sep`. All CSS classes confirmed present in `components.css`. Kael visual review of light-mode rendering still required before the design system overhaul is fully signed off.
 
-Fix (Axiom executes): replace inline `style.cssText` with CSS class toggling. Add `.mlb-group-btn` and `.mlb-group-btn--active` classes. Active state should use `var(--accent-subtle)` / `var(--accent)` to match every other active navigation element in the product. Position button (`_styleMLBPosBtn`) may keep indigo (`--color-chip` / `--color-chip-bg`) — that token is designated for selection/chip context and is semantically appropriate there.
+**One secondary finding for Kael:** `posWrap` (the `#mlbPositionRow` container) at [`js/mlb.js:880`](js/mlb.js#L880) still uses `style.cssText` inline. This was outside the spec scope — flagging rather than fixing. Kael to decide whether a `.mlb-pos-row` class should be added to `components.css` and wired in `mlb.js`.
 
-**Not a blocker for Phase 1.** P2 priority — fix before 2026 feature push.
+---
+
+### Leaderboard Section Dividers — COMPLETE
+**Contributor:** Kael (spec) | **Date:** 2026-05-29 | **Resolved by:** Axiom | **Date resolved:** 2026-05-31
+
+All three text-only dividers ("Active Hitting Streaks", "Hot Right Now", "Statcast Leaders") confirmed with SVG icons matching Kael's spec — trending-up, flame-dot, and target-circle respectively. Verified against current source at lines 3817, 3894, and 4245. No action required.
 
 ---
 
@@ -96,8 +120,8 @@ The skeleton pattern is only as good as the coverage. If a view defaults to a bl
 
 ---
 
-### Game Prep Absent from Mobile Bottom Tab Bar
-**Contributor:** Vera | **Date:** 2026-05-17
+### Game Prep Absent from Mobile Bottom Tab Bar — RESOLVED
+**Contributor:** Vera | **Date:** 2026-05-17 | **Resolved:** 2026-05-31
 
 Current bottom tab bar: Players | Leaders | Scores | Standings | Builder. Game Prep is not in it.
 
@@ -137,8 +161,8 @@ The implementation is lightweight because the timestamp exists: `ApiCache` store
 
 ---
 
-### Sub-nav Ordering Misalignment with Primary Audience
-**Contributor:** Vera | **Date:** 2026-05-17
+### Sub-nav Ordering Misalignment with Primary Audience — RESOLVED
+**Contributor:** Vera | **Date:** 2026-05-17 | **Resolved:** 2026-05-31
 
 Current sub-nav order: Players | Leaders | Teams | Standings | [divider] | Builder | Prep | Arcade.
 
@@ -183,28 +207,10 @@ For the broadcast professional audience, a color-blind announcer using this view
 
 ## Engineering Issues
 
-### AppState Race Condition Risk — Shared Fields, Multiple Fetch Sites
-**Contributor:** Axiom | **Date:** 2026-05-17
+### AppState Race Condition — `mlbLeaderSplits` — RESOLVED (D-003)
+**Contributor:** Axiom | **Date:** 2026-05-17 | **Resolved:** 2026-05-29
 
-Several AppState fields (`mlbLeaderSplits`, `mlbHotStats`, `mlbSavantLeaderboard`) are fetched on-demand by whichever view needs them first. The pattern works in isolation but creates a race when two views load in rapid succession — both check the field, both find it empty, both dispatch a fetch, and the second one either overwrites in-flight data or renders before the first resolves. No confirmed incident, but the conditions for it are present and the 2026 feature push adds more shared async fields.
-
-The fix isn't a rewrite. It's fetch deduplication: a pending-promise registry so the second caller awaits the in-flight request rather than dispatching a new one. This is a small, targeted change to `mlbFetch()` or a thin wrapper around the shared-field fetches. Should be resolved before the next feature adds another shared async dependency to the pile.
-
-### `mlbLeaderSplits` Race Condition — Three Independent Fetch Sites Confirmed
-**Contributor:** Finn | **Date:** 2026-05-17
-
-Grep follow-up on Axiom's race condition entry above. `mlbLeaderSplits` is the highest-exposure field: it has three independent `if (!AppState.mlbLeaderSplits)` / fetch / set sites, not two.
-
-The three sites:
-1. [`js/app.js:282`](js/app.js#L282) — `loadHome()`. Fires when home page loads. Fire-and-forget `Promise.all().then()` — no `await`. Does not enrich team abbreviations.
-2. [`js/mlb.js:3508`](js/mlb.js#L3508) — `loadMLBLeaderboards()`. Fires when leaders view loads. Adds a team-abbreviation enrichment step via `abbrById` map that the other two sites do not perform.
-3. [`js/mlb.js:5407`](js/mlb.js#L5407) — `_showMLBScoutReport()`. Fires when the scout report card is triggered on player detail. Does not enrich team abbreviations.
-
-The race path: user lands on home (site 1 fires, non-blocking) → navigates immediately to leaders (site 2 fires, both checks pass `null`, two fetches in flight simultaneously). Site 2 may also produce a `mlbLeaderSplits` with team abbreviations populated while site 1 produces one without — meaning whichever resolves last wins and the result depends on network timing.
-
-`mlbHotStats` and `mlbSavantLeaderboard` each have only one fetch site (both in `loadMLBLeaderboards()`) — lower exposure.
-
-Escalation: Axiom. This is a confirmed version of the D-003 issue with the specific call sites mapped. No fix attempted.
+`_fetchMLBLeaderSplits()` with a module-scoped `_mlbLeaderSplitsPromise` pending-promise registry is in place in `mlb.js`. All three former call sites now route through this function. D-003 is closed. Verified in code 2026-05-29 — `app.js` uses `_fetchMLBLeaderSplits(MLB_SEASON)`, `loadMLBLeaderboards()` and `_showMLBScoutReport()` likewise. No further action.
 
 ---
 
@@ -295,6 +301,85 @@ Escalation: Kael (visual — blank section posture) and Vera (UX — should this
 ---
 
 ## UX Specs
+
+### Visual Spec: Data Freshness Timestamp
+**Contributor:** Kael | **Date:** 2026-05-31 | **Axiom feasibility:** Confirmed 2026-05-31
+**Addresses:** Beta gate 3. **All three gates complete. Finn may implement.**
+
+Element: `.freshness-label` — inline text, no container, no background.
+Position: trailing element in the `.search-meta` bar on `mlb-players` and `mlb-leaders` views.
+Tokens: `color: var(--text-subtle)` | `font-size: var(--text-xs)`.
+Format: `Updated [N] min ago` for ages under 60 min. `Updated today at [H:MM AM/PM]` at 60 min+.
+Add `aria-label="Data last updated [N] minutes ago"` (verbose for screen readers, differs from visible text).
+States: one — value present, or element absent from DOM. No loading state, no placeholder text.
+
+**Status: Already implemented.** Finn's session audit confirmed `_formatFreshness(ts)` and `.freshness-label` are live in both the players view (via `AppState._mlbPlayerStatsTs`) and the leaders view (via `AppState._mlbLeaderSplitsTs`). The session-introduced `mlbStatsFreshness()` helper and `ApiCache.set('mlb_fresh_…')` call were redundant and have been removed.
+
+**Open refinements — not implementation tasks, decision items:**
+- `aria-label` missing from `.freshness-label` spans at both render sites. Vera flagged this as required (WCAG). Finn adds the attribute once Vera confirms the exact string format. Low effort, one line per site.
+- Format above 60 min: current implementation returns `"Updated Nh ago"`. Kael's spec said `"Updated today at H:MM AM/PM"`. Kael decides — both are defensible.
+
+---
+
+### Visual Spec: First-Visit Value Statement
+**Contributor:** Kael | **Date:** 2026-05-31
+**Addresses:** Beta gate 4. Requires Vera behavioral spec before Finn can implement.
+
+Element: `.home-welcome` — single strip above `#homeHotStrip`, below the games section.
+Surface: `var(--bg-surface)` background | `1px solid var(--border-default)` border | `var(--radius-sm)` | padding `0.625rem 1rem`.
+Text: `var(--text-secondary)` | `var(--text-sm)` | two lines maximum.
+Draft copy: "Built for broadcasters, analysts, and fans who need more than a scoreboard. No login, no paywall."
+Dismiss: `<button>` at trailing edge — `×` character, `var(--text-subtle)` default, `var(--text-secondary)` on hover, no background.
+Margin-bottom: `0.875rem` before the next section.
+
+**Vera must spec:** ~~localStorage key name, definition of "first visit," whether dismiss is permanent or session-scoped, and whether the strip hides before or after its dismiss animation (if any).~~ — **Complete. See behavioral spec below.**
+
+---
+
+### Behavioral Spec: First-Visit Value Statement
+**Contributor:** Vera | **Date:** 2026-05-31
+**Addresses:** Beta gate 4. Companion to Kael's visual spec above. All three gates confirmed: Kael visual ✅ Vera behavioral ✅ Axiom feasibility — pending (see note below).
+
+**Job to be done:** A broadcaster arriving from a Google search, a referral, or a shared link needs to understand what SportStrata is and why it's worth their attention — within the first 10 seconds. They cannot feel this from the game cards alone. The strip gives them one sentence of product context before they navigate anywhere.
+
+**State 1 — Rendered (default, first visit)**
+
+Condition: `localStorage.getItem('ss_welcomed')` is `null` or absent.
+
+The `.home-welcome` strip is in the DOM immediately on `loadHome()`. It is synchronous — no await, no condition on data availability. It renders before anything else on the home page. If localStorage throws (strict private browsing), catch the exception and fail open: render the strip. Never crash the home page over a localStorage read failure.
+
+**State 2 — Dismissed via ×**
+
+User clicks the `×` button. Two things happen in this order:
+1. `localStorage.setItem('ss_welcomed', '1')` — permanent
+2. `.home-welcome` is removed from the DOM via `el.remove()`
+
+No animation. No fade. Instant removal. The content below shifts up naturally via document reflow. The localStorage key is `'ss_welcomed'` — lowercase, no prefix. The value is the string `'1'`.
+
+**State 3 — Dismissed via navigation**
+
+On the first call to `navigateTo()` from the home page, if `.home-welcome` exists in the DOM: set `localStorage.setItem('ss_welcomed', '1')` and remove the element. The strip does not follow the user into other views — it is home-only and home-scoped. Finn wires this into `navigateTo()` in `navigation.js` as a one-time pre-navigation side effect: check for `#homeWelcome`, if present remove it and write the key, then continue routing as normal.
+
+**State 4 — Returning visitor**
+
+Condition: `localStorage.getItem('ss_welcomed') === '1'`.
+
+`loadHome()` does not render the `.home-welcome` element at all. No placeholder, no hidden element, no visible gap. As if the strip were never in the spec.
+
+**What does NOT change:**
+
+The strip never appears on any view other than `home`. It does not re-appear on home page revisits within the same session once dismissed. It does not expire on a timer or reset after N days. Dismiss is permanent until localStorage is cleared.
+
+**Axiom feasibility confirmed 2026-05-31:** The `navigateTo()` side effect — checking for `#homeWelcome` and removing it on first navigation away from home — has already been wired into `navigation.js`. It runs before `renderCurrentView()`, touches no AppState, and is guarded so it only fires when the element exists. localStorage key is `ss_welcomed`, value `'1'`. Finn does not need to touch `navigation.js` for the dismiss-via-navigation path — it's already there.
+
+**Status: Already implemented.** Finn's session audit confirmed `.home-welcome` exists in `loadHome()` via `zs_seen_welcome` localStorage key. Strip renders on first visit and is never shown again. CSS exists in `main.css`. The session-introduced `navigateTo()` side effect (wrong ID `#homeWelcome`, wrong key `ss_welcomed`) was dead code and has been removed.
+
+**Open refinements — decision items for Kael and Vera:**
+- `.home-welcome` uses `--accent-subtle` background + `--accent-border` border. Kael's spec said `--bg-surface` + `--border-default`. Current treatment is more prominent (accent accent). Kael confirms which is correct for the intended posture.
+- No explicit `×` dismiss button. Current behavior: shows once on first load, key is written immediately, never reappears. Vera's spec called for an explicit dismiss button + dismiss-via-navigation. The simpler behavior may be sufficient — Vera decides if the additional dismiss affordance is required before the gate is fully closed.
+- Welcome strip has no `id`. If the dismiss-via-navigation behavior is required, adding `id="homeWelcome"` and aligning the localStorage key (`zs_seen_welcome` vs `ss_welcomed`) needs to be decided before implementation.
+
+---
 
 ---
 

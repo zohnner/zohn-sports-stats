@@ -820,10 +820,11 @@ function _renderMLBGroupToggle() {
 
     const wrap = document.createElement('div');
     wrap.id = 'mlbGroupToggle';
-    wrap.style.cssText = 'display:flex;gap:0.4rem;margin-top:0.875rem;flex-wrap:wrap;align-items:center;';
+    wrap.className = 'mlb-group-toggle-row';
 
     ['hitting', 'pitching'].forEach(group => {
         const btn = document.createElement('button');
+        btn.className = 'mlb-group-btn';
         btn.textContent  = group === 'hitting' ? 'Hitters' : 'Pitchers';
         btn.dataset.group = group;
         _styleMLBGroupBtn(btn, AppState.mlbStatsGroup === group);
@@ -846,24 +847,22 @@ function _renderMLBGroupToggle() {
 
     // Separator
     const sep = document.createElement('span');
-    sep.style.cssText = 'width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 0.25rem;';
+    sep.className = 'mlb-group-sep';
     wrap.appendChild(sep);
 
     // View toggle buttons (card / table)
     const cardBtn = document.createElement('button');
     cardBtn.id = 'mlbCardViewBtn';
+    cardBtn.className = 'mlb-view-btn';
     cardBtn.title = 'Card view';
     cardBtn.textContent = '⊞';
-    cardBtn.style.cssText = 'padding:0.3rem 0.6rem;border-radius:8px;cursor:pointer;font-size:1rem;font-family:inherit;border:1px solid rgba(255,255,255,0.12);transition:all 0.2s;';
-    cardBtn.classList.toggle('active', mlbPlayerViewMode === 'cards');
     cardBtn.addEventListener('click', () => setMLBPlayerView('cards'));
 
     const tableBtn = document.createElement('button');
     tableBtn.id = 'mlbTableViewBtn';
+    tableBtn.className = 'mlb-view-btn';
     tableBtn.title = 'Table view';
     tableBtn.textContent = '≡';
-    tableBtn.style.cssText = cardBtn.style.cssText;
-    tableBtn.classList.toggle('active', mlbPlayerViewMode === 'table');
     tableBtn.addEventListener('click', () => setMLBPlayerView('table'));
 
     _styleMLBViewBtn(cardBtn,  mlbPlayerViewMode === 'cards');
@@ -878,7 +877,7 @@ function _renderMLBGroupToggle() {
     // ── Position filter row ───────────────────────────────────
     const posWrap = document.createElement('div');
     posWrap.id = 'mlbPositionRow';
-    posWrap.style.cssText = 'display:flex;gap:0.3rem;margin-top:0.45rem;flex-wrap:wrap;align-items:center;';
+    posWrap.className = 'mlb-pos-row';
 
     const HITTING_POS  = MLB_HITTING_POSITIONS;
     const PITCHING_POS = MLB_PITCHING_POSITIONS;
@@ -893,6 +892,7 @@ function _renderMLBGroupToggle() {
         if (pos !== 'All' && count === 0) return; // skip positions with no data yet
 
         const btn = document.createElement('button');
+        btn.className = 'mlb-pos-btn';
         btn.textContent      = pos;
         btn.dataset.posFilter = filterVal;
         _styleMLBPosBtn(btn, AppState.mlbPositionFilter === filterVal);
@@ -911,32 +911,15 @@ function _renderMLBGroupToggle() {
 }
 
 function _styleMLBViewBtn(btn, active) {
-    btn.style.cssText = `
-        padding:0.3rem 0.65rem;border-radius:8px;cursor:pointer;font-size:1rem;font-family:inherit;
-        border:1px solid ${active ? 'rgba(16,185,129,0.6)' : 'rgba(255,255,255,0.12)'};
-        background:${active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.04)'};
-        color:${active ? '#34d399' : '#64748b'};transition:all 0.2s;
-    `;
+    btn.classList.toggle('mlb-view-btn--active', active);
 }
 
 function _styleMLBGroupBtn(btn, active) {
-    btn.style.cssText = `
-        padding:0.45rem 0.875rem;border-radius:20px;cursor:pointer;font-weight:700;
-        font-size:0.8rem;transition:all 0.2s;font-family:inherit;
-        border:1px solid ${active ? 'var(--accent-border)' : 'var(--border-default)'};
-        background:${active ? 'var(--accent-subtle)' : 'var(--bg-interactive)'};
-        color:${active ? 'var(--accent)' : 'var(--text-subtle)'};
-    `;
+    btn.classList.toggle('mlb-group-btn--active', active);
 }
 
 function _styleMLBPosBtn(btn, active) {
-    btn.style.cssText = `
-        padding:0.35rem 0.65rem;border-radius:20px;cursor:pointer;font-weight:600;
-        font-size:0.72rem;transition:all 0.2s;font-family:inherit;
-        border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.1)'};
-        background:${active ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)'};
-        color:${active ? '#818cf8' : '#475569'};
-    `;
+    btn.classList.toggle('mlb-pos-btn--active', active);
 }
 
 function displayMLBPlayers(group = AppState.mlbStatsGroup) {
@@ -969,6 +952,7 @@ function _refreshMLBPositionRow(group) {
         if (pos !== 'All' && count === 0) return;
 
         const btn = document.createElement('button');
+        btn.className = 'mlb-pos-btn';
         btn.textContent       = pos;
         btn.dataset.posFilter = filterVal;
         _styleMLBPosBtn(btn, curFilter === filterVal);
@@ -1026,6 +1010,7 @@ function displayMLBPlayerCards(group) {
             const badge = document.createElement('span');
             badge.className = 'freshness-label';
             badge.textContent = freshness;
+            badge.setAttribute('aria-label', 'Data last updated ' + freshness.slice('Updated '.length));
             el.appendChild(badge);
         }
     }
@@ -1170,6 +1155,7 @@ function displayMLBPlayersTable(group) {
             const badge = document.createElement('span');
             badge.className = 'freshness-label';
             badge.textContent = freshness;
+            badge.setAttribute('aria-label', 'Data last updated ' + freshness.slice('Updated '.length));
             el.appendChild(badge);
         }
     }
@@ -1485,7 +1471,20 @@ function _mlbPlayerLeagueRanks(playerId, group) {
 function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     const players = AppState.mlbPlayers[group] || [];
     const player  = players.find(p => p.id === playerId);
-    if (!player) return;
+    if (!player) {
+        const grid = document.getElementById('playersGrid');
+        if (grid) {
+            grid.className = '';
+            grid.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:4rem 1.5rem';
+            grid.innerHTML = `
+                <div style="text-align:center;max-width:360px">
+                    <p style="color:var(--text-secondary);font-weight:600;margin-bottom:0.5rem">Player not found</p>
+                    <p style="color:var(--text-muted);font-size:var(--text-sm);margin-bottom:1rem">This player may not have stats recorded for the current season, or the link may be outdated.</p>
+                    <button class="btn-ghost" onclick="navigateTo('mlb-players')">Browse all players →</button>
+                </div>`;
+        }
+        return;
+    }
 
     const grid    = document.getElementById('playersGrid');
     const stats   = AppState.mlbPlayerStats[group]?.[playerId] || {};
@@ -3817,7 +3816,7 @@ function _appendMLBStreakPanel(fragment, splits, season) {
 
     const divider = document.createElement('div');
     divider.className = 'leaderboard-section-divider';
-    divider.innerHTML = `<span>Active Hitting Streaks · ${season}</span>`;
+    divider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Active Hitting Streaks · ${season}</span>`;
     fragment.appendChild(divider);
 
     const panel = document.createElement('div');
@@ -3894,7 +3893,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
 
     const divider = document.createElement('div');
     divider.className = 'leaderboard-section-divider';
-    divider.innerHTML = `<span>Hot Right Now · Last 7 Days · ${season}</span>`;
+    divider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M13 2c0 4-4 6-4 10a5 5 0 0 0 10 0c0-4.5-3-7.5-3-10"/><path d="M12 17a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill="currentColor" stroke="none"/></svg>Hot Right Now · Last 7 Days · ${season}</span>`;
     fragment.appendChild(divider);
 
     HOT_CATS.forEach(cat => {
@@ -4245,7 +4244,7 @@ function displayMLBLeaderboards() {
     if (savantRows && savantRows.length > 0) {
         const divider = document.createElement('div');
         divider.className = 'leaderboard-section-divider';
-        divider.innerHTML = `<span>Statcast Leaders · ${season} · min 50 batted balls</span>`;
+        divider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Statcast Leaders · ${season} · min 50 batted balls</span>`;
         fragment.appendChild(divider);
 
         // Build player_id → team/position lookup from already-loaded hitting splits
@@ -5663,7 +5662,7 @@ async function displayGamePrep() {
         }, ApiCache.TTL.SHORT);
         games = (data.dates || []).flatMap(d => d.games || []);
     } catch (_) {
-        grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">Could not load today's schedule</p></div>`;
+        grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">Could not load today's schedule</p><button class="btn-ghost" style="margin-top:0.75rem" onclick="displayGamePrep()">Try again</button></div>`;
         return;
     }
 
