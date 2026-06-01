@@ -283,8 +283,8 @@ Escalation: P2 bugs → Axiom (implementation) and Vera (UX spec for loading sta
 
 ---
 
-### Home Page — Hot Strip and Tonight's Starters Render Nothing on Cold Load (No Skeleton)
-**Contributor:** Finn | **Date:** 2026-05-17
+### Home Page — Hot Strip and Tonight's Starters Render Nothing on Cold Load — RESOLVED
+**Contributor:** Finn | **Date:** 2026-05-17 | **Verified by:** Vera | **Date verified:** 2026-06-01
 
 Observed via headless screenshot (desktop, 1280×900). On cold load, the section between "Today's Games" game cards and the four feature tiles (Leaderboards / Game Prep / Statcast / Builder) is completely empty — a large dark blank area. No skeleton, no loading indicator, no error message.
 
@@ -311,8 +311,8 @@ States: one — value present, or element absent from DOM. No loading state, no 
 
 **Status: Already implemented.** Finn's session audit confirmed `_formatFreshness(ts)` and `.freshness-label` are live in both the players view (via `AppState._mlbPlayerStatsTs`) and the leaders view (via `AppState._mlbLeaderSplitsTs`). The session-introduced `mlbStatsFreshness()` helper and `ApiCache.set('mlb_fresh_…')` call were redundant and have been removed.
 
-**Open refinements — not implementation tasks, decision items:**
-- `aria-label` missing from `.freshness-label` spans at both render sites. Vera flagged this as required (WCAG). Finn adds the attribute once Vera confirms the exact string format. Low effort, one line per site.
+**Open refinements:**
+- `aria-label` on freshness-label spans — **RESOLVED (Vera, 2026-06-01).** Players view (card + table modes) already had `aria-label="Data last updated [text]"`. Leaders view was missing it — added in `mlb.js` at the leaderboard section divider render site. Pattern: `'Data last updated ' + formatted.slice('Updated '.length)`. Axiom to review on next pass (one-line string template change, no logic change).
 - Format above 60 min: current implementation returns `"Updated Nh ago"`. Kael's spec said `"Updated today at H:MM AM/PM"`. Kael decides — both are defensible.
 
 ---
@@ -1015,7 +1015,7 @@ Known `actionIndex` eventType values (confirmed across both games + known API vo
 ---
 
 ### Phase 1 — Historical Static Render
-**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** Axiom review complete 2026-06-01 — see findings below. Phase 1 is approved to ship pending Vera ruling on skeleton spec gap.
+**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** ✅ All gates cleared 2026-06-01 — ready for smoke test. Axiom review complete; Vera ruling on skeleton gap: Phase 2 refinement, not blocking.
 
 **Axiom review findings (2026-06-01):**
 

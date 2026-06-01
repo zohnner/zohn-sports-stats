@@ -4122,8 +4122,9 @@ function displayMLBLeaderboards() {
 
     const seasonDivider = document.createElement('div');
     seasonDivider.className = 'leaderboard-section-divider';
-    const freshnessLabel = AppState._mlbLeaderSplitsTs
-        ? `<span class="freshness-label">${_escHtml(_formatFreshness(AppState._mlbLeaderSplitsTs))}</span>`
+    const _freshFmt = AppState._mlbLeaderSplitsTs ? _formatFreshness(AppState._mlbLeaderSplitsTs) : '';
+    const freshnessLabel = _freshFmt
+        ? `<span class="freshness-label" aria-label="Data last updated ${_escHtml(_freshFmt.slice('Updated '.length))}">${_escHtml(_freshFmt)}</span>`
         : '';
     seasonDivider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M2 20V9M9 20V4M16 20V12M23 20V6"/></svg>Season Leaders · ${season}</span>${freshnessLabel}`;
     fragment.appendChild(seasonDivider);
