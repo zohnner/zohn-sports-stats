@@ -241,12 +241,21 @@ header {
     border-radius: var(--radius-sm);
 }
 
+/* Accent ring on logo signals active theme mode — fades in/out when switching */
+[data-theme^="cc-"] .brand-logo-img,
+[data-theme="retro-expos"] .brand-logo-img,
+[data-theme="nl-monarchs"] .brand-logo-img,
+[data-theme="aa-trash-pandas"] .brand-logo-img {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent-glow);
+}
+
 .brand-icon { display: none; }
 
 .brand-logo-img {
     height: 40px;
     width: 40px;
     border-radius: var(--radius-sm);
+    transition: box-shadow var(--transition-base);
     object-fit: contain;
     flex-shrink: 0;
 }
