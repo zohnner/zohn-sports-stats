@@ -5,6 +5,13 @@
    Color values: --scorecard-* tokens from variables.css only.
    ============================================================ */
 
+/* ── Skeleton override — paper context ───────────────────────── */
+/* .skeleton-line uses dark-mode shimmer which is invisible on --scorecard-paper */
+.scorecard-wrapper .skeleton-line {
+    background: var(--scorecard-border-light);
+    animation: none;
+}
+
 /* ── Outer view container ────────────────────────────────────── */
 .scorecard-view {
     max-width: 1200px;

@@ -380,6 +380,7 @@ async function loadMLBScorecard(gameId, gameStub) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
     grid.style.cssText = 'display:block;';
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
 
     // Breadcrumb
     const atAbbr   = gameStub ? _mlbTeamAbbr(gameStub.teams?.away?.team || {}) : '';
