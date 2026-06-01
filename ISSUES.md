@@ -1015,7 +1015,24 @@ Known `actionIndex` eventType values (confirmed across both games + known API vo
 ---
 
 ### Phase 1 — Historical Static Render
-**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** In progress — core implementation shipped 2026-05-18
+**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** Axiom review complete 2026-06-01 — see findings below. Phase 1 is approved to ship pending Vera ruling on skeleton spec gap.
+
+**Axiom review findings (2026-06-01):**
+
+Reviewed `scorecard.js` (425 lines) and `css/scorecard.css` (415 lines) against Phase 0 findings and Kael/Vera specs.
+
+**Approved — no blocking issues:**
+- `resolveNotation()` — correct. Strikeout looking/swinging distinction via last pitch `call.code === 'C'`. All Phase 0 eventType mappings present plus reasonable additions (IBB, CI, SACDP).
+- `resolveBaseProgression()` — correct. Multi-entry runner pattern handled: filters by `runner.id === batterId`, sorts by `playIndex`, takes last entry's `end`. Handles staged advances, out-at-base, and home-run scoring correctly.
+- `buildScorecardData()` — correct. Parallel fetch of PBP + game meta. Inning count derived from data, not hardcoded.
+- `_buildTeamSection()` — correct. Lineup ordered by first appearance; `paByInning` map handles multiple PAs per inning (shows first PA in column slot — known Phase 1 limitation, acceptable).
+- Navigation wiring in `navigation.js` — correct. `_restoreMLBScorecard` registered in all three paths: `popstate`, `_renderMLBView`, `_loadFromHash`. Hash regex `^mlb-scorecard-(\d+)$` correct.
+- `css/scorecard.css` — complete. All Phase 1 selectors, base-fill states, `scoredPulse` animation, `prefers-reduced-motion` overrides, mobile grid sizing all present per Kael's spec.
+
+**Fixed in this session:** Double `resolveBaseProgression(play)` call per PA in `_buildTeamSection` — cached result into `base` variable, used for both `pa.base` and `pa.scored`. Minor efficiency fix.
+
+**Spec gap — route to Vera for ruling:**
+`_renderScorecardSkeleton()` ignores `gameStub` entirely. Vera's spec called for: "The scorecard outer chrome renders synchronously from context already available: team names and team colors." Currently all three header slots render as generic skeleton lines even when `gameStub.teams.home/away` is available. This means a user who clicks "Scorecard" from the Scores view sees a fully generic skeleton rather than a team-contextual loading state. Vera decides: blocker for Phase 1 ship, or Phase 2 refinement?
 
 **New files — both require Axiom review on load order placement before Finn creates them:**
 - `js/scorecard.js` — load position: after `mlb.js`, before `nfl.js` in `index.html`

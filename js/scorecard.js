@@ -98,10 +98,11 @@ function _buildTeamSection(allPlays, halfInning) {
 
         const entry   = lineupMap.get(batter.id);
         const inning  = play.about.inning;
+        const base    = resolveBaseProgression(play);
         const pa      = {
             notation: resolveNotation(play),
-            base:     resolveBaseProgression(play),
-            scored:   resolveBaseProgression(play).includes('scored'),
+            base,
+            scored:   base.includes('scored'),
         };
 
         if (!entry.paByInning.has(inning)) entry.paByInning.set(inning, []);
