@@ -3950,68 +3950,6 @@
     font-weight: 600;
 }
 
-/* ── Position Leaderboard Cards (P3-019) ─────────────────── */
-.pos-leaderboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
-}
-.pos-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    transition: border-color var(--transition-fast);
-}
-.pos-card:hover { border-color: var(--border-mid); }
-.pos-card__header {
-    padding: 0.4rem 0.75rem;
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
-    font-weight: 700;
-    color: var(--text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    border-bottom: 1px solid var(--border-default);
-    background: var(--bg-raised);
-}
-.pos-card__row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.45rem 0.75rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-    transition: background var(--transition-fast);
-}
-.pos-card__row:hover { background: var(--bg-card-hover); }
-.pos-card__rank {
-    font-size: var(--text-xs);
-    color: var(--text-subtle);
-    min-width: 1.2rem;
-    flex-shrink: 0;
-}
-.pos-card__name {
-    flex: 1;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.pos-card__val {
-    font-size: var(--text-sm);
-    font-weight: 700;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-}
-
 /* ── vs-Opponent Stat Row (P3-018, P3-021) ───────────────── */
 .vs-opp-row {
     font-size: var(--text-xs);
