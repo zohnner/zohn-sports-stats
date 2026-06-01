@@ -102,7 +102,9 @@ MLB likely exposes CC-specific logo assets at a different CDN path (unknown patt
 
 **Investigation complete (Kael, 2026-06-01):** Exhaustive probe of mlbstatic.com CDN patterns (`/city-connect/`, `/cap/`, `/-dark`, `/season/2026/`, `/wordmark/`) all return 404. The official MLB CC reveal page itself uses standard `team-logos/{id}.svg` for team identification. No public CC-specific logo URLs exist at this time.
 
-**Recommended path:** Keep the standard logos (current behavior). As a CSS-only enhancement, a small "CC" badge could be composited over the logo in the header when `data-theme` starts with `cc-` — no JS change, no external asset. Flag to Kael when ready to spec. Axiom does not need to act on this until MLB publishes CC logo URLs or the CSS badge approach is scoped.
+**Recommended path:** Keep the standard logos (current behavior). The CSS-only header signal has been implemented (see below) — a 2px accent ring on `.brand-logo-img` fires for all 12 themed modes via `[data-theme^="cc-"]` and the three bonus theme selectors. No JS change needed.
+
+**Remaining Axiom task:** The four bonus themes (`cc-bananas`, `retro-expos`, `nl-monarchs`, `aa-trash-pandas`) are not in `_CC_TEAM_LOGOS` at [`js/app.js:943`](js/app.js#L943). These themes fall back to `assets/Icon.PNG` (correct behavior). If logo assets ever become available for these teams, Axiom adds entries to the map. Non-blocking; logo ring provides sufficient header identity for now.
 
 ---
 
