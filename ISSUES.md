@@ -372,7 +372,7 @@ The strip never appears on any view other than `home`. It does not re-appear on 
 
 **Open refinements — decision items for Kael and Vera:**
 - `.home-welcome` uses `--accent-subtle` background + `--accent-border` border. Kael's spec said `--bg-surface` + `--border-default`. Current treatment is more prominent (accent accent). Kael confirms which is correct for the intended posture.
-- No explicit `×` dismiss button. Current behavior: shows once on first load, key is written immediately, never reappears. Vera's spec called for an explicit dismiss button + dismiss-via-navigation. The simpler behavior may be sufficient — Vera decides if the additional dismiss affordance is required before the gate is fully closed.
+- No explicit `×` dismiss button. **Vera ruling (2026-06-01):** The simpler behavior is sufficient. The strip is two lines, non-blocking, and disappears permanently after the first visit. An explicit dismiss button adds interaction cost without solving a real user problem. Gate closed as-is. No further action needed.
 - Welcome strip has no `id`. If the dismiss-via-navigation behavior is required, adding `id="homeWelcome"` and aligning the localStorage key (`zs_seen_welcome` vs `ss_welcomed`) needs to be decided before implementation.
 
 ---
@@ -1015,7 +1015,11 @@ Known `actionIndex` eventType values (confirmed across both games + known API vo
 ---
 
 ### Phase 1 — Historical Static Render
-**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** ✅ All gates cleared 2026-06-01 — ready for smoke test. Axiom review complete; Vera ruling on skeleton gap: Phase 2 refinement, not blocking.
+**Assigned to:** Finn | **Estimated:** 3–5 weeks | **Status:** ✅ Shipped and smoke-tested 2026-06-01. One P3 finding below.
+
+**Smoke test result (Axiom, 2026-06-01):** Cold deep-link to `#mlb-scorecard-823384` (PHI @ PIT, 10 innings). Full render confirmed: 10-column CSS Grid, correct notation symbols (K, Kc, HR, FC, 1B, DP, G, BB, SF), correct diamond fill states (partial + full amber fills per base reached), paper texture aesthetic, player names, team logos, FINAL status, ← Scores nav. Live scores ticker active alongside the scorecard view.
+
+**P3 finding — header scores show `—` on cold deep-link:** `_fetchGameMeta()` uses `box.teams?.home?.runs` from the boxscore endpoint. On a cold load where `AppState.mlbGames` is not populated, the boxscore fetch likely returns data but the `runs` field may be in a different path (e.g., `teamStats.batting.runs`) or the fetch is completing after the render. Users who arrive via the Scores view (normal path) will have the game stub in `AppState.mlbGames` with correct scores from the schedule hydrate. Only affects bookmark/deep-link entry. Assign to Axiom: verify `box.teams?.home?.runs` field path against actual boxscore response and fix if wrong.
 
 **Axiom review findings (2026-06-01):**
 

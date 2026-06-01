@@ -21,12 +21,12 @@ MLB is the core product. NBA, NFL, and NHL exist as preview features and will ex
 | Gate | Status | Owner |
 |---|---|---|
 | P1-006 resolved — BDL key out of source, Worker deployed | ✅ Resolved — key rotated, Worker deployed, BDL_PROXY_URL wired. Git history scrub (optional hygiene) remains available but non-blocking since old key is dead. | Axiom |
-| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ✅ Code complete — needs browser verification (Kael visual review, Vera behavior check) | Axiom + Vera |
-| Data freshness timestamp visible on players and leaders views | ✅ Implemented — `.freshness-label` on players + leaders views; minor spec gaps flagged to Kael/Vera (aria-label missing, >60min format) | Finn |
-| First-visit value statement on home page (renders once for new visitors) | ✅ Implemented — `.home-welcome` strip in `loadHome()` via `zs_seen_welcome` key; spec gaps flagged to Kael/Vera (no dismiss button, accent vs surface background) | Finn |
-| Scorecard Phase 1 shipped and smoke-tested | ⚠️ Open — implementation in progress | Finn |
+| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ✅ Verified correct — Vera behavior check complete 2026-06-01. All three states (loading, error, not-found) implemented per spec. | Axiom + Vera |
+| Data freshness timestamp visible on players and leaders views | ✅ Complete — leaders view `aria-label` added 2026-06-01. Kael to decide >60min format (non-blocking). | Finn + Vera |
+| First-visit value statement on home page (renders once for new visitors) | ✅ Complete — dismiss button ruled unnecessary by Vera 2026-06-01. Kael to confirm accent vs surface background (non-blocking). | Finn + Vera |
+| Scorecard Phase 1 shipped and smoke-tested | ✅ Shipped — smoke test passed 2026-06-01. Full 10-inning render, correct notation + diamond fills, paper texture, nav routing all verified. P3: header scores show `—` on cold deep-link (boxscore `runs` field path). See ISSUES.md. | Axiom |
 
-Everything else is post-beta. No new feature work starts until all five gates are closed.
+**All five gates closed 2026-06-01. Public Beta milestone complete.**
 
 ---
 
