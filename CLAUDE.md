@@ -44,7 +44,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `schema.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it. Note: `schema.js` loads near the end — do not assume it's available early.
+**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 

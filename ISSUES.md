@@ -104,7 +104,7 @@ MLB likely exposes CC-specific logo assets at a different CDN path (unknown patt
 
 **Recommended path:** Keep the standard logos (current behavior). The CSS-only header signal has been implemented (see below) — a 2px accent ring on `.brand-logo-img` fires for all 12 themed modes via `[data-theme^="cc-"]` and the three bonus theme selectors. No JS change needed.
 
-**Remaining Axiom task:** The four bonus themes (`cc-bananas`, `retro-expos`, `nl-monarchs`, `aa-trash-pandas`) are not in `_CC_TEAM_LOGOS` at [`js/app.js:943`](js/app.js#L943). These themes fall back to `assets/Icon.PNG` (correct behavior). If logo assets ever become available for these teams, Axiom adds entries to the map. Non-blocking; logo ring provides sufficient header identity for now.
+**Axiom decision (2026-06-01):** The four bonus themes (`cc-bananas`, `retro-expos`, `nl-monarchs`, `aa-trash-pandas`) will not receive `_CC_TEAM_LOGOS` entries at this time. All four teams are either independent, minor league, or historical — no stable SVG logo URLs exist on MLB's CDN, and adding third-party domain URLs would require CSP changes in both `index.html` and `_headers` for assets that may drift or disappear. The fallback to `assets/Icon.PNG` is clean; the accent ring badge added by Kael provides sufficient themed-mode identity in the header. Revisit if stable logo sources become available.
 
 ---
 
@@ -229,29 +229,10 @@ For the broadcast professional audience, a color-blind announcer using this view
 
 ---
 
-### `schema.js` Loads Late — `ApiShape` Availability Not Verified Upstream
-**Contributor:** Axiom | **Date:** 2026-05-17
+### `schema.js` Load Order — RESOLVED
+**Contributor:** Axiom (original finding) + Finn (violation trace) | **Date:** 2026-05-17 | **Resolved by:** Axiom | **Date resolved:** 2026-06-01
 
-`schema.js` is positioned near the end of the `<script>` load chain in `index.html` (after `standings.js`, before `db.js`). `ApiShape`, defined there, is a validation helper that any file loaded before it cannot safely reference. The load order is documented but not enforced — there's no runtime check and no build step to catch violations.
-
-The risk is a silent failure: a file that calls `ApiShape.validate()` before `schema.js` has executed gets `undefined` rather than an error, validation is skipped, and malformed API data flows into the render path undetected. Needs a grep across all JS files to confirm nothing upstream references `ApiShape`, and if any do, either move the reference or move `schema.js` earlier in the chain.
-
-### `ApiShape` Upstream Violation Confirmed — `api.js` Calls It, Loads 4th in Chain
-**Contributor:** Finn | **Date:** 2026-05-17
-
-Grep follow-up on Axiom's `schema.js` entry above. Three calls to `ApiShape.check()` in `api.js`, which loads 4th in the script chain — 14 positions before `schema.js`:
-
-- [`js/api.js:217`](js/api.js#L217) — `fetchAllPlayers()` — `ApiShape.check(players, ApiShape.bdlPlayer, 'players')`
-- [`js/api.js:271`](js/api.js#L271) — `fetchBDLGames()` — `ApiShape.check(games, ApiShape.bdlGame, 'games')`
-- [`js/api.js:311`](js/api.js#L311) — `fetchNBASeasonAverages()` — `ApiShape.check(results, ApiShape.bdlStats, 'season_averages')`
-
-All three calls are inside async function bodies, not top-level — so they don't execute at parse time. By the time any BDL fetch is triggered (through user navigation via `app.js`, which loads last), `schema.js` has already executed and `ApiShape` is defined. No live runtime error today.
-
-The fragility: there is no guard. If `ApiShape` is ever undefined at call time — due to a future script order change, a removed script tag, or a preload context — the call fails silently and malformed BDL data proceeds to the render path unchecked. No other JS files upstream of `schema.js` reference `ApiShape`.
-
-Resolution options for Axiom: (a) add a `typeof ApiShape !== 'undefined'` guard inside each call site in `api.js`, or (b) move `schema.js` to load before `api.js` in `index.html`. Option (b) is cleaner but requires verifying `schema.js` has no dependencies that load after it.
-
-Escalation: Axiom.
+`schema.js` moved to load 4th in the chain — immediately before `api.js` — via option (b). Confirmed `schema.js` has no dependencies on any file loaded after position 3 (`cache.js`); it only requires `Logger` from `errorHandler.js` (position 2). All three `ApiShape.check()` call sites in `api.js` now have a guaranteed-live `ApiShape` at every call, including async preload contexts. CLAUDE.md load order documentation updated to reflect the new chain. 25/25 JS files pass `node --check` syntax verification post-move.
 
 ---
 
