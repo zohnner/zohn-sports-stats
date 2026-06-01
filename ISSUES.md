@@ -93,6 +93,19 @@ All three text-only dividers ("Active Hitting Streaks", "Hot Right Now", "Statca
 
 ---
 
+### City Connect — Standard Logos Used, CC-Specific Logos Needed
+**Contributor:** Kael | **Date:** 2026-06-01
+
+`_CC_TEAM_LOGOS` in [`js/app.js:943`](js/app.js#L943) maps each CC theme to the standard team logo SVG from `mlbstatic.com/{teamId}.svg`. When a CC theme is active the header shows the regular team logo, not the City Connect variant.
+
+MLB likely exposes CC-specific logo assets at a different CDN path (unknown pattern — needs investigation). If CC logos exist at a predictable URL, the map should be updated. If not, consider a team wordmark or the CC uniform number as a fallback identity element.
+
+**Investigation complete (Kael, 2026-06-01):** Exhaustive probe of mlbstatic.com CDN patterns (`/city-connect/`, `/cap/`, `/-dark`, `/season/2026/`, `/wordmark/`) all return 404. The official MLB CC reveal page itself uses standard `team-logos/{id}.svg` for team identification. No public CC-specific logo URLs exist at this time.
+
+**Recommended path:** Keep the standard logos (current behavior). As a CSS-only enhancement, a small "CC" badge could be composited over the logo in the header when `data-theme` starts with `cc-` — no JS change, no external asset. Flag to Kael when ready to spec. Axiom does not need to act on this until MLB publishes CC logo URLs or the CSS badge approach is scoped.
+
+---
+
 ### Color Semantic Drift Risk
 **Contributor:** Kael | **Date:** 2026-05-17
 

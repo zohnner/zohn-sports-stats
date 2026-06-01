@@ -60,6 +60,106 @@ body::after {
     );
 }
 
+/* ── City Connect — Atmospheric Layer ─────────────────────────
+   Each theme replaces the generic color-mix glows with an
+   intentional environmental signature. Position, hue, and
+   intensity are chosen per-uniform's conceptual source.
+   ─────────────────────────────────────────────────────────── */
+
+/* Atlanta Braves — 1980s Superstation nostalgia
+   Powder blue broadcast warmth from the upper-left,
+   classic red trim glow from the lower-right corner. */
+[data-theme="cc-braves"] body::before {
+    background:
+        radial-gradient(ellipse 80% 55% at 8% 5%,  rgba(124,185,232,0.20) 0%, transparent 62%),
+        radial-gradient(ellipse 55% 75% at 92% 95%, rgba(206,17,65,0.10)   0%, transparent 58%);
+}
+
+/* Baltimore Orioles — Camden Yards atmosphere
+   Camden green overhead like ballpark ivy; orange brickwork warmth
+   rising from the lower-right, a Baltimore summer night. */
+[data-theme="cc-orioles"] body::before {
+    background:
+        radial-gradient(ellipse 75% 55% at 50% -8%, rgba(0,90,60,0.24)    0%, transparent 62%),
+        radial-gradient(ellipse 45% 60% at 85% 92%, rgba(223,70,1,0.13)   0%, transparent 52%);
+}
+
+/* Cincinnati Reds — total crimson commitment
+   Red descends from above and rises from below — the whole
+   environment belongs to the color. No other hue enters. */
+[data-theme="cc-reds"] body::before {
+    background:
+        radial-gradient(ellipse 100% 55% at 50% -2%,  rgba(165,0,21,0.24)  0%, transparent 62%),
+        radial-gradient(ellipse 100% 45% at 50% 102%, rgba(198,1,31,0.18)  0%, transparent 55%);
+}
+/* Authentic vertical pinstripes replace the horizontal scanline */
+[data-theme="cc-reds"] body::after {
+    background: repeating-linear-gradient(
+        180deg,
+        transparent 0px,
+        transparent 15px,
+        rgba(165,0,21,0.07) 15px,
+        rgba(165,0,21,0.07) 16px
+    );
+}
+
+/* Kansas City Royals — Forever Fountains
+   Fuchsia from the left, royal blue from the right, purple
+   overhead — the fountain gradient rendered as environment. */
+[data-theme="cc-royals"] body::before {
+    background:
+        radial-gradient(ellipse 85% 70% at 0%   50%, rgba(255,0,175,0.18)  0%, transparent 62%),
+        radial-gradient(ellipse 70% 85% at 100% 50%, rgba(0,70,135,0.20)   0%, transparent 62%),
+        radial-gradient(ellipse 55% 40% at 50%  5%,  rgba(120,81,169,0.14) 0%, transparent 52%);
+}
+
+/* Milwaukee Brewers — Wisco Way
+   Wild Mango sunset burns at the top; Great Lakes blue rises
+   from below. The horizon lives in the middle of every screen. */
+[data-theme="cc-brewers"] body::before {
+    background:
+        radial-gradient(ellipse 85% 40% at 50% -5%,   rgba(255,122,0,0.16)   0%, transparent 55%),
+        radial-gradient(ellipse 100% 65% at 50% 105%,  rgba(35,107,142,0.22)  0%, transparent 62%);
+}
+
+/* Pittsburgh Pirates — Steel City grit
+   Gold glints cold from above, like stadium lights over black
+   steel. A second dim source at the lower-left: industrial depth. */
+[data-theme="cc-pirates"] body::before {
+    background:
+        radial-gradient(ellipse 60% 35% at 50% 0%,  rgba(253,184,39,0.11) 0%, transparent 50%),
+        radial-gradient(ellipse 35% 55% at 5%  95%, rgba(253,184,39,0.07) 0%, transparent 42%);
+}
+/* Diagonal crosshatch simulating steel-beam construction geometry */
+[data-theme="cc-pirates"] body::after {
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent 0px,
+        transparent 23px,
+        rgba(253,184,39,0.04) 23px,
+        rgba(253,184,39,0.04) 24px
+    );
+}
+
+/* San Diego Padres — Día de los Muertos
+   Pacific aqua from the upper-left horizon; marigold altar warmth
+   from the lower-right; a whisper of Fireberry at center depth. */
+[data-theme="cc-padres"] body::before {
+    background:
+        radial-gradient(ellipse 60% 50% at 2%   2%,  rgba(0,181,184,0.17)  0%, transparent 56%),
+        radial-gradient(ellipse 65% 55% at 98%  98%, rgba(252,161,32,0.14) 0%, transparent 58%),
+        radial-gradient(ellipse 40% 30% at 50%  50%, rgba(200,43,79,0.06)  0%, transparent 48%);
+}
+
+/* Texas Rangers — Tejas
+   Cochineal earth rises from the ground up like a West Texas
+   sunset; cream sky light touches the very top edge. */
+[data-theme="cc-rangers"] body::before {
+    background:
+        radial-gradient(ellipse 90% 55% at 50% 115%, rgba(157,32,36,0.26)  0%, transparent 62%),
+        radial-gradient(ellipse 60% 30% at 50% -5%,  rgba(245,245,220,0.04) 0%, transparent 48%);
+}
+
 /* ── Header ───────────────────────────────────────────────── */
 header {
     background: var(--bg-header);
@@ -3135,17 +3235,84 @@ a:focus:not(:focus-visible),
     background: var(--sw-accent, #ff8100);
 }
 
-/* Per-swatch preview colors */
-.theme-swatch[data-theme-set="dark"]       { --sw-bg: #060c18; --sw-accent: #ff8100; }
-.theme-swatch[data-theme-set="light"]      { --sw-bg: #f0f4f9; --sw-accent: #d96a00; }
-.theme-swatch[data-theme-set="cc-braves"]  { --sw-bg: #080e1a; --sw-accent: #7CB9E8; }
-.theme-swatch[data-theme-set="cc-orioles"] { --sw-bg: #050f0a; --sw-accent: #DF4601; }
-.theme-swatch[data-theme-set="cc-reds"]    { --sw-bg: #0e0003; --sw-accent: #E8203A; }
-.theme-swatch[data-theme-set="cc-royals"]  { --sw-bg: #080412; --sw-accent: #FF00AF; }
-.theme-swatch[data-theme-set="cc-brewers"] { --sw-bg: #071522; --sw-accent: #FF7A00; }
-.theme-swatch[data-theme-set="cc-pirates"] { --sw-bg: #0a0907; --sw-accent: #FDB827; }
-.theme-swatch[data-theme-set="cc-padres"]  { --sw-bg: #0c0e13; --sw-accent: #FCA120; }
-.theme-swatch[data-theme-set="cc-rangers"] { --sw-bg: #0d0203; --sw-accent: #C23035; }
+/* Per-swatch preview colors — base themes use flat tokens */
+.theme-swatch[data-theme-set="dark"]  { --sw-bg: #060c18; --sw-accent: #ff8100; }
+.theme-swatch[data-theme-set="light"] { --sw-bg: #f0f4f9; --sw-accent: #d96a00; }
+
+/* City Connect swatches: gradient previews that communicate each
+   team's visual identity rather than just a flat dark box. */
+
+/* Atlanta Braves — powder blue wash, red corner */
+.theme-swatch[data-theme-set="cc-braves"] .swatch-preview {
+    background: radial-gradient(ellipse 80% 65% at 20% 20%, rgba(124,185,232,0.28) 0%, #0e1929 62%);
+}
+.theme-swatch[data-theme-set="cc-braves"] .swatch-preview::after {
+    background: linear-gradient(90deg, #7CB9E8 55%, #CE1141 100%);
+    height: 5px;
+}
+
+/* Baltimore Orioles — Camden green descending, orange warmth at base */
+.theme-swatch[data-theme-set="cc-orioles"] .swatch-preview {
+    background: linear-gradient(180deg, rgba(0,90,60,0.32) 0%, #0a1a11 55%);
+}
+.theme-swatch[data-theme-set="cc-orioles"] .swatch-preview::after {
+    background: linear-gradient(90deg, #005A3C 0%, #DF4601 100%);
+    height: 5px;
+}
+
+/* Cincinnati Reds — monochromatic crimson, all in */
+.theme-swatch[data-theme-set="cc-reds"] .swatch-preview {
+    background: linear-gradient(180deg, #1c0007 0%, rgba(165,0,21,0.18) 100%);
+}
+.theme-swatch[data-theme-set="cc-reds"] .swatch-preview::after {
+    background: #E8203A;
+    height: 5px;
+}
+
+/* Kansas City Royals — Forever Fountains gradient IS the swatch */
+.theme-swatch[data-theme-set="cc-royals"] .swatch-preview {
+    background: linear-gradient(135deg, rgba(255,0,175,0.38) 0%, rgba(120,81,169,0.22) 50%, rgba(0,70,135,0.32) 100%);
+}
+.theme-swatch[data-theme-set="cc-royals"] .swatch-preview::after {
+    background: linear-gradient(90deg, #FF00AF 0%, #7851A9 50%, #004687 100%);
+    height: 6px;
+}
+
+/* Milwaukee Brewers — sunset above, Great Lakes below */
+.theme-swatch[data-theme-set="cc-brewers"] .swatch-preview {
+    background: linear-gradient(180deg, rgba(255,122,0,0.22) 0%, #0b2a3e 48%, rgba(35,107,142,0.28) 100%);
+}
+.theme-swatch[data-theme-set="cc-brewers"] .swatch-preview::after {
+    background: linear-gradient(90deg, #FF7A00 0%, #236B8E 100%);
+    height: 5px;
+}
+
+/* Pittsburgh Pirates — dark charcoal, cold gold glint */
+.theme-swatch[data-theme-set="cc-pirates"] .swatch-preview {
+    background: radial-gradient(ellipse 65% 45% at 50% 0%, rgba(253,184,39,0.14) 0%, #1c1a10 62%);
+}
+.theme-swatch[data-theme-set="cc-pirates"] .swatch-preview::after {
+    background: #FDB827;
+    height: 5px;
+}
+
+/* San Diego Padres — aqua horizon left, marigold altar right, fireberry center */
+.theme-swatch[data-theme-set="cc-padres"] .swatch-preview {
+    background: linear-gradient(135deg, rgba(0,181,184,0.22) 0%, #131620 50%, rgba(252,161,32,0.18) 100%);
+}
+.theme-swatch[data-theme-set="cc-padres"] .swatch-preview::after {
+    background: linear-gradient(90deg, #00B5B8 0%, #C82B4F 50%, #FCA120 100%);
+    height: 5px;
+}
+
+/* Texas Rangers — cochineal earth rising, cream sky above */
+.theme-swatch[data-theme-set="cc-rangers"] .swatch-preview {
+    background: linear-gradient(180deg, rgba(245,245,220,0.05) 0%, #1a0507 30%, rgba(157,32,36,0.24) 100%);
+}
+.theme-swatch[data-theme-set="cc-rangers"] .swatch-preview::after {
+    background: linear-gradient(90deg, #C23035 0%, rgba(245,245,220,0.65) 100%);
+    height: 5px;
+}
 
 /* Light theme needs a visible inset border so it reads against a dark drawer */
 .theme-swatch[data-theme-set="light"] .swatch-preview {
