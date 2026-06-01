@@ -71,8 +71,8 @@ body::after {
    classic red trim glow from the lower-right corner. */
 [data-theme="cc-braves"] body::before {
     background:
-        radial-gradient(ellipse 80% 55% at 8% 5%,  rgba(124,185,232,0.20) 0%, transparent 62%),
-        radial-gradient(ellipse 55% 75% at 92% 95%, rgba(206,17,65,0.10)   0%, transparent 58%);
+        radial-gradient(ellipse 88% 62% at 5% 0%,   rgba(124,185,232,0.28) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 75% at 92% 95%, rgba(206,17,65,0.12)   0%, transparent 58%);
 }
 
 /* Baltimore Orioles — Camden Yards atmosphere
@@ -118,8 +118,8 @@ body::after {
    from below. The horizon lives in the middle of every screen. */
 [data-theme="cc-brewers"] body::before {
     background:
-        radial-gradient(ellipse 85% 40% at 50% -5%,   rgba(255,122,0,0.16)   0%, transparent 55%),
-        radial-gradient(ellipse 100% 65% at 50% 105%,  rgba(35,107,142,0.22)  0%, transparent 62%);
+        radial-gradient(ellipse 90% 45% at 50% -15%,  rgba(255,122,0,0.24)   0%, transparent 58%),
+        radial-gradient(ellipse 100% 68% at 50% 110%,  rgba(35,107,142,0.28)  0%, transparent 64%);
 }
 
 /* Pittsburgh Pirates — Steel City grit
@@ -158,6 +158,43 @@ body::after {
     background:
         radial-gradient(ellipse 90% 55% at 50% 115%, rgba(157,32,36,0.26)  0%, transparent 62%),
         radial-gradient(ellipse 60% 30% at 50% -5%,  rgba(245,245,220,0.04) 0%, transparent 48%);
+}
+
+/* ── Bonus Themes — Atmospheric Layer ─────────────────────── */
+
+/* Savannah Bananas — stadium floodlights blazing hot yellow-white
+   overhead, scattered crowd warmth from the lower corner. */
+[data-theme="cc-bananas"] body::before {
+    background:
+        radial-gradient(ellipse 90% 50% at 50% -8%,  rgba(255,224,51,0.30) 0%, transparent 62%),
+        radial-gradient(ellipse 40% 35% at 10% 94%,  rgba(255,200,0,0.12)  0%, transparent 44%);
+}
+
+/* Montreal Expos (Retro) — Olympic Stadium night game.
+   Deep royal blue roof overhead; Expos red logo warmth rising
+   from the lower-left like the crowd energy at le Big O. */
+[data-theme="retro-expos"] body::before {
+    background:
+        radial-gradient(ellipse 82% 62% at 50% -5%,  rgba(0,48,135,0.30)  0%, transparent 64%),
+        radial-gradient(ellipse 52% 42% at 5%  96%,  rgba(206,17,38,0.16) 0%, transparent 50%);
+}
+
+/* Kansas City Monarchs — afternoon sun descending over Blues Park.
+   Antique gold light rakes from the upper-left; deep royal blue
+   shadow gathers in the lower-right as the evening comes on. */
+[data-theme="nl-monarchs"] body::before {
+    background:
+        radial-gradient(ellipse 72% 52% at 22% -4%,  rgba(200,164,0,0.16)  0%, transparent 56%),
+        radial-gradient(ellipse 52% 72% at 85%  97%, rgba(0,48,135,0.22)   0%, transparent 56%);
+}
+
+/* Rocket City Trash Pandas — rocket engine ignition.
+   NASA orange erupts from directly below; the cold void of space
+   presses down from above. Most dramatic atmosphere in the set. */
+[data-theme="aa-trash-pandas"] body::before {
+    background:
+        radial-gradient(ellipse 100% 48% at 50% 112%, rgba(232,104,48,0.30) 0%, transparent 62%),
+        radial-gradient(ellipse 82% 62% at 50% -5%,   rgba(0,30,100,0.24)  0%, transparent 56%);
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -3311,6 +3348,42 @@ a:focus:not(:focus-visible),
 }
 .theme-swatch[data-theme-set="cc-rangers"] .swatch-preview::after {
     background: linear-gradient(90deg, #C23035 0%, rgba(245,245,220,0.65) 100%);
+    height: 5px;
+}
+
+/* Savannah Bananas — hot yellow floodlight from above */
+.theme-swatch[data-theme-set="cc-bananas"] .swatch-preview {
+    background: radial-gradient(ellipse 88% 55% at 50% -10%, rgba(255,224,51,0.40) 0%, #191600 62%);
+}
+.theme-swatch[data-theme-set="cc-bananas"] .swatch-preview::after {
+    background: #FFE033;
+    height: 5px;
+}
+
+/* Montreal Expos — deep Olympic navy with tricolor stripe */
+.theme-swatch[data-theme-set="retro-expos"] .swatch-preview {
+    background: linear-gradient(180deg, rgba(0,48,135,0.32) 0%, #090f2c 55%);
+}
+.theme-swatch[data-theme-set="retro-expos"] .swatch-preview::after {
+    background: linear-gradient(90deg, #CE1126 0%, #003087 50%, #FFFFFF 100%);
+    height: 5px;
+}
+
+/* Kansas City Monarchs — royal blue with antique gold light */
+.theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview {
+    background: radial-gradient(ellipse 72% 52% at 22% 0%, rgba(200,164,0,0.24) 0%, #07102a 64%);
+}
+.theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview::after {
+    background: linear-gradient(90deg, #C8A400 0%, #003087 55%, #F5E6C8 100%);
+    height: 5px;
+}
+
+/* Rocket City Trash Pandas — space cold above, rocket fire below */
+.theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview {
+    background: linear-gradient(180deg, rgba(0,30,100,0.22) 0%, #05081e 40%, rgba(232,104,48,0.28) 100%);
+}
+.theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview::after {
+    background: linear-gradient(90deg, #002F6C 0%, #E86830 100%);
     height: 5px;
 }
 

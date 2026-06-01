@@ -423,8 +423,8 @@
     --border-accent:      rgba(223, 70, 1, 0.32);
     --border-accent-hov:  rgba(223, 70, 1, 0.55);
     --text-primary:       #f5f5dc;
-    --text-secondary:     #c8d8c0;
-    --text-muted:         #7aaa80;
+    --text-secondary:     #bacabb;
+    --text-muted:         #789478;
     --text-subtle:        #3d6645;
     --text-disabled:      #1e3525;
     --accent:             #DF4601;
@@ -719,4 +719,188 @@
     --shadow-header:      0 1px 0 rgba(157,32,36,0.25), 0 4px 24px rgba(0,0,0,0.55);
     --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.65);
     --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.70);
+}
+
+/* ── Fun & Bonus Themes ───────────────────────────────────────
+   Four bonus themes: independent/minor league and retro.
+   ─────────────────────────────────────────────────────────── */
+
+/* Savannah Bananas — banana yellow floodlights over near-black asphalt */
+[data-theme="cc-bananas"] {
+    --bg-base:            #0d0c00;
+    --bg-surface:         #191600;
+    --bg-raised:          #242100;
+    --bg-card:            rgba(25, 22, 0, 0.90);
+    --bg-card-hover:      rgba(36, 33, 0, 0.97);
+    --bg-overlay:         rgba(13, 12, 0, 0.97);
+    --bg-subtle:          rgba(255, 224, 51, 0.05);
+    --bg-interactive:     rgba(255, 224, 51, 0.09);
+    --bg-interactive-hov: rgba(255, 224, 51, 0.15);
+    --border-default:     rgba(255, 255, 255, 0.06);
+    --border-mid:         rgba(255, 255, 255, 0.10);
+    --border-strong:      rgba(255, 255, 255, 0.17);
+    --border-accent:      rgba(255, 224, 51, 0.38);
+    --border-accent-hov:  rgba(255, 224, 51, 0.62);
+    --text-primary:       #faf7e8;
+    --text-secondary:     #d4c870;
+    --text-muted:         #8a7e30;
+    --text-subtle:        #4a4418;
+    --text-disabled:      #252010;
+    --accent:             #FFE033;
+    --accent-light:       #fff066;
+    --accent-dark:        #cca800;
+    --accent-subtle:      rgba(255, 224, 51, 0.10);
+    --accent-border:      rgba(255, 224, 51, 0.30);
+    --accent-glow:        rgba(255, 224, 51, 0.25);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.45), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.03);
+    --skeleton-mid:       rgba(255,255,255,0.07);
+    --bg-header:          rgba(13, 12, 0, 0.97);
+    --bg-waffle-panel:    rgba(9, 8, 0, 0.98);
+    --bg-table-head:      rgba(13, 12, 0, 0.90);
+    --bg-table-sub:       rgba(13, 12, 0, 0.55);
+    --bg-mobile-nav:      rgba(13, 12, 0, 0.97);
+    --bg-toast:           rgba(13, 12, 0, 0.97);
+    --shadow-header:      0 1px 0 rgba(255,224,51,0.24), 0 4px 24px rgba(0,0,0,0.55);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.65);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.70);
+}
+
+/* Montreal Expos (Retro 1969–2004) — Olympic Stadium nights, tricolor pride */
+[data-theme="retro-expos"] {
+    --bg-base:            #04071e;
+    --bg-surface:         #090f2c;
+    --bg-raised:          #0f163a;
+    --bg-card:            rgba(9, 15, 44, 0.87);
+    --bg-card-hover:      rgba(15, 22, 58, 0.96);
+    --bg-overlay:         rgba(4, 7, 30, 0.97);
+    --bg-subtle:          rgba(206, 17, 38, 0.05);
+    --bg-interactive:     rgba(206, 17, 38, 0.09);
+    --bg-interactive-hov: rgba(206, 17, 38, 0.15);
+    --border-default:     rgba(255, 255, 255, 0.06);
+    --border-mid:         rgba(255, 255, 255, 0.10);
+    --border-strong:      rgba(255, 255, 255, 0.17);
+    --border-accent:      rgba(206, 17, 38, 0.38);
+    --border-accent-hov:  rgba(206, 17, 38, 0.62);
+    --text-primary:       #f0f4ff;
+    --text-secondary:     #96aadc;
+    --text-muted:         #4c62a0;
+    --text-subtle:        #283268;
+    --text-disabled:      #131930;
+    --accent:             #CE1126;
+    --accent-light:       #e82040;
+    --accent-dark:        #a00d1e;
+    --accent-subtle:      rgba(206, 17, 38, 0.10);
+    --accent-border:      rgba(206, 17, 38, 0.28);
+    --accent-glow:        rgba(206, 17, 38, 0.20);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.04);
+    --skeleton-mid:       rgba(255,255,255,0.08);
+    --bg-header:          rgba(4, 7, 30, 0.97);
+    --bg-waffle-panel:    rgba(2, 5, 20, 0.98);
+    --bg-table-head:      rgba(4, 7, 30, 0.90);
+    --bg-table-sub:       rgba(4, 7, 30, 0.55);
+    --bg-mobile-nav:      rgba(4, 7, 30, 0.97);
+    --bg-toast:           rgba(4, 7, 30, 0.97);
+    --shadow-header:      0 1px 0 rgba(0,48,135,0.38), 0 4px 24px rgba(0,0,0,0.50);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
+}
+
+/* Kansas City Monarchs — Negro Leagues tribute, royal blue and antique gold */
+[data-theme="nl-monarchs"] {
+    --bg-base:            #03061a;
+    --bg-surface:         #07102a;
+    --bg-raised:          #0d1838;
+    --bg-card:            rgba(7, 16, 42, 0.88);
+    --bg-card-hover:      rgba(13, 24, 56, 0.96);
+    --bg-overlay:         rgba(3, 6, 26, 0.97);
+    --bg-subtle:          rgba(200, 164, 0, 0.04);
+    --bg-interactive:     rgba(200, 164, 0, 0.08);
+    --bg-interactive-hov: rgba(200, 164, 0, 0.14);
+    --border-default:     rgba(245, 230, 200, 0.07);
+    --border-mid:         rgba(245, 230, 200, 0.11);
+    --border-strong:      rgba(245, 230, 200, 0.19);
+    --border-accent:      rgba(200, 164, 0, 0.34);
+    --border-accent-hov:  rgba(200, 164, 0, 0.58);
+    --text-primary:       #f5e6c8;
+    --text-secondary:     #c8b480;
+    --text-muted:         #7a6030;
+    --text-subtle:        #3e3015;
+    --text-disabled:      #20180a;
+    --accent:             #C8A400;
+    --accent-light:       #e0bc00;
+    --accent-dark:        #9a7c00;
+    --accent-subtle:      rgba(200, 164, 0, 0.10);
+    --accent-border:      rgba(200, 164, 0, 0.28);
+    --accent-glow:        rgba(200, 164, 0, 0.20);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.42), 0 0 0 1px rgba(245,230,200,0.04);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.52), 0 0 0 1px rgba(245,230,200,0.05);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.68), 0 0 0 1px rgba(245,230,200,0.06);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.42), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.62), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(245,230,200,0.03);
+    --skeleton-mid:       rgba(245,230,200,0.08);
+    --bg-header:          rgba(3, 6, 26, 0.97);
+    --bg-waffle-panel:    rgba(2, 4, 18, 0.98);
+    --bg-table-head:      rgba(3, 6, 26, 0.90);
+    --bg-table-sub:       rgba(3, 6, 26, 0.55);
+    --bg-mobile-nav:      rgba(3, 6, 26, 0.97);
+    --bg-toast:           rgba(3, 6, 26, 0.97);
+    --shadow-header:      0 1px 0 rgba(200,164,0,0.24), 0 4px 24px rgba(0,0,0,0.52);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.62);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.68);
+}
+
+/* Rocket City Trash Pandas — deep space navy, rocket-engine orange, cold void above */
+[data-theme="aa-trash-pandas"] {
+    --bg-base:            #02030e;
+    --bg-surface:         #05081e;
+    --bg-raised:          #0b1030;
+    --bg-card:            rgba(5, 8, 30, 0.88);
+    --bg-card-hover:      rgba(11, 16, 48, 0.96);
+    --bg-overlay:         rgba(2, 3, 14, 0.97);
+    --bg-subtle:          rgba(232, 104, 48, 0.04);
+    --bg-interactive:     rgba(232, 104, 48, 0.08);
+    --bg-interactive-hov: rgba(232, 104, 48, 0.14);
+    --border-default:     rgba(255, 255, 255, 0.05);
+    --border-mid:         rgba(255, 255, 255, 0.09);
+    --border-strong:      rgba(255, 255, 255, 0.15);
+    --border-accent:      rgba(232, 104, 48, 0.38);
+    --border-accent-hov:  rgba(232, 104, 48, 0.62);
+    --text-primary:       #e8eef5;
+    --text-secondary:     #88a0c0;
+    --text-muted:         #486078;
+    --text-subtle:        #253545;
+    --text-disabled:      #121a22;
+    --accent:             #E86830;
+    --accent-light:       #ff8040;
+    --accent-dark:        #b84c18;
+    --accent-subtle:      rgba(232, 104, 48, 0.10);
+    --accent-border:      rgba(232, 104, 48, 0.28);
+    --accent-glow:        rgba(232, 104, 48, 0.24);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.64), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.52), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.74), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.02);
+    --skeleton-mid:       rgba(255,255,255,0.06);
+    --bg-header:          rgba(2, 3, 14, 0.98);
+    --bg-waffle-panel:    rgba(1, 2, 10, 0.99);
+    --bg-table-head:      rgba(2, 3, 14, 0.92);
+    --bg-table-sub:       rgba(2, 3, 14, 0.55);
+    --bg-mobile-nav:      rgba(2, 3, 14, 0.98);
+    --bg-toast:           rgba(2, 3, 14, 0.98);
+    --shadow-header:      0 1px 0 rgba(232,104,48,0.22), 0 4px 24px rgba(0,0,0,0.64);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.78);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.80);
 }
