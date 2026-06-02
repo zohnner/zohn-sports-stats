@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 44">
+  <defs>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#07102a" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#030618" stop-opacity="1"/>
+    </linearGradient>
+    <!-- Antique gold light source — like a stadium floodlight catching the crown -->
+    <radialGradient id="crown-glow" cx="28%" cy="0%" r="75%">
+      <stop offset="0%"   stop-color="#C8A400" stop-opacity="0.65"/>
+      <stop offset="60%"  stop-color="#C8A400" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#C8A400" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="deep" cx="75%" cy="100%" r="60%">
+      <stop offset="0%"   stop-color="#003087" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#003087" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="144" height="44" fill="url(#base)"/>
+  <rect width="144" height="44" fill="url(#deep)"/>
+  <rect width="144" height="44" fill="url(#crown-glow)"/>
+  <!-- Crown silhouette — five points, Negro Leagues heraldic quality -->
+  <path d="M46,34 L46,16 L57,24 L72,10 L87,24 L98,16 L98,34 Z"
+        fill="rgba(200,164,0,0.14)" stroke="rgba(200,164,0,0.28)" stroke-width="1.2" stroke-linejoin="round"/>
+  <!-- Horizontal baseline of the crown -->
+  <rect x="46" y="32" width="52" height="2.5" rx="1" fill="rgba(200,164,0,0.20)"/>
+</svg>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 44">
+  <defs>
+    <linearGradient id="space" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#001050" stop-opacity="0.90"/>
+      <stop offset="55%"  stop-color="#05081e" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#180800" stop-opacity="1"/>
+    </linearGradient>
+    <!-- Rocket engine fire from below center -->
+    <radialGradient id="fire" cx="50%" cy="115%" r="55%">
+      <stop offset="0%"   stop-color="#E86830" stop-opacity="0.90"/>
+      <stop offset="35%"  stop-color="#E86830" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#E86830" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Brighter engine core -->
+    <radialGradient id="core" cx="50%" cy="118%" r="22%">
+      <stop offset="0%"   stop-color="#FFD060" stop-opacity="0.80"/>
+      <stop offset="100%" stop-color="#FFD060" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Milky Way glow — subtle atmospheric nebula -->
+    <radialGradient id="nebula" cx="70%" cy="25%" r="45%">
+      <stop offset="0%"   stop-color="#002F6C" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#002F6C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="144" height="44" fill="#03030e"/>
+  <rect width="144" height="44" fill="url(#space)"/>
+  <rect width="144" height="44" fill="url(#nebula)"/>
+  <rect width="144" height="44" fill="url(#fire)"/>
+  <rect width="144" height="44" fill="url(#core)"/>
+  <!-- Star field — scattered, varying brightness -->
+  <circle cx="12"  cy="6"  r="0.9" fill="rgba(255,255,255,0.80)"/>
+  <circle cx="28"  cy="3"  r="0.6" fill="rgba(255,255,255,0.60)"/>
+  <circle cx="48"  cy="9"  r="1.1" fill="rgba(255,255,255,0.85)"/>
+  <circle cx="65"  cy="5"  r="0.7" fill="rgba(255,255,255,0.65)"/>
+  <circle cx="82"  cy="2"  r="0.9" fill="rgba(255,255,255,0.72)"/>
+  <circle cx="99"  cy="7"  r="0.6" fill="rgba(255,255,255,0.55)"/>
+  <circle cx="116" cy="4"  r="1.0" fill="rgba(255,255,255,0.78)"/>
+  <circle cx="134" cy="8"  r="0.7" fill="rgba(255,255,255,0.62)"/>
+  <circle cx="6"   cy="16" r="0.5" fill="rgba(255,255,255,0.45)"/>
+  <circle cx="38"  cy="14" r="0.6" fill="rgba(255,255,255,0.50)"/>
+  <circle cx="72"  cy="12" r="0.5" fill="rgba(255,255,255,0.42)"/>
+  <circle cx="107" cy="15" r="0.7" fill="rgba(255,255,255,0.55)"/>
+  <circle cx="138" cy="11" r="0.5" fill="rgba(255,255,255,0.48)"/>
+  <!-- Rocket body suggestion — minimal, just the idea of it -->
+  <rect x="69" y="18" width="6" height="14" rx="3" fill="rgba(255,255,255,0.06)"/>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 44">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#003087" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#090f2c" stop-opacity="1"/>
+    </linearGradient>
+    <!-- Diagonal red sweep referencing the Expos' iconic tricolor hat design -->
+    <linearGradient id="sweep" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#CE1126" stop-opacity="0"/>
+      <stop offset="38%"  stop-color="#CE1126" stop-opacity="0.50"/>
+      <stop offset="52%"  stop-color="#CE1126" stop-opacity="0.50"/>
+      <stop offset="100%" stop-color="#CE1126" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="70%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="144" height="44" fill="#04071e"/>
+  <rect width="144" height="44" fill="url(#sky)"/>
+  <rect width="144" height="44" fill="url(#sweep)"/>
+  <!-- Olympic Stadium's distinctive roof ring — the Big O silhouette -->
+  <ellipse cx="72" cy="74" rx="62" ry="48" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="14"/>
+  <!-- White accent on the color divide — the Expos had a white tricolor element -->
+  <line x1="0" y1="44" x2="144" y2="0" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <rect width="144" height="44" fill="url(#glow)"/>
+</svg>

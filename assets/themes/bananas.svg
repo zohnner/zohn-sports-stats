@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 44">
+  <defs>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#FFE033" stop-opacity="0.92"/>
+      <stop offset="55%"  stop-color="#F0B800" stop-opacity="0.68"/>
+      <stop offset="100%" stop-color="#191600" stop-opacity="1"/>
+    </linearGradient>
+    <!-- Diagonal black pinstripes — Bananas trademark jersey -->
+    <pattern id="pins" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(-52)">
+      <rect x="0" y="0" width="2.5" height="16" fill="rgba(0,0,0,0.30)"/>
+    </pattern>
+    <radialGradient id="spot" cx="50%" cy="0%" r="70%">
+      <stop offset="0%"   stop-color="#FFF5A0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFF5A0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="144" height="44" fill="#191600"/>
+  <rect width="144" height="44" fill="url(#base)"/>
+  <rect width="144" height="44" fill="url(#pins)"/>
+  <!-- Floodlight hot-spot from above center -->
+  <rect width="144" height="44" fill="url(#spot)"/>
+</svg>
