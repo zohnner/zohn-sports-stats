@@ -1350,6 +1350,7 @@ function _mlbHittingBars(stats, rates = {}) {
         _mlbStatBar('On-Base %',         stats.obp,         0.500,  '#34d399', v => _fmtAvg(v)),
         _mlbStatBar('Slugging %',        stats.slg,         0.700,  '#60a5fa', v => _fmtAvg(v)),
         _mlbStatBar('OPS',               stats.ops,         1.100,  '#a78bfa', v => _fmtAvg(v)),
+        _mlbStatBar('wOBA',              rates.woba,        0.450,  '#818cf8', v => v),
         _mlbStatBar('ISO',               rates.iso,         0.400,  '#f472b6', v => v),
         _mlbStatBar('BABIP',             rates.babip,       0.400,  '#fb923c', v => v),
         _mlbStatBar('Home Runs',         stats.homeRuns,    60,     '#ef4444', v => v),
@@ -1556,12 +1557,17 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ['OBP',   stats.obp,          'var(--color-reb)',  'obp'],
         ['SLG',   stats.slg,          'var(--color-ast)',  'slg'],
         ['OPS',   stats.ops,          'var(--color-stl)',  'ops'],
-        ['ISO',   batting?.iso,       'var(--color-blk)',  null],
+        ['wOBA',  batting?.woba,      'var(--color-blk)',  'woba'],
+        ['ISO',   batting?.iso,       '#c4b5fd',           null],
         ['BABIP', batting?.babip,     'var(--color-pts)',  null],
+        ['BB/K',  batting?.bbK,       '#22d3ee',           null],
         ['HR',    stats.homeRuns,     'var(--color-reb)',  'homeRuns'],
         ['RBI',   stats.rbi,          'var(--color-ast)',  'rbi'],
         ['R',     stats.runs,         'var(--color-stl)',  'runs'],
         ['H',     stats.hits,         'var(--color-min)',  'hits'],
+        ['2B',    stats.doubles,      '#67e8f9',           null],
+        ['3B',    stats.triples,      '#a3e635',           null],
+        ['TB',    stats.totalBases,   '#fb923c',           'totalBases'],
         ['SB',    stats.stolenBases,  'var(--color-blk)',  'stolenBases'],
         ['BB',    stats.baseOnBalls,  '#34d399',           'baseOnBalls'],
         ['SO',    stats.strikeOuts,   '#64748b',           'strikeOuts'],
@@ -1570,22 +1576,26 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ['PA',    batting?.pa,         '#64748b',          null],
         ['GP',    stats.gamesPlayed,   '#64748b',          null],
     ] : [
-        ['ERA',  stats.era,               'var(--color-pts)',  'era'],
-        ['FIP',  pitching?.fip,           'var(--color-reb)',  null],
-        ['WHIP', stats.whip,              'var(--color-ast)',  'whip'],
-        ['K/9',  stats.strikeoutsPer9Inn  ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1)  : null, 'var(--color-stl)', 'strikeoutsPer9Inn'],
-        ['BB/9', stats.walksPer9Inn       ? parseFloat(stats.walksPer9Inn).toFixed(1)       : null, 'var(--color-blk)', 'walksPer9Inn'],
-        ['K-BB%',pitching?.kBbPct != null ? pitching.kBbPct + '%' : null, 'var(--color-min)', null],
-        ['W',    stats.wins,              'var(--color-reb)',  'wins'],
-        ['L',    stats.losses,            '#64748b',           null],
-        ['SO',   stats.strikeOuts,        'var(--color-ast)',  'strikeOuts'],
-        ['IP',   stats.inningsPitched,    'var(--color-blk)',  null],
-        ['BB',   stats.baseOnBalls,       '#34d399',           null],
-        ['QS',   stats.qualityStarts,     '#60a5fa',           'qualityStarts'],
-        ['SV',   stats.saves,             'var(--color-pts)',  'saves'],
-        ['HLD',  stats.holds,             'var(--color-reb)',  null],
-        ['GS',   stats.gamesStarted,      '#64748b',           null],
-        ['GP',   stats.gamesPlayed,        '#64748b',          null],
+        ['ERA',   stats.era,                'var(--color-pts)',  'era'],
+        ['FIP',   pitching?.fip,            'var(--color-reb)',  null],
+        ['WHIP',  stats.whip,               'var(--color-ast)',  'whip'],
+        ['K/9',   stats.strikeoutsPer9Inn   ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1)  : null, 'var(--color-stl)', 'strikeoutsPer9Inn'],
+        ['BB/9',  stats.walksPer9Inn        ? parseFloat(stats.walksPer9Inn).toFixed(1)       : null, 'var(--color-blk)', 'walksPer9Inn'],
+        ['H/9',   stats.hitsPer9Inn         ? parseFloat(stats.hitsPer9Inn).toFixed(1)        : null, '#f87171',          null],
+        ['HR/9',  stats.homeRunsPer9        ? parseFloat(stats.homeRunsPer9).toFixed(2)       : null, '#fca5a5',          null],
+        ['K-BB%', pitching?.kBbPct != null  ? pitching.kBbPct + '%' : null, 'var(--color-min)', null],
+        ['LOB%',  pitching?.lobPct != null  ? pitching.lobPct + '%' : null, '#67e8f9',          null],
+        ['QS%',   pitching?.qsPct  != null  ? pitching.qsPct  + '%' : null, '#86efac',          null],
+        ['W',     stats.wins,               'var(--color-reb)',  'wins'],
+        ['L',     stats.losses,             '#64748b',           null],
+        ['SO',    stats.strikeOuts,         'var(--color-ast)',  'strikeOuts'],
+        ['IP',    stats.inningsPitched,     'var(--color-blk)',  null],
+        ['BB',    stats.baseOnBalls,        '#34d399',           null],
+        ['QS',    stats.qualityStarts,      '#86efac',           'qualityStarts'],
+        ['SV',    stats.saves,              'var(--color-pts)',  'saves'],
+        ['HLD',   stats.holds,              'var(--color-reb)',  null],
+        ['GS',    stats.gamesStarted,       '#64748b',           null],
+        ['GP',    stats.gamesPlayed,        '#64748b',          null],
     ];
 
     const gl = typeof StatGlossary !== 'undefined' ? StatGlossary : null;
@@ -1608,6 +1618,25 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
 
     // Stat bars for key metrics
     const barHtml = group === 'hitting' ? _mlbHittingBars(stats, batting) : _mlbPitchingBars(stats);
+
+    // Fielding card — synchronous lookup from AppState populated by _fetchMLBLeaderSplits
+    const _fs = AppState.mlbFieldingStats?.[playerId];
+    const _fmtFpct = v => { const n = parseFloat(v); return isNaN(n) ? '—' : n.toFixed(3).replace(/^0\./, '.'); };
+    const _fsi = (val, label, color) => val != null
+        ? `<div class="stat-item"><div class="stat-value" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`
+        : '';
+    const fieldingCardHtml = _fs ? `
+        <div class="stats-card">
+            <h2 class="detail-section-title">Fielding</h2>
+            <div class="stats-grid">
+                ${_fsi(_fs.errors,                              'E',    'var(--color-loss)')}
+                ${_fsi(_fmtFpct(_fs.fielding),                 'FPCT', '#34d399')}
+                ${_fsi(_fs.chances,                            'TC',   'var(--text-secondary)')}
+                ${_fsi(_fs.assists,                            'A',    '#60a5fa')}
+                ${_fsi(_fs.putOuts,                            'PO',   '#c084fc')}
+                ${_fs.rangeFactorPerGame != null ? _fsi(parseFloat(_fs.rangeFactorPerGame).toFixed(2), 'RF/G', '#fbbf24') : ''}
+            </div>
+        </div>` : '';
 
     // Team logo
     const teamLogo = getMLBTeamLogoUrl(player.teamId);
@@ -1723,6 +1752,8 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                 <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
             </div>
         </div>
+
+        ${fieldingCardHtml}
 
         <div class="stats-card" id="mlb-savant-visual-card">
             ${_mlbSavantVisualCard(player, group)}
@@ -4140,8 +4171,8 @@ function displayMLBLeaderboards() {
         loadMLBLeaderboards();
     }));
 
-    // Control row 2 — Min GP
-    fragment.appendChild(_buildPillControl('Min GP:', MLB_MINGP_OPTIONS, minGP, val => {
+    // Control row 2 — Min GP (hitting) / Min IP (pitching)
+    fragment.appendChild(_buildPillControl('Min GP / IP:', MLB_MINGP_OPTIONS, minGP, val => {
         AppState.mlbLeaderMinGP = val;
         displayMLBLeaderboards();
     }));
@@ -4197,7 +4228,12 @@ function displayMLBLeaderboards() {
             .filter(s => {
                 const numVal = parseFloat(s.stat?.[cat.key]);
                 if (isNaN(numVal)) return false;
-                if (minGP > 0 && (s.stat?.gamesPlayed ?? 0) < minGP) return false;
+                if (minGP > 0) {
+                    const qualVal = cat.group === 'pitching'
+                        ? (parseFloat(s.stat?.inningsPitched) || 0)
+                        : (s.stat?.gamesPlayed ?? 0);
+                    if (qualVal < minGP) return false;
+                }
                 if (teamFilt !== 'all' && s.team?.abbreviation !== teamFilt) return false;
                 if (applyPosFilt) {
                     const pos = (s.position?.abbreviation || '').toLowerCase();

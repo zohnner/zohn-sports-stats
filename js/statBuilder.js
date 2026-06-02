@@ -201,6 +201,9 @@ async function displayStatBuilder(mlbGroup) {
                     position: split.position?.abbreviation,
                 });
             });
+            // Attach computed rates so derived fields (wOBA, FIP, etc.) are available in formulas
+            const _computeFn = group === 'hitting' ? _computeBattingRates : _computePitchingRates;
+            Object.values(AppState.mlbPlayerStats[group]).forEach(s => Object.assign(s, _computeFn(s)));
         } catch (e) {
             grid.innerHTML = `
                 <div class="builder-panel">
