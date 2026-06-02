@@ -3301,15 +3301,43 @@ a:focus:not(:focus-visible),
 /* City Connect swatches: gradient previews that communicate each
    team's visual identity rather than just a flat dark box. */
 
-/* Uniform stripe height for all CC / tribute swatches — applied after individual rules */
+/* Abbreviation overlay — gradient gives mood, text gives identity, stripe gives palette */
+.swatch-abbr {
+    position: absolute;
+    inset: 0 0 9px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.07em;
+    color: rgba(255, 255, 255, 0.88);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65);
+    pointer-events: none;
+    user-select: none;
+}
+/* Per-team accent color on the abbreviation */
+.theme-swatch[data-theme-set="cc-braves"]      .swatch-abbr { color: #7CB9E8; }
+.theme-swatch[data-theme-set="cc-orioles"]     .swatch-abbr { color: #DF4601; }
+.theme-swatch[data-theme-set="cc-brewers"]     .swatch-abbr { color: #FF7A00; }
+.theme-swatch[data-theme-set="cc-pirates"]     .swatch-abbr { color: #FDB827; }
+.theme-swatch[data-theme-set="cc-padres"]      .swatch-abbr { color: #00B5B8; }
+.theme-swatch[data-theme-set="cc-rangers"]     .swatch-abbr { color: #F5F5DC; }
+.theme-swatch[data-theme-set="cc-bananas"]     .swatch-abbr { color: #FFE033; }
+.theme-swatch[data-theme-set="retro-expos"]    .swatch-abbr { color: #CE1126; }
+.theme-swatch[data-theme-set="nl-monarchs"]    .swatch-abbr { color: #C8A400; }
+.theme-swatch[data-theme-set="aa-trash-pandas"].swatch-abbr { color: #E86830; }
+
+/* Uniform stripe height for all CC / tribute swatches */
 .theme-swatch[data-theme-set^="cc-"] .swatch-preview::after,
 .theme-swatch[data-theme-set^="retro-"] .swatch-preview::after,
 .theme-swatch[data-theme-set^="nl-"] .swatch-preview::after,
-.theme-swatch[data-theme-set^="aa-"] .swatch-preview::after { height: 7px; }
+.theme-swatch[data-theme-set^="aa-"] .swatch-preview::after { height: 9px; }
 
-/* Atlanta Braves — powder blue wash, red corner (opacity lifted for 4-col visibility) */
+/* Atlanta Braves — powder blue from top, dark base below. Commit to the color. */
 .theme-swatch[data-theme-set="cc-braves"] .swatch-preview {
-    background: radial-gradient(ellipse 80% 65% at 20% 20%, rgba(124,185,232,0.45) 0%, #0e1929 62%);
+    background: linear-gradient(180deg, rgba(124,185,232,0.70) 0%, rgba(124,185,232,0.15) 55%, #0e1929 100%);
 }
 .theme-swatch[data-theme-set="cc-braves"] .swatch-preview::after {
     background: linear-gradient(90deg, #7CB9E8 55%, #CE1141 100%);
@@ -3352,9 +3380,9 @@ a:focus:not(:focus-visible),
     height: 5px;
 }
 
-/* Pittsburgh Pirates — dark charcoal, cold gold glint (opacity lifted for 4-col visibility) */
+/* Pittsburgh Pirates — gold crown from top, Steel City dark below. Make the gold earn its place. */
 .theme-swatch[data-theme-set="cc-pirates"] .swatch-preview {
-    background: radial-gradient(ellipse 65% 45% at 50% 0%, rgba(253,184,39,0.28) 0%, #1c1a10 62%);
+    background: linear-gradient(180deg, rgba(253,184,39,0.55) 0%, rgba(253,184,39,0.08) 50%, #1c1a10 100%);
 }
 .theme-swatch[data-theme-set="cc-pirates"] .swatch-preview::after {
     background: #FDB827;
