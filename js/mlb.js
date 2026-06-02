@@ -14,6 +14,44 @@ function _activeGameHours() {
     return h >= 12;
 }
 
+// Park factor tiers keyed by team abbreviation (home park).
+// tier > 0 = hitter-friendly, tier < 0 = pitcher-friendly, 0 = neutral.
+// Based on multi-year park factor averages (FanGraphs/Baseball Reference).
+const _MLB_PARK_TIERS = {
+    'COL': { tier: 3,  label: 'Coors'              },  // extreme outlier
+    'CIN': { tier: 2,  label: 'Hitter park'        },
+    'TEX': { tier: 2,  label: 'Hitter park'        },
+    'BAL': { tier: 2,  label: 'Hitter park'        },
+    'BOS': { tier: 2,  label: 'Hitter park'        },
+    'ATL': { tier: 1,  label: 'Hitter-friendly'    },
+    'PHI': { tier: 1,  label: 'Hitter-friendly'    },
+    'LAA': { tier: 1,  label: 'Hitter-friendly'    },
+    'KC':  { tier: 1,  label: 'Hitter-friendly'    },
+    'SF':  { tier: -2, label: 'Pitcher park'       },
+    'SD':  { tier: -2, label: 'Pitcher park'       },
+    'NYM': { tier: -2, label: 'Pitcher park'       },
+    'SEA': { tier: -2, label: 'Pitcher park'       },
+    'CLE': { tier: -1, label: 'Pitcher-friendly'   },
+    'MIN': { tier: -1, label: 'Pitcher-friendly'   },
+    'OAK': { tier: -1, label: 'Pitcher-friendly'   },
+    'ATH': { tier: -1, label: 'Pitcher-friendly'   },
+    'MIA': { tier: -1, label: 'Pitcher-friendly'   },
+    'PIT': { tier: -1, label: 'Pitcher-friendly'   },
+};
+
+function _parkFactorBadge(teamAbbr, style = 'inline') {
+    const tf = _MLB_PARK_TIERS[teamAbbr];
+    if (!tf) return '';
+    if (style === 'dot') {
+        // Compact colored dot for leaderboard rows
+        const color = tf.tier >= 2 ? '#ef4444' : tf.tier === 1 ? '#f97316' : tf.tier <= -2 ? '#22d3ee' : '#60a5fa';
+        return `<span class="park-dot" style="background:${color}" title="${tf.label}"></span>`;
+    }
+    // Full badge for player detail hero
+    const cls = tf.tier >= 2 ? 'park-badge--hit' : tf.tier === 1 ? 'park-badge--hit-light' : tf.tier <= -2 ? 'park-badge--pit' : 'park-badge--pit-light';
+    return `<span class="park-badge ${cls}" title="${tf.label}">${tf.tier === 3 ? '⛰️ ' : ''}${tf.label}</span>`;
+}
+
 // ── MLB Favorites (starred players) ──────────────────────────
 const _MLB_FAVS_KEY = 'zs_mlb_favs';
 // Initialise from localStorage into AppState (AppState is defined later in navigation.js,
@@ -411,6 +449,34 @@ async function fetchStatcastBulkLeaderboard(season) {
         return rows;
     } catch (err) {
         Logger.debug(`Statcast leaderboard unavailable: ${err.message}`, undefined, 'MLB');
+        return null;
+    }
+}
+
+async function fetchSprintSpeedLeaderboard() {
+    const cacheKey = `sprint_speed_${MLB_SEASON}`;
+    const hit = ApiCache.get(cacheKey);
+    if (hit) return hit;
+
+    const url = `${SAVANT_BASE_URL}/leaderboard/sprint_speed?min_opp=10&position=&team=&csv=true`;
+    try {
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        if (!res.ok) throw new Error(`Sprint speed CSV ${res.status}`);
+        const text = await res.text();
+        if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        const rows = lines.slice(1).map(line => {
+            const vals = _splitCSVLine(line);
+            const obj = {};
+            headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+            return obj;
+        }).filter(r => r.player_id && r.sprint_speed);
+        ApiCache.set(cacheKey, rows, ApiCache.TTL.LONG);
+        return rows;
+    } catch (err) {
+        Logger.debug(`Sprint speed unavailable: ${err.message}`, undefined, 'MLB');
         return null;
     }
 }
@@ -1280,7 +1346,19 @@ function _computeBattingRates(s) {
         : null;
     const woba = wobaRaw != null ? _fmtAvg(wobaRaw) : null;
 
-    return { iso, babip, bbPct, kPct, bbK, pa: pa || null, rc, sbPct, woba };
+    // On-pace projections (min 10 GP for stability)
+    const gp = parseFloat(s.gamesPlayed) || 0;
+    const pace = gp >= 10 ? {
+        hr:  Math.round(hr  / gp * 162),
+        rbi: Math.round((parseFloat(s.rbi)         || 0) / gp * 162),
+        r:   Math.round((parseFloat(s.runs)        || 0) / gp * 162),
+        h:   Math.round(hits / gp * 162),
+        sb:  Math.round(sb   / gp * 162),
+        so:  Math.round(so   / gp * 162),
+        dbl: Math.round(dbl  / gp * 162),
+    } : null;
+
+    return { iso, babip, bbPct, kPct, bbK, pa: pa || null, rc, sbPct, woba, pace };
 }
 
 function _computePitchingRates(s) {
@@ -1313,7 +1391,16 @@ function _computePitchingRates(s) {
     // SV+HLD — total leverage appearances preserved
     const svHld = sv + hld;
 
-    return { fip, kBbPct, lobPct, qsPct, svHld: svHld > 0 ? String(svHld) : null };
+    // On-pace projections — min 3 starts for starters, 10 GP for relievers
+    const gp   = parseFloat(s.gamesPlayed) || 0;
+    const pace = (gs >= 3 || (gs === 0 && gp >= 10)) ? {
+        k:  Math.round(so / gp * 162),
+        w:  gs >= 3 ? Math.round((parseFloat(s.wins) || 0) / gs * 30) : null,
+        sv: gs === 0 && sv > 0 ? Math.round(sv / gp * 162) : null,
+        ip: ip > 0 ? parseFloat((ip / gp * 162).toFixed(1)) : null,
+    } : null;
+
+    return { fip, kBbPct, lobPct, qsPct, svHld: svHld > 0 ? String(svHld) : null, pace };
 }
 
 // ── MLB formatting helpers ────────────────────────────────────
@@ -1573,6 +1660,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ['SO',    stats.strikeOuts,   '#64748b',           'strikeOuts'],
         ['BB%',   batting?.bbPct != null ? batting.bbPct + '%' : null, '#34d399', null],
         ['K%',    batting?.kPct  != null ? batting.kPct  + '%' : null, '#64748b', null],
+        ['Speed', (() => { const sr = AppState.mlbSprintSpeed?.[playerId]; return sr ? parseFloat(sr.sprint_speed).toFixed(1) + ' ft/s' : null; })(), '#10b981', null],
         ['PA',    batting?.pa,         '#64748b',          null],
         ['GP',    stats.gamesPlayed,   '#64748b',          null],
     ] : [
@@ -1676,6 +1764,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                     </div>
                     <p class="player-detail-meta" style="color:var(--color-text-muted)">
                         ${MLB_SEASON} MLB Season · ${group === 'hitting' ? 'Batting' : 'Pitching'}
+                        ${_parkFactorBadge(player.teamAbbr)}
                     </p>
                     <div id="mlb-analytics-badge"></div>
                     <div id="mlb-bio-strip"></div>
@@ -1707,6 +1796,21 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             <div class="shooting-stats-grid">${barHtml}</div>
         </div>
         ` : ''}
+
+        ${(() => {
+            const p = group === 'hitting' ? batting?.pace : pitching?.pace;
+            if (!p) return '';
+            const items = group === 'hitting' ? [
+                ['HR', p.hr], ['RBI', p.rbi], ['R', p.r], ['H', p.h],
+                ['2B', p.dbl], ['SB', p.sb], ['SO', p.so],
+            ] : [
+                ['K', p.k], ['W', p.w], ['SV', p.sv], ['IP', p.ip],
+            ].filter(([, v]) => v != null);
+            return `<div class="stats-card pace-card">
+                <h2 class="detail-section-title">On Pace For <span class="pace-season-label">${MLB_SEASON}</span></h2>
+                <div class="pace-grid">${items.map(([label, val]) => val != null ? `<div class="pace-item"><div class="pace-val">${val}</div><div class="pace-label">${label}</div></div>` : '').join('')}</div>
+            </div>`;
+        })()}
 
         <div class="stats-card" id="mlb-splits-card">
             <h2 class="detail-section-title">Splits</h2>
@@ -3731,6 +3835,15 @@ async function loadMLBLeaderboards() {
                 AppState._mlbSavantLbSeason = season;
             }));
         }
+        if (!AppState.mlbSprintSpeed) {
+            promises.push(fetchSprintSpeedLeaderboard().then(rows => {
+                if (!rows) return;
+                const map = {};
+                rows.forEach(r => { if (r.player_id) map[r.player_id] = r; });
+                AppState.mlbSprintSpeed = map;
+                AppState._mlbSprintRows = rows;
+            }).catch(() => {}));
+        }
         if (!AppState.mlbHittingStreaks || AppState._mlbStreakSeason !== season) {
             promises.push(
                 mlbFetch('/stats', { stats: 'streak', group: 'hitting', season, sportId: 1, playerPool: 'All', limit: 50 }, ApiCache.TTL.SHORT)
@@ -4082,7 +4195,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
                     </div>
                     <div class="lb-player">
                         <span class="lb-name">${split.player?.fullName || '—'}</span>
-                        <span class="lb-team">${abbr}</span>
+                        <span class="lb-team">${abbr}${_parkFactorBadge(abbr, 'dot')}</span>
                     </div>
                     <span class="lb-value" style="color:${cat.color}">${valStr}</span>
                 `;
@@ -4490,6 +4603,60 @@ function displayMLBLeaderboards() {
             panel.appendChild(list);
             fragment.appendChild(panel);
         });
+
+        // Sprint Speed panel — separate Savant fetch
+        const sprintRows = AppState._mlbSprintRows;
+        if (sprintRows && sprintRows.length > 0) {
+            const sorted = [...sprintRows]
+                .filter(r => r.sprint_speed !== '' && !isNaN(parseFloat(r.sprint_speed)))
+                .sort((a, b) => parseFloat(b.sprint_speed) - parseFloat(a.sprint_speed));
+
+            const panel  = document.createElement('div');
+            panel.className = 'leaderboard-panel';
+            const header = document.createElement('div');
+            header.className = 'leaderboard-header';
+            header.style.borderLeftColor = '#10b981';
+            header.innerHTML = `
+                <span class="leaderboard-title">Sprint Speed</span>
+                <span class="leaderboard-unit" style="color:#10b981">${season} MLB · ft/sec · ${sorted.length} qualifying</span>
+            `;
+            const list = document.createElement('div');
+            list.className = 'leaderboard-list';
+            sorted.slice(0, 10).forEach((r, i) => {
+                const speed   = parseFloat(r.sprint_speed).toFixed(1);
+                const pid     = r.player_id;
+                const combined = r['last_name, first_name'] || '';
+                const parts   = combined.split(', ');
+                const fullName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : combined || '—';
+                const abbr    = _savantTeamMap[String(pid)] || '';
+                const colors  = getMLBTeamColors(abbr);
+                const initials = fullName.split(' ').map(w => w[0] || '').slice(0, 2).join('');
+                const headshotUrl = pid ? getMLBPlayerHeadshotUrl(pid) : null;
+                const row = document.createElement('div');
+                row.className = 'leaderboard-row';
+                row.setAttribute('role', 'button'); row.setAttribute('tabindex', '0');
+                if (pid) {
+                    row.addEventListener('click', () => showMLBPlayerDetail(Number(pid), 'hitting'));
+                    row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(Number(pid), 'hitting'); });
+                }
+                row.innerHTML = `
+                    <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
+                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                        ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                        <span class="lb-avatar-initials">${initials}</span>
+                    </div>
+                    <div class="lb-player">
+                        <span class="lb-name">${_escHtml(fullName)}</span>
+                        <span class="lb-team">${_escHtml(abbr)}</span>
+                    </div>
+                    <span class="lb-value" style="color:#10b981">${speed} ft/s</span>
+                `;
+                list.appendChild(row);
+            });
+            panel.appendChild(header);
+            panel.appendChild(list);
+            fragment.appendChild(panel);
+        }
     }
 
     grid.innerHTML = '';
@@ -4822,7 +4989,12 @@ function displayMLBStandings(divisions, league = 'AL') {
                     <td class="standings-num standings-pct">${team.pct}</td>
                     <td class="standings-num standings-gb">${team.gb}</td>
                     <td class="standings-num ${_rdiffCls(team.rdiff)}">${team.rdiff}</td>
-                    <td class="standings-num standings-xw standings-col--wide">${xW != null ? xW : '—'}</td>
+                    <td class="standings-num standings-xw standings-col--wide">${(() => {
+                        if (xW == null) return '—';
+                        const delta = team.wins - xW;
+                        const deltaStr = delta > 0 ? `<span class="standings-xw-delta standings-xw-delta--over">+${delta}</span>` : delta < 0 ? `<span class="standings-xw-delta standings-xw-delta--under">${delta}</span>` : '';
+                        return `${xW}${deltaStr}`;
+                    })()}</td>
                     <td class="standings-num standings-col--wide standings-mn">${magicNum}</td>
                     <td class="standings-num ${streakCls}">${team.streak || '—'}</td>
                     <td class="standings-num standings-l10 ${_l10Cls(team.l10)}">${team.l10 || '—'}</td>
@@ -6184,6 +6356,14 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                 ${_cmpRow(awayPit.saves ?? '—',      'SV', homePit.saves ?? '—')}
             </div>
 
+            <div class="prep-section" id="prep-bullpen-section">
+                <div class="prep-section-title">Bullpen Availability</div>
+                <div class="prep-bullpen-loading">
+                    <div class="skeleton-line" style="height:20px;width:60%;margin-bottom:0.5rem"></div>
+                    <div class="skeleton-line" style="height:20px;width:80%"></div>
+                </div>
+            </div>
+
             <div class="prep-section">
                 <div class="prep-section-title">Key Hitters</div>
                 <div class="prep-two-col">
@@ -6210,6 +6390,94 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
     `;
 
     _injectGameWeather(grid);
+
+    // Async: bullpen rest tracker (non-blocking, fills placeholder when ready)
+    _populateBullpenSection(awayTeamId, homeTeamId, awayAbbr, homeAbbr, awayClr.primary, homeClr.primary);
+}
+
+async function _fetchBullpenRest(teamId) {
+    const nowET = new Date(Date.now() - 5 * 3600000);
+    const fmt   = d => d.toISOString().split('T')[0];
+    const from  = new Date(nowET.getTime() - 4 * 24 * 3600000);
+    const today = fmt(nowET);
+
+    try {
+        const sched = await mlbFetch('/schedule', {
+            sportId: 1, teamId, startDate: fmt(from), endDate: today,
+            hydrate: 'team', gameType: 'R,F,D,L,W',
+        }, ApiCache.TTL.SHORT);
+
+        const pks = (sched.dates || [])
+            .flatMap(d => d.games || [])
+            .filter(g => g.status?.abstractGameState === 'Final')
+            .slice(-3)
+            .map(g => ({ pk: g.gamePk, date: (g.gameDate || '').slice(0, 10), isHome: g.teams?.home?.team?.id === teamId }));
+
+        if (!pks.length) return {};
+
+        const restMap = {};
+        await Promise.all(pks.map(async ({ pk, date, isHome }) => {
+            const daysAgo = Math.round((new Date(today) - new Date(date)) / 86400000);
+            try {
+                const box = await mlbFetch(`/game/${pk}/boxscore`, {}, ApiCache.TTL.LONG);
+                const side = isHome ? 'home' : 'away';
+                const players = box.teams?.[side]?.players || {};
+                for (const pd of Object.values(players)) {
+                    const ip = parseFloat(pd.stats?.pitching?.inningsPitched || 0);
+                    if (!ip || !pd.person?.id) continue;
+                    const pid = pd.person.id;
+                    if (!restMap[pid] || daysAgo < restMap[pid].daysAgo) {
+                        restMap[pid] = {
+                            name:   pd.person.fullName || '',
+                            daysAgo,
+                            ip,
+                            pitches: pd.stats.pitching.numberOfPitches || 0,
+                            gs:      pd.stats.pitching.gamesStarted || 0,
+                        };
+                    }
+                }
+            } catch (_) {}
+        }));
+
+        return restMap;
+    } catch (_) { return {}; }
+}
+
+async function _populateBullpenSection(awayId, homeId, awayAbbr, homeAbbr, awayColor, homeColor) {
+    const section = document.getElementById('prep-bullpen-section');
+    if (!section) return;
+
+    const [awayRest, homeRest] = await Promise.all([
+        _fetchBullpenRest(awayId),
+        _fetchBullpenRest(homeId),
+    ]);
+
+    const _restPill = (name, daysAgo) => {
+        const [cls, label] = daysAgo === 0 ? ['bullpen-pill--hot',   'Yesterday']
+                           : daysAgo === 1 ? ['bullpen-pill--warm',  '1 day rest']
+                           : daysAgo === 2 ? ['bullpen-pill--ok',    '2 days rest']
+                           :                 ['bullpen-pill--fresh', `${daysAgo}d rest`];
+        const lastName = name.split(' ').slice(-1)[0] || name;
+        return `<span class="bullpen-pill ${cls}" title="${name} — last pitched ${daysAgo === 0 ? 'yesterday' : daysAgo + ' days ago'}">${_escHtml(lastName)} <span class="bullpen-pill-rest">${label}</span></span>`;
+    };
+
+    const _renderSide = (restMap, abbr, color) => {
+        // Only show relievers (gs === 0) used in last 3 days; sort by most recently used
+        const used = Object.values(restMap)
+            .filter(p => p.gs === 0 && p.daysAgo <= 3)
+            .sort((a, b) => a.daysAgo - b.daysAgo);
+        if (!used.length) return `<div class="bullpen-team-section"><span class="bullpen-abbr" style="color:${color}">${abbr}</span> <span class="bullpen-all-fresh">All fresh</span></div>`;
+        return `<div class="bullpen-team-section"><span class="bullpen-abbr" style="color:${color}">${abbr}</span>${used.map(p => _restPill(p.name, p.daysAgo)).join('')}</div>`;
+    };
+
+    const hasData = Object.keys(awayRest).length || Object.keys(homeRest).length;
+    if (!hasData) { section.remove(); return; }
+
+    section.innerHTML = `
+        <div class="prep-section-title">Bullpen Availability <span class="prep-section-note">last 3 days</span></div>
+        ${_renderSide(awayRest, awayAbbr, awayColor)}
+        ${_renderSide(homeRest, homeAbbr, homeColor)}
+    `;
 }
 
 // ── Standalone Compare View ───────────────────────────────────

@@ -1927,6 +1927,9 @@
 
 /* xW (Pythagorean) and M# columns */
 .standings-xw { color: var(--text-muted) !important; font-style: italic; }
+.standings-xw-delta { font-style: normal; font-size: 0.68rem; font-weight: 700; margin-left: 0.25rem; vertical-align: middle; }
+.standings-xw-delta--over  { color: var(--color-win); }
+.standings-xw-delta--under { color: var(--color-loss); }
 .standings-mn { color: var(--text-muted) !important; font-size: 0.75rem; }
 
 /* Legend note */
@@ -1976,6 +1979,48 @@
 }
 
 /* ── MLB Game Detail ──────────────────────────────────────── */
+
+/* ── Park factor badges ────────────────────────────────── */
+
+.park-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.4rem;
+    border-radius: 20px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.park-badge--hit       { background: rgba(239,68,68,0.14); color: #ef4444; }
+.park-badge--hit-light { background: rgba(249,115,22,0.12); color: #f97316; }
+.park-badge--pit       { background: rgba(34,211,238,0.13); color: #22d3ee; }
+.park-badge--pit-light { background: rgba(96,165,250,0.13); color: #60a5fa; }
+
+.park-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-left: 0.28rem;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* ── On Pace For card ──────────────────────────────────── */
+
+.pace-card { background: linear-gradient(135deg, var(--bg-card) 70%, rgba(124,141,240,0.06) 100%); }
+.pace-season-label { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); margin-left: 0.4rem; vertical-align: middle; }
+.pace-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    padding-top: 0.25rem;
+}
+.pace-item { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+.pace-val  { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+.pace-label { font-size: 0.68rem; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.15rem; }
 
 .mlb-game-detail-wrap {
     max-width: 880px;
@@ -3085,6 +3130,28 @@
     padding-bottom: 0.5rem;
     margin-bottom: 0.9rem;
 }
+.prep-section-note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-subtle); margin-left: 0.4rem; }
+
+/* ── Bullpen availability ─────────────────────────────── */
+.prep-bullpen-loading { opacity: 0.5; }
+.bullpen-team-section { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; }
+.bullpen-abbr { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; min-width: 32px; }
+.bullpen-all-fresh { font-size: 0.75rem; color: var(--color-win); }
+.bullpen-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.bullpen-pill-rest { font-weight: 400; font-size: 0.67rem; }
+.bullpen-pill--hot   { background: rgba(239,68,68,0.14);   color: #ef4444; }
+.bullpen-pill--warm  { background: rgba(249,115,22,0.12);  color: #f97316; }
+.bullpen-pill--ok    { background: rgba(251,191,36,0.12);  color: #fbbf24; }
+.bullpen-pill--fresh { background: rgba(52,211,153,0.10);  color: #34d399; }
 .prep-two-col {
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
