@@ -7,6 +7,13 @@ let MLB_SEASON = new Date().getMonth() >= 2 && new Date().getMonth() <= 9  // Ma
     ? new Date().getFullYear()
     : new Date().getFullYear() - 1;   // Nov–Feb = previous completed season
 
+// True when it's noon–midnight ET — games are live or recently completed,
+// so season stat corrections are most likely. Use SHORT TTL instead of MEDIUM.
+function _activeGameHours() {
+    const h = new Date(Date.now() - 5 * 3600000).getUTCHours();
+    return h >= 12;
+}
+
 // ── MLB Favorites (starred players) ──────────────────────────
 const _MLB_FAVS_KEY = 'zs_mlb_favs';
 // Initialise from localStorage into AppState (AppState is defined later in navigation.js,
@@ -680,11 +687,12 @@ async function fetchMLBSchedule(daysBack = 7) {
         .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
 }
 
-async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit = 300, statsType = 'season') {
+async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit = 600, statsType = 'season') {
     const sortStat = group === 'hitting' ? 'battingAverage' : 'strikeOuts';
     const params = { stats: statsType, season, group, sportId: 1, limit, playerPool: 'All' };
     if (statsType === 'season') params.sortStat = sortStat;
-    const data = await mlbFetch('/stats', params);
+    const ttl  = statsType === 'season' && _activeGameHours() ? ApiCache.TTL.SHORT : ApiCache.TTL.MEDIUM;
+    const data = await mlbFetch('/stats', params, ttl);
     return data.stats?.[0]?.splits || [];
 }
 
@@ -1237,18 +1245,22 @@ function _formatFreshness(ts) {
 // ── Phase 2: computed rate stats ─────────────────────────────
 
 function _computeBattingRates(s) {
-    const pa  = parseFloat(s.plateAppearances) || 0;
-    const ab  = parseFloat(s.atBats)           || 1;
-    const sf  = parseFloat(s.sacFlies)         || 0;
-    const hits = parseFloat(s.hits)            || 0;
-    const hr  = parseFloat(s.homeRuns)         || 0;
-    const so  = parseFloat(s.strikeOuts)       || 0;
-    const bb  = parseFloat(s.baseOnBalls)      || 0;
-    const tb  = parseFloat(s.totalBases)       || 0;
-    const sb  = parseFloat(s.stolenBases)      || 0;
-    const cs  = parseFloat(s.caughtStealing)   || 0;
-    const slg = parseFloat(s.slg);
-    const avg = parseFloat(s.avg);
+    const pa   = parseFloat(s.plateAppearances) || 0;
+    const ab   = parseFloat(s.atBats)           || 1;
+    const sf   = parseFloat(s.sacFlies)         || 0;
+    const hits = parseFloat(s.hits)             || 0;
+    const hr   = parseFloat(s.homeRuns)         || 0;
+    const so   = parseFloat(s.strikeOuts)       || 0;
+    const bb   = parseFloat(s.baseOnBalls)      || 0;
+    const tb   = parseFloat(s.totalBases)       || 0;
+    const sb   = parseFloat(s.stolenBases)      || 0;
+    const cs   = parseFloat(s.caughtStealing)   || 0;
+    const hbp  = parseFloat(s.hitByPitch)       || 0;
+    const ibw  = parseFloat(s.intentionalWalks) || 0;
+    const dbl  = parseFloat(s.doubles)          || 0;
+    const trpl = parseFloat(s.triples)          || 0;
+    const slg  = parseFloat(s.slg);
+    const avg  = parseFloat(s.avg);
 
     const iso   = (!isNaN(slg) && !isNaN(avg)) ? _fmtAvg(slg - avg) : null;
     const babip = (hits >= 0 && hr >= 0 && so >= 0 && (ab - so - hr + sf) > 0)
@@ -1256,12 +1268,19 @@ function _computeBattingRates(s) {
         : null;
     const bbPct = pa > 0 ? (bb / pa * 100).toFixed(1) : null;
     const kPct  = pa > 0 ? (so / pa * 100).toFixed(1) : null;
+    const bbK   = so > 0 ? (bb / so).toFixed(2) : null;
     // Bill James Runs Created: (H + BB) × TB ÷ (AB + BB)
     const rc    = (ab + bb) > 0 ? String(Math.round((hits + bb) * tb / (ab + bb))) : null;
-    // Stolen base efficiency
     const sbPct = (sb + cs) > 0 ? (sb / (sb + cs) * 100).toFixed(1) : null;
+    // wOBA — 2024 FanGraphs linear weights
+    const sing      = Math.max(0, hits - dbl - trpl - hr);
+    const wobaDenom = ab + bb - ibw + sf + hbp;
+    const wobaRaw   = wobaDenom > 0
+        ? (0.69 * (bb - ibw) + 0.72 * hbp + 0.89 * sing + 1.27 * dbl + 1.62 * trpl + 2.10 * hr) / wobaDenom
+        : null;
+    const woba = wobaRaw != null ? _fmtAvg(wobaRaw) : null;
 
-    return { iso, babip, bbPct, kPct, pa: pa || null, rc, sbPct };
+    return { iso, babip, bbPct, kPct, bbK, pa: pa || null, rc, sbPct, woba };
 }
 
 function _computePitchingRates(s) {
@@ -1273,6 +1292,10 @@ function _computePitchingRates(s) {
     const hbp = parseFloat(s.hitBatsmen)      || 0;
     const h   = parseFloat(s.hits)            || 0;
     const r   = parseFloat(s.runs)            || 0;
+    const gs  = parseFloat(s.gamesStarted)    || 0;
+    const qs  = parseFloat(s.qualityStarts)   || 0;
+    const sv  = parseFloat(s.saves)           || 0;
+    const hld = parseFloat(s.holds)           || 0;
 
     const fip = ip > 0
         ? ((13 * hr + 3 * (bb + hbp) - 2 * so) / ip + 3.10).toFixed(2)
@@ -1285,8 +1308,12 @@ function _computePitchingRates(s) {
     const lobPct = lobDenom > 0
         ? Math.min(100, (h + bb + hbp - r) / lobDenom * 100).toFixed(1)
         : null;
+    // QS% — requires at least 5 starts to be meaningful
+    const qsPct = gs >= 5 ? (qs / gs * 100).toFixed(1) : null;
+    // SV+HLD — total leverage appearances preserved
+    const svHld = sv + hld;
 
-    return { fip, kBbPct, lobPct };
+    return { fip, kBbPct, lobPct, qsPct, svHld: svHld > 0 ? String(svHld) : null };
 }
 
 // ── MLB formatting helpers ────────────────────────────────────
@@ -3592,12 +3619,27 @@ function _fetchMLBLeaderSplits(season) {
         ? Promise.resolve(AppState.mlbTeams)
         : fetchMLBTeams(season).then(t => { if (!AppState.mlbTeams.length) AppState.mlbTeams = t; return t; });
 
+    const fieldingPromise = mlbFetch('/stats', {
+        stats: 'season', season, group: 'fielding', sportId: 1, limit: 800, playerPool: 'All',
+    }, ApiCache.TTL.MEDIUM).then(d => d.stats?.[0]?.splits || []).catch(() => []);
+
     _mlbLeaderSplitsPromise = Promise.all([
-        fetchMLBLeagueStats('hitting',  season, 300),
-        fetchMLBLeagueStats('pitching', season, 300),
+        fetchMLBLeagueStats('hitting',  season, 600),
+        fetchMLBLeagueStats('pitching', season, 600),
         teamsPromise,
-    ]).then(([hitSplits, pitSplits, teams]) => {
+        fieldingPromise,
+    ]).then(([hitSplits, pitSplits, teams, fieldSplits]) => {
         const abbrById = new Map(teams.map(t => [t.id, t.abbreviation]));
+
+        // Build fielding map: playerId → primary-position stats (most chances)
+        const fieldMap = {};
+        fieldSplits.forEach(s => {
+            const id = s.player?.id;
+            if (!id || !s.stat) return;
+            const prev = fieldMap[id];
+            if (!prev || (s.stat.chances || 0) > (prev.chances || 0)) fieldMap[id] = s.stat;
+        });
+        AppState.mlbFieldingStats = fieldMap;
         const enrich   = splits => splits.forEach(s => {
             if (s.team?.id && !s.team.abbreviation) s.team.abbreviation = abbrById.get(s.team.id) || '';
         });
@@ -3699,6 +3741,11 @@ const MLB_LEADER_CATS = [
     { key: 'groundIntoDoublePlay',label:'Grounded Into DP',unit: 'GIDP',  color: '#94a3b8', group: 'hitting',  desc: false, decimals: 0 },
     { key: 'rc',                 label: 'Runs Created',    unit: 'RC',    color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'sbPct',              label: 'Stolen Base %',   unit: 'SB%',   color: '#10b981', group: 'hitting',  desc: true,  decimals: 1 },
+    { key: 'woba',               label: 'wOBA',            unit: 'wOBA',  color: '#818cf8', group: 'hitting',  desc: true,  decimals: 3 },
+    { key: 'bbK',                label: 'BB/K',            unit: 'BB/K',  color: '#22d3ee', group: 'hitting',  desc: true,  decimals: 2 },
+    { key: 'atBatsPerHomeRun',   label: 'AB per HR',       unit: 'AB/HR', color: '#fca5a5', group: 'hitting',  desc: false, decimals: 1 },
+    { key: 'groundOutsToAirouts',label: 'GB/FB Ratio',     unit: 'GB/FB', color: '#a3e635', group: 'hitting',  desc: true,  decimals: 2 },
+    { key: 'strikeOuts',         label: 'Strikeouts (Bat)',unit: 'SO',    color: '#f87171', group: 'hitting',  desc: false, decimals: 0 },
     { key: 'era',                label: 'ERA',             unit: 'ERA',   color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
     { key: 'whip',               label: 'WHIP',            unit: 'WHIP',  color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
     { key: 'fip',                label: 'FIP',             unit: 'FIP',   color: '#e879f9', group: 'pitching', desc: false, decimals: 2 },
@@ -3715,6 +3762,9 @@ const MLB_LEADER_CATS = [
     { key: 'saves',              label: 'Saves',           unit: 'SV',    color: '#fbbf24', group: 'pitching', desc: true,  decimals: 0 },
     { key: 'holds',              label: 'Holds',           unit: 'HLD',   color: '#94a3b8', group: 'pitching', desc: true,  decimals: 0 },
     { key: 'blownSaves',         label: 'Blown Saves',     unit: 'BSV',   color: '#fca5a5', group: 'pitching', desc: false, decimals: 0 },
+    { key: 'qsPct',              label: 'Quality Start %', unit: 'QS%',   color: '#86efac', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'inningsPitched',     label: 'Innings Pitched', unit: 'IP',    color: '#a5b4fc', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'svHld',              label: 'Saves + Holds',   unit: 'SVHD',  color: '#fde68a', group: 'pitching', desc: true,  decimals: 0 },
 ];
 
 const STATCAST_LEADER_CATS = [

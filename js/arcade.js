@@ -37,100 +37,112 @@ function loadArcade() {
     const statdleSave   = _arcLoad('statdle');
     const questSave     = _arcLoad('quest');
     const questStreak   = _questStreak();
+    const otdSave       = _arcLoad('otd');
 
-    const _badge = (save, scoreText) => save
-        ? `<div class="arcade-completed-badge">✓ Played — ${scoreText}</div>`
+    // SVG icons — consistent with product icon language
+    const _icons = {
+        otd:       `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="0.6" fill="currentColor" stroke="none"/></svg>`,
+        statdle:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><polyline points="7 14 11 9 15 13 19 7"/></svg>`,
+        shuffle:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>`,
+        blueprint: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 22 12 12 22 2 12"/><circle cx="12" cy="12" r="3"/></svg>`,
+        trade:     `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
+    };
+
+    // Progress tracking
+    const saves = { otd: !!otdSave, statdle: !!statdleSave?.answered, shuffle: !!shuffleSave, trade: !!tradeSave, blueprint: !!blueprintSave };
+    const doneCount = Object.values(saves).filter(Boolean).length;
+    const gameOrder = ['otd', 'statdle', 'shuffle', 'trade', 'blueprint'];
+    const firstUnplayed = gameOrder.find(g => !saves[g]);
+
+    // Streak display
+    const streak = questStreak.count;
+    const streakHtml = streak > 0
+        ? `<div class="arcade-streak"><span class="arcade-streak-fire">🔥</span><span class="arcade-streak-num">${streak}-day streak</span></div>`
         : '';
 
-    const _starScore = s => s
-        ? `${'★'.repeat(s.score)}${'☆'.repeat(5 - s.score)} (${s.score}/5)`
-        : '';
+    // Progress pips
+    const pipLabels = { otd: 'On This Day', statdle: 'Statdle', shuffle: 'Shuffle', trade: 'Trade Tree', blueprint: 'Blueprint' };
+    const pipsHtml = gameOrder.map(g =>
+        `<span class="arc-pip ${saves[g] ? 'arc-pip--done' : ''}">${pipLabels[g]}</span>`
+    ).join('');
 
-    const otdSave = _arcLoad('otd');
+    // Card builder
+    const _card = (game, doneFlag, completedBadge, title, desc, difficulty, onplay, replayLabel) => {
+        const isDone = !!doneFlag;
+        const isFeatured = !isDone && game === firstUnplayed;
+        return `
+            <div class="arcade-game-card arcade-game-card--${game}${isDone ? ' arcade-game-card--done' : ''}${isFeatured ? ' arcade-game-card--featured' : ''}"
+                 data-game="${game}">
+                ${isDone ? completedBadge : ''}
+                <div class="arcade-game-icon-wrap">${_icons[game]}</div>
+                <h2 class="arcade-game-title">${title}</h2>
+                <p class="arcade-game-desc">${desc}</p>
+                <div class="arcade-game-meta"><span>${difficulty}</span></div>
+                <button class="arcade-play-btn${isDone ? ' arcade-play-btn--replay' : ''}" onclick="${onplay}">
+                    ${isDone ? replayLabel : (isFeatured ? 'Play Now →' : 'Play')}
+                </button>
+            </div>`;
+    };
+
+    const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
     grid.innerHTML = `
         <div class="arcade-hub">
             <div class="arcade-hub-header">
-                <h1 class="arcade-hub-title">Arcade</h1>
-                <p class="arcade-hub-sub">Daily sports mini-games · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                <div class="arcade-hub-header-row">
+                    <h1 class="arcade-hub-title">Arcade</h1>
+                    ${streakHtml}
+                </div>
+                <p class="arcade-hub-sub">${dateLabel} · ${doneCount}/5 complete</p>
+                <div class="arcade-progress-row">${pipsHtml}</div>
             </div>
 
             <div class="arcade-sport-section">
                 <div class="arcade-sport-header">
                     <span class="arcade-sport-icon">⚾</span>
-                    <span class="arcade-sport-name">MLB</span>
-                    <span class="arcade-sport-count">5 games</span>
+                    <span class="arcade-sport-name">MLB Daily</span>
                 </div>
                 <div class="arcade-game-grid">
-                    <div class="arcade-game-card arcade-game-card--otd ${otdSave ? 'arcade-game-card--done' : ''}">
-                        ${otdSave ? `<div class="arcade-completed-badge">✓ ${otdSave.correct ? 'Correct 🟩' : 'Missed 🟥'}</div>` : ''}
-                        <div class="arcade-game-icon">📅</div>
-                        <h2 class="arcade-game-title">On This Day</h2>
-                        <p class="arcade-game-desc">Guess the standout player from a game played on this date in MLB history.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~1 min</span>
-                            <span>⚡ Easy</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startOnThisDay()">
-                            ${otdSave ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
-
-                    <div class="arcade-game-card arcade-game-card--statdle ${statdleSave?.answered ? 'arcade-game-card--done' : ''}">
-                        ${statdleSave?.answered ? `<div class="arcade-completed-badge">✓ Played — ${statdleSave.won ? '🟩 Got it' : '🟥 Missed'}</div>` : ''}
-                        <div class="arcade-game-icon">⚾</div>
-                        <h2 class="arcade-game-title">Statdle</h2>
-                        <p class="arcade-game-desc">Guess the mystery MLB hitter from their per-game statlines. One new clue per guess.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~2 min</span>
-                            <span>⚡ Medium</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startStatdle()">
-                            ${statdleSave?.answered ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
-
-                    <div class="arcade-game-card arcade-game-card--shuffle ${shuffleSave ? 'arcade-game-card--done' : ''}">
-                        ${_badge(shuffleSave, shuffleSave ? `${shuffleSave.score}/3 ${['😬','😅','👍','🎉'][shuffleSave.score]}` : '')}
-                        <div class="arcade-game-icon">📊</div>
-                        <h2 class="arcade-game-title">Statline Shuffle</h2>
-                        <p class="arcade-game-desc">Match yesterday's anonymous statlines to the right player. New puzzle every day.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~2 min</span>
-                            <span>⚡ Easy–Hard</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startStatlineShuffle()">
-                            ${shuffleSave ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
-
-                    <div class="arcade-game-card arcade-game-card--trade ${tradeSave ? 'arcade-game-card--done' : ''}">
-                        ${_badge(tradeSave, tradeSave?.correct ? 'Correct 🟩' : 'Missed 🟥')}
-                        <div class="arcade-game-icon">🔀</div>
-                        <h2 class="arcade-game-title">Trade Tree Tracker</h2>
-                        <p class="arcade-game-desc">Fill in the missing player from a famous MLB trade. Deep baseball knowledge rewarded.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~2 min</span>
-                            <span>⚡ Hard</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startTradeTree()">
-                            ${tradeSave ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
-
-                    <div class="arcade-game-card arcade-game-card--blueprint ${blueprintSave ? 'arcade-game-card--done' : ''}">
-                        ${_badge(blueprintSave, blueprintSave ? `${blueprintSave.score}/3 ${['😬','😅','👍','🎉'][blueprintSave.score]}` : '')}
-                        <div class="arcade-game-icon">🏟</div>
-                        <h2 class="arcade-game-title">Ballpark Blueprint</h2>
-                        <p class="arcade-game-desc">Identify the MLB stadium from its field dimensions. Use fewer clues for a better score.</p>
-                        <div class="arcade-game-meta">
-                            <span>⏱ ~1 min</span>
-                            <span>⚡ Medium</span>
-                        </div>
-                        <button class="arcade-play-btn" onclick="startBallparkBlueprint()">
-                            ${blueprintSave ? 'Play Again' : 'Play Now'}
-                        </button>
-                    </div>
+                    ${_card('otd', otdSave,
+                        `<div class="arcade-completed-badge">✓ ${otdSave?.correct ? 'Correct' : 'Missed'}</div>`,
+                        'On This Day',
+                        'Identify the standout player from a game played on this date in MLB history.',
+                        'Easy',
+                        'startOnThisDay()',
+                        'Play Again'
+                    )}
+                    ${_card('statdle', statdleSave?.answered,
+                        `<div class="arcade-completed-badge">✓ ${statdleSave?.won ? 'Got it' : 'Missed'}</div>`,
+                        'Statdle',
+                        'Guess the mystery MLB hitter from per-game statlines. One new clue per guess.',
+                        'Medium',
+                        'startStatdle()',
+                        'Play Again'
+                    )}
+                    ${_card('shuffle', shuffleSave,
+                        `<div class="arcade-completed-badge">✓ ${shuffleSave ? `${shuffleSave.score}/3` : ''}</div>`,
+                        'Statline Shuffle',
+                        'Match yesterday\'s anonymous statlines to the right players. New puzzle every day.',
+                        'Easy–Hard',
+                        'startStatlineShuffle()',
+                        'Play Again'
+                    )}
+                    ${_card('trade', tradeSave,
+                        `<div class="arcade-completed-badge">✓ ${tradeSave?.correct ? 'Correct' : 'Missed'}</div>`,
+                        'Trade Tree Tracker',
+                        'Fill in the missing player from a famous MLB trade chain. Deep knowledge rewarded.',
+                        'Hard',
+                        'startTradeTree()',
+                        'Play Again'
+                    )}
+                    ${_card('blueprint', blueprintSave,
+                        `<div class="arcade-completed-badge">✓ ${blueprintSave ? `${blueprintSave.score}/3` : ''}</div>`,
+                        'Ballpark Blueprint',
+                        'Identify the MLB stadium from its field dimensions. Use fewer clues for a better score.',
+                        'Medium',
+                        'startBallparkBlueprint()',
+                        'Play Again'
+                    )}
                 </div>
             </div>
 

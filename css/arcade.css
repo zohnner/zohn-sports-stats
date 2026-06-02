@@ -117,7 +117,12 @@
 }
 
 .arcade-game-card--done {
-    border-color: rgba(52, 211, 153, 0.25);
+    border-color: rgba(52, 211, 153, 0.22);
+    opacity: 0.65;
+    transition: opacity 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.arcade-game-card--done:hover {
+    opacity: 0.88;
 }
 
 /* Badges */
@@ -185,7 +190,7 @@
     display: flex;
     gap: 1rem;
     font-size: 0.73rem;
-    color: #475569;
+    color: var(--text-subtle);
 }
 
 .arcade-play-btn {
@@ -313,6 +318,128 @@
     padding: 0.25rem 0.5rem;
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+/* ── Hub header redesign ─────────────────────────────────── */
+
+.arcade-hub-header-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.arcade-streak {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.arcade-streak-fire { line-height: 1; }
+.arcade-streak-num  { color: var(--text-secondary); }
+
+/* ── Daily progress row ─────────────────────────────────── */
+
+.arcade-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.arc-pip {
+    display: flex;
+    align-items: center;
+    gap: 0.28rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--text-subtle);
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 20px;
+    padding: 0.18rem 0.55rem 0.18rem 0.42rem;
+    transition: color 0.15s, border-color 0.15s;
+}
+.arc-pip::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-mid);
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.arc-pip--done { color: #34d399; border-color: rgba(52,211,153,0.28); }
+.arc-pip--done::before { background: #34d399; }
+
+/* ── Game icon wrapper ───────────────────────────────────── */
+
+.arcade-game-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 0.15rem;
+}
+
+/* Per-game accent colors — icon tint */
+.arcade-game-card[data-game="otd"]       .arcade-game-icon-wrap { background: rgba(245,158,11,0.13);  color: #f59e0b; }
+.arcade-game-card[data-game="statdle"]   .arcade-game-icon-wrap { background: rgba(99,102,241,0.13);  color: #818cf8; }
+.arcade-game-card[data-game="shuffle"]   .arcade-game-icon-wrap { background: rgba(34,211,238,0.13);  color: #22d3ee; }
+.arcade-game-card[data-game="blueprint"] .arcade-game-icon-wrap { background: rgba(16,185,129,0.13);  color: #10b981; }
+.arcade-game-card[data-game="trade"]     .arcade-game-icon-wrap { background: rgba(249,115,22,0.13);  color: #f97316; }
+
+/* Accent stripes — missing 3 (shuffle + trade already defined above) */
+.arcade-game-card--otd::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    border-radius: 14px 0 0 14px;
+}
+.arcade-game-card--statdle::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, #6366f1, #818cf8);
+    border-radius: 14px 0 0 14px;
+}
+.arcade-game-card--blueprint::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, #10b981, #34d399);
+    border-radius: 14px 0 0 14px;
+}
+
+/* ── Featured card (first unplayed) ─────────────────────── */
+
+.arcade-game-card--featured {
+    border-color: rgba(99,102,241,0.38);
+    background: linear-gradient(160deg, var(--bg-card) 55%, rgba(99,102,241,0.05) 100%);
+}
+.arcade-game-card--featured .arcade-play-btn {
+    background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(99,102,241,0.3));
+    color: #e0e7ff;
+}
+
+/* ── Replay button (completed cards) ────────────────────── */
+
+.arcade-play-btn--replay {
+    background: none;
+    border-color: var(--border-default);
+    color: var(--text-subtle);
+    font-weight: 500;
+}
+.arcade-play-btn--replay:not(:disabled):hover {
+    background: none;
+    border-color: var(--border-mid);
+    color: var(--text-muted);
 }
 
 .arcade-back-link:hover { color: var(--text-secondary); }

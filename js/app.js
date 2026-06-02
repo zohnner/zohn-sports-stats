@@ -526,6 +526,7 @@ function _renderTonightSPSection() {
                         ${wl ? `<span>${wl}</span>` : ''}
                     </div>
                     ${oppTeamId ? `<div class="vs-opp-row" data-vs-placeholder="1"><span class="skeleton-line" style="height:9px;width:120px;display:inline-block"></span></div>` : ''}
+                    <div class="vs-opp-row" data-ha-placeholder="1"><span class="skeleton-line" style="height:9px;width:90px;display:inline-block"></span></div>
                 </div>
             </div>`;
     };
@@ -599,6 +600,31 @@ function _renderTonightSPSection() {
         } catch (_) {
             rowEl.remove();
         }
+    });
+
+    // Async enrichment: home/away ERA split for each confirmed SP
+    el.querySelectorAll('[data-pitcher-id]').forEach(pitcherEl => {
+        const pid   = parseInt(pitcherEl.dataset.pitcherId);
+        const haRow = pitcherEl.querySelector('[data-ha-placeholder]');
+        if (!pid || !haRow) return;
+        mlbFetch(`/people/${pid}`, {
+            hydrate: `stats(group=[pitching],type=homeAndAway,season=${MLB_SEASON})`
+        }, ApiCache.TTL.LONG).then(data => {
+            const splits = data.people?.[0]?.stats?.[0]?.splits || [];
+            const home = splits.find(s => s.split?.code === 'H')?.stat;
+            const away = splits.find(s => s.split?.code === 'A')?.stat;
+            if (!home || !away) { haRow.remove(); return; }
+            const hEra = home.era != null ? parseFloat(home.era).toFixed(2) : null;
+            const aEra = away.era != null ? parseFloat(away.era).toFixed(2) : null;
+            if (!hEra && !aEra) { haRow.remove(); return; }
+            haRow.removeAttribute('data-ha-placeholder');
+            haRow.innerHTML =
+                `<span class="vs-opp-row__label">Home</span>` +
+                `<span class="vs-opp-row__val">${_escHtml(hEra || '—')} ERA</span>` +
+                `<span class="vs-opp-row__sep">·</span>` +
+                `<span class="vs-opp-row__label">Away</span>` +
+                `<span class="vs-opp-row__val">${_escHtml(aEra || '—')} ERA</span>`;
+        }).catch(() => haRow.remove());
     });
 }
 

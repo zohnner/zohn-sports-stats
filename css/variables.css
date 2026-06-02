@@ -496,47 +496,49 @@
     --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
 }
 
-/* Kansas City Royals — "Forever Fountains" fuchsia/purple/blue */
+/* Kansas City Royals — "Kauffman Fountains"
+   Night game palette: deep navy sky, crown gold stadium lights,
+   royal blue pool glow, white water arcs behind center field.  */
 [data-theme="cc-royals"] {
-    --bg-base:            #080412;
-    --bg-surface:         #100820;
-    --bg-raised:          #180e30;
-    --bg-card:            rgba(16, 8, 32, 0.87);
-    --bg-card-hover:      rgba(24, 14, 48, 0.96);
-    --bg-overlay:         rgba(8, 4, 18, 0.97);
-    --bg-subtle:          rgba(255, 0, 175, 0.04);
-    --bg-interactive:     rgba(255, 0, 175, 0.07);
-    --bg-interactive-hov: rgba(255, 0, 175, 0.12);
+    --bg-base:            #010D1F;
+    --bg-surface:         #041428;
+    --bg-raised:          #082040;
+    --bg-card:            rgba(4, 20, 40, 0.90);
+    --bg-card-hover:      rgba(8, 32, 60, 0.96);
+    --bg-overlay:         rgba(1, 8, 20, 0.97);
+    --bg-subtle:          rgba(192, 154, 91, 0.05);
+    --bg-interactive:     rgba(192, 154, 91, 0.08);
+    --bg-interactive-hov: rgba(192, 154, 91, 0.14);
     --border-default:     rgba(255, 255, 255, 0.06);
     --border-mid:         rgba(255, 255, 255, 0.10);
-    --border-strong:      rgba(255, 255, 255, 0.17);
-    --border-accent:      rgba(255, 0, 175, 0.32);
-    --border-accent-hov:  rgba(255, 0, 175, 0.55);
-    --text-primary:       #f5eeff;
-    --text-secondary:     #c8a8e8;
-    --text-muted:         #8060a8;
-    --text-subtle:        #4a2870;
-    --text-disabled:      #25103a;
-    --accent:             #FF00AF;
-    --accent-light:       #ff40c8;
-    --accent-dark:        #cc0090;
-    --accent-subtle:      rgba(255, 0, 175, 0.10);
-    --accent-border:      rgba(255, 0, 175, 0.28);
-    --accent-glow:        rgba(255, 0, 175, 0.25);
-    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.03);
-    --shadow-md:          0 4px 20px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.04);
-    --shadow-lg:          0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
-    --shadow-card:        0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px var(--border-default);
-    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px var(--border-accent);
+    --border-strong:      rgba(255, 255, 255, 0.18);
+    --border-accent:      rgba(192, 154, 91, 0.35);
+    --border-accent-hov:  rgba(192, 154, 91, 0.60);
+    --text-primary:       #f2ead8;
+    --text-secondary:     #c8aa72;
+    --text-muted:         #7a6040;
+    --text-subtle:        #3a2a10;
+    --text-disabled:      #1a1208;
+    --accent:             #C09A5B;
+    --accent-light:       #D4B882;
+    --accent-dark:        #96763C;
+    --accent-subtle:      rgba(192, 154, 91, 0.10);
+    --accent-border:      rgba(192, 154, 91, 0.30);
+    --accent-glow:        rgba(192, 154, 91, 0.22);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.45), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px var(--border-accent);
     --skeleton-from:      rgba(255,255,255,0.03);
     --skeleton-mid:       rgba(255,255,255,0.07);
-    --bg-header:          rgba(8, 4, 18, 0.97);
-    --bg-waffle-panel:    rgba(5, 2, 12, 0.98);
-    --bg-table-head:      rgba(8, 4, 18, 0.90);
-    --bg-table-sub:       rgba(8, 4, 18, 0.55);
-    --bg-mobile-nav:      rgba(8, 4, 18, 0.97);
-    --bg-toast:           rgba(8, 4, 18, 0.97);
-    --shadow-header:      0 1px 0 rgba(255,0,175,0.20), 0 4px 24px rgba(0,0,0,0.50);
+    --bg-header:          rgba(1, 8, 20, 0.97);
+    --bg-waffle-panel:    rgba(1, 6, 16, 0.98);
+    --bg-table-head:      rgba(1, 8, 20, 0.90);
+    --bg-table-sub:       rgba(1, 8, 20, 0.55);
+    --bg-mobile-nav:      rgba(1, 8, 20, 0.97);
+    --bg-toast:           rgba(1, 8, 20, 0.97);
+    --shadow-header:      0 1px 0 rgba(192,154,91,0.18), 0 4px 24px rgba(0,0,0,0.55);
     --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
     --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
 }

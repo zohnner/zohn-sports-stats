@@ -162,8 +162,8 @@ async function _fetchGameMeta(gameId, gameStub) {
     return {
         homeTeam:  { id: ht.id, name: ht.name || '', abbreviation: ht.abbreviation || '' },
         awayTeam:  { id: at.id, name: at.name || '', abbreviation: at.abbreviation || '' },
-        homeScore: box.teams?.home?.runs ?? null,
-        awayScore: box.teams?.away?.runs ?? null,
+        homeScore: box.teams?.home?.teamStats?.batting?.runs ?? null,
+        awayScore: box.teams?.away?.teamStats?.batting?.runs ?? null,
         gameDate:  '',
         status:    'Final',
     };

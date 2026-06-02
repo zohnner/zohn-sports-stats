@@ -103,14 +103,13 @@ body::after {
     );
 }
 
-/* Kansas City Royals — Forever Fountains
-   Fuchsia from the left, royal blue from the right, purple
-   overhead — the fountain gradient rendered as environment. */
+/* Kansas City Royals — Kauffman Fountains
+   Royal blue pool glow from below, gold stadium lights from above —
+   night game at the K, fountains behind center field. */
 [data-theme="cc-royals"] body::before {
     background:
-        radial-gradient(ellipse 85% 70% at 0%   50%, rgba(255,0,175,0.18)  0%, transparent 62%),
-        radial-gradient(ellipse 70% 85% at 100% 50%, rgba(0,70,135,0.20)   0%, transparent 62%),
-        radial-gradient(ellipse 55% 40% at 50%  5%,  rgba(120,81,169,0.14) 0%, transparent 52%);
+        radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0,70,135,0.22)   0%, transparent 60%),
+        radial-gradient(ellipse 75% 45% at 50%   0%, rgba(192,154,91,0.13) 0%, transparent 55%);
 }
 
 /* Milwaukee Brewers — Wisco Way
@@ -3362,14 +3361,14 @@ a:focus:not(:focus-visible),
     height: 5px;
 }
 
-/* Kansas City Royals — Forever Fountains: SVG water-spray art, fuchsia-to-royal-blue */
+/* Kansas City Royals — Kauffman Fountains: SVG fountain art, gold-to-royal-blue */
 .theme-swatch[data-theme-set="cc-royals"] .swatch-preview {
     background-image: url('../assets/themes/royals-cc.svg');
     background-size: cover;
     background-position: center;
 }
 .theme-swatch[data-theme-set="cc-royals"] .swatch-preview::after {
-    background: linear-gradient(90deg, #FF00AF 0%, #7851A9 50%, #004687 100%);
+    background: linear-gradient(90deg, #C09A5B 0%, #004687 55%, #C09A5B 100%);
     height: 6px;
 }
 

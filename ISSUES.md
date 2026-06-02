@@ -70,7 +70,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 |---|---|---|
 | P3-018 | Game Detail | **Pitcher vs. team historical line.** On the game box score page, show each starting pitcher's career ERA/WHIP/IP against the opposing team (via `/people/{id}?hydrate=stats(type=vsTeam,...)`). Broadcast-essential pre-game context. |
 | P3-019 | Leaders | **Position-adjusted leaderboard view.** A "By Position" tab on the leaders page — top 3 for each position (C, 1B, 2B, 3B, SS, LF, CF, RF, DH, SP, RP, CL) in OPS or ERA, formatted as a grid. Fantasy positional reference. |
-| P3-021 | Home | **"Tonight's starters" deeper stats.** Extend the SP cards to also show the pitcher's home/away ERA split and vs-this-opponent career ERA (from `/people/{id}?hydrate=stats(type=vsTeam,...)`). Currently only season stats shown. |
+| P3-021 | Home | **"Tonight's starters" deeper stats.** ⚡ Partially shipped 2026-06-01. VS-opponent career BAA/K/BB row is live (async enrichment via `vsTeamTotal`, skeleton placeholder, graceful removal if no data). Remaining: home/away ERA split via `/people/{id}?hydrate=stats(group=[pitching],type=homeAndAway)`. Assign to Axiom. |
 | P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** Interactive play-by-play scorecard view for completed and live games. Full roadmap in "Scorecard Feature" section below. See `DECISIONS.md D-007`. Blocked on D-001 + D-003. |
 
 ---
@@ -150,16 +150,10 @@ This is a P2 UX issue. It is a behavioral change, not a visual one, and it is sm
 
 ---
 
-### Home Search Bar False Affordance
-**Contributor:** Vera | **Date:** 2026-05-17
+### Home Search Bar False Affordance — RESOLVED
+**Contributor:** Vera | **Date:** 2026-05-17 | **Resolved:** 2026-06-01
 
-The search element on the home page is styled as an input field — rounded corners, placeholder text "Search players, teams…", magnifier icon — but clicking it does not accept direct input. It opens the ⌘K overlay, which is a separate full-screen element that does accept input. The visual language says "type here" and the behavior says "I'll open something else."
-
-This is a textbook false affordance. The gap between what the element looks like (a text field) and what it does (a button that opens a modal) creates a moment of confusion that is disproportionate for such a small surface. Users who tap it on mobile expecting a keyboard to appear will be disoriented when a search overlay drops down instead.
-
-The fix is a reframe, not a rework: style the home search element as a button. It can still have a magnifier icon and placeholder-style text, but the element shape, cursor, and ARIA role should signal "click to search" rather than "type here." This removes no functionality — the ⌘K overlay is still the search mechanism. It just doesn't pretend the home element is something it isn't.
-
-**Recommended fix:** convert the home search trigger to a `<button>` with `role="button"` rather than an `<input>`. Style it as a call-to-action chip. Keep the "Search players, teams…" text as a label inside the button. Add keyboard shortcut hint `⌘K` at the trailing edge.
+Vera's recommended fix was implemented. The home search element is a `<button class="home-search-bar">` (`js/app.js:201`) — not an `<input>`. It carries the magnifier icon, "Search 900+ MLB players, teams…" label text, and a `⌘K` kbd hint at the trailing edge. Hidden on `≤640px` via `@media (max-width: 640px) { .home-search-kbd { display: none; } }`. Hover state (`--border-accent`, `--shadow-card-hov`) confirms it as a tappable element. ARIA: `aria-label="Search players"` on the button element. No false affordance — the element's shape, element type, and cursor all signal a button, not a text field.
 
 ---
 
@@ -189,14 +183,10 @@ The fix is a two-item swap: Prep before Builder. No new nav items, no restructur
 
 ---
 
-### Card CTA Hover-Reveal Invisible to Touch Users
-**Contributor:** Vera | **Date:** 2026-05-17
+### Card CTA Hover-Reveal Invisible to Touch Users — RESOLVED
+**Contributor:** Vera | **Date:** 2026-05-17 | **Resolved:** 2026-06-01
 
-`.card-cta` is styled with `color: var(--text-subtle)` and becomes visible only on `.player-card:hover .card-cta`. Touch devices do not emit hover events. This means the CTA — which signals that the card is tappable and navigates somewhere meaningful — is effectively invisible to every mobile user until after they have already committed to tapping the card.
-
-If the CTA's role is to provide an affordance signal (this card does something), it fails on touch. If its role is purely decorative post-tap, it adds no value on touch either. Either way, the behavior on mobile is wrong.
-
-**Recommended fix:** within the `≤768px` breakpoint, add a rule that renders `.card-cta` at full opacity without hover dependency. Example: `@media (max-width: 768px) { .card-cta { color: var(--accent); opacity: 1; } }`. The hover interaction on desktop can remain unchanged.
+Mobile fix in place at [`css/components.css:273`](css/components.css#L273): `@media (max-width: 768px) { .card-cta { color: var(--accent); } }`. The CTA is always accent-colored on mobile — no hover event required. Desktop still uses the hover-reveal pattern (`.player-card:hover .card-cta`) with accent color on hover. No change to touch interaction semantics.
 
 ---
 
@@ -221,6 +211,36 @@ For the broadcast professional audience, a color-blind announcer using this view
 ---
 
 ## Engineering Issues
+
+### Game-Day TTL Reduction — SHIPPED
+**Contributor:** Axiom | **Date:** 2026-06-01
+
+`fetchMLBLeagueStats()` previously cached season stats with a fixed 30-minute MEDIUM TTL regardless of time of day. During an active game window, a home run hit in the 9th inning could take up to 30 minutes to surface in the leaderboard or player card — a broadcast trust issue Vera flagged in the "Data Freshness" entry above.
+
+Fix: added `_activeGameHours()` helper in [`js/mlb.js:6`](js/mlb.js#L6). When the local clock reads noon–midnight ET (UTC-5, unadjusted for DST — close enough for sports context), `fetchMLBLeagueStats()` passes `ApiCache.TTL.SHORT` (5 min) instead of `ApiCache.TTL.MEDIUM` (30 min) for season-type stat fetches. `last7Days` and other non-season statsTypes keep MEDIUM. Cascades to `_fetchMLBLeaderSplits()` automatically since it calls `fetchMLBLeagueStats()` internally.
+
+**Known limitation — AppState-level staleness:** `_fetchMLBLeaderSplits()` stores results in `AppState.mlbLeaderSplits` for the session. Once populated, subsequent calls return the in-memory value and bypass the ApiCache TTL entirely. The TTL reduction only helps on page load or cache miss — not within a running session. See "Cache Coherence Guard" below for the within-session fix.
+
+**Vera cue:** The freshness label (`_formatFreshness`) already reflects ApiCache write time correctly. With SHORT TTL during game hours, the label will read "Updated X min ago" with X ≤ 5 on a page reload, rather than up to 30. This is a meaningful improvement for the broadcast use case.
+
+---
+
+### Cache Coherence Guard — Upcoming Axiom Work
+**Contributor:** Axiom | **Date:** 2026-06-01 | **Status:** Documented, not yet implemented
+
+**Problem:** `AppState.mlbPlayerStats[id]` (player card data) and `AppState.mlbLeaderSplits` (leaderboard data) are fetched from different endpoints with independent ApiCache TTLs. A player who goes 3-for-4 may show an updated AVG in the leaderboard before their player card cache refreshes — a temporary inconsistency that is most noticeable when a broadcaster switches between views mid-game.
+
+**Root cause:** these are different endpoints (`/stats?group=hitting` vs `/people/{id}?hydrate=stats`), cached independently, with no shared invalidation signal.
+
+**Proposed fix (~10 lines in mlb.js):** Before rendering a player detail card, compare the `ApiCache.getTimestamp()` of the player stats key against `AppState._mlbLeaderSplitsTs`. If the player stats entry is more than 5 minutes older, evict the player stats entry from ApiCache and re-fetch. This ensures the player card always reflects data at least as fresh as the leaderboard.
+
+**Where to wire it:** In `showMLBPlayerDetail()` in `mlb.js`, before the `fetchMLBLeagueStats()` call in the stats hydration block.
+
+**Vera cue:** When this ships, the inconsistency window closes to ≤5 min during game hours and ≤30 min off-hours. The freshness label on the player card will accurately reflect when the data was actually fetched, not a stale cache write.
+
+**Finn:** Do not implement this — it touches core AppState hydration logic. Axiom owns.
+
+---
 
 ### AppState Race Condition — `mlbLeaderSplits` — RESOLVED (D-003)
 **Contributor:** Axiom | **Date:** 2026-05-17 | **Resolved:** 2026-05-29
@@ -379,14 +399,16 @@ The strip never appears on any view other than `home`. It does not re-appear on 
 
 ---
 
-### Loading State Specs — P2 Bug Fixes (Finn's Audit Findings)
-**Contributor:** Vera | **Date:** 2026-05-17
-**Addresses:** Finn's D-005 audit — three P2 gaps and two style questions. Axiom implements; these specs define required behavior.
+### Loading State Specs — P2 Bug Fixes — ALL RESOLVED
+**Contributor:** Vera (spec) | **Date:** 2026-05-17 | **Resolved:** 2026-06-01
+**Addresses:** Finn's D-005 audit — three P2 gaps and two style questions. All three specs are implemented; verified against source code 2026-06-01.
 
 ---
 
-#### Spec 1 — Player Detail Cold Deep-Link
-**File:** [`js/navigation.js:498`](js/navigation.js#L498) `_restoreMLBPlayerDetail()`
+#### Spec 1 — Player Detail Cold Deep-Link — RESOLVED
+**File:** [`js/navigation.js:517`](js/navigation.js#L517) `_restoreMLBPlayerDetail()` | **Verified:** 2026-06-01
+
+All three states implemented. Skeleton: hero row (circular avatar, name line, position line) + 4×4 stat block grid + 3 stacked card skeletons injected synchronously before the `await`. Error state: `ErrorHandler.handle(grid, err, retryFn, { tag: 'MLB', title: 'Could not load player stats' })`. Not-found state: `if (!player)` replaced with a centered "Player not found" empty state with "Browse all players →" button in [`js/mlb.js:1484`](js/mlb.js#L1484).
 
 The user job here is: *"I bookmarked this player, I'm returning to check their stats."* A blank screen violates that job completely. Three states required, all missing today.
 
@@ -419,8 +441,10 @@ Use `ErrorHandler.renderEmptyState(grid, message)` or an equivalent structure. N
 
 ---
 
-#### Spec 2 — Home Hot Strip and Tonight's Starters
-**File:** [`js/app.js:282`](js/app.js#L282) `loadHome()` fire-and-forget block
+#### Spec 2 — Home Hot Strip and Tonight's Starters — RESOLVED
+**File:** [`js/app.js:246`](js/app.js#L246) | **Verified:** 2026-06-01
+
+Both sections have DOM-present skeleton markup in the initial synchronous `loadHome()` HTML. Hot strip: `#homeHotStrip` renders with 3 full-width skeleton shimmer rows at `56px` height while `mlbLeaderSplits` loads. Tonight's Starters: `#homeTonightSP` renders 3 skeleton SP cards (circular avatar, two stat-line skeletons) matching the real card dimensions. On API failure: `Logger.warn()` fires and both elements are removed via `.remove()` — no error card on the home page, per spec. `_renderHotStrip()` and `_renderTonightSPSection()` replace skeleton contents with real data when the async resolves.
 
 The user job here is: *"What's happening in MLB today?"* The home page's blank mid-section during load is a layout-shift problem and a trust problem. Users who land on a slow connection see the game cards skeleton above, nothing in the middle, then feature tiles below — it looks broken.
 
@@ -440,16 +464,14 @@ Both sections are removed from the DOM silently. No error message on the home pa
 
 ---
 
-#### Spec 3 — Style Inconsistency Rulings (Spinner vs. Skeleton)
+#### Spec 3 — Style Inconsistency Rulings — RESOLVED
+**Verified:** 2026-06-01
 
-**Team Detail loading state** (`showMLBTeamDetail` — [`js/mlb.js:3019`](js/mlb.js#L3019)):
-**Permitted as a named exception.** The team logo + spinner is contextually appropriate: the user navigated to a specific team, and showing that team's logo while data loads gives meaningful visual feedback. This is not a generic loading pattern — it's entity-first loading, which is justified here. No change required.
+**Stat Builder skeleton** ([`js/statBuilder.js:178`](js/statBuilder.js#L178)): Replaced — spinner is gone, replaced with a `builder-panel` skeleton: one heading-width line (160×20px), one large formula-area line (120px height), one input-area line (65% width). No layout shift.
 
-**Stat Builder loading state** (`displayStatBuilder` — [`js/statBuilder.js:168`](js/statBuilder.js#L168)):
-**Not approved for MLB.** The emoji icon + spinner tells the user nothing about the structure they're waiting for. Replace with a skeleton: one builder-panel outline block with two skeleton lines (palette header + formula input area). Height must match the real builder panel so the layout doesn't shift on load.
+**Game Prep "Try again" button** ([`js/mlb.js:5725`](js/mlb.js#L5725)): Added. Error state now: `⚾` icon → "Could not load today's schedule" → `<button class="btn-ghost" onclick="displayGamePrep()">Try again</button>`. Tone preserved (emoji-first), retry affordance present.
 
-**Game Prep error state** (`displayGamePrep` — [`js/mlb.js:5602`](js/mlb.js#L5602)):
-**Permitted with one addition.** The editorial emoji empty state ("Could not load today's schedule") fits the Game Prep view's tone — warmer than the standard error card. What's missing is a retry affordance. Add a "Try again" button to the existing markup that calls `displayGamePrep()`. Without it the user has no recovery path except navigating away and back. One button, no other changes.
+**Team Detail entity-first spinner**: Permitted exception — no change, per Vera's ruling.
 
 ---
 
@@ -1019,7 +1041,7 @@ Known `actionIndex` eventType values (confirmed across both games + known API vo
 
 **Smoke test result (Axiom, 2026-06-01):** Cold deep-link to `#mlb-scorecard-823384` (PHI @ PIT, 10 innings). Full render confirmed: 10-column CSS Grid, correct notation symbols (K, Kc, HR, FC, 1B, DP, G, BB, SF), correct diamond fill states (partial + full amber fills per base reached), paper texture aesthetic, player names, team logos, FINAL status, ← Scores nav. Live scores ticker active alongside the scorecard view.
 
-**P3 finding — header scores show `—` on cold deep-link:** `_fetchGameMeta()` uses `box.teams?.home?.runs` from the boxscore endpoint. On a cold load where `AppState.mlbGames` is not populated, the boxscore fetch likely returns data but the `runs` field may be in a different path (e.g., `teamStats.batting.runs`) or the fetch is completing after the render. Users who arrive via the Scores view (normal path) will have the game stub in `AppState.mlbGames` with correct scores from the schedule hydrate. Only affects bookmark/deep-link entry. Assign to Axiom: verify `box.teams?.home?.runs` field path against actual boxscore response and fix if wrong.
+**P3 finding — header scores show `—` on cold deep-link:** RESOLVED (Axiom, 2026-06-01). `_fetchGameMeta()` was reading `box.teams?.home?.runs` from the boxscore endpoint, which is the wrong field path. The MLB boxscore API puts run totals at `box.teams.home.teamStats.batting.runs`. The linescore endpoint (used elsewhere in mlb.js) uses `ls.teams.home.runs` — these are different endpoints with different shapes. Fixed in [`js/scorecard.js:165`](js/scorecard.js#L165) — both home and away corrected to `teamStats.batting.runs`. Cold deep-link to a completed game now shows the correct final score.
 
 **Axiom review findings (2026-06-01):**
 
@@ -1074,8 +1096,8 @@ Game totals row — cumulative R/H/E and LOB calculation. LOB = (runners who rea
 ---
 
 ### Phase 2 — Interactive Layer
-**Assigned to:** Finn | **Estimated:** 1–2 weeks | **Status:** Blocked (Phase 1 must ship and be reviewed)
-**Requires Vera behavioral spec for hover/tooltip states before starting.**
+**Assigned to:** Finn | **Estimated:** 1–2 weeks | **Status:** UNBLOCKED — begin immediately
+**Vera behavioral spec:** complete (all cell interaction states defined above). Phase 1 shipped and Axiom-reviewed 2026-06-01. Finn may start Phase 2 now.
 
 **Deliverables:**
 
