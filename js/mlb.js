@@ -1228,8 +1228,10 @@ function _formatFreshness(ts) {
     const mins = Math.round((Date.now() - ts) / 60000);
     if (mins < 1)  return 'Updated just now';
     if (mins < 60) return `Updated ${mins} min ago`;
-    const hrs = Math.floor(mins / 60);
-    return `Updated ${hrs}h ago`;
+    const d = new Date(ts);
+    const isToday = d.toDateString() === new Date().toDateString();
+    if (isToday) return `Updated today at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+    return `Updated ${Math.floor(mins / 60)}h ago`;
 }
 
 // ── Phase 2: computed rate stats ─────────────────────────────
@@ -5743,6 +5745,7 @@ async function displayGamePrep() {
                 <div class="prep-gc-team">
                     ${awayLogo ? `<img src="${awayLogo}" alt="${awayAbbr}" class="prep-gc-logo" loading="lazy" data-hide-on-error>` : ''}
                     <div class="prep-gc-info">
+                        <span class="prep-gc-side">Away</span>
                         <span class="prep-gc-abbr" style="color:${awayClr.primary}">${awayAbbr}</span>
                         <span class="prep-gc-rec">${awayRec}</span>
                         <span class="prep-gc-pitcher">P: ${_escHtml(awayPP?.fullName || 'TBD')}</span>
@@ -5755,6 +5758,7 @@ async function displayGamePrep() {
                 </div>
                 <div class="prep-gc-team prep-gc-team--home">
                     <div class="prep-gc-info prep-gc-info--home">
+                        <span class="prep-gc-side">Home</span>
                         <span class="prep-gc-abbr" style="color:${homeClr.primary}">${homeAbbr}</span>
                         <span class="prep-gc-rec">${homeRec}</span>
                         <span class="prep-gc-pitcher">P: ${_escHtml(homePP?.fullName || 'TBD')}</span>
@@ -6024,6 +6028,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                 <div class="prep-mh-team" style="border-left:4px solid ${awayClr.primary}">
                     ${awayLogo ? `<img src="${awayLogo}" alt="${awayAbbr}" class="prep-mh-logo" loading="lazy" data-hide-on-error>` : ''}
                     <div>
+                        <div class="prep-mh-side">Away</div>
                         <div class="prep-mh-city">${_escHtml(awayTeam.locationName || '')}</div>
                         <div class="prep-mh-name">${_escHtml(awayTeam.teamName || awayAbbr)}</div>
                         <div class="prep-mh-rec">${awayRec}</div>
@@ -6039,6 +6044,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
                 </div>
                 <div class="prep-mh-team prep-mh-team--home" style="border-right:4px solid ${homeClr.primary}">
                     <div class="prep-mh-team-info--home">
+                        <div class="prep-mh-side">Home</div>
                         <div class="prep-mh-city">${_escHtml(homeTeam.locationName || '')}</div>
                         <div class="prep-mh-name">${_escHtml(homeTeam.teamName || homeAbbr)}</div>
                         <div class="prep-mh-rec">${homeRec}</div>

@@ -3006,6 +3006,7 @@
 .prep-gc-logo { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
 .prep-gc-info { display: flex; flex-direction: column; gap: 0.05rem; }
 .prep-gc-info--home { align-items: flex-end; }
+.prep-gc-side { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-subtle); }
 .prep-gc-abbr { font-size: 1.05rem; font-weight: 800; }
 .prep-gc-rec { font-size: 0.72rem; color: var(--text-muted); }
 .prep-gc-pitcher { font-size: 0.68rem; color: var(--text-muted); }
@@ -3055,6 +3056,7 @@
 }
 .prep-mh-team-info--home { text-align: right; }
 .prep-mh-logo { width: 52px; height: 52px; object-fit: contain; }
+.prep-mh-side { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); margin-bottom: 0.1rem; }
 .prep-mh-city { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
 .prep-mh-name { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); }
 .prep-mh-rec { font-size: 0.78rem; color: var(--text-muted); }
@@ -3264,6 +3266,8 @@
     .prep-cmp-val,
     .prep-pp-val { color: #111 !important; }
 
+    .prep-mh-side,
+    .prep-gc-side,
     .prep-mh-city,
     .prep-mh-rec,
     .prep-mh-venue,
