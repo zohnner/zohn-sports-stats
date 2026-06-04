@@ -34,6 +34,7 @@ function addRecent(entry) {
 let _searchOpen       = false;
 let _searchSelIdx     = -1;
 let _searchFlatItems  = [];   // flat array of { action } for keyboard nav
+let _searchReturnFocus = null; // element to return focus to on close
 
 // ── Open / Close ──────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ function openGlobalSearch() {
     const overlay = document.getElementById('searchOverlay');
     const input   = document.getElementById('searchModalInput');
     if (!overlay || !input) return;
+    _searchReturnFocus = document.activeElement;
     overlay.hidden = false;
     _searchOpen    = true;
     _searchSelIdx  = -1;
@@ -54,6 +56,16 @@ function closeGlobalSearch() {
     const overlay = document.getElementById('searchOverlay');
     if (overlay) overlay.hidden = true;
     _searchOpen = false;
+    _searchReturnFocus?.focus();
+    _searchReturnFocus = null;
+}
+
+function _searchFocusable() {
+    return [
+        document.getElementById('searchModalInput'),
+        document.getElementById('searchModalClose'),
+        ...document.querySelectorAll('#searchModalResults .search-result-item'),
+    ].filter(Boolean);
 }
 
 // ── Recent action builder ─────────────────────────────────────
@@ -297,6 +309,20 @@ function initGlobalSearch() {
             items[_searchSelIdx]?.click();
         } else if (e.key === 'Escape') {
             closeGlobalSearch();
+        }
+    });
+
+    // Focus trap: Tab/Shift+Tab cycles within the overlay while open
+    overlay.addEventListener('keydown', e => {
+        if (!_searchOpen || e.key !== 'Tab') return;
+        const focusable = _searchFocusable();
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last  = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+            if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
         }
     });
 

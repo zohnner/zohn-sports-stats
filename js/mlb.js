@@ -430,7 +430,7 @@ async function fetchStatcastBulkLeaderboard(season) {
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
 
-    const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=batter&filter=&sort=4&sortDir=desc&min=50&selections=xba,xslg,xwoba,exit_velocity_avg,barrel_batted_rate&chart=false&csv=true`;
+    const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=batter&filter=&sort=4&sortDir=desc&min=50&selections=xba,xslg,xwoba,exit_velocity_avg,barrel_batted_rate,hard_hit_percent,sweet_spot_percent&chart=false&csv=true`;
     try {
         const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
         if (!res.ok) throw new Error(`Savant CSV ${res.status}`);
@@ -1586,6 +1586,20 @@ function _mlbPlayerLeagueRanks(playerId, group) {
 // ── View: Player Detail ───────────────────────────────────────
 
 function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
+    // Cache coherence: if leaderboard data is more than 5 min fresher than player
+    // stats in AppState, the player card would show stale numbers. Clear and re-fetch.
+    const _STALE = 5 * 60 * 1000;
+    if (AppState._mlbLeaderSplitsTs && AppState._mlbPlayerStatsTs &&
+        AppState._mlbLeaderSplitsTs - AppState._mlbPlayerStatsTs > _STALE) {
+        AppState.mlbPlayers     = { hitting: [], pitching: [] };
+        AppState.mlbPlayerStats = { hitting: {}, pitching: {} };
+        AppState._mlbPlayerStatsTs = null;
+        if (typeof _restoreMLBPlayerDetail === 'function') {
+            _restoreMLBPlayerDetail(playerId, group);
+            return;
+        }
+    }
+
     const players = AppState.mlbPlayers[group] || [];
     const player  = players.find(p => p.id === playerId);
     if (!player) {
@@ -3147,22 +3161,25 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
             if (!split || !split.gamesPlayed) { rowEl.remove(); return; }
 
             const opp    = data.people?.[0]?.stats?.[0]?.splits?.[0]?.opponent?.abbreviation || '';
-            const baa    = split.avg ? split.avg.replace(/^0/, '') : null;
-            const k      = split.strikeOuts;
-            const bb     = split.baseOnBalls;
+            const era    = split.era   ? parseFloat(split.era).toFixed(2)          : null;
+            const ip     = split.inningsPitched ?? null;
+            const whip   = split.whip  ? parseFloat(split.whip).toFixed(2)         : null;
+            const baa    = split.avg   ? split.avg.replace(/^0/, '')               : null;
             const starts = split.gamesPlayed;
-            const qual   = starts < 3 ? '(small sample)' : `(${starts} starts)`;
+            const qual   = starts < 3 ? '(small sample)' : `(${starts}G)`;
 
-            if (!baa) { rowEl.remove(); return; }
+            if (!era && !baa) { rowEl.remove(); return; }
+
+            const parts = [];
+            if (era)  parts.push(`<span class="vs-opp-row__val">${_escHtml(era)} ERA</span>`);
+            if (ip)   parts.push(`<span class="vs-opp-row__val">${_escHtml(String(ip))} IP</span>`);
+            if (whip) parts.push(`<span class="vs-opp-row__val">${_escHtml(whip)} WHIP</span>`);
+            if (baa)  parts.push(`<span class="vs-opp-row__val">${_escHtml(baa)} BAA</span>`);
 
             rowEl.removeAttribute('data-vs-placeholder');
             rowEl.innerHTML =
-                `<span class="vs-opp-row__label">${_escHtml(opp)} career</span> ` +
-                `<span class="vs-opp-row__val">${_escHtml(baa)} BAA</span>` +
-                `<span class="vs-opp-row__sep"> · </span>` +
-                `<span class="vs-opp-row__val">${k} K</span>` +
-                `<span class="vs-opp-row__sep"> · </span>` +
-                `<span class="vs-opp-row__val">${bb} BB</span>` +
+                `<span class="vs-opp-row__label">vs ${_escHtml(opp)}</span> ` +
+                parts.join('<span class="vs-opp-row__sep"> · </span>') +
                 `<span class="vs-opp-row__caveat"> ${_escHtml(qual)}</span>`;
         } catch (_) {
             rowEl.remove();
@@ -3915,11 +3932,13 @@ const MLB_LEADER_CATS = [
 ];
 
 const STATCAST_LEADER_CATS = [
-    { key: 'exit_velocity_avg',  label: 'Exit Velocity',  unit: 'EV',    color: '#f97316', desc: true, decimals: 1, suffix: ' mph' },
+    { key: 'exit_velocity_avg',  label: 'Exit Velocity',  unit: 'EV',      color: '#f97316', desc: true, decimals: 1, suffix: ' mph' },
     { key: 'barrel_batted_rate', label: 'Barrel Rate',    unit: 'Barrel%', color: '#ef4444', desc: true, decimals: 1, suffix: '%'    },
-    { key: 'xba',                label: 'Expected BA',    unit: 'xBA',   color: '#fbbf24', desc: true, decimals: 3, suffix: ''     },
-    { key: 'xslg',               label: 'Expected SLG',   unit: 'xSLG',  color: '#a78bfa', desc: true, decimals: 3, suffix: ''     },
-    { key: 'xwoba',              label: 'Expected wOBA',  unit: 'xwOBA', color: '#34d399', desc: true, decimals: 3, suffix: ''     },
+    { key: 'hard_hit_percent',   label: 'Hard Hit Rate',  unit: 'HH%',     color: '#fb923c', desc: true, decimals: 1, suffix: '%'    },
+    { key: 'sweet_spot_percent', label: 'Sweet Spot Rate',unit: 'SS%',     color: '#38bdf8', desc: true, decimals: 1, suffix: '%'    },
+    { key: 'xba',                label: 'Expected BA',    unit: 'xBA',     color: '#fbbf24', desc: true, decimals: 3, suffix: ''     },
+    { key: 'xslg',               label: 'Expected SLG',   unit: 'xSLG',    color: '#a78bfa', desc: true, decimals: 3, suffix: ''     },
+    { key: 'xwoba',              label: 'Expected wOBA',  unit: 'xwOBA',   color: '#34d399', desc: true, decimals: 3, suffix: ''     },
 ];
 
 const MLB_MINGP_OPTIONS = [0, 10, 20, 50, 100];

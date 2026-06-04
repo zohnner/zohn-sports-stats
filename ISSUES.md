@@ -70,7 +70,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 |---|---|---|
 | P3-018 | Game Detail | **Pitcher vs. team historical line.** On the game box score page, show each starting pitcher's career ERA/WHIP/IP against the opposing team (via `/people/{id}?hydrate=stats(type=vsTeam,...)`). Broadcast-essential pre-game context. |
 | P3-019 | Leaders | **Position-adjusted leaderboard view.** A "By Position" tab on the leaders page — top 3 for each position (C, 1B, 2B, 3B, SS, LF, CF, RF, DH, SP, RP, CL) in OPS or ERA, formatted as a grid. Fantasy positional reference. |
-| P3-021 | Home | **"Tonight's starters" deeper stats.** ⚡ Partially shipped 2026-06-01. VS-opponent career BAA/K/BB row is live (async enrichment via `vsTeamTotal`, skeleton placeholder, graceful removal if no data). Remaining: home/away ERA split via `/people/{id}?hydrate=stats(group=[pitching],type=homeAndAway)`. Assign to Axiom. |
+| P3-021 | Home | **"Tonight's starters" deeper stats.** ✅ Fully shipped 2026-06-03. Home/away ERA split live via `homeAndAway` hydrate, skeleton placeholder, graceful removal if no data. VS-opponent career BAA/K/BB row also live. |
 | P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** Interactive play-by-play scorecard view for completed and live games. Full roadmap in "Scorecard Feature" section below. See `DECISIONS.md D-007`. Blocked on D-001 + D-003. |
 | P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** Relay data assessment complete (2026-06-03). Expand `fetchStatcastBulkLeaderboard()` batter CSV `selections` param to add `hard_hit_percent` and `sweet_spot_percent`. Add two entries to `STATCAST_LEADER_CATS`. No new domain, no CSP change, no Worker update needed — same Savant endpoint, same caching pattern. Axiom feasibility: confirmed trivial (one-line URL change + two array entries). Assign to Finn once Kael confirms colors. |
 | P3-024 | Leaders | **Pitcher Statcast leaderboard.** Relay finding (2026-06-03): Savant exposes `/leaderboard/custom?type=pitcher` with fields including `p_whiff_percent`, `p_csw_rate`, `exit_velocity_avg` (EV allowed). Requires new fetch function, new `AppState.mlbSavantPitcherLeaderboard` field, and new leaderboard section after the batter Statcast panels. D-003 pattern applies — use pending-promise registry. Axiom must scope and confirm AppState field addition before Finn is assigned any work. |
@@ -84,7 +84,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 
 All three toggle functions (`_styleMLBViewBtn`, `_styleMLBGroupBtn`, `_styleMLBPosBtn`) confirmed using `classList.toggle` with correct base classes assigned on element creation. Wrapper uses `mlb-group-toggle-row`, separator uses `mlb-group-sep`. All CSS classes confirmed present in `components.css`. Kael visual review of light-mode rendering still required before the design system overhaul is fully signed off.
 
-**One secondary finding for Kael:** `posWrap` (the `#mlbPositionRow` container) at [`js/mlb.js:880`](js/mlb.js#L880) still uses `style.cssText` inline. This was outside the spec scope — flagging rather than fixing. Kael to decide whether a `.mlb-pos-row` class should be added to `components.css` and wired in `mlb.js`.
+**Secondary finding resolved (Finn, 2026-06-03):** `posWrap` at current `mlb.js:952` uses `posWrap.className = 'mlb-pos-row'` — the class is already wired. No `style.cssText` present. ISSUES.md line number was stale by ~70 lines. No further action needed.
 
 ---
 

@@ -823,7 +823,9 @@
     --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
 }
 
-/* Kansas City Monarchs — Negro Leagues tribute, royal blue and antique gold */
+/* Kansas City Monarchs — Negro Leagues tribute (1920–1965), Muehlebach Field.
+   Royal blue and antique gold: Satchel Paige, Buck O'Neil, the greatest dynasty
+   in Negro Leagues history. Borders tinted warm-parchment (not white) for period feel. */
 [data-theme="nl-monarchs"] {
     --bg-base:            #03061a;
     --bg-surface:         #07102a;

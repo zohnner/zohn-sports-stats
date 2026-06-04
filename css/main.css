@@ -178,9 +178,9 @@ body::after {
         radial-gradient(ellipse 52% 42% at 5%  96%,  rgba(206,17,38,0.16) 0%, transparent 50%);
 }
 
-/* Kansas City Monarchs — afternoon sun descending over Blues Park.
-   Antique gold light rakes from the upper-left; deep royal blue
-   shadow gathers in the lower-right as the evening comes on. */
+/* Kansas City Monarchs (Negro Leagues, 1920–1965) — afternoon sun over Muehlebach Field.
+   Antique gold rakes in from the upper-left like a long summer day in the Negro Leagues;
+   deep royal blue gathers in the lower-right as the evening comes on. */
 [data-theme="nl-monarchs"] body::before {
     background:
         radial-gradient(ellipse 72% 52% at 22% -4%,  rgba(200,164,0,0.16)  0%, transparent 56%),

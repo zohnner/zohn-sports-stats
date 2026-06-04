@@ -967,14 +967,33 @@ if (typeof window !== 'undefined') {
 // ── Theme & Settings Panel ────────────────────────────────────
 
 const _CC_TEAM_LOGOS = {
-    'cc-braves':  'https://www.mlbstatic.com/team-logos/144.svg',
-    'cc-orioles': 'https://www.mlbstatic.com/team-logos/110.svg',
-    'cc-reds':    'https://www.mlbstatic.com/team-logos/113.svg',
-    'cc-royals':  'https://www.mlbstatic.com/team-logos/118.svg',
-    'cc-brewers': 'https://www.mlbstatic.com/team-logos/158.svg',
-    'cc-pirates': 'https://www.mlbstatic.com/team-logos/134.svg',
-    'cc-padres':  'https://www.mlbstatic.com/team-logos/135.svg',
-    'cc-rangers': 'https://www.mlbstatic.com/team-logos/140.svg',
+    'cc-braves':       'https://www.mlbstatic.com/team-logos/144.svg',
+    'cc-orioles':      'https://www.mlbstatic.com/team-logos/110.svg',
+    'cc-reds':         'https://www.mlbstatic.com/team-logos/113.svg',
+    'cc-royals':       'assets/themes/royals-cc.svg',
+    'cc-brewers':      'https://www.mlbstatic.com/team-logos/158.svg',
+    'cc-pirates':      'https://www.mlbstatic.com/team-logos/134.svg',
+    'cc-padres':       'https://www.mlbstatic.com/team-logos/135.svg',
+    'cc-rangers':      'https://www.mlbstatic.com/team-logos/140.svg',
+    'cc-bananas':      'assets/themes/bananas.svg',
+    'retro-expos':     'assets/themes/expos.svg',
+    'nl-monarchs':     'assets/themes/monarchs.svg',
+    'aa-trash-pandas': 'assets/themes/trash-pandas.svg',
+};
+
+const _CC_THEME_ALTS = {
+    'cc-braves':       'Atlanta Braves City Connect',
+    'cc-orioles':      'Baltimore Orioles City Connect',
+    'cc-reds':         'Cincinnati Reds City Connect',
+    'cc-royals':       'Kansas City Royals City Connect',
+    'cc-brewers':      'Milwaukee Brewers City Connect',
+    'cc-pirates':      'Pittsburgh Pirates City Connect',
+    'cc-padres':       'San Diego Padres City Connect',
+    'cc-rangers':      'Texas Rangers City Connect',
+    'cc-bananas':      'Savannah Bananas',
+    'retro-expos':     'Montreal Expos Retro',
+    'nl-monarchs':     'Kansas City Monarchs — Negro Leagues',
+    'aa-trash-pandas': 'Rocket City Trash Pandas',
 };
 
 function _applyTheme(theme) {
@@ -992,7 +1011,7 @@ function _applyTheme(theme) {
             logoEl.onerror = null;
         }
         logoEl.src = ccLogo || 'assets/Icon.PNG';
-        logoEl.alt = ccLogo ? theme.replace('cc-', '') + ' City Connect' : 'SportStrata';
+        logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
 }
 
