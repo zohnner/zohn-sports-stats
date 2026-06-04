@@ -109,6 +109,9 @@
     --color-cmp-a:             rgba(129,140,248,0.35);
     --color-cmp-b:             rgba(52,211,153,0.35);
 
+    /* ── Text on accent backgrounds (buttons, badges, active states) ── */
+    --text-on-accent:          #0f172a;   /* dark text on #ff8100 orange (~7:1) */
+
     /* ── UI state (not stat categories, not semantic status) ── */
     --color-fav:               #f472b6;   /* favorite/heart icon */
     --color-fav-subtle:        rgba(244,114,182,0.12);
@@ -274,8 +277,8 @@
     --bg-base:              #f0f4f9;
     --bg-surface:           #ffffff;
     --bg-raised:            #f8fafc;
-    --bg-card:              rgba(255, 255, 255, 0.92);
-    --bg-card-hover:        rgba(248, 250, 252, 0.98);
+    --bg-card:              rgba(255, 255, 255, 1.0);
+    --bg-card-hover:        rgba(248, 250, 252, 1.0);
     --bg-overlay:           rgba(248, 250, 252, 0.97);
     --bg-subtle:            rgba(0, 0, 0, 0.025);
     --bg-interactive:       rgba(0, 0, 0, 0.04);
@@ -294,6 +297,9 @@
     --text-muted:           #64748b;
     --text-subtle:          #94a3b8;
     --text-disabled:        #cbd5e1;
+
+    /* Text on accent backgrounds — white on #d96a00 clears AA (~4.7:1) */
+    --text-on-accent:       #ffffff;
 
     /* Accent — slightly deeper for light-bg contrast */
     --accent:               #d96a00;
@@ -774,7 +780,7 @@
 
 /* Montreal Expos (Retro 1969–2004) — Olympic Stadium nights, tricolor pride */
 [data-theme="retro-expos"] {
-    --bg-base:            #04071e;
+    --bg-base:            #06091f;
     --bg-surface:         #090f2c;
     --bg-raised:          #0f163a;
     --bg-card:            rgba(9, 15, 44, 0.87);
@@ -889,11 +895,12 @@
     --accent-subtle:      rgba(232, 104, 48, 0.10);
     --accent-border:      rgba(232, 104, 48, 0.28);
     --accent-glow:        rgba(232, 104, 48, 0.24);
-    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.03);
-    --shadow-md:          0 4px 20px rgba(0,0,0,0.64), 0 0 0 1px rgba(255,255,255,0.04);
-    --shadow-lg:          0 8px 40px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.05);
-    --shadow-card:        0 2px 12px rgba(0,0,0,0.52), 0 0 0 1px var(--border-default);
-    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.74), 0 0 0 1px var(--border-accent);
+    /* Accent-tinted shadows — black-on-void is invisible on #02030e; engine-exhaust glow restores depth */
+    --shadow-sm:          0 1px 8px  rgba(232,104,48,0.15), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(232,104,48,0.18), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(232,104,48,0.22), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(232,104,48,0.12), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(232,104,48,0.20), 0 0 0 1px var(--border-accent);
     --skeleton-from:      rgba(255,255,255,0.02);
     --skeleton-mid:       rgba(255,255,255,0.06);
     --bg-header:          rgba(2, 3, 14, 0.98);

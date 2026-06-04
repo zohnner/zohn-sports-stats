@@ -98,8 +98,8 @@ body::after {
         180deg,
         transparent 0px,
         transparent 15px,
-        rgba(165,0,21,0.07) 15px,
-        rgba(165,0,21,0.07) 16px
+        rgba(165,0,21,0.12) 15px,
+        rgba(165,0,21,0.12) 16px
     );
 }
 

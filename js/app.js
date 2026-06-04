@@ -195,7 +195,7 @@ function loadHome() {
         ${isFirstVisit ? `
         <div class="home-welcome">
             <strong class="home-welcome-headline">Advanced MLB stats for announcers, fantasy players, and data fans.</strong>
-            <span class="home-welcome-sub">FIP, BABIP, ISO, Statcast percentiles, and 36 leaderboard categories — free, no account, no paywall.</span>
+            <span class="home-welcome-sub">FIP, BABIP, ISO, Statcast percentiles, and 50+ leaderboard categories — free, no account, no paywall.</span>
         </div>` : ''}
         <!-- Search prompt bar (P2-004) -->
         <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
@@ -986,6 +986,11 @@ function _applyTheme(theme) {
     const logoEl = document.querySelector('.brand-logo-img');
     if (logoEl) {
         const ccLogo = _CC_TEAM_LOGOS[theme];
+        if (ccLogo) {
+            logoEl.onerror = () => { logoEl.src = 'assets/Icon.PNG'; logoEl.onerror = null; };
+        } else {
+            logoEl.onerror = null;
+        }
         logoEl.src = ccLogo || 'assets/Icon.PNG';
         logoEl.alt = ccLogo ? theme.replace('cc-', '') + ' City Connect' : 'SportStrata';
     }

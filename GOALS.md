@@ -203,7 +203,7 @@ Unified player search across all sports — type any name, get any sport.
 | Metric | Current | Target |
 |---|---|---|
 | MLB features complete | ~90% | 100% (Statcast, career multi-season charts, player comparison) |
-| Leaderboard categories | ✅ 36 (hitting + pitching, incl. RC, LOB%, K/BB, SB%, TB) | Statcast: EV, Barrel%, xBA, xSLG |
+| Leaderboard categories | ✅ 47 standard + 5 Statcast (incl. PA, GS, CG, RC, LOB%, K/BB, SB%, TB, wOBA) | Hard Hit%, Sweet Spot% (P3-023), pitcher Statcast (P3-024) |
 | Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K% | Statcast, wRC+ (needs league constants) |
 | Time to first meaningful paint | ~1.5s cached | < 1s cached, < 3s cold |
 | Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded |

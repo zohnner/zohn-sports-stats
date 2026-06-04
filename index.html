@@ -23,9 +23,12 @@
     <!-- Anti-FOWT: set data-theme before first paint so CSS variables are correct immediately -->
     <script>
         (function(){
-            var s = localStorage.getItem('zs_theme');
-            if (!s) s = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', s);
+            var theme = 'dark';
+            try {
+                var stored = localStorage.getItem('zs_theme');
+                theme = stored != null ? stored : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            } catch (_) {}
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
