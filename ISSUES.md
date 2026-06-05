@@ -25,7 +25,7 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 3. **Deploy Worker proxy — Axiom executes after Step 1.** `cd worker && wrangler secret put BDL_API_KEY && wrangler deploy`. Paste the deployed Worker URL into `BDL_PROXY_URL` in `api.js`. Commit and push. Cipher reviews before push.
 
-**Post-deployment hardening (non-blocking):** Lock `ALLOWED_ORIGIN` in `worker/bdl-proxy.js` from `'*'` to `'https://sportsstrata.com'` to prevent the Worker URL from being used as a free BDL relay by external actors.
+**Post-deployment hardening — COMPLETE (2026-06-04):** Both Workers (`worker/bdl-proxy.js` and `worker/broadcast-blurb.js`) updated from `ALLOWED_ORIGIN = '*'` to an origin allowlist (`sportsstrata.com` + localhost dev ports). Requires `wrangler deploy` on the BDL proxy to take effect in production; broadcast-blurb deployment still pending project owner authorization (D-006). See Engineering Issues — Worker CORS Hardening below.
 
 **NBA features are currently non-functional** (all BDL calls throw — by design given key removal). This resolves when `BDL_PROXY_URL` is wired up in Step 3.
 
@@ -62,22 +62,116 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 | P3-015 | Player Detail | League rank badges on player stats — `#N MLB` shown on stats where the player ranks ≤ 30 in the league; green for top 5, accent for top 15. `_mlbPlayerLeagueRanks()` uses cached `mlbLeaderSplits`. |
 | P3-016 | Leaders | Active hitting streak leaderboard panel on leaders page. Fetches `stats=streak` type; players on ≥ 5-game streaks shown ranked, orange ≥ 10, red ≥ 15. Graceful fallback if endpoint unavailable. |
 | P3-017 | Player Detail | Monthly splits toggle. Month tabs (Apr–Oct) appended after L7/L14/L30 on both hitting and pitching splits cards. Green tint distinguishes month tabs from amber (recent) and default (situational). |
+| P3-018 | Game Detail | Pitcher vs. team historical line — ERA/IP/WHIP/BAA shown for starting pitchers vs. opponent in game box score. Upgraded from BAA/K/BB only. Shipped 2026-06-03. |
 | P3-020 | Home | "Tonight's Starters" section on home page. Shows each scheduled game's probable SPs side-by-side with ERA/WHIP/K9/W-L. Headshot + team color, clickable → pitcher detail. Renders when both games and `mlbLeaderSplits` are available (two trigger points). Hidden when no SPs announced or no games today. |
 
 ### Upcoming
 
 | ID | Area | Description |
 |---|---|---|
-| P3-018 | Game Detail | **Pitcher vs. team historical line.** On the game box score page, show each starting pitcher's career ERA/WHIP/IP against the opposing team (via `/people/{id}?hydrate=stats(type=vsTeam,...)`). Broadcast-essential pre-game context. |
-| P3-019 | Leaders | **Position-adjusted leaderboard view.** A "By Position" tab on the leaders page — top 3 for each position (C, 1B, 2B, 3B, SS, LF, CF, RF, DH, SP, RP, CL) in OPS or ERA, formatted as a grid. Fantasy positional reference. |
+| P3-019 | Leaders | **Position-adjusted leaderboard view.** ✅ Already live — `_appendMLBByPositionGrid` confirmed called at `mlb.js:4338`. Top hitters/pitchers per position by OPS/ERA. |
 | P3-021 | Home | **"Tonight's starters" deeper stats.** ✅ Fully shipped 2026-06-03. Home/away ERA split live via `homeAndAway` hydrate, skeleton placeholder, graceful removal if no data. VS-opponent career BAA/K/BB row also live. |
 | P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** Interactive play-by-play scorecard view for completed and live games. Full roadmap in "Scorecard Feature" section below. See `DECISIONS.md D-007`. Blocked on D-001 + D-003. |
-| P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** Relay data assessment complete (2026-06-03). Expand `fetchStatcastBulkLeaderboard()` batter CSV `selections` param to add `hard_hit_percent` and `sweet_spot_percent`. Add two entries to `STATCAST_LEADER_CATS`. No new domain, no CSP change, no Worker update needed — same Savant endpoint, same caching pattern. Axiom feasibility: confirmed trivial (one-line URL change + two array entries). Assign to Finn once Kael confirms colors. |
-| P3-024 | Leaders | **Pitcher Statcast leaderboard.** Relay finding (2026-06-03): Savant exposes `/leaderboard/custom?type=pitcher` with fields including `p_whiff_percent`, `p_csw_rate`, `exit_velocity_avg` (EV allowed). Requires new fetch function, new `AppState.mlbSavantPitcherLeaderboard` field, and new leaderboard section after the batter Statcast panels. D-003 pattern applies — use pending-promise registry. Axiom must scope and confirm AppState field addition before Finn is assigned any work. |
+| P3-025 | Scores | **Live Game Expanded View — phase-gated implementation.** In-place accordion on live game cards: game header, linescore, play-by-play, box score (Phase 1); pitch zone, base diagram, matchup stats (Phase 2). See `DECISIONS.md D-009` and full roadmap below. |
+| P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** ✅ Shipped 2026-06-03. `fetchStatcastBulkLeaderboard` URL expanded, `STATCAST_LEADER_CATS` has HH% (#fb923c) and SS% (#38bdf8). |
+| P3-024 | Leaders | **Pitcher Statcast leaderboard.** Relay finding (2026-06-03): Savant exposes `/leaderboard/custom?type=pitcher` with `p_k_percent`, `p_bb_percent`, `p_whiff_percent`, `p_csw_rate`, `exit_velocity_avg`. ✅ Shipped 2026-06-03 — see `fetchStatcastPitcherLeaderboard()` and `STATCAST_PITCHER_CATS` in `mlb.js`. |
 
 ---
 
 ## Design Issues
+
+### WCAG Audit Results — mlb-player-{id} (Priority 1)
+**Contributor:** Finn | **Date:** 2026-06-04
+**Tool:** Lighthouse 13.3.0 | **Score: 91/100** — passes D-004 threshold (≥90).
+
+**FAIL: color-contrast** — Ticker LIVE pill text at 3.79:1 (expected 4.5:1). Same root cause as players view — `--color-live` amber text on dark ticker surface. Routes to **Kael** for token fix alongside the players view repair.
+
+**FAIL: select-name** — Two `<select>` elements in the Compare Players card (`#mlb-cmp-select-b`, `#mlb-cmp-select-c`) had no label. Fix applied same session: `aria-label="Compare: player 2"` and `aria-label="Compare: player 3"` added to [`js/mlb.js:5657–5664`](js/mlb.js#L5657). Resolved.
+
+**Manual checks — all pass** (same stack as players view — verified in prior session).
+
+---
+
+### WCAG Audit Results — mlb-leaders (Priority 1) — Manual Run Required
+**Contributor:** Finn | **Date:** 2026-06-04
+
+Lighthouse times out on this view in the headless test environment. Root cause: the Statcast leaderboard fetches (`fetchStatcastBulkLeaderboard`, `fetchStatcastPitcherLeaderboard`) take longer than Lighthouse's DevTools evaluation window under headless. This is a tooling limitation, not an application error — the page loads and renders correctly.
+
+**Action required:** Run Lighthouse manually in Chrome DevTools (`chrome://inspect` → Lighthouse tab → Accessibility → `http://localhost:3001/#mlb-leaders`). Expected: same failures as players view (`--text-subtle` contrast, ticker pill) since the leaders view uses the same token set. Document results as a follow-up ISSUES.md entry.
+
+---
+
+### WCAG Audit Results — mlb-players (Priority 1)
+**Contributor:** Finn | **Date:** 2026-06-04
+**Tool:** Lighthouse 13.3.0 | **Score: 96/100** — passes D-004 threshold (≥90). Two root causes producing nine failures.
+
+**Root Cause A — `--text-subtle` insufficient contrast on dark card surfaces**
+
+`--text-subtle: #556d8f` renders at 3.05:1 on `--bg-card` (`#172131`) and 3.45:1 on `--bg-base` (`#0b1526`). AA requires 4.5:1 for text at these sizes (11.5–13px). Affects eight elements — all inactive toggle labels:
+
+| Element | Token used | Contrast | Failures |
+|---|---|---|---|
+| Inactive `.mlb-group-btn` ("Pitchers") | `--text-subtle` | 3.05:1 | 1 |
+| Inactive `.mlb-pos-btn` (1B, 2B, 3B, SS, OF, DH) | `--text-subtle` | 3.05:1 | 6 |
+| `.freshness-label` | `--text-subtle` | 3.45:1 | 1 |
+
+**Fix (Kael — one token change):** Lighten `--text-subtle` in `:root` (dark mode) to achieve ≥4.5:1 on `#172131`. `--text-muted` at `#7fa5c8` is ~5.9:1 and would pass — Kael decides whether to adjust `--text-subtle` up or switch inactive labels to `--text-muted`. Adjusting the token fixes all 8 failures in one line.
+
+**Root Cause B — Ticker LIVE pill text**
+
+`LIVE` text in `.ticker-status-pill--live`: computed `#976510` on `#191817` = 3.53:1, fails AA. Routes to Kael for visual fix.
+
+**Manual checks — all pass:**
+- `prefers-reduced-motion`: blanket `* { animation-duration: 0.01ms !important }` in `animations.css` ✅
+- Icon-only aria-labels: theme toggle, search button, menu button — all present and specific ✅
+- Search overlay focus trap: focus management + Escape handling confirmed in `search.js` ✅
+- Color-only states: live/win/loss all have text labels alongside color ✅
+
+**Remaining for full D-004 close:**
+1. Kael adjusts `--text-subtle` (or swaps inactive label token) — fixes 8 failures
+2. Kael fixes ticker live pill text contrast — fixes 1 failure
+3. Leaders view Lighthouse run (timed out in this session — re-run separately)
+4. Player detail view Lighthouse run (not yet run — Priority 1, needed before Pro tier launch)
+
+---
+
+### WCAG Contrast Fixes — RESOLVED
+**Contributor:** Finn (audit), Kael (fix) | **Date:** 2026-06-04 | **Verified:** Lighthouse 100/100 on mlb-players post-fix
+
+Two contrast failures confirmed across multiple views. Both have a single clear fix each.
+
+**Item 1 — `--text-subtle` on dark card surfaces (8 elements, 3.05–3.45:1)**
+
+Affects: all inactive `.mlb-pos-btn` labels, inactive `.mlb-group-btn` ("Pitchers"), `.freshness-label`.
+Current value: `--text-subtle: #556d8f`. Need ≥4.5:1 on `--bg-card` (`#172131`).
+`--text-muted: #7fa5c8` achieves ~5.9:1 and passes. Kael decides: raise `--text-subtle` or switch inactive label token.
+One token change in [`css/variables.css`](css/variables.css) `:root` block fixes all 8 elements.
+
+**Item 2 — Ticker LIVE pill text (1 element, 3.53–3.79:1)**
+
+The `.ticker-status-pill--live` text computes to `#976510` on `#191817` — amber on dark ticker background. Expected ≥4.5:1.
+Fix: darken the text color on the live pill, or increase `--color-live` luminance for use as text (not background). Kael decides approach.
+File: [`css/ticker.css`](css/ticker.css) or [`css/variables.css`](css/variables.css) — whichever sets the pill text color.
+
+**Both fixes unblock D-004 WCAG pass for Pro tier launch.**
+
+---
+
+### Position Chip Tokens — Light-Mode Contrast Gap — RESOLVED
+**Contributor:** Kael (finding + fix) | **Date:** 2026-06-04
+
+`--color-chip`, `--color-chip-bg`, and `--color-chip-border` had no `[data-theme="light"]` overrides. In light mode they inherited dark-mode indigo values: `#818cf8` text on white (~2.5:1, fails WCAG AA for 11.5px text) and `rgba(99,102,241,0.12)` background (nearly invisible on white, leaving border as the only active signal).
+
+**Fix:** Added explicit light-mode overrides to `[data-theme="light"]` in [`css/variables.css`](css/variables.css):
+- `--color-chip: #4f46e5` — darker indigo, ~6:1 contrast on white (passes AA)
+- `--color-chip-bg: rgba(79,70,229,0.09)` — proportionally adjusted tint
+- `--color-chip-border: rgba(79,70,229,0.38)` — proportionally adjusted border
+
+Affects all components using chip tokens in light mode: position filter chips, comparison bars, position pills, search tags. Dark mode and all CC themes unaffected — only the `[data-theme="light"]` block was changed.
+
+**Finn note:** When running the WCAG audit, position chips can be considered resolved for light-mode contrast. Verify the dark-mode values (`#818cf8` on `--bg-card`) separately — that contrast is lower (~3.1:1 on the dark surface) and may still be a finding.
+
+---
 
 ### Player View Toggles — COMPLETE
 **Contributor:** Kael (spec) | **Date:** 2026-05-29 | **Resolved by:** Axiom | **Date resolved:** 2026-05-31
@@ -214,6 +308,65 @@ For the broadcast professional audience, a color-blind announcer using this view
 
 ## Engineering Issues
 
+### Park Factors Table — Undated, No Source Attribution, No Update Path
+**Contributor:** Relay | **Date:** 2026-06-04
+
+`_PARK_FACTORS` at [`js/mlb.js:138`](js/mlb.js#L138) is a static 30-entry lookup hardcoded with no season year, no source, and no update mechanism. Park factors shift year-over-year. The A's entry (team ID 133, value `0.97`) references Sutter Health Park in the comment but the factor likely reflects Oakland Coliseum era data — this requires verification.
+
+**Recommended actions (Axiom — small):**
+1. Add `// Source: Baseball Reference park factors | Season: YYYY` at the top of the table. Document which season these values reflect so future reviewers know when a refresh is due.
+2. Flag in GOALS.md as an annual maintenance item: refresh park factor values at each season's start (April).
+
+This is not a P1 — the values are close enough for a badge display and graceful fallback (`_parkFactorBadge` renders nothing if the team ID is missing). But stale values mislead analysis for teams with recently changed parks.
+
+---
+
+### Sprint Speed CSV — No Column Schema Guard
+**Contributor:** Relay | **Date:** 2026-06-04
+
+`fetchSprintSpeedLeaderboard()` at [`js/mlb.js:484`](js/mlb.js#L484) parses Savant's sprint speed CSV by header name. If Savant renames `sprint_speed` to another column name, the `.filter(r => r.player_id && r.sprint_speed)` at line 503 silently returns an empty array — the feature goes dark with no log entry. The HTML-response guard (line 494) handles a different failure mode.
+
+**Recommended fix (Finn — one line, Axiom review):** After parsing headers at line 497, add:
+```js
+if (!headers.includes('sprint_speed')) {
+    Logger.warn('Savant sprint speed CSV schema changed — column not found', undefined, 'MLB');
+    return null;
+}
+```
+This converts a silent data failure into an observable log event. Route to Axiom if the fix touches anything beyond the one guard line.
+
+---
+
+### Bullpen Tracker — Cold-Cache Request Budget Watch Item
+**Contributor:** Relay | **Date:** 2026-06-04
+
+`_populateBullpenSection()` at [`js/mlb.js:6595`](js/mlb.js#L6595) fires up to 6 boxscore fetches on cold cache (3 games × 2 teams). Combined with the ~12 existing parallel fetches in `displayGamePrep()`, a cold game prep load now initiates up to 18 concurrent MLB Stats API calls. LONG TTL (60 min) means this is a one-time cost per session and is acceptable today. Document as a budget watch item: if game prep view grows further in data scope, audit the total cold-cache request count before adding more parallel fetches.
+
+No action needed now. File if the budget exceeds 20 calls on a cold load.
+
+---
+
+### Worker CORS Hardening — Source Complete, BDL Redeploy Pending
+**Contributor:** Cipher (finding) | Axiom (implementation) | Folio (docs) | **Date:** 2026-06-04
+
+**Finding:** Both deployed Cloudflare Workers used `ALLOWED_ORIGIN = '*'`, making them open relays. Anyone who discovered the Worker URLs could use the BDL API key quota for free (bdl-proxy) or generate Anthropic API charges at project expense (broadcast-blurb).
+
+**Severity:** Medium. No key exposure — secrets stay server-side. Risk is quota exhaustion (BDL) and cost abuse (Anthropic).
+
+**Resolution:** Replaced wildcard CORS with an origin allowlist in both Workers. Only `https://sportsstrata.com` and localhost dev ports (`3001`–`3003`, both `localhost` and `127.0.0.1`) receive a matching `Access-Control-Allow-Origin` header. All other origins receive the production domain in the header, causing the browser to block them. Savant proxy path regex also tightened to remove `%` (aligns with the BDL proxy pattern). Brand name corrected from "ZohnStats" to "SportStrata" in the bdl-proxy.js file comment.
+
+**Files changed:** [`worker/bdl-proxy.js`](worker/bdl-proxy.js) | [`worker/broadcast-blurb.js`](worker/broadcast-blurb.js)
+
+**Remaining actions:**
+- `wrangler deploy` on the BDL proxy to push the source change to production — Axiom executes when ready.
+- Broadcast-blurb deployment requires project owner authorization per D-006 — source fix is staged, deploy blocked.
+
+**Cipher verification:** Allowlist uses exact string matching (`Array.includes`), no prefix bypass possible. Empty-origin requests fall back to production domain correctly. Control holds.
+
+**Informational — CF edge cache + Vary:** The BDL proxy uses `cf: { cacheEverything: true }`. With origin-dependent CORS headers, a cached response from one local dev port could be served to a different local port with the wrong CORS header. No security impact — but if local dev CORS failures appear after this deploys, add `'Vary': 'Origin'` to BDL response headers. Not a blocker.
+
+---
+
 ### Game-Day TTL Reduction — SHIPPED
 **Contributor:** Axiom | **Date:** 2026-06-01
 
@@ -227,8 +380,8 @@ Fix: added `_activeGameHours()` helper in [`js/mlb.js:6`](js/mlb.js#L6). When th
 
 ---
 
-### Cache Coherence Guard — Upcoming Axiom Work
-**Contributor:** Axiom | **Date:** 2026-06-01 | **Status:** Documented, not yet implemented
+### Cache Coherence Guard — RESOLVED (verified 2026-06-04)
+**Contributor:** Axiom | **Date:** 2026-06-01 | **Verified by:** Axiom 2026-06-04
 
 **Problem:** `AppState.mlbPlayerStats[id]` (player card data) and `AppState.mlbLeaderSplits` (leaderboard data) are fetched from different endpoints with independent ApiCache TTLs. A player who goes 3-for-4 may show an updated AVG in the leaderboard before their player card cache refreshes — a temporary inconsistency that is most noticeable when a broadcaster switches between views mid-game.
 
@@ -1175,3 +1328,467 @@ Annotation mode (freehand notes per cell) is effectively a mini drawing canvas a
 - `mlbPlayerStats` — `{ hitting: { [id]: statsObj }, pitching: { [id]: statsObj } }`
 
 **Before any push:** run `/deploy-check`. It validates BDL key exposure, CSP sync, and committed state of critical files.
+
+---
+
+## Live Game Expanded View — Phased Implementation Roadmap
+
+**Architecture lead:** Axiom | **Date:** 2026-06-04
+**Reference:** `sportsstrata_live_game_expanded_view.md` | **Decision:** `DECISIONS.md D-009`
+
+**Spec gates — Finn does not start Phase 1 until all three exist:**
+- ✅ Kael visual spec: complete 2026-06-04 — see "Kael Visual Spec — Phase 1" above
+- ✅ Vera behavioral spec: complete 2026-06-04 — see "Vera Behavioral Spec — Phase 1" above
+- ✅ Axiom feasibility sign-off: complete 2026-06-04 — `js/liveGame.js` + `css/liveGame.css` created and wired. Stub implementation in place. `stopLiveGamePolling()` hooked into `navigateTo()`. Click handler updated in `_createMLBGameCard()`. All 26 JS files pass syntax check.
+
+**All three Phase 1 gates closed 2026-06-04. Finn may begin Phase 1 after completing Phase 0 live-game API verification.**
+
+---
+
+### Kael Visual Spec — Phase 1
+**Contributor:** Kael | **Date:** 2026-06-04
+**Gates:** Required before Finn starts Phase 1. Vera behavioral spec and Axiom feasibility must also be complete.
+
+---
+
+#### Posture
+
+The expanded panel lives inside the scores list, not above it. It should feel like a score card that opened up — the same surface, more information, no chrome escalation. No modal shadow, no overlay backdrop, no new surface color. The panel is the game card, extended.
+
+One intentional exception: the left border. A 3px solid band in the home team's primary color runs the full panel height. This is the only place team color applies to the panel structure itself — every other use of team color is in the score display and logo (already established in the game card). The border provides immediate visual identity without the panel needing a team-colored header.
+
+---
+
+#### Accordion Container — `.lg-panel`
+
+```css
+.lg-panel {
+    border-left: 3px solid var(--lg-team-color, var(--accent));
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-default);
+    border-bottom: 1px solid var(--border-default);
+    margin: 0 calc(-1 * var(--space-4));   /* bleed to card edges */
+    padding: var(--space-4);
+    animation: lgPanelOpen 180ms ease-out forwards;
+}
+@keyframes lgPanelOpen {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-panel { animation: none; }
+}
+```
+
+`--lg-team-color` is set inline by JS on `.lg-panel` using the home team's `getMLBTeamColors(abbr).primary`. No hardcoded colors in CSS.
+
+The panel inserts immediately after the clicked game card's DOM node. It is not a child of the card — it is a sibling. The game card itself does not change its layout or size when the panel opens.
+
+---
+
+#### Game Header Bar — `.lg-header`
+
+Sits at top of `.lg-panel`. Single row on desktop, wraps on mobile.
+
+```
+[Away logo] AWAY  3 : 2  HOME [Home logo]    ▲7th    2-1 | 1 Out    [LIVE ●]
+```
+
+Tokens:
+- Score values: `var(--font-display)` weight 800, `var(--text-2xl)` — same weight as ticker scores
+- Winning team score: `color: var(--color-win)`
+- Inning indicator: `var(--font-mono)` weight 700, `var(--text-sm)`, `color: var(--text-secondary)`
+- Count/outs pill: `var(--bg-raised)` background, `var(--border-default)` border, `var(--radius-full)`, `var(--text-xs)` weight 600 — e.g. `2-1 · 1 Out`
+- LIVE badge: reuse existing `.game-status--live` — amber dot + "LIVE" — no redesign
+- FINAL / DELAYED / POSTPONED: reuse `.game-status--final` / `.game-status--sched` with appropriate labels
+
+---
+
+#### Linescore — `.lg-linescore`
+
+CSS Grid. Inning number headers top, R/H/E pinned right, team rows below.
+
+```css
+.lg-linescore {
+    display: grid;
+    grid-template-columns: 48px repeat(var(--lg-innings, 9), minmax(28px, 1fr)) 20px 24px 24px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-xs);
+    margin: var(--space-3) 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.lg-linescore-cell {
+    text-align: center;
+    padding: 0.25rem 0.15rem;
+    color: var(--text-secondary);
+}
+.lg-linescore-cell--header {
+    color: var(--text-subtle);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-default);
+}
+.lg-linescore-cell--active {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border-radius: var(--radius-xs);
+}
+.lg-linescore-cell--rhe {
+    font-weight: 800;
+    color: var(--text-primary);
+    border-left: 1px solid var(--border-default);
+}
+.lg-linescore-team {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    text-align: left;
+    padding-left: 0.25rem;
+}
+```
+
+`--lg-innings` set inline by JS. Extra innings extend the grid automatically — no max column assumption.
+
+---
+
+#### Tab Bar — `.lg-tabs`
+
+Three tabs in Phase 1 (Play-by-Play | Box Score), using existing `.mlb-group-btn` / `.mlb-group-btn--active` classes. No new CSS needed.
+
+```html
+<div class="mlb-group-toggle-row lg-tabs" role="tablist">
+    <button class="mlb-group-btn mlb-group-btn--active" role="tab" aria-selected="true"  data-lg-tab="pbp">Play-by-Play</button>
+    <button class="mlb-group-btn"                        role="tab" aria-selected="false" data--lg-tab="box">Box Score</button>
+</div>
+```
+
+Reuses the existing toggle component exactly — no divergence. Phase 2 adds the Matchup tab as a third button.
+
+---
+
+#### Play-by-Play — `.lg-pbp`
+
+Scrollable list. Max height `320px`, `overflow-y: auto`. Most recent play at top.
+
+```css
+.lg-pbp-entry {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border-default);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.lg-pbp-entry:last-child { border-bottom: none; }
+
+.lg-pbp-inning {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 0.3rem 0.5rem 0.2rem;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border-default);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Scoring play — green-tinted background */
+.lg-pbp-entry--scoring {
+    background: var(--color-win-subtle);
+    border-left: 2px solid var(--color-win);
+    padding-left: calc(0.5rem - 2px);
+}
+
+/* Home run */
+.lg-pbp-entry--hr::before {
+    content: '💥 ';
+}
+```
+
+New play entries slide in from top: `animation: lgEntrySlide 200ms ease-out`. Reduced-motion override: `animation: none`.
+
+---
+
+#### Box Score Tables — `.lg-box`
+
+Two tables per team (batting + pitching), switched via a team selector pill above. No new table CSS needed — reuse `.stats-table` from `components.css` if it exists, otherwise:
+
+```css
+.lg-box-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.lg-box-table th {
+    color: var(--text-subtle);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 0.25rem 0.4rem;
+    border-bottom: 1px solid var(--border-default);
+    text-align: right;
+}
+.lg-box-table th:first-child { text-align: left; }
+.lg-box-table td {
+    padding: 0.2rem 0.4rem;
+    color: var(--text-secondary);
+    text-align: right;
+    border-bottom: 1px solid var(--border-default);
+}
+.lg-box-table td:first-child { text-align: left; color: var(--text-primary); font-family: var(--font-sans); }
+.lg-box-table tr--active td { background: var(--accent-subtle); }
+.lg-box-table tr--sub td:first-child { font-style: italic; color: var(--text-muted); }
+```
+
+Decision column (W/L/S/H/BS) rendered as a colored badge inline in the pitcher name cell — reuse `.position-badge` or similar existing pill.
+
+---
+
+#### What Finn Must Not Do
+- No inline `style=` for team colors — use `--lg-team-color` CSS custom property set by JS
+- No hardcoded pixel values — all spacing from `--space-*` tokens
+- No new color tokens — all from existing `variables.css`
+- No `innerHTML +=` — build the full panel HTML string, inject once
+- Do not modify `.game-card` CSS — the panel is a sibling, not a child
+
+---
+
+### Vera Behavioral Spec — Phase 1
+**Contributor:** Vera | **Date:** 2026-06-04
+**Gates:** Required before Finn starts Phase 1. Companion to Kael's visual spec.
+
+---
+
+#### Entry and Exit
+
+**Trigger:** Click on any live game card (`.game-card` where `abstractGameState === 'Live'`). The existing card click handler opens `showMLBGameDetail` — Finn wires a new handler that opens the expanded panel instead for live games. Final game cards continue to use the existing detail flow.
+
+**One panel at a time.** Opening a panel for Game A while Game B's panel is open: close Game B's panel (collapse, stop polling if running), open Game A's panel, start polling. Never two panels open simultaneously.
+
+**Exit:** A close button (`×`, top-right of `.lg-panel`, `aria-label="Collapse game view"`) collapses the panel. Collapse animation: reverse of open (`opacity 0, translateY(-6px)`, 150ms). After animation completes, element is removed from DOM and polling stops.
+
+---
+
+#### State 1 — Loading
+
+Immediately on panel open, before any fetch resolves:
+
+- Game header renders synchronously from data already available in the game card's `game` object: team names, logos, current score, inning indicator, count/outs if available from `game.linescore`
+- Linescore area: skeleton shimmer rows (2 rows × 10 columns)
+- Tab content area: 4 skeleton lines at `var(--text-xs)` height
+
+The header is never a skeleton — the game card already has enough data to render it immediately.
+
+#### State 2 — Live (data loaded, polling active)
+
+All sections populated. LIVE badge pulses. Polling runs every 9 seconds. On each poll cycle where linescore state changes: header count/outs update, linescore refreshes active column highlight, new play-by-play entries prepend to list with slide-in animation.
+
+**Play-by-play animation:** new entries prepend to the container. The entry animates from `opacity: 0, translateY(-8px)` to `opacity: 1, translateY(0)` over 200ms. No animation for entries that were present before the poll (only the diff).
+
+**Score change:** when either team's run total increases, flash the score digit — `background-color: var(--color-win-subtle)` for 800ms then fade. CSS-only via a toggled class. One class toggle, one CSS transition.
+
+**Pitching change:** if `feed/live` shows a new pitcher (`currentPlay.matchup.pitcher.id` changed since last poll), prepend a banner entry to the play-by-play list styled as `.lg-pbp-entry--pitching-change`: `"↔ Singer replaced by Bubic"`, `color: var(--text-muted)`, italic. No separate banner element — it's a play-by-play entry with a special style.
+
+#### State 3 — Poll failure / reconnecting
+
+After two consecutive linescore poll failures (network error or non-200 response): replace the LIVE badge with a `RECONNECTING…` badge (`color: var(--text-muted)`, no dot). Continue attempting polls.
+
+After five consecutive failures: replace badge with `LIVE DATA UNAVAILABLE`. Show a "Retry" button below the game header that calls `_pollLiveGame(gamePk)` immediately and resets the failure counter. Do not remove any previously loaded data — show last known state, clearly labeled as stale via the badge.
+
+#### State 4 — Game final (during polling session)
+
+When `abstractGameState` changes to `'Final'` during a polling session: stop polling, replace LIVE badge with FINAL badge (`.game-status--final`), remove count/outs pill (game is over), add a "Full scorecard →" link in the header that navigates to `mlb-scorecard-{gamePk}`. Play-by-play log freezes. Box score freezes.
+
+#### State 5 — Delayed / Suspended
+
+When `detailedState` is `'Delayed'`, `'Suspended'`, or `'Rain Delay'`: reduce poll interval to 60 seconds. Replace LIVE badge with `DELAYED` or `SUSPENDED` (`.game-status--sched` styling). Show delay reason as a single line below the linescore if available from `linescore.note`. At-bat module (Phase 2) freezes if present.
+
+#### State 6 — Between innings
+
+When `linescore.inningState === 'Middle'` or `'End'`: count/outs pill shows `—` instead of a count. No at-bat module content (Phase 2). Play-by-play log is current. Poll continues at normal 9-second interval.
+
+---
+
+#### Tab Behavior
+
+`data-lg-tab` attribute on each tab button. Active tab tracked in module-scoped `Map<gamePk, tabId>`. Default tab on first open: `'pbp'` (Play-by-Play). On tab switch: swap active class, swap content panel visibility. No re-fetch on tab switch — all data is already loaded.
+
+`aria-selected="true/false"` on each tab button. `role="tabpanel"` on each content section with matching `aria-labelledby`. Tab panels not hidden via `display:none` — use `hidden` attribute for proper ARIA semantics.
+
+---
+
+#### Mobile Layout (≤768px)
+
+Vertical stack order within `.lg-panel`:
+1. Game header (score, status — same as desktop)
+2. Count/outs + inning pill (own row)
+3. Linescore (horizontal scroll within panel)
+4. Tab bar (full width)
+5. Tab content (play-by-play or box score)
+
+No two-column layout on mobile. The pitch zone (Phase 2) drops below the linescore on mobile, not at the top. This contradicts the source document's wording — the source document is overridden by this spec.
+
+Linescore horizontal scroll: `-webkit-overflow-scrolling: touch`, scrollbar hidden on mobile (`scrollbar-width: none`).
+
+---
+
+#### Keyboard Navigation
+
+| Key | Behavior |
+|---|---|
+| `Tab` | Moves through: close button → tab bar buttons → content elements |
+| `←` / `→` on focused tab button | Moves between tab buttons, activates focused tab |
+| `Enter` / `Space` on tab button | Activates tab (already default behavior on `<button>`) |
+| `Escape` | Collapses panel (same as clicking `×` close button) |
+
+Focus returns to the game card's expand trigger when the panel is closed via Escape or the close button.
+
+---
+
+#### What Vera Has Not Specced (Phase 2)
+- Pitch zone interaction (dot hover/tap, tooltip, keyboard focus on dots)
+- Base diagram tap behavior on mobile
+- Matchup stats tab empty state (player who has never faced this pitcher)
+
+---
+
+### Phase 0 — API Verification (Finn, no code)
+**Assigned to:** Finn | **Blocks:** Phase 1 | **Status:** Partially confirmed by Axiom — remaining item below
+
+**Confirmed:**
+- `/game/{gamePk}/linescore` — lightweight (2KB), correct for diff polling. Fields: `currentInning`, `inningState`, `teams.away.runs`, `teams.home.runs`.
+- `/game/{gamePk}/feed/live` — combined payload (200–500KB). Contains linescore + all plays + boxscore + current play `pitchData`.
+- `/game/{gamePk}/boxscore` — already used by bullpen tracker. Field path for runs: `box.teams.home.teamStats.batting.runs` (not `box.teams.home.runs`). Confirmed by scorecard P3 fix.
+- `/people/{personId}/stats?stats=vsPlayer&opposingPlayerId={id}&group=hitting` — **confirmed working**. Returns `vsPlayer` per-season splits + `vsPlayerTotal` career aggregate. Tested live 2026-06-04 against Pasquantino (686469) vs. Berríos (621244). Handle empty `splits` gracefully.
+- `matchup.batterStrikeZoneTop` / `matchup.batterStrikeZoneBottom` — present in `feed/live` per-play matchup object. Use for zone bounds, not a fixed rectangle.
+
+**Remaining Finn task (Phase 0): ✅ COMPLETE — 2026-06-04.** See findings below.
+
+### Phase 0 Findings — Live Game feed/live API Shape
+**Contributor:** Finn | **Date:** 2026-06-04
+**Game verified:** 823457 (SD @ PHI, Final) via `/api/v1.1/game/823457/feed/live`
+
+---
+
+**CRITICAL — API version mismatch (routed to Relay + Axiom, fixed same session):**
+
+`/game/{gamePk}/feed/live` returns **404 on `/api/v1`** and **200 on `/api/v1.1`**. This is the only MLB Stats API endpoint that requires the v1.1 base URL. All other game endpoints (`/linescore`, `/boxscore`, `/playByPlay`) work correctly on v1.
+
+Impact: `displayGamePrep()` in `mlb.js` was silently failing on this fetch. Fixed by adding `MLB_BASE_URL_V11` constant at `mlb.js:340` and optional `baseUrl` parameter to `mlbFetch()`. The one call site updated at `mlb.js:6217`. `liveGame.js` polling URL updated to v1.1.
+
+---
+
+**CHECK 1 — Linescore field paths: CONFIRMED ✅**
+
+All fields accessible at `feed.liveData.linescore`:
+- `currentInning` — integer (1-based) ✅
+- `inningState` — string: `"Top"`, `"Middle"`, `"End"`, `"Bottom"` ✅
+- `isTopInning` — boolean ✅
+- `balls`, `strikes`, `outs` — integers at linescore root ✅
+- `teams.away.runs`, `teams.away.hits`, `teams.away.errors` ✅
+- `teams.home.runs`, `teams.home.hits`, `teams.home.errors` ✅
+- `innings[n]` shape: `{ num: 1, ordinalNum: "1st", home: { runs, hits, errors, leftOnBase }, away: { runs, hits, errors, leftOnBase } }` ✅
+
+Note: innings use `home`/`away` sub-keys (not `home.runs` at top level of inning) — `liveGame.js` `_buildLinescore()` already handles this correctly.
+
+---
+
+**CHECK 2 — Pitch coordinates: CONFIRMED with correction ✅**
+
+Pitch events in `liveData.plays.currentPlay.playEvents`:
+- Filter by `e.isPitch === true` (not `e.type === 'pitch'`) ✅
+- `pitchData.coordinates.pX` — horizontal position in feet from plate center ✅ (sample: -0.263)
+- `pitchData.coordinates.pZ` — vertical position in feet from ground ✅ (sample: 1.043)
+- `pitchData.startSpeed` — velocity in mph ✅ (sample: 91.4)
+- `details.type.description` — pitch type ✅ (sample: "Cutter")
+- `details.call.description` — call result ✅ (sample: "Swinging Strike")
+- `count.balls`, `count.strikes` — count at time of pitch ✅
+
+**Correction to source document and D-009:** `batterStrikeZoneTop` and `batterStrikeZoneBottom` are NOT on `currentPlay.matchup` — they do not exist at that path. Correct path is `playEvents[n].pitchData.strikeZoneTop` and `pitchData.strikeZoneBottom` (present on every pitch event). D-009 architecture note and Kael's Phase 2 spec should be updated to reflect this. Kael's SVG coordinate mapping formula is unchanged — just the source field path differs.
+
+---
+
+**CHECK 3 — Box score battingOrder: CONFIRMED ✅**
+
+- `liveData.boxscore.teams.home.battingOrder` — array of numeric player IDs (e.g. `[656941, 607208, 547180, ...]`) ✅
+- `liveData.boxscore.teams.away.battingOrder` — same ✅
+- Player data keyed as `teams.home.players['ID' + playerId]` ✅
+- `player.stats.batting` — full batting stats object with `atBats`, `runs`, `hits`, `rbi`, `baseOnBalls`, `strikeOuts` ✅
+- `player.person.fullName`, `player.person.lastName` ✅
+- `player.position.abbreviation` ✅
+- `liveData.boxscore.teams.home.pitchers` — array of numeric pitcher IDs in appearance order ✅
+- `player.gameStatus.isCurrentPitcher` — boolean, true for the active pitcher ✅
+
+---
+
+**CHECK 4 — gameData teams: CONFIRMED ✅**
+
+- `feed.gameData.teams.home.abbreviation` ✅ (e.g. "PHI")
+- `feed.gameData.teams.away.abbreviation` ✅ (e.g. "SD")
+- `feed.gameData.status.abstractGameState` ✅ ("Final", "Live", "Preview")
+- `feed.gameData.status.detailedState` ✅ ("Final", "In Progress", "Scheduled", etc.)
+
+---
+
+**All four checks confirmed. One critical bug found and fixed (v1 → v1.1 for feed/live). One document correction (strikeZoneTop path). Phase 1 implementation is unblocked.**
+
+---
+
+### Phase 1 — Core Expanded View (Linescore, Play-by-Play, Box Score)
+**Assigned to:** Finn (after all three spec gates close) | **Status:** Blocked — specs pending
+
+**Scope:**
+- New file `js/liveGame.js` — loaded after `mlb.js` in `index.html`
+- New CSS in `css/liveGame.css` — loaded via `<link>` in `index.html`
+- Accordion trigger wired to live game cards in `mlb.js` `loadMLBGames()` render path
+- `navigateTo()` cleanup hook in `navigation.js` — clears `_liveGameInterval` before routing
+
+**Components Finn implements:**
+1. **Accordion container** — `.lg-panel` that expands inline below the clicked game card. `data-game-pk` on the trigger button. One panel open at a time (opening a new one collapses the previous).
+2. **Game header bar** — team logos, score, inning indicator (`▲/▼ + ordinal`), count/outs pill, LIVE/FINAL/DELAYED/POSTPONED badge, last-polled indicator.
+3. **Linescore grid** — CSS Grid, inning columns, R/H/E pinned right, current inning `--accent-subtle` highlight, horizontal scroll on mobile.
+4. **Play-by-play tab** — reverse-chronological plays from `allPlays`, grouped by half-inning with collapsible headers. HR entries flagged. Score-at-time shown for scoring plays.
+5. **Box score tab** — batting table (lineup order, `battingOrder`) + pitching table (decision badge, pitch count). Per-team, switchable.
+6. **Diff-based polling loop** — `setInterval(_pollLiveGame, 9000)`. Linescore-only by default; triggers `feed/live` fetch on state change. Stops when `abstractGameState === 'Final'`.
+
+**Finn must not:**
+- Use `mlbFetch()` for live polling — call `fetch(_mlbProxyUrl(url))` directly, no cache
+- Call `feed/live` on every poll — only on linescore state change
+- Leave `_liveGameInterval` running when the user navigates away
+- Use `innerHTML +=` anywhere in the render chain
+
+**Axiom reviews:** All code before Phase 1 is marked complete. Interval lifecycle, proxy URL usage, and AppState interactions are the primary review concerns.
+**Vera reviews:** All state transitions verified in browser on a live game before Phase 1 is called done.
+**Kael reviews:** Visual output against spec.
+
+---
+
+### Phase 2 — Pitch Zone, Base Diagram, Matchup Stats
+**Assigned to:** Finn | **Status:** Blocked — Phase 1 must ship first + Phase 0 live-game verification required
+
+**Scope:**
+- Pitch zone SVG — viewBox `0 0 100 140`, batter-specific zone bounds from `matchup.batterStrikeZoneTop/Bottom`, pitch dots result-coded (see D-009 for color mapping)
+- Base runner diagram — reuses scorecard diamond SVG geometry (read-only, no cell structure), bases filled on occupation
+- Matchup stats tab — `vsPlayerTotal` career H2H, current pitcher's Statcast arsenal, batter/pitcher season splits vs. handedness
+- Mobile pitch zone: drops below fold (below linescore), not at top of stack
+- Pitch dot aria-labels: `aria-label="Pitch N: [type] [velocity]mph — [result]"` on each `<circle>`
+
+**Kael visual spec for Phase 2:** pitch zone proportions, dot sizing (8px default, 10px hover), tooltip positioning, mobile carousel tab treatment — required before Finn starts Phase 2.
+
+---
+
+### Post-MVP — Deferred
+- Win probability chart — requires computation layer not in scope
+- Pitch trajectory animation — requires Statcast release point + 3D render
+- Heat map overlay — all pitches in game vs. current at-bat
+- Share card / social export
+- Push notifications (PWA dependency)

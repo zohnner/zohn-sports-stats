@@ -260,9 +260,11 @@ What "design system overhaul" concretely means here: audit every component again
 - Three text-only leaderboard section dividers ("Active Hitting Streaks," "Hot Right Now," "Statcast Leaders") need SVG icons added to match the two existing icon-bearing dividers.
 - Exact `innerHTML` strings documented in ISSUES.md under "Leaderboard Section Dividers."
 
-**Remaining after Axiom delivers the above:**
-- Audit all remaining views for inline `style=` attribute usage on interactive elements — any that survive outside the three toggle functions above.
-- Verify light-mode rendering of new toggle classes (`--accent-subtle`, `--color-chip-bg`, `--bg-interactive` all have correct light-mode values in `variables.css` already — verify on screen before marking done).
+**Design system overhaul complete — 2026-06-04 (Kael)**
+- Inline `style=` audit complete: `leaderboard-more-btn` (JS hover → CSS `:hover`) and team filter wrapper (`style.cssText` → `.leaderboard-team-filter` class) moved to `css/components.css`. Data-driven color inline styles (team colors, stat category borders) remain intentionally — CSS custom properties are not appropriate for every-render dynamic values.
+- Light-mode token verification complete: toggle classes confirmed. `--color-chip-*` tokens added to `[data-theme="light"]` with AA-compliant indigo values.
+- `--text-subtle` raised in dark mode (`#6d8fb8`) and light mode (`#64748b`) for WCAG AA compliance.
+- Ticker live pill text corrected (`var(--color-live)` → `var(--text-primary)`) for contrast compliance.
 
 ---
 

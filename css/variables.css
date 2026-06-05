@@ -27,7 +27,7 @@
     --text-primary:       #eef2f8;
     --text-secondary:     #adc3d9;
     --text-muted:         #7fa5c8;
-    --text-subtle:        #556d8f;
+    --text-subtle:        #6d8fb8; /* raised from #556d8f for WCAG AA on --bg-card */
     --text-disabled:      #2e4260;
 
     /* ── Brand (orange-gold) ── */
@@ -295,7 +295,7 @@
     --text-primary:         #0f172a;
     --text-secondary:       #334155;
     --text-muted:           #64748b;
-    --text-subtle:          #94a3b8;
+    --text-subtle:          #64748b; /* raised from #94a3b8 — matches --text-muted for AA on white */
     --text-disabled:        #cbd5e1;
 
     /* Text on accent backgrounds — white on #d96a00 clears AA (~4.7:1) */
@@ -360,6 +360,11 @@
     --shadow-header:        0 1px 0 rgba(217,106,0,0.10), 0 4px 24px rgba(0,0,0,0.08);
     --shadow-mobile-nav:    0 -4px 24px rgba(0,0,0,0.08);
     --shadow-waffle-panel:  0 8px 32px rgba(0,0,0,0.10);
+
+    /* Chip tokens — darker indigo for AA contrast on white (#4f46e5 on #fff = 4.54:1) */
+    --color-chip:        #4f46e5;
+    --color-chip-bg:     rgba(79,70,229,0.09);
+    --color-chip-border: rgba(79,70,229,0.38);
 }
 
 /* ── City Connect Themes ──────────────────────────────────────

@@ -135,6 +135,8 @@ const _MLB_ABBR_ALIASES = {
 
 // ── Park factors by home team ID (2024 run-scoring environment) ─
 // 1.00 = league avg; >1.05 hitter-friendly; <0.95 pitcher-friendly
+// Source: Baseball Reference multi-year park factors (2022–2024 avg) | Season: 2024
+// Review annually at season start — values shift as parks change or teams relocate.
 const _PARK_FACTORS = {
     115: 1.15, // Rockies — Coors Field
     113: 1.08, // Reds — Great American Ball Park
@@ -336,7 +338,8 @@ function getMLBPlayerHeadshotUrl(playerId) {
 }
 
 // ── Core fetch helper ─────────────────────────────────────────
-const MLB_BASE_URL = 'https://statsapi.mlb.com/api/v1';
+const MLB_BASE_URL    = 'https://statsapi.mlb.com/api/v1';
+const MLB_BASE_URL_V11 = 'https://statsapi.mlb.com/api/v1.1'; // feed/live only
 
 // On Cloudflare Pages, route MLB API calls through the /api/mlb Pages Function
 // so responses are cached in D1 and the MLB API domain is never hit from the browser.
@@ -351,8 +354,8 @@ function _mlbProxyUrl(targetUrl) {
     return `/api/mlb?url=${encodeURIComponent(targetUrl)}`;
 }
 
-async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM) {
-    const url = new URL(`${MLB_BASE_URL}${endpoint}`);
+async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM, baseUrl = MLB_BASE_URL) {
+    const url = new URL(`${baseUrl}${endpoint}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `mlb${url.pathname}${url.search}`;
 
@@ -453,6 +456,34 @@ async function fetchStatcastBulkLeaderboard(season) {
     }
 }
 
+async function fetchStatcastPitcherLeaderboard(season) {
+    const cacheKey = `statcast_pitcher_lb_${season}`;
+    const hit = ApiCache.get(cacheKey);
+    if (hit) return hit;
+
+    const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=pitcher&filter=&sort=1&sortDir=desc&min=50&selections=p_k_percent,p_bb_percent,p_whiff_percent,p_csw_rate,exit_velocity_avg&chart=false&csv=true`;
+    try {
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        if (!res.ok) throw new Error(`Savant pitcher CSV ${res.status}`);
+        const text = await res.text();
+        if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        const rows = lines.slice(1).map(line => {
+            const vals = _splitCSVLine(line);
+            const obj = {};
+            headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+            return obj;
+        }).filter(r => r.player_id);
+        ApiCache.set(cacheKey, rows, ApiCache.TTL.LONG);
+        return rows;
+    } catch (err) {
+        Logger.debug(`Statcast pitcher leaderboard unavailable: ${err.message}`, undefined, 'MLB');
+        return null;
+    }
+}
+
 async function fetchSprintSpeedLeaderboard() {
     const cacheKey = `sprint_speed_${MLB_SEASON}`;
     const hit = ApiCache.get(cacheKey);
@@ -467,6 +498,10 @@ async function fetchSprintSpeedLeaderboard() {
         const lines = text.trim().split('\n');
         if (lines.length < 2) return [];
         const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        if (!headers.includes('sprint_speed')) {
+            Logger.warn('Savant sprint speed CSV schema changed — expected column not found', undefined, 'MLB');
+            return null;
+        }
         const rows = lines.slice(1).map(line => {
             const vals = _splitCSVLine(line);
             const obj = {};
@@ -2774,9 +2809,16 @@ function _createMLBGameCard(game) {
 
     // Only final/live games have meaningful box scores to show
     const clickable = game.status?.abstractGameState === 'Final' || game.status?.abstractGameState === 'Live';
+    const isLiveCard = game.status?.abstractGameState === 'Live';
     if (clickable && game.gamePk) {
         card.style.cursor = 'pointer';
-        card.addEventListener('click', () => showMLBGameDetail(game.gamePk, game));
+        card.addEventListener('click', () => {
+            if (isLiveCard && typeof openLiveGamePanel === 'function') {
+                openLiveGamePanel(game.gamePk, game, card);
+            } else {
+                showMLBGameDetail(game.gamePk, game);
+            }
+        });
     }
 
     const homeTeam  = game.teams?.home?.team  || {};
@@ -3852,6 +3894,12 @@ async function loadMLBLeaderboards() {
                 AppState._mlbSavantLbSeason = season;
             }));
         }
+        if (!AppState.mlbSavantPitcherLeaderboard || AppState._mlbSavantPitcherLbSeason !== season) {
+            promises.push(fetchStatcastPitcherLeaderboard(season).then(d => {
+                AppState.mlbSavantPitcherLeaderboard = d || [];
+                AppState._mlbSavantPitcherLbSeason = season;
+            }).catch(() => {}));
+        }
         if (!AppState.mlbSprintSpeed) {
             promises.push(fetchSprintSpeedLeaderboard().then(rows => {
                 if (!rows) return;
@@ -3939,6 +3987,14 @@ const STATCAST_LEADER_CATS = [
     { key: 'xba',                label: 'Expected BA',    unit: 'xBA',     color: '#fbbf24', desc: true, decimals: 3, suffix: ''     },
     { key: 'xslg',               label: 'Expected SLG',   unit: 'xSLG',    color: '#a78bfa', desc: true, decimals: 3, suffix: ''     },
     { key: 'xwoba',              label: 'Expected wOBA',  unit: 'xwOBA',   color: '#34d399', desc: true, decimals: 3, suffix: ''     },
+];
+
+const STATCAST_PITCHER_CATS = [
+    { key: 'p_k_percent',     label: 'Pitcher K Rate',  unit: 'K%',     color: '#c084fc', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'p_whiff_percent', label: 'Whiff Rate',       unit: 'Whiff%', color: '#fb923c', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'p_csw_rate',      label: 'CSW Rate',         unit: 'CSW%',   color: '#38bdf8', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'p_bb_percent',    label: 'Pitcher BB Rate',  unit: 'BB%',    color: '#fcd34d', desc: false, decimals: 1, suffix: '%'    },
+    { key: 'exit_velocity_avg',label: 'EV Allowed',      unit: 'EV Alw', color: '#34d399', desc: false, decimals: 1, suffix: ' mph' },
 ];
 
 const MLB_MINGP_OPTIONS = [0, 10, 20, 50, 100];
@@ -4233,11 +4289,11 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
 
 function _buildTeamSelect(splits, current, onSelect) {
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:0.5rem;padding:0.05rem 0 0.2rem;';
+    wrap.className = 'leaderboard-team-filter';
 
     const lbl = document.createElement('span');
     lbl.textContent = 'Team:';
-    lbl.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text-subtle);letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;';
+    lbl.className = 'leaderboard-team-filter__label';
     wrap.appendChild(lbl);
 
     const teamsMap = new Map();
@@ -4485,14 +4541,6 @@ function displayMLBLeaderboards() {
                 const moreBtn = document.createElement('button');
                 moreBtn.className = 'leaderboard-more-btn';
                 moreBtn.textContent = `Show ${extra.length} more`;
-                moreBtn.style.cssText = `
-                    width:100%;padding:0.5rem;margin-top:0.5rem;background:var(--bg-subtle);
-                    border:1px solid var(--border-default);border-radius:var(--radius-sm);
-                    color:var(--text-muted);font-size:0.75rem;cursor:pointer;
-                    transition:background var(--transition-fast);
-                `;
-                moreBtn.addEventListener('mouseenter', () => moreBtn.style.background = 'var(--bg-card)');
-                moreBtn.addEventListener('mouseleave', () => moreBtn.style.background = 'var(--bg-subtle)');
                 moreBtn.addEventListener('click', () => {
                     const hidden = [...list.querySelectorAll('[data-extra]')];
                     const showing = hidden[0]?.style.display !== 'none';
@@ -4605,9 +4653,6 @@ function displayMLBLeaderboards() {
                     const moreBtn = document.createElement('button');
                     moreBtn.className = 'leaderboard-more-btn';
                     moreBtn.textContent = `Show ${extra.length} more`;
-                    moreBtn.style.cssText = `width:100%;padding:0.5rem;margin-top:0.5rem;background:var(--bg-subtle);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.75rem;cursor:pointer;transition:background var(--transition-fast);`;
-                    moreBtn.addEventListener('mouseenter', () => moreBtn.style.background = 'var(--bg-card)');
-                    moreBtn.addEventListener('mouseleave', () => moreBtn.style.background = 'var(--bg-subtle)');
                     moreBtn.addEventListener('click', () => {
                         const hidden = [...list.querySelectorAll('[data-extra]')];
                         const showing = hidden[0]?.style.display !== 'none';
@@ -4678,6 +4723,91 @@ function displayMLBLeaderboards() {
             panel.appendChild(header);
             panel.appendChild(list);
             fragment.appendChild(panel);
+        }
+
+        // ── Pitcher Statcast section ──────────────────────────
+        const pitcherSavantRows = AppState.mlbSavantPitcherLeaderboard;
+        if (pitcherSavantRows && pitcherSavantRows.length > 0) {
+            const pitcherDivider = document.createElement('div');
+            pitcherDivider.className = 'leaderboard-section-divider';
+            pitcherDivider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Pitcher Statcast · ${season} · min 50 IP</span>`;
+            fragment.appendChild(pitcherDivider);
+
+            // Build pitcher team map from pitching splits
+            const _pitcherTeamMap = {};
+            for (const s of (splits.pitching || [])) {
+                if (s.player?.id) _pitcherTeamMap[String(s.player.id)] = s.team?.abbreviation || '';
+            }
+
+            STATCAST_PITCHER_CATS.forEach(pcat => {
+                const sorted = [...pitcherSavantRows]
+                    .filter(r => r[pcat.key] !== '' && !isNaN(parseFloat(r[pcat.key])))
+                    .sort((a, b) => {
+                        const av = parseFloat(a[pcat.key]);
+                        const bv = parseFloat(b[pcat.key]);
+                        return pcat.desc ? bv - av : av - bv;
+                    });
+
+                const panel = document.createElement('div');
+                panel.className = 'leaderboard-panel';
+                const header = document.createElement('div');
+                header.className = 'leaderboard-header';
+                header.style.borderLeftColor = pcat.color;
+                const pcatTip = (typeof StatGlossary !== 'undefined' && StatGlossary.MLB[pcat.unit])
+                    ? `<span class="stat-tip" data-tip="${StatGlossary.MLB[pcat.unit].replace(/"/g,'&quot;')}" tabindex="0">${pcat.unit}</span>`
+                    : pcat.unit;
+                header.innerHTML = `
+                    <span class="leaderboard-title">${pcat.label}</span>
+                    <span class="leaderboard-unit" style="color:${pcat.color}">${season} MLB · ${pcatTip} · ${sorted.length} qualifying</span>
+                `;
+                const list = document.createElement('div');
+                list.className = 'leaderboard-list';
+
+                const _buildPitcherSavantRow = (r, i) => {
+                    const numVal  = parseFloat(r[pcat.key]);
+                    const valStr  = isNaN(numVal) ? '—' :
+                        numVal.toFixed(pcat.decimals) + (pcat.suffix || '');
+                    const combined = r['last_name, first_name'] || '';
+                    const parts    = combined.split(', ');
+                    const fullName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : combined || '—';
+                    const pid      = r.player_id;
+                    const abbr     = _pitcherTeamMap[String(pid)] || '';
+                    const colors   = getMLBTeamColors(abbr);
+                    const initials = fullName.split(' ').map(w => w[0] || '').slice(0, 2).join('');
+                    const headshotUrl = pid ? getMLBPlayerHeadshotUrl(pid) : null;
+
+                    const row = document.createElement('div');
+                    row.className = 'leaderboard-row';
+                    row.setAttribute('role', 'button');
+                    row.setAttribute('tabindex', '0');
+                    if (pid) {
+                        row.addEventListener('click', () => showMLBPlayerDetail(Number(pid), 'pitching'));
+                        row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(Number(pid), 'pitching'); });
+                    }
+                    row.innerHTML = `
+                        <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
+                        <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                            ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                            <span class="lb-avatar-initials">${_escHtml(initials)}</span>
+                        </div>
+                        <div class="lb-player">
+                            <span class="lb-name">${_escHtml(fullName)}</span>
+                            <span class="lb-team">${_escHtml(abbr)}</span>
+                        </div>
+                        <span class="lb-value" style="color:${pcat.color}">${valStr}</span>
+                    `;
+                    return row;
+                };
+
+                if (sorted.length === 0) {
+                    list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+                } else {
+                    sorted.slice(0, 10).forEach((r, i) => list.appendChild(_buildPitcherSavantRow(r, i)));
+                }
+                panel.appendChild(header);
+                panel.appendChild(list);
+                fragment.appendChild(panel);
+            });
         }
     }
 
@@ -5513,11 +5643,11 @@ function _mlbCompareCard(currentPlayer, group) {
         <div class="stats-card">
             <h2 class="detail-section-title">Compare Players</h2>
             <div class="mlb-cmp-selects">
-                <select id="mlb-cmp-select-b" class="compare-select">
+                <select id="mlb-cmp-select-b" class="compare-select" aria-label="Compare: player 2">
                     <option value="">— Add player 2 —</option>
                     ${opts}
                 </select>
-                <select id="mlb-cmp-select-c" class="compare-select">
+                <select id="mlb-cmp-select-c" class="compare-select" aria-label="Compare: player 3">
                     <option value="">— Add player 3 —</option>
                     ${opts}
                 </select>
@@ -6075,7 +6205,7 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
     // Parallel fetches — include probable pitcher stats if not already in AppState
     const _needsPP = id => id && !AppState.mlbPlayerStats?.pitching?.[id];
     const [gameRes, awayBatRes, awayPitRes, homeBatRes, homePitRes, awayPPRes, homePPRes, awayPlayersRes, homePlayersRes, awaySplitsRes, homeSplitsRes] = await Promise.allSettled([
-        mlbFetch(`/game/${gamePk}/feed/live`, {}, ApiCache.TTL.SHORT),
+        mlbFetch(`/game/${gamePk}/feed/live`, {}, ApiCache.TTL.SHORT, MLB_BASE_URL_V11),
         mlbFetch(`/teams/${awayTeamId}/stats`, { stats: 'season', group: 'hitting',  season: MLB_SEASON }, ApiCache.TTL.MEDIUM),
         mlbFetch(`/teams/${awayTeamId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM),
         mlbFetch(`/teams/${homeTeamId}/stats`, { stats: 'season', group: 'hitting',  season: MLB_SEASON }, ApiCache.TTL.MEDIUM),

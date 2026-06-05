@@ -4035,3 +4035,38 @@
 .vs-opp-row__val   { color: var(--text-secondary); font-weight: 500; }
 .vs-opp-row__sep   { color: var(--text-subtle); }
 .vs-opp-row__caveat { color: var(--text-subtle); font-style: italic; }
+
+/* ── Leaderboard "Show more" button ─────────────────────────── */
+.leaderboard-more-btn {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+.leaderboard-more-btn:hover {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+}
+
+/* ── Leaderboard team filter row ────────────────────────────── */
+.leaderboard-team-filter {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.05rem 0 0.2rem;
+}
+.leaderboard-team-filter__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-subtle);
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}

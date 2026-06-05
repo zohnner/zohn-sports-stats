@@ -12,24 +12,38 @@
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 const MODEL         = 'claude-haiku-4-5-20251001';
 
+// Allowed CORS origins — only these origins receive a matching header.
+// Any other origin gets the production domain, causing the browser to block it.
+const ALLOWED_ORIGINS = [
+    'https://sportsstrata.com',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:3003',
+];
+
 export default {
     async fetch(request, env) {
+        const origin = request.headers.get('Origin') || '';
+
         if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: corsHeaders() });
+            return new Response(null, { headers: corsHeaders(origin) });
         }
         if (request.method !== 'POST') {
-            return json({ error: 'Method not allowed' }, 405);
+            return json({ error: 'Method not allowed' }, 405, origin);
         }
 
         let body;
         try {
             body = await request.json();
         } catch {
-            return json({ error: 'Invalid JSON' }, 400);
+            return json({ error: 'Invalid JSON' }, 400, origin);
         }
 
         const { name, team, position, group, season, stats, statcast } = body;
-        if (!name || !stats) return json({ error: 'Missing required fields' }, 400);
+        if (!name || !stats) return json({ error: 'Missing required fields' }, 400, origin);
 
         const statsText = group === 'hitting'
             ? `AVG: ${stats.avg}, OBP: ${stats.obp}, SLG: ${stats.slg}, OPS: ${stats.ops}, HR: ${stats.homeRuns}, RBI: ${stats.rbi}, SB: ${stats.stolenBases}, BABIP: ${stats.babip}, K%: ${stats.kPct?.toFixed?.(1) ?? stats.kPct}%, BB%: ${stats.bbPct?.toFixed?.(1) ?? stats.bbPct}%`
@@ -59,31 +73,32 @@ export default {
 
             if (!res.ok) {
                 const err = await res.text();
-                return json({ error: 'Anthropic error', detail: err }, 502);
+                return json({ error: 'Anthropic error', detail: err }, 502, origin);
             }
 
             const data  = await res.json();
             const blurb = data.content?.[0]?.text?.trim() || '';
             return new Response(JSON.stringify({ blurb }), {
-                headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+                headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
             });
         } catch (err) {
-            return json({ error: 'Worker error', detail: String(err) }, 500);
+            return json({ error: 'Worker error', detail: String(err) }, 500, origin);
         }
     },
 };
 
-function corsHeaders() {
+function corsHeaders(origin) {
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
     return {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
     };
 }
 
-function json(obj, status = 200) {
+function json(obj, status = 200, origin = '') {
     return new Response(JSON.stringify(obj), {
         status,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
     });
 }

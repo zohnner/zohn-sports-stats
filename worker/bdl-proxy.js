@@ -1,5 +1,5 @@
 // ============================================================
-// ZohnStats — Cloudflare Worker: BDL + Kalshi API Proxy
+// SportStrata — Cloudflare Worker: BDL + Savant + Kalshi API Proxy
 //
 // Keeps API keys server-side. The static site calls this Worker;
 // the Worker adds credentials and forwards to the real APIs.
@@ -19,17 +19,26 @@ const BDL_ORIGIN     = 'https://api.balldontlie.io/v1';
 const KALSHI_ORIGIN  = 'https://trading-api.kalshi.com/trade-api/v2';
 const SAVANT_ORIGIN  = 'https://baseballsavant.mlb.com';
 
-// Allowed origins for CORS — lock down to your domain in production.
-// During development '*' is fine since the API key never leaves the Worker.
-const ALLOWED_ORIGIN = '*';
+// Allowed CORS origins — only these origins receive a matching header.
+// Any other origin gets the production domain, causing the browser to block it.
+const ALLOWED_ORIGINS = [
+    'https://sportsstrata.com',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:3003',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'http://127.0.0.1:3003',
+];
 
 export default {
     async fetch(request, env) {
-        const url = new URL(request.url);
+        const url    = new URL(request.url);
+        const origin = request.headers.get('Origin') || '';
 
         // ── CORS preflight ────────────────────────────────────
         if (request.method === 'OPTIONS') {
-            return new Response(null, { status: 204, headers: corsHeaders() });
+            return new Response(null, { status: 204, headers: corsHeaders(origin) });
         }
 
         // ── Only GET allowed ─────────────────────────────────
@@ -39,18 +48,19 @@ export default {
 
         // Route by path prefix:
         //   /bdl/*     → api.balldontlie.io/v1/*
+        //   /savant/*  → baseballsavant.mlb.com/*
         //   /kalshi/*  → trading-api.kalshi.com/trade-api/v2/*  (future)
 
         if (url.pathname.startsWith('/bdl/')) {
-            return proxyBDL(url, env);
+            return proxyBDL(url, env, origin);
         }
 
         if (url.pathname.startsWith('/savant/')) {
-            return proxySavant(url);
+            return proxySavant(url, origin);
         }
 
         if (url.pathname.startsWith('/kalshi/')) {
-            return proxyKalshi(url, env);
+            return proxyKalshi(url, env, origin);
         }
 
         return jsonError('Unknown route. Use /bdl/*, /savant/*, or /kalshi/*', 404);
@@ -59,7 +69,7 @@ export default {
 
 // ── BDL proxy ─────────────────────────────────────────────────
 
-async function proxyBDL(url, env) {
+async function proxyBDL(url, env, origin) {
     if (!env.BDL_API_KEY) {
         return jsonError('BDL_API_KEY secret not configured on the Worker', 500);
     }
@@ -90,7 +100,7 @@ async function proxyBDL(url, env) {
         headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'public, max-age=300',
-            ...corsHeaders(),
+            ...corsHeaders(origin),
         },
     });
 }
@@ -99,13 +109,13 @@ async function proxyBDL(url, env) {
 // No API key required — proxying to handle CORS for client-side fetches.
 // Edge-cached for 6 hours since Statcast data updates once daily.
 
-async function proxySavant(url) {
+async function proxySavant(url, origin) {
     // Strip /savant prefix → forward remainder to Savant base
     const targetPath = url.pathname.slice('/savant'.length); // e.g. /percentile-rankings
     const targetUrl  = `${SAVANT_ORIGIN}${targetPath}${url.search}`;
 
-    // Basic path validation
-    if (!/^\/[\w\-/%.]*$/.test(targetPath)) {
+    // Basic path validation — no percent-encoding tricks
+    if (!/^\/[\w\-/]*$/.test(targetPath)) {
         return jsonError('Invalid path', 400);
     }
 
@@ -125,14 +135,14 @@ async function proxySavant(url) {
         headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'public, max-age=21600',
-            ...corsHeaders(),
+            ...corsHeaders(origin),
         },
     });
 }
 
 // ── Kalshi proxy (stub — RSA signing to be implemented) ───────
 
-async function proxyKalshi(url, env) {
+async function proxyKalshi(url, env, origin) {
     if (!env.KALSHI_API_KEY || !env.KALSHI_PRIVATE_KEY) {
         return jsonError('Kalshi secrets not configured on the Worker', 500);
     }
@@ -145,9 +155,10 @@ async function proxyKalshi(url, env) {
 
 // ── Helpers ───────────────────────────────────────────────────
 
-function corsHeaders() {
+function corsHeaders(origin) {
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
     return {
-        'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
+        'Access-Control-Allow-Origin':  allowedOrigin,
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
     };
@@ -156,6 +167,6 @@ function corsHeaders() {
 function jsonError(message, status = 400) {
     return new Response(JSON.stringify({ error: message }), {
         status,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders('') },
     });
 }
