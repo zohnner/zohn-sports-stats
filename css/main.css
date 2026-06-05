@@ -48,7 +48,7 @@ body::after {
         rgba(255,255,255,0.016) 4px
     );
     pointer-events: none;
-    z-index: 500;
+    z-index: 0;
 }
 [data-theme="light"] body::after {
     background: repeating-linear-gradient(
@@ -121,6 +121,10 @@ body::after {
     background:
         radial-gradient(ellipse 90% 45% at 50% -15%,  rgba(255,122,0,0.24)   0%, transparent 58%),
         radial-gradient(ellipse 100% 68% at 50% 110%,  rgba(35,107,142,0.28)  0%, transparent 64%);
+    /* Explicit transparent midpoint so orange and blue don't clash at the viewport center */
+    background:
+        radial-gradient(ellipse 90% 50% at 50% -10%, rgba(255,122,0,0.22)   0%, transparent 100%),
+        radial-gradient(ellipse 100% 50% at 50% 110%, rgba(35,107,142,0.26)  0%, transparent 100%);
 }
 
 /* Pittsburgh Pirates — Steel City grit
@@ -144,8 +148,10 @@ body::after {
 
 /* San Diego Padres — Día de los Muertos
    Pacific aqua from the upper-left horizon; marigold altar warmth
-   from the lower-right; a whisper of Fireberry at center depth. */
+   from the lower-right; a whisper of Fireberry at center depth.
+   will-change promotes to GPU to prevent banding on three-gradient overlap. */
 [data-theme="cc-padres"] body::before {
+    will-change: background;
     background:
         radial-gradient(ellipse 60% 50% at 2%   2%,  rgba(0,181,184,0.17)  0%, transparent 56%),
         radial-gradient(ellipse 65% 55% at 98%  98%, rgba(252,161,32,0.14) 0%, transparent 58%),
@@ -180,13 +186,24 @@ body::after {
         radial-gradient(ellipse 52% 42% at 5%  96%,  rgba(206,17,38,0.16) 0%, transparent 50%);
 }
 
-/* Kansas City Monarchs (Negro Leagues, 1920–1965) — afternoon sun over Muehlebach Field.
-   Antique gold rakes in from the upper-left like a long summer day in the Negro Leagues;
-   deep royal blue gathers in the lower-right as the evening comes on. */
+/* Kansas City Monarchs (Negro Leagues, 1920–1965) — classic red & cream pinstripes.
+   Warm incandescent light from above like evening at Muehlebach Field;
+   deep crimson glow rises from the base as the crowd fills the stands. */
 [data-theme="nl-monarchs"] body::before {
     background:
-        radial-gradient(ellipse 72% 52% at 22% -4%,  rgba(200,164,0,0.16)  0%, transparent 56%),
-        radial-gradient(ellipse 52% 72% at 85%  97%, rgba(0,48,135,0.22)   0%, transparent 56%);
+        radial-gradient(ellipse 80% 45% at 50% -5%,   rgba(245,230,210,0.06) 0%, transparent 52%),
+        radial-gradient(ellipse 70% 55% at 15%  95%,  rgba(180,20,36,0.18)   0%, transparent 56%),
+        radial-gradient(ellipse 60% 50% at 85%  95%,  rgba(180,20,36,0.14)   0%, transparent 52%);
+}
+/* Vertical pinstripes — classic Monarchs uniform detail */
+[data-theme="nl-monarchs"] body::after {
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 26px,
+        rgba(180,20,36,0.08) 26px,
+        rgba(180,20,36,0.08) 27px
+    );
 }
 
 /* Rocket City Trash Pandas — rocket engine ignition.
@@ -248,6 +265,18 @@ header {
 [data-theme="nl-monarchs"] .brand-logo-img,
 [data-theme="aa-trash-pandas"] .brand-logo-img {
     box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent-glow);
+}
+
+/* Expos logo has a white background — pad it so it reads on dark surfaces */
+[data-theme="retro-expos"] .brand-logo-img {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 3px;
+    box-sizing: border-box;
+}
+
+/* Royals CC logo (JPEG) — dark jersey background, no treatment needed */
+[data-theme="cc-royals"] .brand-logo-img {
+    background: transparent;
 }
 
 .brand-icon { display: none; }
@@ -3339,7 +3368,7 @@ a:focus:not(:focus-visible),
 .theme-swatch[data-theme-set="cc-rangers"]     .swatch-abbr { color: #F5F5DC; }
 .theme-swatch[data-theme-set="cc-bananas"]     .swatch-abbr { color: #FFE033; }
 .theme-swatch[data-theme-set="retro-expos"]    .swatch-abbr { color: #CE1126; }
-.theme-swatch[data-theme-set="nl-monarchs"]    .swatch-abbr { color: #C8A400; }
+.theme-swatch[data-theme-set="nl-monarchs"]    .swatch-abbr { color: #B41428; }
 .theme-swatch[data-theme-set="aa-trash-pandas"].swatch-abbr { color: #E86830; }
 
 /* Uniform stripe height for all CC / tribute swatches */
@@ -3448,12 +3477,12 @@ a:focus:not(:focus-visible),
     mix-blend-mode: lighten;
 }
 
-/* Kansas City Monarchs — actual logo on dark navy */
+/* Kansas City Monarchs — classic red/cream on near-black */
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview {
-    background: #0a0d1e;
+    background: #0a0204;
 }
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview::after {
-    background: linear-gradient(90deg, #C8A400 0%, #003087 55%, #F5E6C8 100%);
+    background: linear-gradient(90deg, #B41428 0%, #f5ece0 50%, #B41428 100%);
     height: 5px;
 }
 
