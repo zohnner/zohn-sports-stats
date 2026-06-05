@@ -252,7 +252,7 @@
 }
 .sc-player-btn:hover { color: #5c3a10; text-decoration: underline; }
 .sc-player-btn:focus-visible {
-    outline: 2px solid var(--scorecard-active-border);
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
     border-radius: 2px;
 }
@@ -272,7 +272,7 @@
     min-height: 88px;
 }
 .sc-cell:focus-visible {
-    outline: 2px solid var(--scorecard-active-border);
+    outline: 2px solid var(--accent);
     outline-offset: -2px;
     z-index: 1;
 }
@@ -395,6 +395,113 @@
 }
 @media (prefers-reduced-motion: reduce) {
     .sc-cell.pa--active { animation: none; }
+}
+
+/* ── Phase 2: Desktop tooltip ───────────────────────────────── */
+.sc-tip {
+    position: fixed;
+    z-index: 1000;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    max-width: 240px;
+    min-width: 150px;
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-xs);
+    color: var(--text-primary);
+    pointer-events: none;
+    line-height: 1.5;
+}
+.sc-tip-outcome {
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+.sc-tip-pitches {
+    border-top: 1px solid var(--border-default);
+    margin-top: 0.2rem;
+    padding-top: 0.2rem;
+}
+.sc-tip-row {
+    color: var(--text-secondary);
+    line-height: 1.55;
+    white-space: nowrap;
+}
+.sc-tip-count {
+    border-top: 1px solid var(--border-default);
+    margin-top: 0.2rem;
+    padding-top: 0.2rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+/* Never show tooltip on touch devices */
+@media (pointer: coarse) {
+    .sc-tip { display: none !important; }
+}
+
+/* ── Phase 2: Mobile bottom sheet ───────────────────────────── */
+.sc-sheet-bd {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+}
+.sc-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1002;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-default);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 0.75rem 1.25rem 2rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    animation: scSheetUp 200ms ease-out forwards;
+}
+@keyframes scSheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sc-sheet { animation: none; }
+}
+.sc-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border-mid);
+    border-radius: var(--radius-full);
+    margin: 0 auto 0.75rem;
+}
+.sc-sheet-body { font-size: var(--text-sm); line-height: 1.6; }
+.sc-sheet-body .sc-tip-outcome {
+    font-size: var(--text-base);
+    margin-bottom: 0.4rem;
+}
+.sc-sheet-body .sc-tip-row { white-space: normal; }
+.sc-sheet-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.sc-sheet-close:hover { color: var(--text-secondary); }
+.sc-sheet-close:focus-visible {
+    outline: 2px solid var(--accent-border);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
+/* Only show sheet on touch devices */
+@media (pointer: fine) {
+    .sc-sheet-bd,
+    .sc-sheet { display: none !important; }
 }
 
 /* ── Mobile ──────────────────────────────────────────────────── */

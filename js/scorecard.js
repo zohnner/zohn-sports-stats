@@ -6,6 +6,13 @@
 // Load order: after mlb.js, before nfl.js in index.html
 // ============================================================
 
+// ── Phase 2: Overlay state ────────────────────────────────────
+let _scTip       = null; // fixed-position desktop tooltip
+let _scSheet     = null; // slide-up mobile bottom sheet
+let _scSheetBd   = null; // bottom sheet backdrop
+let _scTipTimer  = null; // 150ms debounce handle
+let _scListeners = false; // document listeners registered once
+
 // ── Notation resolver ─────────────────────────────────────────
 
 function resolveNotation(play) {
@@ -72,6 +79,29 @@ function resolveBaseProgression(play) {
     return [];
 }
 
+// ── Phase 2: Pitch tip data builder ──────────────────────────
+// Extracts pitch sequence from a play's playEvents for tooltip display.
+
+function _buildPitchTipData(playEvents) {
+    return (playEvents || [])
+        .filter(e => e.isPitch)
+        .map(e => ({
+            n:    e.pitchNumber || 0,
+            type: e.details?.type?.description || '—',
+            velo: e.pitchData?.startSpeed != null ? Math.round(e.pitchData.startSpeed) : null,
+            call: e.details?.description || '—',
+            b:    e.count?.balls ?? 0,
+            s:    e.count?.strikes ?? 0,
+        }));
+}
+
+// Encode an object safely for an HTML attribute value.
+function _encodeAttr(obj) {
+    return JSON.stringify(obj)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+}
+
 // ── Team section builder ──────────────────────────────────────
 // Filters allPlays to one half-inning direction ('top'=away, 'bottom'=home),
 // builds an ordered lineup with each batter's PAs indexed by inning.
@@ -103,6 +133,7 @@ function _buildTeamSection(allPlays, halfInning) {
             notation: resolveNotation(play),
             base,
             scored:   base.includes('scored'),
+            pitchTip: _buildPitchTipData(play.playEvents || []),
         };
 
         if (!entry.paByInning.has(inning)) entry.paByInning.set(inning, []);
@@ -203,8 +234,12 @@ function _renderDiamond(baseClasses) {
 }
 
 function _renderPACell(pa, batterName, inning) {
+    const pitchAttr = _encodeAttr(pa.pitchTip || []);
     return `<div class="sc-cell" role="gridcell" tabindex="0"
-                 aria-label="${_escHtml(batterName)}, inning ${inning}: ${_escHtml(pa.notation)}">
+                 aria-label="${_escHtml(batterName)}, inning ${inning}: ${_escHtml(pa.notation)}"
+                 data-notation="${_escHtml(pa.notation)}"
+                 data-batter="${_escHtml(batterName)}"
+                 data-pitches="${pitchAttr}">
         <span class="sc-notation">${_escHtml(pa.notation)}</span>
         ${_renderDiamond(pa.base)}
     </div>`;
@@ -348,6 +383,161 @@ function _renderScorecardHTML(data) {
 </div>`;
 }
 
+// ── Phase 2: Tooltip / bottom-sheet overlay system ────────────
+
+function _scIsActive() {
+    return !!document.querySelector('.scorecard-view');
+}
+
+function _scEnsureOverlays() {
+    if (!_scTip) {
+        _scTip = document.createElement('div');
+        _scTip.id = 'sc-tip';
+        _scTip.className = 'sc-tip';
+        _scTip.setAttribute('role', 'tooltip');
+        _scTip.setAttribute('hidden', '');
+        document.body.appendChild(_scTip);
+    }
+    if (!_scSheet) {
+        _scSheetBd = document.createElement('div');
+        _scSheetBd.className = 'sc-sheet-bd';
+        _scSheetBd.setAttribute('hidden', '');
+        _scSheetBd.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(_scSheetBd);
+
+        _scSheet = document.createElement('div');
+        _scSheet.id = 'sc-sheet';
+        _scSheet.className = 'sc-sheet';
+        _scSheet.setAttribute('role', 'dialog');
+        _scSheet.setAttribute('aria-modal', 'true');
+        _scSheet.setAttribute('aria-label', 'At-bat details');
+        _scSheet.setAttribute('hidden', '');
+        document.body.appendChild(_scSheet);
+    }
+}
+
+function _scBuildTipHTML(notation, batterName, pitches) {
+    let html = `<div class="sc-tip-outcome"><strong>${_escHtml(notation)}</strong> &mdash; ${_escHtml(batterName)}</div>`;
+    if (pitches.length) {
+        html += '<div class="sc-tip-pitches">';
+        for (const p of pitches) {
+            const velo = p.velo != null ? ` ${p.velo} mph` : '';
+            html += `<div class="sc-tip-row">P${p.n}: ${_escHtml(p.type)}${_escHtml(velo)} &mdash; ${_escHtml(p.call)}</div>`;
+        }
+        html += '</div>';
+        const last = pitches[pitches.length - 1];
+        html += `<div class="sc-tip-count">${last.b}&ndash;${last.s} final count</div>`;
+    }
+    return html;
+}
+
+function _scShowTip(cell) {
+    clearTimeout(_scTipTimer);
+    _scTipTimer = setTimeout(() => {
+        if (!_scIsActive()) return;
+        _scEnsureOverlays();
+        const notation = cell.dataset.notation || '';
+        const batter   = cell.dataset.batter   || '';
+        const pitches  = cell.dataset.pitches  ? JSON.parse(cell.dataset.pitches) : [];
+        if (!notation) return;
+        _scTip.innerHTML = _scBuildTipHTML(notation, batter, pitches);
+        _scTip.removeAttribute('hidden');
+        _scPositionTip(cell);
+        cell.setAttribute('aria-describedby', 'sc-tip');
+    }, 150);
+}
+
+function _scHideTip() {
+    clearTimeout(_scTipTimer);
+    if (_scTip) _scTip.setAttribute('hidden', '');
+    document.querySelector('.sc-cell[aria-describedby="sc-tip"]')
+        ?.removeAttribute('aria-describedby');
+}
+
+function _scPositionTip(cell) {
+    const r     = cell.getBoundingClientRect();
+    const tipH  = _scTip.offsetHeight || 120;
+    const left  = Math.max(8, Math.min(r.left, window.innerWidth - 230));
+    const above = r.top > tipH + 20;
+    _scTip.style.left = `${left}px`;
+    _scTip.style.top  = above
+        ? `${r.top - tipH - 8}px`
+        : `${r.bottom + 8}px`;
+}
+
+function _scShowSheet(cell) {
+    if (!_scIsActive()) return;
+    _scEnsureOverlays();
+    const notation = cell.dataset.notation || '';
+    const batter   = cell.dataset.batter   || '';
+    const pitches  = cell.dataset.pitches  ? JSON.parse(cell.dataset.pitches) : [];
+    if (!notation) return;
+    _scSheet.innerHTML = `
+        <div class="sc-sheet-handle" aria-hidden="true"></div>
+        <div class="sc-sheet-body">${_scBuildTipHTML(notation, batter, pitches)}</div>
+        <button class="sc-sheet-close" aria-label="Close at-bat details">&#x2715;</button>`;
+    _scSheet.removeAttribute('hidden');
+    _scSheetBd.removeAttribute('hidden');
+    _scSheet.querySelector('.sc-sheet-close')?.focus();
+}
+
+function _scHideSheet() {
+    if (_scSheet)   _scSheet.setAttribute('hidden', '');
+    if (_scSheetBd) _scSheetBd.setAttribute('hidden', '');
+}
+
+function _scOnMouseOver(e) {
+    if (!_scIsActive() || window.matchMedia('(pointer: coarse)').matches) return;
+    const cell = e.target.closest('.sc-cell[data-notation]');
+    if (!cell || cell.contains(e.relatedTarget)) return;
+    _scShowTip(cell);
+}
+
+function _scOnMouseOut(e) {
+    if (!_scIsActive() || window.matchMedia('(pointer: coarse)').matches) return;
+    const cell = e.target.closest('.sc-cell[data-notation]');
+    if (!cell || cell.contains(e.relatedTarget)) return;
+    _scHideTip();
+}
+
+function _scOnFocusIn(e) {
+    if (!_scIsActive()) return;
+    const cell = e.target.closest('.sc-cell[data-notation]');
+    if (cell) _scShowTip(cell);
+}
+
+function _scOnFocusOut(e) {
+    if (!_scIsActive()) return;
+    if (e.target.closest('.sc-cell[data-notation]')) _scHideTip();
+}
+
+function _scOnKeyDown(e) {
+    if (e.key !== 'Escape') return;
+    _scHideTip();
+    _scHideSheet();
+}
+
+function _scOnClick(e) {
+    if (!_scIsActive()) return;
+    if (e.target.closest('.sc-sheet-close')) { _scHideSheet(); return; }
+    if (e.target === _scSheetBd) { _scHideSheet(); return; }
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    const cell = e.target.closest('.sc-cell[data-notation]');
+    if (cell) _scShowSheet(cell);
+}
+
+function _initScorecardInteractivity() {
+    _scEnsureOverlays();
+    if (_scListeners) return;
+    _scListeners = true;
+    document.addEventListener('mouseover', _scOnMouseOver, { passive: true });
+    document.addEventListener('mouseout',  _scOnMouseOut,  { passive: true });
+    document.addEventListener('focusin',   _scOnFocusIn,   { passive: true });
+    document.addEventListener('focusout',  _scOnFocusOut,  { passive: true });
+    document.addEventListener('keydown',   _scOnKeyDown);
+    document.addEventListener('click',     _scOnClick);
+}
+
 // ── Skeleton HTML ─────────────────────────────────────────────
 
 function _renderScorecardSkeleton() {
@@ -397,6 +587,7 @@ async function loadMLBScorecard(gameId, gameStub) {
     try {
         const data = await buildScorecardData(gameId, gameStub);
         grid.innerHTML = _renderScorecardHTML(data);
+        _initScorecardInteractivity();
     } catch (err) {
         Logger.error('Scorecard load failed', err, 'MLB');
         ErrorHandler.handle(grid, err, () => loadMLBScorecard(gameId, gameStub), {
