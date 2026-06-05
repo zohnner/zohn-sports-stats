@@ -967,17 +967,19 @@ if (typeof window !== 'undefined') {
 // ── Theme & Settings Panel ────────────────────────────────────
 
 const _CC_TEAM_LOGOS = {
+    // MLB CC 2026 — standard team logos (no official CC-specific CDN paths exist)
     'cc-braves':       'https://www.mlbstatic.com/team-logos/144.svg',
     'cc-orioles':      'https://www.mlbstatic.com/team-logos/110.svg',
     'cc-reds':         'https://www.mlbstatic.com/team-logos/113.svg',
-    'cc-royals':       'assets/themes/royals-cc.svg',
+    'cc-royals':       'assets/themes/royals-cc-forever.jpg',
     'cc-brewers':      'https://www.mlbstatic.com/team-logos/158.svg',
     'cc-pirates':      'https://www.mlbstatic.com/team-logos/134.svg',
     'cc-padres':       'https://www.mlbstatic.com/team-logos/135.svg',
     'cc-rangers':      'https://www.mlbstatic.com/team-logos/140.svg',
-    'cc-bananas':      'assets/themes/bananas.svg',
-    'retro-expos':     'assets/themes/expos.svg',
-    'nl-monarchs':     'assets/themes/monarchs.svg',
+    // Tribute & independent — actual uploaded logos
+    'cc-bananas':      'assets/themes/SavannahBananas.png',
+    'retro-expos':     'assets/themes/exposlogo.webp',
+    'nl-monarchs':     'assets/themes/images.png',
     'aa-trash-pandas': 'assets/themes/trash-pandas.svg',
 };
 

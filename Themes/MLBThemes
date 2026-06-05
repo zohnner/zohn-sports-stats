@@ -1,0 +1,695 @@
+This extensive guide covers all 30 MLB teams, presenting their official primary color palettes alongside one distinctive alternate uniform palette for each.
+
+All colors are defined by HEX codes for accurate digital reproduction in web development projects.
+
+---
+
+## 🌟 Quick Reference Guide
+
+| Division | Teams |
+| :--- | :--- |
+| **AL East** | Baltimore Orioles, Boston Red Sox, New York Yankees, Tampa Bay Rays, Toronto Blue Jays |
+| **AL Central** | Chicago White Sox, Cleveland Guardians, Detroit Tigers, Kansas City Royals, Minnesota Twins |
+| **AL West** | Houston Astros, Los Angeles Angels, Oakland Athletics, Seattle Mariners, Texas Rangers |
+| **NL East** | Atlanta Braves, Miami Marlins, New York Mets, Philadelphia Phillies, Washington Nationals |
+| **NL Central** | Chicago Cubs, Cincinnati Reds, Milwaukee Brewers, Pittsburgh Pirates, St. Louis Cardinals |
+| **NL West** | Arizona Diamondbacks, Colorado Rockies, Los Angeles Dodgers, San Diego Padres, San Francisco Giants |
+
+---
+
+## American League
+
+### Baltimore Orioles
+
+The Orioles' iconic orange and black palette is synonymous with Camden Yards, complemented by the nostalgic "BMORE" City Connect 2.0 design released in 2026.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Orange | `#DF4601` | Primary team color, front and center |
+| Black | `#000000` | Primary secondary, creates contrast |
+| Grey | `#A2AAAD` | Accent, primary lettering component |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Cream | `#F5F5DC` | Vintage-inspired base color |
+| Camden Green | `#005A3C` | Based on ballpark seats, used for sleeves |
+| Orange | `#DF4601` | Brick-inspired trim |
+| Black | `#000000` | Drop shadow component |
+| White | `#FFFFFF` | Drop shadow component |
+
+---
+
+### Boston Red Sox
+
+The Red Sox combine classic navy and red with the vibrant "Green Monster" City Connect 2.0 uniform launched in 2025, paying homage to Fenway Park's iconic left-field wall.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#BD3039` | Primary team color, unmistakable |
+| Navy Blue | `#192C55` | Lettering and trim base |
+| White | `#FFFFFF` | Contrast and spacing |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Fenway Green | `#2C5234` | Inspired by the Green Monster |
+| Yellow | `#FFCD00` | Bold accent color |
+
+---
+
+### New York Yankees
+
+The Yankees maintain one of baseball's most classic palettes. As one of only two teams without a City Connect uniform, their alternate designation falls to their traditional road grey.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Midnight Navy Blue | `#132448` | Primary base for iconic interlocking "NY" |
+| White | `#FFFFFF` | Jersey base and lettering color |
+| Grey | `#C4CED3` | Road uniform primary component |
+
+#### Alternate (Traditional Road Grey)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Grey | `#C4CED3` | Primary color for road uniforms |
+| Midnight Navy Blue | `#132448` | Lettering and details |
+| White | `#FFFFFF` | Accent element |
+
+---
+
+### Tampa Bay Rays
+
+The Rays feature a modern color scheme with their signature light blue cap. Their 2025 City Connect 2.0 uniform introduced a fresh take on the club's identity.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#092C5C` | Primary base for most uniforms |
+| Light Blue | `#8FBCE6` | Primary cap color, signature identity |
+| Yellow | `#F5D130` | Accent and contrast element |
+| White | `#FFFFFF` | Lettering and trim |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Deep Blue | `#0B2E4A` | Primary jersey base |
+| Vibrant Blue | `#1E88E5` | Contrast accent |
+| White | `#FFFFFF` | Lettering |
+
+---
+
+### Toronto Blue Jays
+
+The Blue Jays' royal blue and red palette is among baseball's most recognizable. The city of Toronto's first City Connect uniform was unveiled in 2025.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Royal Blue | `#134A8E` | Primary base color |
+| Navy Blue | `#1D2D5C` | Secondary base and trim |
+| Red | `#E8291C` | Primary accent for logo elements |
+| White | `#FFFFFF` | Lettering and panel contrast |
+
+#### Alternate (2025 City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Ontario Blue | `#004B8F` | Primary jersey base |
+| Gold | `#FFB81C` | Bold accent color |
+| Dark Blue | `#001E4D` | Lettering and trim |
+
+---
+
+### Chicago White Sox
+
+The White Sox feature one of baseball's more minimalist palettes: black, silver, and white. Their 2025 City Connect 2.0 uniform reimagined the club's South Side identity.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Black | `#000000` | Primary base for iconic logo |
+| Silver | `#C4CED4` | Primary contrast color |
+| White | `#FFFFFF` | Lettering and trim |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| South Side Black | `#1C1C1C` | Primary jersey base |
+| Silver/Grey | `#B0B0B0` | Lettering and details |
+| White | `#FFFFFF` | Pinstripe and accent |
+| Red | `#E32636` | Bold accent pop |
+
+---
+
+### Cleveland Guardians
+
+The Guardians transitioned from the Indians' legacy palette to a modern navy and red scheme, honoring Cleveland's industrial heritage.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#00385D` | Primary base color |
+| Red | `#E50022` | Primary accent and lettering |
+| White | `#FFFFFF` | Lettering and panel trim |
+
+#### Alternate (2025 City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Industrial Grey | `#6C6F70` | Primary jersey base |
+| Navy Blue | `#00385D` | Lettering and piping |
+| Red | `#E50022` | Contrast accent |
+
+---
+
+### Detroit Tigers
+
+The Tigers mix midnight navy with vibrant orange, highlighted by two new alternate uniforms for the 2026 season—a navy road set and an orange home set.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Midnight Navy Blue | `#182D55` | Primary base for iconic Olde English "D" |
+| Orange | `#F26722` | Primary accent and trim |
+| White | `#FFFFFF` | Lettering and home uniform base |
+
+#### Alternate (2026 Navy Road)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Navy Blue | `#182D55` | Primary jersey base |
+| White | `#FFFFFF` | Lettering |
+
+#### Alternate (2026 Orange Home)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Orange | `#F26722` | Primary jersey base |
+| Navy Blue | `#182D55` | Lettering |
+
+---
+
+### Kansas City Royals
+
+The Royals' royal blue and gold palette has represented Kansas City since their 1969 inception. Their 2026 City Connect 2.0 "Forever Fountains" uniform introduced a dynamic fuchsia-to-blue gradient.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Royal Blue | `#174885` | Primary base color |
+| Gold | `#C0995A` | Primary secondary, logo accent |
+| Powder Blue | `#7BB2DD` | Alternate throwback element |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| White | `#FFFFFF` | Primary jersey base |
+| Fuchsia-to-Blue Gradient | N/A | Dynamic ombre effect (Fuchsia `#FF00AF` to Royal Blue `#004687`) |
+| Purple | `#7851A9` | Letter ensemble component |
+| Royal Blue | `#004687` | Gradient destination |
+
+---
+
+### Minnesota Twins
+
+The Twins' navy and red palette is anchored by the unique Kasota Gold accent. Their 2025 City Connect 2.0 uniform introduced a fresh Minnesota-inspired color scheme.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#002B5C` | Primary base color |
+| Scarlet Red | `#D31145` | Primary secondary |
+| Kasota Gold | `#CFAC7A` | Distinctive Minnesota accent |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Minnesota Blue | `#1A4C8C` | Primary jersey base |
+| Northern Lights Green | `#4A8C5C` | Unique accent color |
+| Silver | `#C0C0C0` | Lettering and trim |
+
+---
+
+### Houston Astros
+
+The Astros have embraced a modern orange-centric identity since their 2013 rebrand. Their 2025 City Connect 2.0 represents Houston's space-age legacy.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy | `#002D62` | Primary base |
+| Orange | `#EB6E1F` | Primary accent, primary identity color |
+| Light Orange | `#F4911E` | Secondary accent for depth |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Space City Blue | `#00263A` | Primary jersey base |
+| Mission Control Orange | `#FF6B00` | Bold accent |
+| White | `#FFFFFF` | Lettering |
+
+---
+
+### Los Angeles Angels
+
+The Angels feature a red-centric palette unique among MLB teams. The "A" halo logo remains one of baseball's most distinctive marks.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#BA0021` | Primary base color |
+| Dark Red | `#862633` | Secondary red for depth |
+| Navy Blue | `#003263` | Primary secondary |
+| Silver | `#C4CED4` | Trim and contrast component |
+| White | `#FFFFFF` | Lettering and halo color |
+
+#### Alternate (2025 City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| California Red | `#C41E3A` | Primary jersey base |
+| Navy Blue | `#003263` | Lettering and trim |
+| White | `#FFFFFF` | Contrast element |
+
+---
+
+### Oakland Athletics
+
+The Athletics' distinctive Kelly green and gold palette is deeply rooted in the franchise's legacy. Following relocation discussions, their City Connect program has paused.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Kelly Green | `#003831` | Primary base, one of baseball's most unique colors |
+| Gold | `#EFB21E` | Primary secondary |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (Traditional Alternate)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Kelly Green | `#003831` | Primary base |
+| Gold | `#EFB21E` | Lettering and details |
+| White | `#FFFFFF` | Trim and panel contrast |
+
+---
+
+### Seattle Mariners
+
+The Mariners blend navy blue with teal, capturing the Pacific Northwest's maritime identity. Their 2025 City Connect 2.0 introduced a fresh take on the region's color palette.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#0C2C56` | Primary base |
+| Northwest Green | `#005C5C` | Signature regional color |
+| Metallic Silver | `#C4CED4` | Trim and contrast |
+| Mariners Yellow | `#FFC528` | Accent element |
+| White | `#FFFFFF` | Lettering |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Puget Sound Blue | `#006699` | Primary jersey base |
+| Emerald Green | `#008066` | Regional accent |
+| Silver | `#C0C0C0` | Lettering |
+
+---
+
+### Texas Rangers
+
+The Rangers' royal blue and red palette is rooted in Texas heritage. Their 2026 City Connect 2.0 "Tejas" uniform celebrates Mexican heritage with cochineal red and papel picado-inspired details.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Royal Blue | `#003278` | Primary base color |
+| Red | `#C0111F` | Primary secondary |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Cochineal Red | `#9D2024` | Deep, peppery crimson primary base |
+| Cream | `#F5F5DC` | Vintage contrast base for pants |
+| Five Shades of Red | N/A | Multiple red shades for pinstripes |
+
+---
+
+## National League
+
+### Atlanta Braves
+
+The Braves' classic navy and scarlet red has represented Atlanta across multiple eras. Their 2026 City Connect 2.0 uniform reintroduced a brighter powder blue inspired by their beloved 1980s uniforms.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#13274F` | Primary base |
+| Scarlet Red | `#CE1141` | Primary secondary, classic tomahawk accent |
+| Gold | `#EAAA00` | Accent and trim element |
+| White | `#FFFFFF` | Lettering and home uniform base |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Powder Blue | `#7CB9E8` | Brighter, modern 1980s-inspired base |
+| White | `#FFFFFF` | Primary lettering |
+| Red | `#CE1141` | Piping and contrast outline |
+| Navy | `#13274F` | Player numerals |
+
+---
+
+### Miami Marlins
+
+The Marlins have embraced a vibrant palette since their 2019 rebrand. Their 2025 City Connect 2.0 "Retrowave" uniform celebrates Miami with teal and pink, honoring the club's 1993 inaugural colors.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Black | `#000000` | Primary base |
+| Red-Orange | `#FF6600` | Bold primary accent |
+| Blue | `#0077C8` | Secondary accent |
+| Yellow | `#FFD100` | Contrast pop element |
+| White | `#FFFFFF` | Lettering and trim |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Teal | `#007C6F` | Inaugural color, honors 1993 legacy |
+| Pink | `#FF69B4` | Bright "Magic City" accent |
+| Black | `#000000` | Snakeskin pattern component |
+
+---
+
+### New York Mets
+
+The Mets' blue and orange palette is a direct tribute to New York's baseball legacy. The blue has evolved to a deeper shade in recent seasons.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Blue | `#002D72` | Primary base |
+| Orange | `#FF5910` | Primary secondary |
+| White | `#FFFFFF` | Lettering and panel contrast |
+
+#### Alternate (City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Queens Blue | `#002D72` | Primary jersey base |
+| Orange | `#FF5910` | Lettering and piping |
+| Purple | `#4B0082` | Subway-inspired accent |
+
+---
+
+### Philadelphia Phillies
+
+The Phillies' distinctive red and blue palette has deep roots in Philadelphia baseball history, dating back to the club's 1883 founding.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#E81828` | Primary base, one of baseball's classic reds |
+| Blue | `#284898` | Primary secondary |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Liberty Blue | `#002F6C` | Primary jersey base |
+| Red | `#E81828` | Lettering and trim |
+| Gold | `#CFB53B` | Accent element |
+
+---
+
+### Washington Nationals
+
+The Nationals combine a bold red, navy, and blue palette with strong DC-inspired design elements. Their 2025 City Connect 2.0 uniform introduced a fresh take on the capital's identity.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#AB0003` | Primary base color |
+| Blue | `#212759` | Primary secondary |
+| White | `#FFFFFF` | Lettering and contrast |
+| Navy Blue | `#14264B` | Alternate base |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Monument Grey | `#A2AAAD` | Primary jersey base |
+| Cherry Blossom Pink | `#FFB7C5` | DC-inspired accent |
+| Navy Blue | `#14264B` | Lettering |
+
+---
+
+### Chicago Cubs
+
+The Cubs' iconic blue and red palette represents one of baseball's most recognized color combinations. Wrigley Field's ivy influence is ever-present.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Blue | `#0E3386` | Primary base for the iconic "C" |
+| Red | `#CC3433` | Primary accent |
+| White | `#FFFFFF` | Lettering and home uniform base |
+
+#### Alternate (City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Lake Michigan Blue | `#0E3386` | Primary jersey base |
+| Red | `#CC3433` | Lettering and trim |
+| Light Blue | `#7CB9E8` | Accent |
+
+---
+
+### Cincinnati Reds
+
+The Reds are defined by their signature red palette. Their 2026 City Connect 2.0 uniform embraced a tone-on-tone pinstriped look with a nod to the popular vest-style jersey from two decades ago.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#C6011F` | Primary base |
+| Black | `#000000` | Primary secondary |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Reds Red | `#C6011F` | Primary color for both jersey and pants |
+| Dark Red | `#A50015` | Sleeve accent creating "sleeveless" effect |
+| Black | `#000000` | Player numerals |
+| White | `#FFFFFF` | Main lettering and 'C' logo |
+
+---
+
+### Milwaukee Brewers
+
+The Brewers' classic navy and gold is anchored by the beloved "ball-in-glove" logo. Their 2026 road uniform reintroduced powder blue as their primary road jersey, while their 2026 City Connect 2.0 "Wisco Way" celebrates all of Wisconsin.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#0A2351` | Primary base |
+| Gold | `#B6922E` | Primary secondary |
+| White | `#FFFFFF` | Lettering and home base |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Great Lakes Blue | `#236B8E` | Deep blue primary base |
+| Cream | `#F5F5DC` | Accent inspired by beaches and bluffs |
+| Sunset Gradient | N/A | Multi-color gradient (orange, yellow, blue) |
+| Wild Mango | `#FF7A00` | Vibrant lettering shade |
+
+---
+
+### Pittsburgh Pirates
+
+The Pirates' black and gold palette is iconic across Pittsburgh sports. Their 2026 City Connect 2.0 uniform leaned into matte black with a rugged pirate-style wordmark inspired by the city's "Sister Bridges".
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Black | `#000000` | Primary base |
+| Gold | `#FDB827` | Primary secondary |
+| White | `#FFFFFF` | Lettering and trim |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Matte Black | `#27251F` | Primary base from cap to pants |
+| Gold | `#FDB827` | Tattered flag-style lettering |
+| Red | `#E4002B` | Small contrast accents (bandana, Nike swoosh) |
+
+---
+
+### St. Louis Cardinals
+
+The Cardinals' distinctive red and midnight navy palette is deeply rooted in St. Louis baseball tradition. The iconic birds-on-bat logo is one of baseball's most recognized marks.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Red | `#C41E3A` | Primary base |
+| Midnight Navy Blue | `#22205F` | Primary secondary |
+| Yellow | `#FDDA00` | Accent for birds-on-bat |
+| White | `#FFFFFF` | Lettering and contrast |
+
+#### Alternate (City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Gateway Arch Silver | `#A2AAAD` | Primary jersey base |
+| Cardinal Red | `#C41E3A` | Lettering and trim |
+| Navy Blue | `#22205F` | Accent details |
+
+---
+
+### Arizona Diamondbacks
+
+The Diamondbacks have cycled through multiple color schemes. Their 2025 City Connect 2.0 uniform reintroduced purple and teal as primary elements, celebrating the team's inaugural 1998 colors.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Sedona Red | `#A71930` | Current primary base |
+| Sonoran Sand | `#E3D4AD` | Primary secondary |
+| Black | `#000000` | Contrast and logo element |
+| Teal | `#3FC2CC` | Secondary accent |
+| White | `#FFFFFF` | Lettering |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Purple | `#4B0082` | Primary base, inaugural era tribute |
+| Teal | `#008080` | Lettering and accent |
+| Black | `#000000` | Snakeskin pattern base |
+| White | `#FFFFFF` | Contrast accent |
+
+---
+
+### Colorado Rockies
+
+The Rockies celebrate Colorado's majestic landscape with their signature purple palette. Their 2025 City Connect 2.0 uniform captures mountain sunrises and sunsets with a vibrant multi-color scheme.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Purple | `#33006F` | Primary base |
+| Black | `#000000` | Primary secondary |
+| Silver | `#C4CED4` | Trim and contrast |
+| White | `#FFFFFF` | Lettering and home base |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Purple | `#4B0082` | Jersey base |
+| Light Blue | `#87CEEB` | Sky tribute |
+| Orange | `#FF7F00` | Sunrise/sunset accent |
+| Pink | `#FF69B4` | Sunrise/sunset accent |
+| Yellow | `#FFD700` | Sunrise/sunset accent |
+
+---
+
+### Los Angeles Dodgers
+
+The Dodgers feature one of baseball's most timeless palettes, centered on Dodger Blue. The franchise maintains a clean, classic aesthetic with minimal color variation.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Dodger Blue | `#005A9C` | Primary base, unmistakable |
+| Red | `#EF3E42` | Primary accent for trim elements |
+| White | `#FFFFFF` | Lettering and home uniform base |
+
+#### Alternate (City Connect)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Dodger Blue | `#005A9C` | Primary jersey base |
+| Red | `#EF3E42` | Lettering trim |
+| White | `#FFFFFF` | Contrast |
+
+---
+
+### San Diego Padres
+
+The Padres' navy and gold palette is paired with a bold City Connect identity. Their 2026 City Connect 2.0 uniform celebrates Día de los Muertos with a sunset-ombre design.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Navy Blue | `#002D62` | Primary base |
+| White | `#FFFFFF` | Lettering and panel contrast |
+| Gold | `#F9B01D` | Accent and trim |
+
+#### Alternate (2026 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Obsidian | `#1C1F2A` | Deep navy primary base |
+| Bone | `#F3EFE0` | Off-white for pants and cap crown |
+| Marigold | `#FCA120` | Bright orange/yellow accent |
+| Aqua | `#00B5B8` | Minty-green/teal ocean accent |
+| Fireberry | `#C82B4F` | Deep rich pink/magenta |
+| Padres Gold | `#F9B01D` | Metallic/mustard-yellow gold |
+
+---
+
+### San Francisco Giants
+
+The Giants' orange and black palette is iconic across the Bay Area. The 2025 City Connect 2.0 uniform introduced a fresh take on the club's regional identity.
+
+#### Primary Palette
+| Color | HEX | Usage |
+| :--- | :--- | :--- |
+| Orange | `#FD5A1E` | Primary base |
+| Black | `#000000` | Primary secondary |
+| Gold | `#8B6F4E` | Accent for contrast |
+| Cream | `#E6D8AF` | Vintage-inspired element |
+| White | `#FFFFFF` | Lettering |
+
+#### Alternate (2025 City Connect 2.0)
+| Color | HEX | Description |
+| :--- | :--- | :--- |
+| Golden Gate Orange | `#FD5A1E` | Primary jersey base |
+| Black | `#000000` | Lettering and piping |
+| Fog Grey | `#A2AAAD` | SF Bay-inspired accent |
+
+---
+
+## Implementation Notes for Web Design
+
+### Color Strategies
+
+- **Traditional Classic**: Yankees, Dodgers, Cardinals, Giants – timeless navy/blue with red/orange accents. The Yankees' midnight navy (`#132448`) and Dodgers' blue (`#005A9C`) create a sophisticated, traditional aesthetic.
+- **Bold Contrast**: Reds, Tigers, Phillies, Marlins – high-impact primary colors. The Reds' red (`#C6011F`) demands white text for readability.
+- **Emerging Vivid**: Diamondbacks (purple/teal), Rockies (purple), Brewers (powder blue) – unique color combinations for distinctive brand personality.
+
+### Accessibility Best Practices
+
+| Primary Color | Text Color Recommendation |
+| :--- | :--- |
+| Navy Blue (`#002D62`-type shades) | White or very light grey |
+| Orange (`#FD5A1E`, `#F26722`) | White or very dark grey |
+| Red (`#C6011F`, `#BD3039`) | White |
+| Black (`#000000`) | White or bright accent color |
+| Powder Blue (`#7BB2DD`, `#7BB2E8`) | Navy or dark grey for contrast |
+| Purple (`#33006F`) | White or light grey |
+
+### Palette Highlights for 2025-2026
+
+| Team | Update |
+| :--- | :--- |
+| Brewers | Replaced traditional road grey with powder blue |
+| Tigers | Added navy road and orange home alternate uniforms for 2026 |
+| Diamondbacks | Reintroduced purple/teal as primary alternate for 2025 |
+| Rockies | Unveiled sunrise/sunset-themed City Connect 2.0 for 2025 |
+| Marlins | Launched "Retrowave" teal/pink City Connect 2.0 for 2025 |
+| Royals/Braves/Reds/Orioles/Pirates/Padres/Rangers | Released second-generation City Connect uniforms for 2026 |
+
+### Best Practices
+
+- **Gradients as Primary Elements**: The Royals' fuchsia-to-blue and Brewers' sunset gradients serve as dominant design features rather than subtle transitions.
+- **Dark Backgrounds**: Pirates' matte black and Padres' obsidian create powerful, premium aesthetics suitable for entertainment or gaming websites.
+- **Regional Accents**: Angels' halo silver, Twins' Kasota gold, and Mariners' Northwest green offer unique differentiation within the league.
+- **Vintage Approaches**: Orioles' cream/Camden green and Rangers' cochineal red/cream provide sophisticated, heritage-driven palettes for classic-styled projects.

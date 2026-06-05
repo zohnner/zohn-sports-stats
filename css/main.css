@@ -106,10 +106,12 @@ body::after {
 /* Kansas City Royals — Kauffman Fountains
    Royal blue pool glow from below, gold stadium lights from above —
    night game at the K, fountains behind center field. */
+/* Kansas City Royals — Forever Fountains: fuchsia crests from top, royal blue wells from below */
 [data-theme="cc-royals"] body::before {
     background:
-        radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0,70,135,0.22)   0%, transparent 60%),
-        radial-gradient(ellipse 75% 45% at 50%   0%, rgba(192,154,91,0.13) 0%, transparent 55%);
+        radial-gradient(ellipse 80% 50% at 20%   0%, rgba(255,0,175,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 80%   0%, rgba(120,81,169,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 55% at 50% 110%, rgba(0,70,135,0.22)  0%, transparent 60%);
 }
 
 /* Milwaukee Brewers — Wisco Way
@@ -3282,6 +3284,18 @@ a:focus:not(:focus-visible),
     position: relative;
     overflow: hidden;
 }
+.swatch-preview--logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.swatch-preview--logo img {
+    max-width: 80%;
+    max-height: 32px;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+}
 /* Accent stripe at the bottom of each preview */
 .swatch-preview::after {
     content: '';
@@ -3361,15 +3375,16 @@ a:focus:not(:focus-visible),
     height: 5px;
 }
 
-/* Kansas City Royals — Kauffman Fountains: SVG fountain art, gold-to-royal-blue */
+/* Kansas City Royals — Forever Fountains: fuchsia-to-royal-blue, purple */
 .theme-swatch[data-theme-set="cc-royals"] .swatch-preview {
-    background-image: url('../assets/themes/royals-cc.svg');
-    background-size: cover;
-    background-position: center;
+    background: linear-gradient(135deg, #06011a 0%, #160848 50%, #004687 100%);
 }
 .theme-swatch[data-theme-set="cc-royals"] .swatch-preview::after {
-    background: linear-gradient(90deg, #C09A5B 0%, #004687 55%, #C09A5B 100%);
+    background: linear-gradient(90deg, #FF00AF 0%, #7851A9 50%, #004687 100%);
     height: 6px;
+}
+.theme-swatch[data-theme-set="cc-royals"] .swatch-preview img {
+    mix-blend-mode: lighten;
 }
 
 /* Milwaukee Brewers — Wild Mango sunset bleeding into Great Lakes blue */
@@ -3412,33 +3427,30 @@ a:focus:not(:focus-visible),
     height: 5px;
 }
 
-/* Savannah Bananas — banana yellow field with black pinstripes, SVG art */
+/* Savannah Bananas — actual logo on near-black */
 .theme-swatch[data-theme-set="cc-bananas"] .swatch-preview {
-    background-image: url('../assets/themes/bananas.svg');
-    background-size: cover;
-    background-position: center top;
+    background: #191600;
 }
 .theme-swatch[data-theme-set="cc-bananas"] .swatch-preview::after {
     background: #FFE033;
     height: 5px;
 }
 
-/* Montreal Expos — Olympic Stadium silhouette, tricolor diagonal, SVG art */
+/* Montreal Expos — actual logo on deep navy */
 .theme-swatch[data-theme-set="retro-expos"] .swatch-preview {
-    background-image: url('../assets/themes/expos.svg');
-    background-size: cover;
-    background-position: center;
+    background: #04071e;
 }
 .theme-swatch[data-theme-set="retro-expos"] .swatch-preview::after {
     background: linear-gradient(90deg, #CE1126 0%, #003087 50%, #FFFFFF 100%);
     height: 5px;
 }
+.theme-swatch[data-theme-set="retro-expos"] .swatch-preview img {
+    mix-blend-mode: lighten;
+}
 
-/* Kansas City Monarchs — crown silhouette, antique gold light, SVG art */
+/* Kansas City Monarchs — actual logo on dark navy */
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview {
-    background-image: url('../assets/themes/monarchs.svg');
-    background-size: cover;
-    background-position: center;
+    background: #0a0d1e;
 }
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview::after {
     background: linear-gradient(90deg, #C8A400 0%, #003087 55%, #F5E6C8 100%);

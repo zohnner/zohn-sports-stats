@@ -507,51 +507,51 @@
     --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
 }
 
-/* Kansas City Royals — "Kauffman Fountains"
-   Night game palette: deep navy sky, crown gold stadium lights,
-   royal blue pool glow, white water arcs behind center field.  */
+/* Kansas City Royals — "Forever Fountains" 2026 CC
+   Fuchsia-to-royal-blue gradient, purple letter ensemble.
+   Palette: fuchsia #FF00AF, purple #7851A9, royal blue #004687. */
 [data-theme="cc-royals"] {
-    --bg-base:            #010D1F;
-    --bg-surface:         #041428;
-    --bg-raised:          #082040;
-    --bg-card:            rgba(4, 20, 40, 0.90);
-    --bg-card-hover:      rgba(8, 32, 60, 0.96);
-    --bg-overlay:         rgba(1, 8, 20, 0.97);
-    --bg-subtle:          rgba(192, 154, 91, 0.05);
-    --bg-interactive:     rgba(192, 154, 91, 0.08);
-    --bg-interactive-hov: rgba(192, 154, 91, 0.14);
-    --border-default:     rgba(255, 255, 255, 0.06);
-    --border-mid:         rgba(255, 255, 255, 0.10);
-    --border-strong:      rgba(255, 255, 255, 0.18);
-    --border-accent:      rgba(192, 154, 91, 0.35);
-    --border-accent-hov:  rgba(192, 154, 91, 0.60);
-    --text-primary:       #f2ead8;
-    --text-secondary:     #c8aa72;
-    --text-muted:         #7a6040;
-    --text-subtle:        #3a2a10;
-    --text-disabled:      #1a1208;
-    --accent:             #C09A5B;
-    --accent-light:       #D4B882;
-    --accent-dark:        #96763C;
-    --accent-subtle:      rgba(192, 154, 91, 0.10);
-    --accent-border:      rgba(192, 154, 91, 0.30);
-    --accent-glow:        rgba(192, 154, 91, 0.22);
-    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03);
-    --shadow-md:          0 4px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
-    --shadow-lg:          0 8px 40px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,255,255,0.05);
-    --shadow-card:        0 2px 12px rgba(0,0,0,0.45), 0 0 0 1px var(--border-default);
-    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px var(--border-accent);
-    --skeleton-from:      rgba(255,255,255,0.03);
-    --skeleton-mid:       rgba(255,255,255,0.07);
-    --bg-header:          rgba(1, 8, 20, 0.97);
-    --bg-waffle-panel:    rgba(1, 6, 16, 0.98);
-    --bg-table-head:      rgba(1, 8, 20, 0.90);
-    --bg-table-sub:       rgba(1, 8, 20, 0.55);
-    --bg-mobile-nav:      rgba(1, 8, 20, 0.97);
-    --bg-toast:           rgba(1, 8, 20, 0.97);
-    --shadow-header:      0 1px 0 rgba(192,154,91,0.18), 0 4px 24px rgba(0,0,0,0.55);
-    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
-    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
+    --bg-base:            #06011a;
+    --bg-surface:         #0d0430;
+    --bg-raised:          #160848;
+    --bg-card:            rgba(13, 4, 48, 0.90);
+    --bg-card-hover:      rgba(22, 8, 72, 0.96);
+    --bg-overlay:         rgba(6, 1, 26, 0.97);
+    --bg-subtle:          rgba(255, 0, 175, 0.05);
+    --bg-interactive:     rgba(120, 81, 169, 0.09);
+    --bg-interactive-hov: rgba(120, 81, 169, 0.16);
+    --border-default:     rgba(255, 255, 255, 0.07);
+    --border-mid:         rgba(255, 255, 255, 0.12);
+    --border-strong:      rgba(255, 255, 255, 0.20);
+    --border-accent:      rgba(224, 64, 181, 0.40);
+    --border-accent-hov:  rgba(224, 64, 181, 0.65);
+    --text-primary:       #f0e8fc;
+    --text-secondary:     #c8a0e0;
+    --text-muted:         #9070c8;
+    --text-subtle:        #4a3068;
+    --text-disabled:      #201038;
+    --accent:             #e040b5;
+    --accent-light:       #ff60d0;
+    --accent-dark:        #a02080;
+    --accent-subtle:      rgba(224, 64, 181, 0.10);
+    --accent-border:      rgba(224, 64, 181, 0.32);
+    --accent-glow:        rgba(224, 64, 181, 0.28);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.50), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.70), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.04);
+    --skeleton-mid:       rgba(255,255,255,0.09);
+    --bg-header:          rgba(6, 1, 26, 0.97);
+    --bg-waffle-panel:    rgba(4, 0, 18, 0.99);
+    --bg-table-head:      rgba(6, 1, 26, 0.90);
+    --bg-table-sub:       rgba(6, 1, 26, 0.55);
+    --bg-mobile-nav:      rgba(6, 1, 26, 0.97);
+    --bg-toast:           rgba(6, 1, 26, 0.97);
+    --shadow-header:      0 1px 0 rgba(224,64,181,0.25), 0 4px 24px rgba(0,0,0,0.60);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.65);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.70);
 }
 
 /* Milwaukee Brewers — "Wisco Way" Great Lakes blue / Wild Mango */
