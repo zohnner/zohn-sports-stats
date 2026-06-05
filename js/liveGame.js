@@ -34,6 +34,8 @@ let _lgFailures    = 0;      // consecutive poll failure count
 let _lgLastState   = null;   // last linescore state key for diff
 let _lgTabMap      = new Map(); // gamePk → active tab id
 let _lgFeedCache   = null;   // last feed/live payload
+let _lgTriggerEl   = null;   // card element that opened the panel (focus return on close)
+let _lgPrevScores  = null;   // { away, home } for score-change flash detection
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -49,7 +51,8 @@ function stopLiveGamePolling() {
     _lgGamePk    = null;
     _lgLastState = null;
     _lgFailures  = 0;
-    _lgFeedCache = null;
+    _lgFeedCache  = null;
+    _lgPrevScores = null;
 }
 
 // Expand the live game panel below a game card.
@@ -60,8 +63,9 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
     // Close any open panel first
     _closeExistingPanel();
 
-    _lgGamePk = String(gamePk);
+    _lgGamePk    = String(gamePk);
     _lgFeedCache = null;
+    _lgTriggerEl = cardEl;
 
     // Inject skeleton panel immediately (synchronous)
     const panel = _buildSkeletonPanel(game);
@@ -82,8 +86,11 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
 // ── Internal ─────────────────────────────────────────────────
 
 function _closeExistingPanel() {
+    const trigger = _lgTriggerEl;
+    _lgTriggerEl  = null;
     stopLiveGamePolling();
     document.querySelectorAll('.lg-panel').forEach(p => p.remove());
+    trigger?.focus();
 }
 
 function _pollInterval(game) {
@@ -119,8 +126,17 @@ async function _doPoll(gamePk) {
         _lgFeedCache = feed;
 
         const prevPbpCount = panel.querySelectorAll('.lg-pbp-entry').length;
+        const curAway      = ls.teams?.away?.runs ?? 0;
+        const curHome      = ls.teams?.home?.runs ?? 0;
         _renderPanel(panel, feed, gamePk);
         _animateNewPlays(panel, prevPbpCount);
+
+        // Flash score digit when a team scores (compare against last known state)
+        if (_lgPrevScores) {
+            if (curAway > _lgPrevScores.away) _flashScore(panel, 'away');
+            if (curHome > _lgPrevScores.home) _flashScore(panel, 'home');
+        }
+        _lgPrevScores = { away: curAway, home: curHome };
 
         // Stop polling if game ended
         if (feed.gameData?.status?.abstractGameState === 'Final') {
@@ -130,7 +146,7 @@ async function _doPoll(gamePk) {
         _lgFailures++;
         Logger.warn(`Live game poll failed (${_lgFailures})`, err, 'LIVE');
         if (_lgFailures >= 2) _updateBadge(panel, 'reconnecting');
-        if (_lgFailures >= 5) _updateBadge(panel, 'unavailable');
+        if (_lgFailures >= 5) { _updateBadge(panel, 'unavailable'); _showRetryBtn(panel); }
     }
 }
 
@@ -190,6 +206,19 @@ function _buildSkeletonPanel(game) {
         btn.addEventListener('click', () => _switchTab(panel, btn.dataset.lgTab, String(_lgGamePk)));
     });
 
+    // Arrow-key navigation between tabs (ARIA tabs pattern)
+    panel.querySelector('.lg-tabs')?.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const tabs = [...panel.querySelectorAll('[data-lg-tab]')];
+        const idx  = tabs.indexOf(document.activeElement);
+        if (idx === -1) return;
+        const next = e.key === 'ArrowRight'
+            ? (idx + 1) % tabs.length
+            : (idx - 1 + tabs.length) % tabs.length;
+        tabs[next].focus();
+        tabs[next].click();
+    });
+
     return panel;
 }
 
@@ -207,11 +236,12 @@ function _renderPanel(panel, feed, gamePk) {
     const awayScore = ls.teams?.away?.runs ?? '—';
     const homeWon   = isFinal && homeScore > awayScore;
     const awayWon   = isFinal && awayScore > homeScore;
-    const half      = ls.isTopInning ? '▲' : '▼';
-    const inning    = ls.currentInning || '—';
-    const balls     = ls.balls ?? '?';
-    const strikes   = ls.strikes ?? '?';
-    const outs      = ls.outs ?? '?';
+    const half         = ls.isTopInning ? '▲' : '▼';
+    const inning       = ls.currentInning || '—';
+    const balls        = ls.balls ?? '?';
+    const strikes      = ls.strikes ?? '?';
+    const outs         = ls.outs ?? '?';
+    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
 
     const hc = getMLBTeamColors(home.abbreviation);
     panel.style.setProperty('--lg-team-color', hc?.primary || 'var(--accent)');
@@ -229,13 +259,13 @@ function _renderPanel(panel, feed, gamePk) {
         <button class="lg-close-btn" onclick="stopLiveGamePolling();this.closest('.lg-panel').remove()" aria-label="Collapse game view">×</button>
         <div class="lg-scoreline">
             <span class="lg-abbr ${awayWon ? 'lg-winner' : ''}">${_escHtml(away.abbreviation || '???')}</span>
-            <span class="lg-score ${awayWon ? 'lg-score--win' : isFinal && !awayWon ? 'lg-score--loss' : ''}">${awayScore}</span>
+            <span class="lg-score ${awayWon ? 'lg-score--win' : isFinal && !awayWon ? 'lg-score--loss' : ''}" data-side="away">${awayScore}</span>
             <span class="lg-sep">:</span>
-            <span class="lg-score ${homeWon ? 'lg-score--win' : isFinal && !homeWon ? 'lg-score--loss' : ''}">${homeScore}</span>
+            <span class="lg-score ${homeWon ? 'lg-score--win' : isFinal && !homeWon ? 'lg-score--loss' : ''}" data-side="home">${homeScore}</span>
             <span class="lg-abbr ${homeWon ? 'lg-winner' : ''}">${_escHtml(home.abbreviation || '???')}</span>
         </div>
         <div class="lg-meta-row">
-            ${!isFinal ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}</span>` : ''}
+            ${!isFinal ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${isBetweenInn ? '—' : `${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}`}</span>` : ''}
             ${badgeHtml}
             ${scorecardLink}
         </div>`;
@@ -398,6 +428,27 @@ function _updateBadge(panel, state) {
     if (state === 'live')        { badge.className = 'game-status game-status--live lg-status-badge'; badge.innerHTML = '<span class="live-dot"></span>LIVE'; }
     else if (state === 'reconnecting') { badge.className = 'game-status game-status--sched lg-status-badge'; badge.textContent = 'RECONNECTING…'; }
     else if (state === 'unavailable')  { badge.className = 'game-status game-status--sched lg-status-badge'; badge.textContent = 'DATA UNAVAILABLE'; }
+}
+
+function _flashScore(panel, side) {
+    const el = panel.querySelector(`.lg-score[data-side="${side}"]`);
+    if (!el) return;
+    el.classList.add('lg-score--flash');
+    setTimeout(() => el.classList.remove('lg-score--flash'), 800);
+}
+
+function _showRetryBtn(panel) {
+    if (panel.querySelector('.lg-retry-btn')) return;
+    const btn       = document.createElement('button');
+    btn.className   = 'lg-retry-btn';
+    btn.textContent = 'Retry';
+    btn.onclick = () => {
+        btn.remove();
+        _lgFailures = 0;
+        _updateBadge(panel, 'live');
+        _doPoll(_lgGamePk);
+    };
+    panel.querySelector('.lg-meta-row')?.appendChild(btn);
 }
 
 function _animateNewPlays(panel, prevCount) {

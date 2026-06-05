@@ -297,3 +297,35 @@
     font-size: 0.6rem;
     margin-right: 0.2rem;
 }
+
+/* ── Score-change flash ────────────────────────────────────── */
+@keyframes lgScoreFlash {
+    0%, 100% { background: transparent; }
+    40%      { background: var(--color-win-subtle); }
+}
+.lg-score--flash {
+    animation: lgScoreFlash 800ms ease-out 1 forwards;
+    border-radius: var(--radius-xs);
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-score--flash { animation: none; }
+}
+
+/* ── Retry button (DATA UNAVAILABLE state) ────────────────── */
+.lg-retry-btn {
+    background: none;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-family: inherit;
+    padding: 0.15rem 0.5rem;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.lg-retry-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lg-retry-btn:focus-visible {
+    outline: 2px solid var(--accent-border);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
