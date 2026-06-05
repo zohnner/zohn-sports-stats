@@ -980,7 +980,7 @@ const _CC_TEAM_LOGOS = {
     'cc-bananas':      'assets/themes/SavannahBananas.png',
     'retro-expos':     'assets/themes/exposlogo.webp',
     'nl-monarchs':     'assets/themes/images.png',
-    'aa-trash-pandas': 'assets/themes/trash-pandas.svg',
+    'aa-trash-pandas': 'assets/themes/trash-pandas-logo.png',
 };
 
 const _CC_THEME_ALTS = {

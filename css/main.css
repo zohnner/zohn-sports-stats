@@ -3486,15 +3486,20 @@ a:focus:not(:focus-visible),
     height: 5px;
 }
 
-/* Rocket City Trash Pandas — starfield + rocket fire, SVG art */
+/* Rocket City Trash Pandas — actual mascot logo on near-void */
 .theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview {
-    background-image: url('../assets/themes/trash-pandas.svg');
-    background-size: cover;
-    background-position: center bottom;
+    background: #02030e;
 }
 .theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview::after {
     background: linear-gradient(90deg, #002F6C 0%, #E86830 100%);
     height: 5px;
+}
+
+/* Trash Pandas logo has white background — pad it for dark surface display */
+[data-theme="aa-trash-pandas"] .brand-logo-img {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 3px;
+    box-sizing: border-box;
 }
 
 /* Light theme needs a visible inset border so it reads against a dark drawer */
