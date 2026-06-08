@@ -347,3 +347,111 @@
     margin: 0.25rem var(--space-4) 0;
     padding: 0;
 }
+
+/* ── Phase 2: Two-column body layout ──────────────────────── */
+.lg-body {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    margin-top: var(--space-2);
+}
+
+.lg-zone-col {
+    flex: 0 0 130px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.lg-tab-col {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.lg-zone-section-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+@media (max-width: 768px) {
+    .lg-body { flex-direction: column; }
+    .lg-zone-col { width: 100%; flex: none; }
+}
+
+/* ── Phase 2: Pitch zone SVG ───────────────────────────────── */
+.lg-zone-wrap { position: relative; }
+
+.lg-pitch-zone {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    display: block;
+}
+
+.lg-dot-group { cursor: pointer; }
+
+.lg-dot-group circle:not(.lg-dot-focus-ring) {
+    transition: r 120ms ease;
+}
+
+.lg-dot-group:hover circle:not(.lg-dot-focus-ring),
+.lg-dot-group:focus-visible circle:not(.lg-dot-focus-ring) { r: 5px; }
+
+.lg-dot-text {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+
+.lg-dot-group:hover .lg-dot-text,
+.lg-dot-group:focus-visible .lg-dot-text { opacity: 1; }
+
+.lg-dot-focus-ring { opacity: 0; pointer-events: none; }
+.lg-dot-group:focus-visible .lg-dot-focus-ring { opacity: 1; }
+.lg-dot-group:focus-visible { outline: none; }
+
+/* ── Phase 2: Pitch tooltip ────────────────────────────────── */
+.lg-pitch-tooltip {
+    position: absolute;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: var(--shadow-sm);
+    line-height: 1.6;
+}
+
+/* ── Phase 2: Base runner diagram ──────────────────────────── */
+.lg-base-diagram { display: block; margin: 0 auto; }
+
+/* ── Phase 2: Matchup tab content ──────────────────────────── */
+.lg-matchup-wrap { overflow-y: auto; max-height: 320px; }
+
+.lg-matchup-block { padding: var(--space-2) 0; }
+
+.lg-matchup-block + .lg-matchup-block {
+    border-top: 1px solid var(--border-default);
+    margin-top: 0;
+}
+
+.lg-matchup-empty {
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: var(--text-xs);
+    padding: var(--space-3) 0;
+    font-style: italic;
+}
+
+.lg-matchup-line {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    padding: 0.3rem 0;
+    font-family: var(--font-mono);
+}

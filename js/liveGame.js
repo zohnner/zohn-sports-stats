@@ -6,55 +6,73 @@
 // fetches /game/{gamePk}/feed/live only on state change.
 //
 // Globals used from mlb.js (load order dependency):
-//   _mlbProxyUrl(url)      — routes through Cloudflare proxy
-//   MLB_USE_PROXY          — true in production
+//   mlbFetch(path, params, ttl)
+//   _mlbProxyUrl(url)
+//   MLB_USE_PROXY
 //   MLB_BASE_URL_V11       — 'https://statsapi.mlb.com/api/v1.1' (feed/live only)
 //   getMLBTeamColors(abbr)
-//   getMLBTeamLogoUrl(id)
 //   _escHtml(str)
 //   Logger
+//   ApiCache
 //
 // Phase 0 API findings (Finn, 2026-06-04):
 //   - feed/live requires v1.1, NOT v1 (v1 returns 404). All other endpoints use v1.
-//   - Strike zone bounds are at playEvents[n].pitchData.strikeZoneTop/Bottom,
-//     NOT at currentPlay.matchup.batterStrikeZoneTop (that field does not exist).
+//   - Strike zone bounds: playEvents[n].pitchData.strikeZoneTop/Bottom
+//     NOT currentPlay.matchup.batterStrikeZoneTop (that path does not exist).
 //   - Pitch events filtered via e.isPitch === true (not e.type === 'pitch').
-//   - battingOrder: array of numeric player IDs. Player data keyed as players['ID'+id].
-//   - pitchers: array of numeric pitcher IDs in same teams.{home|away}.pitchers array.
-//   - innings[n] shape: { num, ordinalNum, home: { runs, hits, errors }, away: {...} }
+//   - battingOrder: array of numeric IDs. Player data keyed as players['ID'+id].
+//   - pitchers: array of numeric IDs in teams.{home|away}.pitchers.
+//   - innings[n]: { num, ordinalNum, home: { runs, hits, errors }, away: {...} }
 //
 // navigateTo() in navigation.js calls stopLiveGamePolling()
 // before routing — this file must define that function globally.
 // ============================================================
 
 // ── Module state ─────────────────────────────────────────────
-let _lgInterval      = null;   // active setInterval handle
-let _lgGamePk        = null;   // currently expanded gamePk
-let _lgFailures      = 0;      // consecutive poll failure count
-let _lgLastState     = null;   // last linescore state key for diff
-let _lgTabMap        = new Map(); // gamePk → active tab id
-let _lgFeedCache     = null;   // last feed/live payload
-let _lgTriggerEl     = null;   // card element that opened the panel (focus return on close)
-let _lgPrevScores    = null;   // { away, home } for score-change flash detection
-let _lgLastPitcherId = null;   // pitcher id from previous poll — pitching change detection
+let _lgInterval       = null;   // active setInterval handle
+let _lgGamePk         = null;   // currently expanded gamePk
+let _lgFailures       = 0;      // consecutive poll failure count
+let _lgLastState      = null;   // last linescore state key for diff
+let _lgTabMap         = new Map(); // gamePk → active tab id
+let _lgFeedCache      = null;   // last feed/live payload
+let _lgTriggerEl      = null;   // card element that opened the panel (focus return on close)
+let _lgPrevScores     = null;   // { away, home } for score-change flash detection
+let _lgLastPitcherId  = null;   // pitcher id from previous poll — pitching change detection
+let _lgPitchTooltipEl = null;   // active pitch tooltip DOM node or null
+let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat obj }
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
 const LG_PREGAME_MS     = 60000;
+
+// Pitch dot fill colors by MLB Stats API call.code
+const _LG_DOT_COLORS = {
+    B: 'var(--accent)',       // Ball
+    C: 'var(--color-win)',    // Called strike
+    S: 'var(--color-loss)',   // Swinging strike
+    W: 'var(--color-loss)',   // Swinging strike (blocked)
+    T: 'var(--color-loss)',   // Foul tip (strikeout)
+    F: 'var(--text-muted)',   // Foul
+    R: 'var(--text-muted)',   // Foul (bunt attempt)
+    D: 'var(--color-pts)',    // In play (no out — treat as hit)
+    E: 'var(--color-pts)',    // In play (fielding error)
+};
 
 // ── Public API ───────────────────────────────────────────────
 
 function stopLiveGamePolling() {
     if (_lgInterval) {
         clearInterval(_lgInterval);
-        _lgInterval  = null;
+        _lgInterval       = null;
     }
-    _lgGamePk        = null;
-    _lgLastState     = null;
-    _lgFailures      = 0;
-    _lgFeedCache     = null;
-    _lgPrevScores    = null;
-    _lgLastPitcherId = null;
+    _lgHideTooltip();
+    _lgGamePk         = null;
+    _lgLastState      = null;
+    _lgFailures       = 0;
+    _lgFeedCache      = null;
+    _lgPrevScores     = null;
+    _lgLastPitcherId  = null;
+    _lgH2HCache       = {};
 }
 
 // Expand the live game panel below a game card.
@@ -62,24 +80,20 @@ function stopLiveGamePolling() {
 // game:   game object from AppState.mlbGames (has teams, linescore, status)
 // cardEl: the .game-card DOM element that was clicked
 async function openLiveGamePanel(gamePk, game, cardEl) {
-    // Close any open panel first
     _closeExistingPanel();
 
     _lgGamePk    = String(gamePk);
     _lgFeedCache = null;
     _lgTriggerEl = cardEl;
 
-    // Inject skeleton panel immediately (synchronous)
     const panel = _buildSkeletonPanel(game);
     cardEl.insertAdjacentElement('afterend', panel);
     panel.focus();
 
-    // Escape key closes the panel
     panel.addEventListener('keydown', e => {
         if (e.key === 'Escape') _closeExistingPanel();
     });
 
-    // Start polling
     await _doPoll(gamePk);
     const interval = _pollInterval(game);
     _lgInterval = setInterval(() => _doPoll(_lgGamePk), interval);
@@ -117,7 +131,7 @@ async function _doPoll(gamePk) {
         _updateBadge(panel, 'live');
 
         const stateKey = `${ls.currentInning}|${ls.inningState}|${ls.teams?.away?.runs}|${ls.teams?.home?.runs}`;
-        if (stateKey === _lgLastState) return; // nothing changed
+        if (stateKey === _lgLastState) return;
         _lgLastState = stateKey;
 
         // State changed — fetch full feed (v1.1 required — v1 returns 404)
@@ -133,14 +147,13 @@ async function _doPoll(gamePk) {
         _renderPanel(panel, feed, gamePk);
         _animateNewPlays(panel, prevPbpCount);
 
-        // Flash score digit when a team scores (compare against last known state)
         if (_lgPrevScores) {
             if (curAway > _lgPrevScores.away) _flashScore(panel, 'away');
             if (curHome > _lgPrevScores.home) _flashScore(panel, 'home');
         }
         _lgPrevScores = { away: curAway, home: curHome };
 
-        // Pitching change detection — prepend a banner entry to the PBP list
+        // Pitching change detection
         const currentPlay  = feed.liveData?.plays?.currentPlay;
         const curPitcherId = currentPlay?.matchup?.pitcher?.id;
         if (curPitcherId && _lgLastPitcherId && curPitcherId !== _lgLastPitcherId) {
@@ -159,10 +172,8 @@ async function _doPoll(gamePk) {
         const isDelayedNow = /delay|suspend/i.test(feed.gameData?.status?.detailedState || '');
         const isBetweenNow = ls.inningState === 'Middle' || ls.inningState === 'End';
 
-        // Stop polling if game ended
         if (isFinalNow) { stopLiveGamePolling(); return; }
 
-        // Adjust polling interval dynamically on state change
         const newMs = isDelayedNow ? 60000 : isBetweenNow ? LG_BETWEEN_INN_MS : LG_POLL_MS;
         if (_lgInterval) {
             clearInterval(_lgInterval);
@@ -178,8 +189,8 @@ async function _doPoll(gamePk) {
 
 function _buildSkeletonPanel(game) {
     const panel = document.createElement('div');
-    panel.className  = 'lg-panel';
-    panel.tabIndex   = -1;
+    panel.className = 'lg-panel';
+    panel.tabIndex  = -1;
     panel.setAttribute('role', 'region');
     panel.setAttribute('aria-label', 'Live game expanded view');
 
@@ -216,25 +227,29 @@ function _buildSkeletonPanel(game) {
         <div class="lg-linescore-wrap">
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
-        <div class="mlb-group-toggle-row lg-tabs" role="tablist">
-            <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp" aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
-            <button class="mlb-group-btn"                        role="tab" id="lg-tab-box" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
-        </div>
-        <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:75%"></div>
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
+        <div class="lg-body">
+            <div class="lg-zone-col" hidden></div>
+            <div class="lg-tab-col">
+                <div class="mlb-group-toggle-row lg-tabs" role="tablist">
+                    <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
+                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"     aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
+                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
+                </div>
+                <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
+                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
+                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:75%"></div>
+                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
+                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
+                </div>
+            </div>
         </div>`;
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
-    // Wire tab clicks
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
         btn.addEventListener('click', () => _switchTab(panel, btn.dataset.lgTab, String(_lgGamePk)));
     });
 
-    // Arrow-key navigation between tabs (ARIA tabs pattern)
     panel.querySelector('.lg-tabs')?.addEventListener('keydown', e => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         const tabs = [...panel.querySelectorAll('[data-lg-tab]')];
@@ -258,12 +273,12 @@ function _renderPanel(panel, feed, gamePk) {
     const home     = feed.gameData?.teams?.home || {};
     const away     = feed.gameData?.teams?.away || {};
 
-    const isFinal   = status.abstractGameState === 'Final';
-    const isDelayed = /delay|suspend/i.test(status.detailedState || '');
-    const homeScore = ls.teams?.home?.runs ?? '—';
-    const awayScore = ls.teams?.away?.runs ?? '—';
-    const homeWon   = isFinal && homeScore > awayScore;
-    const awayWon   = isFinal && awayScore > homeScore;
+    const isFinal      = status.abstractGameState === 'Final';
+    const isDelayed    = /delay|suspend/i.test(status.detailedState || '');
+    const homeScore    = ls.teams?.home?.runs ?? '—';
+    const awayScore    = ls.teams?.away?.runs ?? '—';
+    const homeWon      = isFinal && homeScore > awayScore;
+    const awayWon      = isFinal && awayScore > homeScore;
     const half         = ls.isTopInning ? '▲' : '▼';
     const inning       = ls.currentInning || '—';
     const balls        = ls.balls ?? '?';
@@ -300,9 +315,10 @@ function _renderPanel(panel, feed, gamePk) {
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
-    panel.querySelector('.lg-linescore-wrap').innerHTML = _buildLinescore(ls, away.abbreviation, home.abbreviation);
+    panel.querySelector('.lg-linescore-wrap').innerHTML =
+        _buildLinescore(ls, away.abbreviation, home.abbreviation);
 
-    // Delay/suspension reason note below linescore
+    // Delay/suspension reason note
     const existingNote = panel.querySelector('.lg-delay-note');
     if (isDelayed && ls.note) {
         if (existingNote) {
@@ -317,6 +333,26 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
+    // Phase 2: pitch zone + base diagram
+    const currentPlay = plays.currentPlay;
+    const pitches     = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const zoneCol     = panel.querySelector('.lg-zone-col');
+    if (zoneCol) {
+        if (currentPlay?.matchup && pitches.length > 0) {
+            zoneCol.removeAttribute('hidden');
+            _lgHideTooltip();
+            zoneCol.innerHTML =
+                `<div class="lg-zone-section-label">Pitch Zone</div>` +
+                _buildPitchZone(currentPlay) +
+                `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
+                _buildBaseDiagram(currentPlay);
+            _wireZoneEvents(panel);
+        } else {
+            zoneCol.setAttribute('hidden', '');
+            zoneCol.innerHTML = '';
+        }
+    }
+
     const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
         const isActive = btn.dataset.lgTab === activeTab;
@@ -327,9 +363,12 @@ function _renderPanel(panel, feed, gamePk) {
     const tabpanel = panel.querySelector('.lg-tab-content');
     if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${activeTab}`);
 
-    tabpanel.innerHTML = activeTab === 'pbp'
-        ? _buildPbp(plays.allPlays || [])
-        : _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
+    if (activeTab === 'pbp') {
+        tabpanel.innerHTML = _buildPbp(plays.allPlays || []);
+    } else if (activeTab === 'box') {
+        tabpanel.innerHTML = _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
+    }
+    // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
 }
 
 function _buildLinescore(ls, awayAbbr, homeAbbr) {
@@ -347,8 +386,8 @@ function _buildLinescore(ls, awayAbbr, homeAbbr) {
     const buildRow = (side, abbr) => {
         let cells = `<div class="lg-linescore-cell lg-linescore-team">${_escHtml(abbr || '')}</div>`;
         for (let i = 1; i <= count; i++) {
-            const inn = innings.find(n => n.num === i);
-            const val = inn?.[side]?.runs;
+            const inn  = innings.find(n => n.num === i);
+            const val  = inn?.[side]?.runs;
             const active = i === curInning;
             cells += `<div class="lg-linescore-cell${active ? ' lg-linescore-cell--active' : ''}">${val != null ? val : '—'}</div>`;
         }
@@ -380,11 +419,13 @@ function _buildPbp(allPlays) {
     for (const [inningLabel, plays] of Object.entries(grouped)) {
         html += `<div class="lg-pbp-inning">${inningLabel}</div>`;
         for (const play of plays) {
-            const desc     = _escHtml(play.result?.description || '');
-            const isScore  = play.about?.isScoringPlay;
-            const isHR     = play.result?.eventType === 'home_run';
-            const score    = isScore ? ` <span class="lg-pbp-score">${play.result?.awayScore}–${play.result?.homeScore}</span>` : '';
-            const cls      = `lg-pbp-entry${isScore ? ' lg-pbp-entry--scoring' : ''}${isHR ? ' lg-pbp-entry--hr' : ''}`;
+            const desc    = _escHtml(play.result?.description || '');
+            const isScore = play.about?.isScoringPlay;
+            const isHR    = play.result?.eventType === 'home_run';
+            const score   = isScore
+                ? ` <span class="lg-pbp-score">${play.result?.awayScore}–${play.result?.homeScore}</span>`
+                : '';
+            const cls = `lg-pbp-entry${isScore ? ' lg-pbp-entry--scoring' : ''}${isHR ? ' lg-pbp-entry--hr' : ''}`;
             html += `<div class="${cls}">${desc}${score}</div>`;
         }
     }
@@ -428,12 +469,14 @@ function _buildBoxScore(boxscore, awayAbbr, homeAbbr) {
         </tr></thead><tbody>`;
 
         for (const pid of pitchers) {
-            const p  = players[`ID${pid}`] || {};
-            const s  = p.stats?.pitching || {};
-            const nm = _escHtml(p.person?.lastName || p.person?.fullName || '');
-            const decision = p.gameStatus?.isCurrentPitcher ? '<span class="lg-box-active">▶</span> ' : '';
+            const p      = players[`ID${pid}`] || {};
+            const s      = p.stats?.pitching || {};
+            const nm     = _escHtml(p.person?.lastName || p.person?.fullName || '');
+            const active = p.gameStatus?.isCurrentPitcher
+                ? '<span class="lg-box-active">▶</span> '
+                : '';
             html += `<tr>
-                <td>${decision}${nm}</td>
+                <td>${active}${nm}</td>
                 <td>${s.inningsPitched ?? '—'}</td><td>${s.hits ?? '—'}</td><td>${s.runs ?? '—'}</td>
                 <td>${s.earnedRuns ?? '—'}</td><td>${s.baseOnBalls ?? '—'}</td><td>${s.strikeOuts ?? '—'}</td>
             </tr>`;
@@ -442,6 +485,281 @@ function _buildBoxScore(boxscore, awayAbbr, homeAbbr) {
     }
     return html + '</div>';
 }
+
+// ── Phase 2: Pitch zone SVG ───────────────────────────────────
+
+function _lgSvgCoords(pX, pZ) {
+    return {
+        x: +(50 + (pX / 2.5) * 50).toFixed(1),
+        y: +(130 - ((pZ - 0.5) / 4.5) * 120).toFixed(1),
+    };
+}
+
+function _buildPitchZone(currentPlay) {
+    const playEvents = currentPlay?.playEvents || [];
+    const pitches    = playEvents.filter(e => e.isPitch);
+
+    // Zone bounds from last pitch that has strikeZoneTop
+    let szTop = 3.5, szBot = 1.5;
+    const lastPitchWithZone = [...pitches].reverse().find(e => e.pitchData?.strikeZoneTop);
+    if (lastPitchWithZone?.pitchData) {
+        szTop = lastPitchWithZone.pitchData.strikeZoneTop;
+        szBot = lastPitchWithZone.pitchData.strikeZoneBottom;
+    }
+
+    const zoneXL = _lgSvgCoords(-0.71, 0);
+    const zoneXR = _lgSvgCoords(0.71, 0);
+    const zoneYT = _lgSvgCoords(0, szTop);
+    const zoneYB = _lgSvgCoords(0, szBot);
+
+    const zx = zoneXL.x, zw = zoneXR.x - zoneXL.x;
+    const zy = zoneYT.y, zh = zoneYB.y - zoneYT.y;
+
+    let dotsHtml = '';
+    for (let i = 0; i < pitches.length; i++) {
+        const p   = pitches[i];
+        const pd  = p.pitchData || {};
+        const pX  = pd.coordinates?.pX;
+        const pZ  = pd.coordinates?.pZ;
+        if (pX == null || pZ == null) continue;
+
+        const { x: cx, y: cy } = _lgSvgCoords(pX, pZ);
+        const code = p.details?.call?.code || '';
+        let   fill = _LG_DOT_COLORS[code] || 'var(--border-mid)';
+        let   strokeExtra = '';
+
+        if (code === 'X') {
+            const evt = (p.result?.event || '').toLowerCase();
+            if (evt === 'home run') {
+                fill = 'var(--color-pts)';
+                strokeExtra = 'stroke="var(--text-primary)" stroke-width="2"';
+            } else if (/out|ground|fly|line|pop/.test(evt)) {
+                fill = 'var(--text-subtle)';
+            } else {
+                fill = 'var(--color-pts)'; // hit (single/double/triple)
+            }
+        }
+
+        const pitchType  = _escHtml(p.details?.type?.description || '—');
+        const velocity   = p.startSpeed ? `${p.startSpeed} mph` : '—';
+        const result     = _escHtml(p.details?.call?.description || '—');
+        const countStr   = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
+        const ariaLabel  = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity} — ${result}`);
+
+        dotsHtml += `<g class="lg-dot-group" tabindex="0" role="button"
+            aria-label="${ariaLabel}"
+            data-pitch-type="${pitchType}"
+            data-velocity="${_escHtml(velocity)}"
+            data-result="${result}"
+            data-count="${_escHtml(countStr)}">
+            <circle cx="${cx}" cy="${cy}" r="4" fill="${fill}" ${strokeExtra}/>
+            <circle cx="${cx}" cy="${cy}" r="7" class="lg-dot-focus-ring" fill="none" stroke="var(--accent-border)" stroke-width="1.5"/>
+            <text class="lg-dot-text" x="${cx}" y="${cy}" font-size="5" fill="var(--bg-base)" text-anchor="middle" dominant-baseline="central">${i + 1}</text>
+        </g>`;
+    }
+
+    return `<div class="lg-zone-wrap">
+        <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" aria-label="Pitch zone diagram for current at-bat">
+            <polygon points="44,132 56,132 58,128 50,126 42,128" fill="none" stroke="var(--border-mid)" stroke-width="1"/>
+            <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" fill="none" stroke="var(--border-strong)" stroke-width="1.5"/>
+            ${dotsHtml}
+        </svg>
+    </div>`;
+}
+
+// ── Phase 2: Base runner diagram ──────────────────────────────
+
+function _buildBaseDiagram(currentPlay) {
+    const runners  = currentPlay?.runners || [];
+    const occupied = new Set(
+        runners
+            .map(r => r.movement?.end)
+            .filter(e => e && e !== 'score' && e !== 'Home')
+    );
+
+    const baseStyle = base => occupied.has(base)
+        ? `fill="var(--color-pts)" stroke="var(--color-pts)" stroke-width="1.5"`
+        : `fill="var(--bg-surface)" stroke="var(--border-mid)" stroke-width="1.5"`;
+
+    return `<svg class="lg-base-diagram" viewBox="0 0 60 60" width="56" xmlns="http://www.w3.org/2000/svg" aria-label="Base runner positions" style="pointer-events:none">
+        <line x1="30" y1="12" x2="50" y2="30" stroke="var(--border-default)" stroke-width="1"/>
+        <line x1="50" y1="30" x2="30" y2="48" stroke="var(--border-default)" stroke-width="1"/>
+        <line x1="30" y1="48" x2="10" y2="30" stroke="var(--border-default)" stroke-width="1"/>
+        <line x1="10" y1="30" x2="30" y2="12" stroke="var(--border-default)" stroke-width="1"/>
+        <rect x="26" y="8"  width="8" height="8" transform="rotate(45,30,12)" ${baseStyle('2B')}/>
+        <rect x="6"  y="26" width="8" height="8" transform="rotate(45,10,30)" ${baseStyle('3B')}/>
+        <rect x="46" y="26" width="8" height="8" transform="rotate(45,50,30)" ${baseStyle('1B')}/>
+        <polygon points="26,52 34,52 36,48 30,46 24,48" fill="var(--bg-surface)" stroke="var(--border-mid)" stroke-width="1.5"/>
+    </svg>`;
+}
+
+// ── Phase 2: Tooltip ──────────────────────────────────────────
+
+function _lgShowTooltip(groupEl, zoneWrap) {
+    _lgHideTooltip();
+
+    const circle = groupEl.querySelector('circle:not(.lg-dot-focus-ring)');
+    if (!circle) return;
+
+    const tip = document.createElement('div');
+    tip.className = 'lg-pitch-tooltip';
+    tip.innerHTML = [
+        _escHtml(groupEl.dataset.pitchType),
+        _escHtml(groupEl.dataset.velocity),
+        _escHtml(groupEl.dataset.result),
+        _escHtml(groupEl.dataset.count),
+    ].join('<br>');
+    zoneWrap.appendChild(tip);
+    _lgPitchTooltipEl = tip;
+
+    const cr   = circle.getBoundingClientRect();
+    const wr   = zoneWrap.getBoundingClientRect();
+    const tipH = tip.offsetHeight;
+    const tipW = tip.offsetWidth;
+
+    const relTop  = cr.top  - wr.top;
+    const relLeft = cr.left - wr.left + cr.width / 2;
+
+    let top  = relTop - tipH - 6;
+    let left = relLeft - tipW / 2;
+
+    if (top < 0) top = relTop + cr.height + 6;
+    left = Math.max(0, Math.min(left, wr.width - tipW));
+
+    tip.style.top  = `${top}px`;
+    tip.style.left = `${left}px`;
+}
+
+function _lgHideTooltip() {
+    if (_lgPitchTooltipEl) {
+        _lgPitchTooltipEl.remove();
+        _lgPitchTooltipEl = null;
+    }
+}
+
+function _wireZoneEvents(panel) {
+    const zoneWrap = panel.querySelector('.lg-zone-wrap');
+    if (!zoneWrap) return;
+
+    zoneWrap.addEventListener('mouseenter', e => {
+        const group = e.target.closest?.('.lg-dot-group');
+        if (group) _lgShowTooltip(group, zoneWrap);
+    }, true);
+
+    zoneWrap.addEventListener('mouseleave', e => {
+        const group = e.target.closest?.('.lg-dot-group');
+        if (group) _lgHideTooltip();
+    }, true);
+
+    zoneWrap.addEventListener('click', e => {
+        const group = e.target.closest?.('.lg-dot-group');
+        if (group) {
+            if (_lgPitchTooltipEl) {
+                _lgHideTooltip();
+            } else {
+                _lgShowTooltip(group, zoneWrap);
+            }
+        } else {
+            _lgHideTooltip();
+        }
+    });
+
+    zoneWrap.addEventListener('focusin', e => {
+        const group = e.target.closest?.('.lg-dot-group');
+        if (group) _lgShowTooltip(group, zoneWrap);
+    });
+
+    zoneWrap.addEventListener('focusout', e => {
+        const group = e.target.closest?.('.lg-dot-group');
+        if (group) _lgHideTooltip();
+    });
+
+    zoneWrap.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            _lgHideTooltip();
+            zoneWrap.focus();
+        }
+    });
+}
+
+// ── Phase 2: H2H data + Matchup tab ──────────────────────────
+
+async function _lgFetchH2H(batterId, pitcherId) {
+    const key = `${batterId}_${pitcherId}`;
+    if (_lgH2HCache[key] !== undefined) return _lgH2HCache[key];
+    try {
+        const data = await mlbFetch(
+            `/people/${batterId}/stats`,
+            { stats: 'vsPlayer', opposingPlayerId: pitcherId, group: 'hitting' },
+            ApiCache.TTL.MEDIUM
+        );
+        const total = data?.stats?.find(s => s.type?.displayName === 'vsPlayerTotal')
+            ?.splits?.[0]?.stat || null;
+        _lgH2HCache[key] = total;
+        return total;
+    } catch (err) {
+        Logger.warn('H2H fetch failed', err, 'LIVE');
+        _lgH2HCache[key] = null;
+        return null;
+    }
+}
+
+async function _buildMatchupContent(feed) {
+    const currentPlay = feed.liveData?.plays?.currentPlay;
+    const matchup     = currentPlay?.matchup;
+    if (!matchup) return '<div class="lg-pbp-empty">No at-bat in progress.</div>';
+
+    const batterId    = matchup.batter?.id;
+    const pitcherId   = matchup.pitcher?.id;
+    const batterName  = _escHtml(matchup.batter?.fullName  || '');
+    const pitcherName = _escHtml(matchup.pitcher?.fullName || '');
+
+    const h2h = (batterId && pitcherId)
+        ? await _lgFetchH2H(batterId, pitcherId)
+        : null;
+
+    // Block 1 — Career H2H
+    let block1Html;
+    const pa = h2h?.plateAppearances;
+    if (!h2h || !pa) {
+        block1Html = `<div class="lg-matchup-empty">${batterName} has never faced ${pitcherName} in the majors</div>`;
+    } else {
+        const s = h2h;
+        block1Html = `<table class="lg-box-table"><thead><tr>
+            <th>PA</th><th>H</th><th>HR</th><th>BB</th><th>K</th><th>AVG</th><th>OBP</th><th>SLG</th>
+        </tr></thead><tbody><tr>
+            <td>${pa}</td>
+            <td>${s.hits           ?? '—'}</td>
+            <td>${s.homeRuns       ?? '—'}</td>
+            <td>${s.baseOnBalls    ?? '—'}</td>
+            <td>${s.strikeOuts     ?? '—'}</td>
+            <td>${s.avg            ?? '—'}</td>
+            <td>${s.obp            ?? '—'}</td>
+            <td>${s.slg            ?? '—'}</td>
+        </tr></tbody></table>`;
+    }
+
+    // Block 2 — This At-Bat (only if pitches thrown)
+    const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const ls      = feed.liveData?.linescore || {};
+    let block2Html = '';
+    if (pitches.length > 0) {
+        block2Html = `<div class="lg-matchup-block">
+            <div class="lg-box-section-title">This At-Bat</div>
+            <div class="lg-matchup-line">${pitches.length} pitch${pitches.length !== 1 ? 'es' : ''} · ${ls.balls ?? '?'}-${ls.strikes ?? '?'} count</div>
+        </div>`;
+    }
+
+    return `<div class="lg-matchup-wrap">
+        <div class="lg-matchup-block">
+            <div class="lg-box-section-title">${batterName} vs. ${pitcherName}</div>
+            ${block1Html}
+        </div>
+        ${block2Html}
+    </div>`;
+}
+
+// ── Tab switching ─────────────────────────────────────────────
 
 function _switchTab(panel, tabId, gamePk) {
     _lgTabMap.set(gamePk, tabId);
@@ -452,22 +770,41 @@ function _switchTab(panel, tabId, gamePk) {
     });
     const tabpanel = panel.querySelector('.lg-tab-content');
     if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${tabId}`);
-    if (_lgFeedCache) {
-        const feed  = _lgFeedCache;
-        const away  = feed.gameData?.teams?.away?.abbreviation || '';
-        const home  = feed.gameData?.teams?.home?.abbreviation || '';
-        panel.querySelector('.lg-tab-content').innerHTML = tabId === 'pbp'
-            ? _buildPbp(feed.liveData?.plays?.allPlays || [])
-            : _buildBoxScore(feed.liveData?.boxscore || {}, away, home);
+    if (!_lgFeedCache) return;
+
+    const feed = _lgFeedCache;
+    const away = feed.gameData?.teams?.away?.abbreviation || '';
+    const home = feed.gameData?.teams?.home?.abbreviation || '';
+
+    if (tabId === 'pbp') {
+        tabpanel.innerHTML = _buildPbp(feed.liveData?.plays?.allPlays || []);
+    } else if (tabId === 'box') {
+        tabpanel.innerHTML = _buildBoxScore(feed.liveData?.boxscore || {}, away, home);
+    } else if (tabId === 'matchup') {
+        tabpanel.innerHTML = `
+            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:85%"></div>
+            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:70%"></div>`;
+        _buildMatchupContent(feed).then(html => {
+            if (_lgFeedCache === feed) tabpanel.innerHTML = html;
+        });
     }
 }
+
+// ── Status badge ──────────────────────────────────────────────
 
 function _updateBadge(panel, state) {
     const badge = panel?.querySelector('.lg-status-badge');
     if (!badge) return;
-    if (state === 'live')        { badge.className = 'game-status game-status--live lg-status-badge'; badge.innerHTML = '<span class="live-dot"></span>LIVE'; }
-    else if (state === 'reconnecting') { badge.className = 'game-status game-status--sched lg-status-badge'; badge.textContent = 'RECONNECTING…'; }
-    else if (state === 'unavailable')  { badge.className = 'game-status game-status--sched lg-status-badge'; badge.textContent = 'DATA UNAVAILABLE'; }
+    if (state === 'live') {
+        badge.className = 'game-status game-status--live lg-status-badge';
+        badge.innerHTML = '<span class="live-dot"></span>LIVE';
+    } else if (state === 'reconnecting') {
+        badge.className = 'game-status game-status--sched lg-status-badge';
+        badge.textContent = 'RECONNECTING…';
+    } else if (state === 'unavailable') {
+        badge.className = 'game-status game-status--sched lg-status-badge';
+        badge.textContent = 'DATA UNAVAILABLE';
+    }
 }
 
 function _flashScore(panel, side) {
@@ -492,7 +829,7 @@ function _showRetryBtn(panel) {
 }
 
 function _animateNewPlays(panel, prevCount) {
-    const entries = panel.querySelectorAll('.lg-pbp-entry');
+    const entries  = panel.querySelectorAll('.lg-pbp-entry');
     const newCount = entries.length - prevCount;
     for (let i = 0; i < Math.min(newCount, entries.length); i++) {
         entries[i].classList.add('lg-pbp-entry--new');
@@ -501,6 +838,6 @@ function _animateNewPlays(panel, prevCount) {
 
 // ── Global exports ────────────────────────────────────────────
 if (typeof window !== 'undefined') {
-    window.openLiveGamePanel  = openLiveGamePanel;
+    window.openLiveGamePanel   = openLiveGamePanel;
     window.stopLiveGamePolling = stopLiveGamePolling;
 }

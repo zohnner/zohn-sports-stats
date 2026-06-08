@@ -1346,6 +1346,8 @@ Annotation mode (freehand notes per cell) is effectively a mini drawing canvas a
 
 **All three Phase 1 gates closed 2026-06-04. Finn may begin Phase 1 after completing Phase 0 live-game API verification.**
 
+**All three Phase 2 gates closed 2026-06-08. Finn may begin Phase 2 now. Phase 1 shipped 2026-06-08.**
+
 ---
 
 ### Kael Visual Spec — Phase 1
@@ -1775,17 +1777,296 @@ Pitch events in `liveData.plays.currentPlay.playEvents`:
 
 ---
 
+### Kael Visual Spec — Phase 2
+**Contributor:** Kael | **Date:** 2026-06-08
+**Gates:** Required before Finn starts Phase 2. Vera behavioral addendum and Axiom feasibility must also be complete.
+
+---
+
+#### Posture
+
+Phase 2 elements live within the existing `.lg-panel` without adding chrome or escalating elevation. Pitch zone and base diagram are data displays, not dashboards — they should feel like a broadcast overlay inset into the score card, same surface, more signal. No new container shadows, no new background fills, no modal treatment.
+
+Desktop adds a two-column split within `.lg-panel`: pitch zone + base diagram stack on the left, existing tabs (PBP, Box Score) plus new Matchup tab on the right. This split only activates when a current at-bat exists (`currentPlay.matchup` is present and at least one pitch has been thrown in the at-bat). Between innings and before first pitch, the single-column Phase 1 layout is unchanged.
+
+---
+
+#### Two-Column Body Wrapper — `.lg-body`
+
+Wrap the pitch zone column and the tab column in a flex row. The linescore and game header remain outside `.lg-body`.
+
+```css
+.lg-body {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+}
+
+.lg-zone-col {
+    flex: 0 0 130px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.lg-tab-col {
+    flex: 1 1 0;
+    min-width: 0;
+}
+```
+
+Mobile (`≤768px`): `.lg-body { flex-direction: column; }`. `.lg-zone-col` renders after `.lg-linescore-wrap` in the vertical stack, not before it. Matches Vera's layout override.
+
+---
+
+#### Pitch Zone SVG — `.lg-pitch-zone`
+
+`viewBox="0 0 100 140"`. Coordinate origin: top-left. `aspect-ratio: 5 / 7` maintains proportions fluidly.
+
+```css
+.lg-zone-wrap { position: relative; }
+.lg-pitch-zone { width: 100%; aspect-ratio: 5 / 7; display: block; }
+```
+
+Strike zone rectangle: built from the **last pitch event's** `pitchData.strikeZoneTop` and `pitchData.strikeZoneBottom` (corrected path per Finn's Phase 0 findings — not `currentPlay.matchup`). Fallback if no pitches yet: `szTop=3.5`, `szBot=1.5`. Horizontal bounds ±0.71ft (plate half-width).
+
+Coordinate mapping (API feet → SVG units 0–100 / 0–140):
+- `svgX = 50 + (pX / 2.5) * 50` — maps ±2.5ft horizontal to 0–100
+- `svgY = 130 - ((pZ - 0.5) / 4.5) * 120` — maps 0.5–5.0ft to 130–10 (inverted, high pZ = low svgY)
+
+Zone `<rect>`:
+- `x = svgX(−0.71) ≈ 36`
+- `width = svgX(0.71) − svgX(−0.71) ≈ 28`
+- `y = svgY(strikeZoneTop)`, `height = svgY(strikeZoneBot) − svgY(strikeZoneTop)`
+- `fill="none"`, `stroke="var(--border-strong)"`, `stroke-width="1.5"`
+
+Home plate outline: pentagon centered at `(50, 130)`, width 12, height 6. `fill="none"`, `stroke="var(--border-mid)"`, `stroke-width="1"`.
+
+Grid lines (optional enhancement, not required for Phase 2 ship): 3×3 faint lines dividing the zone into 9 quadrants. `stroke="var(--border-default)"`, `stroke-width="0.5"`, `opacity="0.5"`. Only draw if zone rect height > 20 SVG units.
+
+---
+
+#### Pitch Dot Styling
+
+Each pitch event in the current at-bat gets one `<g class="lg-dot-group" tabindex="0" role="button">` containing one `<circle>` and one `<text>`.
+
+Default: `r="4"`. Hover/focus: `r="5"`. Use CSS `r` on the circle (supported in all modern browsers; wrap in a `try/catch` for the SVG attribute fallback if needed):
+
+```css
+.lg-dot-group { cursor: pointer; }
+.lg-dot-group circle {
+    transition: r 120ms ease, opacity 120ms ease;
+}
+.lg-dot-group:hover circle,
+.lg-dot-group:focus-visible circle { r: 5px; }
+```
+
+Pitch number label: `<text class="lg-dot-text">` at same cx/cy, font-size `5`, fill `var(--bg-base)`, `text-anchor="middle"`, `dominant-baseline="central"`. Opacity 0 at default size, 1 on hover/focus:
+```css
+.lg-dot-text { opacity: 0; pointer-events: none; }
+.lg-dot-group:hover .lg-dot-text,
+.lg-dot-group:focus-visible .lg-dot-text { opacity: 1; }
+```
+
+Dot color by result (from `details.call.code`):
+
+| `call.code` | Category | Fill |
+|---|---|---|
+| `'B'` | Ball | `var(--accent)` |
+| `'C'` | Called strike | `var(--color-win)` |
+| `'S'`, `'W'`, `'T'` | Swinging strike | `var(--color-loss)` |
+| `'F'`, `'R'` | Foul | `var(--text-muted)` |
+| `'X'` — hit result | In play — hit | `var(--color-pts)` |
+| `'X'` — HR | In play — home run | `var(--color-pts)`, `stroke-width="2"`, `stroke="var(--text-primary)"` |
+| `'X'` — out | In play — out | `var(--text-subtle)` |
+| Other / unknown | Fallback | `var(--border-mid)` |
+
+For `call.code === 'X'`: check `result.event` (or `result.eventType`) — `'Home Run'` → HR style; any string containing `'Out'`, `'Grounded'`, `'Flyout'`, `'Strikeout'` → out style; otherwise → hit style.
+
+Dots are rendered in pitch sequence order, oldest first. Most recent pitch is always on top (SVG paint order = array order, so append new dots, don't prepend).
+
+---
+
+#### Pitch Tooltip — `.lg-pitch-tooltip`
+
+`position: absolute` on `.lg-zone-wrap`. Not inside the SVG element.
+
+```css
+.lg-pitch-tooltip {
+    position: absolute;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: var(--shadow-sm);
+    line-height: 1.6;
+}
+```
+
+Content (4 lines):
+```
+Cutter               ← details.type.description
+91.4 mph             ← startSpeed
+Swinging Strike      ← details.call.description
+2-2 count            ← count.balls + '-' + count.strikes + ' count'
+```
+
+Positioning: JS places it using `getBoundingClientRect()` on the circle and the `.lg-zone-wrap` container. Default: centered above the dot (`top: dotTop - tooltipHeight - 4px`, `left: dotCenterX - tooltipWidth/2`). If `dotTop < 32px` from zone top: position below instead. Clamp `left` so it doesn't overflow zone wrapper edges.
+
+---
+
+#### Base Runner Diagram — `.lg-base-diagram`
+
+Sits below the pitch zone in `.lg-zone-col`. Small, fixed-width, no fluid scaling needed.
+
+```css
+.lg-base-diagram { display: block; margin: 0 auto; }
+```
+
+`viewBox="0 0 60 60"`, `width="56"` attribute on the SVG element.
+
+Layout — four bases at diamond positions:
+- Second base: `cx=30, cy=12` 
+- Third base: `cx=10, cy=30`
+- First base: `cx=50, cy=30`
+- Home plate: `cx=30, cy=50` (pentagon, not square)
+
+Each base is a `<rect width="8" height="8" transform="rotate(45, cx, cy)"`. Home plate: a small `<polygon>` approximately 8×6.
+
+Diamond infield lines connecting adjacent bases: `<line>` elements, `stroke="var(--border-default)"`, `stroke-width="1"`.
+
+Empty base: `fill="var(--bg-surface)"`, `stroke="var(--border-mid)"`, `stroke-width="1.5"`.
+Occupied base: `fill="var(--color-pts)"`, `stroke="var(--color-pts)"`.
+
+Runner data from `currentPlay.runners`: each object has `movement.end` — `'1B'`, `'2B'`, `'3B'`. A runner at `'score'` (scoring play in progress) does not fill a base. Render occupied state based on unique end positions across all runners in the array. If `currentPlay.runners` is absent: all bases empty.
+
+No animation on base state change. Base occupation updates synchronously when `_renderPanel()` re-runs on each poll. If a base flips from occupied to empty or vice versa, the fill attribute updates — no transition.
+
+---
+
+#### Matchup Tab Layout
+
+Third tab: `"Matchup"` button added after "Box Score" in `.lg-tabs`. Uses `.mlb-group-btn` class, same as the first two.
+
+Tab content (`data-lg-tab="matchup"`) is a scrollable vertical stack, `max-height: 320px`, `overflow-y: auto`, consistent with PBP.
+
+Four blocks rendered top-to-bottom; blocks 2–4 are conditional:
+
+**Block 1 — Career H2H** (always renders, or shows empty state per Vera's spec)
+Section label: `"[BATTER] VS. [PITCHER]"`, `font-size: 0.65rem`, `color: var(--text-subtle)`, uppercase.
+Stat row: `PA / H / HR / BB / K / AVG / OBP / SLG`, tabular mono, same width and style as `.lg-box-table` — reuse that table class.
+
+**Block 2 — This At-Bat** (only if ≥1 pitch thrown in current at-bat)
+Label: `"THIS AT-BAT"`.
+Single stat line: `N pitches · X-Y count`, color `var(--text-secondary)`.
+
+**Block 3 — Pitcher Arsenal** (only if `AppState.mlbPlayerStats.pitching[pitcherId]` has arsenal data)
+Label: `"[PITCHER NAME] ARSENAL"`.
+Pitch type badges: reuse existing markup from player detail pitch arsenal card.
+
+**Block 4 — Handedness Splits** (only if splits data in AppState)
+Label: `"BATTER VS. [L/R]HP"` and `"PITCHER VS. [L/R]HB"`.
+Two stat rows: AVG / OBP / SLG vs. hand.
+
+Dividers between blocks: `border-top: 1px solid var(--border-default)`, `margin: var(--space-2) 0`. No section card wrappers — flat list.
+
+---
+
+### Vera Behavioral Spec Addendum — Phase 2
+**Contributor:** Vera | **Date:** 2026-06-08
+**Gates:** Covers three interactions left unspecced in Phase 1 behavioral spec. All three required before Finn starts Phase 2.
+
+---
+
+#### Pitch Zone Dot Interaction
+
+**Desktop (pointer device):**
+`mouseenter` on `.lg-dot-group`: show tooltip, expand dot (r=5 via CSS). `mouseleave`: hide tooltip, shrink dot (r=4). No delay on show or hide. Only one tooltip active at a time — entering a second dot removes the first tooltip immediately before placing the new one.
+
+**Mobile (touch):**
+First tap on a dot: show tooltip positioned above the dot (or below if near top edge), highlight dot. Tooltip stays visible until: user taps another dot (replace tooltip), user taps outside `.lg-zone-wrap` (dismiss), or the panel closes (cleanup in `stopLiveGamePolling()`). No bottom sheet — the zone is too small for a sheet origin, and the tooltip content (4 lines) doesn't warrant the weight.
+
+**Keyboard:**
+Each `.lg-dot-group` carries `tabindex="0"` and `role="button"`. `aria-label="Pitch [N]: [type] [velocity]mph — [result]"`. `:focus-visible` → show tooltip, expand dot. `blur` → hide tooltip, shrink dot. `Tab` moves through dots in pitch sequence order (1, 2, 3…). `Escape` while a dot has focus: hide tooltip, move focus to `.lg-zone-wrap` (not out of the zone). Arrow keys within the zone: not implemented in Phase 2.
+
+**Tooltip cleanup:** `stopLiveGamePolling()` removes the active tooltip element from the DOM (if present) and clears `_lgPitchTooltipEl`. Between-innings transitions that re-render the panel also remove stale tooltip references.
+
+---
+
+#### Base Diagram — Mobile Tap Behavior
+
+No tap interaction. The base diagram is display-only in Phase 2. Tapping it does nothing — `pointer-events: none` on the entire SVG. The diagram communicates runner positions visually; that is its complete scope.
+
+---
+
+#### Matchup Tab — H2H Empty State
+
+When `vsPlayerTotal` has `PA === 0` or `splits` is an empty array (batter and pitcher have never faced each other in the majors): render Block 1 as:
+
+```
+[BatterName] has never faced [PitcherName]
+in the majors
+```
+
+`color: var(--text-subtle)`, `font-size: var(--text-xs)`, centered within the block area, `padding: var(--space-3) 0`.
+
+**Loading state** (Block 1 while `vsPlayer` fetch is in flight): two-line skeleton shimmer, same pattern as box score loading. Blocks 3 and 4 use data already in AppState and render immediately without a skeleton.
+
+**Block 3 absent** (pitcher has no Statcast arsenal data): omit Block 3 entirely. No placeholder text, no skeleton.
+
+**Block 4 absent** (splits unavailable): omit Block 4 entirely.
+
+These are data-absent states, not errors. No error icon, no "something went wrong" copy.
+
+---
+
+### Axiom Feasibility Sign-off — Phase 2
+**Contributor:** Axiom | **Date:** 2026-06-08
+**Gates:** Required before Finn starts Phase 2.
+
+All Phase 2 components fit within the existing `liveGame.js` module without new files or new global state fields beyond two additions to module scope.
+
+**Pitch zone SVG**: Built with `document.createElementNS()` calls, not a template string (cleaner attribute control for dynamic `r`, `fill`, `cx`, `cy` values). SVG container inserted into `.lg-zone-col`. Tooltip is a `<div>` created once and reused — removed from DOM on close, reinserted on show. Coordinate math runs inside a helper `_lgSvgCoords(pX, pZ)` → `{x, y}`. Zone bounds helper `_lgZoneBounds(plays)` reads the last pitch event's `pitchData.strikeZoneTop/Bottom`.
+
+**Base diagram**: Static SVG string built once. `fill` attributes on the four base `<rect>` elements updated in-place via `setAttribute()` on each poll cycle — no full redraw.
+
+**Matchup fetch**: New helper `_lgFetchH2H(batterId, pitcherId)` calls `mlbFetch('/people/${batterId}/stats', { stats: 'vsPlayer', opposingPlayerId: pitcherId, group: 'hitting' }, ApiCache.TTL.MEDIUM)`. Triggered on first Matchup tab click for a given batter+pitcher pair, not on panel open. Results cached in-memory in `_lgH2HCache` (`"${batterId}_${pitcherId}"` key), cleared in `stopLiveGamePolling()`.
+
+**HTML structure change**: `_renderPanel()` wraps the existing tab section in `.lg-tab-col` and injects `.lg-zone-col` as sibling inside new `.lg-body` wrapper, only when `currentPlay.matchup` is present. When between innings or no current play: render single-column Phase 1 layout unchanged.
+
+**New module state** (two additions only):
+```js
+let _lgPitchTooltipEl = null;  // active tooltip DOM node or null
+let _lgH2HCache = {};          // { "batterId_pitcherId": vsPlayerTotal }
+```
+Both cleared in `stopLiveGamePolling()`.
+
+**CSS `r` attribute**: `r` as a CSS property (not SVG attribute) is supported in Chrome 86+, Firefox 80+, Safari 14.1+. No polyfill needed for 2026 browser targets. The `r` SVG attribute on `<circle>` is the fallback — JS sets it via `setAttribute('r', '4')` on creation; CSS overrides it for hover/focus states.
+
+**No new files, no new global state. Finn may proceed.**
+
+---
+
 ### Phase 2 — Pitch Zone, Base Diagram, Matchup Stats
-**Assigned to:** Finn | **Status:** Blocked — Phase 1 must ship first + Phase 0 live-game verification required
+**Assigned to:** Finn | **Status:** ✅ All gates closed 2026-06-08 — Finn may begin Phase 2
+
+**Spec gates:**
+- ✅ Kael visual spec: complete 2026-06-08 — see "Kael Visual Spec — Phase 2" above
+- ✅ Vera behavioral spec: complete 2026-06-08 — see "Vera Behavioral Spec Addendum — Phase 2" above
+- ✅ Axiom feasibility sign-off: complete 2026-06-08 — see "Axiom Feasibility Sign-off — Phase 2" above
 
 **Scope:**
-- Pitch zone SVG — viewBox `0 0 100 140`, batter-specific zone bounds from `matchup.batterStrikeZoneTop/Bottom`, pitch dots result-coded (see D-009 for color mapping)
-- Base runner diagram — reuses scorecard diamond SVG geometry (read-only, no cell structure), bases filled on occupation
-- Matchup stats tab — `vsPlayerTotal` career H2H, current pitcher's Statcast arsenal, batter/pitcher season splits vs. handedness
-- Mobile pitch zone: drops below fold (below linescore), not at top of stack
-- Pitch dot aria-labels: `aria-label="Pitch N: [type] [velocity]mph — [result]"` on each `<circle>`
-
-**Kael visual spec for Phase 2:** pitch zone proportions, dot sizing (8px default, 10px hover), tooltip positioning, mobile carousel tab treatment — required before Finn starts Phase 2.
+- Pitch zone SVG — `viewBox="0 0 100 140"`, zone bounds from `playEvents[n].pitchData.strikeZoneTop/Bottom` (corrected per Finn's Phase 0 findings — not `currentPlay.matchup`), pitch dots result-coded by `details.call.code`
+- Base runner diagram — compact SVG diamond, 56px fixed-width, bases filled from `currentPlay.runners[*].movement.end`
+- Matchup stats tab — `vsPlayerTotal` career H2H, pitcher Statcast arsenal if available, batter/pitcher handedness splits if available
+- Mobile: `.lg-body` switches to `flex-direction: column`; `.lg-zone-col` drops below linescore
+- Pitch dot aria-labels: `aria-label="Pitch [N]: [type] [velocity]mph — [result]"` on each `<g class="lg-dot-group">`
+- Two-column layout activates only when `currentPlay.matchup` exists and ≥1 pitch thrown; between-innings renders Phase 1 layout unchanged
 
 ---
 
