@@ -329,3 +329,21 @@
     outline-offset: 2px;
     border-radius: var(--radius-xs);
 }
+
+/* ── Pitching change entry ─────────────────────────────────── */
+.lg-pbp-entry--pitching-change {
+    color: var(--text-muted);
+    font-style: italic;
+    border-left: 2px solid var(--border-mid);
+    padding-left: calc(0.5rem - 2px);
+}
+
+/* ── Delay / suspension reason note ───────────────────────── */
+.lg-delay-note {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    margin: 0.25rem var(--space-4) 0;
+    padding: 0;
+}

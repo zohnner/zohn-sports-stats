@@ -28,14 +28,15 @@
 // ============================================================
 
 // ── Module state ─────────────────────────────────────────────
-let _lgInterval    = null;   // active setInterval handle
-let _lgGamePk      = null;   // currently expanded gamePk
-let _lgFailures    = 0;      // consecutive poll failure count
-let _lgLastState   = null;   // last linescore state key for diff
-let _lgTabMap      = new Map(); // gamePk → active tab id
-let _lgFeedCache   = null;   // last feed/live payload
-let _lgTriggerEl   = null;   // card element that opened the panel (focus return on close)
-let _lgPrevScores  = null;   // { away, home } for score-change flash detection
+let _lgInterval      = null;   // active setInterval handle
+let _lgGamePk        = null;   // currently expanded gamePk
+let _lgFailures      = 0;      // consecutive poll failure count
+let _lgLastState     = null;   // last linescore state key for diff
+let _lgTabMap        = new Map(); // gamePk → active tab id
+let _lgFeedCache     = null;   // last feed/live payload
+let _lgTriggerEl     = null;   // card element that opened the panel (focus return on close)
+let _lgPrevScores    = null;   // { away, home } for score-change flash detection
+let _lgLastPitcherId = null;   // pitcher id from previous poll — pitching change detection
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -48,11 +49,12 @@ function stopLiveGamePolling() {
         clearInterval(_lgInterval);
         _lgInterval  = null;
     }
-    _lgGamePk    = null;
-    _lgLastState = null;
-    _lgFailures  = 0;
-    _lgFeedCache  = null;
-    _lgPrevScores = null;
+    _lgGamePk        = null;
+    _lgLastState     = null;
+    _lgFailures      = 0;
+    _lgFeedCache     = null;
+    _lgPrevScores    = null;
+    _lgLastPitcherId = null;
 }
 
 // Expand the live game panel below a game card.
@@ -138,9 +140,33 @@ async function _doPoll(gamePk) {
         }
         _lgPrevScores = { away: curAway, home: curHome };
 
+        // Pitching change detection — prepend a banner entry to the PBP list
+        const currentPlay  = feed.liveData?.plays?.currentPlay;
+        const curPitcherId = currentPlay?.matchup?.pitcher?.id;
+        if (curPitcherId && _lgLastPitcherId && curPitcherId !== _lgLastPitcherId) {
+            const lastName = currentPlay.matchup.pitcher.fullName?.split(' ').pop() || '—';
+            const pbpEl = panel.querySelector('.lg-pbp');
+            if (pbpEl) {
+                const entry = document.createElement('div');
+                entry.className = 'lg-pbp-entry lg-pbp-entry--pitching-change lg-pbp-entry--new';
+                entry.textContent = `↔ ${lastName} now pitching`;
+                pbpEl.prepend(entry);
+            }
+        }
+        _lgLastPitcherId = curPitcherId ?? _lgLastPitcherId;
+
+        const isFinalNow   = feed.gameData?.status?.abstractGameState === 'Final';
+        const isDelayedNow = /delay|suspend/i.test(feed.gameData?.status?.detailedState || '');
+        const isBetweenNow = ls.inningState === 'Middle' || ls.inningState === 'End';
+
         // Stop polling if game ended
-        if (feed.gameData?.status?.abstractGameState === 'Final') {
-            stopLiveGamePolling();
+        if (isFinalNow) { stopLiveGamePolling(); return; }
+
+        // Adjust polling interval dynamically on state change
+        const newMs = isDelayedNow ? 60000 : isBetweenNow ? LG_BETWEEN_INN_MS : LG_POLL_MS;
+        if (_lgInterval) {
+            clearInterval(_lgInterval);
+            _lgInterval = setInterval(() => _doPoll(_lgGamePk), newMs);
         }
     } catch (err) {
         _lgFailures++;
@@ -275,6 +301,21 @@ function _renderPanel(panel, feed, gamePk) {
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
     panel.querySelector('.lg-linescore-wrap').innerHTML = _buildLinescore(ls, away.abbreviation, home.abbreviation);
+
+    // Delay/suspension reason note below linescore
+    const existingNote = panel.querySelector('.lg-delay-note');
+    if (isDelayed && ls.note) {
+        if (existingNote) {
+            existingNote.textContent = _escHtml(ls.note);
+        } else {
+            const n = document.createElement('p');
+            n.className   = 'lg-delay-note';
+            n.textContent = _escHtml(ls.note);
+            panel.querySelector('.lg-linescore-wrap')?.insertAdjacentElement('afterend', n);
+        }
+    } else if (existingNote) {
+        existingNote.remove();
+    }
 
     const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
