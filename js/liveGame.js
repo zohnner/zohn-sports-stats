@@ -45,18 +45,30 @@ const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
 const LG_PREGAME_MS     = 60000;
 
-// Pitch dot fill colors by MLB Stats API call.code
-const _LG_DOT_COLORS = {
-    B: 'var(--accent)',       // Ball
-    C: 'var(--color-win)',    // Called strike
-    S: 'var(--color-loss)',   // Swinging strike
-    W: 'var(--color-loss)',   // Swinging strike (blocked)
-    T: 'var(--color-loss)',   // Foul tip (strikeout)
-    F: 'var(--text-muted)',   // Foul
-    R: 'var(--text-muted)',   // Foul (bunt attempt)
-    D: 'var(--color-pts)',    // In play (no out — treat as hit)
-    E: 'var(--color-pts)',    // In play (fielding error)
+// Pitch dot CSS class by MLB Stats API call.code.
+// CSS variables only work as CSS properties (style="fill:..."), NOT SVG presentation
+// attributes (fill="..."). We use class names to apply token-based fills via CSS.
+const _LG_DOT_CLASS = {
+    B: 'ball',     // Ball
+    C: 'cstrike',  // Called strike
+    S: 'kstrike',  // Swinging strike
+    W: 'kstrike',  // Swinging strike (blocked)
+    T: 'kstrike',  // Foul tip (strikeout)
+    F: 'foul',     // Foul
+    R: 'foul',     // Foul (bunt attempt)
+    D: 'hit',      // In play (no out)
+    E: 'hit',      // In play (fielding error)
 };
+
+function _lgDotCategory(code, event) {
+    if (code === 'X') {
+        const evt = (event || '').toLowerCase();
+        if (evt === 'home run') return 'hr';
+        if (/out|ground|fly|line|pop|sacrifice|double play/.test(evt)) return 'out';
+        return 'hit';
+    }
+    return _LG_DOT_CLASS[code] || 'unknown';
+}
 
 // ── Public API ───────────────────────────────────────────────
 
@@ -517,51 +529,39 @@ function _buildPitchZone(currentPlay) {
 
     let dotsHtml = '';
     for (let i = 0; i < pitches.length; i++) {
-        const p   = pitches[i];
-        const pd  = p.pitchData || {};
-        const pX  = pd.coordinates?.pX;
-        const pZ  = pd.coordinates?.pZ;
+        const p  = pitches[i];
+        const pd = p.pitchData || {};
+        const pX = pd.coordinates?.pX;
+        const pZ = pd.coordinates?.pZ;
         if (pX == null || pZ == null) continue;
 
         const { x: cx, y: cy } = _lgSvgCoords(pX, pZ);
-        const code = p.details?.call?.code || '';
-        let   fill = _LG_DOT_COLORS[code] || 'var(--border-mid)';
-        let   strokeExtra = '';
+        const code      = p.details?.call?.code || '';
+        const category  = _lgDotCategory(code, p.result?.event);
+        const pitchType = _escHtml(p.details?.type?.description || '—');
+        const velocity  = p.startSpeed ? `${p.startSpeed} mph` : '—';
+        const result    = _escHtml(p.details?.call?.description || '—');
+        const countStr  = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
+        const ariaLabel = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity} — ${result}`);
 
-        if (code === 'X') {
-            const evt = (p.result?.event || '').toLowerCase();
-            if (evt === 'home run') {
-                fill = 'var(--color-pts)';
-                strokeExtra = 'stroke="var(--text-primary)" stroke-width="2"';
-            } else if (/out|ground|fly|line|pop/.test(evt)) {
-                fill = 'var(--text-subtle)';
-            } else {
-                fill = 'var(--color-pts)'; // hit (single/double/triple)
-            }
-        }
-
-        const pitchType  = _escHtml(p.details?.type?.description || '—');
-        const velocity   = p.startSpeed ? `${p.startSpeed} mph` : '—';
-        const result     = _escHtml(p.details?.call?.description || '—');
-        const countStr   = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
-        const ariaLabel  = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity} — ${result}`);
-
-        dotsHtml += `<g class="lg-dot-group" tabindex="0" role="button"
+        // CSS classes carry all fill/stroke via liveGame.css — SVG presentation
+        // attributes don't resolve CSS custom properties, so we rely on CSS only.
+        dotsHtml += `<g class="lg-dot-group lg-dot--${category}" tabindex="0" role="button"
             aria-label="${ariaLabel}"
             data-pitch-type="${pitchType}"
             data-velocity="${_escHtml(velocity)}"
             data-result="${result}"
             data-count="${_escHtml(countStr)}">
-            <circle cx="${cx}" cy="${cy}" r="4" fill="${fill}" ${strokeExtra}/>
-            <circle cx="${cx}" cy="${cy}" r="7" class="lg-dot-focus-ring" fill="none" stroke="var(--accent-border)" stroke-width="1.5"/>
-            <text class="lg-dot-text" x="${cx}" y="${cy}" font-size="5" fill="var(--bg-base)" text-anchor="middle" dominant-baseline="central">${i + 1}</text>
+            <circle cx="${cx}" cy="${cy}" r="4"/>
+            <circle cx="${cx}" cy="${cy}" r="7" class="lg-dot-focus-ring"/>
+            <text class="lg-dot-text" x="${cx}" y="${cy}" font-size="5" text-anchor="middle" dominant-baseline="central">${i + 1}</text>
         </g>`;
     }
 
     return `<div class="lg-zone-wrap">
         <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" aria-label="Pitch zone diagram for current at-bat">
-            <polygon points="44,132 56,132 58,128 50,126 42,128" fill="none" stroke="var(--border-mid)" stroke-width="1"/>
-            <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" fill="none" stroke="var(--border-strong)" stroke-width="1.5"/>
+            <polygon points="44,132 56,132 58,128 50,126 42,128" class="lg-home-plate"/>
+            <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" class="lg-zone-rect"/>
             ${dotsHtml}
         </svg>
     </div>`;
@@ -577,25 +577,24 @@ function _buildBaseDiagram(currentPlay) {
             .filter(e => e && e !== 'score' && e !== 'Home')
     );
 
-    const baseStyle = base => occupied.has(base)
-        ? `fill="var(--color-pts)" stroke="var(--color-pts)" stroke-width="1.5"`
-        : `fill="var(--bg-surface)" stroke="var(--border-mid)" stroke-width="1.5"`;
+    const baseCls = base => occupied.has(base) ? 'lg-base-occupied' : 'lg-base-empty';
 
     return `<svg class="lg-base-diagram" viewBox="0 0 60 60" width="56" xmlns="http://www.w3.org/2000/svg" aria-label="Base runner positions" style="pointer-events:none">
-        <line x1="30" y1="12" x2="50" y2="30" stroke="var(--border-default)" stroke-width="1"/>
-        <line x1="50" y1="30" x2="30" y2="48" stroke="var(--border-default)" stroke-width="1"/>
-        <line x1="30" y1="48" x2="10" y2="30" stroke="var(--border-default)" stroke-width="1"/>
-        <line x1="10" y1="30" x2="30" y2="12" stroke="var(--border-default)" stroke-width="1"/>
-        <rect x="26" y="8"  width="8" height="8" transform="rotate(45,30,12)" ${baseStyle('2B')}/>
-        <rect x="6"  y="26" width="8" height="8" transform="rotate(45,10,30)" ${baseStyle('3B')}/>
-        <rect x="46" y="26" width="8" height="8" transform="rotate(45,50,30)" ${baseStyle('1B')}/>
-        <polygon points="26,52 34,52 36,48 30,46 24,48" fill="var(--bg-surface)" stroke="var(--border-mid)" stroke-width="1.5"/>
+        <line x1="30" y1="12" x2="50" y2="30" class="lg-base-line"/>
+        <line x1="50" y1="30" x2="30" y2="48" class="lg-base-line"/>
+        <line x1="30" y1="48" x2="10" y2="30" class="lg-base-line"/>
+        <line x1="10" y1="30" x2="30" y2="12" class="lg-base-line"/>
+        <rect x="26" y="8"  width="8" height="8" transform="rotate(45,30,12)" class="${baseCls('2B')}"/>
+        <rect x="6"  y="26" width="8" height="8" transform="rotate(45,10,30)" class="${baseCls('3B')}"/>
+        <rect x="46" y="26" width="8" height="8" transform="rotate(45,50,30)" class="${baseCls('1B')}"/>
+        <polygon points="26,52 34,52 36,48 30,46 24,48" class="lg-home-plate-shape"/>
     </svg>`;
 }
 
 // ── Phase 2: Tooltip ──────────────────────────────────────────
 
 function _lgShowTooltip(groupEl, zoneWrap) {
+    if (_lgPitchTooltipEl?._forGroup === groupEl) return;
     _lgHideTooltip();
 
     const circle = groupEl.querySelector('circle:not(.lg-dot-focus-ring)');
@@ -611,6 +610,7 @@ function _lgShowTooltip(groupEl, zoneWrap) {
     ].join('<br>');
     zoneWrap.appendChild(tip);
     _lgPitchTooltipEl = tip;
+    tip._forGroup = groupEl;
 
     const cr   = circle.getBoundingClientRect();
     const wr   = zoneWrap.getBoundingClientRect();
@@ -641,15 +641,12 @@ function _wireZoneEvents(panel) {
     const zoneWrap = panel.querySelector('.lg-zone-wrap');
     if (!zoneWrap) return;
 
-    zoneWrap.addEventListener('mouseenter', e => {
+    zoneWrap.addEventListener('mouseover', e => {
         const group = e.target.closest?.('.lg-dot-group');
         if (group) _lgShowTooltip(group, zoneWrap);
-    }, true);
+    });
 
-    zoneWrap.addEventListener('mouseleave', e => {
-        const group = e.target.closest?.('.lg-dot-group');
-        if (group) _lgHideTooltip();
-    }, true);
+    zoneWrap.addEventListener('mouseleave', () => _lgHideTooltip());
 
     zoneWrap.addEventListener('click', e => {
         const group = e.target.closest?.('.lg-dot-group');

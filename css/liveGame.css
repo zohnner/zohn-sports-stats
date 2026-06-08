@@ -455,3 +455,28 @@
     padding: 0.3rem 0;
     font-family: var(--font-mono);
 }
+
+/* ── Phase 2: SVG token classes ────────────────────────────────
+   SVG presentation attributes cannot resolve CSS custom properties,
+   so all fill/stroke values for zone/diagram elements live here. */
+
+.lg-zone-rect { fill: none; stroke: var(--border-strong); stroke-width: 1.5; }
+
+.lg-home-plate { fill: none; stroke: var(--border-mid); stroke-width: 1; }
+.lg-home-plate-shape { fill: var(--bg-surface); stroke: var(--border-mid); stroke-width: 1.5; }
+
+.lg-base-line { fill: none; stroke: var(--border-default); stroke-width: 1; }
+.lg-base-empty { fill: var(--bg-surface); stroke: var(--border-mid); stroke-width: 1.5; }
+.lg-base-occupied { fill: var(--color-pts); stroke: var(--color-pts); stroke-width: 1.5; }
+
+.lg-dot-text { fill: var(--bg-base); }
+.lg-dot-focus-ring { fill: none; stroke: var(--accent-border); stroke-width: 1.5; }
+
+.lg-dot--ball      circle:not(.lg-dot-focus-ring) { fill: var(--accent); }
+.lg-dot--cstrike   circle:not(.lg-dot-focus-ring) { fill: var(--color-win); }
+.lg-dot--kstrike   circle:not(.lg-dot-focus-ring) { fill: var(--color-loss); }
+.lg-dot--foul      circle:not(.lg-dot-focus-ring) { fill: var(--text-muted); }
+.lg-dot--hit       circle:not(.lg-dot-focus-ring) { fill: var(--color-pts); }
+.lg-dot--hr        circle:not(.lg-dot-focus-ring) { fill: var(--color-pts); stroke: var(--text-primary); stroke-width: 2; }
+.lg-dot--out       circle:not(.lg-dot-focus-ring) { fill: var(--text-subtle); }
+.lg-dot--unknown   circle:not(.lg-dot-focus-ring) { fill: var(--border-mid); }
