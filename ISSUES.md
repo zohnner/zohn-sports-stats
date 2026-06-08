@@ -71,7 +71,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 |---|---|---|
 | P3-019 | Leaders | **Position-adjusted leaderboard view.** ✅ Already live — `_appendMLBByPositionGrid` confirmed called at `mlb.js:4338`. Top hitters/pitchers per position by OPS/ERA. |
 | P3-021 | Home | **"Tonight's starters" deeper stats.** ✅ Fully shipped 2026-06-03. Home/away ERA split live via `homeAndAway` hydrate, skeleton placeholder, graceful removal if no data. VS-opponent career BAA/K/BB row also live. |
-| P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** Interactive play-by-play scorecard view for completed and live games. Full roadmap in "Scorecard Feature" section below. See `DECISIONS.md D-007`. Blocked on D-001 + D-003. |
+| P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** ✅ Phases 1–3 shipped 2026-06-08. Phase 4 (export/share) unblocked — Axiom html2canvas spike is the remaining gate. |
 | P3-025 | Scores | **Live Game Expanded View — phase-gated implementation.** In-place accordion on live game cards: game header, linescore, play-by-play, box score (Phase 1); pitch zone, base diagram, matchup stats (Phase 2). See `DECISIONS.md D-009` and full roadmap below. |
 | P3-026 | Scorecard | **Scorecard download / export.** Users should be able to download a completed scorecard as a PNG or PDF. Scorecard Phase 4 (export) covers this — requires html2canvas spike to assess viability on the actual rendered scorecard (CSS transforms, inline SVG, CSS custom properties all have known html2canvas issues). If html2canvas fails, fallback is a Cloudflare Worker + headless screenshot approach. See scorecard Phase 4 section below and `DECISIONS.md D-007`. Blocked on Phase 1–3 shipping first. |
 | P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** ✅ Shipped 2026-06-03. `fetchStatcastBulkLeaderboard` URL expanded, `STATCAST_LEADER_CATS` has HH% (#fb923c) and SS% (#38bdf8). |
@@ -1266,7 +1266,7 @@ Run scoring visual — when a run scores, the home-plate diamond segment gets a 
 ---
 
 ### Phase 3 — Live Mode
-**Assigned to:** Finn | **Estimated:** 2–3 weeks | **Status:** Blocked (Phase 2 must ship; D-003 must be resolved; Vera spec required for active-PA state)
+**Assigned to:** Finn | **Estimated:** 2–3 weeks | **Status:** ✅ Shipped 2026-06-08. All deliverables implemented in `js/scorecard.js` + `css/scorecard.css`. visibilitychange pause/resume committed same session.
 
 **New AppState fields (Axiom approves shape before Finn writes anything):**
 - `mlbLiveGameId` — string, the gameId currently being polled. Null when no live scorecard is active.
@@ -1287,7 +1287,7 @@ State recovery — if the user navigates away mid-game and returns to `mlb-score
 ---
 
 ### Phase 4 — Export / Share Card (P3-026)
-**Assigned to:** Axiom (spike) → Finn (if spike passes) | **Estimated:** 2–4 weeks | **Status:** Blocked (Phase 3 must ship; spike must pass)
+**Assigned to:** Axiom (spike) → Finn (if spike passes) | **Estimated:** 2–4 weeks | **Status:** UNBLOCKED — Phase 3 shipped 2026-06-08. Axiom spike is the remaining gate before Finn implements.
 
 **User request (2026-06-04):** Users should be able to download a completed scorecard. This is the primary motivator for Phase 4 — the scorecard is a shareable artifact (broadcast use case, social distribution) and a static PNG download is the minimum viable version. PDF (jsPDF) is a secondary nice-to-have.
 
