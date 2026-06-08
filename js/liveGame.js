@@ -527,6 +527,15 @@ function _buildPitchZone(currentPlay) {
     const zx = zoneXL.x, zw = zoneXR.x - zoneXL.x;
     const zy = zoneYT.y, zh = zoneYB.y - zoneYT.y;
 
+    // 3×3 inner grid — divides zone into 9 MLB-standard zones
+    const gw = +(zw / 3).toFixed(1);
+    const gh = +(zh / 3).toFixed(1);
+    const gridHtml =
+        `<line x1="${+(zx + gw).toFixed(1)}"   y1="${zy.toFixed(1)}"        x2="${+(zx + gw).toFixed(1)}"   y2="${+(zy + zh).toFixed(1)}" class="lg-zone-grid"/>` +
+        `<line x1="${+(zx + gw * 2).toFixed(1)}" y1="${zy.toFixed(1)}"       x2="${+(zx + gw * 2).toFixed(1)}" y2="${+(zy + zh).toFixed(1)}" class="lg-zone-grid"/>` +
+        `<line x1="${zx.toFixed(1)}"             y1="${+(zy + gh).toFixed(1)}" x2="${+(zx + zw).toFixed(1)}"  y2="${+(zy + gh).toFixed(1)}" class="lg-zone-grid"/>` +
+        `<line x1="${zx.toFixed(1)}"             y1="${+(zy + gh * 2).toFixed(1)}" x2="${+(zx + zw).toFixed(1)}" y2="${+(zy + gh * 2).toFixed(1)}" class="lg-zone-grid"/>`;
+
     let dotsHtml = '';
     for (let i = 0; i < pitches.length; i++) {
         const p  = pitches[i];
@@ -562,8 +571,14 @@ function _buildPitchZone(currentPlay) {
         <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" aria-label="Pitch zone diagram for current at-bat">
             <polygon points="44,132 56,132 58,128 50,126 42,128" class="lg-home-plate"/>
             <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" class="lg-zone-rect"/>
+            ${gridHtml}
             ${dotsHtml}
         </svg>
+        <div class="lg-zone-legend">
+            <span class="lg-zone-legend-item lg-zone-legend--ball">Ball</span>
+            <span class="lg-zone-legend-item lg-zone-legend--strike">Strike</span>
+            <span class="lg-zone-legend-item lg-zone-legend--hit">In Play</span>
+        </div>
     </div>`;
 }
 

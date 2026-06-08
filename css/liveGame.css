@@ -460,7 +460,30 @@
    SVG presentation attributes cannot resolve CSS custom properties,
    so all fill/stroke values for zone/diagram elements live here. */
 
-.lg-zone-rect { fill: none; stroke: var(--border-strong); stroke-width: 1.5; }
+.lg-zone-rect  { fill: none; stroke: var(--border-strong); stroke-width: 1.5; }
+.lg-zone-grid  { stroke: var(--border-default); stroke-width: 0.6; }
+
+.lg-zone-legend {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.lg-zone-legend-item {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+}
+
+.lg-zone-legend--ball   { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border-color: var(--accent); }
+.lg-zone-legend--strike { background: color-mix(in srgb, var(--color-loss) 18%, transparent); color: var(--color-loss); border-color: var(--color-loss); }
+.lg-zone-legend--hit    { background: color-mix(in srgb, var(--color-pts) 18%, transparent); color: var(--color-pts); border-color: var(--color-pts); }
 
 .lg-home-plate { fill: none; stroke: var(--border-mid); stroke-width: 1; }
 .lg-home-plate-shape { fill: var(--bg-surface); stroke: var(--border-mid); stroke-width: 1.5; }
