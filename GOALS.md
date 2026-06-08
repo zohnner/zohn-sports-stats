@@ -50,8 +50,8 @@ Degraded/partial data is acceptable; a broken blank screen is not.
 ### G2 — MLB Depth First
 MLB must reach **full feature parity** before other sports expand.  
 
-**Completed:** players, leaderboards (36 categories), teams, scores (with pitcher matchups), standings (with L10 + power rankings), stat builder, player detail, game prep sheet, starred favorites, live ticker.  
-**Remaining:** Statcast metrics (exit velocity, barrel%, xBA, xSLG via Savant proxy), multi-season career charts, player head-to-head comparison.  
+**Completed:** players, leaderboards (47 categories including Statcast), teams, scores (with pitcher matchups), standings (with L10 + power rankings), stat builder, player detail, game prep sheet, starred favorites, live ticker, Statcast metrics (exit velocity, barrel%, xBA, xSLG, xwOBA, sprint speed via Savant), career year-by-year stats table with trend chart, player H2H comparison (P3-001, P3-003), live game expanded panel with pitch zone + base diagram (P3-025 Phases 1–2), baseball scorecard Phases 1–4.  
+**Remaining:** wRC+ (needs season-specific league constants from FanGraphs). All other G2 depth targets met.  
 
 Advanced computed stats (FIP, BABIP, ISO, WHIP, FIP, K-BB%, LOB%, RC, SB%) differentiate SportStrata from ESPN's surface-level scoreboard.
 
@@ -60,8 +60,8 @@ Every key fact should be surfaceable in **3 clicks or fewer**.
 Player detail → comparison → export should be a single workflow.  
 Print layout (`⌘P`) produces a clean game-prep sheet with no chrome.  
 
-**Completed:** Game Prep view with pitcher matchups, lineup context, print button. Search (⌘K) surfaces players with AVG/ERA hint. Player detail has stat bars, career chart scaffold, team context.  
-**Remaining:** Side-by-side player comparison, shareable URL deep-link for player cards.
+**Completed:** Game Prep view with pitcher matchups, lineup context, print button. Search (⌘K) surfaces players with AVG/ERA hint. Player detail with full stat bars, career chart, Statcast percentile card, predictive analytics badge (Breakout/Regression/Sell High/Buy Low). Side-by-side comparison with shareable URL (P3-001). Broadcast Blurb button on player detail (Cloudflare Worker, needs deployment — P2-005). All G3 depth targets met.  
+**Remaining:** Broadcast Blurb Worker deployment (P2-005 — authorization pending).
 
 ### G4 — Zero Friction
 No login, no cookies banner, no paywall.  
@@ -203,8 +203,8 @@ Unified player search across all sports — type any name, get any sport.
 | Metric | Current | Target |
 |---|---|---|
 | MLB features complete | ~90% | 100% (Statcast, career multi-season charts, player comparison) |
-| Leaderboard categories | ✅ 47 standard + 5 Statcast (incl. PA, GS, CG, RC, LOB%, K/BB, SB%, TB, wOBA) | Hard Hit%, Sweet Spot% (P3-023), pitcher Statcast (P3-024) |
-| Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K% | Statcast, wRC+ (needs league constants) |
+| Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | wRC+ (needs league constants) |
+| Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA (Statcast) | wRC+ (needs season-specific league constants) |
 | Time to first meaningful paint | ~1.5s cached | < 1s cached, < 3s cold |
 | Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded |
 | Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |

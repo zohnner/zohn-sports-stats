@@ -711,9 +711,10 @@ async function _buildMatchupContent(feed) {
     const batterName  = _escHtml(matchup.batter?.fullName  || '');
     const pitcherName = _escHtml(matchup.pitcher?.fullName || '');
 
-    const h2h = (batterId && pitcherId)
-        ? await _lgFetchH2H(batterId, pitcherId)
-        : null;
+    const [h2h, arsenalRows] = await Promise.all([
+        (batterId && pitcherId) ? _lgFetchH2H(batterId, pitcherId) : Promise.resolve(null),
+        pitcherId               ? _fetchPitchArsenal(pitcherId)     : Promise.resolve(null),
+    ]);
 
     // Block 1 — Career H2H
     let block1Html;
@@ -747,12 +748,22 @@ async function _buildMatchupContent(feed) {
         </div>`;
     }
 
+    // Block 3 — Pitcher Arsenal (only if Statcast data available)
+    let block3Html = '';
+    if (arsenalRows?.length) {
+        block3Html = `<div class="lg-matchup-block">
+            <div class="lg-box-section-title">${pitcherName} Arsenal</div>
+            ${_renderPitchArsenal(arsenalRows)}
+        </div>`;
+    }
+
     return `<div class="lg-matchup-wrap">
         <div class="lg-matchup-block">
             <div class="lg-box-section-title">${batterName} vs. ${pitcherName}</div>
             ${block1Html}
         </div>
         ${block2Html}
+        ${block3Html}
     </div>`;
 }
 

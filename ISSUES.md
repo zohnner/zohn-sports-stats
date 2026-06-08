@@ -85,7 +85,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 **Contributor:** Finn | **Date:** 2026-06-04
 **Tool:** Lighthouse 13.3.0 | **Score: 91/100** — passes D-004 threshold (≥90).
 
-**FAIL: color-contrast** — Ticker LIVE pill text at 3.79:1 (expected 4.5:1). Same root cause as players view — `--color-live` amber text on dark ticker surface. Routes to **Kael** for token fix alongside the players view repair.
+**FAIL: color-contrast** — Ticker LIVE pill text at 3.79:1 (expected 4.5:1). **Resolved** — `.ticker-status-pill--live` changed from `color: var(--color-live)` to `color: var(--text-primary)` in `css/ticker.css` (Design System Overhaul, 2026-06-04). Re-audit recommended to confirm 100/100.
 
 **FAIL: select-name** — Two `<select>` elements in the Compare Players card (`#mlb-cmp-select-b`, `#mlb-cmp-select-c`) had no label. Fix applied same session: `aria-label="Compare: player 2"` and `aria-label="Compare: player 3"` added to [`js/mlb.js:5657–5664`](js/mlb.js#L5657). Resolved.
 
@@ -2053,7 +2053,7 @@ Both cleared in `stopLiveGamePolling()`.
 ---
 
 ### Phase 2 — Pitch Zone, Base Diagram, Matchup Stats
-**Assigned to:** Finn | **Status:** ✅ All gates closed 2026-06-08 — Finn may begin Phase 2
+**Assigned to:** Finn | **Status:** ✅ Shipped 2026-06-08. SVG CSS-variable bug fixed same day. Pitcher arsenal block (Block 3) added 2026-06-08.
 
 **Spec gates:**
 - ✅ Kael visual spec: complete 2026-06-08 — see "Kael Visual Spec — Phase 2" above
