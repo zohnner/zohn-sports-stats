@@ -73,7 +73,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 | P3-021 | Home | **"Tonight's starters" deeper stats.** ✅ Fully shipped 2026-06-03. Home/away ERA split live via `homeAndAway` hydrate, skeleton placeholder, graceful removal if no data. VS-opponent career BAA/K/BB row also live. |
 | P3-022 | Scorecard | **Baseball scorecard — phase-gated implementation.** ✅ Phases 1–3 shipped 2026-06-08. Phase 4 (export/share) unblocked — Axiom html2canvas spike is the remaining gate. |
 | P3-025 | Scores | **Live Game Expanded View — phase-gated implementation.** In-place accordion on live game cards: game header, linescore, play-by-play, box score (Phase 1); pitch zone, base diagram, matchup stats (Phase 2). See `DECISIONS.md D-009` and full roadmap below. |
-| P3-026 | Scorecard | **Scorecard download / export.** Users should be able to download a completed scorecard as a PNG or PDF. Scorecard Phase 4 (export) covers this — requires html2canvas spike to assess viability on the actual rendered scorecard (CSS transforms, inline SVG, CSS custom properties all have known html2canvas issues). If html2canvas fails, fallback is a Cloudflare Worker + headless screenshot approach. See scorecard Phase 4 section below and `DECISIONS.md D-007`. Blocked on Phase 1–3 shipping first. |
+| P3-026 | Scorecard | **Scorecard download / export.** ✅ Shipped 2026-06-08. "Download ↓" button on completed scorecards, html2canvas 1.4.1 dynamic load from cdnjs, 2× PNG capture. jsPDF PDF export remains a future enhancement (Phase 5 scope). |
 | P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** ✅ Shipped 2026-06-03. `fetchStatcastBulkLeaderboard` URL expanded, `STATCAST_LEADER_CATS` has HH% (#fb923c) and SS% (#38bdf8). |
 | P3-024 | Leaders | **Pitcher Statcast leaderboard.** Relay finding (2026-06-03): Savant exposes `/leaderboard/custom?type=pitcher` with `p_k_percent`, `p_bb_percent`, `p_whiff_percent`, `p_csw_rate`, `exit_velocity_avg`. ✅ Shipped 2026-06-03 — see `fetchStatcastPitcherLeaderboard()` and `STATCAST_PITCHER_CATS` in `mlb.js`. |
 
@@ -1287,7 +1287,7 @@ State recovery — if the user navigates away mid-game and returns to `mlb-score
 ---
 
 ### Phase 4 — Export / Share Card (P3-026)
-**Assigned to:** Axiom (spike) → Finn (if spike passes) | **Estimated:** 2–4 weeks | **Status:** UNBLOCKED — Phase 3 shipped 2026-06-08. Axiom spike is the remaining gate before Finn implements.
+**Assigned to:** Axiom (spike) → Finn (if spike passes) | **Estimated:** 2–4 weeks | **Status:** ✅ Shipped 2026-06-08. "Download ↓" button on completed scorecards; html2canvas 1.4.1 loaded dynamically from cdnjs; 2× scale PNG capture of `.scorecard-wrapper`. No CSP changes needed. jsPDF (PDF export) remains a future enhancement.
 
 **User request (2026-06-04):** Users should be able to download a completed scorecard. This is the primary motivator for Phase 4 — the scorecard is a shareable artifact (broadcast use case, social distribution) and a static PNG download is the minimum viable version. PDF (jsPDF) is a secondary nice-to-have.
 
