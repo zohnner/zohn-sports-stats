@@ -570,12 +570,17 @@ function _renderScorecardSkeleton() {
 }
 
 // ── Phase 3: Live scorecard polling ──────────────────────────
-let _scLiveInterval = null;
-let _scLiveGameId   = null;
-const SC_LIVE_POLL_MS = 20000;
+let _scLiveInterval      = null;
+let _scLiveGameId        = null;
+let _scVisibilityHandler = null;
+const SC_LIVE_POLL_MS    = 20000;
 
 function stopLiveScorecardPolling() {
     if (_scLiveInterval) { clearInterval(_scLiveInterval); _scLiveInterval = null; }
+    if (_scVisibilityHandler) {
+        document.removeEventListener('visibilitychange', _scVisibilityHandler);
+        _scVisibilityHandler = null;
+    }
     _scLiveGameId = null;
     AppState.mlbLiveGameId = null;
 }
@@ -587,6 +592,29 @@ async function startLiveScorecard(gameId, gameStub) {
     await loadMLBScorecard(gameId, gameStub, true);
     if (_scLiveInterval) clearInterval(_scLiveInterval);
     _scLiveInterval = setInterval(_pollLiveScorecard, SC_LIVE_POLL_MS);
+
+    if (_scVisibilityHandler) document.removeEventListener('visibilitychange', _scVisibilityHandler);
+    _scVisibilityHandler = () => {
+        if (!_scLiveGameId) return;
+        if (document.visibilityState === 'hidden') {
+            clearInterval(_scLiveInterval);
+            _scLiveInterval = null;
+        } else {
+            // Show "UPDATING…" in the LIVE badge while re-sync fetch runs
+            const badge = document.querySelector('.sc-status-live');
+            if (badge) {
+                const tn = [...badge.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
+                if (tn) tn.nodeValue = ' UPDATING…';
+            }
+            _pollLiveScorecard().then(() => {
+                if (_scLiveGameId) {
+                    if (_scLiveInterval) clearInterval(_scLiveInterval);
+                    _scLiveInterval = setInterval(_pollLiveScorecard, SC_LIVE_POLL_MS);
+                }
+            });
+        }
+    };
+    document.addEventListener('visibilitychange', _scVisibilityHandler);
 }
 
 async function _pollLiveScorecard() {
