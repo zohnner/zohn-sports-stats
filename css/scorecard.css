@@ -504,6 +504,25 @@
     .sc-sheet { display: none !important; }
 }
 
+/* ── Phase 3: Live active-PA count badge ────────────────────── */
+.sc-count {
+    position: absolute;
+    bottom: 4px;
+    right: 5px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--color-live);
+    line-height: 1;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* ── Phase 3: LIVE badge in scorecard paper header ──────────── */
+.sc-status-live {
+    border-radius: var(--radius-sm);
+}
+
 /* ── Mobile ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .scorecard-view {

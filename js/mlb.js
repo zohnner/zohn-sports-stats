@@ -2872,7 +2872,9 @@ function _createMLBGameCard(game) {
 
     const scorecardBtn = (isFinal || isLive) && game.gamePk
         ? `<button class="game-card-scorecard-btn${isLive ? ' game-card-scorecard-btn--live' : ''}"
-               onclick="event.stopPropagation();if(typeof loadMLBScorecard==='function')loadMLBScorecard(${game.gamePk},null)"
+               onclick="event.stopPropagation();${isLive
+                   ? `if(typeof startLiveScorecard==='function')startLiveScorecard(${game.gamePk},null)`
+                   : `if(typeof loadMLBScorecard==='function')loadMLBScorecard(${game.gamePk},null)`}"
                aria-label="${isLive ? 'Live s' : 'S'}corecard for this game">
                ${isLive ? 'Live Scorecard' : 'Scorecard →'}
            </button>`

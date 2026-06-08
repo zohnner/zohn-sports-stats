@@ -233,12 +233,14 @@ function _renderDiamond(baseClasses) {
     </svg>`;
 }
 
-function _renderPACell(pa, batterName, inning) {
+function _renderPACell(pa, batterName, inning, batterId) {
     const pitchAttr = _encodeAttr(pa.pitchTip || []);
     return `<div class="sc-cell" role="gridcell" tabindex="0"
                  aria-label="${_escHtml(batterName)}, inning ${inning}: ${_escHtml(pa.notation)}"
                  data-notation="${_escHtml(pa.notation)}"
                  data-batter="${_escHtml(batterName)}"
+                 data-batter-id="${batterId}"
+                 data-inning="${inning}"
                  data-pitches="${pitchAttr}">
         <span class="sc-notation">${_escHtml(pa.notation)}</span>
         ${_renderDiamond(pa.base)}
@@ -281,7 +283,7 @@ function _renderScorecardGrid(lineup, totals, innings, teamAbbr, side) {
                 // known edge case — subsequent PAs shown in a second cell if present.
                 // Flagged for Axiom: grid column alignment requires exactly one cell
                 // per inning, so only the first PA renders in the column slot.
-                html += _renderPACell(pas[0], batter.fullName, inning);
+                html += _renderPACell(pas[0], batter.fullName, inning, batter.id);
             }
         }
     }
@@ -345,7 +347,9 @@ function _renderScorecardHTML(data) {
                 </div>
             </div>
             <div class="sc-header-center">
-                <div class="sc-header-status">${_escHtml(meta.status)}</div>
+                ${meta.isLive
+                    ? `<span class="game-status game-status--live sc-status-live"><span class="live-dot"></span>LIVE</span>`
+                    : `<div class="sc-header-status">${_escHtml(meta.status)}</div>`}
                 ${dateStr ? `<div class="sc-header-date">${_escHtml(dateStr)}</div>` : ''}
             </div>
             <div class="sc-team-side sc-team-side--home">
@@ -565,9 +569,103 @@ function _renderScorecardSkeleton() {
 </div>`;
 }
 
+// ── Phase 3: Live scorecard polling ──────────────────────────
+let _scLiveInterval = null;
+let _scLiveGameId   = null;
+const SC_LIVE_POLL_MS = 20000;
+
+function stopLiveScorecardPolling() {
+    if (_scLiveInterval) { clearInterval(_scLiveInterval); _scLiveInterval = null; }
+    _scLiveGameId = null;
+    AppState.mlbLiveGameId = null;
+}
+
+async function startLiveScorecard(gameId, gameStub) {
+    _scLiveGameId = String(gameId);
+    AppState.mlbLiveGameId = _scLiveGameId;
+    AppState.mlbLiveScorecardPlays = [];
+    await loadMLBScorecard(gameId, gameStub, true);
+    if (_scLiveInterval) clearInterval(_scLiveInterval);
+    _scLiveInterval = setInterval(_pollLiveScorecard, SC_LIVE_POLL_MS);
+}
+
+async function _pollLiveScorecard() {
+    if (!_scLiveGameId) return;
+    const grid = document.getElementById('playersGrid');
+    if (!grid?.querySelector('.scorecard-view')) { stopLiveScorecardPolling(); return; }
+
+    try {
+        const feedUrl = `https://statsapi.mlb.com/api/v1.1/game/${_scLiveGameId}/feed/live`;
+        const res     = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(feedUrl) : feedUrl);
+        if (!res.ok) throw new Error(`Feed/live ${res.status}`);
+        const feed = await res.json();
+
+        const allPlays    = feed.liveData?.plays?.allPlays || [];
+        const currentPlay = feed.liveData?.plays?.currentPlay || null;
+        const linescore   = feed.liveData?.linescore || {};
+        const isFinal     = feed.gameData?.status?.abstractGameState === 'Final';
+
+        AppState.mlbLiveScorecardPlays = allPlays;
+
+        const meta    = await _fetchGameMeta(_scLiveGameId, null);
+        const innings = Math.max(9, allPlays.reduce((mx, p) => Math.max(mx, p.about?.inning || 0), 0));
+        const data    = {
+            meta: {
+                ...meta,
+                gameId:    Number(_scLiveGameId),
+                innings,
+                isLive:    !isFinal,
+                homeScore: linescore.teams?.home?.runs ?? meta.homeScore,
+                awayScore: linescore.teams?.away?.runs ?? meta.awayScore,
+                status:    isFinal ? 'Final' : meta.status,
+            },
+            away:   _buildTeamSection(allPlays, 'top'),
+            home:   _buildTeamSection(allPlays, 'bottom'),
+            totals: _buildInningTotals(allPlays, innings),
+        };
+
+        // Preserve horizontal scroll positions across re-render
+        const scrolls = [...grid.querySelectorAll('.sc-scroll-wrap')].map(el => el.scrollLeft);
+        grid.innerHTML = _renderScorecardHTML(data);
+        grid.querySelectorAll('.sc-scroll-wrap').forEach((el, i) => { if (scrolls[i]) el.scrollLeft = scrolls[i]; });
+        _initScorecardInteractivity();
+
+        if (!isFinal && currentPlay?.about?.inning) _markActivePA(currentPlay);
+        if (isFinal) stopLiveScorecardPolling();
+
+    } catch (err) {
+        Logger.warn('Live scorecard poll failed', err, 'MLB');
+    }
+}
+
+function _markActivePA(currentPlay) {
+    const batterId = currentPlay.matchup?.batter?.id;
+    const inning   = currentPlay.about?.inning;
+    if (!batterId || !inning) return;
+
+    // Remove any existing active cell
+    document.querySelectorAll('.sc-cell.pa--active').forEach(c => {
+        c.classList.remove('pa--active');
+        c.querySelector('.sc-count')?.remove();
+    });
+
+    const cell = document.querySelector(`.sc-cell[data-batter-id="${batterId}"][data-inning="${inning}"]`);
+    if (!cell) return;
+
+    cell.classList.add('pa--active');
+
+    // Show live pitch count: B•S
+    const b = currentPlay.count?.balls ?? 0;
+    const s = currentPlay.count?.strikes ?? 0;
+    const countEl       = document.createElement('span');
+    countEl.className   = 'sc-count';
+    countEl.textContent = `${b}•${s}`;
+    cell.appendChild(countEl);
+}
+
 // ── Entry point ───────────────────────────────────────────────
 
-async function loadMLBScorecard(gameId, gameStub) {
+async function loadMLBScorecard(gameId, gameStub, isLive = false) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
     grid.style.cssText = 'display:block;';
@@ -586,6 +684,7 @@ async function loadMLBScorecard(gameId, gameStub) {
 
     try {
         const data = await buildScorecardData(gameId, gameStub);
+        data.meta.isLive = isLive;
         grid.innerHTML = _renderScorecardHTML(data);
         _initScorecardInteractivity();
     } catch (err) {
@@ -609,9 +708,11 @@ async function _restoreMLBScorecard(gameId) {
 }
 
 if (typeof window !== 'undefined') {
-    window.loadMLBScorecard     = loadMLBScorecard;
-    window._restoreMLBScorecard = _restoreMLBScorecard;
-    window.buildScorecardData   = buildScorecardData;
-    window.resolveNotation      = resolveNotation;
-    window.resolveBaseProgression = resolveBaseProgression;
+    window.loadMLBScorecard         = loadMLBScorecard;
+    window._restoreMLBScorecard     = _restoreMLBScorecard;
+    window.buildScorecardData       = buildScorecardData;
+    window.resolveNotation          = resolveNotation;
+    window.resolveBaseProgression   = resolveBaseProgression;
+    window.startLiveScorecard       = startLiveScorecard;
+    window.stopLiveScorecardPolling = stopLiveScorecardPolling;
 }

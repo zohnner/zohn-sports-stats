@@ -138,6 +138,7 @@ function _closeMenu() {
 function navigateTo(view, push = true) {
     if (window.StatsCharts) StatsCharts.destroyAll();
     if (typeof stopLiveGamePolling === 'function') stopLiveGamePolling();
+    if (typeof stopLiveScorecardPolling === 'function') stopLiveScorecardPolling();
 
     // Scroll to top on every navigation
     window.scrollTo({ top: 0, behavior: 'instant' });

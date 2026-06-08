@@ -173,7 +173,7 @@ function _buildSkeletonPanel(game) {
 
     panel.innerHTML = `
         <div class="lg-header">
-            <button class="lg-close-btn" onclick="stopLiveGamePolling();this.closest('.lg-panel').remove()" aria-label="Collapse game view">×</button>
+            <button class="lg-close-btn" aria-label="Collapse game view">×</button>
             <div class="lg-scoreline">
                 <span class="lg-abbr">${_escHtml(awayAbbr)}</span>
                 <span class="lg-score">${awayScore}</span>
@@ -200,6 +200,8 @@ function _buildSkeletonPanel(game) {
             <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
             <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
         </div>`;
+
+    panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
     // Wire tab clicks
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
@@ -256,7 +258,7 @@ function _renderPanel(panel, feed, gamePk) {
         : '';
 
     panel.querySelector('.lg-header').innerHTML = `
-        <button class="lg-close-btn" onclick="stopLiveGamePolling();this.closest('.lg-panel').remove()" aria-label="Collapse game view">×</button>
+        <button class="lg-close-btn" aria-label="Collapse game view">×</button>
         <div class="lg-scoreline">
             <span class="lg-abbr ${awayWon ? 'lg-winner' : ''}">${_escHtml(away.abbreviation || '???')}</span>
             <span class="lg-score ${awayWon ? 'lg-score--win' : isFinal && !awayWon ? 'lg-score--loss' : ''}" data-side="away">${awayScore}</span>
@@ -270,10 +272,7 @@ function _renderPanel(panel, feed, gamePk) {
             ${scorecardLink}
         </div>`;
 
-    panel.querySelector('.lg-close-btn')?.addEventListener('click', () => {
-        stopLiveGamePolling();
-        panel.remove();
-    });
+    panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
     panel.querySelector('.lg-linescore-wrap').innerHTML = _buildLinescore(ls, away.abbreviation, home.abbreviation);
 
