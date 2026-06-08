@@ -135,7 +135,7 @@ async function _doPoll(gamePk) {
 
     try {
         const lsUrl = `https://statsapi.mlb.com/api/v1/game/${gamePk}/linescore`;
-        const lsRes = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(lsUrl) : lsUrl);
+        const lsRes = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(lsUrl) : lsUrl, { signal: AbortSignal.timeout(10_000) });
         if (!lsRes.ok) throw new Error(`Linescore ${lsRes.status}`);
         const ls = await lsRes.json();
 
@@ -148,7 +148,7 @@ async function _doPoll(gamePk) {
 
         // State changed — fetch full feed (v1.1 required — v1 returns 404)
         const feedUrl = `https://statsapi.mlb.com/api/v1.1/game/${gamePk}/feed/live`;
-        const feedRes = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(feedUrl) : feedUrl);
+        const feedRes = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(feedUrl) : feedUrl, { signal: AbortSignal.timeout(15_000) });
         if (!feedRes.ok) throw new Error(`Feed ${feedRes.status}`);
         const feed = await feedRes.json();
         _lgFeedCache = feed;
@@ -794,6 +794,9 @@ function _switchTab(panel, tabId, gamePk) {
             <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:70%"></div>`;
         _buildMatchupContent(feed).then(html => {
             if (_lgFeedCache === feed) tabpanel.innerHTML = html;
+        }).catch(err => {
+            Logger.warn('Matchup content failed', err, 'LIVE');
+            if (_lgFeedCache === feed) tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
         });
     }
 }

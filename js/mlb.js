@@ -226,7 +226,7 @@ async function _fetchStadiumWeather(teamId) {
 
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
-        const resp = await fetch(url);
+        const resp = await fetch(url, { signal: AbortSignal.timeout(8_000) });
         if (!resp.ok) return null;
         const json = await resp.json();
         const cur = json.current;
@@ -399,13 +399,17 @@ async function fetchStatcast(playerId, type = 'batter') {
     const directUrl = `${SAVANT_BASE_URL}/percentile-rankings?${params}`;
     const fetchUrl  = MLB_USE_PROXY ? _mlbProxyUrl(directUrl) : directUrl;
     let json;
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 10_000);
     try {
-        const res = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' } });
+        const res = await fetch(fetchUrl, { headers: { 'Accept': 'application/json' }, signal: ctrl.signal });
         if (!res.ok) throw new Error(`Savant ${res.status}`);
         json = await res.json();
     } catch (err) {
         Logger.debug(`Statcast unavailable for ${playerId}: ${err.message}`, undefined, 'MLB');
         return null;
+    } finally {
+        clearTimeout(tid);
     }
 
     // Savant returns an array; we want the first entry
@@ -435,7 +439,7 @@ async function fetchStatcastBulkLeaderboard(season) {
 
     const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=batter&filter=&sort=4&sortDir=desc&min=50&selections=xba,xslg,xwoba,exit_velocity_avg,barrel_batted_rate,hard_hit_percent,sweet_spot_percent&chart=false&csv=true`;
     try {
-        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(15_000) });
         if (!res.ok) throw new Error(`Savant CSV ${res.status}`);
         const text = await res.text();
         if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
@@ -463,7 +467,7 @@ async function fetchStatcastPitcherLeaderboard(season) {
 
     const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=pitcher&filter=&sort=1&sortDir=desc&min=50&selections=p_k_percent,p_bb_percent,p_whiff_percent,p_csw_rate,exit_velocity_avg&chart=false&csv=true`;
     try {
-        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(15_000) });
         if (!res.ok) throw new Error(`Savant pitcher CSV ${res.status}`);
         const text = await res.text();
         if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
@@ -491,7 +495,7 @@ async function fetchSprintSpeedLeaderboard() {
 
     const url = `${SAVANT_BASE_URL}/leaderboard/sprint_speed?min_opp=10&position=&team=&csv=true`;
     try {
-        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(15_000) });
         if (!res.ok) throw new Error(`Sprint speed CSV ${res.status}`);
         const text = await res.text();
         if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
@@ -629,8 +633,10 @@ async function _fetchPitchArsenal(pitcherId) {
         `&player_type=pitcher&hfGT=R%7C&hfSea=${year}%7C` +
         `&min_results=0&group_by=name-pitch&sort_col=pitches&sort_order=desc`;
 
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 10_000);
     try {
-        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: ctrl.signal });
         if (!res.ok) throw new Error(`Arsenal ${res.status}`);
         const text = await res.text();
         if (!text || text.trim().startsWith('<')) return null;
@@ -655,6 +661,8 @@ async function _fetchPitchArsenal(pitcherId) {
     } catch (err) {
         Logger.debug(`Pitch arsenal unavailable: ${err.message}`, undefined, 'MLB');
         return null;
+    } finally {
+        clearTimeout(tid);
     }
 }
 
@@ -721,7 +729,7 @@ async function _fetchMLBH2H(batterId, pitcherId) {
         `&player_type=pitcher&hfGT=R%7C&hfSea=${hfSea}&min_results=0`;
 
     try {
-        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url);
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(10_000) });
         if (!res.ok) throw new Error(`H2H ${res.status}`);
         const text = await res.text();
         if (!text || text.trim().startsWith('<')) return null;

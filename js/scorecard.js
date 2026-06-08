@@ -624,7 +624,7 @@ async function _pollLiveScorecard() {
 
     try {
         const feedUrl = `https://statsapi.mlb.com/api/v1.1/game/${_scLiveGameId}/feed/live`;
-        const res     = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(feedUrl) : feedUrl);
+        const res     = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(feedUrl) : feedUrl, { signal: AbortSignal.timeout(10_000) });
         if (!res.ok) throw new Error(`Feed/live ${res.status}`);
         const feed = await res.json();
 
