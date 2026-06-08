@@ -312,8 +312,8 @@ function _renderScorecardHTML(data) {
     const awayLogo = getMLBTeamLogoUrl(meta.awayTeam.id) || getMLBTeamLogoByAbbr(meta.awayTeam.abbreviation);
     const homeLogo = getMLBTeamLogoUrl(meta.homeTeam.id) || getMLBTeamLogoByAbbr(meta.homeTeam.abbreviation);
 
-    const awayWon = meta.awayScore !== null && meta.homeScore !== null && meta.awayScore > meta.homeScore;
-    const homeWon = meta.awayScore !== null && meta.homeScore !== null && meta.homeScore > meta.awayScore;
+    const awayWon  = meta.awayScore !== null && meta.homeScore !== null && meta.awayScore > meta.homeScore;
+    const homeWon  = meta.awayScore !== null && meta.homeScore !== null && meta.homeScore > meta.awayScore;
 
     let dateStr = '';
     if (meta.gameDate) {
@@ -332,7 +332,7 @@ function _renderScorecardHTML(data) {
     <div class="sc-nav-bar">
         <button class="sc-back-btn" onclick="navigateTo('mlb-games')" aria-label="Back to scores">← Scores</button>
         <span class="sc-nav-title">Scorecard</span>
-        <span></span>
+        ${meta.isLive ? '<span></span>' : '<button class="sc-download-btn" onclick="_scDownloadScorecard()" aria-label="Download scorecard as PNG">Download ↓</button>'}
     </div>
     <div class="scorecard-wrapper">
         <div class="scorecard-header">
@@ -735,6 +735,46 @@ async function _restoreMLBScorecard(gameId) {
     await loadMLBScorecard(gameId, stub);
 }
 
+// ── Phase 4: Scorecard download (html2canvas) ─────────────────
+
+async function _scLoadHtml2Canvas() {
+    if (window.html2canvas) return;
+    await new Promise((resolve, reject) => {
+        const s  = document.createElement('script');
+        s.src    = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('html2canvas load failed'));
+        document.head.appendChild(s);
+    });
+}
+
+async function _scDownloadScorecard() {
+    const wrapper = document.querySelector('.scorecard-wrapper');
+    if (!wrapper) return;
+
+    const btn = document.querySelector('.sc-download-btn');
+    if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
+
+    try {
+        await _scLoadHtml2Canvas();
+        const canvas = await window.html2canvas(wrapper, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: '#f5f0e6',
+        });
+        const url  = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        const gid  = location.hash.replace('#mlb-scorecard-', '') || 'game';
+        link.download = `scorecard-${gid}.png`;
+        link.href = url;
+        link.click();
+        if (btn) { btn.textContent = 'Download ↓'; btn.disabled = false; }
+    } catch (err) {
+        Logger.warn('Scorecard download failed', err, 'MLB');
+        if (btn) { btn.textContent = 'Download failed'; btn.disabled = false; }
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.loadMLBScorecard         = loadMLBScorecard;
     window._restoreMLBScorecard     = _restoreMLBScorecard;
@@ -743,4 +783,5 @@ if (typeof window !== 'undefined') {
     window.resolveBaseProgression   = resolveBaseProgression;
     window.startLiveScorecard       = startLiveScorecard;
     window.stopLiveScorecardPolling = stopLiveScorecardPolling;
+    window._scDownloadScorecard     = _scDownloadScorecard;
 }

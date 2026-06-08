@@ -504,6 +504,33 @@
     .sc-sheet { display: none !important; }
 }
 
+/* ── Phase 4: Download button ───────────────────────────────── */
+.sc-download-btn {
+    background: none;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-family: inherit;
+    transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+.sc-download-btn:hover {
+    border-color: var(--scorecard-border);
+    color: var(--scorecard-ink);
+    background: rgba(245, 240, 230, 0.08);
+}
+.sc-download-btn:focus-visible {
+    outline: 2px solid var(--accent-border);
+    outline-offset: 2px;
+}
+.sc-download-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+}
+
 /* ── Phase 3: Live active-PA count badge ────────────────────── */
 .sc-count {
     position: absolute;
