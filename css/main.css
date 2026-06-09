@@ -782,11 +782,6 @@ main {
 .breadcrumb-root {
     color: var(--text-muted);
     font-size: var(--text-sm);
-    font-weight: 600;
-}
-
-.breadcrumb-root {
-    color: var(--text-muted);
     font-weight: 700;
 }
 
@@ -1092,7 +1087,7 @@ main {
     backdrop-filter: var(--blur-md);
     padding: 1.75rem;
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border-default);
+    border: 1px solid var(--border-mid);
     box-shadow: var(--shadow-card);
     transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
     animation: fadeUp 0.35s var(--ease-out) both;
@@ -1494,7 +1489,7 @@ main {
     border-radius: 10px;
     letter-spacing: 0.04em;
 }
-.home-recent-badge--nba { background: rgba(249,115,22,0.18); color: #fb923c; }
+.home-recent-badge--nba { background: color-mix(in srgb, var(--color-pct) 18%, transparent); color: var(--color-pct); }
 .home-recent-badge--mlb { background: var(--accent-subtle); color: var(--accent); }
 
 .home-recent-name {
@@ -2524,7 +2519,8 @@ main {
     .menu-panel { padding: 0.875rem var(--space-4); }
 
     .bottom-nav {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         position: fixed;
         bottom: 0;
         left: 0;
@@ -2535,11 +2531,10 @@ main {
         border-top: 1px solid var(--border-default);
         box-shadow: var(--shadow-mobile-nav);
         padding: 0 0 env(safe-area-inset-bottom, 0);
+        overflow: hidden;
     }
 
     .bottom-nav .nav-tab {
-        flex: 1;
-        min-width: 0;
         flex-direction: column;
         gap: 0.2rem;
         padding: 0.5rem 0.25rem 0.6rem;
@@ -2551,6 +2546,7 @@ main {
         font-weight: 700;
         color: var(--text-muted);
         overflow: hidden;
+        min-width: 0;
     }
     .bottom-nav .nav-tab.active {
         color: var(--accent-light);
