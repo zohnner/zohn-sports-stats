@@ -2821,8 +2821,9 @@ function _createMLBGameCard(game) {
     if (clickable && game.gamePk) {
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
-            if (isLiveCard && typeof openLiveGamePanel === 'function') {
-                openLiveGamePanel(game.gamePk, game, card);
+            if (isLiveCard) {
+                AppState.mlbLiveGame = game;
+                navigateTo('mlb-live-' + game.gamePk);
             } else {
                 showMLBGameDetail(game.gamePk, game);
             }

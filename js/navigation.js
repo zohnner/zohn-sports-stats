@@ -375,6 +375,13 @@ function _renderMLBView(view) {
         document.getElementById('mlbGroupToggle')?.remove();
     }
 
+    if (view.startsWith('mlb-live-')) {
+        const gamePk = parseInt(view.slice('mlb-live-'.length), 10);
+        if (viewCount) viewCount.textContent = 'Live Game';
+        if (!isNaN(gamePk) && typeof showMLBLiveGame === 'function') showMLBLiveGame(gamePk);
+        return;
+    }
+
     switch (view) {
         case 'mlb-players':
             if ((AppState.mlbPlayers?.['hitting']?.length || 0) === 0) {
@@ -613,6 +620,7 @@ function _loadFromHash() {
     const mlbTeamMatch       = hash.match(/^mlb-team-(\d+)$/);
     const mlbCompareMatch    = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
     const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
+    const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -629,13 +637,17 @@ function _loadFromHash() {
         if (typeof _restoreMLBScorecard === 'function') {
             _restoreMLBScorecard(parseInt(mlbScorecardMatch[1]));
         }
+    } else if (mlbLiveMatch) {
+        AppState.currentSport = 'mlb';
+        _applySportUI('mlb');
+        navigateTo('mlb-live-' + mlbLiveMatch[1], false);
     } else if (mlbPlayerMatch) {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
-        const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-'];
+        const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-', 'mlb-live-', 'mlb-scorecard-'];
         if (knownPrefixes.some(p => hash.startsWith(p))) {
             Logger.warn(`Unrecognised hash: #${hash} — falling back to home`, undefined, 'NAV');
             ErrorHandler.toast(`Link not found (#${hash}) — showing home view.`, 'warn', { duration: 4000 });

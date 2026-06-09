@@ -114,6 +114,10 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
 // ── Internal ─────────────────────────────────────────────────
 
 function _closeExistingPanel() {
+    if (document.querySelector('.lg-panel')?.closest('.lg-live-page')) {
+        navigateTo('mlb-games');
+        return;
+    }
     const trigger = _lgTriggerEl;
     _lgTriggerEl  = null;
     stopLiveGamePolling();
@@ -862,8 +866,42 @@ function _animateNewPlays(panel, prevCount) {
     }
 }
 
+// ── Page-mode entry point (navigateTo('mlb-live-{gamePk}')) ──
+function showMLBLiveGame(gamePk) {
+    stopLiveGamePolling();
+
+    const game   = AppState?.mlbLiveGame || {};
+    _lgGamePk    = String(gamePk);
+    _lgFeedCache = null;
+    _lgTriggerEl = null;
+
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+
+    const page = document.createElement('div');
+    page.className = 'lg-live-page';
+
+    const backBtn = document.createElement('button');
+    backBtn.className   = 'back-button';
+    backBtn.textContent = '← Back to Scores';
+    backBtn.addEventListener('click', () => navigateTo('mlb-games'));
+    page.appendChild(backBtn);
+
+    const panel = _buildSkeletonPanel(game);
+    page.appendChild(panel);
+
+    grid.innerHTML = '';
+    grid.appendChild(page);
+    panel.focus();
+
+    _doPoll(gamePk).then(() => {
+        _lgInterval = setInterval(() => _doPoll(_lgGamePk), LG_POLL_MS);
+    });
+}
+
 // ── Global exports ────────────────────────────────────────────
 if (typeof window !== 'undefined') {
     window.openLiveGamePanel   = openLiveGamePanel;
     window.stopLiveGamePolling = stopLiveGamePolling;
+    window.showMLBLiveGame     = showMLBLiveGame;
 }
