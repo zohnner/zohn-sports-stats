@@ -229,7 +229,7 @@ Bot data: Axiom's JSON API endpoint approach deferred with landing pages — not
 ---
 
 ## D-009 — Live Game Expanded View: Approved, Phase-Gated, Architecture Decisions
-**Status:** open
+**Status:** complete — owner ruling 2026-06-09: full-page view accepted as the intended direction. Architecture decision #2 (inline accordion) is superseded by the shipped `showMLBLiveGame` full-page pattern; `openLiveGamePanel` remains exported for potential future accordion use but is not wired. ISSUES.md "Architecture Deviation" entry closes with this ruling.
 **Contributors:** Vera, Relay, Kael, Axiom
 **Date opened:** 2026-06-04 | **Date resolved:** —
 
