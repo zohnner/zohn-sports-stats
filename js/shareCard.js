@@ -32,7 +32,7 @@ function _shcBuildCard(d, withPhoto) {
     const initials = _escHtml((d.playerName || '').split(' ').map(w => w[0] || '').slice(0, 2).join(''));
     const name     = _escHtml(d.playerName || '');
     const teamLine = _escHtml(d.teamAbbr + (d.position ? ' · ' + d.position : ''));
-    const badgeBg  = d.rank <= 3 ? _SHC_GOLD : _SHC_ACCENT;
+    const badgeBg  = (d.rank && d.rank <= 3) ? _SHC_GOLD : _SHC_ACCENT;
     const updated  = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const avatar = withPhoto && d.headshotUrl
         ? `<img src="${d.headshotUrl}" crossorigin="anonymous" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
@@ -51,7 +51,7 @@ function _shcBuildCard(d, withPhoto) {
                 </div>
             </div>
             <div class="shc-right">
-                <span class="shc-rank" style="background:${badgeBg};color:${_SHC_BG}">#${d.rank} IN MLB</span>
+                ${d.rank ? `<span class="shc-rank" style="background:${badgeBg};color:${_SHC_BG}">#${d.rank} IN MLB</span>` : ''}
                 <div class="shc-value" style="color:${_SHC_TEXT}">${_escHtml(String(d.statValue))}</div>
                 <div class="shc-label" style="color:${_SHC_ACCENT2}">${_escHtml(d.statLabel)}</div>
                 <div class="shc-meta" style="color:${_SHC_SUBTLE}">${MLB_SEASON} season · updated ${updated}</div>
@@ -118,7 +118,7 @@ async function shareStatCard(d) {
                 await navigator.share({
                     files: [file],
                     title: `${d.playerName} — ${d.statLabel}`,
-                    text:  `${d.playerName}: ${d.statValue} ${d.statLabel} (#${d.rank} in MLB) — via sportsstrata.com`,
+                    text:  `${d.playerName}: ${d.statValue} ${d.statLabel}${d.rank ? ` (#${d.rank} in MLB)` : ''} — via sportsstrata.com`,
                 });
             } catch (err) {
                 if (err?.name !== 'AbortError') throw err;

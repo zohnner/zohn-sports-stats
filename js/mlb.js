@@ -1706,7 +1706,7 @@ function _mlbSavantVisualCard(player, group) {
         return `
             <h2 class="detail-section-title">Spray Chart <span class="statcast-badge">${year} season</span></h2>
             <div id="spray-chart-area" class="spray-loading">
-                <div class="loading-spinner"></div>
+                <div class="skeleton-line" style="height:220px;border-radius:var(--radius-sm)"></div>
             </div>
             <div class="savant-link-row" style="margin-top:0.75rem">
                 <a href="${sprayUrl}" target="_blank" rel="noopener" class="savant-link-btn">View on Savant ↗</a>
@@ -1964,6 +1964,9 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${_escHtml(player.fullName)}</h1>
                         <span class="player-hero-pos">${player.position || 'N/A'}</span>
+                        <button class="shc-share-btn" id="mlb-hero-share" aria-label="Share ${_escHtml(player.fullName)}'s stat card" title="Share stat card">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+                        </button>
                     </div>
                     <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.2rem">
                         ${teamLogo ? `<img src="${teamLogo}" alt="" style="width:24px;height:24px;object-fit:contain" loading="lazy" data-hide-on-error>` : ''}
@@ -2110,6 +2113,26 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     // Wire compare dropdowns
     document.getElementById('mlb-cmp-select-b')?.addEventListener('change', e => _onMLBCompareChange(player, stats, group, colors));
     document.getElementById('mlb-cmp-select-c')?.addEventListener('change', e => _onMLBCompareChange(player, stats, group, colors));
+
+    // Hero share button (P3-027 Phase 2) — headline stat card
+    document.getElementById('mlb-hero-share')?.addEventListener('click', () => {
+        if (typeof shareStatCard !== 'function') return;
+        const hit = group === 'hitting';
+        const statKey = hit ? 'ops' : 'era';
+        const statNum = parseFloat(hit ? stats.ops : stats.era);
+        if (isNaN(statNum)) return;
+        shareStatCard({
+            playerId,
+            playerName: player.fullName || '',
+            teamAbbr:   player.teamAbbr || '',
+            position:   player.position || '',
+            statLabel:  hit ? 'OPS' : 'ERA',
+            statValue:  hit ? _fmtAvg(statNum) : statNum.toFixed(2),
+            rank:       leagueRanks?.[statKey]?.rank || null,
+            headshotUrl: getMLBPlayerHeadshotUrl(playerId),
+            btn: document.getElementById('mlb-hero-share'),
+        });
+    });
 
     // Async: splits (hitting + pitching)
     const splitsFetcher = group === 'hitting'
@@ -3603,7 +3626,11 @@ async function showMLBTeamDetail(teamId, push = true) {
                 ${loadLogo ? `<img src="${loadLogo}" style="width:100%;height:100%;object-fit:contain;padding:10px" loading="lazy" data-hide-on-error>` : (team?.abbreviation || '?')}
             </div>
             <p style="color:var(--color-text-secondary);font-size:1.1rem">Loading roster…</p>
-            <div class="loading-spinner" style="margin-top:1.5rem"></div>
+            <div style="max-width:420px;margin:1.25rem auto 0;display:flex;flex-direction:column;gap:0.6rem">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line" style="width:70%;margin:0 auto"></div>
+            </div>
         </div>
     `;
 
@@ -6400,7 +6427,8 @@ async function displayGamePrep() {
             gameType: 'R,F,D,L,W',
         }, ApiCache.TTL.SHORT);
         games = (data.dates || []).flatMap(d => d.games || []);
-    } catch (_) {
+    } catch (err) {
+        Logger.warn('Game prep schedule fetch failed', err, 'MLB');
         grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">Could not load today's schedule</p><button class="btn-ghost" style="margin-top:0.75rem" onclick="displayGamePrep()">Try again</button></div>`;
         return;
     }
