@@ -816,7 +816,7 @@ class StatsCharts {
         canvas.height = H;
         const ctx = canvas.getContext('2d');
         const pc  = primaryColor || '#6366f1';
-        const fontFace = getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim().split(',')[0].replace(/['"]/g, '').trim() || 'Inter';
+        const fontFace = getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim().split(',')[0].replace(/['"]/g, '').trim() || 'Helvetica';
         const f = (style, px) => `${style} ${px}px ${fontFace}, sans-serif`;
 
         // Background gradient

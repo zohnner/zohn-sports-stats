@@ -264,7 +264,7 @@ header {
 [data-theme="retro-expos"] .brand-logo-img,
 [data-theme="nl-monarchs"] .brand-logo-img,
 [data-theme="aa-trash-pandas"] .brand-logo-img {
-    box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent-glow);
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* Expos logo has a white background — pad it so it reads on dark surfaces */
@@ -299,10 +299,7 @@ header {
 .brand-name {
     font-size: var(--text-xl);
     font-weight: 900;
-    background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--accent);
     letter-spacing: -0.3px;
 }
 
@@ -1142,7 +1139,7 @@ main {
 .builder-panel button { transition: all var(--transition-base); }
 .builder-panel button:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-accent);
+    box-shadow: var(--shadow-md);
 }
 
 .examples-panel {
@@ -1210,10 +1207,7 @@ main {
     letter-spacing: -3px;
     line-height: 1;
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-light) 50%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
     animation: fadeUp 0.45s 0.05s var(--ease-out) both;
 }
 
@@ -2551,9 +2545,6 @@ main {
     .bottom-nav .nav-tab.active {
         color: var(--accent-light);
         background: transparent;
-    }
-    .bottom-nav .nav-tab.active .nav-icon {
-        filter: drop-shadow(0 0 4px var(--accent));
     }
     .bottom-nav .nav-icon { display: inline-flex; align-items: center; justify-content: center; }
     .bottom-nav-label { display: block; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: clip; }

@@ -27,7 +27,7 @@
 }
 .btn-primary:hover:not(:disabled) {
     background: var(--accent-dark);
-    box-shadow: var(--shadow-accent);
+    box-shadow: var(--shadow-md);
     transform: translateY(-1px);
 }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -431,12 +431,12 @@
     font-weight: 700;
     font-size: 0.9rem;
     transition: transform var(--transition-base), box-shadow var(--transition-base);
-    box-shadow: 0 4px 15px var(--accent-glow);
+    box-shadow: var(--shadow-sm);
     font-family: var(--font-sans);
 }
 .retry-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px var(--accent-glow);
+    box-shadow: var(--shadow-md);
 }
 
 /* ── Win / Season Badges ──────────────────────────────────── */
@@ -1267,11 +1267,11 @@
     cursor: pointer;
     letter-spacing: 0.2px;
     transition: all var(--transition-base);
-    box-shadow: 0 4px 16px var(--accent-glow);
+    box-shadow: var(--shadow-sm);
 }
 .builder-run-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px var(--accent-glow);
+    box-shadow: var(--shadow-md);
 }
 .builder-run-btn:disabled {
     opacity: 0.4;

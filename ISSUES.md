@@ -2409,3 +2409,19 @@ Four items shipped, one verification blocked:
 3. **Hero share button (P3-027 Phase 2).** Player detail hero now carries the share button — exports the headline stat card (OPS for hitters, ERA for pitchers) with the league rank badge when the player ranks ≤30, hidden otherwise. `shareCard.js` rank made optional to support this.
 4. **Pitch movement plot entry reconciled.** Implementation was already live (`_buildMovementSVG`, mlb.js:699) — ISSUES entry was stale, now marked shipped.
 5. **Relay Savant verification (P6/P9/P10) — still blocked.** Endpoints time out from the audit environment. Items remain correctly parked on the manual browser step; no implementation against guessed schemas.
+
+---
+
+### De-AI Visual Pass — Generic-Template Tells Removed — SHIPPED
+**Contributor:** Kael (audit + fixes), Folio (doc correction) | **Date:** 2026-06-09
+
+Owner brief: strip the tell-tale signs of an AI-generated site. Audit findings and fixes:
+
+1. **Inter dropped.** \`--font-sans\` is now the native system stack. Inter is the default body font of nearly every AI-generated site — its presence undermines the broadcast-grade posture, and dropping it removes ~100KB of font transfer (G1). Barlow Semi Condensed stays as \`--font-display\` — it is a deliberate sports-graphics choice, not a default.
+2. **JetBrains Mono dropped.** \`--font-mono\` is now the system mono stack. A code-editor font on a baseball site read as developer-tool residue. Formula inputs and linescores keep monospace alignment via the system stack.
+3. **Gradient-clip text eliminated** (2 sites): \`.brand-name\` and \`.home-hero-title\` are now solid color. Gradient text is the second-loudest AI-template tell after Inter.
+4. **Neon glows stripped:** 5× inline \`0 0 40px\` avatar halos (player hero, team detail, NBA detail, teams ×2), the 16px amber bloom on \`--shadow-live\` (1px ring retained — the signal survives, the neon dies), \`drop-shadow(0 0 4px)\` on active bottom-nav icons, and 6 orange-bloom button shadows replaced with neutral elevation (\`--shadow-sm/md\`). The focus ring keeps its 2px accent line, loses its glow. Scorecard run-pulse retained — it is diegetic to the paper scorecard, not decoration.
+5. **Share card realigned to brand.** \`_SHC_ACCENT\` was the stale indigo \`#7c8df0\` — now brand orange \`#ff8100\` / gold \`#ffd200\`. The exported PNG now matches the site identity.
+6. **CLAUDE.md token docs corrected** — accent was documented as indigo; the live token has been brand orange. Folio fix, Axiom-reviewed.
+
+Not touched, deliberately: \`backdrop-filter\` header blur (mainstream convention, not an AI tell), the percentile blue–red data scale (industry convention from Savant), stat category colors (semantic system per the GOALS direction note), skeleton shimmer (standard loading grammar).

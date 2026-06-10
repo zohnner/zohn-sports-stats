@@ -12,8 +12,8 @@ const _SHC_BORDER  = '#2a3850';
 const _SHC_TEXT    = '#f0f4fa';
 const _SHC_MUTED   = '#7fa5c8';
 const _SHC_SUBTLE  = '#556d8f';
-const _SHC_ACCENT  = '#7c8df0';
-const _SHC_ACCENT2 = '#a5b4fc';
+const _SHC_ACCENT  = '#ff8100';
+const _SHC_ACCENT2 = '#ffd200';
 const _SHC_GOLD    = '#facc15';
 
 function _shcPreloadImage(url) {

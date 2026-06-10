@@ -1956,8 +1956,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             <div class="player-hero">
                 <div class="player-detail-avatar"
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:2.5rem;font-weight:800;
-                            box-shadow:0 0 40px ${colors.primary}44">
+                            color:#fff;font-size:2.5rem;font-weight:800">
                     ${headshotImg}${initials}
                 </div>
                 <div class="player-hero-info">
@@ -3901,8 +3900,7 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
             <div class="player-hero">
                 <div class="player-detail-avatar"
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:1.75rem;font-weight:800;
-                            box-shadow:0 0 40px ${colors.primary}44">
+                            color:#fff;font-size:1.75rem;font-weight:800">
                     ${logo ? `<img class="player-headshot player-headshot--detail" src="${logo}" alt="${name}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : abbr}
                 </div>
                 <div class="player-hero-info">

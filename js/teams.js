@@ -214,8 +214,7 @@ function _teamHeader(team, colors) {
             <div class="player-hero">
                 <div class="player-detail-avatar"
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:2rem;font-weight:800;letter-spacing:0.02em;
-                            box-shadow:0 0 40px ${colors.primary}44">
+                            color:#fff;font-size:2rem;font-weight:800;letter-spacing:0.02em">
                     ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;object-position:center;padding:8px" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
                     <span class="avatar-text">${initials}</span>
                 </div>
@@ -431,8 +430,7 @@ function _teamGameDetailHTML(game, playerStats, team, teamId) {
                 <div class="player-hero">
                     <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
                         <div class="player-detail-avatar"
-                             style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                                    box-shadow:0 0 40px ${colors.primary}44">
+                             style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
                             <img class="player-headshot" src="${teamLogo}" alt="" loading="lazy"
                                  style="object-fit:contain;object-position:center;padding:8px" data-hide-on-error>
                             <span class="avatar-text">${_teamInitials(team)}</span>

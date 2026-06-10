@@ -317,8 +317,7 @@ function _playerHero(player, teamName, stats) {
             <div class="player-hero">
                 <div class="player-detail-avatar"
                      style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:2.5rem;font-weight:800;letter-spacing:0.02em;
-                            box-shadow:0 0 40px ${colors.primary}44">
+                            color:#fff;font-size:2.5rem;font-weight:800;letter-spacing:0.02em">
                     ${headshotImg}<span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">

@@ -267,7 +267,7 @@ TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/pla
 **Key design tokens:**
 - Surfaces: `--bg-base`, `--bg-surface`, `--bg-raised`, `--bg-card`, `--bg-card-hover`
 - Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-subtle`, `--text-disabled`
-- Accent: `--accent` (`#7c8df0`), `--accent-light` (`#a5b4fc`), `--accent-subtle`, `--accent-border`
+- Accent (brand orange-gold): `--accent` (`#ff8100`), `--accent-light` (`#ffd200`), `--accent-dark`, `--accent-subtle`, `--accent-border`
 - Borders: `--border-default`, `--border-mid`, `--border-strong`, `--border-accent`
 - Semantic: `--color-win` (green), `--color-loss` (red), `--color-live` (amber), `--color-error`
 - Stat colors: `--color-pts` (amber), `--color-reb` (emerald), `--color-ast` (sky), `--color-stl` (violet), `--color-blk` (pink), `--color-pct` (orange), `--color-min` (indigo), `--color-tov` (red-light)

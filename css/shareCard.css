@@ -22,7 +22,7 @@
     border-radius: 12px;
     position: relative;
     overflow: hidden;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     box-sizing: border-box;
 }
 .shc-wash {
@@ -76,7 +76,7 @@
     border-radius: 4px;
 }
 .shc-value {
-    font-family: 'Barlow Semi Condensed', 'Inter', system-ui, sans-serif;
+    font-family: 'Barlow Semi Condensed', -apple-system, 'Segoe UI', sans-serif;
     font-size: 56px;
     font-weight: 600;
     line-height: 1;
@@ -117,7 +117,7 @@
 .shc-share-btn:hover,
 .shc-share-btn:focus-visible {
     color: var(--accent);
-    background: var(--accent-subtle, rgba(124, 141, 240, 0.12));
+    background: var(--accent-subtle, rgba(255, 129, 0, 0.10));
 }
 .shc-share-btn:focus-visible {
     outline: 2px solid var(--accent);
