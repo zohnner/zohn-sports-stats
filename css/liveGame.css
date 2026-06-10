@@ -3,6 +3,20 @@
    Scoped to .lg-* selectors. All values from variables.css tokens.
    ============================================================ */
 
+/* ── Full-page wrapper (showMLBLiveGame) ──────────────────── */
+
+.lg-live-page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 var(--space-3) var(--space-6);
+}
+
+.lg-live-page .lg-panel {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--lg-team-color, var(--accent));
+}
+
 /* ── Panel container ──────────────────────────────────────── */
 
 .lg-panel {
@@ -116,6 +130,17 @@
     text-decoration: none;
 }
 .lg-scorecard-link:hover { text-decoration: underline; }
+
+/* ── Freshness timestamp ──────────────────────────────────── */
+
+.lg-poll-ts {
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--text-subtle);
+    min-height: 1em;
+    margin-top: calc(var(--space-3) * -1);
+    margin-bottom: var(--space-2);
+}
 
 /* ── Linescore ────────────────────────────────────────────── */
 

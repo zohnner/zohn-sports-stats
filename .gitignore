@@ -23,3 +23,6 @@ Thumbs.db
 # Meta / prompting files — not project code
 reflection.md
 .claude/
+
+# Owner-private session checklists — contain operational security detail
+owner-checklist-*.md

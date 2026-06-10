@@ -40,6 +40,8 @@ let _lgPrevScores     = null;   // { away, home } for score-change flash detecti
 let _lgLastPitcherId  = null;   // pitcher id from previous poll — pitching change detection
 let _lgPitchTooltipEl = null;   // active pitch tooltip DOM node or null
 let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat obj }
+let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
+let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -78,6 +80,7 @@ function stopLiveGamePolling() {
         _lgInterval       = null;
     }
     _lgHideTooltip();
+    if (_lgTsInterval) { clearInterval(_lgTsInterval); _lgTsInterval = null; }
     _lgGamePk         = null;
     _lgLastState      = null;
     _lgFailures       = 0;
@@ -85,6 +88,21 @@ function stopLiveGamePolling() {
     _lgPrevScores     = null;
     _lgLastPitcherId  = null;
     _lgH2HCache       = {};
+    _lgLastPollMs     = null;
+}
+
+function _updatePollTimestamp(state) {
+    const el = document.querySelector('.lg-poll-ts');
+    if (!el) return;
+    if (state === 'updating') { el.textContent = 'Updating…'; return; }
+    if (!_lgLastPollMs) return;
+    const sec = Math.round((Date.now() - _lgLastPollMs) / 1000);
+    el.textContent = `Updated ${sec}s ago`;
+}
+
+function _startTsInterval() {
+    if (_lgTsInterval) clearInterval(_lgTsInterval);
+    _lgTsInterval = setInterval(() => _updatePollTimestamp('tick'), 2000);
 }
 
 // Expand the live game panel below a game card.
@@ -137,6 +155,8 @@ async function _doPoll(gamePk) {
     const panel = document.querySelector('.lg-panel');
     if (!panel) { stopLiveGamePolling(); return; }
 
+    _updatePollTimestamp('updating');
+
     try {
         const lsUrl = `https://statsapi.mlb.com/api/v1/game/${gamePk}/linescore`;
         const lsRes = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(lsUrl) : lsUrl, { signal: AbortSignal.timeout(10_000) });
@@ -144,7 +164,10 @@ async function _doPoll(gamePk) {
         const ls = await lsRes.json();
 
         _lgFailures = 0;
+        _lgLastPollMs = Date.now();
         _updateBadge(panel, 'live');
+        _updatePollTimestamp('tick');
+        if (!_lgTsInterval) _startTsInterval();
 
         const stateKey = `${ls.currentInning}|${ls.inningState}|${ls.teams?.away?.runs}|${ls.teams?.home?.runs}`;
         if (stateKey === _lgLastState) return;
@@ -243,6 +266,7 @@ function _buildSkeletonPanel(game) {
         <div class="lg-linescore-wrap">
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
+        <div class="lg-poll-ts" aria-live="polite"></div>
         <div class="lg-body">
             <div class="lg-zone-col" hidden></div>
             <div class="lg-tab-col">
@@ -333,6 +357,15 @@ function _renderPanel(panel, feed, gamePk) {
 
     panel.querySelector('.lg-linescore-wrap').innerHTML =
         _buildLinescore(ls, away.abbreviation, home.abbreviation);
+
+    // Ensure the freshness row exists in re-rendered panels (fallback for panels
+    // that were built before this element was added to the skeleton template)
+    if (!panel.querySelector('.lg-poll-ts')) {
+        const ts = document.createElement('div');
+        ts.className = 'lg-poll-ts';
+        ts.setAttribute('aria-live', 'polite');
+        panel.querySelector('.lg-linescore-wrap')?.insertAdjacentElement('afterend', ts);
+    }
 
     // Delay/suspension reason note
     const existingNote = panel.querySelector('.lg-delay-note');
@@ -870,7 +903,12 @@ function _animateNewPlays(panel, prevCount) {
 function showMLBLiveGame(gamePk) {
     stopLiveGamePolling();
 
-    const game   = AppState?.mlbLiveGame || {};
+    // Prefer the stub set by the card click; fall back to cached games list
+    // for back-navigation and deep-link cases where mlbLiveGame may be stale.
+    const game = AppState?.mlbLiveGame?.gamePk === gamePk
+        ? AppState.mlbLiveGame
+        : (AppState.mlbGames || []).find(g => g.gamePk === gamePk) || {};
+
     _lgGamePk    = String(gamePk);
     _lgFeedCache = null;
     _lgTriggerEl = null;
@@ -881,11 +919,14 @@ function showMLBLiveGame(gamePk) {
     const page = document.createElement('div');
     page.className = 'lg-live-page';
 
+    const backRow = document.createElement('div');
+    backRow.className = 'arcade-back-row';
     const backBtn = document.createElement('button');
-    backBtn.className   = 'back-button';
+    backBtn.className   = 'arcade-back-btn';
     backBtn.textContent = '← Back to Scores';
     backBtn.addEventListener('click', () => navigateTo('mlb-games'));
-    page.appendChild(backBtn);
+    backRow.appendChild(backBtn);
+    page.appendChild(backRow);
 
     const panel = _buildSkeletonPanel(game);
     page.appendChild(panel);
@@ -895,7 +936,8 @@ function showMLBLiveGame(gamePk) {
     panel.focus();
 
     _doPoll(gamePk).then(() => {
-        _lgInterval = setInterval(() => _doPoll(_lgGamePk), LG_POLL_MS);
+        // Guard against navigation-away during the initial poll
+        if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), LG_POLL_MS);
     });
 }
 

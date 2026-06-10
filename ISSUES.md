@@ -8,9 +8,14 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 | ID | File | Description |
 |---|---|---|
-| P1-006 | [`js/api.js:11`](js/api.js#L11) | `BDL_API_KEY` is plaintext in source — any public push leaks it. Fix: deploy `worker/bdl-proxy.js`, set `BDL_PROXY_URL` in `api.js`, remove the raw key. |
+| — | — | No active P1 items. P1-006 closed in source (see reconciliation below); two owner-confirmation steps remain in the deploy checklist. |
 
-### P1-006 — Active Incident Detail
+### P1-006 — Status Reconciliation
+**Contributor:** Folio (reconciliation), Cipher (verification) | **Date:** 2026-06-09
+
+GOALS.md marked this gate ✅ on 2026-06-01 (key rotated, Worker deployed, `BDL_PROXY_URL` wired) while this file still carried it as an active incident. Cipher re-verified source state 2026-06-09: `BDL_API_KEY = ''` in `api.js`, `BDL_PROXY_URL` wired to the deployed Worker, Worker CORS allowlist present in source, no key material in any tracked file. The old key remains in public git history (3 commits) — harmless **if** rotation actually occurred. Two items move to the owner checklist: (1) confirm at balldontlie.io that the `857bec7d…` key is invalidated; (2) optional history scrub for hygiene. ISSUES and GOALS now agree: P1-006 is closed in source.
+
+### P1-006 — Original Incident Detail (historical)
 **Contributor:** Cipher (finding), Axiom (fix plan) | **Date:** 2026-05-31
 
 **Confirmed:** Commit `4082a90` contains the live BDL key. The repo is public on GitHub (`github.com/zohnner/zohn-sports-stats`). Local and remote are fully synced. The key is readable by anyone right now. This is not a future risk — it is an active credential exposure.
@@ -76,6 +81,21 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 | P3-026 | Scorecard | **Scorecard download / export.** ✅ Shipped 2026-06-08. "Download ↓" button on completed scorecards, html2canvas 1.4.1 dynamic load from cdnjs, 2× PNG capture. jsPDF PDF export remains a future enhancement (Phase 5 scope). |
 | P3-023 | Leaders | **Statcast leaderboard expansion — Hard Hit% and Sweet Spot%.** ✅ Shipped 2026-06-03. `fetchStatcastBulkLeaderboard` URL expanded, `STATCAST_LEADER_CATS` has HH% (#fb923c) and SS% (#38bdf8). |
 | P3-024 | Leaders | **Pitcher Statcast leaderboard.** Relay finding (2026-06-03): Savant exposes `/leaderboard/custom?type=pitcher` with `p_k_percent`, `p_bb_percent`, `p_whiff_percent`, `p_csw_rate`, `exit_velocity_avg`. ✅ Shipped 2026-06-03 — see `fetchStatcastPitcherLeaderboard()` and `STATCAST_PITCHER_CATS` in `mlb.js`. |
+
+---
+
+## P3-027 — Shareable Stat Cards (R5 Phase 1) — Three Gates
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-06-09
+
+**Job to be done (Vera):** A fan or broadcaster sees a leaderboard stat worth talking about and wants to post it. One tap produces a branded PNG they can share anywhere; every share carries the SportStrata watermark and domain back to the site. This is the R5 acquisition loop.
+
+**Behavioral spec (Vera):** Share icon button on every leaderboard row, always visible (no hover-reveal — touch lesson from the card CTA fix). Click: button enters generating state (disabled, spinner glyph); card renders offscreen; on mobile with Web Share file support → native share sheet; otherwise PNG download named `{player}-{stat}-sportstrata.png` + toast "Card saved". Failure → toast "Couldn't generate card — try again", button restores. Headshot CDN refusal → card auto-falls back to team-color initials avatar (P3-013 pattern), never fails the share. Button: `aria-label="Share {player}'s {stat} stat card"`; row click/keydown guards exclude the button so it never navigates. Toast is `aria-live="polite"`.
+
+**Visual spec (Kael):** 600×315 card exported at 2× (1200×630 — exact OG/Twitter ratio). Always dark-brand regardless of active theme — an export artifact is brand surface, not UI surface, so its colors are fixed hex (documented exception to the token rule). Layout: left column headshot/initials circle with accent ring + name + team·pos; right column rank badge ("#N IN MLB" — gold for top 3, accent otherwise), stat value at 56px in Barlow Semi Condensed, stat label, "{season} season · updated {date}" line; bottom bar SPORTSTRATA wordmark + sportsstrata.com. Diagonal team-color wash behind the left column at low opacity. Mockup approved by owner 2026-06-09.
+
+**Feasibility (Axiom):** Confirmed. html2canvas 1.4.1 loader `_scLoadHtml2Canvas()` already global from scorecard.js (P3-026 validated the capture pipeline). CDN CORS for headshots unverifiable from the audit environment (egress-blocked) — resolved by deterministic preflight: load headshot with `crossOrigin="anonymous"`, on error build the card with initials avatar; canvas never taints. New file `js/shareCard.js` after `liveGame.js` in the chain + `css/shareCard.css`; both added to `sw.js` STATIC_ASSETS per D-010. No new CSP domains (cdnjs already allowed). Sparkline of last 30 days (R5 full spec) deferred to Phase 2 — needs game-log fetches.
+
+**All three gates present. Implementation approved.**
 
 ---
 
@@ -308,6 +328,47 @@ For the broadcast professional audience, a color-blind announcer using this view
 ---
 
 ## Engineering Issues
+
+### liveGame.js — Corrupted Tail Broke Entire Live Game Feature — RESOLVED
+**Contributor:** Axiom (finding + fix), Cipher (review) | **Date:** 2026-06-09
+
+The uncommitted working-tree edit that added the poll-freshness timestamp and the improved `showMLBLiveGame()` accidentally appended 53 lines of duplicated fragments after the file's legitimate end (line 949): a mid-comment paste artifact ("on-away during the initial poll"), a duplicate export block, and a partial duplicate of the new function body. `node --check` failed at line 950 — the whole script would have thrown a `SyntaxError` at load, killing every live game feature (the rest of the app survives because classic scripts fail independently). Fix: truncated at line 949. All 25 JS files + workers + edge function now pass `node --check`. Lesson for the pre-commit path: `/syntax-check` would have caught this — it must run before every commit, not just before pushes.
+
+### Service Worker — Cache-First Froze Deployed Code; Precache List Incomplete — RESOLVED
+**Contributor:** Axiom (finding + fix), Vera (behavior review) | **Date:** 2026-06-09
+
+`sw.js` served all same-origin JS/CSS cache-first under a static `sportstrata-v2` cache name. Consequence: once a returning user had the SW installed, every deploy was invisible to them until `CACHE_NAME` was manually bumped — "we shipped the fix but users still see the bug." Compounding it, `STATIC_ASSETS` omitted `math.min.js`, `scorecard.js`, `liveGame.js`, `scorecard.css`, and `liveGame.css`, so offline boot was incomplete and lazily-cached files from later deploys could mix versions with precached ones. Fix: strategy changed to stale-while-revalidate (cached copy serves instantly, background refresh makes the next load current — offline behavior preserved), precache list completed, cache bumped to `sportstrata-v3` (one-time eviction of all v2 clients). Vera note: first paint stays fast; freshness now lags by at most one page load instead of indefinitely.
+
+### CSP Missing Broadcast Blurb Worker Domain — RESOLVED
+**Contributor:** Cipher (finding), Axiom (fix) | **Date:** 2026-06-09
+
+`connect-src` in both `index.html` and `_headers` listed the BDL proxy Worker but not `sportsstrata-blurb.zohnwheeler.workers.dev`, which `mlb.js` fetches for the Broadcast Blurb feature. The moment P2-005 deploys the Worker, the browser would block every blurb request — F1 would appear broken despite a successful deployment. Fix: blurb domain added to `connect-src` in both files (kept in sync per CLAUDE.md deployment rule).
+
+### node_modules and package-lock.json Tracked in Public Repo — STAGED FOR REMOVAL
+**Contributor:** Cipher (finding), Axiom (fix) | **Date:** 2026-06-09
+
+408 `node_modules/` files plus `package-lock.json` were committed before `.gitignore` added those patterns — gitignore only prevents new tracking, it never untracks. A public analytics dashboard repo shipping a vendored axios tree is noise at best and a stale-dependency CVE surface at worst. Fix: `git rm -r --cached node_modules package-lock.json` executed — 409 deletions staged, files remain on disk. Removal lands with the owner's next commit.
+
+### Stray Files Removed; bot/ GitHub Workflow Is Inert
+**Contributor:** Folio (finding), Axiom (cleanup) | **Date:** 2026-06-09
+
+Removed: `js/cache.js.tmp` (byte-identical duplicate of `cache.js`) and the empty root file `images` (was tracked). Separate note: `bot/.github/workflows/mlb-bot.yml` will never run — GitHub Actions only reads workflows from the repository root `.github/workflows/`. When the bot is ready to schedule, either move the workflow to the root or extract `bot/` to its own repo (D-008 anticipated extraction). No action now; flagging so the dormant workflow isn't mistaken for a live one.
+
+### Local .env Hygiene — OWNER ADVISORY (details in private owner checklist)
+**Contributor:** Cipher | **Date:** 2026-06-09 | **Severity:** Medium (local-only)
+
+The untracked root `.env` contains credentials beyond what SportStrata consumes. Verified: not tracked, not in git history, covered by `.gitignore`. Recommendation: keep only project-scoped secrets in this working copy. Specifics are documented in the private owner checklist (gitignored), not here — this is a public repo.
+
+### Live Game Page — Architecture Deviation from D-009
+**Contributor:** Axiom | **Date:** 2026-06-08
+
+D-009 specifies the live game entry pattern as "inline accordion" (opens in-place within the scores list). The current implementation in `js/liveGame.js` uses a full-page view (`showMLBLiveGame`) instead. `openLiveGamePanel` — the inline accordion function — is exported but never called from `_createMLBGameCard`. The card click routes to `navigateTo('mlb-live-'+gamePk)` → `showMLBLiveGame`.
+
+This is a design deviation, not a crash bug. The full-page view is functional. But D-009 is still `open` status and the decision team should either accept the full-page approach as the intended direction or re-specify whether the inline accordion should be restored.
+
+**Requires:** D-009 resolution. Vera and Kael should weigh in on whether the full-page vs. inline accordion distinction affects their specs.
+
+---
 
 ### Park Factors Table — Undated, No Source Attribution, No Update Path
 **Contributor:** Relay | **Date:** 2026-06-04
@@ -2076,3 +2137,244 @@ Both cleared in `stopLiveGamePolling()`.
 - Heat map overlay — all pitches in game vs. current at-bat
 - Share card / social export
 - Push notifications (PWA dependency)
+
+---
+
+## Relay — Analytics & Data Presentation Items (2026-06-08)
+
+The following items were identified in Relay's full data architecture deep dive (`relay-deep-dive-2026-06-08.md`). Implemented items are noted. Items requiring spec gates or further verification are parked here.
+
+---
+
+### [IMPLEMENTED] P4 — Savant Bulk Leaderboard Fetch Deduplication
+**Contributor:** Relay / Axiom | **Date:** 2026-06-08
+
+`mlbSavantLeaderboard` and `mlbSavantPitcherLeaderboard` lacked in-flight promise guards, meaning rapid double-navigation could fire two 200–500KB Savant CSV fetches simultaneously. Added `_mlbSavantLbPromise` and `_mlbSavantPitcherLbPromise` module-level guards matching the existing `_mlbLeaderSplitsPromise` pattern. `js/mlb.js` — `loadMLBLeaderboards`.
+
+---
+
+### [IMPLEMENTED] P7 — Schema Drift Detection on Savant CSV Fetchers
+**Contributor:** Relay / Axiom | **Date:** 2026-06-08
+
+`fetchStatcastBulkLeaderboard` and `fetchStatcastPitcherLeaderboard` only validated `player_id` presence. Added required-column checks on parsed headers. Mismatch logs `Logger.warn` with actual headers received and returns `null`, triggering graceful degradation in the UI. `js/mlb.js`.
+
+---
+
+### [IMPLEMENTED] P2 — Chase Rate and Zone Contact Rate on Statcast Card
+**Contributor:** Relay / Axiom | **Date:** 2026-06-08
+
+`oz_swing_percent` (chase rate) and `z_contact_percent` (zone contact rate) were present in every `fetchStatcast` percentile response but not rendered. Added to both hitter and pitcher sections of `_renderStatcastCard`. `js/mlb.js`.
+
+---
+
+### [IMPLEMENTED] P3 — CSW% on Pitcher Statcast Card
+**Contributor:** Relay / Axiom | **Date:** 2026-06-08
+
+Added `csw_rate` / `p_csw_rate` row to the pitcher section of `_renderStatcastCard`. Data sourced from `fetchStatcast` percentile-rankings response (same endpoint already powering the card). If field is absent from the response, `_row()` silently no-ops. `js/mlb.js`.
+
+**Note for Relay verification:** `csw_rate` field presence in the percentile-rankings JSON response is assumed from Savant API conventions — flagged <90% confidence. Relay to verify against a live response and confirm or remove if absent.
+
+---
+
+### [IMPLEMENTED] P5 — wRC+ with Hardcoded FanGraphs Constants
+**Contributor:** Relay / Axiom | **Date:** 2026-06-08
+
+Added `_MLB_WRC_CONSTANTS` (2024 and 2025 preliminary values) and wRC+ computation in `_computeBattingRates`. Formula: `((wOBA − lgwOBA) / wOBAscale + lgRPA) / lgRPA × 100`. Added to player detail stat grid and hitting stat bars. 2025 values are preliminary (marked `†` in code comments). `js/mlb.js`.
+
+**Relay note:** 2025 constants flagged at <90% confidence — drawn from historical FanGraphs guts patterns. Relay to confirm 2025 final constants (typically available mid-September) and update `_MLB_WRC_CONSTANTS[2025]` when finalized.
+
+---
+
+### [IMPLEMENTED] P1 — xBA−AVG and xwOBA−wOBA Luck Delta Display
+**Shipped:** 2026-06-08 | `mlb.js` — `_deltaRow()` helper + data augmentation in `fetchStatcast().then()`
+**Contributor:** Relay | **Date:** 2026-06-08
+**Vera spec:** 2026-06-08 ✅ | **Kael spec:** pending | **Axiom feasibility:** n/a (no new arch)
+
+---
+
+#### Vera — UX Spec (2026-06-08)
+
+**Job to be done.** The user is looking at a player's Statcast card and wants to know one thing: is this player's current performance sustainable? The xBA−AVG gap is the cleanest single answer to that question. A hitter batting .210 with an xBA of .290 is almost certainly going to improve. A hitter batting .330 with an xBA of .240 is almost certainly going to regress. Without the gap, the user sees two disconnected numbers and has to do the math themselves. With the gap, the card makes an argument.
+
+**What gets added.** Two delta rows for hitters, one for pitchers:
+
+*Hitters (after the xBA row and after the xwOBA row):*
+- `xBA − AVG` delta row: label "Luck (xBA)", value is `xBA − AVG` formatted as `±.NNN`
+- `xwOBA − wOBA` delta row: label "Luck (xwOBA)", value is `xwOBA − wOBA` formatted as `±.NNN`
+
+*Pitchers (after the xERA row):*
+- `xERA − ERA` delta row: label "Luck (xERA)", value is `xERA − ERA` formatted as `±N.NN`
+
+**Color semantics — hitters.**
+- Delta > +0.020: player is underperforming expectations → **green** (unlucky, buy signal). The user should read this as "expected to improve."
+- Delta < −0.020: player is outperforming expectations → **red** (lucky, sell/regression risk).
+- Delta between −0.020 and +0.020: **neutral** (--text-muted). No directional signal at this precision.
+
+**Color semantics — pitchers.** Direction inverts. An ERA lower than xERA means the pitcher is getting lucky (fewer runs allowed than deserved).
+- xERA − ERA > +0.50: pitcher ERA is better than deserved → **red** (lucky, regression risk).
+- xERA − ERA < −0.50: pitcher ERA is worse than deserved → **green** (unlucky, expected improvement).
+- Between −0.50 and +0.50: **neutral**.
+
+**Neutral threshold rationale.** For batting metrics (AVG, wOBA), deltas under 20 points are within normal season-to-date variance and carry no actionable signal. For ERA, 0.50 runs is the standard broadcast rounding convention. These thresholds prevent false signals for players who are performing roughly as expected.
+
+**Display format.**
+- Batting deltas: always 3 decimal places with leading sign: `+.043`, `−.062`, `≈0`. Use `−` (minus sign U+2212) not `-` (hyphen) for negative values.
+- ERA delta: 2 decimal places: `+0.71`, `−1.23`, `≈0`.
+- Zero/neutral case: display `≈ 0` in `--text-muted` color. Do not hide the row — absence of a row reads as "data unavailable," which is different from "no signal."
+
+**States.**
+- **Data present, signal directional:** colored value (green or red per above).
+- **Data present, signal neutral:** `≈ 0` in `--text-muted`.
+- **Data missing (one or both inputs null):** skip the row entirely — the `_deltaRow()` helper returns `''` when either input is null. This is the same behavior as `_row()` with two null inputs.
+- **No percentile bar.** Delta rows have no percentile ranking and no bar. The `.sc-bar-wrap` cell is present but empty (zero-width bar, no color fill) so the grid columns stay aligned.
+
+**Tooltip / title attribute.** Each delta row's label `<span>` carries a `title` attribute:
+- "xBA vs AVG: positive = hitting below expectations (unlucky), negative = hitting above expectations (lucky)"
+- "xwOBA vs wOBA: positive = underperforming expected run value (unlucky)"
+- "xERA vs ERA: positive = ERA better than deserved (lucky), negative = ERA worse than deserved (unlucky)"
+These are the only explanation the user gets — no modal, no footnote. The wording must be plain English, not analyst jargon.
+
+**Placement.**
+- Hitter xBA delta row: immediately after the `xBA` row.
+- Hitter xwOBA delta row: immediately after the `xwOBA` row.
+- Pitcher xERA delta row: immediately after the `xERA` row.
+- Do not group deltas into a separate section — co-locating each delta with its source stat is what makes the connection legible at a glance.
+
+**Implementation note for Finn.** `stats.avg` and `batting.woba` are available via closure in the `fetchStatcast().then()` callback in `showMLBPlayerDetail`. Augment the `data` object before passing to `_renderStatcastCard`:
+```js
+data._actual_avg  = stats.avg  ? parseFloat(stats.avg)  : null;
+data._actual_woba = batting?.woba ?? null;
+data._actual_era  = stats.era  ? parseFloat(stats.era)  : null;
+```
+Inside `_renderStatcastCard`, add a `_deltaRow(label, expected, actual, invert, unit, title)` helper that computes `delta = expected - actual`, applies threshold logic, returns the `.sc-row` HTML with no bar fill and appropriate color. `invert` flips the color semantics (used for pitchers where lower delta = better).
+
+**What Kael needs to design.** The delta rows sit inside the existing `.sc-grid` layout. The delta value goes in the `.sc-val` slot. No new layout primitives are needed — the only visual question is whether the ± prefix color should be full-intensity (same as percentile colors) or slightly muted (e.g., 80% opacity) to visually distinguish delta rows from ranked rows. Kael should decide and add a CSS class or inline alpha if needed.
+
+**Finn does not start until Kael adds their visual note below.**
+
+---
+
+#### Kael — Visual Spec (2026-06-08)
+
+The existing percentile color scale (`#22c55e` → `#86efac` → `#fbbf24` → `#fb923c` → `#f87171`) is semantic: it maps percentile rank to a quality signal. Delta rows carry a different signal — they're directional (buy/sell), not ranked. Using the same greens/reds would visually merge the two systems and make the card harder to read at a glance.
+
+**Decision: use full-intensity semantic colors but distinguish via opacity.** The delta value should render at `opacity: 0.80` on the color. This is light enough to read as a secondary signal relative to the ranked rows above it, but still clearly green or red when directional. Use `--color-win` (`var(--color-win)`) and `--color-loss` (`var(--color-loss)`) rather than the hardcoded hex used in `_pctColor` — these are the correct tokens for win/loss semantics in this design system.
+
+**Delta row font weight: `500` (medium), not `600` (the `.sc-val` default).** Slightly lighter weight reinforces the visual hierarchy: ranked percentile rows are the primary signal, delta rows are the interpretive gloss. Do not add a new CSS class for this — apply `font-weight:500;opacity:0.80` as inline style on the value span inside `_deltaRow()` to avoid cascade complexity.
+
+**No bar fill for delta rows.** The `.sc-bar-wrap` should still render (preserving grid column alignment) but with `width: 0` and no background color. Do not try to render a centered "deviation from zero" bar — the added complexity isn't worth the marginal information gain at this card width.
+
+**Label style.** Delta row labels use the same `.sc-label` style as ranked rows. The `title` attribute specified by Vera provides the full explanation on hover — no additional label styling needed.
+
+**Finn is clear to implement.** All three gates: Vera ✅, Kael ✅, Axiom n/a (no new architecture). Implement `_deltaRow()` and the `data` augmentation as Vera specified.
+
+---
+
+### [IMPLEMENTED] P8 — Pitch Movement Plot
+**Contributor:** Relay | **Date:** 2026-06-08
+**Shipped:** 2026-06-08 | `mlb.js` — `_buildMovementSVG()` + event delegation; `components.css` — `.arsenal-movement-plot`
+**Specs:** Kael ✅ · Vera ✅ · Axiom ✅
+
+We are one URL parameter change away from the data: add `pfx_x,pfx_z,release_extension` to the `selections` in `_fetchPitchArsenal`. The pitch movement plot (horizontal/vertical break scatter by pitch type, colored by `_PITCH_COLORS`) is Savant's most distinctive feature and the highest-visibility gap between SportStrata and Savant.
+
+**Required before implementation:** Kael designs plot proportions, axis ranges, and dot sizing. Vera specs interaction states (hover tooltip with pitch type + velo + break values, empty state when no arsenal data). Axiom confirms SVG implementation approach. Finn does not start until all three specs exist here.
+
+---
+
+#### Kael — Visual Spec (2026-06-08)
+
+**What we're building.** A pitch movement plot: a scatter showing average horizontal and vertical break per pitch type, one dot per pitch in the arsenal, colored by `_PITCH_COLORS`. This is the single visualization that most distinguishes Savant from every other free baseball tool.
+
+**Data note (for Finn to verify first).** The current `_fetchPitchArsenal` URL has no `selections` filter, so the CSV likely already returns `pfx_x` and `pfx_z` as average break per pitch type. Verify by logging `Object.keys(rows[0])` in the console before building the renderer. If they're absent, add `&selections=pfx_x,pfx_z,release_extension,release_speed,release_spin_rate,pitch_name,pitch_type,pitches,ba` to the URL. Do not change the URL until you've confirmed the fields are missing.
+
+**Plot dimensions.** `240×240px` viewBox, rendered as an inline `<svg>` inside the arsenal card, above the existing pitch table. The SVG uses `viewBox="-22 -22 44 44"` — this maps directly to the pfx coordinate space (inches of break, typically ±18 max) with 2in padding on each side. No separate scaling required.
+
+**Coordinate mapping.** `cx = pfx_x` (positive = glove-side, negative = arm-side for RHP). `cy = -pfx_z` (negate because SVG Y increases downward; positive pfx_z = "rise" should map visually upward). This is the standard convention — do not flip it.
+
+**Zero crosshairs.** Two dashed lines at `x=0` and `y=0`, `stroke: var(--border-mid)`, `stroke-dasharray: 2 2`, `stroke-width: 0.5`. These represent neutral movement. Label them with tiny text: "Arm" at the left edge of the x-axis, "Glove" at the right, "Rise" at the top of the y-axis, "Drop" at the bottom. Text size: `font-size: 2px` in SVG units (renders as ~11px in the 240px container). Color: `var(--text-muted)`.
+
+**Dots.** One `<circle>` per pitch type:
+- `r` = scaled by usage: `2.5 + (pct / 100) * 3.5` (ranges from 2.5 at 0% to 6.0 at 100%). This gives a visual weight hint without making low-usage pitches invisible.
+- `fill` = `_PITCH_COLORS[pitch_type]` at full opacity.
+- `stroke` = same color at 40% opacity (`color + '66'`), `stroke-width: 0.3`. Gives a subtle halo that helps readability when two dots overlap.
+
+**Pitch type labels.** `<text>` element at `(cx + r + 0.5, cy + 0.8)` — offset right of the dot. `font-size: 2.2px`. `fill: var(--text-secondary)`. Content: `r.pitch_type` (the 2-letter code, e.g. "FF", "SL"). On mobile (≤768px), suppress labels — the dot tooltip alone is sufficient.
+
+**Background.** `<rect>` filling the full viewBox, `fill: var(--bg-surface)`, `rx: 1`. The SVG should inherit the card background rather than rendering as transparent over white.
+
+**Card placement.** The SVG renders at the top of the `#mlb-arsenal-card` section, above `.arsenal-list`. Wrap it in `<div class="arsenal-movement-plot">` with `display:flex; justify-content:center; padding-bottom:0.75rem`. No new CSS file needed — add the `.arsenal-movement-plot` rule to `components.css` with `display:flex; justify-content:center; padding-bottom:0.75rem`.
+
+---
+
+#### Vera — Interaction Spec (2026-06-08)
+
+**Job to be done.** The pitcher detail user (broadcaster or analyst) wants to understand how a pitcher's arsenal plays — not just what they throw, but the physical reason why certain pitches are effective. A fastball that runs 10 inches arm-side paired with a slider that cuts 8 inches glove-side creates a visual tunnel effect. The movement plot makes this readable in two seconds.
+
+**Hover state (desktop).** On `mouseover` of a pitch dot, show a floating tooltip:
+```
+Curveball (CU)
+Break: 8.2" horizontal · −12.4" vertical
+Velo: 82.1 mph · Spin: 2,411 rpm · Usage: 22%
+```
+Tooltip floats relative to the SVG container — `position: absolute` inside the `.arsenal-movement-plot` wrapper (which gets `position: relative`). Width: `160px`. `background: var(--bg-raised)`, `border: 1px solid var(--border-default)`, `border-radius: var(--radius-sm)`, `padding: 0.4rem 0.6rem`, `font-size: 0.75rem`. Dismiss on `mouseout`. No delay — instant show/hide.
+
+Tooltip sign convention for the user: show "+" for arm-side (pfx_x > 0) and "−" for glove-side (pfx_x < 0). Show "+" for rise (pfx_z > 0) and "−" for drop (pfx_z < 0). Do not expose the raw coordinate system — use plain "horizontal"/"vertical" labels.
+
+**Touch/mobile state.** On mobile (≤768px), dots are tappable — first tap shows tooltip, second tap dismisses. The SVG renders at `180×180px`. Pitch type text labels are suppressed on mobile (the usage table below provides identification). The tooltip positions above the dot to avoid being cut off at the bottom of the card.
+
+**Empty state.** If `pfx_x` and `pfx_z` are null/absent for all pitch types in the arsenal, do not render the SVG at all — skip the `<div class="arsenal-movement-plot">` entirely. The existing usage table still renders normally. No "data unavailable" message in the plot area — absence is preferable to a broken-looking empty chart. Log a `Logger.debug` for observability.
+
+**Loading state.** Arsenal data loads async — the card already has a skeleton state before `_fetchPitchArsenal` resolves. No new loading state needed for the plot specifically; it appears when `_renderPitchArsenal` is called, same as the table.
+
+**Accessibility.** Each `<circle>` gets `role="img"` and `aria-label` with the full pitch description: `aria-label="Four-Seam Fastball: 8.2 inches horizontal, 12.4 inches vertical rise, 95.1 mph"`. The SVG element gets `role="img" aria-label="Pitch movement plot"`. Keyboard navigation is not required for this version — the data is also in the table below.
+
+---
+
+#### Axiom — Feasibility Note (2026-06-08)
+
+Confirmed viable as inline SVG within `_renderPitchArsenal`. No canvas needed — the data is static aggregate values per pitch type (not a real-time or high-frequency plot), so SVG is the right choice. Canvas would only add complexity without benefit.
+
+**Implementation path for Finn:**
+
+1. Verify `pfx_x`/`pfx_z` are in `rows[0]` keys. If absent, add `&selections=...` to the URL in `_fetchPitchArsenal`.
+2. In `_renderPitchArsenal`, add a `_buildMovementSVG(rows)` helper that: filters to rows with valid pfx values, builds the SVG string, returns empty string if no valid pfx data.
+3. The SVG is a template literal — no DOM manipulation, just HTML string concatenation, consistent with the project's batch-DOM-write rule.
+4. Tooltip is a `<div id="arsenal-mvmt-tooltip">` injected once into the page by `_renderPitchArsenal` (or reused if already present). Show/hide via `style.display`. Position by reading `getBoundingClientRect()` on the SVG container relative to its parent.
+5. Event listeners go on the SVG element via event delegation: one `mouseover` on the `<svg>` checking `event.target.dataset.pitchType`, not one listener per circle. This is simpler and avoids listener accumulation on re-renders — call `StatsCharts.destroyAll()` equivalent: remove the SVG element from the DOM before re-injecting.
+
+**CSS changes needed:** One new rule in `components.css`: `.arsenal-movement-plot { display:flex; justify-content:center; padding-bottom:0.75rem; position:relative; }`. All other visual properties are inline SVG attributes or inline styles on the tooltip — no cascade risk.
+
+**Render order:** `_buildMovementSVG(rows)` result + `
+` + existing `<div class="arsenal-list">` HTML. Movement plot is above the table.
+
+**Finn is clear to implement.** Gates: Kael ✅ · Vera ✅ · Axiom ✅.
+
+
+---
+
+### [PARKED — NEEDS SPEC] P9 — Spray Chart Migration to Savant statcast_search
+**Contributor:** Relay | **Date:** 2026-06-08
+**Updated:** 2026-06-08 — D-001 is complete. Unblocked. Awaiting Relay coordinate field verification + Kael EV color spec + Vera toggle spec.
+
+Current `fetchSprayChartData` makes up to 21 API calls (game log + up to 20 play-by-play fetches) to reconstruct spray coordinates. Savant's `statcast_search/csv?type=batter` returns all batted balls with real EV, LA, and `hc_x/hc_y` in a single call. Migration reduces request cost by ~20× and unlocks exit-velocity–colored spray dots (EV as dot color intensity). Phase 1: swap coordinate source. Phase 2: EV-colored dot toggle.
+
+**Required before implementation:** Relay to verify Savant batter CSV coordinate field names (`hc_x`, `hc_y`) against live response. Kael designs EV color scale. Vera specs toggle interaction (outcome-coded vs EV-coded view). Finn does not start until all three specs exist here.
+
+---
+
+### [PARKED — NEEDS SPEC] P10 — OAA (Outs Above Average) Leaderboard Section
+**Contributor:** Relay | **Date:** 2026-06-08
+**Updated:** 2026-06-08 — D-001 is complete. Unblocked. Awaiting Vera section spec + Kael visual spec + Axiom AppState confirmation.
+
+Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata has no fielding analytics beyond MLB Stats API fielding% and range factor — neither is useful in broadcast context. OAA is the standard broadcast fielding reference. Fetch, parse, store in `AppState.mlbSavantOAALeaderboard`. Add a section to the leaders view below pitcher Statcast.
+
+**Required before implementation:** Vera specs the section (position filter? separate batter/pitcher sections?). Kael adds OAA to the visual leaderboard system. Axiom confirms AppState field addition doesn't need a DECISIONS.md entry. Finn does not start until all three specs exist here.
+
+---
+
+### [PARKED — NEEDS RELAY VERIFICATION] P6 — H2H Fetch Scope Reduction (group_by=name)
+**Contributor:** Relay | **Date:** 2026-06-08
+
+`_fetchMLBH2H` fetches 5 years of pitch-level rows and manually aggregates event outcomes client-side. Adding `group_by=name` to the Savant URL should return one pre-aggregated row per batter-pitcher pair, cutting payload by 100–1000×. The open question is whether grouped mode includes event-outcome columns (`ba`, `ab`, `h`, `hr`) or only Statcast aggregate metrics (EV averages). Only the former is a valid drop-in replacement.
+
+**Verification attempt 2026-06-08:** Fetched `statcast_search/csv?...&group_by=name` from dev environment. Savant returned `Content-Type: application/download` — tooling rendered binary, column names not inspectable. **Manual step required:** open the URL in a browser, inspect the CSV header row, and document the confirmed field mapping here before Finn implements.

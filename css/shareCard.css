@@ -1,0 +1,164 @@
+/* ============================================================
+   SportStrata — Shareable Stat Cards (P3-027)
+   .shc-card uses fixed hex by design: the exported PNG is brand
+   surface and must render identically in any theme (Kael).
+   UI elements (.shc-share-btn, .shc-toast) use tokens as normal.
+   ============================================================ */
+
+/* ── Offscreen render stage ───────────────────────────────── */
+.shc-stage {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    pointer-events: none;
+}
+
+/* ── Card (600×315, exported at 2×) ───────────────────────── */
+.shc-card {
+    width: 600px;
+    height: 315px;
+    background: #0b1526;
+    border: 1px solid #2a3850;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+    box-sizing: border-box;
+}
+.shc-wash {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    clip-path: polygon(0 0, 55% 0, 35% 100%, 0 100%);
+}
+.shc-body {
+    position: relative;
+    display: flex;
+    height: 281px;
+    padding: 28px 32px 0;
+    gap: 28px;
+    box-sizing: border-box;
+}
+.shc-left {
+    flex: 0 0 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+.shc-avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 3px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.shc-id { text-align: center; }
+.shc-name { font-size: 17px; font-weight: 600; }
+.shc-team { font-size: 12px; margin-top: 2px; }
+.shc-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 36px;
+}
+.shc-rank {
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 4px;
+}
+.shc-value {
+    font-family: 'Barlow Semi Condensed', 'Inter', system-ui, sans-serif;
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1;
+    margin-top: 10px;
+}
+.shc-label { font-size: 15px; margin-top: 6px; }
+.shc-meta  { font-size: 11.5px; margin-top: 6px; }
+.shc-footer {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 34px;
+    border-top: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+}
+.shc-wordmark { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+.shc-domain   { font-size: 11px; }
+
+/* ── Share button on leaderboard rows ─────────────────────── */
+.shc-share-btn {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: var(--radius-xs, 4px);
+    color: var(--text-subtle);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.25rem;
+    transition: color 0.15s, background 0.15s;
+}
+.shc-share-btn:hover,
+.shc-share-btn:focus-visible {
+    color: var(--accent);
+    background: var(--accent-subtle, rgba(124, 141, 240, 0.12));
+}
+.shc-share-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.shc-share-btn:disabled { cursor: default; }
+.shc-share-btn svg { width: 15px; height: 15px; }
+
+.shc-spin {
+    width: 13px;
+    height: 13px;
+    border: 2px solid var(--border-mid, #334155);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: shc-rotate 0.7s linear infinite;
+    display: inline-block;
+}
+@keyframes shc-rotate { to { transform: rotate(360deg); } }
+.shc-done { color: var(--color-win, #22c55e); font-size: 14px; font-weight: 700; }
+
+/* ── Toast ────────────────────────────────────────────────── */
+.shc-toast {
+    position: fixed;
+    bottom: calc(var(--space-6, 2rem) + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    box-shadow: var(--shadow-md);
+    z-index: 1000;
+    animation: shc-toast-in 0.18s ease-out;
+}
+@keyframes shc-toast-in {
+    from { opacity: 0; transform: translate(-50%, 6px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 768px) {
+    .shc-toast { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+}

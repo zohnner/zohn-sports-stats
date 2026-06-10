@@ -44,7 +44,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `math.min.js` → `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 
@@ -85,10 +85,14 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `index.html` | Static shell: `<script>` load order (defines global scope), 3-row header structure, nav markup, CSP `<meta>` |
 | `js/config.js` | Shared utilities: `_escHtml()`, `_normName()` + NBA team colors, `getTeamColors()`, `getNBATeamLogoUrl()` |
 | `js/mlb.js` | All MLB logic: team colors/logos, API calls, all MLB view renderers, `MLB_SEASON`, `MLB_LEADER_CATS`, `_computeBattingRates`, `_computePitchingRates` |
+| `js/liveGame.js` | Live game expanded view (P3-025): `showMLBLiveGame()`, `openLiveGamePanel()`, diff-based linescore polling, pitch zone, box score. Loads after `scorecard.js` |
+| `js/scorecard.js` | Baseball scorecard (P3-022): historical + live modes, 9×9 grid render, html2canvas PNG export |
+| `js/shareCard.js` | Shareable stat cards (P3-027): `shareStatCard()`, offscreen 600×315 card → 2× PNG via html2canvas, Web Share / download. Reuses `_scLoadHtml2Canvas()` from scorecard.js |
+| `js/math.min.js` | Vendored math.js (formula evaluation for Stat Builder). Loads first |
 | `js/api.js` | BDL API + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. **⚠ BDL_API_KEY hardcoded — see P1-006 below** |
 | `js/navigation.js` | `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |
 | `js/app.js` | Bootstrap: ticker, season selector, cache-bust on season change, `setupNavigation()`, `loadHome()` (landing page) |
-| `js/cache.js` | `ApiCache` — localStorage cache with TTL buckets (SHORT 5m, MEDIUM 30m, LONG 60m) |
+| `js/cache.js` | `ApiCache` — localStorage cache with TTL buckets (SHORT 5m, MEDIUM 30m, LONG 60m, DAILY 12h) |
 | `js/players.js` | NBA player list/cards; `loadStatsForPlayers()` uses `fetchNBAStatsMap` |
 | `js/leaderboards.js` | NBA leaderboards |
 | `js/playerDetail.js` | NBA player detail + compare; `fetchNBAStatsMap` backed |
@@ -240,7 +244,7 @@ const data = await fetch(...);
 ApiCache.set(cacheKey, data, ApiCache.TTL.MEDIUM);
 ```
 
-TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/players, `LONG` (60m) for teams.
+TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/players, `LONG` (60m) for teams, `DAILY` (12h) for Savant once-a-day data (percentile rankings, sprint speed).
 
 `ApiCache.invalidate('')` clears all cache entries (prefix-match on empty string).
 
@@ -256,6 +260,9 @@ TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/pla
 | `css/ticker.css` | Score ticker — `.ticker-title`, `.ticker`, `.ticker__item`, status pills, animations |
 | `css/animations.css` | View fade transitions and shared `@keyframes` |
 | `css/arcade.css` | Arcade game-specific styles |
+| `css/scorecard.css` | Scorecard grid, diamond SVG fills, paper texture |
+| `css/liveGame.css` | Live game panel (`.lg-*` selectors only) |
+| `css/shareCard.css` | Stat share card (`.shc-*`). Card colors are intentionally fixed hex — exported PNGs must be theme-invariant (P3-027) |
 
 **Key design tokens:**
 - Surfaces: `--bg-base`, `--bg-surface`, `--bg-raised`, `--bg-card`, `--bg-card-hover`

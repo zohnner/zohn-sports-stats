@@ -11,11 +11,17 @@ const ALLOWED_ORIGINS = [
 
 // TTL in seconds per endpoint type
 function ttlFor(url) {
-    if (url.includes('/schedule'))             return 60;    // live scores
-    if (url.includes('/standings'))            return 1800;  // standings 30 min
+    if (url.includes('/schedule'))                    return 60;     // live scores — 1 min
+    if (url.includes('/standings'))                   return 1800;   // standings — 30 min
     if (url.includes('/people/') ||
-        url.includes('/teams/'))               return 3600;  // rosters 1 hr
-    if (url.includes('baseballsavant'))        return 3600;  // savant data 1 hr
+        url.includes('/teams/'))                      return 3600;   // rosters — 1 hr
+    // Savant endpoints — granular TTLs based on update frequency
+    if (url.includes('percentile-rankings'))          return 43200;  // player percentiles — updated daily
+    if (url.includes('sprint_speed'))                 return 43200;  // sprint speed — updated daily
+    if (url.includes('statcast_search'))              return 3600;   // pitch-level / H2H search — 1 hr
+    if (url.includes('baseballsavant') &&
+        url.includes('leaderboard'))                  return 7200;   // leaderboard CSVs — updated a few times/day
+    if (url.includes('baseballsavant'))               return 3600;   // other savant — fallback
     return 300; // default 5 min
 }
 

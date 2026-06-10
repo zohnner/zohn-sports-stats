@@ -15,6 +15,7 @@ class ApiCache {
         SHORT:  5  * 60 * 1000,   //  5 min  — live scores, game log
         MEDIUM: 30 * 60 * 1000,   // 30 min  — season averages, players
         LONG:   60 * 60 * 1000,   // 60 min  — teams (rarely change)
+        DAILY:  12 * 60 * 60 * 1000, // 12 hr — Savant data updated once/day (percentile rankings, sprint speed)
     };
 
     static #key(raw) {

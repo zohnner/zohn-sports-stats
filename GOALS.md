@@ -51,7 +51,7 @@ Degraded/partial data is acceptable; a broken blank screen is not.
 MLB must reach **full feature parity** before other sports expand.  
 
 **Completed:** players, leaderboards (47 categories including Statcast), teams, scores (with pitcher matchups), standings (with L10 + power rankings), stat builder, player detail, game prep sheet, starred favorites, live ticker, Statcast metrics (exit velocity, barrel%, xBA, xSLG, xwOBA, sprint speed via Savant), career year-by-year stats table with trend chart, player H2H comparison (P3-001, P3-003), live game expanded panel with pitch zone + base diagram (P3-025 Phases 1–2), baseball scorecard Phases 1–4.  
-**Remaining:** wRC+ (needs season-specific league constants from FanGraphs). All other G2 depth targets met.  
+**Remaining:** All G2 depth targets met. ✅ wRC+ shipped 2026-06-08 (hardcoded FanGraphs guts constants, 2025 preliminary).  
 
 Advanced computed stats (FIP, BABIP, ISO, WHIP, FIP, K-BB%, LOB%, RC, SB%) differentiate SportStrata from ESPN's surface-level scoreboard.
 
@@ -203,8 +203,8 @@ Unified player search across all sports — type any name, get any sport.
 | Metric | Current | Target |
 |---|---|---|
 | MLB features complete | ~90% | 100% (Statcast, career multi-season charts, player comparison) |
-| Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | wRC+ (needs league constants) |
-| Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA (Statcast) | wRC+ (needs season-specific league constants) |
+| Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | — |
+| Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA, wRC+ (Statcast) | — |
 | Time to first meaningful paint | ~1.5s cached | < 1s cached, < 3s cold |
 | Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded |
 | Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |

@@ -282,3 +282,28 @@ Proceed, phase-gated. Phase 1 approved. Each subsequent phase requires Phase 1 t
 - WCAG note: pitch dots require `aria-label` on each plotted point (pitch number, type, result) for keyboard/screen reader users. Vera specs the keyboard interaction on the zone in Phase 2.
 - Mobile layout order (Vera ruling): game header → count/outs → base diagram → linescore → pitch sequence log → zone plot. Zone drops below fold on mobile; this is intentional.
 
+---
+
+## D-010 — Service Worker Update Strategy: Stale-While-Revalidate for Static Assets
+**Status:** accepted
+**Contributors:** Axiom, Vera, Cipher (review)
+**Date opened:** 2026-06-09 | **Date resolved:** 2026-06-09
+
+**Decision needed:**
+How the service worker should serve same-origin JS/CSS so that production deploys actually reach returning users, without sacrificing offline support or first-paint speed.
+
+**Options considered:**
+- Keep cache-first, enforce a manual `CACHE_NAME` bump on every deploy (process discipline — the failure mode is the default)
+- Network-first for JS/CSS (always fresh, but every load pays full network latency)
+- Stale-while-revalidate: serve cached instantly, refresh in background
+
+**Decision:**
+Stale-while-revalidate for all same-origin static assets. `CACHE_NAME` bumped to `sportstrata-v3` to evict existing cache-first clients once. Navigation requests stay network-first with `offline.html` fallback. Precache list completed (`math.min.js`, `scorecard.js`, `liveGame.js`, `scorecard.css`, `liveGame.css` added).
+
+**Rationale:**
+Cache-first plus a static version string meant every deploy silently shipped to nobody who had visited before — the worst possible failure mode for a product whose pitch is data trust. SWR keeps the instant first paint and offline capability while bounding staleness to a single page load. A manual bump-on-deploy rule was rejected because it fails silently the first time someone forgets.
+
+**Implications:**
+- Deploys no longer require a `CACHE_NAME` bump to propagate JS/CSS changes.
+- Returning users may run one-load-old code immediately after a deploy — acceptable; freshness-critical data is API-fetched, not in static assets.
+- Any future file added to the script chain in `index.html` must also be added to `STATIC_ASSETS` in `sw.js` — Folio adds this to the deploy checklist documentation.

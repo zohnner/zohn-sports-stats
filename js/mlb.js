@@ -337,6 +337,16 @@ function getMLBPlayerHeadshotUrl(playerId) {
         : null;
 }
 
+// ── wRC+ league constants (FanGraphs guts) ───────────────────
+// Source: FanGraphs leaderboard guts page — update each season.
+// Values marked † are preliminary (early-season estimates); finalize after ~1200 PA of season data.
+// Formula: ((wOBA − lgwOBA) / wOBAscale + lgRPA) / lgRPA × 100
+// I'm flagging <90% confidence on the 2025 values — drawn from historical FanGraphs data.
+const _MLB_WRC_CONSTANTS = {
+    2024: { lgwOBA: 0.310, wOBAscale: 1.157, lgRPA: 0.115 },
+    2025: { lgwOBA: 0.309, wOBAscale: 1.157, lgRPA: 0.113 }, // † preliminary
+};
+
 // ── Core fetch helper ─────────────────────────────────────────
 const MLB_BASE_URL    = 'https://statsapi.mlb.com/api/v1';
 const MLB_BASE_URL_V11 = 'https://statsapi.mlb.com/api/v1.1'; // feed/live only
@@ -415,7 +425,7 @@ async function fetchStatcast(playerId, type = 'batter') {
     // Savant returns an array; we want the first entry
     const data = Array.isArray(json) ? json[0] : json;
     if (!data) return null;
-    ApiCache.set(cacheKey, data, ApiCache.TTL.LONG);
+    ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
     return data;
 }
 
@@ -446,6 +456,12 @@ async function fetchStatcastBulkLeaderboard(season) {
         const lines = text.trim().split('\n');
         if (lines.length < 2) return [];
         const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        const required = ['player_id', 'xba', 'xwoba', 'exit_velocity_avg', 'barrel_batted_rate', 'hard_hit_percent'];
+        const missing  = required.filter(c => !headers.includes(c));
+        if (missing.length) {
+            Logger.warn(`Savant batter CSV schema drift — missing: ${missing.join(', ')}`, { headers }, 'MLB');
+            return null;
+        }
         const rows = lines.slice(1).map(line => {
             const vals = _splitCSVLine(line);
             const obj = {};
@@ -474,6 +490,12 @@ async function fetchStatcastPitcherLeaderboard(season) {
         const lines = text.trim().split('\n');
         if (lines.length < 2) return [];
         const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        const required = ['player_id', 'p_k_percent', 'p_bb_percent', 'p_whiff_percent', 'p_csw_rate', 'exit_velocity_avg'];
+        const missing  = required.filter(c => !headers.includes(c));
+        if (missing.length) {
+            Logger.warn(`Savant pitcher CSV schema drift — missing: ${missing.join(', ')}`, { headers }, 'MLB');
+            return null;
+        }
         const rows = lines.slice(1).map(line => {
             const vals = _splitCSVLine(line);
             const obj = {};
@@ -512,7 +534,7 @@ async function fetchSprintSpeedLeaderboard() {
             headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
             return obj;
         }).filter(r => r.player_id && r.sprint_speed);
-        ApiCache.set(cacheKey, rows, ApiCache.TTL.LONG);
+        ApiCache.set(cacheKey, rows, ApiCache.TTL.DAILY);
         return rows;
     } catch (err) {
         Logger.debug(`Sprint speed unavailable: ${err.message}`, undefined, 'MLB');
@@ -674,9 +696,78 @@ const _PITCH_COLORS = {
     KN: '#64748b',
 };
 
+function _buildMovementSVG(rows, total) {
+    // Returns inline SVG for pitch movement plot, or '' if pfx data absent.
+    const valid = rows.filter(r =>
+        r.pfx_x != null && r.pfx_x !== '' && r.pfx_x !== 'null' &&
+        r.pfx_z != null && r.pfx_z !== '' && r.pfx_z !== 'null'
+    );
+    if (!valid.length) return '';
+
+    const axisColor  = 'var(--border-mid)';
+    const mutedColor = 'var(--text-muted)';
+
+    // Axis labels
+    const labels = `
+        <text x="-21" y="1.2"  font-size="2" fill="${mutedColor}" text-anchor="start">Arm</text>
+        <text x="21"  y="1.2"  font-size="2" fill="${mutedColor}" text-anchor="end">Glove</text>
+        <text x="0"   y="-19"  font-size="2" fill="${mutedColor}" text-anchor="middle">Rise</text>
+        <text x="0"   y="21.5" font-size="2" fill="${mutedColor}" text-anchor="middle">Drop</text>`;
+
+    const dots = valid.map(r => {
+        const cx    = parseFloat(r.pfx_x);
+        const cy    = -parseFloat(r.pfx_z); // negate: positive pfx_z = rise = up in SVG
+        const count = parseInt(r.pitches || r.n || 0);
+        const pct   = total > 0 ? (count / total * 100) : 0;
+        const rad   = (2.5 + (pct / 100) * 3.5).toFixed(2);
+        const color = _PITCH_COLORS[r.pitch_type] || '#7c8df0';
+        const velo  = parseFloat(r.release_speed || r.effective_speed || 0);
+        const spin  = parseInt(r.release_spin_rate || r.spin_rate || 0);
+        const name  = _escHtml(r.pitch_name || r.pitch_type);
+        // Data attrs drive the tooltip via event delegation
+        return `<circle
+            cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${rad}"
+            fill="${color}" stroke="${color}66" stroke-width="0.3"
+            role="img"
+            aria-label="${name}: ${Math.abs(cx).toFixed(1)}&quot; ${cx >= 0 ? 'arm-side' : 'glove-side'}, ${Math.abs(parseFloat(r.pfx_z)).toFixed(1)}&quot; ${parseFloat(r.pfx_z) >= 0 ? 'rise' : 'drop'}"
+            data-pitch-type="${_escHtml(r.pitch_type)}"
+            data-pitch-name="${name}"
+            data-pfx-h="${cx.toFixed(1)}"
+            data-pfx-v="${parseFloat(r.pfx_z).toFixed(1)}"
+            data-velo="${velo > 0 ? velo.toFixed(1) : ''}"
+            data-spin="${spin > 0 ? spin.toLocaleString() : ''}"
+            data-pct="${pct.toFixed(1)}"
+            style="cursor:pointer"
+        />
+        <text x="${(cx + parseFloat(rad) + 0.6).toFixed(2)}" y="${(cy + 0.9).toFixed(2)}"
+            font-size="2.2" fill="var(--text-secondary)"
+            class="arsenal-mvmt-label"
+        >${_escHtml(r.pitch_type)}</text>`;
+    }).join('');
+
+    return `<div class="arsenal-movement-plot">
+        <svg viewBox="-22 -22 44 44" width="240" height="240"
+            role="img" aria-label="Pitch movement plot"
+            id="arsenal-mvmt-svg" style="display:block;overflow:visible">
+            <rect x="-22" y="-22" width="44" height="44" fill="var(--bg-surface)" rx="1"/>
+            <line x1="-20" y1="0" x2="20" y2="0" stroke="${axisColor}" stroke-width="0.5" stroke-dasharray="2 2"/>
+            <line x1="0" y1="-20" x2="0" y2="20" stroke="${axisColor}" stroke-width="0.5" stroke-dasharray="2 2"/>
+            ${labels}
+            ${dots}
+        </svg>
+        <div id="arsenal-mvmt-tooltip" style="display:none;position:absolute;z-index:10;width:160px;
+            background:var(--bg-raised);border:1px solid var(--border-default);
+            border-radius:var(--radius-sm);padding:0.4rem 0.6rem;font-size:0.75rem;
+            color:var(--text-primary);pointer-events:none"></div>
+    </div>`;
+}
+
 function _renderPitchArsenal(rows) {
     const total = rows.reduce((sum, r) => sum + (parseInt(r.pitches || r.n || 0)), 0);
     if (!total) return '';
+
+    const mvmtSvg = _buildMovementSVG(rows, total);
+    if (!mvmtSvg) Logger.debug('Movement plot: pfx_x/pfx_z absent from arsenal rows', undefined, 'MLB');
 
     const rowsHtml = rows.map(r => {
         const count = parseInt(r.pitches || r.n || 0);
@@ -701,7 +792,7 @@ function _renderPitchArsenal(rows) {
             </div>`;
     }).join('');
 
-    return `
+    return `${mvmtSvg}
         <div class="arsenal-list">
             <div class="arsenal-hdr-row">
                 <span></span>
@@ -1401,7 +1492,14 @@ function _computeBattingRates(s) {
         dbl: Math.round(dbl  / gp * 162),
     } : null;
 
-    return { iso, babip, bbPct, kPct, bbK, pa: pa || null, rc, sbPct, woba, pace };
+    // wRC+ — park-neutral, league-average-scaled offensive rate
+    // Uses FanGraphs guts constants. Display with "†" if using preliminary constants.
+    const wrcConst = _MLB_WRC_CONSTANTS[MLB_SEASON] || _MLB_WRC_CONSTANTS[2024];
+    const wrcPlus = wobaRaw != null && wrcConst && wrcConst.lgRPA > 0
+        ? Math.round(((wobaRaw - wrcConst.lgwOBA) / wrcConst.wOBAscale + wrcConst.lgRPA) / wrcConst.lgRPA * 100)
+        : null;
+
+    return { iso, babip, bbPct, kPct, bbK, pa: pa || null, rc, sbPct, woba, wrcPlus, pace };
 }
 
 function _computePitchingRates(s) {
@@ -1481,6 +1579,7 @@ function _mlbHittingBars(stats, rates = {}) {
         _mlbStatBar('Slugging %',        stats.slg,         0.700,  '#60a5fa', v => _fmtAvg(v)),
         _mlbStatBar('OPS',               stats.ops,         1.100,  '#a78bfa', v => _fmtAvg(v)),
         _mlbStatBar('wOBA',              rates.woba,        0.450,  '#818cf8', v => v),
+        _mlbStatBar('wRC+',             rates.wrcPlus,     200,    '#818cf8', v => v + ((_MLB_WRC_CONSTANTS[MLB_SEASON]?.lgwOBA === undefined) ? '†' : (MLB_SEASON === 2025 ? '†' : ''))),
         _mlbStatBar('ISO',               rates.iso,         0.400,  '#f472b6', v => v),
         _mlbStatBar('BABIP',             rates.babip,       0.400,  '#fb923c', v => v),
         _mlbStatBar('Home Runs',         stats.homeRuns,    60,     '#ef4444', v => v),
@@ -1702,6 +1801,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ['SLG',   stats.slg,          'var(--color-ast)',  'slg'],
         ['OPS',   stats.ops,          'var(--color-stl)',  'ops'],
         ['wOBA',  batting?.woba,      'var(--color-blk)',  'woba'],
+        ['wRC+',  batting?.wrcPlus != null ? String(batting.wrcPlus) : null, '#818cf8', null],
         ['ISO',   batting?.iso,       '#c4b5fd',           null],
         ['BABIP', batting?.babip,     'var(--color-pts)',  null],
         ['BB/K',  batting?.bbK,       '#22d3ee',           null],
@@ -2034,6 +2134,10 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         const card = document.getElementById('mlb-statcast-card');
         if (!card) return;
         if (!data) { card.innerHTML = ''; return; }
+        // Augment with actual stats for luck-delta rows (data stays in-scope; no mutation outside this closure)
+        data._actual_avg  = stats.avg  ? parseFloat(stats.avg)  : null;
+        data._actual_woba = batting?.woba ?? null;
+        data._actual_era  = stats.era  ? parseFloat(stats.era)  : null;
         card.innerHTML = `
             <h2 class="detail-section-title">Statcast <span class="statcast-badge">via Baseball Savant</span></h2>
             ${_renderStatcastCard(data, group)}
@@ -2073,6 +2177,43 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
                 <h2 class="detail-section-title">Pitch Arsenal <span class="statcast-badge">via Baseball Savant</span></h2>
                 ${_renderPitchArsenal(rows)}
             `;
+            // Movement plot tooltip — event delegation on SVG
+            const svg     = document.getElementById('arsenal-mvmt-svg');
+            const tooltip = document.getElementById('arsenal-mvmt-tooltip');
+            if (svg && tooltip) {
+                svg.addEventListener('mouseover', e => {
+                    const c = e.target.closest('circle[data-pitch-type]');
+                    if (!c) return;
+                    const h    = c.dataset.pfxH;
+                    const v    = c.dataset.pfxV;
+                    const hDir = parseFloat(h) >= 0 ? 'arm-side' : 'glove-side';
+                    const vDir = parseFloat(v) >= 0 ? 'rise' : 'drop';
+                    const velo = c.dataset.velo ? `${c.dataset.velo} mph` : '';
+                    const spin = c.dataset.spin ? `${c.dataset.spin} rpm` : '';
+                    const meta = [velo, spin].filter(Boolean).join(' · ');
+                    tooltip.innerHTML =
+                        `<strong>${c.dataset.pitchName} (${_escHtml(c.dataset.pitchType)})</strong><br>` +
+                        `Break: ${Math.abs(parseFloat(h)).toFixed(1)}" H (${hDir}) · ${Math.abs(parseFloat(v)).toFixed(1)}" V (${vDir})<br>` +
+                        (meta ? meta + ` · ` : '') +
+                        `${c.dataset.pct}% usage`;
+                    const svgRect = svg.getBoundingClientRect();
+                    const cRect   = c.getBoundingClientRect();
+                    const wrap    = svg.closest('.arsenal-movement-plot');
+                    const wRect   = wrap.getBoundingClientRect();
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = `${cRect.left - wRect.left + 12}px`;
+                    tooltip.style.top  = `${cRect.top  - wRect.top  - tooltip.offsetHeight - 6}px`;
+                });
+                svg.addEventListener('mouseout', e => {
+                    if (!e.target.closest('circle[data-pitch-type]')) return;
+                    tooltip.style.display = 'none';
+                });
+                // Touch: tap to show, tap elsewhere to hide
+                svg.addEventListener('click', e => {
+                    const c = e.target.closest('circle[data-pitch-type]');
+                    tooltip.style.display = (c && tooltip.style.display === 'none') ? 'block' : 'none';
+                });
+            }
         }).catch(() => {
             const card = document.getElementById('mlb-arsenal-card');
             if (card) card.innerHTML = '';
@@ -2472,6 +2613,35 @@ function _renderStatcastCard(data, group) {
         `;
     };
 
+    // Delta row: directional ± display for expected-vs-actual luck gaps.
+    // invert=true flips color logic (used for ERA where lower = better for pitcher).
+    // threshold: |delta| < thresh → neutral display.
+    const _deltaRow = (label, expected, actual, invert = false, decimals = 3, title = '', thresh = 0) => {
+        if (expected == null || actual == null) return '';
+        const delta = parseFloat(expected) - parseFloat(actual);
+        const abs   = Math.abs(delta);
+        let color   = 'var(--text-muted)';
+        let display;
+        if (abs <= thresh) {
+            display = '≈ 0';
+        } else {
+            // positive delta = performing below expected = unlucky (good signal for hitters)
+            // invert flips semantics for ERA (higher xERA vs ERA = pitcher getting lucky = bad)
+            const good = invert ? delta < 0 : delta > 0;
+            color   = good ? 'var(--color-win)' : 'var(--color-loss)';
+            const sign = delta > 0 ? '+' : '−'; // U+2212 proper minus
+            display = `${sign}${abs.toFixed(decimals)}`;
+        }
+        return `
+            <div class="sc-row">
+                <span class="sc-label" title="${title}">${label}</span>
+                <span class="sc-val" style="font-weight:500;opacity:0.80;color:${color}">${display}</span>
+                <div class="sc-bar-wrap"><div class="sc-bar-fill" style="width:0"></div></div>
+                <span class="sc-pct"></span>
+            </div>
+        `;
+    };
+
     let rows = '';
     if (group === 'hitting') {
         rows += _row('Exit Velocity',  data.avg_hit_speed,       data.p_avg_hit_speed,       ' mph');
@@ -2480,17 +2650,24 @@ function _renderStatcastCard(data, group) {
         rows += _row('Sweet Spot %',   data.sweet_spot_percent,  data.p_sweet_spot_percent,  '%');
         rows += _row('Launch Angle',   data.launch_angle,        data.p_launch_angle,        '°');
         rows += _row('xBA',            data.xba,                 data.p_xba);
+        rows += _deltaRow('Luck (xBA)',   data.xba,  data._actual_avg,  false, 3, 'xBA vs AVG: positive = hitting below expectations (unlucky); negative = hitting above expectations (lucky)', 0.020);
         rows += _row('xSLG',           data.xslg,                data.p_xslg);
         rows += _row('xwOBA',          data.xwoba,               data.p_xwoba);
+        rows += _deltaRow('Luck (xwOBA)', data.xwoba, data._actual_woba, false, 3, 'xwOBA vs wOBA: positive = underperforming expected run value (unlucky); negative = overperforming (lucky)', 0.020);
         rows += _row('Sprint Speed',   data.sprint_speed,        data.p_sprint_speed,        ' ft/s');
+        rows += _row('Chase %',        data.oz_swing_percent,    data.p_oz_swing_percent,    '%');
+        rows += _row('Zone Contact %', data.z_contact_percent,   data.p_z_contact_percent,   '%');
     } else {
         rows += _row('Exit Velocity',  data.exit_velocity,       data.p_exit_velocity,       ' mph');
         rows += _row('Spin Rate',      data.spin_rate,           data.p_spin_rate,           ' rpm');
         rows += _row('K %',            data.k_percent,           data.p_k_percent,           '%');
         rows += _row('BB %',           data.bb_percent,          data.p_bb_percent,          '%');
         rows += _row('Chase %',        data.oz_swing_percent,    data.p_oz_swing_percent,    '%');
+        rows += _row('Zone Contact %', data.z_contact_percent,   data.p_z_contact_percent,   '%');
         rows += _row('Whiff %',        data.whiff_percent,       data.p_whiff_percent,       '%');
+        rows += _row('CSW %',          data.csw_rate,            data.p_csw_rate,             '%');
         rows += _row('xERA',           data.xera,                data.p_xera);
+        rows += _deltaRow('Luck (xERA)',  data.xera, data._actual_era,  true,  2, 'xERA vs ERA: positive = ERA better than deserved (lucky, regression risk); negative = ERA worse than deserved (unlucky, expected improvement)', 0.50);
         rows += _row('xwOBA vs',       data.xwoba,               data.p_xwoba);
     }
 
@@ -2897,7 +3074,7 @@ function _createMLBGameCard(game) {
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${homeTeam.name || homeAbbr}">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
-                    ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" loading="lazy" data-hide-on-error onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">` : ''}
+                    ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" loading="lazy" data-hide-on-error>` : ''}
                     <span class="game-logo-text">${homeAbbr}</span>
                 </div>
                 <div class="game-team-abbr">${homeAbbr}</div>
@@ -2910,7 +3087,7 @@ function _createMLBGameCard(game) {
             </div>
             <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}" data-team-id="${awayTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${awayTeam.name || awayAbbr}">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
-                    ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" loading="lazy" data-hide-on-error onload="var t=this.parentElement.querySelector('.game-logo-text');if(t)t.style.display='none'">` : ''}
+                    ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" loading="lazy" data-hide-on-error>` : ''}
                     <span class="game-logo-text">${awayAbbr}</span>
                 </div>
                 <div class="game-team-abbr">${awayAbbr}</div>
@@ -2921,6 +3098,12 @@ function _createMLBGameCard(game) {
         ${scorecardBtn}
         <div class="game-weather" data-weather-team="${homeTeam.id}"></div>
     `;
+
+    card.querySelectorAll('.game-logo-img').forEach(img => {
+        img.addEventListener('load', () => {
+            img.parentElement.querySelector('.game-logo-text')?.style.setProperty('display', 'none');
+        }, { once: true });
+    });
 
     card.querySelectorAll('.game-team[data-team-id]').forEach(el => {
         const handler = e => {
@@ -3812,7 +3995,9 @@ function _mlbRosterCard(roster, colors) {
 
 // ── Shared fetch: mlbLeaderSplits ─────────────────────────────
 
-let _mlbLeaderSplitsPromise = null;
+let _mlbLeaderSplitsPromise       = null;
+let _mlbSavantLbPromise           = null;  // dedup guard for bulk batter leaderboard CSV
+let _mlbSavantPitcherLbPromise    = null;  // dedup guard for bulk pitcher leaderboard CSV
 
 function _clearMLBLeaderSplitsCache() { _mlbLeaderSplitsPromise = null; }
 
@@ -3900,16 +4085,22 @@ async function loadMLBLeaderboards() {
             }).catch(() => {}));
         }
         if (!AppState.mlbSavantLeaderboard || AppState._mlbSavantLbSeason !== season) {
-            promises.push(fetchStatcastBulkLeaderboard(season).then(d => {
-                AppState.mlbSavantLeaderboard = d || [];
-                AppState._mlbSavantLbSeason = season;
-            }));
+            if (!_mlbSavantLbPromise) {
+                _mlbSavantLbPromise = fetchStatcastBulkLeaderboard(season).then(d => {
+                    AppState.mlbSavantLeaderboard = d || [];
+                    AppState._mlbSavantLbSeason = season;
+                }).finally(() => { _mlbSavantLbPromise = null; });
+            }
+            promises.push(_mlbSavantLbPromise);
         }
         if (!AppState.mlbSavantPitcherLeaderboard || AppState._mlbSavantPitcherLbSeason !== season) {
-            promises.push(fetchStatcastPitcherLeaderboard(season).then(d => {
-                AppState.mlbSavantPitcherLeaderboard = d || [];
-                AppState._mlbSavantPitcherLbSeason = season;
-            }).catch(() => {}));
+            if (!_mlbSavantPitcherLbPromise) {
+                _mlbSavantPitcherLbPromise = fetchStatcastPitcherLeaderboard(season).then(d => {
+                    AppState.mlbSavantPitcherLeaderboard = d || [];
+                    AppState._mlbSavantPitcherLbSeason = season;
+                }).catch(() => {}).finally(() => { _mlbSavantPitcherLbPromise = null; });
+            }
+            promises.push(_mlbSavantPitcherLbPromise);
         }
         if (!AppState.mlbSprintSpeed) {
             promises.push(fetchSprintSpeedLeaderboard().then(rows => {
@@ -4515,8 +4706,8 @@ function displayMLBLeaderboards() {
             row.setAttribute('tabindex', '0');
             const pid = split.player?.id;
             if (pid) {
-                row.addEventListener('click', () => showMLBPlayerDetail(pid, cat.group));
-                row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(pid, cat.group); });
+                row.addEventListener('click', e => { if (e.target.closest('.shc-share-btn')) return; showMLBPlayerDetail(pid, cat.group); });
+                row.addEventListener('keydown', e => { if (e.target.closest('.shc-share-btn')) return; if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(pid, cat.group); });
             }
             row.innerHTML = `
                 <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
@@ -4529,7 +4720,30 @@ function displayMLBLeaderboards() {
                     <span class="lb-team">${abbr}${split.position?.abbreviation ? ' · ' + split.position.abbreviation : ''}</span>
                 </div>
                 <span class="lb-value" style="color:${cat.color}">${valStr}</span>
+                <button class="shc-share-btn" aria-label="Share ${_escHtml(split.player?.fullName || 'player')}'s ${_escHtml(cat.label)} stat card" title="Share stat card">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+                </button>
             `;
+            const shareBtn = row.querySelector('.shc-share-btn');
+            if (shareBtn && pid && typeof shareStatCard === 'function') {
+                shareBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    shareStatCard({
+                        playerId: pid,
+                        playerName: split.player?.fullName || '',
+                        teamAbbr: abbr,
+                        position: split.position?.abbreviation || '',
+                        statLabel: cat.label,
+                        statUnit: cat.unit,
+                        statValue: valStr,
+                        rank: i + 1,
+                        headshotUrl,
+                        btn: shareBtn,
+                    });
+                });
+            } else if (shareBtn) {
+                shareBtn.remove();
+            }
             return row;
         }
 

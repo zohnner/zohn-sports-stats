@@ -1,10 +1,10 @@
 // ============================================================
-// SportStrata — Service Worker  v2
-// Strategy: Cache-first for static assets, network-first for API calls
+// SportStrata — Service Worker  v3
+// Strategy: stale-while-revalidate for static assets, network-first for navigation
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v2';
+const CACHE_NAME    = 'sportstrata-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -16,6 +16,10 @@ const STATIC_ASSETS = [
     '/css/components.css',
     '/css/ticker.css',
     '/css/arcade.css',
+    '/css/scorecard.css',
+    '/css/liveGame.css',
+    '/css/shareCard.css',
+    '/js/math.min.js',
     '/js/config.js',
     '/js/schema.js',
     '/js/errorHandler.js',
@@ -31,6 +35,9 @@ const STATIC_ASSETS = [
     '/js/charts.js',
     '/js/statBuilder.js',
     '/js/mlb.js',
+    '/js/scorecard.js',
+    '/js/liveGame.js',
+    '/js/shareCard.js',
     '/js/nfl.js',
     '/js/nhl.js',
     '/js/glossary.js',
@@ -60,7 +67,7 @@ self.addEventListener('activate', e => {
     );
 });
 
-// Fetch — cache-first for static, network-first for API
+// Fetch — SWR for static, network-first for navigation
 self.addEventListener('fetch', e => {
     if (e.request.method !== 'GET') return;
 
@@ -87,16 +94,20 @@ self.addEventListener('fetch', e => {
         return;
     }
 
-    // Cache-first for all other same-origin assets (JS, CSS, images, fonts)
+    // Stale-while-revalidate for all other same-origin assets (JS, CSS, images, fonts).
+    // Cache-first here previously froze deployed JS/CSS until CACHE_NAME was bumped —
+    // returning users kept running old code after every deploy. SWR serves the cached
+    // copy instantly but refreshes it in the background, so the next load is current.
     e.respondWith(
         caches.match(e.request).then(cached => {
-            if (cached) return cached;
-            return fetch(e.request).then(resp => {
-                if (!resp || resp.status !== 200 || resp.type === 'opaque') return resp;
-                const clone = resp.clone();
-                caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            const network = fetch(e.request).then(resp => {
+                if (resp && resp.status === 200 && resp.type !== 'opaque') {
+                    const clone = resp.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+                }
                 return resp;
-            });
+            }).catch(() => cached);
+            return cached || network;
         })
     );
 });
