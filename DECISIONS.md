@@ -307,3 +307,4 @@ Cache-first plus a static version string meant every deploy silently shipped to 
 - Deploys no longer require a `CACHE_NAME` bump to propagate JS/CSS changes.
 - Returning users may run one-load-old code immediately after a deploy — acceptable; freshness-critical data is API-fetched, not in static assets.
 - Any future file added to the script chain in `index.html` must also be added to `STATIC_ASSETS` in `sw.js` — Folio adds this to the deploy checklist documentation.
+

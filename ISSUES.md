@@ -96,7 +96,6 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 **Feasibility (Axiom):** Confirmed. html2canvas 1.4.1 loader `_scLoadHtml2Canvas()` already global from scorecard.js (P3-026 validated the capture pipeline). CDN CORS for headshots unverifiable from the audit environment (egress-blocked) — resolved by deterministic preflight: load headshot with `crossOrigin="anonymous"`, on error build the card with initials avatar; canvas never taints. New file `js/shareCard.js` after `liveGame.js` in the chain + `css/shareCard.css`; both added to `sw.js` STATIC_ASSETS per D-010. No new CSP domains (cdnjs already allowed). Sparkline of last 30 days (R5 full spec) deferred to Phase 2 — needs game-log fetches.
 
 **All three gates present. Implementation approved.**
-
 ---
 
 ## Design Issues
@@ -2378,3 +2377,18 @@ Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata h
 `_fetchMLBH2H` fetches 5 years of pitch-level rows and manually aggregates event outcomes client-side. Adding `group_by=name` to the Savant URL should return one pre-aggregated row per batter-pitcher pair, cutting payload by 100–1000×. The open question is whether grouped mode includes event-outcome columns (`ba`, `ab`, `h`, `hr`) or only Statcast aggregate metrics (EV averages). Only the former is a valid drop-in replacement.
 
 **Verification attempt 2026-06-08:** Fetched `statcast_search/csv?...&group_by=name` from dev environment. Savant returned `Content-Type: application/download` — tooling rendered binary, column names not inspectable. **Manual step required:** open the URL in a browser, inspect the CSV header row, and document the confirmed field mapping here before Finn implements.
+
+---
+
+## P3-028 — Player Detail Percentile Stat Profile — Three Gates
+**Contributors:** Kael (visual), Vera (behavioral), Axiom (feasibility) | **Date:** 2026-06-09
+
+**Problem (owner brief):** Player page stats read as undifferentiated numbers in a box. The fixed-max stat bars (`_mlbStatBar`) scale value against arbitrary maxima with decorative colors — a league-average hitter shows a 69%-full amber bar, which encodes nothing. The competitive reference is Baseball Savant's percentile sliders.
+
+**Visual spec (Kael):** Each stat row: label (fixed column) | percentile track with fill + circular numbered bubble at the percentile position | actual value right-aligned in tabular figures. Diverging blue→gray→red scale, Savant convention: red = elite, always — lower-is-better stats (ERA, WHIP, BB/9, H/9, HR/9, K%) invert before coloring. Scale colors are fixed hex by documented exception: this is a perceptual data-encoding scale, not a themed surface. Caption above rows: "League percentiles · vs N qualified {hitters|pitchers} · red = elite". Mockup approved by owner 2026-06-09.
+
+**Behavioral spec (Vera):** Percentiles render only when (a) `mlbLeaderSplits` is loaded, (b) the qualified pool has ≥20 players, and (c) the player themself qualifies (≥80 PA hitters / ≥15 IP pitchers — same thresholds as P3-015 rank badges). Any failure of (a)–(b) degrades each row to a plain label+value pair, never a broken bar. Failure of (c) shows plain rows plus the caption "Below qualification threshold (80 PA) — league percentiles hidden". Each percentile row: `role="img"` + `aria-label="{stat}: {value}, {N}th percentile of qualified {pool}"`, `title` tooltip with the same. The raw value remains the visually dominant number — percentile is context, not replacement (broadcast-grade rule: the citable number leads).
+
+**Feasibility (Axiom):** Confirmed, zero new fetches. `AppState.mlbLeaderSplits` already holds full league splits with computed rates merged (`mlb.js:4036`) and is already awaited on player detail for rank badges. Percentile = midrank position in the sorted qualified pool, memoized per `(group, season)` in `AppState._mlbPctPools` with lazily built sorted arrays per stat key. `_mlbHittingBars`/`_mlbPitchingBars` keep their names and call sites — presentation-only rewrite. New `.pct-*` classes in `components.css` (grep-verified no collisions). Old `.shooting-stat-*` classes untouched — still used by NBA player detail.
+
+**All three gates present. Shipped 2026-06-09** — percentile engine + `.pct-*` rows live in `mlb.js` / `components.css`; dead `_mlbStatBar` removed; engine unit-verified (extremes, median, inversion, degraded states).

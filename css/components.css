@@ -4081,3 +4081,67 @@
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* ── League percentile rows (P3-028) ────────────────────────── */
+.pct-caption {
+    font-size: 0.6875rem;
+    color: var(--text-subtle);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin: 0 0 0.625rem;
+}
+.pct-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.7rem;
+}
+.pct-label {
+    flex: 0 0 6.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pct-track {
+    flex: 1;
+    height: 5px;
+    background: var(--bg-raised);
+    border-radius: 3px;
+    position: relative;
+}
+.pct-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+.pct-bubble {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 1.3125rem;
+    height: 1.3125rem;
+    border-radius: 50%;
+    border: 2px solid var(--bg-card);
+    color: #0d1420; /* fixed: bubble bg is a fixed data-scale color, text must hold contrast in both themes */
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pct-value {
+    flex: 0 0 3.25rem;
+    text-align: right;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.pct-row--plain { justify-content: space-between; }
+.pct-row--plain .pct-label { flex: 0 1 auto; }
+.pct-row--plain .pct-value { flex: 0 0 auto; }
+
+@media (max-width: 480px) {
+    .pct-label { flex-basis: 5.25rem; font-size: 0.6875rem; }
+}

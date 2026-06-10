@@ -1554,85 +1554,137 @@ function _fmtAvg(n) {
 
 // ── MLB stat bar helpers ──────────────────────────────────────
 
-function _mlbStatBar(label, value, max, color, fmt) {
+// ── League percentile engine (P3-028) ─────────────────────────
+// Percentiles computed client-side from AppState.mlbLeaderSplits —
+// the same qualified pool as the P3-015 rank badges. No extra fetches.
+
+const _MLB_PCT_MIN_PA = 80;
+const _MLB_PCT_MIN_IP = 15;
+
+function _mlbIpToNum(ip) { const p = String(ip || '0').split('.'); return parseInt(p[0]) + (parseInt(p[1] || 0) / 3); }
+
+function _mlbPctPool(group) {
+    AppState._mlbPctPools = AppState._mlbPctPools || {};
+    const key = `${group}_${MLB_SEASON}`;
+    if (AppState._mlbPctPools[key]) return AppState._mlbPctPools[key];
+    const splits = AppState.mlbLeaderSplits?.[group] || [];
+    if (!splits.length) return null;
+    const qual = group === 'hitting'
+        ? splits.filter(s => (parseFloat(s.stat?.plateAppearances) || 0) >= _MLB_PCT_MIN_PA)
+        : splits.filter(s => _mlbIpToNum(s.stat?.inningsPitched) >= _MLB_PCT_MIN_IP);
+    if (qual.length < 20) return null;
+    const pool = { qual, sorted: {}, n: qual.length };
+    AppState._mlbPctPools[key] = pool;
+    return pool;
+}
+
+function _mlbPctOf(group, statKey, value, lowerBetter) {
+    const pool = _mlbPctPool(group);
+    if (!pool) return null;
+    const v = parseFloat(value);
+    if (isNaN(v)) return null;
+    let arr = pool.sorted[statKey];
+    if (!arr) {
+        arr = pool.qual.map(s => parseFloat(s.stat?.[statKey])).filter(x => !isNaN(x)).sort((a, b) => a - b);
+        pool.sorted[statKey] = arr;
+    }
+    if (arr.length < 20) return null;
+    let below = 0, ties = 0;
+    for (const x of arr) { if (x < v) below++; else if (x === v) ties++; }
+    let pct = Math.round(((below + ties / 2) / arr.length) * 100);
+    if (lowerBetter) pct = 100 - pct;
+    return Math.max(1, Math.min(99, pct));
+}
+
+// Diverging blue → gray → red, Savant convention (red = elite).
+// Fixed hex by design: data-encoding scale, not a themed surface (P3-028).
+function _mlbPctColor(p) {
+    const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+    if (p >= 50) { const t = (p - 50) / 50; return `rgb(${lerp(138, 214, t)},${lerp(141, 58, t)},${lerp(147, 49, t)})`; }
+    const t = p / 50;
+    return `rgb(${lerp(54, 138, t)},${lerp(97, 141, t)},${lerp(173, 147, t)})`;
+}
+
+function _mlbPctRow(label, value, opts = {}) {
     const num = parseFloat(value);
     if (isNaN(num) || value == null) return '';
-    const pct = Math.min(100, Math.round((num / max) * 100));
-    const display = fmt ? fmt(num) : num;
+    const display = opts.fmt ? opts.fmt(num) : value;
+    const pct = (opts.statKey && !opts.noPct) ? _mlbPctOf(opts.group, opts.statKey, num, opts.lowerBetter) : null;
+    if (pct == null) {
+        return `
+        <div class="pct-row pct-row--plain">
+            <span class="pct-label">${label}</span>
+            <span class="pct-value">${display}</span>
+        </div>`;
+    }
+    const color = _mlbPctColor(pct);
+    const ord = (pct % 10 === 1 && pct !== 11) ? 'st' : (pct % 10 === 2 && pct !== 12) ? 'nd' : (pct % 10 === 3 && pct !== 13) ? 'rd' : 'th';
+    const pool = opts.group === 'pitching' ? 'pitchers' : 'hitters';
     return `
-        <div class="shooting-stat-item">
-            <div class="shooting-stat-header">
-                <span style="color:var(--color-text-secondary)">${label}</span>
-                <span style="color:var(--color-text-primary);font-weight:700">${display}</span>
+        <div class="pct-row" role="img" aria-label="${label}: ${display}, ${pct}${ord} percentile of qualified ${pool}" title="${pct}${ord} percentile of qualified ${pool}">
+            <span class="pct-label">${label}</span>
+            <div class="pct-track">
+                <div class="pct-fill" style="width:${pct}%;background:${color}"></div>
+                <span class="pct-bubble" style="left:${pct}%;background:${color}">${pct}</span>
             </div>
-            <div class="shooting-stat-bar">
-                <div class="shooting-stat-fill" style="width:${pct}%;background:${color}"></div>
-            </div>
-        </div>
-    `;
+            <span class="pct-value">${display}</span>
+        </div>`;
+}
+
+function _mlbPctCaption(group, playerQualified) {
+    const pool = _mlbPctPool(group);
+    if (!pool) return '';
+    const noun = group === 'pitching' ? 'pitchers' : 'hitters';
+    if (!playerQualified) {
+        const thresh = group === 'pitching' ? `${_MLB_PCT_MIN_IP} IP` : `${_MLB_PCT_MIN_PA} PA`;
+        return `<p class="pct-caption">Below qualification threshold (${thresh}) — league percentiles hidden</p>`;
+    }
+    return `<p class="pct-caption">League percentiles · vs ${pool.n} qualified ${noun} · red = elite</p>`;
 }
 
 function _mlbHittingBars(stats, rates = {}) {
-    return [
-        _mlbStatBar('Batting Average',   stats.avg,         0.400,  '#fbbf24', v => _fmtAvg(v)),
-        _mlbStatBar('On-Base %',         stats.obp,         0.500,  '#34d399', v => _fmtAvg(v)),
-        _mlbStatBar('Slugging %',        stats.slg,         0.700,  '#60a5fa', v => _fmtAvg(v)),
-        _mlbStatBar('OPS',               stats.ops,         1.100,  '#a78bfa', v => _fmtAvg(v)),
-        _mlbStatBar('wOBA',              rates.woba,        0.450,  '#818cf8', v => v),
-        _mlbStatBar('wRC+',             rates.wrcPlus,     200,    '#818cf8', v => v + ((_MLB_WRC_CONSTANTS[MLB_SEASON]?.lgwOBA === undefined) ? '†' : (MLB_SEASON === 2025 ? '†' : ''))),
-        _mlbStatBar('ISO',               rates.iso,         0.400,  '#f472b6', v => v),
-        _mlbStatBar('BABIP',             rates.babip,       0.400,  '#fb923c', v => v),
-        _mlbStatBar('Home Runs',         stats.homeRuns,    60,     '#ef4444', v => v),
-        _mlbStatBar('RBI',               stats.rbi,         140,    '#f59e0b', v => v),
-        _mlbStatBar('Total Bases',       stats.totalBases,  350,    '#fb923c', v => v),
-        _mlbStatBar('Runs Created',      rates.rc,          150,    '#f59e0b', v => v),
-        _mlbStatBar('Triples',           stats.triples,     20,     '#a3e635', v => v),
-        _mlbStatBar('Stolen Bases',      stats.stolenBases, 70,     '#10b981', v => v),
-        _mlbStatBar('SB%',               rates.sbPct,       100,    '#10b981', v => `${v}%`),
+    const qualified = (parseFloat(stats.plateAppearances) || 0) >= _MLB_PCT_MIN_PA && !!_mlbPctPool('hitting');
+    const g = { group: 'hitting', noPct: !qualified };
+    const rows = [
+        _mlbPctRow('Batting Avg',  stats.avg,         { ...g, statKey: 'avg', fmt: _fmtAvg }),
+        _mlbPctRow('On-Base %',    stats.obp,         { ...g, statKey: 'obp', fmt: _fmtAvg }),
+        _mlbPctRow('Slugging %',   stats.slg,         { ...g, statKey: 'slg', fmt: _fmtAvg }),
+        _mlbPctRow('OPS',          stats.ops,         { ...g, statKey: 'ops', fmt: _fmtAvg }),
+        _mlbPctRow('wOBA',         rates.woba,        { ...g, statKey: 'woba' }),
+        _mlbPctRow('wRC+',         rates.wrcPlus,     { ...g, statKey: 'wrcPlus', fmt: v => v + ((_MLB_WRC_CONSTANTS[MLB_SEASON]?.lgwOBA === undefined) ? '†' : (MLB_SEASON === 2025 ? '†' : '')) }),
+        _mlbPctRow('ISO',          rates.iso,         { ...g, statKey: 'iso' }),
+        _mlbPctRow('BABIP',        rates.babip,       { ...g, statKey: 'babip' }),
+        _mlbPctRow('Home Runs',    stats.homeRuns,    { ...g, statKey: 'homeRuns' }),
+        _mlbPctRow('RBI',          stats.rbi,         { ...g, statKey: 'rbi' }),
+        _mlbPctRow('Total Bases',  stats.totalBases,  { ...g, statKey: 'totalBases' }),
+        _mlbPctRow('Runs Created', rates.rc,          { ...g, statKey: 'rc' }),
+        _mlbPctRow('Triples',      stats.triples,     { ...g, statKey: 'triples' }),
+        _mlbPctRow('Stolen Bases', stats.stolenBases, { ...g, statKey: 'stolenBases' }),
+        _mlbPctRow('SB%',          rates.sbPct,       { ...g, statKey: 'sbPct', fmt: v => `${v}%` }),
     ].filter(Boolean).join('');
+    return _mlbPctCaption('hitting', qualified) + rows;
 }
 
 function _mlbPitchingBars(stats) {
-    // ERA: lower is better — invert bar (full bar = 0.00, empty = 6.00+)
-    const era = parseFloat(stats.era);
-    const eraBar = !isNaN(era) && stats.era != null ? `
-        <div class="shooting-stat-item">
-            <div class="shooting-stat-header">
-                <span style="color:var(--color-text-secondary)">ERA <span style="font-size:0.7rem;color:var(--color-text-muted)">(lower = better)</span></span>
-                <span style="color:var(--color-text-primary);font-weight:700">${era.toFixed(2)}</span>
-            </div>
-            <div class="shooting-stat-bar">
-                <div class="shooting-stat-fill" style="width:${Math.min(100, Math.round(Math.max(0, (6 - era) / 6 * 100)))}%;background:#f472b6"></div>
-            </div>
-        </div>
-    ` : '';
-    const whip = parseFloat(stats.whip);
-    const whipBar = !isNaN(whip) && stats.whip != null ? `
-        <div class="shooting-stat-item">
-            <div class="shooting-stat-header">
-                <span style="color:var(--color-text-secondary)">WHIP <span style="font-size:0.7rem;color:var(--color-text-muted)">(lower = better)</span></span>
-                <span style="color:var(--color-text-primary);font-weight:700">${whip.toFixed(2)}</span>
-            </div>
-            <div class="shooting-stat-bar">
-                <div class="shooting-stat-fill" style="width:${Math.min(100, Math.round(Math.max(0, (2 - whip) / 2 * 100)))}%;background:#818cf8"></div>
-            </div>
-        </div>
-    ` : '';
-    return [
-        eraBar,
-        whipBar,
-        _mlbStatBar('K/9',         stats.strikeoutsPer9Inn,     15,  '#fb923c', v => parseFloat(v).toFixed(1)),
-        _mlbStatBar('BB/9',        stats.walksPer9Inn,          10,  '#fcd34d', v => parseFloat(v).toFixed(2)),
-        _mlbStatBar('H/9',         stats.hitsPer9Inn,           12,  '#38bdf8', v => parseFloat(v).toFixed(2)),
-        _mlbStatBar('HR/9',        stats.homeRunsPer9,           3,  '#fca5a5', v => parseFloat(v).toFixed(2)),
-        _mlbStatBar('K/BB',        stats.strikeoutWalkRatio,    10,  '#c084fc', v => parseFloat(v).toFixed(2)),
-        _mlbStatBar('Strikeouts',  stats.strikeOuts,           300,  '#818cf8', v => v),
-        _mlbStatBar('Wins',        stats.wins,                  25,  '#34d399', v => v),
-        _mlbStatBar('Saves',       stats.saves,                 45,  '#fbbf24', v => v),
+    const qualified = _mlbIpToNum(stats.inningsPitched) >= _MLB_PCT_MIN_IP && !!_mlbPctPool('pitching');
+    const g = { group: 'pitching', noPct: !qualified };
+    const f2 = v => parseFloat(v).toFixed(2);
+    const rows = [
+        _mlbPctRow('ERA',        stats.era,                { ...g, statKey: 'era',  lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('WHIP',       stats.whip,               { ...g, statKey: 'whip', lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('K/9',        stats.strikeoutsPer9Inn,  { ...g, statKey: 'strikeoutsPer9Inn', fmt: v => parseFloat(v).toFixed(1) }),
+        _mlbPctRow('BB/9',       stats.walksPer9Inn,       { ...g, statKey: 'walksPer9Inn', lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('H/9',        stats.hitsPer9Inn,        { ...g, statKey: 'hitsPer9Inn',  lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('HR/9',       stats.homeRunsPer9,       { ...g, statKey: 'homeRunsPer9', lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('K/BB',       stats.strikeoutWalkRatio, { ...g, statKey: 'strikeoutWalkRatio', fmt: f2 }),
+        _mlbPctRow('Strikeouts', stats.strikeOuts,         { ...g, statKey: 'strikeOuts' }),
+        _mlbPctRow('Wins',       stats.wins,               { ...g, statKey: 'wins' }),
+        _mlbPctRow('Saves',      stats.saves,              { ...g, statKey: 'saves' }),
     ].filter(Boolean).join('');
+    return _mlbPctCaption('pitching', qualified) + rows;
 }
 
-// ── Savant Visual Card ────────────────────────────────────────
+// ── Savant Visual Card ──────────────────────────────────────────────
 // Opens Baseball Savant in a new tab — no iframe (Savant blocks embedding).
 
 function _mlbSavantVisualCard(player, group) {
