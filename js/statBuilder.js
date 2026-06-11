@@ -166,6 +166,7 @@ function _getBuilderConfig(mlbGroup) {
 // ── Main display function ─────────────────────────────────────
 
 async function displayStatBuilder(mlbGroup) {
+    _sbLoadMath().catch(() => {});
     const grid = document.getElementById('playersGrid');
     if (window.setBreadcrumb) setBreadcrumb('builder', null);
 
@@ -477,11 +478,26 @@ function _applyFilters(players, cfg) {
     });
 }
 
+// Lazy math.js loader (D-011) — 664KB library only needed here.
+let _sbMathPromise = null;
+function _sbLoadMath() {
+    if (typeof math !== 'undefined') return Promise.resolve();
+    if (_sbMathPromise) return _sbMathPromise;
+    _sbMathPromise = new Promise((resolve, reject) => {
+        const sc = document.createElement('script');
+        sc.src = 'js/math.min.js';
+        sc.onload = resolve;
+        sc.onerror = () => { _sbMathPromise = null; reject(new Error('math.js load failed')); };
+        document.head.appendChild(sc);
+    });
+    return _sbMathPromise;
+}
+
 // ── Formula evaluation ────────────────────────────────────────
 
 function _tryFormula(formula, players, cfg) {
     if (!players?.length) return { ok: false, error: 'No player data loaded' };
-    if (typeof math === 'undefined') return { ok: false, error: 'math.js not loaded' };
+    if (typeof math === 'undefined') { _sbLoadMath().catch(() => {}); return { ok: false, error: 'Formula engine loading — try again in a moment' }; }
     let lastError = 'Formula error';
     for (const player of players.slice(0, 5)) {
         try {
@@ -510,6 +526,11 @@ function _runFormula(formula, name, players, cfg) {
     const tableEl = document.getElementById('builderResultsTable');
     const emptyEl = document.getElementById('builderResultsEmpty');
 
+    if (typeof math === 'undefined') {
+        _sbLoadMath().catch(() => {});
+        ErrorHandler.toast('Formula engine loading — try again in a moment', 'info');
+        return;
+    }
     let compiled;
     try {
         compiled = math.compile(formula);

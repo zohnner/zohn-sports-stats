@@ -2353,7 +2353,7 @@ Confirmed viable as inline SVG within `_renderPitchArsenal`. No canvas needed �
 
 ---
 
-### [PARKED — NEEDS SPEC] P9 — Spray Chart Migration to Savant statcast_search
+### [PHASE 1 SHIPPED 2026-06-09] P9 — Spray Chart Migration to Savant statcast_search
 **Contributor:** Relay | **Date:** 2026-06-08
 **Updated:** 2026-06-08 — D-001 is complete. Unblocked. Awaiting Relay coordinate field verification + Kael EV color spec + Vera toggle spec.
 
@@ -2373,7 +2373,7 @@ Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata h
 
 ---
 
-### [PARKED — NEEDS RELAY VERIFICATION] P6 — H2H Fetch Scope Reduction (group_by=name)
+### [CLOSED — NOT VIABLE, Relay verification 2026-06-09] P6 — H2H Fetch Scope Reduction (group_by=name)
 **Contributor:** Relay | **Date:** 2026-06-08
 
 `_fetchMLBH2H` fetches 5 years of pitch-level rows and manually aggregates event outcomes client-side. Adding `group_by=name` to the Savant URL should return one pre-aggregated row per batter-pitcher pair, cutting payload by 100–1000×. The open question is whether grouped mode includes event-outcome columns (`ba`, `ab`, `h`, `hr`) or only Statcast aggregate metrics (EV averages). Only the former is a valid drop-in replacement.
@@ -2448,3 +2448,28 @@ Rule going forward: any new surface that links to a game routes through `openMLB
 4. **F5 Phase 1 shipped — Add-to-Home-Screen prompt.** Vera spec: shows only on 2nd distinct visit day (localStorage day list, G4-compliant), only when `beforeinstallprompt` fires (iOS Safari never shows it — no fake instructions), permanent dismiss either way, never shown in standalone display mode. Kael: `.a2hs-strip` bottom strip in toast grammar, tokens only, `position: fixed` documented as intentional (same exception class as bottom-nav). Axiom: manifest verified install-eligible (standalone + icons + start_url + SW). Logic unit-verified: 2nd-day visit + event → strip; install/dismiss → `zs_a2hs_done`, never again.
 
 **Still blocked on manual/owner steps:** Lighthouse mlb-leaders (D-004), throttled-network pass (D-005), Savant schema verification (P6/P9/P10), blurb Worker deploy (P2-005/D-006).
+
+---
+
+### Relay Verification Results — Owner-Supplied CSV Headers (2026-06-09)
+**Contributor:** Relay (analysis), owner (browser fetch) | **Date:** 2026-06-09
+
+**P9 — VERIFIED, UNBLOCKED.** Batter `statcast_search/csv` header confirms all required fields: `hc_x`, `hc_y`, `launch_speed`, `launch_angle`, plus `events`, `bb_type`, `des`, `game_date`. Phase 1 (coordinate-source swap, outcome coloring unchanged) clear to implement — Relay + Axiom only. Phase 2 (EV-colored dots) still needs Kael color scale + Vera toggle spec.
+
+**P6 — NOT VIABLE, CLOSED.** `group_by=name` returned a header byte-identical to pitch-level mode — Savant ignores the parameter on this endpoint or applies it only in the UI layer. No aggregated outcome columns exist. The client-side aggregation in `_fetchMLBH2H` stays; payload-reduction idea closed rather than parked.
+
+**P10 — STILL PARKED.** The OAA leaderboard header was not captured in this batch. One remaining URL for the owner (from the walkthrough, step 4A).
+
+**D-006 — owner ruling:** Broadcast Blurb deliberately disabled for now. Recorded in DECISIONS.md; removed from pending-action lists.
+
+---
+
+### Session 2026-06-09 (verification results applied) — SHIPPED
+**Contributors:** Relay (verification analysis), Axiom (implementation), Folio (records) | **Date:** 2026-06-09
+
+- **D-004 CLOSED** — owner Lighthouse on mlb-leaders: Accessibility 100. Paid-tier WCAG gate satisfied.
+- **D-006 CLOSED** — blurb worker deliberately deferred by owner ruling.
+- **P6 CLOSED (not viable)** — `group_by=name` returns the pitch-level schema unchanged.
+- **D-011 OPENED + executed** — performance pass targeting Lighthouse 58 → ≥90: math.min.js (664KB) out of the script chain, lazy-loaded by Stat Builder with loading-state fallback; arcade/scorecard/liveGame/shareCard CSS + fonts CSS deferred (print/onload swap with noscript fallback); header icon 96KB → 5KB (`assets/icon-64.png`, explicit dimensions); `robots.txt` added (was missing — crawlers got the SPA HTML fallback, 335 parse errors); HSTS + COOP headers added.
+- **P9 Phase 1 SHIPPED** — `fetchSprayChartData` now one Savant CSV call instead of gameLog + up to 20 playByPlay fetches. Schema guard on `events`/`hc_x`/`hc_y` (Relay pattern). Renderer unchanged — Savant event values match its keys. Parse verified against stubbed CSV. Phase 2 (EV-colored dots via `launch_speed`, now confirmed in schema) awaits Kael color scale + Vera toggle spec.
+- **Re-test needed (owner):** Lighthouse performance re-run after deploy; expect FCP/LCP to drop substantially. Also still open: OAA header row (P10), Slow-3G pass (D-005).

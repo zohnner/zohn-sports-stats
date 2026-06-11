@@ -44,7 +44,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `math.min.js` → `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 
@@ -88,7 +88,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/liveGame.js` | Live game expanded view (P3-025): `showMLBLiveGame()`, `openLiveGamePanel()`, diff-based linescore polling, pitch zone, box score. Loads after `scorecard.js` |
 | `js/scorecard.js` | Baseball scorecard (P3-022): historical + live modes, 9×9 grid render, html2canvas PNG export |
 | `js/shareCard.js` | Shareable stat cards (P3-027): `shareStatCard()`, offscreen 600×315 card → 2× PNG via html2canvas, Web Share / download. Reuses `_scLoadHtml2Canvas()` from scorecard.js |
-| `js/math.min.js` | Vendored math.js (formula evaluation for Stat Builder). Loads first |
+| `js/math.min.js` | Vendored math.js (formula evaluation). **Not in the script chain** — lazy-loaded by `statBuilder.js` on Builder open (D-011) |
 | `js/api.js` | BDL API + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. **⚠ BDL_API_KEY hardcoded — see P1-006 below** |
 | `js/navigation.js` | `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |
 | `js/app.js` | Bootstrap: ticker, season selector, cache-bust on season change, `setupNavigation()`, `loadHome()` (landing page) |

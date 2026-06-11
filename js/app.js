@@ -1010,11 +1010,11 @@ function _applyTheme(theme) {
     if (logoEl) {
         const ccLogo = _CC_TEAM_LOGOS[theme];
         if (ccLogo) {
-            logoEl.onerror = () => { logoEl.src = 'assets/Icon.PNG'; logoEl.onerror = null; };
+            logoEl.onerror = () => { logoEl.src = 'assets/icon-64.png'; logoEl.onerror = null; };
         } else {
             logoEl.onerror = null;
         }
-        logoEl.src = ccLogo || 'assets/Icon.PNG';
+        logoEl.src = ccLogo || 'assets/icon-64.png';
         logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
 }
@@ -1139,7 +1139,7 @@ if (typeof window !== 'undefined') {
         strip.setAttribute('role', 'region');
         strip.setAttribute('aria-label', 'Install SportStrata');
         strip.innerHTML = `
-            <img class="a2hs-icon" src="assets/Icon.PNG" alt="">
+            <img class="a2hs-icon" src="assets/icon-64.png" alt="">
             <span class="a2hs-text">Install SportStrata for one-tap access</span>
             <button class="btn-primary a2hs-install">Install</button>
             <button class="a2hs-dismiss" aria-label="Dismiss install prompt">\u00d7</button>`;

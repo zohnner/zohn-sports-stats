@@ -33,24 +33,26 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
     <!-- Design tokens first so all stylesheets can reference variables -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/ticker.css">
-    <link rel="stylesheet" href="css/arcade.css">
-    <link rel="stylesheet" href="css/scorecard.css">
-    <link rel="stylesheet" href="css/liveGame.css">
-    <link rel="stylesheet" href="css/shareCard.css">
+    <link rel="stylesheet" href="css/arcade.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/scorecard.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/liveGame.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/shareCard.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="css/arcade.css"><link rel="stylesheet" href="css/scorecard.css"><link rel="stylesheet" href="css/liveGame.css"><link rel="stylesheet" href="css/shareCard.css"></noscript>
 </head>
 <body>
 
     <header>
         <div class="header-inner">
             <button class="brand" onclick="navigateTo('home')" aria-label="SportStrata home">
-                <img class="brand-logo-img" src="assets/Icon.PNG" alt="SportStrata">
+                <img class="brand-logo-img" src="assets/icon-64.png" width="64" height="64" alt="SportStrata">
                 <span id="brandIcon" hidden></span>
                 <div class="brand-text">
                     <span class="brand-name">SportStrata</span>
@@ -311,7 +313,6 @@
     </main>
 
     <!-- math.js 13: safe formula evaluation in Stat Builder (never use eval()) -->
-    <script src="js/math.min.js"></script>
     <!-- Chart.js: data visualisation — loaded before charts.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
             integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt"

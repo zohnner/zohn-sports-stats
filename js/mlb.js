@@ -544,45 +544,39 @@ async function fetchSprintSpeedLeaderboard() {
 
 async function fetchSprayChartData(playerId) {
     const year = MLB_SEASON;
-    const cacheKey = `spray_${playerId}_${year}`;
+    const cacheKey = `spray_${playerId}_${year}_v2`;
     const cached = ApiCache.get(cacheKey);
     if (cached) return cached;
 
+    // P9 Phase 1 (Relay-verified 2026-06-09): single Savant CSV replaces the
+    // old gameLog + up-to-20 playByPlay reconstruction (~21 requests → 1).
+    // Savant event values ('single'…'home_run') match the renderer's keys directly.
+    const url = `${SAVANT_BASE_URL}/statcast_search/csv?all=true&type=details` +
+        `&player_type=batter&hfSea=${year}%7C&batters_lookup%5B%5D=${playerId}` +
+        `&hfGT=R%7C&min_results=0`;
     try {
-        const logData = await mlbFetch(`/people/${playerId}/stats`, {
-            stats: 'gameLog', group: 'hitting', season: year, sportId: 1,
-        }, ApiCache.TTL.MEDIUM);
-
-        const splits = logData?.stats?.[0]?.splits ?? [];
-        if (!splits.length) {
-            ApiCache.set(cacheKey, [], ApiCache.TTL.LONG);
-            return [];
+        const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(20_000) });
+        if (!res.ok) throw new Error(`Savant spray CSV ${res.status}`);
+        const text = await res.text();
+        if (text.trim().startsWith('<')) throw new Error('Savant returned HTML');
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) { ApiCache.set(cacheKey, [], ApiCache.TTL.LONG); return []; }
+        const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+        const iEv = headers.indexOf('events'), iX = headers.indexOf('hc_x'), iY = headers.indexOf('hc_y');
+        if (iEv < 0 || iX < 0 || iY < 0) {
+            Logger.warn('Savant spray CSV schema changed — events/hc_x/hc_y not found', undefined, 'MLB');
+            return null;
         }
-
-        const gamePks = [...new Set(splits.map(s => s.game?.gamePk).filter(Boolean))].slice(-20);
-
-        const pbpResults = await Promise.allSettled(
-            gamePks.map(pk => mlbFetch(`/game/${pk}/playByPlay`, {}, ApiCache.TTL.LONG))
-        );
-
-        const EVENT_MAP = { 'Single': 'single', 'Double': 'double', 'Triple': 'triple', 'Home Run': 'home_run' };
+        const clean = v => (v || '').replace(/^"|"$/g, '').trim();
         const hits = [];
-        const pid = +playerId;
-
-        for (const r of pbpResults) {
-            if (r.status !== 'fulfilled' || !r.value?.allPlays) continue;
-            for (const play of r.value.allPlays) {
-                if (+play.matchup?.batter?.id !== pid) continue;
-                const coord = play.result?.hitData?.coordinates;
-                if (coord?.coordX == null || coord?.coordY == null) continue;
-                hits.push({
-                    events: EVENT_MAP[play.result?.event] ?? 'out',
-                    hc_x: coord.coordX,
-                    hc_y: coord.coordY,
-                });
-            }
+        for (let i = 1; i < lines.length; i++) {
+            const vals = _splitCSVLine(lines[i]);
+            const x = parseFloat(clean(vals[iX]));
+            const y = parseFloat(clean(vals[iY]));
+            const ev = clean(vals[iEv]);
+            if (isNaN(x) || isNaN(y) || !ev) continue;
+            hits.push({ events: ev, hc_x: x, hc_y: y });
         }
-
         ApiCache.set(cacheKey, hits, ApiCache.TTL.LONG);
         return hits;
     } catch (err) {

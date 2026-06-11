@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Disallow: /worker/
+Disallow: /bot/
+Disallow: /functions/

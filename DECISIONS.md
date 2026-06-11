@@ -76,7 +76,7 @@ The race condition is latent today. Each new feature that depends on a shared Ap
 ---
 
 ## D-004 — WCAG Audit Required Before Pro or Enterprise Tier Launch
-**Status:** open — Priority 1 audit substantially complete, one view pending manual run
+**Status:** complete — closed 2026-06-09. Owner ran manual Lighthouse on `mlb-leaders`: **Accessibility 100/100** (alongside 96 Best Practices, 92 SEO). All three Priority 1 views now at 100. The WCAG launch gate for paid tiers is satisfied; future views inherit the token-level fixes.
 **Contributors:** Kael, Vera, Finn
 **Date opened:** 2026-05-17 | **Date resolved:** —
 
@@ -158,7 +158,7 @@ The feature maps directly to the target audience (broadcasters, statheds), the M
 ---
 
 ## D-006 — Broadcast Blurb Worker Deployment Requires Explicit Authorization
-**Status:** open
+**Status:** complete — owner ruling 2026-06-09: deployment **deliberately deferred**. The worker stays undeployed by choice (Anthropic API cost), not by oversight. F1 remains inert in production until the owner reopens this. Do not re-list as a pending action.
 **Contributors:** Axiom
 **Date opened:** 2026-05-17 | **Date resolved:** —
 
@@ -308,3 +308,28 @@ Cache-first plus a static version string meant every deploy silently shipped to 
 - Returning users may run one-load-old code immediately after a deploy — acceptable; freshness-critical data is API-fetched, not in static assets.
 - Any future file added to the script chain in `index.html` must also be added to `STATIC_ASSETS` in `sw.js` — Folio adds this to the deploy checklist documentation.
 
+
+---
+
+## D-011 — Performance Pass Approved: Lighthouse 58 → ≥90 Target (G1)
+**Status:** accepted
+**Contributors:** Axiom, Relay, Kael (consulted), owner (Lighthouse run)
+**Date opened:** 2026-06-09 | **Date resolved:** —
+
+**Decision needed:**
+Owner's Lighthouse run on `mlb-leaders`: Performance **58** — FCP 4.6s, LCP 4.6s, Speed Index 6.3s. G1 promises a useful render within 2 seconds. The score breakdown identifies: render-blocking requests (~2,240ms est), unused JS 135KiB, image delivery 96KiB, missing robots.txt (335 SEO errors), no HSTS.
+
+**Decision:**
+Performance pass approved with these specific measures, in order of measured impact:
+
+1. **math.min.js (664KB) leaves the critical script chain** — lazy-loaded by `statBuilder.js` when the Builder view first opens. This is a documented load-order change: `math.min.js` is no longer position 1; the existing `typeof math === 'undefined'` guard plus an async loader covers the gap. Stat Builder shows its loading state until the library arrives.
+2. **View-specific CSS deferred** — `arcade.css`, `scorecard.css`, `liveGame.css`, `shareCard.css` and the Google Fonts stylesheet load non-blocking (`media="print"` + onload swap, with `<noscript>` fallback). Core path keeps variables → animations → main → components → ticker.
+3. **Header icon right-sized** — 96KB `Icon.PNG` replaced in the header/A2HS by a generated 64px version; original retained for manifest/large uses.
+4. **robots.txt added** (was missing — SPA fallback served HTML to crawlers, producing 335 parse errors).
+5. **HSTS + COOP headers added** to `_headers` (Best Practices findings).
+6. Minification (16KiB CSS / 10KiB JS) **rejected for now** — conflicts with G5 (no build step) for modest gain. Revisit only if ≥90 is not reached without it.
+
+**Implications:**
+- CLAUDE.md load-order doc updates (math.min.js no longer first).
+- `sw.js` precache keeps math.min.js (offline Builder still works once cached).
+- Re-run Lighthouse after deploy to verify the ≥90 target; FCP/LCP should drop by roughly the render-blocking estimate on broadband.
