@@ -4145,3 +4145,23 @@
 @media (max-width: 480px) {
     .pct-label { flex-basis: 5.25rem; font-size: 0.6875rem; }
 }
+
+/* ── Percentile profile container (P3-028 follow-up) ──────────
+   Replaces legacy .shooting-stats-grid on MLB detail: that flex
+   column + 1.25rem gap was sized for two-line stat bars and left
+   single-line rows floating in space. Bar rows span full width;
+   plain (unqualified) rows pack two-up as a dense table. */
+.pct-profile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    column-gap: 2.5rem;
+    align-content: start;
+}
+.pct-profile .pct-caption { grid-column: 1 / -1; }
+.pct-profile .pct-row { grid-column: 1 / -1; }
+.pct-profile .pct-row--plain {
+    grid-column: auto;
+    margin-bottom: 0;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border-default);
+}

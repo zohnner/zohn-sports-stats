@@ -2485,3 +2485,12 @@ Round 1 covered visual tells (fonts, glows, gradients). Round 2 went after conte
 2. **Console silenced in production.** `Logger` now gates INFO/DEBUG console output behind localhost or `localStorage.zs_debug = '1'`. A visitor opening DevTools sees a quiet console instead of a colored dev-log stream — the single fastest way a technical evaluator smells a vibe-coded site. History buffer still records everything for the error boundary.
 3. **Attribution footer added** to the home page: "Stats: MLB Stats API & Baseball Savant. This site is not endorsed by or affiliated with Major League Baseball." plus copyright. This is simultaneously a legitimacy marker (real stat products credit sources), an MLB API terms nicety, and the kind of boring detail template sites never have.
 4. **README reviewed, kept** — already professional: concrete feature inventory, no emoji headers, no badge walls.
+
+---
+
+### Key Metrics — Unqualified-Player Layout Looked Broken — RESOLVED
+**Contributor:** owner (report + screenshot), Kael (diagnosis + fix) | **Date:** 2026-06-09
+
+Owner screenshot: a ~2-game player's Key Metrics rendered as sparse full-width label/value rows with huge vertical gaps — read as a loading failure. Diagnosis: the percentile rows were injected into the legacy `.shooting-stats-grid` (flex column, 1.25rem gap) sized for the old two-line stat bars; one-line rows inherited the airy spacing. The qualification logic itself was correct — the player genuinely sits below 80 PA, so percentiles were rightly hidden.
+
+Fix: MLB Key Metrics gets its own `.pct-profile` container (legacy grid untouched — NBA detail still uses it). Percentile bar rows span full width; plain unqualified rows pack two-up as a dense bordered table via auto-fit grid (collapses to one column on narrow screens). Verify post-deploy on both a qualified starter (bars + bubbles) and a call-up (compact two-column table).

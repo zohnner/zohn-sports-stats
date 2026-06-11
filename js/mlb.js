@@ -1998,7 +1998,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ${barHtml ? `
         <div class="stats-card">
             <h2 class="detail-section-title">Key Metrics</h2>
-            <div class="shooting-stats-grid">${barHtml}</div>
+            <div class="pct-profile">${barHtml}</div>
         </div>
         ` : ''}
 
