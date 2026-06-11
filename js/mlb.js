@@ -1774,6 +1774,18 @@ function _mlbPlayerLeagueRanks(playerId, group) {
 // ── View: Player Detail ───────────────────────────────────────
 
 function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
+    // Cold deep-links land here without mlbLeaderSplits — rank badges and
+    // P3-028 percentiles silently vanish. Fetch the pool once and re-render.
+    if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function' && !showMLBPlayerDetail._refetching) {
+        showMLBPlayerDetail._refetching = true;
+        _fetchMLBLeaderSplits(MLB_SEASON).then(() => {
+            showMLBPlayerDetail._refetching = false;
+            if (AppState.mlbLeaderSplits && String(location.hash).startsWith(`#mlb-player-${playerId}`)) {
+                showMLBPlayerDetail(playerId, group);
+            }
+        }).catch(() => { showMLBPlayerDetail._refetching = false; });
+    }
+
     // Cache coherence: if leaderboard data is more than 5 min fresher than player
     // stats in AppState, the player card would show stale numbers. Clear and re-fetch.
     const _STALE = 5 * 60 * 1000;
