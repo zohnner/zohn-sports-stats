@@ -310,6 +310,11 @@ function loadHome() {
                 </div>
             </button>
         </div>
+
+        <footer class="home-footer">
+            <span>Stats: MLB Stats API &amp; Baseball Savant. This site is not endorsed by or affiliated with Major League Baseball.</span>
+            <span>&copy; ${new Date().getFullYear()} SportStrata</span>
+        </footer>
     `;
 
     _renderHomeRecents();
@@ -342,7 +347,7 @@ function _renderHomeRecents() {
 
     const chips = recents.slice(0, 8).map(r => `
             <button class="home-recent-chip" data-id="${r.id}" data-sport="${r.sport}" data-type="${r.type || 'player'}">
-                <span class="home-recent-badge home-recent-badge--mlb">${r.badge || '⚾'}</span>
+                <span class="home-recent-badge home-recent-badge--mlb">${_escHtml(r.badge || 'MLB')}</span>
                 <span class="home-recent-name">${_escHtml(r.name)}</span>
                 <span class="home-recent-sub">${_escHtml(r.sub || '')}</span>
             </button>

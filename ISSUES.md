@@ -2473,3 +2473,15 @@ Rule going forward: any new surface that links to a game routes through `openMLB
 - **D-011 OPENED + executed** — performance pass targeting Lighthouse 58 → ≥90: math.min.js (664KB) out of the script chain, lazy-loaded by Stat Builder with loading-state fallback; arcade/scorecard/liveGame/shareCard CSS + fonts CSS deferred (print/onload swap with noscript fallback); header icon 96KB → 5KB (`assets/icon-64.png`, explicit dimensions); `robots.txt` added (was missing — crawlers got the SPA HTML fallback, 335 parse errors); HSTS + COOP headers added.
 - **P9 Phase 1 SHIPPED** — `fetchSprayChartData` now one Savant CSV call instead of gameLog + up to 20 playByPlay fetches. Schema guard on `events`/`hc_x`/`hc_y` (Relay pattern). Renderer unchanged — Savant event values match its keys. Parse verified against stubbed CSV. Phase 2 (EV-colored dots via `launch_speed`, now confirmed in schema) awaits Kael color scale + Vera toggle spec.
 - **Re-test needed (owner):** Lighthouse performance re-run after deploy; expect FCP/LCP to drop substantially. Also still open: OAA header row (P10), Slow-3G pass (D-005).
+
+---
+
+### De-AI Pass Round 2 — Content-Level Tells — SHIPPED
+**Contributor:** Kael (audit + rulings), Axiom (implementation), Vera (review) | **Date:** 2026-06-09
+
+Round 1 covered visual tells (fonts, glows, gradients). Round 2 went after content and behavior:
+
+1. **Emoji removed from professional surfaces.** Breadcrumbs now render labels only (were "🏆 MLB Leaders"). Every empty state uses one neutral SVG baseball glyph via `ErrorHandler.EMPTY_GLYPH` — `renderEmptyState` ignores legacy emoji args (accepts SVG strings only). Recents badge fallback is text ("MLB"), not ⚾. **Documented exception:** Arcade keeps its emoji — it is the deliberately playful zone, and uniformity there would be its own kind of fake. The hidden `#brandIcon` span retains emoji fallbacks (never rendered).
+2. **Console silenced in production.** `Logger` now gates INFO/DEBUG console output behind localhost or `localStorage.zs_debug = '1'`. A visitor opening DevTools sees a quiet console instead of a colored dev-log stream — the single fastest way a technical evaluator smells a vibe-coded site. History buffer still records everything for the error boundary.
+3. **Attribution footer added** to the home page: "Stats: MLB Stats API & Baseball Savant. This site is not endorsed by or affiliated with Major League Baseball." plus copyright. This is simultaneously a legitimacy marker (real stat products credit sources), an MLB API terms nicety, and the kind of boring detail template sites never have.
+4. **README reviewed, kept** — already professional: concrete feature inventory, no emoji headers, no badge walls.

@@ -3038,7 +3038,7 @@ function displayMLBGames(games, dateStr, offset) {
     gamesWrap.style.cssText = 'max-width:900px;margin:0 auto;';
 
     if (!games || games.length === 0) {
-        gamesWrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">No MLB games scheduled for ${label}</p></div>`;
+        gamesWrap.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ErrorHandler.EMPTY_GLYPH}</div><p class="empty-state-title">No MLB games scheduled for ${label}</p></div>`;
     } else {
         games.forEach(game => gamesWrap.appendChild(_createMLBGameCard(game)));
     }
@@ -5160,7 +5160,7 @@ function _displayMLBSearchResults(results, q) {
     const el = document.getElementById('resultCount');
 
     if (results.length === 0) {
-        ErrorHandler.renderEmptyState(grid, `No players found matching "${q}"`, '⚾');
+        ErrorHandler.renderEmptyState(grid, `No players found matching "${q}"`);
         if (el) el.textContent = '0 players found';
         return;
     }
@@ -6436,12 +6436,12 @@ async function displayGamePrep() {
         games = (data.dates || []).flatMap(d => d.games || []);
     } catch (err) {
         Logger.warn('Game prep schedule fetch failed', err, 'MLB');
-        grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">Could not load today's schedule</p><button class="btn-ghost" style="margin-top:0.75rem" onclick="displayGamePrep()">Try again</button></div>`;
+        grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ErrorHandler.EMPTY_GLYPH}</div><p class="empty-state-title">Could not load today's schedule</p><button class="btn-ghost" style="margin-top:0.75rem" onclick="displayGamePrep()">Try again</button></div>`;
         return;
     }
 
     if (!games.length) {
-        grid.innerHTML = `<div class="prep-page-wrap"><h1 class="prep-page-title">Game Prep</h1><div class="empty-state"><div class="empty-state-icon">⚾</div><p class="empty-state-title">No games scheduled today</p><p style="color:var(--text-muted);font-size:0.85rem">${todayStr}</p></div></div>`;
+        grid.innerHTML = `<div class="prep-page-wrap"><h1 class="prep-page-title">Game Prep</h1><div class="empty-state"><div class="empty-state-icon">${ErrorHandler.EMPTY_GLYPH}</div><p class="empty-state-title">No games scheduled today</p><p style="color:var(--text-muted);font-size:0.85rem">${todayStr}</p></div></div>`;
         return;
     }
 

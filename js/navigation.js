@@ -271,13 +271,13 @@ function setBreadcrumb(root, current) {
     const meta = _NAV_META[root] || { label: root, icon: '' };
     if (current) {
         el.innerHTML = `
-            <button class="breadcrumb-link" onclick="navigateTo('${root}')">${meta.icon} ${meta.label}</button>
+            <button class="breadcrumb-link" onclick="navigateTo('${root}')">${meta.label}</button>
             <span class="breadcrumb-sep">›</span>
             <span class="breadcrumb-current">${current}</span>
         `;
         document.title = `${current} — SportStrata`;
     } else {
-        el.innerHTML = `<span class="breadcrumb-root">${meta.icon} ${meta.label}</span>`;
+        el.innerHTML = `<span class="breadcrumb-root">${meta.label}</span>`;
         const label = meta.label || root;
         document.title = label === 'Home' ? 'SportStrata — MLB Analytics' : `${label} — SportStrata`;
     }

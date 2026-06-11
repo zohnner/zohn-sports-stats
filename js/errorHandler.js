@@ -11,10 +11,21 @@ class Logger {
         ERROR: 'color:#f87171;font-weight:700'
     };
 
+    // Console output gated in production: INFO/DEBUG only on localhost or with
+    // localStorage zs_debug=1. History always records (for the error boundary).
+    static #verbose = (() => {
+        try {
+            return location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+                || localStorage.getItem('zs_debug') === '1';
+        } catch (_) { return false; }
+    })();
+
     static #write(level, ctx, msg, data) {
         const ts = new Date();
         this.#history.push({ level, ctx, msg, data, ts });
         if (this.#history.length > this.#max) this.#history.shift();
+
+        if (!Logger.#verbose && level !== 'WARN' && level !== 'ERROR') return;
 
         const hms = ts.toLocaleTimeString('en-US', { hour12: false });
         const ms  = String(ts.getMilliseconds()).padStart(3, '0');
@@ -137,10 +148,14 @@ class ErrorHandler {
      * @param {string} title
      * @param {string} icon
      */
-    static renderEmptyState(container, title = 'No results found', icon = '🏀') {
+    // Neutral glyph for all empty states — emoji reads as template residue
+    // on a broadcast-grade surface (Kael, de-AI pass round 2).
+    static EMPTY_GLYPH = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="opacity:0.5"><circle cx="12" cy="12" r="9"/><path d="M6.5 5.5c2 1.8 3.2 4 3.2 6.5s-1.2 4.7-3.2 6.5M17.5 5.5c-2 1.8-3.2 4-3.2 6.5s1.2 4.7 3.2 6.5"/></svg>';
+
+    static renderEmptyState(container, title = 'No results found', icon = null) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">${icon}</div>
+                <div class="empty-state-icon">${icon && String(icon).startsWith('<') ? icon : ErrorHandler.EMPTY_GLYPH}</div>
                 <p class="empty-state-title">${title}</p>
             </div>
         `;
