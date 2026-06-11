@@ -202,18 +202,25 @@ Unified player search across all sports — type any name, get any sport.
 
 | Metric | Current | Target |
 |---|---|---|
-| MLB features complete | ~90% | 100% (Statcast, career multi-season charts, player comparison) |
+| MLB features complete | ✅ G2/G3 depth targets met (2026-06-08) | Maintain; new depth via P9/P10 (parked on Savant schema verification) |
 | Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | — |
 | Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA, wRC+ (Statcast) | — |
 | Time to first meaningful paint | ~1.5s cached | < 1s cached, < 3s cold |
-| Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded |
+| Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded (open) |
 | Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |
 | Starred favorites system | ✅ Heart on cards, home page chip section, localStorage | |
 | Live scores + ticker | ✅ Header ticker + live polling home page | |
 | Brand identity | ✅ Orange/gold palette, SportStrata icon in header | |
-| API key in source code | ⚠️ BDL key hardcoded (P1-006) | Worker proxy — blocks public launch |
+| API key in source code | ✅ Resolved — key removed, Worker proxy live, CORS allowlist (P1-006 closed 2026-06-09) | — |
 | Lighthouse Performance | Unknown | ≥ 90 |
 | WCAG AA accessibility | Partial | Full pass on MLB views |
+
+---
+
+## Annual Maintenance
+
+- **Park factors refresh (each April):** `_PARK_FACTORS` in `js/mlb.js` reflects 2022–2024 Baseball Reference averages. Re-verify at season start — relocations (Athletics) and park changes shift values. (Relay, 2026-06-04)
+- **wRC+ guts constants:** `_MLB_WRC_CONSTANTS` needs each new season's FanGuts values when published; current-season values are preliminary (dagger shown in UI).
 
 ---
 

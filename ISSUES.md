@@ -549,7 +549,7 @@ States: one — value present, or element absent from DOM. No loading state, no 
 
 **Open refinements:**
 - `aria-label` on freshness-label spans — **RESOLVED (Vera, 2026-06-01).** Players view (card + table modes) already had `aria-label="Data last updated [text]"`. Leaders view was missing it — added in `mlb.js` at the leaderboard section divider render site. Pattern: `'Data last updated ' + formatted.slice('Updated '.length)`. Axiom to review on next pass (one-line string template change, no logic change).
-- Format above 60 min: current implementation returns `"Updated Nh ago"`. Kael's spec said `"Updated today at H:MM AM/PM"`. Kael decides — both are defensible.
+- Format above 60 min: **RESOLVED (Kael ruling, 2026-06-09).** Same-day already used the spec format (ISSUES note was stale). Non-today now reads `Updated {Mon D} at {H:MM}` — absolute timestamps are on-air citable; relative ages go stale as spoken.
 
 ---
 
@@ -2436,3 +2436,15 @@ Owner report: clicking a live game on the ticker loaded the static box-score vie
 Fix: new `openMLBGame(gamePk, forceLive)` router in `mlb.js` — live games (by `AppState.mlbGames` lookup OR a DOM live hint) go to the live page with the `mlbLiveGame` stub set; everything else goes to game detail. Ticker passes `ticker__item--live`, home cards pass `home-game-card--live` as the hint, so routing works even when the game object is not yet in AppState. `showMLBLiveGame` already tolerates a missing stub (falls back to games-list lookup, then skeleton + first poll), so cold ticker clicks are safe.
 
 Rule going forward: any new surface that links to a game routes through `openMLBGame()` — never call `showMLBGameDetail` directly for a clickable game element.
+
+---
+
+### Session 2026-06-09 (late) — Issues + Goals Work — SHIPPED
+**Contributors:** Cipher (finding), Axiom (implementation), Folio (reconciliation), Kael (ruling), Vera (spec) | **Date:** 2026-06-09
+
+1. **Unescaped API strings fixed (Cipher → Axiom).** `lb-name` in both leaderboard row builders and the scout-report summary rendered API-derived strings into innerHTML without `_escHtml()`. All three sites now escape. MLB API data is low-risk, but the escaping rule exists for defense in depth — exceptions rot.
+2. **GOALS.md reconciled (Folio).** Success-metrics table: API-key row updated to resolved (was still showing the P1-006 warning), MLB-features row updated to reflect G2/G3 completion, Stat Builder examples target marked open. New "Annual Maintenance" section: park factors refresh each April, wRC+ guts constants each season.
+3. **Freshness >60min format closed (Kael ruling).** Same-day already matched spec ("Updated today at H:MM") — the ISSUES note was stale. Non-today now shows "Updated {Mon D} at {H:MM}" instead of "Nh ago": absolute timestamps are on-air citable.
+4. **F5 Phase 1 shipped — Add-to-Home-Screen prompt.** Vera spec: shows only on 2nd distinct visit day (localStorage day list, G4-compliant), only when `beforeinstallprompt` fires (iOS Safari never shows it — no fake instructions), permanent dismiss either way, never shown in standalone display mode. Kael: `.a2hs-strip` bottom strip in toast grammar, tokens only, `position: fixed` documented as intentional (same exception class as bottom-nav). Axiom: manifest verified install-eligible (standalone + icons + start_url + SW). Logic unit-verified: 2nd-day visit + event → strip; install/dismiss → `zs_a2hs_done`, never again.
+
+**Still blocked on manual/owner steps:** Lighthouse mlb-leaders (D-004), throttled-network pass (D-005), Savant schema verification (P6/P9/P10), blurb Worker deploy (P2-005/D-006).

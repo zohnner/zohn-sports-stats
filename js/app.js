@@ -1103,3 +1103,56 @@ if (typeof window !== 'undefined') {
         Logger.info('PWA installed', undefined, 'APP');
     });
 })();
+
+
+// ── F5 Phase 1: Add-to-Home-Screen prompt (2nd distinct-day visit) ──
+// G4: visit tracking is localStorage-only, nothing leaves the browser.
+// iOS Safari never fires beforeinstallprompt — strip simply never shows there.
+(function setupInstallPrompt() {
+    const DONE_KEY = 'zs_a2hs_done';
+    const DAYS_KEY = 'zs_visit_days';
+    let deferred = null;
+
+    try {
+        if (localStorage.getItem(DONE_KEY)) return;
+        if (window.matchMedia('(display-mode: standalone)').matches) return;
+        const today = new Date().toDateString();
+        const days = JSON.parse(localStorage.getItem(DAYS_KEY) || '[]');
+        if (!days.includes(today)) {
+            days.push(today);
+            localStorage.setItem(DAYS_KEY, JSON.stringify(days.slice(-5)));
+        }
+        if (days.length < 2) return;
+    } catch (_) { return; }
+
+    window.addEventListener('appinstalled', () => {
+        try { localStorage.setItem(DONE_KEY, '1'); } catch (_) {}
+        document.querySelector('.a2hs-strip')?.remove();
+    });
+
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferred = e;
+        if (document.querySelector('.a2hs-strip')) return;
+        const strip = document.createElement('div');
+        strip.className = 'a2hs-strip';
+        strip.setAttribute('role', 'region');
+        strip.setAttribute('aria-label', 'Install SportStrata');
+        strip.innerHTML = `
+            <img class="a2hs-icon" src="assets/Icon.PNG" alt="">
+            <span class="a2hs-text">Install SportStrata for one-tap access</span>
+            <button class="btn-primary a2hs-install">Install</button>
+            <button class="a2hs-dismiss" aria-label="Dismiss install prompt">\u00d7</button>`;
+        const done = () => {
+            strip.remove();
+            try { localStorage.setItem(DONE_KEY, '1'); } catch (_) {}
+        };
+        strip.querySelector('.a2hs-install').addEventListener('click', async () => {
+            done();
+            if (deferred) { deferred.prompt(); await deferred.userChoice.catch(() => {}); deferred = null; }
+        });
+        strip.querySelector('.a2hs-dismiss').addEventListener('click', done);
+        document.body.appendChild(strip);
+        Logger.info('A2HS prompt shown', undefined, 'APP');
+    });
+})();

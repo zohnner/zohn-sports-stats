@@ -1439,7 +1439,7 @@ function _formatFreshness(ts) {
     const d = new Date(ts);
     const isToday = d.toDateString() === new Date().toDateString();
     if (isToday) return `Updated today at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-    return `Updated ${Math.floor(mins / 60)}h ago`;
+    return `Updated ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 }
 
 // ── Phase 2: computed rate stats ─────────────────────────────
@@ -4551,7 +4551,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
                     <div class="lb-player">
-                        <span class="lb-name">${split.player?.fullName || '—'}</span>
+                        <span class="lb-name">${_escHtml(split.player?.fullName || '—')}</span>
                         <span class="lb-team">${abbr}${_parkFactorBadge(abbr, 'dot')}</span>
                     </div>
                     <span class="lb-value" style="color:${cat.color}">${valStr}</span>
@@ -4793,7 +4793,7 @@ function displayMLBLeaderboards() {
                     <span class="lb-avatar-initials">${initials}</span>
                 </div>
                 <div class="lb-player">
-                    <span class="lb-name">${split.player?.fullName || '—'}</span>
+                    <span class="lb-name">${_escHtml(split.player?.fullName || '—')}</span>
                     <span class="lb-team">${abbr}${split.position?.abbreviation ? ' · ' + split.position.abbreviation : ''}</span>
                 </div>
                 <span class="lb-value" style="color:${cat.color}">${valStr}</span>
@@ -6386,7 +6386,7 @@ function _buildScoutReportHTML(playerId, group) {
                 <span>Category</span><span>Percentile</span><span></span><span>Grade</span><span>Stats</span>
             </div>
             <div class="scout-rows">${rows}</div>
-            <p class="scout-summary">"${summary}"</p>
+            <p class="scout-summary">"${_escHtml(summary)}"</p>
             <p class="scout-footnote">Percentile vs qualified MLB ${group === 'hitting' ? 'hitters (min 20 GP)' : 'pitchers (min 20 GP)'}  ·  ${MLB_SEASON} season</p>
         </div>`;
 }

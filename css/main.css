@@ -3509,3 +3509,40 @@ a:focus:not(:focus-visible),
     .settings-panel-drawer { width: 100vw; }
 }
 
+
+/* ── F5: Add-to-Home-Screen strip ─────────────────────────────
+   position: fixed is intentional (floating prompt over content,
+   same documented exception class as .bottom-nav / .menu-panel) */
+.a2hs-strip {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 0.5rem 0.625rem 0.5rem 0.75rem;
+    z-index: 900;
+    max-width: calc(100vw - 2rem);
+}
+.a2hs-icon { width: 24px; height: 24px; border-radius: 6px; flex: 0 0 auto; }
+.a2hs-text { font-size: 0.8125rem; color: var(--text-primary); }
+.a2hs-install { font-size: 0.75rem; padding: 0.35rem 0.75rem; }
+.a2hs-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-subtle);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.a2hs-dismiss:hover { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+    .a2hs-strip { bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 0.75rem); }
+}
