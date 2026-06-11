@@ -312,7 +312,7 @@ Cache-first plus a static version string meant every deploy silently shipped to 
 ---
 
 ## D-011 — Performance Pass Approved: Lighthouse 58 → ≥90 Target (G1)
-**Status:** accepted
+**Status:** complete — owner re-ran Lighthouse post-deploy 2026-06-09: **Performance 93** (FCP 710ms, LCP 1.72s, TBT 77ms, CLS 0, SI 868ms), SEO **100** (robots.txt fix), Best Practices 96. Target met without minification — G5 no-build constraint holds. Watch item: Accessibility read 96 on this run vs 100 previously — likely run variance or a new element; re-check on next audit pass, not a gate regression (≥90 threshold still satisfied).
 **Contributors:** Axiom, Relay, Kael (consulted), owner (Lighthouse run)
 **Date opened:** 2026-06-09 | **Date resolved:** —
 

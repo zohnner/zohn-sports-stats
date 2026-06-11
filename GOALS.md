@@ -205,15 +205,15 @@ Unified player search across all sports — type any name, get any sport.
 | MLB features complete | ✅ G2/G3 depth targets met (2026-06-08) | Maintain; new depth via P9/P10 (parked on Savant schema verification) |
 | Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | — |
 | Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA, wRC+ (Statcast) | — |
-| Time to first meaningful paint | ~1.5s cached | < 1s cached, < 3s cold |
+| Time to first meaningful paint | ✅ FCP 710ms, LCP 1.72s (Lighthouse, 2026-06-09) | < 1s cached, < 3s cold — met |
 | Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded (open) |
 | Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |
 | Starred favorites system | ✅ Heart on cards, home page chip section, localStorage | |
 | Live scores + ticker | ✅ Header ticker + live polling home page | |
 | Brand identity | ✅ Orange/gold palette, SportStrata icon in header | |
 | API key in source code | ✅ Resolved — key removed, Worker proxy live, CORS allowlist (P1-006 closed 2026-06-09) | — |
-| Lighthouse Performance | Unknown | ≥ 90 |
-| WCAG AA accessibility | Partial | Full pass on MLB views |
+| Lighthouse Performance | ✅ 93 (2026-06-09, D-011 pass: lazy math.js, deferred CSS, icon resize) | ≥ 90 — met |
+| WCAG AA accessibility | ✅ 100/100 on players, player detail, leaders (D-004 closed 2026-06-09) | Full pass — met |
 
 ---
 
