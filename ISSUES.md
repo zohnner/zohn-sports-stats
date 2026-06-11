@@ -2425,3 +2425,14 @@ Owner brief: strip the tell-tale signs of an AI-generated site. Audit findings a
 6. **CLAUDE.md token docs corrected** — accent was documented as indigo; the live token has been brand orange. Folio fix, Axiom-reviewed.
 
 Not touched, deliberately: \`backdrop-filter\` header blur (mainstream convention, not an AI tell), the percentile blue–red data scale (industry convention from Savant), stat category colors (semantic system per the GOALS direction note), skeleton shimmer (standard loading grammar).
+
+---
+
+### Live Games Opened the Wrong View from Ticker and Home Cards — RESOLVED
+**Contributor:** Finn (trace), Axiom (fix) | **Date:** 2026-06-09
+
+Owner report: clicking a live game on the ticker loaded the static box-score view instead of the live game page. Trace: both the ticker click handler (`app.js` setupTickerClicks) and the home page game card handler hardcoded `showMLBGameDetail(gamePk)` for every game regardless of state — only the scores-view cards routed live games to `navigateTo('mlb-live-' + gamePk)`.
+
+Fix: new `openMLBGame(gamePk, forceLive)` router in `mlb.js` — live games (by `AppState.mlbGames` lookup OR a DOM live hint) go to the live page with the `mlbLiveGame` stub set; everything else goes to game detail. Ticker passes `ticker__item--live`, home cards pass `home-game-card--live` as the hint, so routing works even when the game object is not yet in AppState. `showMLBLiveGame` already tolerates a missing stub (falls back to games-list lookup, then skeleton + first poll), so cold ticker clicks are safe.
+
+Rule going forward: any new surface that links to a game routes through `openMLBGame()` — never call `showMLBGameDetail` directly for a clickable game element.

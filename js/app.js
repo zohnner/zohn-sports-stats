@@ -135,7 +135,8 @@ setupNavigation();
             const gamePk = parseInt(item.dataset.gamePk, 10);
             if (!gamePk) return;
             if (AppState.currentSport !== 'mlb') switchSport('mlb');
-            if (typeof showMLBGameDetail === 'function') showMLBGameDetail(gamePk);
+            if (typeof openMLBGame === 'function') openMLBGame(gamePk, item.classList.contains('ticker__item--live'));
+            else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(gamePk);
         } else if (sport === 'nfl') {
             if (AppState.currentSport !== 'nfl') switchSport('nfl');
             else navigateTo('nfl-games');
@@ -762,7 +763,8 @@ async function _loadHomeTodayGames() {
                 const id = parseInt((card.dataset.gameKey || '').replace('mlb-', ''), 10);
                 if (!id) return;
                 if (AppState.currentSport !== 'mlb') switchSport('mlb');
-                if (typeof showMLBGameDetail === 'function') showMLBGameDetail(id);
+                if (typeof openMLBGame === 'function') openMLBGame(id, card.classList.contains('home-game-card--live'));
+                else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(id);
             };
             card.addEventListener('click', open);
             card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });

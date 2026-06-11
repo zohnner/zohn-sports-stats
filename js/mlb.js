@@ -5186,6 +5186,21 @@ function _displayMLBSearchResults(results, q) {
 
 // ── MLB Ticker ────────────────────────────────────────────────
 
+// Route a game click to the right view: live games open the live page,
+// everything else opens the static game detail. forceLive covers surfaces
+// where the game object may not be in AppState.mlbGames but the DOM knows
+// the game is live (ticker pill, home card class).
+function openMLBGame(gamePk, forceLive = false) {
+    const game = (AppState.mlbGames || []).find(g => g.gamePk === gamePk);
+    const isLive = forceLive || game?.status?.abstractGameState === 'Live';
+    if (isLive) {
+        if (game) AppState.mlbLiveGame = game;
+        navigateTo('mlb-live-' + gamePk);
+    } else if (typeof showMLBGameDetail === 'function') {
+        showMLBGameDetail(gamePk);
+    }
+}
+
 function updateMLBTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
