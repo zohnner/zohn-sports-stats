@@ -2494,3 +2494,10 @@ Round 1 covered visual tells (fonts, glows, gradients). Round 2 went after conte
 Owner screenshot: a ~2-game player's Key Metrics rendered as sparse full-width label/value rows with huge vertical gaps — read as a loading failure. Diagnosis: the percentile rows were injected into the legacy `.shooting-stats-grid` (flex column, 1.25rem gap) sized for the old two-line stat bars; one-line rows inherited the airy spacing. The qualification logic itself was correct — the player genuinely sits below 80 PA, so percentiles were rightly hidden.
 
 Fix: MLB Key Metrics gets its own `.pct-profile` container (legacy grid untouched — NBA detail still uses it). Percentile bar rows span full width; plain unqualified rows pack two-up as a dense bordered table via auto-fit grid (collapses to one column on narrow screens). Verify post-deploy on both a qualified starter (bars + bubbles) and a call-up (compact two-column table).
+
+---
+
+### Browser Identity Assets Missing — Favicon, Touch Icon, Emoji PWA Icons — RESOLVED
+**Contributor:** Vera (finding), Kael (icon production), Axiom (wiring) | **Date:** 2026-06-11
+
+Public-readiness UX pass found the site had no `<link rel=icon>` at all (generic globe in every browser tab + a /favicon.ico 404 in every visitor console), no apple-touch-icon (iOS home screen got a page screenshot), and — worst — the PWA manifest icons were inline SVG data-URIs rendering a ⚡ emoji: that emoji was the installed app icon behind the F5 install prompt. Fixed: generated brand icons from Icon.PNG (favicon.ico multi-size, icon-64/192/512 with maskable-safe margins on brand background, apple-touch-icon 180), linked in index.html, manifest icons now real PNGs, key icons precached in sw.js.
