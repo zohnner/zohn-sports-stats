@@ -2501,3 +2501,17 @@ Fix: MLB Key Metrics gets its own `.pct-profile` container (legacy grid untouche
 **Contributor:** Vera (finding), Kael (icon production), Axiom (wiring) | **Date:** 2026-06-11
 
 Public-readiness UX pass found the site had no `<link rel=icon>` at all (generic globe in every browser tab + a /favicon.ico 404 in every visitor console), no apple-touch-icon (iOS home screen got a page screenshot), and — worst — the PWA manifest icons were inline SVG data-URIs rendering a ⚡ emoji: that emoji was the installed app icon behind the F5 install prompt. Fixed: generated brand icons from Icon.PNG (favicon.ico multi-size, icon-64/192/512 with maskable-safe margins on brand background, apple-touch-icon 180), linked in index.html, manifest icons now real PNGs, key icons precached in sw.js.
+
+---
+
+### Live UX Walkthrough (Vera, via owner's Chrome) — Findings — 2026-06-11
+**Contributors:** Vera (walkthrough), Axiom (fixes), Cipher (CORS), Folio (record)
+
+Walked the production site in the owner's browser. Results:
+
+1. **CRITICAL, FIXED: cold deep-links lost percentiles + rank badges.** Reproduced the owner's "Key Metrics not loading" report on Aaron Judge (261 PA): `AppState.mlbLeaderSplits` was null on the cold deep-link path — `_restoreMLBPlayerDetail` loads league stats but never the leader splits, so P3-028 percentiles AND P3-015 rank badges silently vanished. Fix in `showMLBPlayerDetail`: fetch the pool once when absent, re-render guarded by hash. **Verified live** by executing the fix's logic in-page: full Savant-style profile rendered (Judge: OPS 95th, ISO 98th, vs 366 qualified hitters), rank badges returned.
+2. **CRITICAL, SOURCE-FIXED: production origin blocked by own Workers.** `sportsstrata.com` serves an error page — production actually lives at `zohn-sports-stats.pages.dev`, which was NOT in the Worker CORS allowlists. NBA features (BDL proxy) and the blurb Worker (when enabled) would be CORS-refused on the real production origin. Added pages.dev to both allowlists — **owner must `wrangler deploy` the BDL proxy** and decide the custom-domain question: either attach sportsstrata.com to the Pages project (it is the brand domain printed on share cards and the footer) or re-brand those references.
+3. **Console clean in production** — Logger gating verified live, zero errors on home page load.
+4. **Cold deep-link works** (player page renders from direct URL), `popstate` handler present so Back/Forward work. Known edge: manually editing the hash mid-session does not re-route (no `hashchange` listener) — minor, parked.
+5. **Home page first impression: strong.** Game cards, ticker, Tonight's Starters all render with team identity. Minor copy inconsistency parked: game card shows "Pérez vs ?" while the starters section shows "TBD" for the same unknown.
+6. **State nit, parked:** `AppState.currentView` reads `mlb-players` while on a player detail page (restore path doesn't set the player route) — cosmetic, but worth a cleanup pass.

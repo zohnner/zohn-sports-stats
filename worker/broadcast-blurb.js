@@ -16,6 +16,7 @@ const MODEL         = 'claude-haiku-4-5-20251001';
 // Any other origin gets the production domain, causing the browser to block it.
 const ALLOWED_ORIGINS = [
     'https://sportsstrata.com',
+    'https://zohn-sports-stats.pages.dev',
     'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:3003',
