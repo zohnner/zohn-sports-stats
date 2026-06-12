@@ -2515,3 +2515,12 @@ Walked the production site in the owner's browser. Results:
 4. **Cold deep-link works** (player page renders from direct URL), `popstate` handler present so Back/Forward work. Known edge: manually editing the hash mid-session does not re-route (no `hashchange` listener) — minor, parked.
 5. **Home page first impression: strong.** Game cards, ticker, Tonight's Starters all render with team identity. Minor copy inconsistency parked: game card shows "Pérez vs ?" while the starters section shows "TBD" for the same unknown.
 6. **State nit, parked:** `AppState.currentView` reads `mlb-players` while on a player detail page (restore path doesn't set the player route) — cosmetic, but worth a cleanup pass.
+
+---
+
+### P9 Phase 2 — Exit-Velocity Spray Chart Coloring — SHIPPED
+**Contributors:** Kael (color spec), Vera (toggle spec), Axiom (implementation) | **Date:** 2026-06-11
+
+Built on the owner-verified CSV schema (launch_speed confirmed present). Kael: EV dots reuse the P3-028 _mlbPctColor diverging scale (75 mph -> blue, 115 -> red) — one data-intensity language site-wide, no new palette. Vera: Outcome / Exit velo pill toggle above the chart, outcome default, toggle rendered only when EV data exists, aria-pressed + group label, EV-less rows render neutral in EV mode, legend switches to mph buckets with counts (105+, 95–105, 85–95, <85). Axiom: launch_speed captured in the spray parse (cache key bumped to v3), delegated click listener on the container re-renders from cached rows — zero refetches on toggle. Renderer unit-verified in both modes plus the no-EV fallback.
+
+Also this session: SITE_DOMAIN constant in config.js (owner ruling 2026-06-11: pages.dev is canonical for now) wired into the share card footer and share text — one-line change when a custom domain attaches; home game card unknown-pitcher fallback unified to TBD; AppState.currentView made truthful on player detail.

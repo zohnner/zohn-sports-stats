@@ -544,7 +544,7 @@ async function fetchSprintSpeedLeaderboard() {
 
 async function fetchSprayChartData(playerId) {
     const year = MLB_SEASON;
-    const cacheKey = `spray_${playerId}_${year}_v2`;
+    const cacheKey = `spray_${playerId}_${year}_v3`;
     const cached = ApiCache.get(cacheKey);
     if (cached) return cached;
 
@@ -563,6 +563,7 @@ async function fetchSprayChartData(playerId) {
         if (lines.length < 2) { ApiCache.set(cacheKey, [], ApiCache.TTL.LONG); return []; }
         const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
         const iEv = headers.indexOf('events'), iX = headers.indexOf('hc_x'), iY = headers.indexOf('hc_y');
+        const iLS = headers.indexOf('launch_speed');
         if (iEv < 0 || iX < 0 || iY < 0) {
             Logger.warn('Savant spray CSV schema changed — events/hc_x/hc_y not found', undefined, 'MLB');
             return null;
@@ -575,7 +576,8 @@ async function fetchSprayChartData(playerId) {
             const y = parseFloat(clean(vals[iY]));
             const ev = clean(vals[iEv]);
             if (isNaN(x) || isNaN(y) || !ev) continue;
-            hits.push({ events: ev, hc_x: x, hc_y: y });
+            const ls = iLS >= 0 ? parseFloat(clean(vals[iLS])) : NaN;
+            hits.push({ events: ev, hc_x: x, hc_y: y, ev: isNaN(ls) ? null : ls });
         }
         ApiCache.set(cacheKey, hits, ApiCache.TTL.LONG);
         return hits;
@@ -585,19 +587,30 @@ async function fetchSprayChartData(playerId) {
     }
 }
 
-function _renderSprayChartSVG(hits) {
+// P9 Phase 2: mode 'outcome' (default) or 'ev' — exit-velocity coloring on
+// the shared _mlbPctColor data-intensity scale (75 mph → blue, 115 → red).
+function _sprayEvColor(ev) {
+    return _mlbPctColor(Math.max(1, Math.min(99, Math.round((ev - 75) * 2.5))));
+}
+
+function _renderSprayChartSVG(hits, mode = 'outcome') {
     if (!hits || !hits.length) return '<p class="spray-no-data">No batted ball data available for this season.</p>';
 
     const HITS = new Set(['single', 'double', 'triple', 'home_run']);
     const COLOR = { single: '#22d3a0', double: '#38bdf8', triple: '#ffd200', home_run: '#ff8100' };
     const OUT_FILL = 'rgba(255,255,255,0.18)';
+    const hasEv = hits.some(r => r.ev != null);
+    const evMode = mode === 'ev' && hasEv;
+    const dotFill = r => evMode
+        ? (r.ev != null ? _sprayEvColor(r.ev) : OUT_FILL)
+        : (HITS.has(r.events) ? COLOR[r.events] : OUT_FILL);
 
     // Outs rendered first so hits appear on top
     const outDots = hits
         .filter(r => !HITS.has(r.events))
         .map(r => {
             const x = parseFloat(r.hc_x), y = parseFloat(r.hc_y);
-            return isNaN(x) || isNaN(y) ? '' : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${OUT_FILL}"/>`;
+            return isNaN(x) || isNaN(y) ? '' : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${dotFill(r)}" opacity="${evMode ? 0.85 : 1}"/>`;
         }).join('');
 
     const hitDots = hits
@@ -605,13 +618,35 @@ function _renderSprayChartSVG(hits) {
         .map(r => {
             const x = parseFloat(r.hc_x), y = parseFloat(r.hc_y);
             if (isNaN(x) || isNaN(y)) return '';
-            return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="${COLOR[r.events]}" opacity="0.9"/>`;
+            return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="${dotFill(r)}" opacity="0.9"/>`;
         }).join('');
 
     const count = t => hits.filter(r => r.events === t).length;
     const outs  = hits.filter(r => !HITS.has(r.events)).length;
+    const evBucket = (lo, hi) => hits.filter(r => r.ev != null && r.ev >= lo && r.ev < hi).length;
 
-    return `
+    const legend = evMode ? `
+        <div class="spray-legend">
+            <span class="spray-legend-item"><span class="spray-dot" style="background:${_sprayEvColor(110)}"></span>105+ mph (${evBucket(105, 999)})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:${_sprayEvColor(99)}"></span>95–105 (${evBucket(95, 105)})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:${_sprayEvColor(89)}"></span>85–95 (${evBucket(85, 95)})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:${_sprayEvColor(79)}"></span>&lt;85 (${evBucket(0, 85)})</span>
+        </div>` : `
+        <div class="spray-legend">
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#ff8100"></span>HR (${count('home_run')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#ffd200"></span>3B (${count('triple')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#38bdf8"></span>2B (${count('double')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#22d3a0"></span>1B (${count('single')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:rgba(255,255,255,0.2)"></span>Out (${outs})</span>
+        </div>`;
+
+    const toggle = hasEv ? `
+        <div class="spray-toggle" role="group" aria-label="Spray chart color mode">
+            <button class="spray-mode-btn${evMode ? '' : ' active'}" data-mode="outcome" aria-pressed="${!evMode}">Outcome</button>
+            <button class="spray-mode-btn${evMode ? ' active' : ''}" data-mode="ev" aria-pressed="${evMode}">Exit velo</button>
+        </div>` : '';
+
+    return `${toggle}`+`
         <svg viewBox="0 0 250 210" xmlns="http://www.w3.org/2000/svg" class="spray-svg" role="img" aria-label="Spray chart">
             <!-- Outfield grass wedge -->
             <path d="M125,199 L22,28 Q125,-12 228,28 Z" fill="rgba(34,160,80,0.10)"/>
@@ -629,13 +664,7 @@ function _renderSprayChartSVG(hits) {
             ${outDots}
             ${hitDots}
         </svg>
-        <div class="spray-legend">
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#ff8100"></span>HR (${count('home_run')})</span>
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#ffd200"></span>3B (${count('triple')})</span>
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#38bdf8"></span>2B (${count('double')})</span>
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#22d3a0"></span>1B (${count('single')})</span>
-            <span class="spray-legend-item"><span class="spray-dot" style="background:rgba(255,255,255,0.2)"></span>Out (${outs})</span>
-        </div>`;
+        ${legend}`;
 }
 
 async function _fetchPitchArsenal(pitcherId) {
@@ -2240,9 +2269,16 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             const area = document.getElementById('spray-chart-area');
             if (!area) return;
             area.className = '';
-            area.innerHTML = hits && hits.length
-                ? _renderSprayChartSVG(hits)
-                : '<p class="spray-no-data">No batted ball data available for this season.</p>';
+            if (!hits || !hits.length) {
+                area.innerHTML = '<p class="spray-no-data">No batted ball data available for this season.</p>';
+                return;
+            }
+            area.innerHTML = _renderSprayChartSVG(hits, 'outcome');
+            area.addEventListener('click', e => {
+                const btn = e.target.closest('.spray-mode-btn');
+                if (!btn || btn.classList.contains('active')) return;
+                area.innerHTML = _renderSprayChartSVG(hits, btn.dataset.mode);
+            });
         }).catch(() => {
             const area = document.getElementById('spray-chart-area');
             if (area) area.innerHTML = '<p class="spray-no-data">Spray chart unavailable.</p>';
