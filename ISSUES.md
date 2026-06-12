@@ -2537,3 +2537,10 @@ Owner flagged the player page showing season stats twice (stat tiles + Key Metri
 **Flagged for owner decision:** the Stat Profile radar still re-plots six stats now shown elsewhere. Options: remove from single-player view (keep in Compare where shape-vs-shape earns it), or keep as visual anchor. Kael leans remove-on-single-player; awaiting ruling.
 
 **Standing team mandate:** every view audited against Principle 7 during its next touch. Known candidates to check: game prep team-comparison rows vs probable-pitcher cards (ERA/WHIP may repeat), team detail aggregate card vs standings row, compare view stat bars vs radar.
+
+---
+
+### Principle 7 Audit — Game Prep — PASSES (live review 2026-06-11)
+**Contributors:** Vera + Kael (live walkthrough), Folio (record)
+
+Walked the full STL@NYM prep sheet in the owner's browser. Verdict: the apparent stat repeats are scope distinctions, not redundancy — Team Batting (season), Handedness Splits (lineup vs starter hand), Key Hitters (individual), Probable Pitchers (individual) vs Team Pitching (staff) each answer a different broadcast question. No changes. Bullpen availability chips pair color with text labels correctly. Headshot false alarm investigated and withdrawn (real photos, small render). Remaining Principle 7 candidates for next touches: team detail aggregate card vs standings row; compare view bars vs radar; the player-detail radar awaiting owner ruling.
