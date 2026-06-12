@@ -2524,3 +2524,16 @@ Walked the production site in the owner's browser. Results:
 Built on the owner-verified CSV schema (launch_speed confirmed present). Kael: EV dots reuse the P3-028 _mlbPctColor diverging scale (75 mph -> blue, 115 -> red) — one data-intensity language site-wide, no new palette. Vera: Outcome / Exit velo pill toggle above the chart, outcome default, toggle rendered only when EV data exists, aria-pressed + group label, EV-less rows render neutral in EV mode, legend switches to mph buckets with counts (105+, 95–105, 85–95, <85). Axiom: launch_speed captured in the spray parse (cache key bumped to v3), delegated click listener on the container re-renders from cached rows — zero refetches on toggle. Renderer unit-verified in both modes plus the no-EV fallback.
 
 Also this session: SITE_DOMAIN constant in config.js (owner ruling 2026-06-11: pages.dev is canonical for now) wired into the share card footer and share text — one-line change when a custom domain attaches; home game card unknown-pitcher fallback unified to TBD; AppState.currentView made truthful on player detail.
+
+---
+
+### Redundancy Audit — "One Number, One Home" — Phase 1 SHIPPED
+**Contributors:** owner (finding), Kael (ruling + redesign), Axiom (implementation) | **Date:** 2026-06-11
+
+Owner flagged the player page showing season stats twice (stat tiles + Key Metrics). Kael's audit found it was actually three times — the radar also plots AVG/OBP/SLG/HR/RBI/SB. Adopted as Design Principle 7 (GOALS.md): one number, one home, context system matched to stat type.
+
+**Shipped:** Player detail restructured. "Season Totals" tiles now hold only counting/volume stats (HR R RBI H 2B 3B TB SB BB SO Speed PA GP; pitching: W L SO IP BB QS SV HLD GS GP) with rank badges for league context. Key Metrics owns every rate/advanced stat (hitting: AVG OBP SLG OPS wOBA wRC+ ISO BABIP BB% K% SB%; pitching: ERA WHIP K/9 BB/9 H/9 HR/9 K/BB FIP K-BB% LOB% QS%) with percentile bars. FIP/K-BB%/LOB%/QS% gained percentiles they never had; zero stats appear in both sections.
+
+**Flagged for owner decision:** the Stat Profile radar still re-plots six stats now shown elsewhere. Options: remove from single-player view (keep in Compare where shape-vs-shape earns it), or keep as visual anchor. Kael leans remove-on-single-player; awaiting ruling.
+
+**Standing team mandate:** every view audited against Principle 7 during its next touch. Known candidates to check: game prep team-comparison rows vs probable-pitcher cards (ERA/WHIP may repeat), team detail aggregate card vs standings row, compare view stat bars vs radar.

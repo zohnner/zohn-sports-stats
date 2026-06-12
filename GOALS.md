@@ -232,6 +232,7 @@ Unified player search across all sports — type any name, get any sport.
 4. **Fail gracefully** — every view has a skeleton, an error state, and a retry button
 5. **No magic strings** — all team names, abbreviations, and IDs live in `config.js`
 6. **Cache aggressively, invalidate clearly** — TTL buckets (5m/30m/60m) documented in `cache.js`
+7. **One number, one home** — a stat appears once per view, paired with the context system suited to its type: counting stats get rank badges, rates get percentile bars. Showing the same number in two sections is not reinforcement, it is noise. (Owner + Kael, 2026-06-11)
 
 ---
 

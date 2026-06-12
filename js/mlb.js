@@ -1677,18 +1677,14 @@ function _mlbHittingBars(stats, rates = {}) {
         _mlbPctRow('wRC+',         rates.wrcPlus,     { ...g, statKey: 'wrcPlus', fmt: v => v + ((_MLB_WRC_CONSTANTS[MLB_SEASON]?.lgwOBA === undefined) ? '†' : (MLB_SEASON === 2025 ? '†' : '')) }),
         _mlbPctRow('ISO',          rates.iso,         { ...g, statKey: 'iso' }),
         _mlbPctRow('BABIP',        rates.babip,       { ...g, statKey: 'babip' }),
-        _mlbPctRow('Home Runs',    stats.homeRuns,    { ...g, statKey: 'homeRuns' }),
-        _mlbPctRow('RBI',          stats.rbi,         { ...g, statKey: 'rbi' }),
-        _mlbPctRow('Total Bases',  stats.totalBases,  { ...g, statKey: 'totalBases' }),
-        _mlbPctRow('Runs Created', rates.rc,          { ...g, statKey: 'rc' }),
-        _mlbPctRow('Triples',      stats.triples,     { ...g, statKey: 'triples' }),
-        _mlbPctRow('Stolen Bases', stats.stolenBases, { ...g, statKey: 'stolenBases' }),
+        _mlbPctRow('BB%',          rates.bbPct,       { ...g, statKey: 'bbPct', fmt: v => `${v}%` }),
+        _mlbPctRow('K%',           rates.kPct,        { ...g, statKey: 'kPct',  lowerBetter: true, fmt: v => `${v}%` }),
         _mlbPctRow('SB%',          rates.sbPct,       { ...g, statKey: 'sbPct', fmt: v => `${v}%` }),
     ].filter(Boolean).join('');
     return _mlbPctCaption('hitting', qualified) + rows;
 }
 
-function _mlbPitchingBars(stats) {
+function _mlbPitchingBars(stats, rates = {}) {
     const qualified = _mlbIpToNum(stats.inningsPitched) >= _MLB_PCT_MIN_IP && !!_mlbPctPool('pitching');
     const g = { group: 'pitching', noPct: !qualified };
     const f2 = v => parseFloat(v).toFixed(2);
@@ -1700,9 +1696,10 @@ function _mlbPitchingBars(stats) {
         _mlbPctRow('H/9',        stats.hitsPer9Inn,        { ...g, statKey: 'hitsPer9Inn',  lowerBetter: true, fmt: f2 }),
         _mlbPctRow('HR/9',       stats.homeRunsPer9,       { ...g, statKey: 'homeRunsPer9', lowerBetter: true, fmt: f2 }),
         _mlbPctRow('K/BB',       stats.strikeoutWalkRatio, { ...g, statKey: 'strikeoutWalkRatio', fmt: f2 }),
-        _mlbPctRow('Strikeouts', stats.strikeOuts,         { ...g, statKey: 'strikeOuts' }),
-        _mlbPctRow('Wins',       stats.wins,               { ...g, statKey: 'wins' }),
-        _mlbPctRow('Saves',      stats.saves,              { ...g, statKey: 'saves' }),
+        _mlbPctRow('FIP',        rates?.fip,               { ...g, statKey: 'fip',    lowerBetter: true, fmt: f2 }),
+        _mlbPctRow('K-BB%',      rates?.kBbPct,            { ...g, statKey: 'kBbPct', fmt: v => `${v}%` }),
+        _mlbPctRow('LOB%',       rates?.lobPct,            { ...g, statKey: 'lobPct', fmt: v => `${v}%` }),
+        _mlbPctRow('QS%',        rates?.qsPct,             { ...g, statKey: 'qsPct',  fmt: v => `${v}%` }),
     ].filter(Boolean).join('');
     return _mlbPctCaption('pitching', qualified) + rows;
 }
@@ -1884,16 +1881,9 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     const pitching = group === 'pitching' ? _computePitchingRates(stats) : null;
 
     // 4th element: stat key for league rank lookup (null = no rank shown)
+    // One number, one home (2026-06-11): tiles hold counting/volume stats with
+    // rank badges; all rates/advanced live in Key Metrics with percentile bars.
     const statDefs = group === 'hitting' ? [
-        ['AVG',   stats.avg,          'var(--color-pts)',  'avg'],
-        ['OBP',   stats.obp,          'var(--color-reb)',  'obp'],
-        ['SLG',   stats.slg,          'var(--color-ast)',  'slg'],
-        ['OPS',   stats.ops,          'var(--color-stl)',  'ops'],
-        ['wOBA',  batting?.woba,      'var(--color-blk)',  'woba'],
-        ['wRC+',  batting?.wrcPlus != null ? String(batting.wrcPlus) : null, '#818cf8', null],
-        ['ISO',   batting?.iso,       '#c4b5fd',           null],
-        ['BABIP', batting?.babip,     'var(--color-pts)',  null],
-        ['BB/K',  batting?.bbK,       '#22d3ee',           null],
         ['HR',    stats.homeRuns,     'var(--color-reb)',  'homeRuns'],
         ['RBI',   stats.rbi,          'var(--color-ast)',  'rbi'],
         ['R',     stats.runs,         'var(--color-stl)',  'runs'],
@@ -1904,22 +1894,10 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         ['SB',    stats.stolenBases,  'var(--color-blk)',  'stolenBases'],
         ['BB',    stats.baseOnBalls,  '#34d399',           'baseOnBalls'],
         ['SO',    stats.strikeOuts,   '#64748b',           'strikeOuts'],
-        ['BB%',   batting?.bbPct != null ? batting.bbPct + '%' : null, '#34d399', null],
-        ['K%',    batting?.kPct  != null ? batting.kPct  + '%' : null, '#64748b', null],
         ['Speed', (() => { const sr = AppState.mlbSprintSpeed?.[playerId]; return sr ? parseFloat(sr.sprint_speed).toFixed(1) + ' ft/s' : null; })(), '#10b981', null],
         ['PA',    batting?.pa,         '#64748b',          null],
         ['GP',    stats.gamesPlayed,   '#64748b',          null],
     ] : [
-        ['ERA',   stats.era,                'var(--color-pts)',  'era'],
-        ['FIP',   pitching?.fip,            'var(--color-reb)',  null],
-        ['WHIP',  stats.whip,               'var(--color-ast)',  'whip'],
-        ['K/9',   stats.strikeoutsPer9Inn   ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1)  : null, 'var(--color-stl)', 'strikeoutsPer9Inn'],
-        ['BB/9',  stats.walksPer9Inn        ? parseFloat(stats.walksPer9Inn).toFixed(1)       : null, 'var(--color-blk)', 'walksPer9Inn'],
-        ['H/9',   stats.hitsPer9Inn         ? parseFloat(stats.hitsPer9Inn).toFixed(1)        : null, '#f87171',          null],
-        ['HR/9',  stats.homeRunsPer9        ? parseFloat(stats.homeRunsPer9).toFixed(2)       : null, '#fca5a5',          null],
-        ['K-BB%', pitching?.kBbPct != null  ? pitching.kBbPct + '%' : null, 'var(--color-min)', null],
-        ['LOB%',  pitching?.lobPct != null  ? pitching.lobPct + '%' : null, '#67e8f9',          null],
-        ['QS%',   pitching?.qsPct  != null  ? pitching.qsPct  + '%' : null, '#86efac',          null],
         ['W',     stats.wins,               'var(--color-reb)',  'wins'],
         ['L',     stats.losses,             '#64748b',           null],
         ['SO',    stats.strikeOuts,         'var(--color-ast)',  'strikeOuts'],
@@ -1951,7 +1929,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         }).join('');
 
     // Stat bars for key metrics
-    const barHtml = group === 'hitting' ? _mlbHittingBars(stats, batting) : _mlbPitchingBars(stats);
+    const barHtml = group === 'hitting' ? _mlbHittingBars(stats, batting || {}) : _mlbPitchingBars(stats, pitching || {});
 
     // Fielding card — synchronous lookup from AppState populated by _fetchMLBLeaderSplits
     const _fs = AppState.mlbFieldingStats?.[playerId];
@@ -2032,7 +2010,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
 
         <div class="stats-card">
             <div class="detail-section-hdr">
-                <h2 class="detail-section-title">${MLB_SEASON} ${group === 'hitting' ? 'Batting' : 'Pitching'} Stats</h2>
+                <h2 class="detail-section-title">${MLB_SEASON} Season Totals</h2>
                 <div id="mlb-sparkline-row"></div>
             </div>
             <div class="stats-grid">${statsGrid}</div>
