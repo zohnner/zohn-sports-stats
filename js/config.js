@@ -106,3 +106,8 @@ if (typeof window !== 'undefined') {
     window._normName          = _normName;
     window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
 }
+
+// Canonical public domain — printed on share cards and share text.
+// Owner ruling 2026-06-11: pages.dev is the public domain for now.
+// When a custom domain is attached, change it here only.
+const SITE_DOMAIN = 'zohn-sports-stats.pages.dev';

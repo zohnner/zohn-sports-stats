@@ -59,7 +59,7 @@ function _shcBuildCard(d, withPhoto) {
         </div>
         <div class="shc-footer" style="background:${_SHC_SURFACE};border-color:${_SHC_BORDER}">
             <span class="shc-wordmark" style="color:${_SHC_TEXT}">SPORT<span style="color:${_SHC_ACCENT}">STRATA</span></span>
-            <span class="shc-domain" style="color:${_SHC_MUTED}">sportsstrata.com</span>
+            <span class="shc-domain" style="color:${_SHC_MUTED}">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
         </div>`;
     return card;
 }
@@ -118,7 +118,7 @@ async function shareStatCard(d) {
                 await navigator.share({
                     files: [file],
                     title: `${d.playerName} — ${d.statLabel}`,
-                    text:  `${d.playerName}: ${d.statValue} ${d.statLabel}${d.rank ? ` (#${d.rank} in MLB)` : ''} — via sportsstrata.com`,
+                    text:  `${d.playerName}: ${d.statValue} ${d.statLabel}${d.rank ? ` (#${d.rank} in MLB)` : ''} — via ${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}`,
                 });
             } catch (err) {
                 if (err?.name !== 'AbortError') throw err;

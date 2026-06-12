@@ -510,7 +510,7 @@ function _renderTonightSPSection() {
         const k9      = _fmt(s.strikeoutsPer9Inn, 1);
         const pid     = pp.id;
 
-        const lastName = (pp.fullName || '').split(' ').slice(1).join(' ') || pp.fullName || '?';
+        const lastName = (pp.fullName || '').split(' ').slice(1).join(' ') || pp.fullName || 'TBD';
 
         return `
             <div class="sp-pitcher sp-pitcher--${align}" role="button" tabindex="0"
@@ -670,7 +670,7 @@ async function _loadHomeTodayGames() {
         const awayName   = _teamFullName(awayAbbr);
         const fmt        = (n) => hasScore ? n : '–';
         const liveCls    = isLive ? ' home-game-card--live' : '';
-        const lastName   = n => n ? n.split(' ').slice(-1)[0] : '?';
+        const lastName   = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
         const ppLine     = !isFinal && (awayPP || homePP)
             ? `<div class="hgc-pitchers">${lastName(awayPP)} vs ${lastName(homePP)}</div>`
             : '';

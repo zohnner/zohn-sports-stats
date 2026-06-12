@@ -1774,6 +1774,8 @@ function _mlbPlayerLeagueRanks(playerId, group) {
 // ── View: Player Detail ───────────────────────────────────────
 
 function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
+    AppState.currentView = `mlb-player-${playerId}`;
+
     // Cold deep-links land here without mlbLeaderSplits — rank badges and
     // P3-028 percentiles silently vanish. Fetch the pool once and re-render.
     if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function' && !showMLBPlayerDetail._refetching) {
