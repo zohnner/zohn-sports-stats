@@ -915,6 +915,9 @@ function showMLBLiveGame(gamePk) {
 
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
+    // navigateTo() leaves #playersGrid as .players-grid (multi-column auto-fill);
+    // the live view is a single-column page, so clear it the way scorecard/detail do.
+    grid.className = '';
 
     const page = document.createElement('div');
     page.className = 'lg-live-page';

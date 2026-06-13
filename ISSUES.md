@@ -2544,3 +2544,20 @@ Owner flagged the player page showing season stats twice (stat tiles + Key Metri
 **Contributors:** Vera + Kael (live walkthrough), Folio (record)
 
 Walked the full STL@NYM prep sheet in the owner's browser. Verdict: the apparent stat repeats are scope distinctions, not redundancy — Team Batting (season), Handedness Splits (lineup vs starter hand), Key Hitters (individual), Probable Pitchers (individual) vs Team Pitching (staff) each answer a different broadcast question. No changes. Bullpen availability chips pair color with text labels correctly. Headshot false alarm investigated and withdrawn (real photos, small render). Remaining Principle 7 candidates for next touches: team detail aggregate card vs standings row; compare view bars vs radar; the player-detail radar awaiting owner ruling.
+
+---
+
+### Live Game Viewer Not Rendering Full-Page — FIXED (2026-06-12)
+**Contributors:** owner (report), Axiom (diagnosis + fix), Vera + Kael (review), Finn (record)
+
+**Report:** the full-page live game view (`navigateTo('mlb-live-{gamePk}')`, the D-009 pattern) was not loading into the whole page — it rendered cramped in a narrow column.
+
+**Root cause (Axiom):** `navigateTo()` sets `#playersGrid` to `.players-grid` for every non-home view (`navigation.js:153`) — a `grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))` multi-column grid. `showMLBLiveGame()` then appended `.lg-live-page` straight into that grid without resetting the class, so the live page became a single grid item pinned to one ~240px auto-fill track on the left. Its own `max-width:680px; margin:0 auto` never engaged because the grid track was already narrower than 680px. Scorecard (`grid.className = ''`) and player detail (`grid.className = 'player-detail-container'`) already reset the container; the live page was the one full-bleed view that didn't. This is the contract: any view that injects its own page wrapper into `#playersGrid` must first drop `.players-grid`.
+
+**Fix (Finn, per Axiom):** one line in `showMLBLiveGame` — `grid.className = ''` before injecting the page, with a WHY comment. Renderer, polling, and back-nav unchanged. Restores the intended centered single-column reading view across the full content area. Syntax-checked.
+
+**Kael (visual review):** the restored 680px centered column is the intended D-009 reading width — matches the focused-page posture of scorecard and player detail. No change. If the owner wants edge-to-edge box-score density later, that's a separate Kael spec, not a regression.
+
+**Vera (behavior review):** back button (`← Back to Scores`) and the `_closeExistingPanel` page-mode branch (`navigateTo('mlb-games')`) both intact; polling lifecycle stops on nav-away via the existing `stopLiveGamePolling()` in `navigateTo`. No state-cleanup gap introduced — navigating away restores `.players-grid` on the next view.
+
+**Secondary finding (Finn, flagged — not fixed):** mid-session manual hash edits still don't re-route — there is no `hashchange` listener; routing runs through `navigateTo()` and a first-load `_loadFromHash()` only. Carried over from the 2026-06-11 walkthrough (parked as minor). If "improve nav functions" is meant to cover this, it needs an Axiom call on adding a `hashchange` handler vs. leaving it. Routed to Axiom.
