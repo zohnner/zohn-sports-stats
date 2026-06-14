@@ -201,8 +201,8 @@
     --blur-md: blur(20px);
 
     /* ── Typography ── */
-    --font-sans:    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-mono:    ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, 'Roboto Mono', monospace;
+    --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, 'Roboto Mono', monospace;
     --font-display: 'Barlow Semi Condensed', var(--font-sans);
 
     /* ── Selection / chip accent (indigo — secondary interactive, distinct from orange nav) ── */
