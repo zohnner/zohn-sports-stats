@@ -108,6 +108,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Canonical public domain — printed on share cards and share text.
-// Owner ruling 2026-06-11: pages.dev is the public domain for now.
-// When a custom domain is attached, change it here only.
-const SITE_DOMAIN = 'zohn-sports-stats.pages.dev';
+// Custom domain attached 2026-06-14: sportstrata.cc (Cloudflare Pages).
+// og:url / canonical are set from location.href at runtime, so they follow
+// whatever origin serves the page; this constant is the human-facing label.
+const SITE_DOMAIN = 'sportstrata.cc';
