@@ -5,10 +5,10 @@ load_dotenv()
 
 # ── X (Twitter) API credentials ───────────────────────────────
 # Set these in .env — never commit values
-X_API_KEY             = os.environ["X_API_KEY"]
-X_API_SECRET          = os.environ["X_API_SECRET"]
-X_ACCESS_TOKEN        = os.environ["X_ACCESS_TOKEN"]
-X_ACCESS_TOKEN_SECRET = os.environ["X_ACCESS_TOKEN_SECRET"]
+X_API_KEY             = os.environ.get("X_API_KEY")
+X_API_SECRET          = os.environ.get("X_API_SECRET")
+X_ACCESS_TOKEN        = os.environ.get("X_ACCESS_TOKEN")
+X_ACCESS_TOKEN_SECRET = os.environ.get("X_ACCESS_TOKEN_SECRET")
 
 # ── SportStrata base URL ───────────────────────────────────────
 # Used to construct links in tweet templates
