@@ -333,3 +333,15 @@ Performance pass approved with these specific measures, in order of measured imp
 - CLAUDE.md load-order doc updates (math.min.js no longer first).
 - `sw.js` precache keeps math.min.js (offline Builder still works once cached).
 - Re-run Lighthouse after deploy to verify the ≥90 target; FCP/LCP should drop by roughly the render-blocking estimate on broadband.
+
+---
+
+## D-009 — Amendment (2026-06-12): Owner Reactivates Pitch Heat Map; Trajectory Stays Gated
+**Contributors:** owner (direction), Kael (color), Vera (toggle + mobile), Axiom (feasibility)
+
+D-009 deferred the live pitch heat map and pitch-trajectory animation "post-MVP, indefinitely." Owner reactivated both. Team split them by data certainty:
+
+- **Heat map — SHIPPED.** Built on the already-confirmed `pitchData.coordinates.pX/pZ` fields (same source as the dots view and the spray chart). Aggregates every pitch the current pitcher has thrown **this game** (`liveData.plays.allPlays`, filtered by `matchup.pitcher.id`) into a binned density grid over the zone. Kael: one hue (`--accent`), opacity encodes count — no new palette, same data-intensity language as P9/P3-028. Vera: a Dots/Heat pill toggle above the zone, Dots default, Heat disabled until ≥1 game pitch exists, session-scoped per gamePk. No refetch on toggle — re-renders from `_lgFeedCache`.
+- **Trajectory animation — STILL GATED.** Needs per-pitch physics fields (movement/break, e.g. `pfxX/pfxZ`, `breaks.*`) that are **not** confirmed in the live `feed/live` payload. Per the Relay/Axiom precedent (P9/P6 schema verification), this stays parked until the owner supplies a real `feed/live` sample so the fields can be verified. No code written against unverified fields.
+
+Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column drops below the play-by-play log via flex `order` — the spatial zone is the lower-priority view on a phone; the log leads.

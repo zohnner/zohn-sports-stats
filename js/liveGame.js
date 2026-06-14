@@ -42,6 +42,7 @@ let _lgPitchTooltipEl = null;   // active pitch tooltip DOM node or null
 let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat obj }
 let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
+let _lgZoneMode       = new Map(); // gamePk → 'dots' | 'heat' — pitch zone view, session-scoped
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -382,25 +383,8 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
-    // Phase 2: pitch zone + base diagram
-    const currentPlay = plays.currentPlay;
-    const pitches     = (currentPlay?.playEvents || []).filter(e => e.isPitch);
-    const zoneCol     = panel.querySelector('.lg-zone-col');
-    if (zoneCol) {
-        if (currentPlay?.matchup && pitches.length > 0) {
-            zoneCol.removeAttribute('hidden');
-            _lgHideTooltip();
-            zoneCol.innerHTML =
-                `<div class="lg-zone-section-label">Pitch Zone</div>` +
-                _buildPitchZone(currentPlay) +
-                `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
-                _buildBaseDiagram(currentPlay);
-            _wireZoneEvents(panel);
-        } else {
-            zoneCol.setAttribute('hidden', '');
-            zoneCol.innerHTML = '';
-        }
-    }
+    // Phase 2 + P9-live: pitch zone (dots / heat toggle) + base diagram
+    _renderZone(panel, feed, gamePk);
 
     const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
@@ -544,27 +528,22 @@ function _lgSvgCoords(pX, pZ) {
     };
 }
 
-function _buildPitchZone(currentPlay) {
-    const playEvents = currentPlay?.playEvents || [];
-    const pitches    = playEvents.filter(e => e.isPitch);
-
-    // Zone bounds from last pitch that has strikeZoneTop
+// Strike-zone geometry (rect + 3×3 grid) shared by the dots and heat views so
+// both render against an identical zone.
+function _lgZoneGeom(currentPlay) {
+    const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
     let szTop = 3.5, szBot = 1.5;
     const lastPitchWithZone = [...pitches].reverse().find(e => e.pitchData?.strikeZoneTop);
     if (lastPitchWithZone?.pitchData) {
         szTop = lastPitchWithZone.pitchData.strikeZoneTop;
         szBot = lastPitchWithZone.pitchData.strikeZoneBottom;
     }
-
     const zoneXL = _lgSvgCoords(-0.71, 0);
     const zoneXR = _lgSvgCoords(0.71, 0);
     const zoneYT = _lgSvgCoords(0, szTop);
     const zoneYB = _lgSvgCoords(0, szBot);
-
     const zx = zoneXL.x, zw = zoneXR.x - zoneXL.x;
     const zy = zoneYT.y, zh = zoneYB.y - zoneYT.y;
-
-    // 3×3 inner grid — divides zone into 9 MLB-standard zones
     const gw = +(zw / 3).toFixed(1);
     const gh = +(zh / 3).toFixed(1);
     const gridHtml =
@@ -572,6 +551,39 @@ function _buildPitchZone(currentPlay) {
         `<line x1="${+(zx + gw * 2).toFixed(1)}" y1="${zy.toFixed(1)}"       x2="${+(zx + gw * 2).toFixed(1)}" y2="${+(zy + zh).toFixed(1)}" class="lg-zone-grid"/>` +
         `<line x1="${zx.toFixed(1)}"             y1="${+(zy + gh).toFixed(1)}" x2="${+(zx + zw).toFixed(1)}"  y2="${+(zy + gh).toFixed(1)}" class="lg-zone-grid"/>` +
         `<line x1="${zx.toFixed(1)}"             y1="${+(zy + gh * 2).toFixed(1)}" x2="${+(zx + zw).toFixed(1)}" y2="${+(zy + gh * 2).toFixed(1)}" class="lg-zone-grid"/>`;
+    return { zx, zy, zw, zh, gridHtml };
+}
+
+// Every pitch thrown by one pitcher across the whole game — feeds the heat view.
+// Uses the same confirmed pX/pZ coordinate fields as the dots view.
+function _collectPitcherGamePitches(allPlays, pitcherId) {
+    if (!Array.isArray(allPlays) || pitcherId == null) return [];
+    const out = [];
+    for (const play of allPlays) {
+        if (play?.matchup?.pitcher?.id !== pitcherId) continue;
+        for (const e of (play.playEvents || [])) {
+            if (!e.isPitch) continue;
+            const pX = e.pitchData?.coordinates?.pX;
+            const pZ = e.pitchData?.coordinates?.pZ;
+            if (pX == null || pZ == null) continue;
+            out.push(_lgSvgCoords(pX, pZ));
+        }
+    }
+    return out;
+}
+
+function _buildZoneToggle(mode, heatCount) {
+    const heatOn = mode === 'heat';
+    const heatDisabled = heatCount < 1;
+    return `<div class="lg-zone-toggle" role="group" aria-label="Pitch zone view">
+        <button type="button" class="lg-zone-toggle-btn ${!heatOn ? 'lg-zone-toggle-btn--active' : ''}" data-lg-zone="dots" aria-pressed="${!heatOn}">Dots</button>
+        <button type="button" class="lg-zone-toggle-btn ${heatOn ? 'lg-zone-toggle-btn--active' : ''}" data-lg-zone="heat" aria-pressed="${heatOn}"${heatDisabled ? ' disabled' : ''}>Heat</button>
+    </div>`;
+}
+
+function _buildPitchZone(currentPlay) {
+    const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const { zx, zy, zw, zh, gridHtml } = _lgZoneGeom(currentPlay);
 
     let dotsHtml = '';
     for (let i = 0; i < pitches.length; i++) {
@@ -605,7 +617,7 @@ function _buildPitchZone(currentPlay) {
     }
 
     return `<div class="lg-zone-wrap">
-        <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" aria-label="Pitch zone diagram for current at-bat">
+        <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pitch zone — current at-bat, ${pitches.length} pitch${pitches.length !== 1 ? 'es' : ''}">
             <polygon points="44,132 56,132 58,128 50,126 42,128" class="lg-home-plate"/>
             <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" class="lg-zone-rect"/>
             ${gridHtml}
@@ -617,6 +629,81 @@ function _buildPitchZone(currentPlay) {
             <span class="lg-zone-legend-item lg-zone-legend--hit">In Play</span>
         </div>
     </div>`;
+}
+
+// Binned density overlay over the plot region. Opacity encodes pitch count in
+// one hue (accent) — same single-intensity language as the rest of the site,
+// no new palette.
+function _buildPitchHeat(currentPlay, gamePitches) {
+    const { zx, zy, zw, zh, gridHtml } = _lgZoneGeom(currentPlay);
+    const X0 = 15, X1 = 85, Y0 = 15, Y1 = 125, COLS = 7, ROWS = 9;
+    const cw = (X1 - X0) / COLS, ch = (Y1 - Y0) / ROWS;
+    const counts = new Array(COLS * ROWS).fill(0);
+    let plotted = 0;
+    for (const p of gamePitches) {
+        if (p.x < X0 || p.x > X1 || p.y < Y0 || p.y > Y1) continue;
+        const c = Math.min(COLS - 1, Math.floor((p.x - X0) / cw));
+        const r = Math.min(ROWS - 1, Math.floor((p.y - Y0) / ch));
+        counts[r * COLS + c]++;
+        plotted++;
+    }
+    const max = Math.max(0, ...counts);
+    let cellsHtml = '';
+    if (max > 0) {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const n = counts[r * COLS + c];
+                if (!n) continue;
+                const op = +(0.12 + 0.78 * (n / max)).toFixed(2);
+                const x  = +(X0 + c * cw).toFixed(1);
+                const y  = +(Y0 + r * ch).toFixed(1);
+                cellsHtml += `<rect x="${x}" y="${y}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}" class="lg-heat-cell" style="opacity:${op}"/>`;
+            }
+        }
+    }
+
+    return `<div class="lg-zone-wrap">
+        <svg class="lg-pitch-zone" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pitch location heat map — ${plotted} pitches by the current pitcher this game">
+            <polygon points="44,132 56,132 58,128 50,126 42,128" class="lg-home-plate"/>
+            ${cellsHtml}
+            <rect x="${zx.toFixed(1)}" y="${zy.toFixed(1)}" width="${zw.toFixed(1)}" height="${zh.toFixed(1)}" class="lg-zone-rect"/>
+            ${gridHtml}
+        </svg>
+        <div class="lg-zone-legend">
+            <span class="lg-zone-legend-heat">Fewer</span>
+            <span class="lg-heat-ramp" aria-hidden="true"></span>
+            <span class="lg-zone-legend-heat">More</span>
+            <span class="lg-zone-legend-note">${plotted} pitches this game</span>
+        </div>
+    </div>`;
+}
+
+// Renders the zone column (toggle + dots|heat + bases) and wires its events.
+// Called on every poll render and on toggle clicks (re-renders from cache).
+function _renderZone(panel, feed, gamePk) {
+    const plays       = feed.liveData?.plays || {};
+    const currentPlay = plays.currentPlay;
+    const pitches     = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const zoneCol     = panel.querySelector('.lg-zone-col');
+    if (!zoneCol) return;
+    if (!(currentPlay?.matchup && pitches.length > 0)) {
+        zoneCol.setAttribute('hidden', '');
+        zoneCol.innerHTML = '';
+        return;
+    }
+    zoneCol.removeAttribute('hidden');
+    _lgHideTooltip();
+    const key         = String(gamePk);
+    const mode        = _lgZoneMode.get(key) || 'dots';
+    const gamePitches = _collectPitcherGamePitches(plays.allPlays, currentPlay.matchup?.pitcher?.id);
+    const useHeat     = mode === 'heat' && gamePitches.length > 0;
+    zoneCol.innerHTML =
+        `<div class="lg-zone-section-label">Pitch Zone</div>` +
+        _buildZoneToggle(mode, gamePitches.length) +
+        (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay)) +
+        `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
+        _buildBaseDiagram(currentPlay);
+    _wireZoneEvents(panel, key);
 }
 
 // ── Phase 2: Base runner diagram ──────────────────────────────
@@ -689,7 +776,16 @@ function _lgHideTooltip() {
     }
 }
 
-function _wireZoneEvents(panel) {
+function _wireZoneEvents(panel, gamePk) {
+    const toggle = panel.querySelector('.lg-zone-col .lg-zone-toggle');
+    if (toggle && gamePk != null) {
+        toggle.addEventListener('click', e => {
+            const btn = e.target.closest?.('[data-lg-zone]');
+            if (!btn || btn.disabled) return;
+            _lgZoneMode.set(String(gamePk), btn.dataset.lgZone);
+            if (_lgFeedCache) _renderZone(panel, _lgFeedCache, String(gamePk));
+        });
+    }
     const zoneWrap = panel.querySelector('.lg-zone-wrap');
     if (!zoneWrap) return;
 

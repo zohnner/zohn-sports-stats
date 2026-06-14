@@ -403,8 +403,38 @@
 
 @media (max-width: 768px) {
     .lg-body { flex-direction: column; }
-    .lg-zone-col { width: 100%; flex: none; }
+    /* D-009 mobile order: lead with the play-by-play log; the spatial zone
+       drops below the fold (lower-priority view on a phone). */
+    .lg-tab-col  { order: 1; }
+    .lg-zone-col { width: 100%; flex: none; order: 2; }
 }
+
+/* ── Pitch zone view toggle (Dots / Heat) ──────────────────── */
+.lg-zone-toggle { display: flex; gap: 4px; justify-content: center; margin-bottom: var(--space-2); }
+.lg-zone-toggle-btn {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-mid);
+    background: var(--bg-raised);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.lg-zone-toggle-btn--active { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.lg-zone-toggle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Heat overlay — single hue, opacity encodes density (set inline per cell) */
+.lg-heat-cell { fill: var(--accent); }
+.lg-heat-ramp {
+    display: inline-block;
+    width: 44px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(to right, color-mix(in srgb, var(--accent) 12%, transparent), var(--accent));
+}
+.lg-zone-legend-heat { font-size: 0.65rem; color: var(--text-muted); }
+.lg-zone-legend-note { font-size: 0.65rem; color: var(--text-subtle); margin-left: 6px; }
 
 /* ── Phase 2: Pitch zone SVG ───────────────────────────────── */
 .lg-zone-wrap { position: relative; }

@@ -2582,3 +2582,18 @@ Owner flagged the multicolored "Season Totals" tiles on the player page as readi
 Semantic color (win/loss/live), rank badges, and percentile bars are intentionally unchanged. Syntax-checked; diff is color-only, no logic touched.
 
 **Remaining category-hue candidates for next touch (flagged, not fixed):** NBA player detail still tints values (`players.js`/`playerDetail.js`) — left alone per the MLB-only rule; `stat-rank--good/great/elite` reuse category tokens rather than the `--color-tier-*` performance tokens; a couple of component-card accents (`components.css` ~2284, ~2348). None are on the player page the owner flagged.
+
+---
+
+### Live Game Viewer — Pitch Heat Map + Mobile/a11y Polish — SHIPPED (2026-06-12)
+**Contributors:** owner (direction), Kael (color spec), Vera (toggle + mobile order), Axiom (implementation) | See DECISIONS.md D-009 amendment.
+
+**Shipped:**
+- **Pitch heat map** on the live game zone. New `_collectPitcherGamePitches(allPlays, pitcherId)` aggregates the current pitcher's whole-game pitches via the confirmed `coordinates.pX/pZ` fields; `_buildPitchHeat` bins them (7×9) over the plot region and shades cells by count in one hue (`--accent`, opacity-scaled). `_lgZoneGeom` factored out so dots and heat share identical zone geometry. `_renderZone` now owns the zone column and is called from `_renderPanel` and from the toggle handler (re-renders from `_lgFeedCache`, zero refetch).
+- **Dots/Heat toggle** — pill group above the zone, `aria-pressed`, Heat disabled until ≥1 game pitch, session-scoped via `_lgZoneMode` Map keyed by gamePk.
+- **Mobile order** — zone column drops below the play-by-play log on ≤768px (flex `order`), per the D-009 mobile-order intent.
+- **a11y** — zone SVGs now `role="img"` with mode-specific `aria-label` (dots: at-bat + pitch count; heat: pitcher game pitch count); existing dot keyboard/focus/Escape behavior unchanged.
+
+Verified: `node --check` clean; 16-assertion jsdom harness passed (aggregation excludes other pitchers, dots render, heat cells render with inline opacity, toggle disabled-state correct, `_renderZone` integration + hidden-when-no-at-bat). Pixel verification pending owner `/screenshot` (no browser in build env).
+
+**Gated, not built:** pitch **trajectory animation** — needs per-pitch movement/break fields not confirmed in `feed/live`. Parked pending an owner-supplied feed sample (Relay/Axiom schema-verification pattern). See D-009 amendment.
