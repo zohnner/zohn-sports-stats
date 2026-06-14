@@ -1407,19 +1407,19 @@ function _createMLBPlayerCard(player, stats, group, rank) {
 
     const statsHtml = stats
         ? (group === 'hitting' ? `
-            <div class="detail-row"><span class="detail-label">AVG</span><span class="detail-value" style="color:var(--color-pts)">${stats.avg || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">OBP</span><span class="detail-value" style="color:var(--color-reb)">${stats.obp || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">SLG</span><span class="detail-value" style="color:var(--color-ast)">${stats.slg || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">OPS</span><span class="detail-value" style="color:var(--color-stl)">${stats.ops || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">HR</span><span class="detail-value" style="color:var(--color-blk)">${stats.homeRuns ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">RBI</span><span class="detail-value" style="color:var(--color-pts)">${stats.rbi ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">AVG</span><span class="detail-value">${stats.avg || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">OBP</span><span class="detail-value">${stats.obp || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SLG</span><span class="detail-value">${stats.slg || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">OPS</span><span class="detail-value">${stats.ops || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">HR</span><span class="detail-value">${stats.homeRuns ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">RBI</span><span class="detail-value">${stats.rbi ?? '—'}</span></div>
         ` : `
-            <div class="detail-row"><span class="detail-label">ERA</span><span class="detail-value" style="color:var(--color-pts)">${stats.era || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">WHIP</span><span class="detail-value" style="color:var(--color-reb)">${stats.whip || '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">W-L</span><span class="detail-value" style="color:var(--color-ast)">${stats.wins ?? '—'}–${stats.losses ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">SO</span><span class="detail-value" style="color:var(--color-stl)">${stats.strikeOuts ?? '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">K/9</span><span class="detail-value" style="color:var(--color-blk)">${stats.strikeoutsPer9Inn ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1) : '—'}</span></div>
-            <div class="detail-row"><span class="detail-label">SV</span><span class="detail-value" style="color:var(--color-pts)">${stats.saves ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">ERA</span><span class="detail-value">${stats.era || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">WHIP</span><span class="detail-value">${stats.whip || '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">W-L</span><span class="detail-value">${stats.wins ?? '—'}–${stats.losses ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SO</span><span class="detail-value">${stats.strikeOuts ?? '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">K/9</span><span class="detail-value">${stats.strikeoutsPer9Inn ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1) : '—'}</span></div>
+            <div class="detail-row"><span class="detail-label">SV</span><span class="detail-value">${stats.saves ?? '—'}</span></div>
         `)
         : `<div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">No stats available</div>`;
 
@@ -1884,44 +1884,44 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     // One number, one home (2026-06-11): tiles hold counting/volume stats with
     // rank badges; all rates/advanced live in Key Metrics with percentile bars.
     const statDefs = group === 'hitting' ? [
-        ['HR',    stats.homeRuns,     'var(--color-reb)',  'homeRuns'],
-        ['RBI',   stats.rbi,          'var(--color-ast)',  'rbi'],
-        ['R',     stats.runs,         'var(--color-stl)',  'runs'],
-        ['H',     stats.hits,         'var(--color-min)',  'hits'],
-        ['2B',    stats.doubles,      '#67e8f9',           null],
-        ['3B',    stats.triples,      '#a3e635',           null],
-        ['TB',    stats.totalBases,   '#fb923c',           'totalBases'],
-        ['SB',    stats.stolenBases,  'var(--color-blk)',  'stolenBases'],
-        ['BB',    stats.baseOnBalls,  '#34d399',           'baseOnBalls'],
-        ['SO',    stats.strikeOuts,   '#64748b',           'strikeOuts'],
-        ['Speed', (() => { const sr = AppState.mlbSprintSpeed?.[playerId]; return sr ? parseFloat(sr.sprint_speed).toFixed(1) + ' ft/s' : null; })(), '#10b981', null],
-        ['PA',    batting?.pa,         '#64748b',          null],
-        ['GP',    stats.gamesPlayed,   '#64748b',          null],
+        ['HR',    stats.homeRuns,     'homeRuns'],
+        ['RBI',   stats.rbi,          'rbi'],
+        ['R',     stats.runs,         'runs'],
+        ['H',     stats.hits,         'hits'],
+        ['2B',    stats.doubles,      null],
+        ['3B',    stats.triples,      null],
+        ['TB',    stats.totalBases,   'totalBases'],
+        ['SB',    stats.stolenBases,  'stolenBases'],
+        ['BB',    stats.baseOnBalls,  'baseOnBalls'],
+        ['SO',    stats.strikeOuts,   'strikeOuts'],
+        ['Speed', (() => { const sr = AppState.mlbSprintSpeed?.[playerId]; return sr ? parseFloat(sr.sprint_speed).toFixed(1) + ' ft/s' : null; })(), null],
+        ['PA',    batting?.pa,         null],
+        ['GP',    stats.gamesPlayed,   null],
     ] : [
-        ['W',     stats.wins,               'var(--color-reb)',  'wins'],
-        ['L',     stats.losses,             '#64748b',           null],
-        ['SO',    stats.strikeOuts,         'var(--color-ast)',  'strikeOuts'],
-        ['IP',    stats.inningsPitched,     'var(--color-blk)',  null],
-        ['BB',    stats.baseOnBalls,        '#34d399',           null],
-        ['QS',    stats.qualityStarts,      '#86efac',           'qualityStarts'],
-        ['SV',    stats.saves,              'var(--color-pts)',  'saves'],
-        ['HLD',   stats.holds,              'var(--color-reb)',  null],
-        ['GS',    stats.gamesStarted,       '#64748b',           null],
-        ['GP',    stats.gamesPlayed,        '#64748b',          null],
+        ['W',     stats.wins,               'wins'],
+        ['L',     stats.losses,             null],
+        ['SO',    stats.strikeOuts,         'strikeOuts'],
+        ['IP',    stats.inningsPitched,     null],
+        ['BB',    stats.baseOnBalls,        null],
+        ['QS',    stats.qualityStarts,      'qualityStarts'],
+        ['SV',    stats.saves,              'saves'],
+        ['HLD',   stats.holds,              null],
+        ['GS',    stats.gamesStarted,       null],
+        ['GP',    stats.gamesPlayed,        null],
     ];
 
     const gl = typeof StatGlossary !== 'undefined' ? StatGlossary : null;
     const leagueRanks = _mlbPlayerLeagueRanks(playerId, group);
     const statsGrid = statDefs
         .filter(([, value]) => value != null)
-        .map(([label, value, color, rankKey]) => {
+        .map(([label, value, rankKey]) => {
             const ri = rankKey && leagueRanks[rankKey];
             const rankHtml = ri && ri.rank <= 30
                 ? `<div class="stat-rank${ri.rank <= 5 ? ' stat-rank--elite' : ri.rank <= 15 ? ' stat-rank--top' : ''}">#${ri.rank}</div>`
                 : '';
             return `
                 <div class="stat-item">
-                    <div class="stat-value" style="color:${color}">${value}</div>
+                    <div class="stat-value">${value}</div>
                     <div class="stat-label">${gl ? gl.auto(label) : label}</div>
                     ${rankHtml}
                 </div>
@@ -1934,19 +1934,19 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     // Fielding card — synchronous lookup from AppState populated by _fetchMLBLeaderSplits
     const _fs = AppState.mlbFieldingStats?.[playerId];
     const _fmtFpct = v => { const n = parseFloat(v); return isNaN(n) ? '—' : n.toFixed(3).replace(/^0\./, '.'); };
-    const _fsi = (val, label, color) => val != null
-        ? `<div class="stat-item"><div class="stat-value" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`
+    const _fsi = (val, label) => val != null
+        ? `<div class="stat-item"><div class="stat-value">${val}</div><div class="stat-label">${label}</div></div>`
         : '';
     const fieldingCardHtml = _fs ? `
         <div class="stats-card">
             <h2 class="detail-section-title">Fielding</h2>
             <div class="stats-grid">
-                ${_fsi(_fs.errors,                              'E',    'var(--color-loss)')}
-                ${_fsi(_fmtFpct(_fs.fielding),                 'FPCT', '#34d399')}
-                ${_fsi(_fs.chances,                            'TC',   'var(--text-secondary)')}
-                ${_fsi(_fs.assists,                            'A',    '#60a5fa')}
-                ${_fsi(_fs.putOuts,                            'PO',   '#c084fc')}
-                ${_fs.rangeFactorPerGame != null ? _fsi(parseFloat(_fs.rangeFactorPerGame).toFixed(2), 'RF/G', '#fbbf24') : ''}
+                ${_fsi(_fs.errors,                              'E')}
+                ${_fsi(_fmtFpct(_fs.fielding),                 'FPCT')}
+                ${_fsi(_fs.chances,                            'TC')}
+                ${_fsi(_fs.assists,                            'A')}
+                ${_fsi(_fs.putOuts,                            'PO')}
+                ${_fs.rangeFactorPerGame != null ? _fsi(parseFloat(_fs.rangeFactorPerGame).toFixed(2), 'RF/G') : ''}
             </div>
         </div>` : '';
 
@@ -4029,9 +4029,9 @@ function _mlbRosterCard(roster, colors) {
             const so   = stats.strikeOuts ?? '—';
             statsHtml = `
                 <div class="roster-stats">
-                    <span style="color:var(--color-pts)">${era}</span>
-                    <span style="color:var(--color-reb)">${whip}</span>
-                    <span style="color:var(--color-ast)">${so}</span>
+                    <span>${era}</span>
+                    <span>${whip}</span>
+                    <span>${so}</span>
                 </div>
                 <div class="roster-labels"><span>ERA</span><span>WHIP</span><span>K</span></div>
             `;
@@ -4041,9 +4041,9 @@ function _mlbRosterCard(roster, colors) {
             const rbi = stats.rbi     ?? '—';
             statsHtml = `
                 <div class="roster-stats">
-                    <span style="color:var(--color-pts)">${avg}</span>
-                    <span style="color:var(--color-reb)">${hr}</span>
-                    <span style="color:var(--color-ast)">${rbi}</span>
+                    <span>${avg}</span>
+                    <span>${hr}</span>
+                    <span>${rbi}</span>
                 </div>
                 <div class="roster-labels"><span>AVG</span><span>HR</span><span>RBI</span></div>
             `;

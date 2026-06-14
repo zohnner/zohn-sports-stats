@@ -2561,3 +2561,24 @@ Walked the full STL@NYM prep sheet in the owner's browser. Verdict: the apparent
 **Vera (behavior review):** back button (`← Back to Scores`) and the `_closeExistingPanel` page-mode branch (`navigateTo('mlb-games')`) both intact; polling lifecycle stops on nav-away via the existing `stopLiveGamePolling()` in `navigateTo`. No state-cleanup gap introduced — navigating away restores `.players-grid` on the next view.
 
 **Secondary finding (Finn, flagged — not fixed):** mid-session manual hash edits still don't re-route — there is no `hashchange` listener; routing runs through `navigateTo()` and a first-load `_loadFromHash()` only. Carried over from the 2026-06-11 walkthrough (parked as minor). If "improve nav functions" is meant to cover this, it needs an Axiom call on adding a `hashchange` handler vs. leaving it. Routed to Axiom.
+
+---
+
+### De-AI Pass Round 3 — Off-Theme Decorative Color — SHIPPED (2026-06-12)
+**Contributors:** owner (report), Kael (audit + ruling), Axiom (implementation)
+
+Owner flagged the multicolored "Season Totals" tiles on the player page as reading "vibecoded." Kael's audit confirmed it and found the same anti-pattern across MLB/shared surfaces: stat **values** were tinted by category — a different hue per stat (HR emerald, RBI sky, R violet, plus raw hex `#67e8f9`, `#a3e635`, `#fb923c`…). This directly violates the project's own token rule (`variables.css`: "do NOT use stat-category tokens for grading — those tokens mark category, not quality") and Kael's principle "color is meaning, not decoration."
+
+**Kael ruling (now the standing rule):** stat values render in one neutral weight (`--text-primary`/`--text-secondary`). Color is reserved for (a) semantic state — win/loss/live — and (b) performance quality — rank badges and percentile bars. Category never gets a hue. Data is the hero; the rainbow was chrome competing with it.
+
+**Shipped (Axiom):**
+- Player detail **Season Totals** tiles — dropped the per-stat color column entirely (hitting + pitching); values now uniform. Rank badges (quality) untouched.
+- Player detail compact stats card (AVG/OBP/SLG/OPS/HR/RBI; ERA/WHIP/W-L/SO/K9/SV) — removed per-stat tint.
+- **Fielding** card tiles — removed tint.
+- **Team roster** card stat lines (ERA/WHIP/K; AVG/HR/RBI) — removed tint.
+- Stat-table columns `.tbl-pts/.tbl-reb/.tbl-ast/.tbl-pct` (`main.css`) — collapsed to one `--text-primary` rule.
+- Home `.examples-panel` — replaced the surviving `linear-gradient` + category-amber heading with a flat `--accent-subtle` panel and `--accent` heading (kills a gradient Round 1 missed).
+
+Semantic color (win/loss/live), rank badges, and percentile bars are intentionally unchanged. Syntax-checked; diff is color-only, no logic touched.
+
+**Remaining category-hue candidates for next touch (flagged, not fixed):** NBA player detail still tints values (`players.js`/`playerDetail.js`) — left alone per the MLB-only rule; `stat-rank--good/great/elite` reuse category tokens rather than the `--color-tier-*` performance tokens; a couple of component-card accents (`components.css` ~2284, ~2348). None are on the player page the owner flagged.
