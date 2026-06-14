@@ -12,7 +12,7 @@ X_ACCESS_TOKEN_SECRET = os.environ["X_ACCESS_TOKEN_SECRET"]
 
 # ── SportStrata base URL ───────────────────────────────────────
 # Used to construct links in tweet templates
-SPORTSTRATA_URL = os.getenv("SPORTSTRATA_URL", "https://sportsstrata.com")
+SPORTSTRATA_URL = os.getenv("SPORTSTRATA_URL", "https://sportstrata.cc")
 
 # ── Database ───────────────────────────────────────────────────
 DB_PATH = os.getenv("DB_PATH", "bot.db")

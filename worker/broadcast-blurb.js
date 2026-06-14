@@ -15,7 +15,8 @@ const MODEL         = 'claude-haiku-4-5-20251001';
 // Allowed CORS origins — only these origins receive a matching header.
 // Any other origin gets the production domain, causing the browser to block it.
 const ALLOWED_ORIGINS = [
-    'https://sportsstrata.com',
+    'https://sportstrata.cc',
+    'https://www.sportstrata.cc',
     'https://zohn-sports-stats.pages.dev',
     'http://localhost:3001',
     'http://localhost:3002',
