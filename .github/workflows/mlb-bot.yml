@@ -1,25 +1,20 @@
-name: MLB Statistical Bot
+name: SportStrata Social Digest
+
+# Generates ready-to-post draft posts as a downloadable artifact.
+# Does NOT post to X — no API keys/secrets required. You post manually.
 
 on:
   schedule:
-    - cron: '0 9 * * *'    # 5 AM ET (UTC-4) — overnight recap
-    - cron: '0 16 * * *'   # Noon ET — drought check
-  workflow_dispatch:        # Manual trigger for testing
+    - cron: '0 11 * * *'    # ~7 AM ET — digest of yesterday's finals
+  workflow_dispatch:
     inputs:
-      mode:
-        description: 'Run mode'
-        required: true
-        default: 'dryrun'
-        type: choice
-        options: [recap, drought, dryrun, seed]
       date:
-        description: 'Target date (YYYY-MM-DD), leave blank for yesterday'
+        description: 'Target date (YYYY-MM-DD), blank = yesterday'
         required: false
 
 jobs:
-  run-bot:
+  digest:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,50 +28,27 @@ jobs:
       - name: Install dependencies
         run: pip install -r bot/requirements.txt
 
-      - name: Restore database
+      - name: Restore history DB
         uses: actions/cache@v4
         with:
           path: bot/bot.db
           key: mlb-bot-db-${{ github.run_id }}
           restore-keys: mlb-bot-db-
 
-      - name: Run overnight recap
-        if: github.event_name == 'schedule' && github.event.schedule == '0 9 * * *'
+      - name: Generate digest
         working-directory: bot
-        env:
-          X_API_KEY:             ${{ secrets.X_API_KEY }}
-          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
-        run: python main.py --mode recap
-
-      - name: Run drought check
-        if: github.event_name == 'schedule' && github.event.schedule == '0 16 * * *'
-        working-directory: bot
-        env:
-          X_API_KEY:             ${{ secrets.X_API_KEY }}
-          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
-        run: python main.py --mode drought
-
-      - name: Run manual dispatch
-        if: github.event_name == 'workflow_dispatch'
-        working-directory: bot
-        env:
-          X_API_KEY:             ${{ secrets.X_API_KEY }}
-          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          SPORTSTRATA_URL:       ${{ secrets.SPORTSTRATA_URL }}
         run: |
-          python main.py --mode ${{ github.event.inputs.mode }} \
-            ${{ github.event.inputs.date && format('--date {0}', github.event.inputs.date) || '' }}
+          python digest.py ${{ github.event.inputs.date && format('--date {0}', github.event.inputs.date) || '' }}
 
-      - name: Save database
+      - name: Save history DB
         uses: actions/cache@v4
         with:
           path: bot/bot.db
           key: mlb-bot-db-${{ github.run_id }}
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: sportstrata-digest
+          path: bot/drafts/*.md
+          if-no-files-found: warn
