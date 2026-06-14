@@ -1933,13 +1933,8 @@ main {
     overflow: hidden;
     position: relative;
 }
-.home-hot-tile::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--hot-color) 6%, transparent), transparent 60%);
-    pointer-events: none;
-}
+/* De-AI follow-up: gradient wash removed — flat card, single accent left-border,
+   no per-stat color glow (the tiles were the last multicolor home surface). */
 .home-hot-tile:hover {
     border-color: var(--hot-color);
     transform: translateY(-2px);
@@ -1999,6 +1994,7 @@ main {
     font-weight: 500;
 }
 .home-hot-stat {
+    color: var(--accent);
     font-size: 1.15rem;
     font-weight: 900;
     font-family: var(--font-mono);
@@ -3560,4 +3556,5 @@ a:focus:not(:focus-visible),
     border-top: 1px solid var(--border-default);
     font-size: 0.6875rem;
     color: var(--text-subtle);
-    line-height: 
+    line-height: 1.5;
+}

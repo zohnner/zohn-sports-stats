@@ -2597,3 +2597,12 @@ Semantic color (win/loss/live), rank badges, and percentile bars are intentional
 Verified: `node --check` clean; 16-assertion jsdom harness passed (aggregation excludes other pitchers, dots render, heat cells render with inline opacity, toggle disabled-state correct, `_renderZone` integration + hidden-when-no-at-bat). Pixel verification pending owner `/screenshot` (no browser in build env).
 
 **Gated, not built:** pitch **trajectory animation** — needs per-pitch movement/break fields not confirmed in `feed/live`. Parked pending an owner-supplied feed sample (Relay/Axiom schema-verification pattern). See D-009 amendment.
+
+---
+
+### De-AI Follow-up — Hot Right Now Strip + Font Audit (2026-06-14)
+**Contributors:** owner (report), Kael (audit + ruling), Axiom (implementation)
+
+**Hot Right Now multicolor — FIXED.** The home "Hot Right Now" tiles (`home-hot-tile`, rendered in `app.js`) were the last multicolor home surface Rounds 1/3 missed: four hardcoded category hues (HR red, AVG amber, ERA pink, OPS violet) drove a per-stat colored left-border, a `::before` gradient wash, and the colored stat value — the "multicolored glow" on the dark tiles. Kael ruling (per Round 3 standard — color is state/quality, not category): collapse to the single brand `--accent`. Dropped the per-stat `color` from the `spots` array and both inline styles; `.home-hot-stat` now renders in `--accent`; removed the `::before` gradient wash for a flat card. Also repaired the `main.css` footer truncation left by the Round 3 sync corruption (footer rule restored).
+
+**Font audit (Kael) — finding, owner ruling pending.** De-AI Round 1 (`ef02de0`) dropped **Inter** (body sans) and **JetBrains Mono** (stat numerals) for system stacks, citing ~100KB perf. It KEPT **Barlow Semi Condensed** (`--font-display`), which still loads and carries the headings, scores, and stat values — so the signature aesthetic is intact. The `Themes/` docs are team color palettes, not site typography. Open question for the owner: restore Inter + JetBrains Mono (revert Round 1 fonts), restore just the stat monospace, or keep system stacks. No font change made yet.

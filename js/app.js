@@ -429,15 +429,15 @@ function _renderHotStrip() {
     };
 
     const spots = [
-        { split: _top(hitting, 'homeRuns'),  key: 'homeRuns',  label: 'Home Runs',  unit: 'HR',  color: '#ef4444', fmt: v => String(v) },
-        { split: _top(hitting, 'avg'),        key: 'avg',       label: 'Batting Avg', unit: 'AVG', color: '#fbbf24', fmt: v => _fmtAvgLocal(v) },
-        { split: _top(pitching, 'era', false),key: 'era',       label: 'ERA Leader',  unit: 'ERA', color: '#f472b6', fmt: v => parseFloat(v).toFixed(2) },
-        { split: _top(hitting, 'ops'),        key: 'ops',       label: 'OPS Leader',  unit: 'OPS', color: '#a78bfa', fmt: v => _fmtAvgLocal(v) },
+        { split: _top(hitting, 'homeRuns'),  key: 'homeRuns',  label: 'Home Runs',  unit: 'HR',  fmt: v => String(v) },
+        { split: _top(hitting, 'avg'),        key: 'avg',       label: 'Batting Avg', unit: 'AVG', fmt: v => _fmtAvgLocal(v) },
+        { split: _top(pitching, 'era', false),key: 'era',       label: 'ERA Leader',  unit: 'ERA', fmt: v => parseFloat(v).toFixed(2) },
+        { split: _top(hitting, 'ops'),        key: 'ops',       label: 'OPS Leader',  unit: 'OPS', fmt: v => _fmtAvgLocal(v) },
     ].filter(s => s.split);
 
     if (!spots.length) return;
 
-    grid.innerHTML = spots.map(({ split, key, label, unit, color, fmt }) => {
+    grid.innerHTML = spots.map(({ split, key, label, unit, fmt }) => {
         const val    = fmt(parseFloat(split.stat[key]));
         const name   = split.player?.fullName || '—';
         const abbr   = split.team?.abbreviation || '';
@@ -446,7 +446,7 @@ function _renderHotStrip() {
         const headshot = pid && typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(pid) : null;
         const initials = name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
         return `
-            <button class="home-hot-tile" data-pid="${pid || ''}" style="--hot-color:${color};--team-color:${colors.primary}">
+            <button class="home-hot-tile" data-pid="${pid || ''}" style="--team-color:${colors.primary}">
                 <div class="home-hot-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
                     ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                     <span class="home-hot-initials">${initials}</span>
@@ -456,7 +456,7 @@ function _renderHotStrip() {
                     <span class="home-hot-name">${_escHtml(name)}</span>
                     <span class="home-hot-team">${_escHtml(abbr)}</span>
                 </div>
-                <div class="home-hot-stat" style="color:${color}">${val}<span class="home-hot-unit">${unit}</span></div>
+                <div class="home-hot-stat">${val}<span class="home-hot-unit">${unit}</span></div>
             </button>`;
     }).join('');
 
