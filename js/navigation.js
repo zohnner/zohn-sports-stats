@@ -454,6 +454,10 @@ function _renderNFLView(view) {
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
 
     switch (view) {
+        case 'nfl-mock':
+            if (viewCount) viewCount.textContent = 'Mock Draft';
+            if (typeof loadMockDraft === 'function') loadMockDraft();
+            break;
         case 'nfl-players':
         case 'nfl-leaders':
             if (viewCount) viewCount.textContent = 'NFL Leaders';
@@ -664,7 +668,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-teams', 'nfl-games', 'nfl-standings'];
+        const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
         if (mlbViews.includes(hash)) {
@@ -696,7 +700,7 @@ const SUB_NAV_TABS = {
         { v: 'mlb-compare', l: 'Compare' }, { v: 'arcade', l: 'Arcade' },
     ],
     nfl: [
-        { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' }, { v: 'nfl-teams', l: 'Teams' },
+        { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' }, { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-mock', l: 'Mock Draft' },
     ],
 };
 

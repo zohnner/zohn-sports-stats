@@ -3609,3 +3609,54 @@ a:focus:not(:focus-visible),
     background: var(--accent); color: var(--text-on-accent); cursor: pointer;
 }
 .nfl-offseason-btn--ghost { background: transparent; color: var(--accent); }
+
+/* ── NFL Mock Draft simulator ──────────────────────────────── */
+.md-wrap { max-width: 1100px; margin: 0 auto; }
+.md-setup { max-width: 520px; margin: 3rem auto; text-align: center; display: flex; flex-direction: column; gap: 1rem; }
+.md-title { font-family: var(--font-display); font-size: 2rem; color: var(--text-primary); margin: 0; }
+.md-sub { color: var(--text-secondary); margin: 0; }
+.md-setup-row { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+.md-setup-row label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.md-setup-row select { font-size: 0.9rem; padding: 0.4rem 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--border-mid); background: var(--bg-raised); color: var(--text-primary); }
+.md-btn { font-size: 0.85rem; font-weight: 700; padding: 0.55rem 1.2rem; border-radius: var(--radius-md); border: 1px solid var(--border-mid); background: var(--bg-raised); color: var(--text-primary); cursor: pointer; }
+.md-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); align-self: center; }
+.md-btn--ghost { background: transparent; }
+.md-note { color: var(--text-subtle); font-size: 0.75rem; margin: 0; }
+.md-loading, .md-empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+.md-draft-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.md-onclock { display: block; font-family: var(--font-display); font-size: 1.15rem; color: var(--accent); font-weight: 700; }
+.md-pickno { font-size: 0.8rem; color: var(--text-muted); }
+.md-draft-grid { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; align-items: start; }
+.md-available { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
+.md-avail-controls { padding: 0.6rem; border-bottom: 1px solid var(--border-default); display: flex; flex-direction: column; gap: 0.5rem; }
+.md-search { width: 100%; padding: 0.45rem 0.7rem; border-radius: var(--radius-md); border: 1px solid var(--border-mid); background: var(--bg-raised); color: var(--text-primary); }
+.md-pos-filters { display: flex; gap: 4px; flex-wrap: wrap; }
+.md-pos-btn { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-full); border: 1px solid var(--border-mid); background: transparent; color: var(--text-secondary); cursor: pointer; }
+.md-pos-btn--on { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.md-list { max-height: 62vh; overflow-y: auto; }
+.md-row { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.5rem 0.8rem; border: none; border-bottom: 1px solid var(--border-default); background: transparent; color: var(--text-primary); cursor: pointer; text-align: left; font-size: 0.85rem; }
+.md-row:hover { background: var(--bg-card-hover); }
+.md-row-pos { font-weight: 800; font-size: 0.7rem; width: 28px; flex-shrink: 0; }
+.md-row-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-row-team { color: var(--text-muted); font-size: 0.72rem; width: 34px; flex-shrink: 0; }
+.md-row-adp { color: var(--text-subtle); font-size: 0.7rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.md-surv { font-size: 0.7rem; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.md-surv--low { color: var(--color-loss); }
+.md-surv--high { color: var(--color-win); }
+.md-roster { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 0.8rem; }
+.md-roster h3 { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-primary); }
+.md-need { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; padding: 2px 0; }
+.md-roster-list { margin-top: 0.6rem; border-top: 1px solid var(--border-default); padding-top: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.md-rl-row { font-size: 0.78rem; color: var(--text-secondary); }
+.md-rl-pos { font-weight: 800; font-size: 0.7rem; }
+.md-rl-team { color: var(--text-subtle); font-size: 0.7rem; }
+.md-complete { text-align: center; max-width: 640px; margin: 2rem auto; }
+.md-grade-card { display: inline-flex; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1rem 1.5rem; margin: 1rem 0; }
+.md-grade { font-family: var(--font-display); font-size: 3rem; font-weight: 900; color: var(--accent); }
+.md-grade-meta { text-align: left; display: flex; flex-direction: column; }
+.md-final-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin: 1.5rem 0; text-align: left; }
+.md-fr-group { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.6rem; }
+.md-fr-pos { font-weight: 800; font-size: 0.75rem; margin-bottom: 0.3rem; }
+.md-fr-row { font-size: 0.78rem; color: var(--text-secondary); padding: 1px 0; }
+@media (max-width: 760px) { .md-draft-grid { grid-template-columns: 1fr; } .md-roster { order: -1; } }
