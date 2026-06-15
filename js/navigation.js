@@ -11,9 +11,17 @@ function setupNavigation() {
         return;
     }
 
-    // Tab clicks — delegate to navigateTo so state/hash always stay in sync
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    // Tab clicks — sub-nav items are re-rendered per sport, so they're handled by
+    // delegation (below); everything else is bound directly.
+    document.querySelectorAll('.nav-tab:not(.sub-nav-item)').forEach(tab => {
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
+    });
+    document.getElementById('subNav')?.addEventListener('click', e => {
+        const t = e.target.closest('.nav-tab[data-view]');
+        if (t) navigateTo(t.dataset.view);
+    });
+    document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
+        b.addEventListener('click', () => switchSport(b.dataset.sport));
     });
 
     initMenu();
@@ -202,7 +210,7 @@ function switchSport(sport) {
     const brandConfig = {
         nba: { icon: '🏀', sub: 'NBA Analytics',  defaultView: 'players'     },
         mlb: { icon: '⚾',  sub: 'MLB Analytics',  defaultView: 'mlb-players' },
-        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-players' },
+        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-games' },
         nhl: { icon: '🏒',  sub: 'NHL Analytics',  defaultView: 'nhl-players' },
     };
     const cfg = brandConfig[sport] || brandConfig.mlb;
@@ -678,6 +686,31 @@ function _loadFromHash() {
 }
 
 // Updates brand text/icon for the active sport
+// Per-sport sub-nav tab sets. NFL is the D-012 light surface: Scores/Standings/Teams.
+const SUB_NAV_TABS = {
+    mlb: [
+        { v: 'mlb-players', l: 'Players' }, { v: 'mlb-leaders', l: 'Leaders' },
+        { v: 'mlb-teams', l: 'Teams' }, { v: 'mlb-standings', l: 'Standings' },
+        { divider: true },
+        { v: 'mlb-prep', l: 'Prep' }, { v: 'mlb-builder', l: 'Builder' },
+        { v: 'mlb-compare', l: 'Compare' }, { v: 'arcade', l: 'Arcade' },
+    ],
+    nfl: [
+        { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' }, { v: 'nfl-teams', l: 'Teams' },
+    ],
+};
+
+function _renderSubNav(sport) {
+    const nav = document.getElementById('subNav');
+    if (!nav) return;
+    const tabs = SUB_NAV_TABS[sport] || SUB_NAV_TABS.mlb;
+    nav.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
+    nav.innerHTML = tabs.map(t => t.divider
+        ? '<span class="sub-nav-divider" aria-hidden="true"></span>'
+        : `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`).join('');
+    nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
+}
+
 function _applySportUI(sport) {
     const brands = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
     const [icon, sub] = brands[sport] || brands.mlb;
@@ -685,6 +718,12 @@ function _applySportUI(sport) {
     const brandSub  = document.getElementById('brandSub');
     if (brandIcon) brandIcon.textContent = icon;
     if (brandSub)  brandSub.textContent  = sub;
+    _renderSubNav(sport);
+    document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
+        const on = b.dataset.sport === sport;
+        b.classList.toggle('sport-switch-btn--active', on);
+        b.setAttribute('aria-pressed', String(on));
+    });
 }
 
 // ── Utility ──────────────────────────────────────────────────

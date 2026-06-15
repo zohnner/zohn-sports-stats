@@ -3558,3 +3558,33 @@ a:focus:not(:focus-visible),
     color: var(--text-subtle);
     line-height: 1.5;
 }
+
+/* ── Sport switcher (header MLB / NFL) ─────────────────────── */
+.sport-switch {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-full);
+    margin-left: var(--space-3);
+    flex-shrink: 0;
+}
+.sport-switch-btn {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 3px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+.sport-switch-btn--active { background: var(--accent); color: var(--text-on-accent); }
+.sport-switch-btn:hover:not(.sport-switch-btn--active) { color: var(--text-primary); }
+@media (max-width: 480px) {
+    .sport-switch { margin-left: var(--space-2); }
+    .sport-switch-btn { padding: 3px 9px; }
+}
