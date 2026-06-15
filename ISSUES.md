@@ -2655,3 +2655,20 @@ Live beta pass found several Leaders panels showing "No data." Root-caused both 
 2. **Quality Starts / QS% — not in the data source.** `qualityStarts` is absent from the MLB Stats API leader splits (`qualityStartsKeyExists: false`, totalQS 0). Rather than show a permanently-broken panel, the season-leaders renderer now **hides any panel that is empty in the default (unfiltered) view**; filtered views still show empties so "no matches" stays visible. QS reappears automatically if a source is wired later.
 
 Verified: corrected Savant query returns populated K%/Whiff%/BB% live; `node --check` clean; diff is the four intended edits only.
+
+---
+
+### NFL Fantasy — Mock Draft Simulator (spec / three gates) (2026-06-14)
+**Contributors:** Vera, Kael, Axiom, Relay | Roadmap: DECISIONS.md D-014. Scope: no-login, casual/redraft.
+
+Foundation added: `functions/api/sleeper.js` (same-origin Sleeper proxy). Build is gated on the three specs below closing AND a data check.
+
+**Relay — data gate (must validate post-deploy before building the value engine):** confirm via `/api/sleeper?path=/v1/players/nfl` what's actually available — positions, team, status, and an ADP-like signal (`search_rank`). Sleeper has no direct ADP/projections endpoint; if `search_rank` is too coarse, supplement ADP/projections from another ToS-clean source (decision, not assumption). VORP/PAR are derived from projections, so they depend on this.
+
+**Vera — behavioral spec:** Flow: setup (teams 8/10/12/14, scoring PPR/half/std, snake, your slot) → live board → AI opponents auto-pick on ADP + tier with controlled variance → your turn (search/filter best-available, position needs) → recap (team grade, value vs. ADP, VORP-lite). States: players loading, error/empty, draft in progress, your-turn, complete. Session-only, fully resettable; **no login, nothing persisted server-side.** Keyboard + mobile flows specced.
+
+**Kael — visual spec:** Immersive draft board (rounds × teams grid), turn/countdown indicator, "best available" panel, a "war room" panel for your roster needs, position color-coding drawn from the existing token system (no new palette). Reuse card/leaderboard/table language; restrained, broadcast-grade.
+
+**Axiom — feasibility:** Monte Carlo (thousands of sims for value ranges) runs **client-side in a Web Worker** (non-blocking) over cached player values — no backend, fits static Pages. New `js/fantasy.js` + an `nfl-mock` route; AI-opponent logic = ADP/tier + variance (no LLM). Three gates required before Finn builds.
+
+**Accounts foundation (parallel planning, Axiom — design only, not built):** target Cloudflare-native (Pages + D1 for user/league data + Turnstile/Access or lightweight auth). Design the mock-draft result + roster shapes so "save my draft," league import (Sleeper league/roster), and personalized grades slot in later without a rebuild. No auth code ships in this phase.
