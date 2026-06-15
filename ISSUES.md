@@ -2633,3 +2633,14 @@ Walked the live production site. Deploy + `sportstrata.cc` confirmed live; home,
 3. **LOW, confirmed — `hashchange` deep links.** Pasting a `#mlb-...` URL into an already-open tab doesn't re-route (no `hashchange` listener). Cold loads and in-app clicks work. Parked.
 4. **Minor data gaps:** pitcher Statcast leaders (K%/Whiff%/CSW%/BB%) and Quality Starts show "No data" on the leaders page — confirm the source/qualifier before promoting those sections.
 5. **Positive:** the "Player not found" state is well-designed (clear message + "Browse all players" CTA), not a blank screen.
+
+---
+
+### Leader Qualification — rate leaderboards + Hot Right Now (2026-06-14)
+**Contributors:** owner (direction), Relay (qualifier), Axiom (implementation), Folio (record)
+
+Fixes the beta credibility issue where 1-for-1 lines topped rate boards (Batting Avg 1.000, OPS 3.250, ERA 0.00). Applied the MLB-standard qualifier — **3.1 PA per team game** for hitters, **1 IP per team game** for pitchers — derived at runtime from the max games-played in the pool, so it auto-scales with the season:
+- **Home "Hot Right Now"** (`app.js` `_renderHotStrip`): AVG/OPS pick from qualified hitters, ERA from qualified pitchers (HR stays full-pool — counting stat). Falls back to the full pool if nobody qualifies yet.
+- **Leaders page** (`mlb.js` season-leaders filter): every rate category (`cat.decimals > 0`) now requires the PA/IP qualifier by default, independent of the user's Min GP/IP control. Counting stats unchanged. Panels show the "N qualifying" count.
+
+**Tradeoff to note:** the 1-IP/game pitching qualifier (≈70 IP now) excludes relievers from rate boards like K/9 — that's the standard "qualified" definition (matches ERA-title rules), but if we want elite reliever rates surfaced, we'd add a lower reliever bar later.

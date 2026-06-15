@@ -428,11 +428,21 @@ function _renderHotStrip() {
         return sorted[0] || null;
     };
 
+    // Qualified pools for rate leaders (MLB standard: 3.1 PA / 1 IP per team game),
+    // so a 1-for-1 line can't appear as the batting-average or OPS "leader".
+    const _teamG  = Math.max(0, ...hitting.map(s => parseInt(s.stat?.gamesPlayed, 10) || 0));
+    const _paQual = Math.round(3.1 * _teamG);
+    const _ipQual = _teamG;
+    const _qh = hitting.filter(s => (parseFloat(s.stat?.plateAppearances) || 0) >= _paQual);
+    const _qp = pitching.filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= _ipQual);
+    const qHit = _qh.length ? _qh : hitting;
+    const qPit = _qp.length ? _qp : pitching;
+
     const spots = [
         { split: _top(hitting, 'homeRuns'),  key: 'homeRuns',  label: 'Home Runs',  unit: 'HR',  fmt: v => String(v) },
-        { split: _top(hitting, 'avg'),        key: 'avg',       label: 'Batting Avg', unit: 'AVG', fmt: v => _fmtAvgLocal(v) },
-        { split: _top(pitching, 'era', false),key: 'era',       label: 'ERA Leader',  unit: 'ERA', fmt: v => parseFloat(v).toFixed(2) },
-        { split: _top(hitting, 'ops'),        key: 'ops',       label: 'OPS Leader',  unit: 'OPS', fmt: v => _fmtAvgLocal(v) },
+        { split: _top(qHit, 'avg'),           key: 'avg',       label: 'Batting Avg', unit: 'AVG', fmt: v => _fmtAvgLocal(v) },
+        { split: _top(qPit, 'era', false),    key: 'era',       label: 'ERA Leader',  unit: 'ERA', fmt: v => parseFloat(v).toFixed(2) },
+        { split: _top(qHit, 'ops'),           key: 'ops',       label: 'OPS Leader',  unit: 'OPS', fmt: v => _fmtAvgLocal(v) },
     ].filter(s => s.split);
 
     if (!spots.length) return;

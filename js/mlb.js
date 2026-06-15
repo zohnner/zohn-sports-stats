@@ -4706,6 +4706,12 @@ function displayMLBLeaderboards() {
     seasonDivider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M2 20V9M9 20V4M16 20V12M23 20V6"/></svg>Season Leaders · ${season}</span>${freshnessLabel}`;
     fragment.appendChild(seasonDivider);
 
+    // Rate-stat qualifier (MLB standard: 3.1 PA / 1 IP per team game) so small-sample
+    // lines (e.g. 1-for-1) don't top rate leaderboards. Counting stats need no qualifier.
+    const _teamG  = Math.max(0, ...((splits.hitting || []).map(s => parseInt(s.stat?.gamesPlayed, 10) || 0)));
+    const _paQual = Math.round(3.1 * _teamG);
+    const _ipQual = _teamG;
+
     MLB_LEADER_CATS.forEach(cat => {
         const catSplits = splits[cat.group] || [];
 
@@ -4722,6 +4728,12 @@ function displayMLBLeaderboards() {
             .filter(s => {
                 const numVal = parseFloat(s.stat?.[cat.key]);
                 if (isNaN(numVal)) return false;
+                if (cat.decimals > 0) { // rate stat — require a qualified sample
+                    const q = cat.group === 'pitching'
+                        ? (parseFloat(s.stat?.inningsPitched) || 0) >= _ipQual
+                        : (parseFloat(s.stat?.plateAppearances) || 0) >= _paQual;
+                    if (!q) return false;
+                }
                 if (minGP > 0) {
                     const qualVal = cat.group === 'pitching'
                         ? (parseFloat(s.stat?.inningsPitched) || 0)
@@ -4754,7 +4766,7 @@ function displayMLBLeaderboards() {
         header.title = `Click to sort ${dir ? 'ascending' : 'descending'}`;
         header.innerHTML = `
             <span class="leaderboard-title">${cat.label}</span>
-            <span class="leaderboard-unit" style="color:${cat.color}">${season} ${teamFilt !== 'all' ? teamFilt : 'MLB'} · ${unitTipMlb}${(minGP > 0 || applyPosFilt || teamFilt !== 'all') ? ` · ${sorted.length} qualifying` : ''}</span>
+            <span class="leaderboard-unit" style="color:${cat.color}">${season} ${teamFilt !== 'all' ? teamFilt : 'MLB'} · ${unitTipMlb}${(minGP > 0 || applyPosFilt || teamFilt !== 'all' || cat.decimals > 0) ? ` · ${sorted.length} qualifying` : ''}</span>
             <button class="lb-export-btn" aria-label="Export ${cat.label} as CSV" title="Download CSV" onclick="event.stopPropagation()">↓CSV</button>
             <span class="leaderboard-sort-arrow">${dir ? '▼' : '▲'}</span>
         `;
