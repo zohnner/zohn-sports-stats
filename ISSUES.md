@@ -2606,3 +2606,17 @@ Verified: `node --check` clean; 16-assertion jsdom harness passed (aggregation e
 **Hot Right Now multicolor — FIXED.** The home "Hot Right Now" tiles (`home-hot-tile`, rendered in `app.js`) were the last multicolor home surface Rounds 1/3 missed: four hardcoded category hues (HR red, AVG amber, ERA pink, OPS violet) drove a per-stat colored left-border, a `::before` gradient wash, and the colored stat value — the "multicolored glow" on the dark tiles. Kael ruling (per Round 3 standard — color is state/quality, not category): collapse to the single brand `--accent`. Dropped the per-stat `color` from the `spots` array and both inline styles; `.home-hot-stat` now renders in `--accent`; removed the `::before` gradient wash for a flat card. Also repaired the `main.css` footer truncation left by the Round 3 sync corruption (footer rule restored).
 
 **Font audit (Kael) — finding, owner ruling pending.** De-AI Round 1 (`ef02de0`) dropped **Inter** (body sans) and **JetBrains Mono** (stat numerals) for system stacks, citing ~100KB perf. It KEPT **Barlow Semi Condensed** (`--font-display`), which still loads and carries the headings, scores, and stat values — so the signature aesthetic is intact. The `Themes/` docs are team color palettes, not site typography. Open question for the owner: restore Inter + JetBrains Mono (revert Round 1 fonts), restore just the stat monospace, or keep system stacks. No font change made yet.
+
+---
+
+### Public Beta Readiness Review (2026-06-14)
+**Contributors:** Cipher (data/security), Vera (UX), Kael + Relay (layout/data presentation), Folio (record)
+
+**Cipher — data liabilities.** Overall clean: no accounts/login, **no PII collected or transmitted**, no third-party trackers/analytics, no hardcoded secrets in source (all server-side Worker env), local storage is cache/prefs/favorites only (never sent). `.gitignore` covers `.env`, `*.key/*.pem`, and `owner-checklist-*.md`. Findings:
+- **P1-006 (open owner action) — the one real liability.** The old BDL key is in public git history (entered in `4082a90`). Current source is clean (`BDL_API_KEY=''`), but on a public repo the old key is extractable. **Owner must confirm it's invalidated at balldontlie.io;** optional history scrub for hygiene. This is the top pre-promotion item.
+- **CSP uses `'unsafe-inline'`** (script + style) — necessary for the no-build inline scripts/styles, mitigated by `_escHtml` discipline, but it's the main XSS-hardening gap. Acceptable for beta; note for later.
+- **Kalshi betting code path** in `worker/bdl-proxy.js` (env-gated, inert unless keys set). Scope/brand/regulatory flag for a publicly promoted stats site — confirm it stays disabled.
+
+**Vera — UX.** Public Beta gates closed 2026-06-01; recent fixes (full-page live view, hot strip, fonts, cold deep-link) land the experience. Residual: mid-session hash edits don't re-route (no `hashchange` listener — parked, minor). **Gating item: several fixes are committed but must be pushed and deployed (and the `sportstrata.cc` custom domain attached) before promoting** — users should land on the fixed build.
+
+**Kael + Relay — layout / data presentation (for consideration, not changes).** Continue the Principle-7 sweep (team-detail vs standings, compare bars vs radar). Review first-visit home hierarchy for a cold beta visitor, off-season/no-games empty states, and re-run Lighthouse post-deploy (D-011). All forward-looking — no silent edits.
