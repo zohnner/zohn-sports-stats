@@ -314,7 +314,15 @@ function displayNFLStandings(rows) {
     grid.innerHTML = '';
 
     if (!rows?.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL standings available', '📊');
+        grid.innerHTML = `<div class="nfl-offseason">
+            <svg class="nfl-offseason-glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5.6" transform="rotate(-45 12 12)"/><path d="M8.5 8.5l7 7M10.6 7.4l1.4 1.4M7.4 10.6l1.4 1.4"/></svg>
+            <h2 class="nfl-offseason-title">NFL is in the offseason</h2>
+            <p class="nfl-offseason-text">Standings populate once the 2026 regular season is underway. Until kickoff in September, browse the upcoming schedule and all 32 teams.</p>
+            <div class="nfl-offseason-actions">
+                <button class="nfl-offseason-btn" onclick="navigateTo('nfl-games')">View schedule</button>
+                <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>
+            </div>
+        </div>`;
         return;
     }
 
