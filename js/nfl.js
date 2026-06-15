@@ -8,9 +8,12 @@ const NFL_ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nf
 // ── Fetch helper ──────────────────────────────────────────────
 
 async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM) {
-    const url = new URL(`${NFL_ESPN_BASE}${path}`);
+    // Route through our same-origin Pages Function proxy (functions/api/nfl.js):
+    // a server-side fetch fixes ESPN's browser CORS on /teams and /leaders.
+    const url = new URL('/api/nfl', location.origin);
+    url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const cacheKey = `nfl:${url.pathname}${url.search}`;
+    const cacheKey = `nfl:${path}:${url.searchParams.toString()}`;
 
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
