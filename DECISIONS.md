@@ -382,3 +382,25 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Standings:** ESPN site `/standings` has no data; standings will be derived from the `/teams` endpoint (records + a division map) — to be built against the real proxied payload after deploy, not guessed.
 
 **Next:** push → validate `/api/nfl?path=/teams` & `/scoreboard` return real data via the live proxy → build NFL standings/teams parsing on verified shapes → surface NFL in the nav (sport switcher + tabs) + offseason state. ToS-clean, consistent with how MLB already works.
+
+---
+
+## D-014 — NFL Fantasy Roadmap: Mock Draft First; Accounts Are the Pivotal Decision
+**Status:** open — owner direction 2026-06-14; accounts decision + target audience pending
+**Contributors:** owner, Vera, Kael, Axiom, Relay, Cipher, Folio
+
+**Direction (owner):** make NFL fantasy cutting-edge — mock drafts, fantasy grades, rich interactive graphics, league integration, monetization.
+
+**Honest framing — two tiers:**
+- **Doable now (no accounts, fits static Pages + Functions):** mock-draft simulator with Monte Carlo value ranges and ADP/tier AI opponents, a live draft-board UI, projections/ADP/rankings. Recommended first build — the #1 fantasy hook and the biggest wow per unit of effort, with no identity change.
+- **Requires a product-identity change (accounts + storage + backend + payments):** personalized grades, league import, AI insights, multiplayer draft rooms, freemium subscriptions. SportStrata is currently no-login/free — adding accounts is a strategic pivot, not a feature.
+
+**Data source (Relay/Cipher):** **Sleeper API** — free, public, read-only, no key, NFL-comprehensive, commercial use OK (review ToS before monetizing), supports league/roster import without cookie-scraping. Rejected for consistency with D-013: `sportly` (ESPN-Fantasy cookie auth + Python-only), `nfl-mcp-server` (scrapes CBS projections — ToS risk, same class as the rejected Sportsipy), NexGenData (paid + sportsbook lines = betting/brand/regulatory flag, cf. the Kalshi flag in P-notes).
+
+**Compute:** Monte Carlo mock-draft simulation can run client-side or in a Pages Function on cached Sleeper ADP/projection data — no always-on server needed for the no-login tier. AI insights need an LLM API (per-call cost; the broadcast-blurb Worker is the existing pattern, currently disabled for cost). Multiplayer needs a real-time backend (Durable Objects/WebSockets).
+
+**Monetization:** freemium requires accounts + a payment processor; payment setup is owner-performed (not something the build does directly).
+
+**Open decisions (owner):** (1) **Add user accounts/login?** — gates the entire account tier. (2) **Which fantasy player first** — casual/redraft, dynasty, or DFS? — focuses the feature set.
+
+**Next (workflow):** finish the NFL light surface (D-013 validation + nav). Then Vera/Kael/Axiom spec the no-login mock-draft simulator behind the three gates.

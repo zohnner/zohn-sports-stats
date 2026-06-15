@@ -354,3 +354,16 @@ D3 is not entering this codebase. Diamond animations are CSS. Any proposal to ad
 The risk going into the 2026 feature push is that AppState grows by accretion rather than by design. Each new feature adds a field, and the "check if populated, fetch if not, then render" pattern gets repeated across more views against more interdependent fields. That's fine until two views race to populate the same field and either double-fetch or render on stale data. No confirmed incidents yet — but `mlbLeaderSplits`, `mlbHotStats`, and `mlbSavantLeaderboard` are already three heavyweight async dependencies that several views share. Adding more without auditing the fetch coordination will eventually produce a timing bug that's hard to reproduce.
 
 The goal before the feature push: document which AppState fields each view depends on, identify any fields that multiple views independently fetch, and consolidate those fetches to a single call site. This doesn't require a rewrite — it requires deliberate accounting.
+
+---
+
+## NFL Fantasy — Cutting-Edge Tools (added 2026-06-14)
+
+Goal: make the NFL surface a destination for fantasy players, not a stats mirror. Owner direction; extends D-012 (NFL in beta) and D-013 (data via proxy). Full roadmap + decisions in DECISIONS.md D-014.
+
+The proposed features split into two tiers by whether they need **user accounts** — and SportStrata is currently **no-login / no-accounts / free**. That identity is the central decision:
+
+- **No-account tier (fits today's static Pages + Functions):** a mock-draft simulator (practice vs. ADP/tier-based AI opponents, Monte Carlo value ranges), an immersive draft-board UI, and projections/ADP/rankings/tiers browsing. This is the cutting-edge hook and needs no login.
+- **Account tier (a product-identity change):** personalized fantasy grades, league import, AI trade/waiver insights (LLM), multiplayer draft rooms, and freemium monetization. These require accounts, persistent storage, a compute/real-time backend, and (for monetization) payments.
+
+Principle: **lead no-login.** Ship the mock-draft simulator first (Sleeper data, ToS-clean); gate the account tier on an explicit "add accounts?" decision.
