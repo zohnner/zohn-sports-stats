@@ -2620,3 +2620,16 @@ Verified: `node --check` clean; 16-assertion jsdom harness passed (aggregation e
 **Vera — UX.** Public Beta gates closed 2026-06-01; recent fixes (full-page live view, hot strip, fonts, cold deep-link) land the experience. Residual: mid-session hash edits don't re-route (no `hashchange` listener — parked, minor). **Gating item: several fixes are committed but must be pushed and deployed (and the `sportstrata.cc` custom domain attached) before promoting** — users should land on the fixed build.
 
 **Kael + Relay — layout / data presentation (for consideration, not changes).** Continue the Principle-7 sweep (team-detail vs standings, compare bars vs radar). Review first-visit home hierarchy for a cold beta visitor, off-season/no-games empty states, and re-run Lighthouse post-deploy (D-011). All forward-looking — no silent edits.
+
+---
+
+### Public Beta — Live UX Pass Findings (2026-06-14)
+**Contributors:** Vera (live walkthrough on sportstrata.cc), Axiom (fix), Cipher/Relay (data notes), Folio (record)
+
+Walked the live production site. Deploy + `sportstrata.cc` confirmed live; home, ticker, scores, search, Recently Viewed, fonts (Inter/JetBrains restored), and the Hot Right Now accent fix all render correctly. Findings:
+
+1. **CRITICAL, FIXED — Players grid collapsed to a single squished row.** `showMLBPlayerDetail` sets an inline `grid.style.cssText='display:flex;align-items:center;justify-content:center;padding:4rem'` for its loading/not-found layout (`mlb.js:1837`). That inline style **leaked**: navigating from a player detail to the Players list left it on `#playersGrid`, and inline `display:flex` overrode `.players-grid{display:grid}` — 100 cards crushed into one ~34px-wide nowrap row. Fix: `displayMLBPlayerCards` and `displayMLBPlayersTable` now clear `grid.style.cssText` before rendering. Verified live (clearing the inline style restored a proper 4-column ~299px grid). Same inline-leak class as the live-game `.players-grid` fix — candidate central hardening: clear grid inline style in `navigateTo`.
+2. **HIGH, data credibility (Relay) — unqualified rate leaders.** Home "Hot Right Now" and the season rate leaderboards default to no qualifier ("Min GP/IP: All"), so they surface 1-for-1 players: Batting Avg 1.000, OPS 3.250, OBP 1.000, ERA 0.00 (10-way tie), K% 0.0%. The position grid and Statcast leaders (which enforce a minimum) show correct leaders. For "serious stats," the headline leaders must be qualified — apply a min-PA/IP default to `_top()` and the rate leaderboards. Not yet fixed — needs threshold decision.
+3. **LOW, confirmed — `hashchange` deep links.** Pasting a `#mlb-...` URL into an already-open tab doesn't re-route (no `hashchange` listener). Cold loads and in-app clicks work. Parked.
+4. **Minor data gaps:** pitcher Statcast leaders (K%/Whiff%/CSW%/BB%) and Quality Starts show "No data" on the leaders page — confirm the source/qualifier before promoting those sections.
+5. **Positive:** the "Player not found" state is well-designed (clear message + "Browse all players" CTA), not a blank screen.

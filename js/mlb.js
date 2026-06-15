@@ -1202,6 +1202,7 @@ function _refreshMLBPositionRow(group) {
 function displayMLBPlayerCards(group) {
     const grid    = document.getElementById('playersGrid');
     grid.className = 'players-grid';
+    grid.style.cssText = ''; // clear leftover inline layout (e.g. player-detail flex-center) so .players-grid governs
 
     const allPlayers = AppState.mlbPlayers[group] || [];
     const players    = AppState.mlbPositionFilter === 'all'
@@ -1250,6 +1251,7 @@ function displayMLBPlayerCards(group) {
 function displayMLBPlayersTable(group) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
+    grid.style.cssText = ''; // clear leftover inline layout from a prior view (e.g. player-detail flex-center)
     grid.innerHTML = '';
 
     const allPlayers = AppState.mlbPlayers[group] || [];
