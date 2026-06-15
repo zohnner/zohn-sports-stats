@@ -481,7 +481,7 @@ async function fetchStatcastPitcherLeaderboard(season) {
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
 
-    const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=pitcher&filter=&sort=1&sortDir=desc&min=50&selections=p_k_percent,p_bb_percent,p_whiff_percent,p_csw_rate,exit_velocity_avg&chart=false&csv=true`;
+    const url = `${SAVANT_BASE_URL}/leaderboard/custom?year=${season}&type=pitcher&filter=&sort=1&sortDir=desc&min=50&selections=k_percent,bb_percent,whiff_percent,exit_velocity_avg&chart=false&csv=true`;
     try {
         const res = await fetch(MLB_USE_PROXY ? _mlbProxyUrl(url) : url, { signal: AbortSignal.timeout(15_000) });
         if (!res.ok) throw new Error(`Savant pitcher CSV ${res.status}`);
@@ -490,7 +490,7 @@ async function fetchStatcastPitcherLeaderboard(season) {
         const lines = text.trim().split('\n');
         if (lines.length < 2) return [];
         const headers = _splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
-        const required = ['player_id', 'p_k_percent', 'p_bb_percent', 'p_whiff_percent', 'p_csw_rate', 'exit_velocity_avg'];
+        const required = ['player_id', 'k_percent', 'bb_percent', 'whiff_percent', 'exit_velocity_avg'];
         const missing  = required.filter(c => !headers.includes(c));
         if (missing.length) {
             Logger.warn(`Savant pitcher CSV schema drift — missing: ${missing.join(', ')}`, { headers }, 'MLB');
@@ -4293,10 +4293,9 @@ const STATCAST_LEADER_CATS = [
 ];
 
 const STATCAST_PITCHER_CATS = [
-    { key: 'p_k_percent',     label: 'Pitcher K Rate',  unit: 'K%',     color: '#c084fc', desc: true,  decimals: 1, suffix: '%'    },
-    { key: 'p_whiff_percent', label: 'Whiff Rate',       unit: 'Whiff%', color: '#fb923c', desc: true,  decimals: 1, suffix: '%'    },
-    { key: 'p_csw_rate',      label: 'CSW Rate',         unit: 'CSW%',   color: '#38bdf8', desc: true,  decimals: 1, suffix: '%'    },
-    { key: 'p_bb_percent',    label: 'Pitcher BB Rate',  unit: 'BB%',    color: '#fcd34d', desc: false, decimals: 1, suffix: '%'    },
+    { key: 'k_percent',       label: 'Pitcher K Rate',  unit: 'K%',     color: '#c084fc', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'whiff_percent',   label: 'Whiff Rate',       unit: 'Whiff%', color: '#fb923c', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'bb_percent',      label: 'Pitcher BB Rate',  unit: 'BB%',    color: '#fcd34d', desc: false, decimals: 1, suffix: '%'    },
     { key: 'exit_velocity_avg',label: 'EV Allowed',      unit: 'EV Alw', color: '#34d399', desc: false, decimals: 1, suffix: ' mph' },
 ];
 
@@ -4752,6 +4751,11 @@ function displayMLBLeaderboards() {
                 const bv = parseFloat(b.stat[cat.key]);
                 return dir ? bv - av : av - bv;
             });
+
+        // Hide a panel with no data in the default (unfiltered) view — e.g. a stat the
+        // source doesn't provide (Quality Starts). Filtered views keep the empty panel
+        // so "no matches" stays visible to the user.
+        if (sorted.length === 0 && minGP === 0 && teamFilt === 'all' && posFilt === 'all') return;
 
         const panel  = document.createElement('div');
         panel.className = 'leaderboard-panel';

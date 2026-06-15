@@ -2644,3 +2644,14 @@ Fixes the beta credibility issue where 1-for-1 lines topped rate boards (Batting
 - **Leaders page** (`mlb.js` season-leaders filter): every rate category (`cat.decimals > 0`) now requires the PA/IP qualifier by default, independent of the user's Min GP/IP control. Counting stats unchanged. Panels show the "N qualifying" count.
 
 **Tradeoff to note:** the 1-IP/game pitching qualifier (≈70 IP now) excludes relievers from rate boards like K/9 — that's the standard "qualified" definition (matches ERA-title rules), but if we want elite reliever rates surfaced, we'd add a lower reliever bar later.
+
+---
+
+### Leaders "No data" gaps — Pitcher Statcast fixed; empty boards hidden (2026-06-14)
+**Contributors:** Relay (Savant schema diagnosis), Axiom (fix), Folio (record)
+
+Live beta pass found several Leaders panels showing "No data." Root-caused both against the live data:
+1. **Pitcher Statcast (K%/Whiff%/BB%) — FIXED.** The Savant custom-leaderboard column names had a stale `p_` prefix (`p_k_percent`, `p_whiff_percent`, `p_bb_percent`) that Savant now returns **blank**; only `exit_velocity_avg` populated (hence EV Allowed worked, the rest were empty). Verified the correct keys live (`k_percent`/`bb_percent`/`whiff_percent` return real values, 129 qualifying). Updated the fetch `selections`, the schema-`required` check, and `STATCAST_PITCHER_CATS`. **CSW removed** — Savant returns `csw_percent` blank here (no source), so the category is dropped rather than shown empty.
+2. **Quality Starts / QS% — not in the data source.** `qualityStarts` is absent from the MLB Stats API leader splits (`qualityStartsKeyExists: false`, totalQS 0). Rather than show a permanently-broken panel, the season-leaders renderer now **hides any panel that is empty in the default (unfiltered) view**; filtered views still show empties so "no matches" stays visible. QS reappears automatically if a source is wired later.
+
+Verified: corrected Savant query returns populated K%/Whiff%/BB% live; `node --check` clean; diff is the four intended edits only.
