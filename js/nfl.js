@@ -269,18 +269,18 @@ function _createNFLGameCard(game) {
         <div class="game-date">${dateStr}</div>
         <div class="game-teams">
             <div class="game-team ${game.awayTeam.winner ? 'game-team--winner' : ''}">
-                <div class="team-logo-wrap">
-                    <img src="${game.awayTeam.logo}" alt="${_escHtml(game.awayTeam.abbr)}" class="team-logo" loading="lazy" data-hide-on-error>
+                <div class="game-team-logo">
+                    <img src="${game.awayTeam.logo}" alt="${_escHtml(game.awayTeam.abbr)}" class="game-logo-img" loading="lazy" data-hide-on-error>
                 </div>
-                <span class="team-abbr">${_escHtml(game.awayTeam.abbr)}</span>
+                <span class="game-team-abbr">${_escHtml(game.awayTeam.abbr)}</span>
                 ${hasScore ? `<span class="game-score ${game.awayTeam.winner ? 'game-score--win' : ''}">${as}</span>` : ''}
             </div>
             <div class="game-vs">@</div>
             <div class="game-team ${game.homeTeam.winner ? 'game-team--winner' : ''}">
                 ${hasScore ? `<span class="game-score ${game.homeTeam.winner ? 'game-score--win' : ''}">${hs}</span>` : ''}
-                <span class="team-abbr">${_escHtml(game.homeTeam.abbr)}</span>
-                <div class="team-logo-wrap">
-                    <img src="${game.homeTeam.logo}" alt="${_escHtml(game.homeTeam.abbr)}" class="team-logo" loading="lazy" data-hide-on-error>
+                <span class="game-team-abbr">${_escHtml(game.homeTeam.abbr)}</span>
+                <div class="game-team-logo">
+                    <img src="${game.homeTeam.logo}" alt="${_escHtml(game.homeTeam.abbr)}" class="game-logo-img" loading="lazy" data-hide-on-error>
                 </div>
             </div>
         </div>
