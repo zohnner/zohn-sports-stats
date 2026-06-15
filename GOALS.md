@@ -367,3 +367,15 @@ The proposed features split into two tiers by whether they need **user accounts*
 - **Account tier (a product-identity change):** personalized fantasy grades, league import, AI trade/waiver insights (LLM), multiplayer draft rooms, and freemium monetization. These require accounts, persistent storage, a compute/real-time backend, and (for monetization) payments.
 
 Principle: **lead no-login.** Ship the mock-draft simulator first (Sleeper data, ToS-clean); gate the account tier on an explicit "add accounts?" decision.
+
+---
+
+## Current State — 2026-06-14
+
+**MLB (primary):** public beta, full depth. Recent: live-game full-page fix, leader qualification (3.1 PA / 1 IP per game), De-AI passes (no rainbow stat colors, fonts restored), pitcher-Statcast Savant fix, Players-grid + main.css repairs. Data liabilities cleared (old BDL key dead, no PII/trackers, Kalshi off).
+
+**NFL (now live beta):** sport switcher + NFL Scores (ESPN Week-1 schedule via `/api/nfl` proxy), Teams (32), offseason Standings state. Validated live.
+
+**NFL Fantasy — Mock Draft v1 SHIPPED + validated live:** no-login snake mock draft (`js/fantasy.js`), Sleeper ADP data via `/api/sleeper`, ADP/need-based AI opponents, Monte Carlo "% to return," roster panel, value-vs-ADP grade. Path: no-login-first, accounts planned in parallel; audience: casual/redraft (D-014).
+
+**Next NFL (in scope):** deepen NFL by reusing existing MLB component logic — NFL leaderboards (leaderboard panels), NFL player cards/detail (player-card pattern) on ESPN data via proxy. Then projections-dependent fantasy (VORP/PAR), DST, year-round standings source, and the accounts tier (grades, league import, multiplayer, monetization).

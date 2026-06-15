@@ -2672,3 +2672,21 @@ Foundation added: `functions/api/sleeper.js` (same-origin Sleeper proxy). Build 
 **Axiom — feasibility:** Monte Carlo (thousands of sims for value ranges) runs **client-side in a Web Worker** (non-blocking) over cached player values — no backend, fits static Pages. New `js/fantasy.js` + an `nfl-mock` route; AI-opponent logic = ADP/tier + variance (no LLM). Three gates required before Finn builds.
 
 **Accounts foundation (parallel planning, Axiom — design only, not built):** target Cloudflare-native (Pages + D1 for user/league data + Turnstile/Access or lightweight auth). Design the mock-draft result + roster shapes so "save my draft," league import (Sleeper league/roster), and personalized grades slot in later without a rebuild. No auth code ships in this phase.
+
+---
+
+### NFL Beta + Fantasy Mock Draft — SHIPPED + validated (2026-06-14)
+**Contributors:** Axiom, Relay, Vera, Kael, Finn, Folio
+
+Validated live on sportstrata.cc:
+- **NFL light surface:** sport switcher → brand/sub-nav swap (Scores/Standings/Teams/Mock Draft); Scores = 2026 Week-1 schedule via `/api/nfl`; Teams = 32; Standings = offseason state; game-card logo fix.
+- **Mock Draft v1 (`js/fantasy.js`):** setup → snake draft vs ADP/need AI → best-available search/filter → Monte Carlo "% to return" (verified: 0%→97% gradient by ADP) → roster panel → value-vs-ADP grade. No login, session-only. Data: Sleeper `/api/sleeper` (search_rank ADP; 1,709 ranked players).
+
+**Open follow-ups:**
+- **NFL depth (next, per owner):** reuse existing MLB component logic — NFL **leaderboards** (leaderboard panel pattern) and NFL **player cards/detail** (player-card/detail pattern), powered by ESPN data via `/api/nfl` (`/leaders`, team rosters, athlete stats). Needs the three gates.
+- Projections-dependent fantasy (VORP/PAR, projected points) + DST — need a ToS-clean projections source (Sleeper public data lacks projections).
+- Year-round NFL standings source (ESPN site `/standings` is permanently dead; derive in-season from scoreboard records or a cdn/core endpoint via the proxy).
+- Mobile bottom-nav per-sport swap; Monte Carlo → Web Worker for thousands of sims.
+- Accounts tier (grades, league import, multiplayer, monetization) — D-014 parallel planning.
+
+Note: service worker is stale-while-revalidate (D-010) — post-deploy changes show after a load or two.

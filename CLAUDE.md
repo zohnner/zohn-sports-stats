@@ -8,9 +8,11 @@ All user-facing text uses "SportStrata". Never revert to "ZohnStats".
 ---
 
 ## Sport Focus — READ THIS FIRST
-**MLB is the only active product.** NBA, NFL, and NHL are preview features — do not proactively suggest new features, refactors, or improvements for them. Only MLB depth, broadcast tools, and MLB UX count as forward progress.
+**MLB is the primary product; NFL is now a live public-beta surface (as of 2026-06-14).** Per D-012/D-013/D-014, NFL was promoted from preview to beta. Shipped: a header sport switcher, NFL Scores / Standings / Teams (ESPN via the `/api/nfl` Pages Function proxy), an offseason state, and a no-login **Mock Draft simulator** (`js/fantasy.js`, Sleeper data via `/api/sleeper`, ADP + Monte Carlo). NFL feature work is in scope and expected.
 
-When the user explicitly asks to fix a bug or change something in `nfl.js`, `nhl.js`, or NBA files, help with that specific request. Just never propose non-MLB work on your own.
+**NBA and NHL remain preview-only** — do not propose NBA/NHL feature work unprompted.
+
+Both MLB depth and NFL beta build-out count as forward progress. NFL roadmap (leaderboards, player cards/detail reusing MLB component patterns; later fantasy grades + league import behind an accounts tier) lives in DECISIONS.md D-012/D-014.
 
 ---
 

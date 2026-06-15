@@ -406,3 +406,5 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Next (workflow):** finish the NFL light surface (D-013 validation + nav). Then Vera/Kael/Axiom spec the no-login mock-draft simulator behind the three gates.
 
 **Decided (owner, 2026-06-14):** path = **no-login mock-draft first, plan accounts in parallel**; first audience = **casual / redraft**. Build the mock-draft simulator now (no accounts); design the accounts/backend data model alongside so the account tier (grades, league import via Sleeper, AI, monetization) can follow without a rebuild. Data via `/api/sleeper` Pages Function proxy (added).
+
+**Status update (2026-06-14):** D-012 (NFL light surface) and D-013 (ESPN proxy) — SHIPPED + validated live (switcher, Scores, Teams, offseason Standings, logo fix). D-014 mock-draft v1 — SHIPPED + validated live (`js/fantasy.js`: Sleeper ADP, AI opponents, Monte Carlo, grade). CLAUDE.md "Sport Focus" rule reconciled (NFL now in scope). Open follow-ups in ISSUES.
