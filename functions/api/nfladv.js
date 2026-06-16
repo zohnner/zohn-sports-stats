@@ -114,21 +114,25 @@ export async function onRequest(context) {
     const type = typeForPos(pos);
     const spec = METRICS[type];
 
-    let text;
-    try {
-        const r = await fetch(`${NGS_BASE}/ngs_${season}_${type}.csv.gz`, {
-            headers: { 'Accept': 'application/octet-stream' },
-            cf: { cacheTtl: 43200, cacheEverything: true },
-        });
-        if (!r.ok || !r.body) return json({ found: false, reason: 'ngs fetch failed', status: r.status }, 200);
-        const ds = new DecompressionStream('gzip');
-        text = await new Response(r.body.pipeThrough(ds)).text();
-    } catch (e) { return json({ found: false, reason: 'ngs decode failed' }, 200); }
-
-    const rows = parseCSV(text);
-    if (rows.length < 2) return json({ found: false, reason: 'empty ngs' }, 200);
+    // Try the requested season, falling back to earlier seasons when the file is
+    // missing (current season not yet published) or returns a partial body.
+    const reqSeason = Number(season);
+    let rows = null, used = null;
+    for (let y = reqSeason; y >= Math.max(2016, reqSeason - 6); y--) {
+        try {
+            const r = await fetch(`${NGS_BASE}/ngs_${y}_${type}.csv.gz`, {
+                headers: { 'Accept': 'application/octet-stream' },
+                cf: { cacheTtl: 1800, cacheEverything: true },
+            });
+            if (!r.ok || !r.body) continue;
+            const text = await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
+            const parsed = parseCSV(text);
+            if (parsed.length > 100) { rows = parsed; used = y; break; }  // full file, not a partial
+        } catch (_) { /* try the previous season */ }
+    }
+    if (!rows) return json({ found: false, reason: 'no NGS data available', season: reqSeason, type }, 200, 600);
     const hdr = rows[0];
-    if (u.searchParams.get('debug')) return json({ debug: true, season: Number(season), type, header: hdr, sampleRow: rows[1] }, 200, 60);
+    if (u.searchParams.get('debug')) return json({ debug: true, season: used, type, header: hdr, rowCount: rows.length, sampleRow: rows[1] }, 200, 60);
     const idx = {}; hdr.forEach((h, i) => { idx[h] = i; });
     const wkCol = idx.week, nameCol = idx.player_display_name, teamCol = idx.team_abbr;
     if (nameCol == null) return json({ found: false, reason: 'no name column', _meta: { header: hdr.slice(0, 20) } }, 200);
@@ -144,7 +148,7 @@ export async function onRequest(context) {
     let hit = qualified.find(r => norm(r[nameCol]) === target0);
     if (!hit) hit = season0.find(r => norm(r[nameCol]) === target0);  // unqualified but present
     if (!hit && team) hit = season0.find(r => norm(r[nameCol]).split(' ').pop() === target0.split(' ').pop() && (teamCol == null || r[teamCol] === team));
-    if (!hit) return json({ found: false, reason: 'player not in NGS', season: Number(season), type }, 200);
+    if (!hit) return json({ found: false, reason: 'player not in NGS', season: used, type }, 200);
 
     const pct = (col, dir, val) => {
         if (val == null || !qualified.length) return null;
@@ -163,7 +167,7 @@ export async function onRequest(context) {
 
     return json({
         found: metrics.length > 0,
-        season: Number(season),
+        season: used,
         type,
         player: hit[nameCol],
         team: teamCol != null ? hit[teamCol] : '',
