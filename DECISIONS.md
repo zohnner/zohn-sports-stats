@@ -444,3 +444,15 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **IA change:** NFL sub-nav now splits **Leaders** (real stats, `nfl-leaders` → `loadNFLStatLeaders`) from **Trending** (fantasy add/drop, moved to `nfl-trending` → `loadNFLLeaderboards`). Bottom-nav (mobile) = Players · Leaders · Scores · Standings · Draft.
 
 **Deferred:** per-player game logs / stat lines on the player-detail page (same core-API athlete `statistics` ref — next iteration); ⌘K NFL search; mobile menu-panel per-sport swap.
+
+---
+
+## D-017 — NFL Historical / Multi-Season Support
+**Status:** in progress — owner direction 2026-06-15 ("use historical data... go as far back as possible, like MLB")
+**Contributors:** owner, Relay, Finn
+
+**Direction:** make NFL data multi-season — browse past seasons and be ready for the upcoming year, like the MLB season selector.
+
+**Data (Relay, validated):** ESPN core-API leaders return full data back to at least 2000 (verified 2000/2024/2025). Per-player game-log season options are the player's career span (ESPN `filters.season.options`). `/api/nflstats` and `/api/nflplayer` already accept `?season=`; the season auto-detects the latest completed season (flips to the live season in September), so "prepare for the upcoming year" is automatic.
+
+**Shipped:** NFL Leaders season selector (2000 → latest), re-fetches + caches per season. Next: season-aware player stat line + game logs.

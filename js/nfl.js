@@ -616,6 +616,8 @@ function updateNFLTicker(games) {
 // ── Display: Stat Leaders (real season stats via /api/nflstats) ──
 const _NFL_STAT_COLORS = ['#ef4444','#f97316','#34d399','#10b981','#60a5fa','#3b82f6','#a78bfa','#f43f5e','#22d3ee'];
 
+let _nflLeaderSeason = null;  // null = current season (server auto-detects)
+
 async function loadNFLStatLeaders() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
@@ -627,10 +629,11 @@ async function loadNFLStatLeaders() {
     ).join('');
 
     try {
-        const cacheKey = 'nfl:statleaders';
+        const qs = _nflLeaderSeason ? `?season=${_nflLeaderSeason}` : '';
+        const cacheKey = `nfl:statleaders:${_nflLeaderSeason || 'cur'}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch('/api/nflstats');
+            const res = await fetch('/api/nflstats' + qs);
             if (!res.ok) throw new Error(`Stat leaders ${res.status}`);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -651,10 +654,20 @@ function displayNFLStatLeaders(data) {
     grid.style.cssText = '';
     grid.innerHTML = '';
 
-    const note = document.createElement('div');
-    note.style.cssText = 'grid-column:1/-1;font-size:0.74rem;color:var(--text-muted);padding:0 0.25rem 0.4rem';
-    note.textContent = `${data.season} NFL regular-season leaders. Source: ESPN.`;
-    grid.appendChild(note);
+    const bar = document.createElement('div');
+    bar.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;padding:0 0.25rem 0.6rem';
+    const now = new Date();
+    const latest = (now.getMonth() + 1 >= 9) ? now.getFullYear() : now.getFullYear() - 1;
+    let opts = '';
+    for (let y = latest; y >= 2000; y--) opts += `<option value="${y}" ${y === data.season ? 'selected' : ''}>${y}</option>`;
+    bar.innerHTML = `
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-secondary);font-weight:700">
+            Season
+            <select id="nflLeaderSeason" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${opts}</select>
+        </label>
+        <span style="font-size:0.74rem;color:var(--text-muted)">${data.season} regular-season leaders · Source: ESPN</span>`;
+    grid.appendChild(bar);
+    bar.querySelector('#nflLeaderSeason').addEventListener('change', e => { _nflLeaderSeason = e.target.value; loadNFLStatLeaders(); });
 
     data.categories.forEach((cat, ci) => {
         const color = _NFL_STAT_COLORS[ci % _NFL_STAT_COLORS.length];
