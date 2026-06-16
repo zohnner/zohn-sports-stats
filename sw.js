@@ -1,10 +1,10 @@
 // ============================================================
-// SportStrata — Service Worker  v3
+// SportStrata — Service Worker  v4
 // Strategy: stale-while-revalidate for static assets, network-first for navigation
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v3';
+const CACHE_NAME    = 'sportstrata-v4';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -50,11 +50,18 @@ const STATIC_ASSETS = [
     '/js/app.js',
 ];
 
-// Install — pre-cache static shell
+// Install — pre-cache the static shell, bypassing the HTTP cache so a CACHE_NAME
+// bump always lands the freshly deployed files. cache.addAll() fetches through the
+// 4h must-revalidate HTTP cache and could re-cache stale code; { cache: 'reload' }
+// forces each precache fetch to the network.
 self.addEventListener('install', e => {
     e.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(STATIC_ASSETS))
+            .then(cache => Promise.all(STATIC_ASSETS.map(url =>
+                fetch(new Request(url, { cache: 'reload' }))
+                    .then(resp => { if (resp && resp.ok) return cache.put(url, resp); })
+                    .catch(() => {})
+            )))
             .then(() => self.skipWaiting())
     );
 });

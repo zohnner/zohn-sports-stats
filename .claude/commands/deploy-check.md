@@ -38,6 +38,16 @@ ls worker/wrangler.toml
 ```
 Report present/missing.
 
+**8. Service-worker cache version bumped when cached assets change**
+The SW (`sw.js`) precaches the static shell under `CACHE_NAME` (`sportstrata-vN`). If any precached asset changed in this deploy but `CACHE_NAME` was NOT bumped, returning visitors keep the old cached copy for a revalidation cycle. Auto-bump it:
+```bash
+# precached assets (must match STATIC_ASSETS in sw.js): index.html, css/*, js/*
+CHANGED=$(git diff --name-only origin/HEAD -- index.html "css/*.css" "js/*.js" | grep -v "^sw.js$")
+SW_BUMPED=$(git diff --name-only origin/HEAD -- sw.js)
+CUR=$(grep -oE "sportstrata-v[0-9]+" sw.js | head -1)
+```
+If `CHANGED` is non-empty and `SW_BUMPED` is empty, increment the version: replace `sportstrata-vN` -> `sportstrata-v(N+1)` in BOTH the header comment and `CACHE_NAME` in `sw.js`, then `git add sw.js`. Report the bump (e.g. `v4 -> v5`). If `CHANGED` is empty, no bump needed (PASS). If already bumped this deploy, PASS.
+
 ## Output format
 
 Print a table:
