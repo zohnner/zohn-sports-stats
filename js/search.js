@@ -1,7 +1,7 @@
 // ============================================================
 // SportStrata — Global Search (UX-007) + Recently Viewed (UX-006)
 //
-// Cmd/Ctrl+K opens overlay. Searches NBA/MLB players + teams
+// Cmd/Ctrl+K opens overlay. Searches NBA/MLB/NFL players + teams
 // across already-loaded AppState data (no extra fetches).
 // Recently viewed persisted to localStorage (last 10).
 // ============================================================
@@ -47,6 +47,13 @@ function openGlobalSearch() {
     _searchOpen    = true;
     _searchSelIdx  = -1;
     input.value    = '';
+    // Lazily warm the NFL player pool so NFL is searchable even before visiting an NFL view.
+    if (typeof fetchNFLSleeperPool === 'function' && (typeof _nflPool === 'undefined' || !_nflPool)) {
+        fetchNFLSleeperPool().then(() => {
+            const box = document.getElementById('searchModalInput');
+            if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
+        }).catch(() => {});
+    }
     _renderResults('');
     // Delay so backdrop paint doesn't steal the focus event
     requestAnimationFrame(() => input.focus());
@@ -83,7 +90,19 @@ function _recentAction(r) {
     if (r.type === 'team' && r.sport === 'mlb') {
         return () => { closeGlobalSearch(); if (AppState.currentSport !== 'mlb') switchSport('mlb'); showMLBTeamDetail(r.id); };
     }
+    if (r.type === 'player' && r.sport === 'nfl') {
+        return () => { closeGlobalSearch(); _nflSearchGo(r.id); };
+    }
     return () => closeGlobalSearch();
+}
+
+// Switch into NFL context (header/nav) then open a player detail.
+function _nflSearchGo(id) {
+    if (AppState.currentSport !== 'nfl') {
+        AppState.currentSport = 'nfl';
+        if (typeof _applySportUI === 'function') _applySportUI('nfl');
+    }
+    navigateTo('nfl-player-' + id);
 }
 
 // ── Search ────────────────────────────────────────────────────
@@ -145,6 +164,28 @@ function _buildGroups(q) {
         };
     });
     if (mlbHits.length) groups.push({ label: 'MLB Players', items: mlbHits });
+
+    // ── NFL Players (Sleeper pool; warmed lazily on overlay open) ──
+    const nflPool = (typeof _nflPool !== 'undefined' && _nflPool) ? _nflPool : [];
+    const nflHits = nflPool.filter(p => {
+        const name = (p.full_name || '').toLowerCase();
+        return name.includes(q) || (p.team || '').toLowerCase().startsWith(q)
+            || (p.position || '').toLowerCase() === q;
+    }).slice(0, 6).map(p => ({
+        id:     p.player_id,
+        sport:  'nfl',
+        type:   'player',
+        name:   p.full_name,
+        sub:    `${p.team || 'FA'} · ${p.position || '—'}${p._adp ? ` · #${p._adp} ADP` : ''}`,
+        badge:  'NFL',
+        avatarUrl: typeof getNFLSleeperHeadshot === 'function' ? getNFLSleeperHeadshot(p.player_id) : '',
+        action: () => {
+            closeGlobalSearch();
+            _nflSearchGo(p.player_id);
+            addRecent({ id: p.player_id, sport: 'nfl', type: 'player', name: p.full_name, sub: `${p.team || 'FA'} · ${p.position || ''}`, badge: 'NFL' });
+        },
+    }));
+    if (nflHits.length) groups.push({ label: 'NFL Players', items: nflHits });
 
     // ── Teams ────────────────────────────────────────────────
     const teamHits = [
@@ -244,7 +285,7 @@ function _itemHtml(item, idx) {
     } else {
         avatar = `<span class="search-result-avatar" style="${bgStyle}">${_esc(initials)}</span>`;
     }
-    const bc = item.sport === 'nba' ? 'search-badge--nba' : 'search-badge--mlb';
+    const bc = item.sport === 'nba' ? 'search-badge--nba' : item.sport === 'nfl' ? 'search-badge--nfl' : 'search-badge--mlb';
     return `<button class="search-result-item" data-idx="${idx}">
         ${avatar}
         <span class="search-result-name">${_esc(item.name)}</span>

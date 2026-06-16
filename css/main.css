@@ -2745,6 +2745,10 @@ main {
     background: var(--accent-subtle);
     color: var(--accent-light);
 }
+.search-badge--nfl {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+}
 
 .search-modal-footer {
     display: flex;
