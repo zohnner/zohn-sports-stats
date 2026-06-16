@@ -2707,3 +2707,19 @@ Owner: deepen NFL reusing existing component logic (leaderboards, player cards).
 - True NFL stat leaders (passing/rushing/receiving yds, TDs, sacks, INT) — requires standing up an ESPN **core-API** proxy (`sports.core.api.espn.com`): new Pages Function, allowlist, payload validation. In-season only.
 - NFL player-detail page (reuse player-detail pattern) — worth building once per-player stats exist via the core-API proxy; Sleeper metadata alone doesn't justify a full detail page.
 - Mobile bottom-nav per-sport swap (still MLB-only destinations on mobile).
+
+### NFL Functional Pass — Player Detail, Team Detail+Rosters, Mobile Bottom-Nav (2026-06-15) — SHIPPED (pending push)
+Owner: "make the NFL side fully functional." Team audit (Vera/Kael/Axiom/Relay) → owner picked 3 of 4 fixes.
+
+**Audit findings (live):** player cards showed pointer cursor but had no click action (dead-end); team cards non-clickable; mobile bottom-nav stayed on MLB destinations in NFL mode; ⌘K omits NFL (deferred by owner). Scores view confirmed correct (shows real 2026 Week 1 schedule in offseason).
+
+**Shipped (all reuse existing components, Sleeper data):**
+- **NFL player detail** (`showNFLPlayerDetail`/`_renderNFLPlayerDetail`, nfl.js) — reuses `.player-detail-*`. Hero (headshot, pos pill, ADP badge, clickable team link), Player Profile (age/exp/HT/WT/college/jersey/depth-chart/status), Fantasy Outlook prose. Player cards now clickable (+ "VIEW PROFILE" CTA); Trending rows clickable. Route `nfl-player-{id}`.
+- **NFL team detail + roster** (`showNFLTeamDetail`/`_renderNFLTeamDetail`) — reuses detail header. Team header (logo/record/player count), next-opponent from schedule, full roster grouped Offense/Defense/Special Teams (Sleeper by team, `_nflSleeperAbbr` aliases WSH→WAS, OAK→LV), each player row clickable → player detail. Route `nfl-team-{abbr}`. Validated: BUF 95 players, 45/45/5 split, 0 orphans.
+- **Mobile bottom-nav per-sport swap** (`BOTTOM_NAV_TABS` + `_renderBottomNav` in `_applySportUI`) — NFL mode shows Players/Trending/Scores/Standings/Draft instead of MLB destinations.
+- Hash deep-links: `nfl-player-*` / `nfl-team-*` handled in `_loadFromHash` + `_renderNFLView`.
+- SW cache bumped v4→v5 (precached JS changed) so the deploy lands immediately.
+
+**Verification:** node --check clean (nfl.js, navigation.js, sw.js); no NUL/truncation; player-detail + roster-grouping logic validated live against Sleeper. Full interaction verification pending push + deploy.
+
+**Deferred:** ⌘K NFL search (owner skipped this round); true stat leaders + game logs (need ESPN core-API proxy, D-015).

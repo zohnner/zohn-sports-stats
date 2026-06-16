@@ -453,6 +453,17 @@ function _renderNFLView(view) {
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
 
+    if (view.startsWith('nfl-player-')) {
+        if (viewCount) viewCount.textContent = 'NFL Player';
+        showNFLPlayerDetail(view.slice('nfl-player-'.length));
+        return;
+    }
+    if (view.startsWith('nfl-team-')) {
+        if (viewCount) viewCount.textContent = 'NFL Team';
+        showNFLTeamDetail(view.slice('nfl-team-'.length));
+        return;
+    }
+
     switch (view) {
         case 'nfl-mock':
             if (viewCount) viewCount.textContent = 'Mock Draft';
@@ -636,6 +647,8 @@ function _loadFromHash() {
     const mlbCompareMatch    = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
     const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
     const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
+    const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
+    const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -660,6 +673,14 @@ function _loadFromHash() {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
+    } else if (nflPlayerMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        navigateTo('nfl-player-' + nflPlayerMatch[1], false);
+    } else if (nflTeamMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        navigateTo('nfl-team-' + nflTeamMatch[1], false);
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
         const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-', 'mlb-live-', 'mlb-scorecard-'];
@@ -721,6 +742,37 @@ function _renderSubNav(sport) {
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }
 
+const _NAV_ICONS = {
+    players:   '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>',
+    leaders:   '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2h6v4a3 3 0 01-6 0V2z"/><path d="M5 5H3a2 2 0 002 2"/><path d="M11 5h2a2 2 0 01-2 2"/><path d="M8 9v2.5M6 13h4"/></svg>',
+    scores:    '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="10.5" rx="1.5"/><path d="M2 7.5h12M5.5 1.5v4M10.5 1.5v4"/></svg>',
+    standings: '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5V10M7 13.5V6M11.5 13.5V3"/><path d="M1.5 13.5h13"/></svg>',
+    extra:     '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="10" height="11" rx="1"/><path d="M6.5 3a1.5 1.5 0 013 0"/><path d="M5.5 7.5h5M5.5 10.5h3.5"/></svg>',
+};
+
+const BOTTOM_NAV_TABS = {
+    mlb: [
+        { v: 'mlb-players', l: 'Players', i: 'players' }, { v: 'mlb-leaders', l: 'Leaders', i: 'leaders' },
+        { v: 'mlb-games', l: 'Scores', i: 'scores' }, { v: 'mlb-standings', l: 'Standings', i: 'standings' },
+        { v: 'mlb-prep', l: 'Prep', i: 'extra' },
+    ],
+    nfl: [
+        { v: 'nfl-players', l: 'Players', i: 'players' }, { v: 'nfl-leaders', l: 'Trending', i: 'leaders' },
+        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
+        { v: 'nfl-mock', l: 'Draft', i: 'extra' },
+    ],
+};
+
+function _renderBottomNav(sport) {
+    const nav = document.getElementById('bottomNav');
+    if (!nav) return;
+    const tabs = BOTTOM_NAV_TABS[sport] || BOTTOM_NAV_TABS.mlb;
+    nav.innerHTML = tabs.map(t =>
+        `<button class="nav-tab" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
+    ).join('');
+    nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
+}
+
 function _applySportUI(sport) {
     const brands = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
     const [icon, sub] = brands[sport] || brands.mlb;
@@ -729,6 +781,7 @@ function _applySportUI(sport) {
     if (brandIcon) brandIcon.textContent = icon;
     if (brandSub)  brandSub.textContent  = sub;
     _renderSubNav(sport);
+    _renderBottomNav(sport);
     document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
         const on = b.dataset.sport === sport;
         b.classList.toggle('sport-switch-btn--active', on);
