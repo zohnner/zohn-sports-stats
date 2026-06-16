@@ -132,7 +132,6 @@ export async function onRequest(context) {
     }
     if (!rows) return json({ found: false, reason: 'no NGS data available', season: reqSeason, type }, 200, 600);
     const hdr = rows[0];
-    if (u.searchParams.get('debug')) return json({ debug: true, season: used, type, header: hdr, rowCount: rows.length, sampleRow: rows[1] }, 200, 60);
     const idx = {}; hdr.forEach((h, i) => { idx[h] = i; });
     const wkCol = idx.week, nameCol = idx.player_display_name, teamCol = idx.team_abbr;
     if (nameCol == null) return json({ found: false, reason: 'no name column', _meta: { header: hdr.slice(0, 20) } }, 200);

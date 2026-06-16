@@ -84,6 +84,5 @@ export async function onRequest(context) {
         season: Number(season),
         columns,
         games,
-        _meta: { topKeys: Object.keys(g).slice(0, 12), seasonTypes: (g.seasonTypes || []).map(s => s.displayName), gameCount: games.length },
     }, 200, 21600);
 }

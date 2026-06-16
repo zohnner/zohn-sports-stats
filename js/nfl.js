@@ -809,7 +809,7 @@ async function _loadNFLPlayerStats(p) {
     const host = document.getElementById('nfl-stat-line');
     if (!host) return;
     try {
-        const cacheKey = `nfl:pstats:${p.player_id}`;
+        const cacheKey = `nfl:pstats2:${p.player_id}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
             const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}`);
@@ -913,7 +913,8 @@ async function _loadNFLAdvanced(p) {
         const fmt = v => { const n = +v; if (!isFinite(n)) return '—'; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
         const barColor = pct => pct == null ? 'var(--border-mid)' : pct >= 80 ? '#ef4444' : pct >= 60 ? '#f59e0b' : pct >= 40 ? '#64748b' : '#3b82f6';
         const rows = data.metrics.map(m => {
-            const pctTxt = m.pct != null ? ` <span style="color:var(--text-muted);font-weight:700">· ${m.pct}<span style="font-size:0.6rem">th</span></span>` : '';
+            const ord = n => (n % 10 === 1 && n % 100 !== 11) ? 'st' : (n % 10 === 2 && n % 100 !== 12) ? 'nd' : (n % 10 === 3 && n % 100 !== 13) ? 'rd' : 'th';
+            const pctTxt = m.pct != null ? ` <span style="color:var(--text-muted);font-weight:700">· ${m.pct}<span style="font-size:0.6rem">${ord(m.pct)}</span></span>` : '';
             return `<div style="margin-bottom:0.55rem">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.8rem;margin-bottom:0.25rem">
                     <span style="color:var(--text-secondary);font-weight:600">${_escHtml(m.label)}</span>
