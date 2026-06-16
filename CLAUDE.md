@@ -446,3 +446,33 @@ This is a small vanilla JS/CSS SPA. Most tasks are well-scoped enough to handle 
 - Do not add comments that describe what the code does; only add them when the WHY is non-obvious
 - Do not call `fetch(statsapi.mlb.com/...)` directly — always use `mlbFetch()`
 - Do not remove `_applySportUI('mlb')` from the top of `loadHome()` in `app.js`
+
+---
+
+## NFL Data Foundation (D-017/D-018/D-019)
+
+NFL is multi-season and reads live from upstream with Cloudflare edge-caching (no D1 persistence — D-019). Season auto-detects and rolls every year via the model in `js/nfl.js`:
+- `NFL_STATS_SEASON` — latest season with completed/accumulating stats (Sep–Feb = current year, else prior). Flips to the live season in September.
+- `NFL_FANTASY_SEASON` — the season ADP / drafts / player profiles refer to (Mar onward = current year). Drives the "{season} NFL Season" / "enters {season}" / offseason copy.
+- `NFL_LEADERS_MIN_SEASON` = 2000, `NFL_NGS_MIN_SEASON` = 2016.
+
+**Never hardcode a season year in NFL client copy — use the model.**
+
+### Source → coverage map
+
+| Data | Source (function) | Seasons | Join key |
+|---|---|---|---|
+| Players, ADP, metadata, depth, injury | Sleeper (`/api/sleeper`) | current | Sleeper `player_id` |
+| Fantasy trending (add/drop) | Sleeper (`/api/sleeper`) | live 24h | Sleeper `player_id` |
+| Mock draft (`js/fantasy.js`) | Sleeper ADP | current | Sleeper `player_id` |
+| Stat leaders (`/api/nflstats`) | ESPN core API | **2000+** | ESPN athlete id (resolved server-side) |
+| Player season stats (`/api/nflplayer`) | ESPN | any | team roster **name match** → ESPN athlete id |
+| Game logs (`/api/nflgamelog`) | ESPN gamelog | any played | ESPN athlete id (from `/api/nflplayer`) |
+| Advanced / Next Gen Stats (`/api/nfladv`) | **nflverse** (CC-BY-4.0) | **2016+** | name+team → NGS `player_display_name` |
+| Scores, schedule, standings, teams (`/api/nfl`) | ESPN | current | ESPN team id/abbr |
+
+**Join note:** Sleeper's own ESPN/gsis ids are sparse (~25–33%), so player stats/logs/advanced bridge by **normalized name (+team)** against the authoritative source, not by Sleeper id. ESPN team-id↔abbr and Sleeper↔ESPN abbr aliases (WSH↔WAS, OAK→LV) live in the functions.
+
+**Caching by volatility:** past seasons are immutable → long cf `cacheTtl`; current-season data → short (scores SHORT, NGS/stats refresh in-season). Client also caches via `ApiCache`.
+
+**Prepared for the upcoming season:** when 2026 kicks off, the season model flips automatically, ESPN scores/standings/stats populate from their live endpoints (the offseason empty-states clear on their own), and incoming weekly stats flow through the same functions with no code change.

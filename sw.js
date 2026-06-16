@@ -1,10 +1,10 @@
 // ============================================================
-// SportStrata — Service Worker  v13
+// SportStrata — Service Worker  v14
 // Strategy: stale-while-revalidate for static assets, network-first for navigation
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v13';
+const CACHE_NAME    = 'sportstrata-v14';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

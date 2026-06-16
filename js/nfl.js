@@ -5,6 +5,15 @@
 
 const NFL_ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 
+// ── NFL season model — single source of truth; auto-rolls every year ──
+// STATS  = latest season with completed/accumulating stats (Sep–Feb window).
+// FANTASY = the season ADP / drafts / player profiles refer to (upcoming or in-progress).
+const _nflNow = new Date();
+const NFL_STATS_SEASON       = (_nflNow.getMonth() + 1 >= 9) ? _nflNow.getFullYear() : _nflNow.getFullYear() - 1;
+const NFL_FANTASY_SEASON     = (_nflNow.getMonth() + 1 >= 3) ? _nflNow.getFullYear() : _nflNow.getFullYear() - 1;
+const NFL_LEADERS_MIN_SEASON = 2000;  // ESPN core-API leaders depth
+const NFL_NGS_MIN_SEASON     = 2016;  // Next Gen Stats depth
+
 // ── Fetch helper ──────────────────────────────────────────────
 
 async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM) {
@@ -292,7 +301,7 @@ function displayNFLStandings(rows) {
         grid.innerHTML = `<div class="nfl-offseason">
             <svg class="nfl-offseason-glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5.6" transform="rotate(-45 12 12)"/><path d="M8.5 8.5l7 7M10.6 7.4l1.4 1.4M7.4 10.6l1.4 1.4"/></svg>
             <h2 class="nfl-offseason-title">NFL is in the offseason</h2>
-            <p class="nfl-offseason-text">Standings populate once the 2026 regular season is underway. Until kickoff in September, browse the upcoming schedule and all 32 teams.</p>
+            <p class="nfl-offseason-text">Standings populate once the ${NFL_FANTASY_SEASON} regular season is underway. Until kickoff in September, browse the upcoming schedule and all 32 teams.</p>
             <div class="nfl-offseason-actions">
                 <button class="nfl-offseason-btn" onclick="navigateTo('nfl-games')">View schedule</button>
                 <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>
@@ -656,10 +665,8 @@ function displayNFLStatLeaders(data) {
 
     const bar = document.createElement('div');
     bar.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;padding:0 0.25rem 0.6rem';
-    const now = new Date();
-    const latest = (now.getMonth() + 1 >= 9) ? now.getFullYear() : now.getFullYear() - 1;
     let opts = '';
-    for (let y = latest; y >= 2000; y--) opts += `<option value="${y}" ${y === data.season ? 'selected' : ''}>${y}</option>`;
+    for (let y = NFL_STATS_SEASON; y >= NFL_LEADERS_MIN_SEASON; y--) opts += `<option value="${y}" ${y === data.season ? 'selected' : ''}>${y}</option>`;
     bar.innerHTML = `
         <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-secondary);font-weight:700">
             Season
@@ -773,7 +780,7 @@ function _renderNFLPlayerDetail(p) {
                         ${teamLogo ? `<img src="${teamLogo}" alt="" style="width:24px;height:24px;object-fit:contain" loading="lazy" data-hide-on-error>` : ''}
                         ${teamBtn}
                     </div>
-                    <p class="player-detail-meta" style="color:var(--text-muted)">2026 NFL Season · Fantasy profile</p>
+                    <p class="player-detail-meta" style="color:var(--text-muted)">${NFL_FANTASY_SEASON} NFL Season · Fantasy profile</p>
                 </div>
             </div>
         </div>
@@ -790,7 +797,7 @@ function _renderNFLPlayerDetail(p) {
         <div class="stats-card">
             <h2 class="detail-section-title">Fantasy Outlook</h2>
             <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin:0">
-                ${_escHtml(p.full_name)} enters 2026 ${p._adp ? `as the <strong>#${p._adp}</strong> player off the board by Sleeper ADP` : 'as an undrafted-tier option'}${p.fantasy_positions && p.fantasy_positions.length ? `, eligible at <strong>${_escHtml(p.fantasy_positions.join(', '))}</strong>` : ''}.${p.depth_chart_order === 1 ? ' Currently atop the depth chart.' : p.depth_chart_order ? ` Listed ${_escHtml((p.depth_chart_position || pos) + ' ' + p.depth_chart_order)} on the depth chart.` : ''}${p.injury_status ? ` <span style="color:var(--color-loss)">Injury watch: ${_escHtml(p.injury_status)}.</span>` : ''}
+                ${_escHtml(p.full_name)} enters ${NFL_FANTASY_SEASON} ${p._adp ? `as the <strong>#${p._adp}</strong> player off the board by Sleeper ADP` : 'as an undrafted-tier option'}${p.fantasy_positions && p.fantasy_positions.length ? `, eligible at <strong>${_escHtml(p.fantasy_positions.join(', '))}</strong>` : ''}.${p.depth_chart_order === 1 ? ' Currently atop the depth chart.' : p.depth_chart_order ? ` Listed ${_escHtml((p.depth_chart_position || pos) + ' ' + p.depth_chart_order)} on the depth chart.` : ''}${p.injury_status ? ` <span style="color:var(--color-loss)">Injury watch: ${_escHtml(p.injury_status)}.</span>` : ''}
             </p>
             <p style="color:var(--text-muted);font-size:0.78rem;margin:0.75rem 0 0">Fantasy/ADP and depth chart via Sleeper; season stats via ESPN.</p>
         </div>

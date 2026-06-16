@@ -472,3 +472,15 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Architecture (Axiom):** same Pages Function + edge-cache pattern, no new infra. NGS files static post-season (cache 12h covers in-season weekly refresh).
 
 **Next:** projections/rankings, then charts (reuse MLB), then NFL comparison (reuse MLB compare).
+
+---
+
+## D-019 — NFL Data Foundation: edge-cache from upstream (no D1), unified season model
+**Status:** decided + shipped — owner 2026-06-15 ("strong NFL foundation, reference all past data, ready for the upcoming season")
+**Contributors:** owner, Relay, Axiom, Folio
+
+**Decision:** NFL stays **edge-cached from upstream** (ESPN / Sleeper / nflverse via Pages Functions + Cloudflare cache) — **no D1 persistence layer** for NFL for now (unlike MLB). Rationale: the upstream sources already cover all historical depth we need (leaders 2000+, stats/logs any season, NGS 2016+), cf-caching is fast + free, and a D1 archive adds ingestion/ops weight without a current need. Revisit only if upstream reliability or query needs change.
+
+**Foundation shipped:** unified season model in `js/nfl.js` (`NFL_STATS_SEASON` / `NFL_FANTASY_SEASON` / min-season constants) replacing all hardcoded year strings (player-detail label, fantasy outlook, offseason copy) so the 2026 rollover is automatic and coordinated. Data source→coverage map documented in CLAUDE.md ("NFL Data Foundation"). Transition is automatic: season model flips in September, ESPN live endpoints populate, offseason empty-states clear.
+
+**Next (D-018 roadmap):** projections/rankings, charts (reuse MLB), NFL comparison (reuse MLB compare).
