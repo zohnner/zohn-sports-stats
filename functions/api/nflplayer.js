@@ -127,7 +127,16 @@ export async function onRequest(context) {
         const cm = cats[g.cat];
         if (!cm) continue;
         const prim = cm[g.primary];
-        if (!prim || !(prim.v > 0)) continue;
+        let show = !!(prim && prim.v > 0);
+        if (g.key === 'defense') {
+            // Skill players pick up 1-3 incidental tackles; only show Defense for real production.
+            const di = cats.defensiveInterceptions && cats.defensiveInterceptions.interceptions;
+            show = (cm.totalTackles && cm.totalTackles.v >= 10)
+                || (cm.sacks && cm.sacks.v > 0)
+                || (cm.passesDefended && cm.passesDefended.v > 0)
+                || (di && di.v > 0);
+        }
+        if (!show) continue;
         const line = g.stats.map(([n, l]) => [l, cm[n] ? cm[n].d : '—']);
         if (g.key === 'defense' && cats.defensiveInterceptions && cats.defensiveInterceptions.interceptions) {
             line.push(['INT', cats.defensiveInterceptions.interceptions.d]);
