@@ -13,12 +13,24 @@ function setupNavigation() {
 
     // Tab clicks — sub-nav items are re-rendered per sport, so they're handled by
     // delegation (below); everything else is bound directly.
-    document.querySelectorAll('.nav-tab:not(.sub-nav-item)').forEach(tab => {
+    // Bind only "standalone" nav-tabs directly; the sub-nav, bottom-nav and menu
+    // panel are re-rendered per sport, so they use delegation (handlers survive
+    // regeneration). Binding regenerated buttons directly would leave them dead.
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        if (tab.closest('#subNav') || tab.closest('#bottomNav') || tab.closest('#menuPanel')) return;
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
     });
     document.getElementById('subNav')?.addEventListener('click', e => {
         const t = e.target.closest('.nav-tab[data-view]');
         if (t) navigateTo(t.dataset.view);
+    });
+    document.getElementById('bottomNav')?.addEventListener('click', e => {
+        const t = e.target.closest('.nav-tab[data-view]');
+        if (t) navigateTo(t.dataset.view);
+    });
+    document.getElementById('menuPanel')?.addEventListener('click', e => {
+        const t = e.target.closest('.nav-tab[data-view]');
+        if (t) { navigateTo(t.dataset.view); _closeMenu(); }
     });
     document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
         b.addEventListener('click', () => switchSport(b.dataset.sport));
@@ -753,7 +765,40 @@ const _NAV_ICONS = {
     scores:    '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="10.5" rx="1.5"/><path d="M2 7.5h12M5.5 1.5v4M10.5 1.5v4"/></svg>',
     standings: '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5V10M7 13.5V6M11.5 13.5V3"/><path d="M1.5 13.5h13"/></svg>',
     extra:     '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="10" height="11" rx="1"/><path d="M6.5 3a1.5 1.5 0 013 0"/><path d="M5.5 7.5h5M5.5 10.5h3.5"/></svg>',
+    teams:     '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5L2.5 4v4C2.5 11.5 5 14 8 15c3-1 5.5-3.5 5.5-7V4L8 1.5z"/></svg>',
+    builder:   '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 2L14 5 6 13H3v-3L11 2z"/><path d="M9 4l3 3"/></svg>',
+    compare:   '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="5" height="10" rx="1"/><rect x="9.5" y="3" width="5" height="10" rx="1"/></svg>',
+    arcade:    '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="4.5" width="13" height="7" rx="2.5"/><path d="M5 8h2M6 7v2"/><circle cx="11" cy="7.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="13" cy="7.5" r="0.75" fill="currentColor" stroke="none"/></svg>',
+    trending:  '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 11l4-4 3 3 5-6"/><path d="M11 4h3v3"/></svg>',
 };
+
+const MENU_TABS = {
+    mlb: [
+        { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
+        { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-games', l:'Scores', i:'scores' },
+        { v:'mlb-standings', l:'Standings', i:'standings' }, { v:'mlb-builder', l:'Builder', i:'builder' },
+        { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'mlb-compare', l:'Compare', i:'compare' },
+        { v:'arcade', l:'Arcade', i:'arcade' },
+    ],
+    nfl: [
+        { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
+        { v:'nfl-trending', l:'Trending', i:'trending' }, { v:'nfl-teams', l:'Teams', i:'teams' },
+        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-standings', l:'Standings', i:'standings' },
+        { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+    ],
+};
+
+function _renderMenuPanel(sport) {
+    const panel = document.getElementById('menuPanel');
+    const grid = panel && panel.querySelector('.menu-grid');
+    if (!grid) return;
+    const tabs = MENU_TABS[sport] || MENU_TABS.mlb;
+    grid.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
+    grid.innerHTML = tabs.map(t =>
+        `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
+    ).join('');
+    grid.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
+}
 
 const BOTTOM_NAV_TABS = {
     mlb: [
@@ -787,6 +832,7 @@ function _applySportUI(sport) {
     if (brandSub)  brandSub.textContent  = sub;
     _renderSubNav(sport);
     _renderBottomNav(sport);
+    _renderMenuPanel(sport);
     document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
         const on = b.dataset.sport === sport;
         b.classList.toggle('sport-switch-btn--active', on);

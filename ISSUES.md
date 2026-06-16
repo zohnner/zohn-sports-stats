@@ -2749,3 +2749,10 @@ Extends D-016. Owner: keep building toward NFL fully built out.
 **Verification:** node --check clean (nflplayer.js, nfl.js, sw.js); roster + statistics shapes validated via web_fetch. Function is server-side — full render verification post-deploy.
 
 **Deferred:** per-game game logs (game-by-game); ⌘K NFL search; mobile menu-panel per-sport swap.
+
+### Mobile nav: bottom-nav click bug fix + menu-panel per-sport swap (2026-06-15) — SHIPPED (pending push)
+- **Bug found + fixed:** `_renderBottomNav` regenerates the mobile bottom bar per sport, but `setupNavigation` bound click handlers directly to the original static buttons at init — so regenerated buttons were dead (no navigation) on mobile. Now sub-nav, bottom-nav, and menu-panel all use event delegation; only standalone `.nav-tab`s (e.g. ticker SCORES) are bound directly. (Verified the bug live: real-click on a regenerated bottom-nav button did not navigate.)
+- **Menu-panel per-sport swap:** the mobile hamburger (`#menuPanel`) was static MLB tiles in all sports. Added `MENU_TABS` + `_renderMenuPanel(sport)` (called from `_applySportUI`); NFL now shows Players/Leaders/Trending/Teams/Scores/Standings/Mock Draft. Extended `_NAV_ICONS` (teams/builder/compare/arcade/trending).
+- SW v8→v9.
+
+**Verification:** node --check clean; full mobile click-through pending push + deploy.
