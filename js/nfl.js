@@ -140,32 +140,6 @@ async function fetchNFLStandings() {
     return result;
 }
 
-async function fetchNFLLeaders() {
-    const data = await espnNFLFetch('/leaders', {}, ApiCache.TTL.MEDIUM);
-    const cats = data.categories || data.leaders || [];
-    return cats.map(cat => ({
-        name:        cat.name,
-        displayName: cat.displayName || cat.name,
-        leaders:     (cat.leaders || []).map(l => ({
-            rank:         l.rank || 1,
-            value:        l.value,
-            displayValue: l.displayValue,
-            athlete: {
-                id:       l.athlete?.id,
-                name:     l.athlete?.fullName || l.athlete?.displayName || '',
-                shortName:l.athlete?.shortName || '',
-                headshot: l.athlete?.headshot?.href || getNFLPlayerHeadshotUrl(l.athlete?.id),
-                position: l.athlete?.position?.abbreviation || '',
-                team: {
-                    abbr:  l.athlete?.team?.abbreviation || '',
-                    logo:  l.athlete?.team?.logo || getNFLTeamLogoUrl(l.athlete?.team?.abbreviation),
-                    color: '#' + (l.athlete?.team?.color || '334155'),
-                },
-            },
-        })),
-    })).filter(cat => cat.leaders.length > 0);
-}
-
 // ── Display: Teams ────────────────────────────────────────────
 
 async function loadNFLTeams() {
@@ -392,92 +366,210 @@ function displayNFLStandings(rows) {
     grid.appendChild(wrap);
 }
 
-// ── Display: Leaders ──────────────────────────────────────────
+// ── Sleeper player pool (validated NFL player source) ─────────
+// ESPN's site API exposes no working /leaders or roster path, so player-level
+// NFL data comes from Sleeper's public API via the same-origin /api/sleeper proxy.
+let _nflPool    = null;     // active fantasy players sorted by ADP (search_rank)
+let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
+let _nflPosFilter = 'ALL';
 
-const _NFL_LEADER_CATS = [
-    { name: 'passingYards',        label: 'Pass YDS',  icon: '🏈' },
-    { name: 'passingTouchdowns',   label: 'Pass TD',   icon: '🏈' },
-    { name: 'rushingYards',        label: 'Rush YDS',  icon: '🏃' },
-    { name: 'rushingTouchdowns',   label: 'Rush TD',   icon: '🏃' },
-    { name: 'receivingYards',      label: 'Rec YDS',   icon: '🙌' },
-    { name: 'receptions',          label: 'REC',       icon: '🙌' },
-    { name: 'receivingTouchdowns', label: 'Rec TD',    icon: '🙌' },
-    { name: 'sacks',               label: 'Sacks',     icon: '🛡️' },
-    { name: 'interceptions',       label: 'INT',       icon: '🛡️' },
-];
+const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
+const _NFL_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
 
-async function loadNFLLeaderboards() {
+async function fetchNFLSleeperPool() {
+    if (_nflPool) return _nflPool;
+    const res = await fetch('/api/sleeper?path=/v1/players/nfl');
+    if (!res.ok) throw new Error(`Sleeper players ${res.status}`);
+    const raw = await res.json();
+    _nflPoolMap = raw;
+    _nflPool = Object.values(raw)
+        .filter(p => p && p.active && p.full_name && Array.isArray(p.fantasy_positions)
+                     && p.fantasy_positions.length && p.search_rank && p.search_rank < 9999)
+        .sort((a, b) => a.search_rank - b.search_rank);
+    _nflPool.forEach((p, i) => { p._adp = i + 1; });  // dense ADP (search_rank has ties)
+    return _nflPool;
+}
+
+function getNFLSleeperHeadshot(id) {
+    return id ? `https://sleepercdn.com/content/nfl/players/${id}.jpg` : null;
+}
+
+// ── Display: Players (reuses the .player-card component) ───────
+async function loadNFLPlayers() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
 
-    grid.innerHTML = Array.from({ length: 6 }, () =>
+    grid.innerHTML = Array.from({ length: 8 }, () =>
         `<div class="skeleton-card" style="min-height:240px"></div>`
     ).join('');
 
     try {
-        const cats = await fetchNFLLeaders();
-        if (!cats?.length) {
-            ErrorHandler.renderEmptyState(grid, 'No NFL leaders data — check back during the season.', '🏈');
-            return;
-        }
-        displayNFLLeaderboards(cats);
+        await fetchNFLSleeperPool();
+        displayNFLPlayers();
     } catch (err) {
-        ErrorHandler.handle(grid, err, loadNFLLeaderboards, { tag: 'NFL', title: 'Failed to Load NFL Leaders' });
+        ErrorHandler.handle(grid, err, loadNFLPlayers, { tag: 'NFL', title: 'Failed to Load NFL Players' });
     }
 }
 
-function displayNFLLeaderboards(cats) {
+function displayNFLPlayers() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+
+    const pool = _nflPool || [];
+    if (!pool.length) {
+        ErrorHandler.renderEmptyState(grid, 'No NFL player data available', '🏈');
+        return;
+    }
+
+    const filtered = _nflPosFilter === 'ALL'
+        ? pool
+        : pool.filter(p => p.fantasy_positions.includes(_nflPosFilter));
+    const shown = filtered.slice(0, 120);
+
+    const chip = (f) => {
+        const active = f === _nflPosFilter;
+        return `<button data-nfl-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);
+            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+            background:${active ? 'var(--accent)' : 'transparent'};
+            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+    };
+    const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
+        ${_NFL_POS_FILTERS.map(chip).join('')}
+        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} by ADP</span>
+    </div>`;
+
+    const cards = document.createElement('div');
+    cards.className = 'players-grid';
+    shown.forEach(p => cards.appendChild(_createNFLPlayerCard(p)));
+
+    grid.innerHTML = bar;
+    grid.appendChild(cards);
+
+    grid.querySelectorAll('[data-nfl-pos]').forEach(btn => {
+        btn.addEventListener('click', () => { _nflPosFilter = btn.dataset.nflPos; displayNFLPlayers(); });
+    });
+}
+
+function _createNFLPlayerCard(p) {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+
+    const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
+    const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
+    card.style.borderTop = `3px solid ${posColor}cc`;
+
+    const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
+    const headshot = getNFLSleeperHeadshot(p.player_id);
+    const inches   = parseInt(p.height, 10);
+    const htStr    = (!isNaN(inches) && inches > 0) ? `${Math.floor(inches / 12)}'${inches % 12}"` : (p.height || '—');
+
+    const rows = [
+        ['POS',     pos || '—'],
+        ['TEAM',    p.team || 'FA'],
+        ['AGE',     p.age != null ? p.age : '—'],
+        ['EXP',     p.years_exp != null ? (p.years_exp === 0 ? 'Rookie' : `${p.years_exp} yr`) : '—'],
+        ['HT / WT', `${htStr}${p.weight ? ' · ' + p.weight : ''}`],
+        ['COLLEGE', p.college || '—'],
+    ].map(([l, v]) =>
+        `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-value">${_escHtml(String(v))}</span></div>`
+    ).join('');
+
+    const rankBadge = `<span class="player-rank-badge ${p._adp <= 12 ? 'player-rank-badge--top' : ''}">#${p._adp} ADP</span>`;
+    const inj = p.injury_status
+        ? `<div class="player-team" style="color:var(--color-loss);font-size:0.68rem">${_escHtml(p.injury_status)}</div>`
+        : '';
+
+    card.innerHTML = `
+        <div class="player-card-top">
+            ${rankBadge}
+            <div class="player-avatar" style="background:linear-gradient(135deg,${posColor}cc,${posColor}55)">
+                ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${initials}
+            </div>
+            <div class="player-name">${_escHtml(p.full_name)}</div>
+            <div class="player-team">${p.team ? _escHtml(p.team) + ' · ' : ''}${_escHtml(pos)}${p.number ? ' · #' + p.number : ''}</div>
+            ${inj}
+        </div>
+        <div class="player-details">${rows}</div>
+    `;
+    return card;
+}
+
+// ── Display: Trending (fantasy add/drop — reuses leaderboard panel) ──
+async function loadNFLLeaderboards() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
+
+    grid.innerHTML = Array.from({ length: 2 }, () =>
+        `<div class="skeleton-card" style="min-height:360px"></div>`
+    ).join('');
+
+    try {
+        await fetchNFLSleeperPool();
+        const [adds, drops] = await Promise.all([
+            fetch('/api/sleeper?path=/v1/players/nfl/trending/add').then(r => r.json()),
+            fetch('/api/sleeper?path=/v1/players/nfl/trending/drop').then(r => r.json()),
+        ]);
+        displayNFLTrending(adds, drops);
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLLeaderboards, { tag: 'NFL', title: 'Failed to Load NFL Trending' });
+    }
+}
+
+function displayNFLTrending(adds, drops) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
     grid.innerHTML = '';
 
-    const ORDERED = _NFL_LEADER_CATS.map(c => cats.find(cat => cat.name === c.name)).filter(Boolean);
-    cats.forEach(cat => {
-        if (!_NFL_LEADER_CATS.some(c => c.name === cat.name)) ORDERED.push(cat);
-    });
-
-    const fragment = document.createDocumentFragment();
-    ORDERED.forEach(cat => {
-        const meta  = _NFL_LEADER_CATS.find(c => c.name === cat.name);
-        const label = meta?.label || cat.displayName;
-        const icon  = meta?.icon  || '🏈';
-
+    const panel = (title, icon, list, accent) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.style.cssText = 'padding:0;overflow:hidden';
-
-        const rowsHtml = cat.leaders.slice(0, 5).map((l, i) => `
+        const items = (list || []).slice(0, 12);
+        const rows = items.map((e, i) => {
+            const p    = _nflPoolMap?.[e.player_id];
+            const name = p ? p.full_name : 'Unknown player';
+            const meta = p ? `${p.team || 'FA'}${p.position ? ' · ' + p.position : ''}` : '';
+            const hs   = getNFLSleeperHeadshot(e.player_id);
+            return `
             <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;
-                border-bottom:${i < 4 ? '1px solid var(--border-subtle)' : 'none'}">
+                border-bottom:${i < items.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
                 <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
                 <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
-                    <img src="${l.athlete.headshot || ''}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
+                    <img src="${hs || ''}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
                 </div>
                 <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(l.athlete.shortName || l.athlete.name)}</div>
-                    <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(l.athlete.team.abbr)}${l.athlete.position ? ' · ' + l.athlete.position : ''}</div>
+                    <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(name)}</div>
+                    <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(meta)}</div>
                 </div>
-                <span style="font-weight:900;font-size:0.92rem;color:var(--accent)">${_escHtml(String(l.displayValue))}</span>
-            </div>
-        `).join('');
-
+                <span style="font-weight:900;font-size:0.92rem;color:${accent}">${Number(e.count || 0).toLocaleString()}</span>
+            </div>`;
+        }).join('');
         card.innerHTML = `
             <div style="padding:0.55rem 0.75rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
                 font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
                 display:flex;align-items:center;gap:0.4rem;color:var(--text-secondary)">
-                <span>${icon}</span> ${_escHtml(label)}
+                <span>${icon}</span> ${title}
             </div>
-            ${rowsHtml || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.82rem">No data available</div>'}
-        `;
-        fragment.appendChild(card);
-    });
-    grid.innerHTML = '';
-    grid.appendChild(fragment);
-}
+            ${rows || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.82rem">No trending data</div>'}`;
+        return card;
+    };
 
-// Players view delegates to leaders
-async function loadNFLPlayers() { return loadNFLLeaderboards(); }
+    const note = document.createElement('div');
+    note.style.cssText = 'grid-column:1/-1;font-size:0.74rem;color:var(--text-muted);padding:0 0.25rem 0.4rem';
+    note.textContent = 'Most-added and most-dropped players across fantasy leagues in the last 24 hours. Source: Sleeper.';
+
+    grid.appendChild(note);
+    grid.appendChild(panel('Trending Adds', '📈', adds, 'var(--color-win)'));
+    grid.appendChild(panel('Trending Drops', '📉', drops, 'var(--color-loss)'));
+}
 
 // ── Ticker ────────────────────────────────────────────────────
 
@@ -524,6 +616,8 @@ if (typeof window !== 'undefined') {
     window.loadNFLStandings    = loadNFLStandings;
     window.displayNFLStandings = displayNFLStandings;
     window.loadNFLLeaderboards = loadNFLLeaderboards;
+    window.displayNFLTrending  = displayNFLTrending;
     window.loadNFLPlayers      = loadNFLPlayers;
+    window.displayNFLPlayers   = displayNFLPlayers;
     window.updateNFLTicker     = updateNFLTicker;
 }

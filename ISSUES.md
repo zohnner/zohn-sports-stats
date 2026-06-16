@@ -2690,3 +2690,20 @@ Validated live on sportstrata.cc:
 - Accounts tier (grades, league import, multiplayer, monetization) — D-014 parallel planning.
 
 Note: service worker is stale-while-revalidate (D-010) — post-deploy changes show after a load or two.
+
+### NFL Depth — Players directory + Trending board (2026-06-15) — SHIPPED (pending push)
+Owner: deepen NFL reusing existing component logic (leaderboards, player cards). See D-015.
+
+**Data reality (Relay):** ESPN site API has no working `/leaders` or roster path (404 / not-allowlisted); real stat leaders need the ESPN core-API host. Offseason = zero 2026 stats. Removed the dead `fetchNFLLeaders()`.
+
+**Shipped on validated Sleeper data:**
+- **NFL Players** (`loadNFLPlayers`/`displayNFLPlayers`/`_createNFLPlayerCard` in `nfl.js`) — reuses `.player-card`. 2,347 active fantasy players ranked by ADP; metadata pos/team/age/exp/HT-WT/college/#/injury; position filter chips. Sleeper headshots (`sleepercdn.com` added to CSP img-src in `index.html` + `_headers`; image existence verified).
+- **NFL Trending** (`loadNFLLeaderboards`/`displayNFLTrending`) — reuses leaderboard panel. Sleeper trending add/drop, real 24h counts, two panels, labeled "across fantasy leagues in the last 24 hours · Source: Sleeper."
+- Nav: sub-nav = Players · Trending · Scores · Standings · | · Teams · Mock Draft; route split (`nfl-players`→players, `nfl-leaders`→trending); menu labels fixed (were both "NFL Leaders").
+
+**Verification:** `node --check` clean on `nfl.js` + `navigation.js`; no NUL/truncation; Sleeper pool + trending payloads + headshot image validated live pre-deploy. Full live render verification pending push + Cloudflare deploy.
+
+**Open follow-ups (deferred):**
+- True NFL stat leaders (passing/rushing/receiving yds, TDs, sacks, INT) — requires standing up an ESPN **core-API** proxy (`sports.core.api.espn.com`): new Pages Function, allowlist, payload validation. In-season only.
+- NFL player-detail page (reuse player-detail pattern) — worth building once per-player stats exist via the core-API proxy; Sleeper metadata alone doesn't justify a full detail page.
+- Mobile bottom-nav per-sport swap (still MLB-only destinations on mobile).
