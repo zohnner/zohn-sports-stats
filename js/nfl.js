@@ -1031,8 +1031,85 @@ function _renderNFLTeamDetail(abbr) {
     `;
 }
 
+// ── Display: Rankings (Sleeper ADP — overall + positional ranks + tiers) ──
+let _nflRankPos = 'ALL';
+
+async function loadNFLRankings() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-rankings', null);
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:420px"></div>`;
+    try {
+        await fetchNFLSleeperPool();
+        displayNFLRankings();
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLRankings, { tag: 'NFL', title: 'Failed to Load NFL Rankings' });
+    }
+}
+
+function displayNFLRankings() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+    const pool = _nflPool || [];
+    if (!pool.length) { ErrorHandler.renderEmptyState(grid, 'No NFL ranking data available', '🏈'); return; }
+
+    const posCount = {};
+    const ranked = pool.map((p, i) => {
+        const pos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
+        posCount[pos] = (posCount[pos] || 0) + 1;
+        return { p, overall: i + 1, pos, posRank: posCount[pos] };
+    });
+    const isAll = _nflRankPos === 'ALL';
+    const filtered = isAll ? ranked : ranked.filter(r => r.pos === _nflRankPos || (r.p.fantasy_positions || []).includes(_nflRankPos));
+    const shown = filtered.slice(0, 200);
+
+    const chip = f => {
+        const a = f === _nflRankPos;
+        return `<button data-nfl-rank-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);border:1px solid ${a ? 'var(--accent)' : 'var(--border-default)'};background:${a ? 'var(--accent)' : 'transparent'};color:${a ? '#0b0b0d' : 'var(--text-secondary)'};font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+    };
+
+    let html = `<div style="max-width:760px;margin:0 auto">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
+            ${['ALL', 'QB', 'RB', 'WR', 'TE', 'K'].map(chip).join('')}
+            <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">${NFL_FANTASY_SEASON} rankings · ADP via Sleeper</span>
+        </div>`;
+
+    let lastTier = null;
+    shown.forEach(r => {
+        const tier = isAll ? Math.ceil(r.overall / 12) : Math.ceil(r.posRank / 6);
+        if (tier !== lastTier) {
+            lastTier = tier;
+            const label = isAll ? `Round ${tier}` : `${_escHtml(_nflRankPos)} Tier ${tier}`;
+            html += `<div style="font-size:0.66rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:var(--accent);margin:0.9rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border-mid)">${label}</div>`;
+        }
+        const pos = r.pos, pc = _NFL_POS_COLOR[pos] || 'var(--accent)';
+        const hs = getNFLSleeperHeadshot(r.p.player_id);
+        const rankNum = isAll ? r.overall : r.posRank;
+        const posTag = (isAll && pos) ? `${_escHtml(pos)}${r.posRank}` : '';
+        const inj = r.p.injury_status ? ` <span style="color:var(--color-loss);font-size:0.62rem;font-weight:700">${_escHtml(r.p.injury_status)}</span>` : '';
+        html += `<div onclick="navigateTo('nfl-player-${r.p.player_id}')" style="display:flex;align-items:center;gap:0.7rem;padding:0.4rem 0.5rem;border-bottom:1px solid var(--border-subtle);cursor:pointer">
+            <span style="width:28px;text-align:right;font-weight:800;font-size:0.95rem;color:var(--text-primary)">${rankNum}</span>
+            <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
+                <img src="${hs}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(r.p.full_name)}${inj}</div>
+                <div style="font-size:0.68rem;color:var(--text-muted)">${_escHtml(r.p.team || 'FA')}</div>
+            </div>
+            ${posTag ? `<span style="font-size:0.7rem;font-weight:800;color:${pc};min-width:38px;text-align:right">${posTag}</span>` : ''}
+            <span style="font-size:0.72rem;color:var(--text-secondary);min-width:56px;text-align:right">ADP ${r.p._adp}</span>
+        </div>`;
+    });
+    html += `</div>`;
+    grid.innerHTML = html;
+    grid.querySelectorAll('[data-nfl-rank-pos]').forEach(b => b.addEventListener('click', () => { _nflRankPos = b.dataset.nflRankPos; displayNFLRankings(); }));
+}
+
 if (typeof window !== 'undefined') {
     window.loadNFLTeams        = loadNFLTeams;
+    window.loadNFLRankings     = loadNFLRankings;
     window.showNFLPlayerDetail = showNFLPlayerDetail;
     window.showNFLTeamDetail   = showNFLTeamDetail;
     window.displayNFLTeams     = displayNFLTeams;

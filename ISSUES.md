@@ -2775,3 +2775,12 @@ D-018 (market-competitive, priority 1). nflverse = CC-BY-4.0 (verified, clean).
 - SW v11→v12.
 
 **Verification:** node --check clean; functions are server-side (gz decode + parse) so verify live: confirm columns via `?debug=1`, then the card renders with real percentiles for a known player. Then remove the debug path.
+
+### NFL Rankings view (ADP, positional + tiers) (2026-06-15) — SHIPPED (pending push)
+D-018 priority 2. Projections deferred (no clean documented forward-projection source — ESPN core mirrors actuals / empty for future; ESPN fantasy API is ToS-gray). Owner: "Rankings now, skip projections."
+
+- **`loadNFLRankings`/`displayNFLRankings`** (nfl.js) — Sleeper ADP ranked list: overall rank (ALL) or positional rank (filtered), position chips, tier grouping (Round N for ALL, {POS} Tier N filtered), injury flag, clickable → player detail. Uses NFL_FANTASY_SEASON label.
+- Nav: sub-nav Players · **Rankings** · Leaders · Trending · Scores · Standings · | · Teams · Mock Draft; route `nfl-rankings`; menu + nflViews + view-meta wired.
+- SW v14→v15.
+
+**Verification:** node --check clean; live render check pending push.
