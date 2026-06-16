@@ -2756,3 +2756,13 @@ Extends D-016. Owner: keep building toward NFL fully built out.
 - SW v8→v9.
 
 **Verification:** node --check clean; full mobile click-through pending push + deploy.
+
+### NFL Game Logs (game-by-game) on player detail (2026-06-15) — SHIPPED (pending push)
+Extends D-017. Owner: historical/multi-season.
+
+- **`functions/api/nflgamelog.js`** (NEW) — `?id={espnId}&season=`: fetches ESPN's gamelog (full payload, no truncation server-side), parses position-relative columns (`labels`/`names`) + `seasonTypes[].categories[].events[].stats` joined to the `events` metadata map (week, opponent, result, score, date). Returns compact `{columns, games}` + a temporary `_meta` introspection field.
+- **`/api/nflplayer`** now returns the resolved `espnId` so the game log reuses it (no extra roster fetch).
+- **`_loadNFLGameLog`** (nfl.js) — renders a horizontally-scrollable game-log table (reuses `.table-wrapper`/`.stats-table`) into a `#nfl-gamelog` placeholder on the player detail, below the season stat line. Sticky WK column, W/L coloring, score. Silent no-op when no games.
+- SW v10→v11.
+
+**Caveat:** my local web_fetch of the gamelog truncated at 89KB (the events metadata map), so the per-game stat-row parse follows ESPN's documented standard format and is confirmed via the `_meta` field on first live test. Remove `_meta` once confirmed.

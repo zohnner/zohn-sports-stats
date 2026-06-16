@@ -144,5 +144,5 @@ export async function onRequest(context) {
         groups.push({ key: g.key, label: g.label, stats: line });
     }
 
-    return json({ found: groups.length > 0, season: Number(season), name: espnName, gp, groups }, 200, 21600);
+    return json({ found: groups.length > 0, season: Number(season), name: espnName, espnId: athleteId, gp, groups }, 200, 21600);
 }

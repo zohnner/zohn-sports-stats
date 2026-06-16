@@ -784,6 +784,7 @@ function _renderNFLPlayerDetail(p) {
         </div>
 
         <div id="nfl-stat-line"></div>
+        <div id="nfl-gamelog"></div>
 
         <div class="stats-card">
             <h2 class="detail-section-title">Fantasy Outlook</h2>
@@ -814,6 +815,7 @@ async function _loadNFLPlayerStats(p) {
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
+        if (data.espnId) _loadNFLGameLog(data.espnId, data.season);
         if (!data.found || !data.groups || !data.groups.length) return;
         if (!document.body.contains(host)) return;  // user navigated away
 
@@ -836,6 +838,52 @@ async function _loadNFLPlayerStats(p) {
             ${groupsHtml}
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
         `;
+    } catch (_) {}
+}
+
+// Game-by-game log on the player-detail page (ESPN, via the resolved athlete id).
+async function _loadNFLGameLog(espnId, season) {
+    if (!espnId) return;
+    const host = document.getElementById('nfl-gamelog');
+    if (!host) return;
+    try {
+        const cacheKey = `nfl:gamelog:${espnId}:${season}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/nflgamelog?id=${encodeURIComponent(espnId)}&season=${encodeURIComponent(season)}`);
+            if (!res.ok) return;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        if (!data.found || !data.games || !data.games.length) return;
+        if (!document.body.contains(host)) return;
+
+        const cols = data.columns || [];
+        const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">WK</th>` +
+            `<th style="text-align:left">OPP</th><th>RES</th>` +
+            cols.map(c => `<th title="${_escHtml(c.full)}">${_escHtml(c.label)}</th>`).join('');
+        const rows = data.games.map(gm => {
+            const resColor = gm.res === 'W' ? 'var(--color-win)' : gm.res === 'L' ? 'var(--color-loss)' : 'var(--text-muted)';
+            const wk = gm.post ? 'P' : (gm.wk != null ? gm.wk : '');
+            const statTds = (gm.stats || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('');
+            return `<tr>
+                <td style="font-weight:700;position:sticky;left:0;background:var(--bg-card)">${_escHtml(String(wk))}</td>
+                <td style="white-space:nowrap">${gm.atVs === '@' ? '@' : 'vs'} <strong>${_escHtml(gm.opp)}</strong></td>
+                <td style="text-align:center;white-space:nowrap"><span style="color:${resColor};font-weight:800">${_escHtml(gm.res)}</span> <span style="color:var(--text-muted);font-size:0.7rem">${_escHtml(gm.score)}</span></td>
+                ${statTds}
+            </tr>`;
+        }).join('');
+
+        host.className = 'stats-card';
+        host.innerHTML = `
+            <h2 class="detail-section-title">${data.season} Game Log</h2>
+            <div class="table-wrapper" style="overflow-x:auto">
+                <table class="stats-table" style="min-width:max-content;white-space:nowrap">
+                    <thead><tr>${head}</tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.5rem 0 0">Game-by-game · Source: ESPN.</p>`;
     } catch (_) {}
 }
 
