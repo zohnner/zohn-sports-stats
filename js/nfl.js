@@ -613,6 +613,78 @@ function updateNFLTicker(games) {
     }));
 }
 
+// ── Display: Stat Leaders (real season stats via /api/nflstats) ──
+const _NFL_STAT_COLORS = ['#ef4444','#f97316','#34d399','#10b981','#60a5fa','#3b82f6','#a78bfa','#f43f5e','#22d3ee'];
+
+async function loadNFLStatLeaders() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
+
+    grid.innerHTML = Array.from({ length: 6 }, () =>
+        `<div class="skeleton-card" style="min-height:260px"></div>`
+    ).join('');
+
+    try {
+        const cacheKey = 'nfl:statleaders';
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch('/api/nflstats');
+            if (!res.ok) throw new Error(`Stat leaders ${res.status}`);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        if (!data.categories || !data.categories.length) {
+            ErrorHandler.renderEmptyState(grid, 'Stat leaders are unavailable right now.', '🏈');
+            return;
+        }
+        displayNFLStatLeaders(data);
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLStatLeaders, { tag: 'NFL', title: 'Failed to Load NFL Leaders' });
+    }
+}
+
+function displayNFLStatLeaders(data) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+    grid.innerHTML = '';
+
+    const note = document.createElement('div');
+    note.style.cssText = 'grid-column:1/-1;font-size:0.74rem;color:var(--text-muted);padding:0 0.25rem 0.4rem';
+    note.textContent = `${data.season} NFL regular-season leaders. Source: ESPN.`;
+    grid.appendChild(note);
+
+    data.categories.forEach((cat, ci) => {
+        const color = _NFL_STAT_COLORS[ci % _NFL_STAT_COLORS.length];
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.cssText = `padding:0;overflow:hidden;border-left:3px solid ${color}`;
+        const rows = cat.leaders.map((l, i) => `
+            <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;
+                border-bottom:${i < cat.leaders.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
+                <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
+                <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
+                    <img src="${l.headshot}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(l.name)}</div>
+                    <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
+                </div>
+                <span style="font-weight:900;font-size:0.92rem;color:${color}">${_escHtml(String(l.value))}</span>
+            </div>`).join('');
+        card.innerHTML = `
+            <div style="padding:0.55rem 0.75rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
+                font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
+                display:flex;align-items:center;justify-content:space-between;color:var(--text-secondary)">
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+            </div>
+            ${rows}`;
+        grid.appendChild(card);
+    });
+}
+
 // ── Team abbr alias: ESPN → Sleeper (Washington + legacy Oakland differ) ──
 function _nflSleeperAbbr(abbr) {
     return ({ WSH: 'WAS', OAK: 'LV' })[abbr] || abbr;
@@ -809,6 +881,8 @@ if (typeof window !== 'undefined') {
     window.displayNFLStandings = displayNFLStandings;
     window.loadNFLLeaderboards = loadNFLLeaderboards;
     window.displayNFLTrending  = displayNFLTrending;
+    window.loadNFLStatLeaders  = loadNFLStatLeaders;
+    window.displayNFLStatLeaders = displayNFLStatLeaders;
     window.loadNFLPlayers      = loadNFLPlayers;
     window.displayNFLPlayers   = displayNFLPlayers;
     window.updateNFLTicker     = updateNFLTicker;

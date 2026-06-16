@@ -261,7 +261,8 @@ const _NAV_META = {
     'mlb-compare':   { label: 'Compare',       icon: '⚡' },
     'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
-    'nfl-leaders':   { label: 'NFL Trending',  icon: '🔥' },
+    'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
+    'nfl-trending':  { label: 'NFL Trending',  icon: '🔥' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
@@ -474,6 +475,10 @@ function _renderNFLView(view) {
             loadNFLPlayers();
             break;
         case 'nfl-leaders':
+            if (viewCount) viewCount.textContent = 'NFL Leaders';
+            loadNFLStatLeaders();
+            break;
+        case 'nfl-trending':
             if (viewCount) viewCount.textContent = 'NFL Trending';
             loadNFLLeaderboards();
             break;
@@ -692,7 +697,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock'];
+        const nflViews = ['nfl-players', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
         if (mlbViews.includes(hash)) {
@@ -724,7 +729,7 @@ const SUB_NAV_TABS = {
         { v: 'mlb-compare', l: 'Compare' }, { v: 'arcade', l: 'Arcade' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players' }, { v: 'nfl-leaders', l: 'Trending' },
+        { v: 'nfl-players', l: 'Players' }, { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-trending', l: 'Trending' },
         { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' },
         { divider: true },
         { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-mock', l: 'Mock Draft' },
@@ -757,7 +762,7 @@ const BOTTOM_NAV_TABS = {
         { v: 'mlb-prep', l: 'Prep', i: 'extra' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players', i: 'players' }, { v: 'nfl-leaders', l: 'Trending', i: 'leaders' },
+        { v: 'nfl-players', l: 'Players', i: 'players' }, { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' },
         { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
         { v: 'nfl-mock', l: 'Draft', i: 'extra' },
     ],

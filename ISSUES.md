@@ -2723,3 +2723,15 @@ Owner: "make the NFL side fully functional." Team audit (Vera/Kael/Axiom/Relay) 
 **Verification:** node --check clean (nfl.js, navigation.js, sw.js); no NUL/truncation; player-detail + roster-grouping logic validated live against Sleeper. Full interaction verification pending push + deploy.
 
 **Deferred:** ⌘K NFL search (owner skipped this round); true stat leaders + game logs (need ESPN core-API proxy, D-015).
+
+### NFL Real Stat Leaders (2025) + Leaders/Trending split (2026-06-15) — SHIPPED (pending push)
+See D-016. Owner: keep building toward NFL fully built out.
+
+- **`functions/api/nflstats.js`** (NEW) — resolves ESPN core-API leaders + top athletes server-side → compact payload. Season auto-detect, `?season=` override. ~30 subrequests, cf-cached.
+- **`loadNFLStatLeaders`/`displayNFLStatLeaders`** (nfl.js) — reuse leaderboard panel; 9 categories (pass/rush/rec yds+TD, receptions, sacks, INT), top 5 each, headshots, team·pos, value+unit, "{season} · Source: ESPN" note.
+- **IA split:** `nfl-leaders` = real stats; `nfl-trending` = fantasy add/drop (was nfl-leaders). Sub-nav: Players · Leaders · Trending · Scores · Standings · | · Teams · Mock Draft. Bottom-nav: Players · Leaders · Scores · Standings · Draft.
+- SW bumped v5→v6.
+
+**Verification:** node --check clean (nflstats.js, nfl.js, navigation.js, sw.js); leaders + athlete-ref shapes validated via web_fetch. Function is server-side — full render verification is post-deploy.
+
+**Deferred:** player game logs on detail (core-API athlete statistics ref); ⌘K NFL search; mobile menu-panel per-sport swap.
