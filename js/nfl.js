@@ -783,6 +783,7 @@ function _renderNFLPlayerDetail(p) {
             <div class="player-details" style="max-width:520px">${bio}</div>
         </div>
 
+        <div id="nfl-advanced"></div>
         <div id="nfl-stat-line"></div>
         <div id="nfl-gamelog"></div>
 
@@ -796,6 +797,7 @@ function _renderNFLPlayerDetail(p) {
     `;
 
     _loadNFLPlayerStats(p);
+    _loadNFLAdvanced(p);
 }
 
 const _NFL_STAT_GROUP_COLOR = { passing:'#60a5fa', rushing:'#34d399', receiving:'#f59e0b', defense:'#a78bfa', kicking:'#f43f5e' };
@@ -884,6 +886,50 @@ async function _loadNFLGameLog(espnId, season) {
                 </table>
             </div>
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.5rem 0 0">Game-by-game · Source: ESPN.</p>`;
+    } catch (_) {}
+}
+
+const _NFL_NGS_LABEL = { receiving: 'receivers', passing: 'passers', rushing: 'rushers' };
+
+// Advanced metrics card (Next Gen Stats via nflverse) with league percentile bars.
+async function _loadNFLAdvanced(p) {
+    if (!p || !p.full_name) return;
+    const host = document.getElementById('nfl-advanced');
+    if (!host) return;
+    const pos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
+    if (!['QB', 'RB', 'FB', 'WR', 'TE'].includes(pos)) return;  // NGS covers skill positions only
+    try {
+        const cacheKey = `nfl:adv:${p.player_id}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/nfladv?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}&pos=${encodeURIComponent(pos)}`);
+            if (!res.ok) return;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        if (!data.found || !data.metrics || !data.metrics.length) return;
+        if (!document.body.contains(host)) return;
+
+        const fmt = v => { const n = +v; if (!isFinite(n)) return '—'; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
+        const barColor = pct => pct == null ? 'var(--border-mid)' : pct >= 80 ? '#ef4444' : pct >= 60 ? '#f59e0b' : pct >= 40 ? '#64748b' : '#3b82f6';
+        const rows = data.metrics.map(m => {
+            const pctTxt = m.pct != null ? ` <span style="color:var(--text-muted);font-weight:700">· ${m.pct}<span style="font-size:0.6rem">th</span></span>` : '';
+            return `<div style="margin-bottom:0.55rem">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.8rem;margin-bottom:0.25rem">
+                    <span style="color:var(--text-secondary);font-weight:600">${_escHtml(m.label)}</span>
+                    <span style="font-weight:800;color:var(--text-primary)">${_escHtml(fmt(m.value))}${m.unit ? '<span style="color:var(--text-muted);font-size:0.7rem">' + _escHtml(m.unit) + '</span>' : ''}${pctTxt}</span>
+                </div>
+                <div style="height:7px;border-radius:4px;background:var(--bg-subtle);overflow:hidden">
+                    ${m.pct != null ? `<div style="height:100%;width:${m.pct}%;background:${barColor(m.pct)};border-radius:4px"></div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+
+        host.className = 'stats-card';
+        host.innerHTML = `
+            <h2 class="detail-section-title">Advanced · Next Gen Stats</h2>
+            <div style="max-width:560px">${rows}</div>
+            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.4rem 0 0">${data.season} · percentile vs qualified ${_escHtml(_NFL_NGS_LABEL[data.type] || data.type)} (n=${data.qualifiedPlayers}) · Data via nflverse Next Gen Stats (CC-BY)</p>`;
     } catch (_) {}
 }
 

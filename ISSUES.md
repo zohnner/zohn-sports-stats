@@ -2766,3 +2766,12 @@ Extends D-017. Owner: historical/multi-season.
 - SW v10→v11.
 
 **Caveat:** my local web_fetch of the gamelog truncated at 89KB (the events metadata map), so the per-game stat-row parse follows ESPN's documented standard format and is confirmed via the `_meta` field on first live test. Remove `_meta` once confirmed.
+
+### NFL Advanced Metrics — Next Gen Stats via nflverse (2026-06-15) — SHIPPED (pending push)
+D-018 (market-competitive, priority 1). nflverse = CC-BY-4.0 (verified, clean).
+
+- **`functions/api/nfladv.js`** (NEW) — `?name&team&pos&season`: fetch `ngs_{season}_{type}.csv.gz` (nflverse), gunzip+parse server-side, name+team match, compute league percentiles among qualified players. Per-position metric sets. `?debug=1` returns the header (confirm columns live, then remove). NGS from 2016+.
+- **`_loadNFLAdvanced`** (nfl.js) — "Advanced · Next Gen Stats" card on player detail (above season stats) with Savant-style percentile bars (red=elite) + nflverse attribution. Skill positions only; silent no-op otherwise.
+- SW v11→v12.
+
+**Verification:** node --check clean; functions are server-side (gz decode + parse) so verify live: confirm columns via `?debug=1`, then the card renders with real percentiles for a known player. Then remove the debug path.

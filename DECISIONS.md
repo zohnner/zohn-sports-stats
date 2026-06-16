@@ -456,3 +456,19 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Data (Relay, validated):** ESPN core-API leaders return full data back to at least 2000 (verified 2000/2024/2025). Per-player game-log season options are the player's career span (ESPN `filters.season.options`). `/api/nflstats` and `/api/nflplayer` already accept `?season=`; the season auto-detects the latest completed season (flips to the live season in September), so "prepare for the upcoming year" is automatic.
 
 **Shipped:** NFL Leaders season selector (2000 → latest), re-fetches + caches per season. Next: season-aware player stat line + game logs.
+
+---
+
+## D-018 — NFL Market-Competitive: Advanced Metrics via nflverse (Next Gen Stats)
+**Status:** in progress — owner direction 2026-06-15 ("get NFL market-competitive"); priority order: advanced metrics → projections/rankings → charts → comparison
+**Contributors:** owner, Relay, Axiom, Kael, Vera, Finn
+
+**Goal:** make "serious stats / hidden layers" real on NFL — the brand promise was thin (basic box scores) vs. MLB's Savant percentiles.
+
+**Data (Relay, verified):** **nflverse** data is **CC-BY-4.0** (open, commercial use OK with attribution) — lowest-risk option, consistent with D-013 (no scraping). Next Gen Stats published as small per-season/per-type gzipped CSVs (`ngs_{year}_{passing|receiving|rushing}.csv.gz`, ~40-120KB, back to 2016). Join: Sleeper's own IDs are too sparse (gsis_id ~25%, espn_id ~33%), so we match by normalized **name + team** against NGS `player_display_name` (both authoritative sources).
+
+**Shipped (advanced metrics):** `functions/api/nfladv.js` — fetches the season+position NGS gz, gunzips (DecompressionStream) + parses server-side, finds the player, and computes **league percentile ranks** among qualified players per metric (Savant-style 0-100). Per position: WR/TE = separation, YAC-over-expected, aDOT, air-yards share, cushion, catch%; QB = CPOE, time-to-throw, aggressiveness, completed air yards; RB = RYOE/att, rush% over expected, efficiency, time-to-LOS. `_loadNFLAdvanced` renders an "Advanced · Next Gen Stats" card with percentile bars (red=elite) on the player detail, above the season stat line. Attribution shown ("Data via nflverse NGS, CC-BY"). Skill positions only.
+
+**Architecture (Axiom):** same Pages Function + edge-cache pattern, no new infra. NGS files static post-season (cache 12h covers in-season weekly refresh).
+
+**Next:** projections/rankings, then charts (reuse MLB), then NFL comparison (reuse MLB compare).
