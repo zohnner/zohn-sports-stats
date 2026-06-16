@@ -2735,3 +2735,17 @@ See D-016. Owner: keep building toward NFL fully built out.
 **Verification:** node --check clean (nflstats.js, nfl.js, navigation.js, sw.js); leaders + athlete-ref shapes validated via web_fetch. Function is server-side — full render verification is post-deploy.
 
 **Deferred:** player game logs on detail (core-API athlete statistics ref); ⌘K NFL search; mobile menu-panel per-sport swap.
+
+### NFL Player Detail — Season Stat Lines via ESPN (2026-06-15) — SHIPPED (pending push)
+Extends D-016. Owner: keep building toward NFL fully built out.
+
+**Data finding (Relay):** Sleeper's `espn_id` covers only ~33% of top players (JSN, Bijan, Nacua have none) — too lossy to bridge detail→stats. ESPN's team-roster endpoint (`site.api.espn.com/.../teams/{id}/roster`) returns athletes inline (id + fullName + position), so we bridge by team + normalized-name match instead → near-100% coverage for rostered players.
+
+**Shipped:**
+- **`functions/api/nflplayer.js`** (NEW) — `?name=&team=&season=`: maps Sleeper abbr→ESPN team id, fetches that team's roster, name-matches to the ESPN athlete id, then fetches season statistics. 2 subrequests, cf-cached. Returns curated groups (passing/rushing/receiving/defense/kicking), each shown only if its primary stat > 0, plus GP.
+- **`_loadNFLPlayerStats`** (nfl.js) — async-loads into a `#nfl-stat-line` placeholder on the player-detail page after the profile renders; renders a "{season} Season Stats · N GP" card with stat chips per group. Silent no-op when the player isn't matched (free agents, name mismatches) — no broken state.
+- SW v6→v7.
+
+**Verification:** node --check clean (nflplayer.js, nfl.js, sw.js); roster + statistics shapes validated via web_fetch. Function is server-side — full render verification post-deploy.
+
+**Deferred:** per-game game logs (game-by-game); ⌘K NFL search; mobile menu-panel per-sport swap.

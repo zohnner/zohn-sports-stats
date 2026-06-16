@@ -770,14 +770,60 @@ function _renderNFLPlayerDetail(p) {
             <div class="player-details" style="max-width:520px">${bio}</div>
         </div>
 
+        <div id="nfl-stat-line"></div>
+
         <div class="stats-card">
             <h2 class="detail-section-title">Fantasy Outlook</h2>
             <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin:0">
                 ${_escHtml(p.full_name)} enters 2026 ${p._adp ? `as the <strong>#${p._adp}</strong> player off the board by Sleeper ADP` : 'as an undrafted-tier option'}${p.fantasy_positions && p.fantasy_positions.length ? `, eligible at <strong>${_escHtml(p.fantasy_positions.join(', '))}</strong>` : ''}.${p.depth_chart_order === 1 ? ' Currently atop the depth chart.' : p.depth_chart_order ? ` Listed ${_escHtml((p.depth_chart_position || pos) + ' ' + p.depth_chart_order)} on the depth chart.` : ''}${p.injury_status ? ` <span style="color:var(--color-loss)">Injury watch: ${_escHtml(p.injury_status)}.</span>` : ''}
             </p>
-            <p style="color:var(--text-muted);font-size:0.78rem;margin:0.75rem 0 0">Game-by-game stats return when the 2026 season kicks off in September. Source: Sleeper.</p>
+            <p style="color:var(--text-muted);font-size:0.78rem;margin:0.75rem 0 0">Fantasy/ADP and depth chart via Sleeper; season stats via ESPN.</p>
         </div>
     `;
+
+    _loadNFLPlayerStats(p);
+}
+
+const _NFL_STAT_GROUP_COLOR = { passing:'#60a5fa', rushing:'#34d399', receiving:'#f59e0b', defense:'#a78bfa', kicking:'#f43f5e' };
+
+// Season stat line on the player-detail page. Sleeper has no game stats, so we
+// bridge to ESPN via /api/nflplayer (team roster name-match -> athlete stats).
+async function _loadNFLPlayerStats(p) {
+    if (!p || !p.team) return;
+    const host = document.getElementById('nfl-stat-line');
+    if (!host) return;
+    try {
+        const cacheKey = `nfl:pstats:${p.player_id}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}`);
+            if (!res.ok) return;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        if (!data.found || !data.groups || !data.groups.length) return;
+        if (!document.body.contains(host)) return;  // user navigated away
+
+        const groupsHtml = data.groups.map(g => {
+            const color = _NFL_STAT_GROUP_COLOR[g.key] || 'var(--accent)';
+            const chips = g.stats.map(([l, v]) =>
+                `<div style="text-align:center;min-width:54px">
+                    <div style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">${_escHtml(String(v))}</div>
+                    <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.5px;color:var(--text-muted)">${_escHtml(l)}</div>
+                </div>`).join('');
+            return `<div style="margin-bottom:0.9rem">
+                <div style="font-size:0.68rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:${color};margin-bottom:0.4rem">${_escHtml(g.label)}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:0.6rem 1.1rem">${chips}</div>
+            </div>`;
+        }).join('');
+
+        host.className = 'stats-card';
+        host.innerHTML = `
+            <h2 class="detail-section-title">${data.season} Season Stats${data.gp ? ` · ${_escHtml(String(data.gp))} GP` : ''}</h2>
+            ${groupsHtml}
+            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
+        `;
+    } catch (_) {}
 }
 
 // ── Team detail (header + roster grouped by position) ─────────
