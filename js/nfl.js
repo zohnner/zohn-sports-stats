@@ -760,6 +760,11 @@ function _renderNFLPlayerDetail(p) {
         ? `<button onclick="navigateTo('nfl-team-${_escHtml(p.team)}')" style="background:none;border:none;padding:0;color:var(--text-secondary);cursor:pointer;font-size:inherit;font-family:inherit;text-decoration:underline;text-underline-offset:3px">${_escHtml(p.team)}</button>`
         : '<span style="color:var(--text-secondary)">Free Agent</span>';
 
+    const _exp = (typeof p.years_exp === 'number') ? p.years_exp : 1;
+    const _rookieSeason = Math.max(2000, NFL_STATS_SEASON - Math.max(0, _exp - 1));
+    let _seasonOpts = '';
+    for (let _y = NFL_STATS_SEASON; _y >= _rookieSeason; _y--) _seasonOpts += `<option value="${_y}" ${_y === NFL_STATS_SEASON ? 'selected' : ''}>${_y}</option>`;
+
     grid.innerHTML = `
         <div class="player-detail-header">
             <div style="display:flex;align-items:center;justify-content:space-between">
@@ -790,6 +795,10 @@ function _renderNFLPlayerDetail(p) {
             <div class="player-details" style="max-width:520px">${bio}</div>
         </div>
 
+        <div style="display:flex;align-items:center;gap:0.5rem;margin:0.1rem 0 0.55rem">
+            <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Stats season</span>
+            <select onchange="_nflChangeDetailSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${_seasonOpts}</select>
+        </div>
         <div id="nfl-advanced"></div>
         <div id="nfl-stat-line"></div>
         <div id="nfl-gamelog"></div>
@@ -803,28 +812,39 @@ function _renderNFLPlayerDetail(p) {
         </div>
     `;
 
-    _loadNFLPlayerStats(p);
-    _loadNFLAdvanced(p);
+    _nflDetailPlayer = p;
+    _nflDetailSeason = NFL_STATS_SEASON;
+    _loadNFLPlayerStats(p, NFL_STATS_SEASON);
+    _loadNFLAdvanced(p, NFL_STATS_SEASON);
+}
+
+let _nflDetailPlayer = null, _nflDetailSeason = null;
+// Player-detail season switch — drives the stats / game log / advanced cards.
+function _nflChangeDetailSeason(season) {
+    _nflDetailSeason = season;
+    ['nfl-advanced', 'nfl-stat-line', 'nfl-gamelog'].forEach(id => { const e = document.getElementById(id); if (e) { e.className = ''; e.innerHTML = ''; } });
+    if (_nflDetailPlayer) { _loadNFLPlayerStats(_nflDetailPlayer, season); _loadNFLAdvanced(_nflDetailPlayer, season); }
 }
 
 const _NFL_STAT_GROUP_COLOR = { passing:'#60a5fa', rushing:'#34d399', receiving:'#f59e0b', defense:'#a78bfa', kicking:'#f43f5e' };
 
 // Season stat line on the player-detail page. Sleeper has no game stats, so we
 // bridge to ESPN via /api/nflplayer (team roster name-match -> athlete stats).
-async function _loadNFLPlayerStats(p) {
+async function _loadNFLPlayerStats(p, season) {
     if (!p || !p.team) return;
+    season = season || NFL_STATS_SEASON;
     const host = document.getElementById('nfl-stat-line');
     if (!host) return;
     try {
-        const cacheKey = `nfl:pstats2:${p.player_id}`;
+        const cacheKey = `nfl:pstats2:${p.player_id}:${season}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}`);
+            const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}&season=${season}`);
             if (!res.ok) return;
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
-        if (data.espnId) _loadNFLGameLog(data.espnId, data.season);
+        if (data.espnId) _loadNFLGameLog(data.espnId, season);
         if (!data.found || !data.groups || !data.groups.length) return;
         if (!document.body.contains(host)) return;  // user navigated away
 
@@ -902,17 +922,18 @@ async function _loadNFLGameLog(espnId, season) {
 const _NFL_NGS_LABEL = { receiving: 'receivers', passing: 'passers', rushing: 'rushers' };
 
 // Advanced metrics card (Next Gen Stats via nflverse) with league percentile bars.
-async function _loadNFLAdvanced(p) {
+async function _loadNFLAdvanced(p, season) {
     if (!p || !p.full_name) return;
+    season = season || NFL_STATS_SEASON;
     const host = document.getElementById('nfl-advanced');
     if (!host) return;
     const pos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     if (!['QB', 'RB', 'FB', 'WR', 'TE'].includes(pos)) return;  // NGS covers skill positions only
     try {
-        const cacheKey = `nfl:adv:${p.player_id}`;
+        const cacheKey = `nfl:adv:${p.player_id}:${season}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nfladv?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}&pos=${encodeURIComponent(pos)}`);
+            const res = await fetch(`/api/nfladv?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}&pos=${encodeURIComponent(pos)}&season=${season}`);
             if (!res.ok) return;
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);

@@ -2804,3 +2804,12 @@ D-018 priority 4 (comparison), reusing the .cmp-* compare UI.
 **Completes D-018 roadmap:** advanced metrics, multi-season/historical, rankings, charts, comparison all shipped.
 
 **Verification:** node --check clean; live render pending push.
+
+### NFL player-detail season selector — historical access (2026-06-15) — SHIPPED (pending push)
+Owner: encourage offseason / "years past" use by stat fanatics through ease of access.
+
+- **`_nflChangeDetailSeason`** + "Stats season" `<select>` on the player detail (career range: rookie season → latest, from Sleeper `years_exp`). Drives the season stat line, game log (+ trend chart), and Advanced/NGS cards to the selected year; profile + fantasy outlook stay current-season.
+- Loaders `_loadNFLPlayerStats(p, season)` / `_loadNFLAdvanced(p, season)` now take a season (cache-keyed per season); game log already did. Empty seasons (pre-rookie, pre-2016 NGS) clear gracefully.
+- SW v17→v18.
+
+**Verification:** node --check clean; live check pending push (flip a player to a prior season, confirm stats/log/advanced update).
