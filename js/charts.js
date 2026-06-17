@@ -810,6 +810,56 @@ class StatsCharts {
     // ── Share Card (ANN-002) ─────────────────────────────────────
     // Draws a 720×400 stat card on a canvas element.
     // stats: [{label, value, color}] — up to 6 shown (2 rows × 3 cols)
+    // ── NFL per-game trend (auto-detects primary stat group) ──
+    static nflGameTrend(canvasId, games, columns, color = '#60a5fa') {
+        if (!games || !games.length || !window.Chart || !columns) return null;
+        const t = this.#getTheme();
+        const sorted = [...games].filter(g => g.stats)
+            .sort((a, b) => (a.date && b.date) ? (new Date(a.date) - new Date(b.date)) : ((a.wk || 0) - (b.wk || 0)));
+        if (!sorted.length) return null;
+
+        const colIdx = name => columns.findIndex(c => c.name === name);
+        const num = (g, i) => { const v = parseFloat(g.stats[i]); return isNaN(v) ? null : v; };
+        // pick the yardage group the player actually produces in
+        const order = [
+            ['passingYards', 'Pass Yds', 'passingTouchdowns'],
+            ['rushingYards', 'Rush Yds', 'rushingTouchdowns'],
+            ['receivingYards', 'Rec Yds', 'receivingTouchdowns'],
+        ];
+        let spec = null, yIdx = -1;
+        for (const o of order) { const idx = colIdx(o[0]); if (idx >= 0 && sorted.some(g => num(g, idx) > 0)) { spec = o; yIdx = idx; break; } }
+        if (!spec) return null;
+        const tdIdx = colIdx(spec[2]);
+
+        const labels = sorted.map(g => g.post ? 'P' : ('Wk ' + (g.wk != null ? g.wk : '')));
+        const yData = sorted.map(g => num(g, yIdx));
+        const tdData = tdIdx >= 0 ? sorted.map(g => num(g, tdIdx)) : null;
+
+        const datasets = [{
+            label: spec[1], data: yData, borderColor: color, backgroundColor: 'transparent',
+            yAxisID: 'y', tension: 0.35, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: color, borderWidth: 2, spanGaps: true,
+        }];
+        if (tdData) datasets.push({
+            label: 'TD', data: tdData, type: 'bar', backgroundColor: 'rgba(245,158,11,0.45)', borderColor: '#f59e0b',
+            yAxisID: 'yTd', borderWidth: 1, barPercentage: 0.5,
+        });
+
+        return this.#create(canvasId, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { labels: { color: t.tick, font: { family: t.font, size: 10 }, boxWidth: 12 } } },
+                scales: {
+                    x: { ticks: { color: t.tick, font: { family: t.font, size: 10 }, maxTicksLimit: 12 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                    y: { type: 'linear', position: 'left', min: 0, ticks: { color, font: { family: t.font, size: 10 }, maxTicksLimit: 5 }, grid: { color: t.grid }, title: { display: true, text: spec[1], color: t.tick, font: { size: 10 } } },
+                    ...(tdData ? { yTd: { type: 'linear', position: 'right', min: 0, ticks: { color: '#f59e0b', font: { family: t.font, size: 10 }, maxTicksLimit: 4, precision: 0 }, grid: { display: false }, title: { display: true, text: 'TD', color: '#f59e0b', font: { size: 10 } } } } : {}),
+                },
+            },
+        });
+    }
+
     static drawShareCard(canvas, { name, position, teamName, teamAbbr, primaryColor, secondaryColor, season, stats }) {
         const W = 720, H = 400;
         canvas.width  = W;

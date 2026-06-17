@@ -886,6 +886,7 @@ async function _loadNFLGameLog(espnId, season) {
         host.className = 'stats-card';
         host.innerHTML = `
             <h2 class="detail-section-title">${data.season} Game Log</h2>
+            <div id="nfl-gl-chart-wrap" style="position:relative;height:200px;margin:0 0 0.9rem"><canvas id="nfl-gl-chart"></canvas></div>
             <div class="table-wrapper" style="overflow-x:auto">
                 <table class="stats-table" style="min-width:max-content;white-space:nowrap">
                     <thead><tr>${head}</tr></thead>
@@ -893,6 +894,8 @@ async function _loadNFLGameLog(espnId, season) {
                 </table>
             </div>
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.5rem 0 0">Game-by-game · Source: ESPN.</p>`;
+        const _glChart = (window.StatsCharts && StatsCharts.nflGameTrend) ? StatsCharts.nflGameTrend('nfl-gl-chart', data.games, data.columns) : null;
+        if (!_glChart) { const w = document.getElementById('nfl-gl-chart-wrap'); if (w) w.remove(); }
     } catch (_) {}
 }
 

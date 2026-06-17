@@ -2784,3 +2784,12 @@ D-018 priority 2. Projections deferred (no clean documented forward-projection s
 - SW v14→v15.
 
 **Verification:** node --check clean; live render check pending push.
+
+### NFL chart layer — game-log trend (2026-06-15) — SHIPPED (pending push)
+D-018 priority 3 (charts), reusing MLB Chart.js infra (StatsCharts).
+
+- **`StatsCharts.nflGameTrend`** (charts.js) — line chart of the player's primary yardage stat per game (auto-detects passing/rushing/receiving group) + TD bars on a second axis. Tracked/destroyed via the existing StatsCharts instance map.
+- **`_loadNFLGameLog`** (nfl.js) — renders a trend canvas above the game-log table; self-removes if Chart.js unavailable. Chart.js already loads site-wide before charts.js.
+- SW v15→v16.
+
+**Verification:** node --check clean; live render pending push.
