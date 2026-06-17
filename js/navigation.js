@@ -274,6 +274,7 @@ const _NAV_META = {
     'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
     'nfl-rankings':  { label: 'NFL Rankings',  icon: '📊' },
+    'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
     'nfl-trending':  { label: 'NFL Trending',  icon: '🔥' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
@@ -491,6 +492,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'NFL Rankings';
             loadNFLRankings();
             break;
+        case 'nfl-compare':
+            if (viewCount) viewCount.textContent = 'Player Compare';
+            loadNFLCompare();
+            break;
         case 'nfl-leaders':
             if (viewCount) viewCount.textContent = 'NFL Leaders';
             loadNFLStatLeaders();
@@ -671,6 +676,7 @@ function _loadFromHash() {
     const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
+    const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -703,6 +709,11 @@ function _loadFromHash() {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
         navigateTo('nfl-team-' + nflTeamMatch[1], false);
+    } else if (nflCompareMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        AppState.currentView = 'nfl-compare';
+        loadNFLCompare();
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
         const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-', 'mlb-live-', 'mlb-scorecard-'];
@@ -714,7 +725,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock'];
+        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
         if (mlbViews.includes(hash)) {
@@ -749,7 +760,7 @@ const SUB_NAV_TABS = {
         { v: 'nfl-players', l: 'Players' }, { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-trending', l: 'Trending' },
         { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' },
         { divider: true },
-        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-mock', l: 'Mock Draft' },
+        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-compare', l: 'Compare' },
     ],
 };
 
@@ -789,7 +800,7 @@ const MENU_TABS = {
         { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
         { v:'nfl-trending', l:'Trending', i:'trending' }, { v:'nfl-teams', l:'Teams', i:'teams' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-standings', l:'Standings', i:'standings' },
-        { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+        { v:'nfl-mock', l:'Mock Draft', i:'extra' }, { v:'nfl-compare', l:'Compare', i:'compare' },
     ],
 };
 

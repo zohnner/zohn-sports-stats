@@ -2793,3 +2793,14 @@ D-018 priority 3 (charts), reusing MLB Chart.js infra (StatsCharts).
 - SW v15→v16.
 
 **Verification:** node --check clean; live render pending push.
+
+### NFL Player Comparison (2026-06-15) — SHIPPED (pending push)
+D-018 priority 4 (comparison), reusing the .cmp-* compare UI.
+
+- **`loadNFLCompare`/`_renderNFLCompareView`/`_updateNFLCompare`** (nfl.js) — two-player picker from the Sleeper pool (top 300 ADP); on selection fetches each player's season stats via `/api/nflplayer` and renders side-by-side with "share" tug-of-war bars per stat (A=accent, B=blue), winner bolded, GP in headers. Shareable hash `#nfl-compare-{idA}-{idB}` (replaceState + restore). Reuses `.cmp-*` CSS.
+- Nav: sub-nav Compare (after Mock Draft) + route + hash handler in `_loadFromHash` + menu + nflViews + view-meta.
+- SW v16→v17.
+
+**Completes D-018 roadmap:** advanced metrics, multi-season/historical, rankings, charts, comparison all shipped.
+
+**Verification:** node --check clean; live render pending push.

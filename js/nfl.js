@@ -1110,9 +1110,104 @@ function displayNFLRankings() {
     grid.querySelectorAll('[data-nfl-rank-pos]').forEach(b => b.addEventListener('click', () => { _nflRankPos = b.dataset.nflRankPos; displayNFLRankings(); }));
 }
 
+// ── Player Compare (two-player side-by-side; reuses .cmp-* + /api/nflplayer) ──
+const _NFL_CMP_A = '#ff8100';
+const _NFL_CMP_B = '#60a5fa';
+
+async function loadNFLCompare() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-compare', null);
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:300px"></div>`;
+    try {
+        await fetchNFLSleeperPool();
+        _renderNFLCompareView();
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLCompare, { tag: 'NFL', title: 'Failed to Load Compare' });
+    }
+}
+
+function _renderNFLCompareView() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+    const top = (_nflPool || []).slice(0, 300);
+    const opts = '<option value="">— Select player —</option>' +
+        top.map(p => `<option value="${p.player_id}">${_escHtml(p.full_name)} · ${_escHtml(p.team || 'FA')} ${_escHtml(p.position || '')}</option>`).join('');
+    grid.innerHTML = `
+        <div class="cmp-page-wrap">
+            <div class="cmp-page-hdr"><h1 class="cmp-page-title">Player Compare</h1></div>
+            <div class="cmp-selects-row">
+                <div class="cmp-player-slot"><label class="cmp-slot-label">Player A</label><select id="nfl-cmp-a" class="cmp-select">${opts}</select></div>
+                <div class="cmp-vs-badge">VS</div>
+                <div class="cmp-player-slot"><label class="cmp-slot-label">Player B</label><select id="nfl-cmp-b" class="cmp-select">${opts}</select></div>
+            </div>
+            <div id="nfl-cmp-results" class="cmp-results" style="display:none"></div>
+        </div>`;
+    const a = document.getElementById('nfl-cmp-a'), b = document.getElementById('nfl-cmp-b');
+    a.addEventListener('change', _updateNFLCompare);
+    b.addEventListener('change', _updateNFLCompare);
+    const m = location.hash.replace('#', '').match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
+    if (m) { a.value = m[1]; b.value = m[2]; _updateNFLCompare(); }
+}
+
+async function _updateNFLCompare() {
+    const selA = document.getElementById('nfl-cmp-a'), selB = document.getElementById('nfl-cmp-b');
+    const results = document.getElementById('nfl-cmp-results');
+    if (!selA || !selB || !results) return;
+    const idA = selA.value, idB = selB.value;
+    if (!idA || !idB || idA === idB) { results.style.display = 'none'; return; }
+    const pA = _nflPoolMap && _nflPoolMap[idA], pB = _nflPoolMap && _nflPoolMap[idB];
+    if (!pA || !pB) { results.style.display = 'none'; return; }
+    history.replaceState(null, '', `#nfl-compare-${idA}-${idB}`);
+    results.style.display = '';
+    results.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:1.5rem">Loading…</div>`;
+
+    const fetchStats = async p => {
+        try { const r = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}`); return r.ok ? await r.json() : null; }
+        catch { return null; }
+    };
+    const [dA, dB] = await Promise.all([fetchStats(pA), fetchStats(pB)]);
+    if (!document.body.contains(results)) return;
+
+    const flat = d => { const m = {}; (d && d.groups || []).forEach(g => g.stats.forEach(([l, v]) => { m[`${g.label} · ${l}`] = v; })); return m; };
+    const mA = flat(dA), mB = flat(dB);
+    const keys = [...Object.keys(mA), ...Object.keys(mB).filter(k => !(k in mA))];
+    const num = v => { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? null : n; };
+
+    const headCard = (p, d, color) => `
+        <div style="flex:1;text-align:center;min-width:0">
+            <div style="width:54px;height:54px;border-radius:50%;overflow:hidden;margin:0 auto 0.4rem;border:2px solid ${color};background:var(--bg-subtle)"><img src="${getNFLSleeperHeadshot(p.player_id)}" alt="" style="width:100%;height:100%;object-fit:cover" data-hide-on-error></div>
+            <div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(p.full_name)}</div>
+            <div style="font-size:0.7rem;color:var(--text-muted)">${_escHtml(p.team || 'FA')} · ${_escHtml(p.position || '')}${d && d.gp ? ' · ' + _escHtml(String(d.gp)) + ' GP' : ''}</div>
+        </div>`;
+
+    const rows = keys.map(k => {
+        const va = mA[k], vb = mB[k], na = num(va), nb = num(vb);
+        let barA = 50, barB = 50;
+        if (na != null && nb != null && (na + nb) > 0) { barA = Math.round(na / (na + nb) * 100); barB = 100 - barA; }
+        const aWin = na != null && nb != null && na > nb, bWin = nb != null && na != null && nb > na;
+        return `<div style="display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;gap:0.6rem;padding:0.35rem 0;border-bottom:1px solid var(--border-subtle)">
+            <span style="text-align:right;font-weight:${aWin ? '800' : '600'};color:${aWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${va != null ? _escHtml(String(va)) : '—'}</span>
+            <div style="min-width:0">
+                <div style="font-size:0.62rem;text-align:center;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${_escHtml(k.split(' · ')[1])}</div>
+                <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--bg-subtle)"><div style="width:${barA}%;background:${_NFL_CMP_A}"></div><div style="width:${barB}%;background:${_NFL_CMP_B}"></div></div>
+            </div>
+            <span style="text-align:left;font-weight:${bWin ? '800' : '600'};color:${bWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${vb != null ? _escHtml(String(vb)) : '—'}</span>
+        </div>`;
+    }).join('');
+
+    results.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.8rem">${headCard(pA, dA, _NFL_CMP_A)}<div style="align-self:center;font-weight:900;color:var(--text-muted);font-size:0.8rem">VS</div>${headCard(pB, dB, _NFL_CMP_B)}</div>
+        ${keys.length ? rows : '<p style="text-align:center;color:var(--text-muted);padding:1rem">No season stats to compare for these players.</p>'}
+        <p style="color:var(--text-muted);font-size:0.7rem;margin:0.7rem 0 0;text-align:center">${NFL_STATS_SEASON} season · bar = share of each stat · Source: ESPN</p>`;
+}
+
 if (typeof window !== 'undefined') {
     window.loadNFLTeams        = loadNFLTeams;
     window.loadNFLRankings     = loadNFLRankings;
+    window.loadNFLCompare      = loadNFLCompare;
     window.showNFLPlayerDetail = showNFLPlayerDetail;
     window.showNFLTeamDetail   = showNFLTeamDetail;
     window.displayNFLTeams     = displayNFLTeams;
