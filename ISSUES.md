@@ -2822,3 +2822,9 @@ Stat-fanatic historical access (follows the player-detail season selector).
 - SW v18→v19.
 
 **Verification:** node --check clean; career data shape validated via web_fetch (JSN receiving 2023-25 + totals). Live render pending push.
+
+### Link Leaders rows → player detail (2026-06-15) — SHIPPED (pending push)
+Closes the connectivity item (#38). Trending rows already linked.
+
+- `loadNFLStatLeaders` warms the Sleeper pool; `displayNFLStatLeaders` name-matches each leader to a Sleeper player_id and makes matched rows clickable → `nfl-player-{id}`. Current-season leaders link (in the pool); historical/retired leaders gracefully stay non-clickable (not in the Sleeper roster).
+- SW v19→v20.

@@ -651,6 +651,7 @@ async function loadNFLStatLeaders() {
             ErrorHandler.renderEmptyState(grid, 'Stat leaders are unavailable right now.', '🏈');
             return;
         }
+        try { await fetchNFLSleeperPool(); } catch (_) {}
         displayNFLStatLeaders(data);
     } catch (err) {
         ErrorHandler.handle(grid, err, loadNFLStatLeaders, { tag: 'NFL', title: 'Failed to Load NFL Leaders' });
@@ -676,13 +677,19 @@ function displayNFLStatLeaders(data) {
     grid.appendChild(bar);
     bar.querySelector('#nflLeaderSeason').addEventListener('change', e => { _nflLeaderSeason = e.target.value; loadNFLStatLeaders(); });
 
+    const _nflLeaderNrm = x => (x || '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+    const _nflLeaderNameIdx = {}; (_nflPool || []).forEach(pl => { _nflLeaderNameIdx[_nflLeaderNrm(pl.full_name)] = pl.player_id; });
+
     data.categories.forEach((cat, ci) => {
         const color = _NFL_STAT_COLORS[ci % _NFL_STAT_COLORS.length];
         const card = document.createElement('div');
         card.className = 'card';
         card.style.cssText = `padding:0;overflow:hidden;border-left:3px solid ${color}`;
-        const rows = cat.leaders.map((l, i) => `
-            <div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;
+        const rows = cat.leaders.map((l, i) => {
+            const _sid = _nflLeaderNameIdx[_nflLeaderNrm(l.name)];
+            const _clk = _sid ? ` onclick="navigateTo('nfl-player-${_sid}')"` : '';
+            return `
+            <div${_clk} style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;cursor:${_sid ? 'pointer' : 'default'};
                 border-bottom:${i < cat.leaders.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
                 <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
                 <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
@@ -693,7 +700,8 @@ function displayNFLStatLeaders(data) {
                     <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
                 </div>
                 <span style="font-weight:900;font-size:0.92rem;color:${color}">${_escHtml(String(l.value))}</span>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         card.innerHTML = `
             <div style="padding:0.55rem 0.75rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
                 font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
