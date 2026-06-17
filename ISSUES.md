@@ -2813,3 +2813,12 @@ Owner: encourage offseason / "years past" use by stat fanatics through ease of a
 - SW v17→v18.
 
 **Verification:** node --check clean; live check pending push (flip a player to a prior season, confirm stats/log/advanced update).
+
+### NFL career year-by-year table (2026-06-15) — SHIPPED (pending push)
+Stat-fanatic historical access (follows the player-detail season selector).
+
+- **`functions/api/nflcareer.js`** (NEW) — `?id={espnId}`: ESPN per-athlete career stats; slimmed to {category: labels, per-season rows, totals}, volume-filtered (drops noise like a WR's trick-play pass / incidental tackles).
+- **`_loadNFLCareer`** (nfl.js) — "Career" card on player detail below the game log: a table per meaningful category (rows per season + a Career totals row). Loads once per player (espnId-gated; season-independent). Tapping a season row calls `_nflChangeDetailSeason` → loads that season's stats/log/advanced above and syncs the season dropdown.
+- SW v18→v19.
+
+**Verification:** node --check clean; career data shape validated via web_fetch (JSN receiving 2023-25 + totals). Live render pending push.

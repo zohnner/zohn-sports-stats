@@ -802,6 +802,7 @@ function _renderNFLPlayerDetail(p) {
         <div id="nfl-advanced"></div>
         <div id="nfl-stat-line"></div>
         <div id="nfl-gamelog"></div>
+        <div id="nfl-career"></div>
 
         <div class="stats-card">
             <h2 class="detail-section-title">Fantasy Outlook</h2>
@@ -814,16 +815,60 @@ function _renderNFLPlayerDetail(p) {
 
     _nflDetailPlayer = p;
     _nflDetailSeason = NFL_STATS_SEASON;
+    _nflCareerEspnId = null;
     _loadNFLPlayerStats(p, NFL_STATS_SEASON);
     _loadNFLAdvanced(p, NFL_STATS_SEASON);
 }
 
-let _nflDetailPlayer = null, _nflDetailSeason = null;
+let _nflDetailPlayer = null, _nflDetailSeason = null, _nflCareerEspnId = null;
 // Player-detail season switch — drives the stats / game log / advanced cards.
 function _nflChangeDetailSeason(season) {
+    season = String(season);
     _nflDetailSeason = season;
+    const _sel = document.querySelector('#playersGrid select[onchange*="_nflChangeDetailSeason"]');
+    if (_sel && String(_sel.value) !== season) _sel.value = season;
     ['nfl-advanced', 'nfl-stat-line', 'nfl-gamelog'].forEach(id => { const e = document.getElementById(id); if (e) { e.className = ''; e.innerHTML = ''; } });
     if (_nflDetailPlayer) { _loadNFLPlayerStats(_nflDetailPlayer, season); _loadNFLAdvanced(_nflDetailPlayer, season); }
+}
+
+// Career year-by-year table (ESPN /api/nflcareer) — season-independent.
+async function _loadNFLCareer(espnId) {
+    if (!espnId) return;
+    const host = document.getElementById('nfl-career');
+    if (!host) return;
+    try {
+        const cacheKey = `nfl:career:${espnId}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/nflcareer?id=${encodeURIComponent(espnId)}`);
+            if (!res.ok) return;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        if (!data.found || !data.categories || !data.categories.length) return;
+        if (!document.body.contains(host)) return;
+
+        const tables = data.categories.map(c => {
+            const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">SZN</th><th style="text-align:left">TM</th>` +
+                (c.labels || []).map(l => `<th>${_escHtml(l)}</th>`).join('');
+            const rows = (c.seasons || []).map(sn => `<tr onclick="_nflChangeDetailSeason('${sn.year}')" style="cursor:pointer">
+                <td style="font-weight:700;position:sticky;left:0;background:var(--bg-card)">${_escHtml(String(sn.year || ''))}</td>
+                <td style="color:var(--text-muted)">${_escHtml(sn.team || '')}</td>
+                ${(sn.stats || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('')}
+            </tr>`).join('');
+            const totals = `<tr style="border-top:2px solid var(--border-mid);font-weight:800">
+                <td style="position:sticky;left:0;background:var(--bg-card)">Career</td><td></td>
+                ${(c.totals || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('')}
+            </tr>`;
+            return `<div style="margin-bottom:1rem">
+                <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin:0 0 0.35rem">${_escHtml(c.displayName)}</div>
+                <div class="table-wrapper" style="overflow-x:auto"><table class="stats-table" style="min-width:max-content;white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${rows}${totals}</tbody></table></div>
+            </div>`;
+        }).join('');
+
+        host.className = 'stats-card';
+        host.innerHTML = `<h2 class="detail-section-title">Career</h2>${tables}<p style="color:var(--text-muted);font-size:0.72rem;margin:0.3rem 0 0">Regular season · tap a row to load that season above · Source: ESPN.</p>`;
+    } catch (_) {}
 }
 
 const _NFL_STAT_GROUP_COLOR = { passing:'#60a5fa', rushing:'#34d399', receiving:'#f59e0b', defense:'#a78bfa', kicking:'#f43f5e' };
@@ -845,6 +890,7 @@ async function _loadNFLPlayerStats(p, season) {
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (data.espnId) _loadNFLGameLog(data.espnId, season);
+        if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId); }
         if (!data.found || !data.groups || !data.groups.length) return;
         if (!document.body.contains(host)) return;  // user navigated away
 
