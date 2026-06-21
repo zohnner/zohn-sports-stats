@@ -484,3 +484,44 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Foundation shipped:** unified season model in `js/nfl.js` (`NFL_STATS_SEASON` / `NFL_FANTASY_SEASON` / min-season constants) replacing all hardcoded year strings (player-detail label, fantasy outlook, offseason copy) so the 2026 rollover is automatic and coordinated. Data source→coverage map documented in CLAUDE.md ("NFL Data Foundation"). Transition is automatic: season model flips in September, ESPN live endpoints populate, offseason empty-states clear.
 
 **Next (D-018 roadmap):** projections/rankings, charts (reuse MLB), NFL comparison (reuse MLB compare).
+
+---
+
+## D-020 — NFL Historical / Retired-Player Stats (ESPN-id player path)
+**Status:** decided (owner 2026-06-15: "we def want historical stats… ensure best data practices"); build pending priority
+**Contributors:** owner, Relay, Axiom, Cipher, Vera, Kael, Folio
+
+**Goal:** make SportStrata an all-time NFL stats destination — look up ANY player (retired or current), not just the current Sleeper roster.
+
+**The ceiling today (Relay):** player detail is keyed on Sleeper `player_id`, and `/api/nflplayer`'s stat bridge needs a *current* team roster — so retired players (Calvin Johnson, prime Peyton) can't be found or shown. The stats spine, though, is already ESPN-athlete-id-based: `/api/nflcareer` and `/api/nflgamelog` resolve by ESPN id and work for retired players (verified: Calvin Johnson id 10447 → 2007–2015 career, 11,619 rec yds).
+
+**Decision (Axiom):** add an **ESPN-athlete-id player path** alongside the Sleeper path:
+- `/api/nflsearch?q=` — ESPN `search/v2`, filtered to NFL (`l:28`) athletes; returns {espnId, name, lastTeam, headshot, active}.
+- An ESPN-id detail route (e.g. `nfl-player-espn-{id}`) rendering profile + **career table** + **game logs** + advanced (NGS, 2016+ only) — all keyed by ESPN id, no roster bridge. Reuses the existing detail components.
+- ⌘K search: when the local Sleeper pool has few matches, query `/api/nflsearch` for an "All-time players" section so retired players surface.
+
+**Best data practices (Cipher/Relay) — explicit guardrails:**
+1. **Public APIs only** — ESPN public JSON (D-013 clean) + nflverse (CC-BY). No scraping, no auth/cookie endpoints.
+2. **Attribution** — "Source: ESPN" / "Data via nflverse" stay on rendered historical data.
+3. **Canonical key** — ESPN athlete id is the spine for historical; Sleeper id remains for current/fantasy. Don't conflate the two id spaces.
+4. **Cache by volatility** — retired/past-season data is immutable → long cf `cacheTtl`; cache hard to respect upstream rate limits (no per-keystroke search hammering — debounce + cache).
+5. **No PII**, no compiling personal data; stats only.
+6. **Graceful gaps** — pre-2016 has no NGS, older seasons fewer fields; empty cards clear cleanly (no fabrication).
+
+**Gates before Finn builds:** Vera (search + all-time detail behavior/states), Kael (visual reuse), Axiom (ESPN-id route + dual-key model), Cipher (data-practice sign-off), Folio (data-map update).
+
+---
+
+## D-021 — Mock Draft: Interactive Drag-and-Drop Board (proposed)
+**Status:** proposed — owner direction 2026-06-15 ("interactive and inviting… pull player tiles onto your board… think outside the box"); approach + priority pending
+**Contributors:** owner, Kael, Vera, Axiom
+
+**Direction:** turn the mock draft from a click-a-list tool into an interactive, inviting **draft-board** experience.
+
+**Proposal (Kael/Vera):** a two-panel board — a **best-available tile pool** (player tiles: headshot, position-color, ADP, tier) on one side, **your roster board** (slots by position) on the other. **Drag a tile onto a slot to draft**; AI opponents auto-pick between your picks and their tiles animate off the pool. Layer the cues that make it feel alive: an "on the clock" indicator, snake-order visualization, positional-need highlighting on your board, tier breaks in the pool, and the existing **Monte Carlo "% to return"** surfaced right on each tile (will this player survive to your next pick).
+
+**Outside-the-box hooks:** value-vs-ADP "steal/reach" flash when you draft; a live grade meter that ticks as your roster fills; auto-pick-best button for speed; post-draft shareable board image (reuse the html2canvas share-card pattern).
+
+**Architecture (Axiom):** keep the existing draft engine (snake order, ADP-based AI, Monte Carlo in `js/fantasy.js`); rebuild only the UI as a DnD board using pointer events. **Mobile:** drag-and-drop degrades poorly on touch → keep tap-to-draft as the mobile path (the current interaction). No new data (Sleeper ADP, already clean).
+
+**Open for owner:** (1) priority vs D-020; (2) confirm drag-and-drop-with-tap-fallback as the model.
