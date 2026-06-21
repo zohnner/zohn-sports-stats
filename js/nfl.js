@@ -822,13 +822,14 @@ function _renderNFLPlayerDetail(p) {
     `;
 
     _nflDetailPlayer = p;
+    _nflEspnId = null;
     _nflDetailSeason = NFL_STATS_SEASON;
     _nflCareerEspnId = null;
     _loadNFLPlayerStats(p, NFL_STATS_SEASON);
     _loadNFLAdvanced(p, NFL_STATS_SEASON);
 }
 
-let _nflDetailPlayer = null, _nflDetailSeason = null, _nflCareerEspnId = null;
+let _nflDetailPlayer = null, _nflDetailSeason = null, _nflCareerEspnId = null, _nflEspnId = null, _nflEspnSeason = null;
 // Player-detail season switch — drives the stats / game log / advanced cards.
 function _nflChangeDetailSeason(season) {
     season = String(season);
@@ -859,7 +860,7 @@ async function _loadNFLCareer(espnId) {
         const tables = data.categories.map(c => {
             const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">SZN</th><th style="text-align:left">TM</th>` +
                 (c.labels || []).map(l => `<th>${_escHtml(l)}</th>`).join('');
-            const rows = (c.seasons || []).map(sn => `<tr onclick="_nflChangeDetailSeason('${sn.year}')" style="cursor:pointer">
+            const rows = (c.seasons || []).map(sn => `<tr onclick="_nflCareerRowClick('${sn.year}')" style="cursor:pointer">
                 <td style="font-weight:700;position:sticky;left:0;background:var(--bg-card)">${_escHtml(String(sn.year || ''))}</td>
                 <td style="color:var(--text-muted)">${_escHtml(sn.team || '')}</td>
                 ${(sn.stats || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('')}
@@ -1279,8 +1280,87 @@ async function _updateNFLCompare() {
         <p style="color:var(--text-muted);font-size:0.7rem;margin:0.7rem 0 0;text-align:center">${NFL_STATS_SEASON} season · bar = share of each stat · Source: ESPN</p>`;
 }
 
+// Career-row click dispatcher — works on the Sleeper detail and the all-time (ESPN) detail.
+function _nflCareerRowClick(year) {
+    if (_nflEspnId) _nflEspnSetSeason(year);
+    else _nflChangeDetailSeason(year);
+}
+
+function _nflEspnSetSeason(season) {
+    _nflEspnSeason = String(season);
+    const sel = document.querySelector('#playersGrid select[onchange*="_nflEspnSetSeason"]');
+    if (sel && String(sel.value) !== String(season)) sel.value = season;
+    const g = document.getElementById('nfl-gamelog'); if (g) { g.className = ''; g.innerHTML = ''; }
+    if (_nflEspnId) _loadNFLGameLog(_nflEspnId, season);
+}
+
+// All-time player detail (any current or retired player, keyed by ESPN athlete id).
+async function showNFLEspnPlayer(espnId) {
+    espnId = String(espnId).replace(/[^0-9]/g, '');
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'player-detail-container';
+    grid.style.cssText = '';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
+    if (window.setBreadcrumb) setBreadcrumb('nfl-player', null);
+    _nflDetailPlayer = null;
+    _nflEspnId = espnId;
+
+    let prof = {}, career = null;
+    try {
+        const [pr, cr] = await Promise.all([
+            fetch(`/api/nflathlete?id=${espnId}`).then(r => r.ok ? r.json() : null),
+            fetch(`/api/nflcareer?id=${espnId}`).then(r => r.ok ? r.json() : null),
+        ]);
+        prof = pr || {}; career = cr;
+    } catch (_) {}
+    if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found', '🏈'); return; }
+
+    const years = [];
+    (career && career.categories || []).forEach(c => (c.seasons || []).forEach(sn => { if (sn.year && years.indexOf(sn.year) < 0) years.push(sn.year); }));
+    years.sort((a, b) => b - a);
+    _nflEspnSeason = years[0] || NFL_STATS_SEASON;
+
+    const pos = prof.pos || '';
+    const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
+    const initials = (prof.name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
+    const retired = prof.statusType && prof.statusType !== 'active';
+    const bits = [prof.team, (prof.height && prof.weight) ? `${prof.height}, ${prof.weight}` : '', prof.college, prof.debutYear ? `Debut ${prof.debutYear}` : '', prof.jersey ? '#' + prof.jersey : ''].filter(Boolean);
+    const yearOpts = years.map(y => `<option value="${y}" ${y === _nflEspnSeason ? 'selected' : ''}>${y}</option>`).join('');
+
+    grid.innerHTML = `
+        <div class="player-detail-header">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+                <button onclick="navigateTo('nfl-players')" class="back-button">← Players</button>
+                ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
+            </div>
+            <div class="player-hero">
+                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${posColor}cc,${posColor}55);color:#fff;font-size:2.5rem;font-weight:800">
+                    ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}${initials}
+                </div>
+                <div class="player-hero-info">
+                    <div class="player-hero-top">
+                        <h1 class="player-detail-name">${_escHtml(prof.name)}</h1>
+                        <span class="player-hero-pos" style="background:${posColor}33;color:${posColor}">${_escHtml(pos)}</span>
+                    </div>
+                    <p class="player-detail-meta" style="color:var(--text-muted)">${_escHtml(bits.join(' · '))}</p>
+                </div>
+            </div>
+        </div>
+        <div id="nfl-career"></div>
+        ${years.length ? `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.6rem 0 0.45rem;padding:0 0.1rem">
+            <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Game log season</span>
+            <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
+        </div>` : ''}
+        <div id="nfl-gamelog"></div>
+        <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
+    `;
+    _loadNFLCareer(espnId);
+    if (years.length) _loadNFLGameLog(espnId, _nflEspnSeason);
+}
+
 if (typeof window !== 'undefined') {
     window.loadNFLTeams        = loadNFLTeams;
+    window.showNFLEspnPlayer   = showNFLEspnPlayer;
     window.loadNFLRankings     = loadNFLRankings;
     window.loadNFLCompare      = loadNFLCompare;
     window.showNFLPlayerDetail = showNFLPlayerDetail;

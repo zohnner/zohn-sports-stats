@@ -468,6 +468,11 @@ function _renderNFLView(view) {
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
 
+    if (view.startsWith('nfl-player-espn-')) {
+        if (viewCount) viewCount.textContent = 'NFL Player';
+        showNFLEspnPlayer(view.slice('nfl-player-espn-'.length));
+        return;
+    }
     if (view.startsWith('nfl-player-')) {
         if (viewCount) viewCount.textContent = 'NFL Player';
         showNFLPlayerDetail(view.slice('nfl-player-'.length));
@@ -674,6 +679,7 @@ function _loadFromHash() {
     const mlbCompareMatch    = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
     const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
     const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
+    const nflEspnMatch       = hash.match(/^nfl-player-espn-(\d+)$/);
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
@@ -701,6 +707,11 @@ function _loadFromHash() {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
+    } else if (nflEspnMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        AppState.currentView = 'nfl-player-espn-' + nflEspnMatch[1];
+        showNFLEspnPlayer(nflEspnMatch[1]);
     } else if (nflPlayerMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');

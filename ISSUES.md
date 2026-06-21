@@ -2828,3 +2828,15 @@ Closes the connectivity item (#38). Trending rows already linked.
 
 - `loadNFLStatLeaders` warms the Sleeper pool; `displayNFLStatLeaders` name-matches each leader to a Sleeper player_id and makes matched rows clickable → `nfl-player-{id}`. Current-season leaders link (in the pool); historical/retired leaders gracefully stay non-clickable (not in the Sleeper roster).
 - SW v19→v20.
+
+### NFL all-time / retired-player path (2026-06-15) — SHIPPED (pending push)
+D-020. Owner: historical stats for any player + best data practices.
+
+- **`functions/api/nflsearch.js`** (NEW) — ESPN search/v2 filtered to NFL (`~l:28~`), returns {id,name,team,headshot}. Cache 1h by query.
+- **`functions/api/nflathlete.js`** (NEW) — slim ESPN athlete profile (name, pos, headshot, ht/wt, college, debut, jersey, status active/inactive). Cache 24h (near-immutable).
+- **`showNFLEspnPlayer(espnId)`** (nfl.js) — all-time detail keyed by ESPN id: hero (Retired badge for inactive) + Career table + Game Log with a season selector built from career years. Reuses `_loadNFLCareer` / `_loadNFLGameLog`. Career-row click dispatches via `_nflCareerRowClick` (Sleeper detail vs ESPN detail).
+- Routing: `nfl-player-espn-{id}` in `_renderNFLView` (checked before the Sleeper `nfl-player-` prefix) + `_loadFromHash` deep-link.
+- **⌘K**: async "All-Time Players" section (`_appendNflAllTime`, debounced+cached) → routes to `nfl-player-espn-{id}`, surfacing retired players (e.g. Calvin Johnson).
+- Data practices: public ESPN API only, attribution kept, ESPN id canonical for historical, immutable→long cache, debounced search. SW v20→v21.
+
+**Verification:** node --check clean; search/athlete/career validated via web_fetch (Calvin Johnson 10447 → 2007-15 career). Live render pending push.

@@ -250,6 +250,7 @@ function _renderResults(q) {
     const groups = _buildGroups(q);
     if (!groups.length) {
         container.innerHTML = `<div class="search-empty">No results for <strong>${_esc(q)}</strong></div>`;
+        _appendNflAllTime(q);
         return;
     }
 
@@ -261,6 +262,39 @@ function _renderResults(q) {
     });
     container.innerHTML = html;
     _attachHandlers();
+    _appendNflAllTime(q);
+}
+
+// Async "All-Time Players" section (current + retired) via ESPN search. Appends
+// below the local results so retired players are reachable from ⌘K. Debounced + cached.
+let _nflSearchTimer = null;
+function _appendNflAllTime(q) {
+    clearTimeout(_nflSearchTimer);
+    if (!q || q.length < 2) return;
+    _nflSearchTimer = setTimeout(async () => {
+        const box = document.getElementById('searchModalInput');
+        if (!box || box.value.trim().toLowerCase() !== q) return;          // stale query
+        let results = [];
+        try { const r = await fetch(`/api/nflsearch?q=${encodeURIComponent(q)}`); if (r.ok) results = (await r.json()).results || []; } catch (_) {}
+        const box2 = document.getElementById('searchModalInput');
+        const container = document.getElementById('searchModalResults');
+        if (!container || !box2 || box2.value.trim().toLowerCase() !== q) return;
+        if (!results.length) return;
+        const shown = new Set([...container.querySelectorAll('.search-result-name')].map(e => e.textContent.trim().toLowerCase()));
+        const items = results.filter(pl => !shown.has((pl.name || '').toLowerCase())).slice(0, 6);
+        if (!items.length) return;
+        const emptyEl = container.querySelector('.search-empty'); if (emptyEl) emptyEl.remove();
+        const rows = items.map(pl => {
+            const initials = (pl.name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase();
+            return `<button class="search-result-item" onclick="closeGlobalSearch();if(AppState.currentSport!=='nfl'){AppState.currentSport='nfl';if(typeof _applySportUI==='function')_applySportUI('nfl');}navigateTo('nfl-player-espn-${pl.id}')">
+                <span class="search-result-avatar search-result-avatar--img"><img src="${_esc(pl.headshot)}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;border-radius:50%;object-fit:cover"><span class="search-avatar-fallback">${_esc(initials)}</span></span>
+                <span class="search-result-name">${_esc(pl.name)}</span>
+                <span class="search-result-sub">${_esc(pl.team || 'NFL')}</span>
+                <span class="search-badge search-badge--nfl">NFL</span>
+            </button>`;
+        }).join('');
+        container.insertAdjacentHTML('beforeend', `<div class="search-group"><div class="search-group-label">All-Time Players</div>${rows}</div>`);
+    }, 320);
 }
 
 function _groupHtml(label, rows) {
