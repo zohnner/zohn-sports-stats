@@ -2840,3 +2840,14 @@ D-020. Owner: historical stats for any player + best data practices.
 - Data practices: public ESPN API only, attribution kept, ESPN id canonical for historical, immutable→long cache, debounced search. SW v20→v21.
 
 **Verification:** node --check clean; search/athlete/career validated via web_fetch (Calvin Johnson 10447 → 2007-15 career). Live render pending push.
+
+### Nav IA: categorize + align both sports (2026-06-21) — SHIPPED (pending push)
+D-022. Owner: nav lacked direction / industry-standard categorization across MLB + NFL.
+
+- Stable spine both sports: **Stats** (Players·Leaders·Teams·Standings) · **Fantasy** (NFL: Rankings·Mock·Trending) · **Tools** (Compare·Builder·Prep·Arcade / Compare). Identical order; only contents vary.
+- Sub-nav: flat row with uppercase group labels (`.sub-nav-group`, non-interactive) replacing the single cosmetic divider. Menu: same spine with `.menu-section` headers.
+- Mobile bottom nav now identical across sports: Scores · Players · Leaders · Standings · **More** (More toggles the menu panel; `stopPropagation` avoids the document close-handler race).
+- Fixed latent bug: ticker SCORES button was hardcoded `mlb-games` → now sport-aware via `_applySportUI` (NFL desktop scores no longer routed to MLB).
+- Files: js/navigation.js (configs + 3 render fns + `_openMenu` + handler + `_applySportUI`), css/main.css, sw.js v21→v22.
+
+**Verification:** node --check clean (NUL 0); static render sim confirms identical cross-sport order. Live desktop+mobile screenshots pending push.

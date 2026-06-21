@@ -525,3 +525,25 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 **Architecture (Axiom):** keep the existing draft engine (snake order, ADP-based AI, Monte Carlo in `js/fantasy.js`); rebuild only the UI as a DnD board using pointer events. **Mobile:** drag-and-drop degrades poorly on touch → keep tap-to-draft as the mobile path (the current interaction). No new data (Sleeper ADP, already clean).
 
 **Open for owner:** (1) priority vs D-020; (2) confirm drag-and-drop-with-tap-fallback as the model.
+
+## D-022 — Navigation IA: stable Scores · Stats · Tools · Fantasy spine (both sports)
+**Status:** Accepted (owner-approved scope: "Categorize + align"). Vera (lead), Kael, Axiom consensus.
+
+**Problem.** Nav was a flat, uncategorized run of 9–10 buttons with one cosmetic divider. Order differed across sports (Teams 3rd on MLB, 7th on NFL; Scores absent from MLB desktop row but present on NFL), forcing a re-scan on sport switch. NFL stacked Leaders + Rankings + Trending with no parent — three ranked-player lists users can't tell apart. No industry-standard grouping (Scores/Stats/Tools/Fantasy).
+
+**Decision.** One stable cross-sport spine, identical order both sports, contents vary:
+- **Stats** — Players · Leaders · Teams · Standings (identical both sports)
+- **Fantasy** (NFL only) — Rankings · Mock Draft · Trending (the grouping disambiguates them from stat Leaders)
+- **Tools** — Compare · Builder · Prep · Arcade (MLB) / Compare (NFL)
+- **Scores** — the always-present ticker SCORES button is the canonical desktop scores entry for BOTH sports (honors the prior MLB decision to keep Scores out of the sub-nav). Bottom nav + menu keep an explicit Scores item.
+
+Desktop sub-nav: flat row with small uppercase group labels acting as separators (replaces the single divider). Mobile menu: same spine with section headers. Mobile bottom nav: identical across sports — Scores · Players · Leaders · Standings · **More** (More opens the existing menu panel).
+
+**Also fixes a latent bug:** the ticker SCORES button was hardcoded `data-view="mlb-games"`, so on NFL it navigated to MLB scores. Now `_applySportUI` sets it per sport.
+
+**Scope deliberately excluded** (offered, owner chose the lighter option): dropdown/mega-menu parents; section landing pages (Stats/Fantasy hubs); detail-page breadcrumbs. Revisit if a 3rd live sport lands.
+
+### Three gates (recorded for the implementation)
+- **Vera (behavioral):** group labels are non-interactive (`role="presentation"`, not focusable, not in tab order). Active-state sync unchanged (still `.nav-tab[data-view]`). More button toggles the menu panel; Escape + outside-click + item-tap still close it. Bottom-nav order stable across sports so muscle memory holds.
+- **Kael (visual):** group labels = 0.6rem uppercase `--text-subtle`, left-border separator, first label borderless. Menu section headers span full grid width with a bottom rule. No new colors; reuses existing tokens.
+- **Axiom (feasibility):** config-only data changes + 3 render-fn tweaks + 1 `_applySportUI` line + `_openMenu()` helper + bottom-nav More handler with `stopPropagation` (avoids the document close-handler race). No routing changes; `.nav-tab`+`data-view` contract intact.

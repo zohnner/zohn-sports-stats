@@ -3664,3 +3664,40 @@ a:focus:not(:focus-visible),
 .md-fr-pos { font-weight: 800; font-size: 0.75rem; margin-bottom: 0.3rem; }
 .md-fr-row { font-size: 0.78rem; color: var(--text-secondary); padding: 1px 0; }
 @media (max-width: 760px) { .md-draft-grid { grid-template-columns: 1fr; } .md-roster { order: -1; } }
+
+
+/* ── Nav categorization (D-022) — grouped sub-nav labels, menu section headers, mobile More ── */
+.sub-nav-group {
+    flex-shrink: 0;
+    align-self: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    padding: 0 0.45rem 0 0.7rem;
+    margin-left: 0.15rem;
+    border-left: 1px solid var(--border-mid);
+    user-select: none;
+    pointer-events: none;
+}
+.sub-nav-group:first-child {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+}
+.menu-section {
+    grid-column: 1 / -1;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    padding: 0.5rem 0.25rem 0.15rem;
+    border-bottom: 1px solid var(--border-default);
+    margin-bottom: 0.1rem;
+    user-select: none;
+    pointer-events: none;
+}
+.menu-section:first-child { padding-top: 0; }
+.bottom-more { cursor: pointer; }

@@ -25,6 +25,12 @@ function setupNavigation() {
         if (t) navigateTo(t.dataset.view);
     });
     document.getElementById('bottomNav')?.addEventListener('click', e => {
+        if (e.target.closest('.bottom-more')) {
+            e.stopPropagation();
+            const panel = document.getElementById('menuPanel');
+            (panel && panel.hidden) ? _openMenu() : _closeMenu();
+            return;
+        }
         const t = e.target.closest('.nav-tab[data-view]');
         if (t) navigateTo(t.dataset.view);
     });
@@ -142,6 +148,15 @@ function initMenu() {
     panel.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', _closeMenu);
     });
+}
+
+function _openMenu() {
+    const btn   = document.getElementById('menuBtn');
+    const panel = document.getElementById('menuPanel');
+    if (!panel) return;
+    panel.hidden = false;
+    btn?.classList.add('menu-btn--open');
+    btn?.setAttribute('aria-expanded', 'true');
 }
 
 function _closeMenu() {
@@ -761,17 +776,22 @@ function _loadFromHash() {
 // Per-sport sub-nav tab sets. NFL is the D-012 light surface: Scores/Standings/Teams.
 const SUB_NAV_TABS = {
     mlb: [
+        { group: 'Stats' },
         { v: 'mlb-players', l: 'Players' }, { v: 'mlb-leaders', l: 'Leaders' },
         { v: 'mlb-teams', l: 'Teams' }, { v: 'mlb-standings', l: 'Standings' },
-        { divider: true },
-        { v: 'mlb-prep', l: 'Prep' }, { v: 'mlb-builder', l: 'Builder' },
-        { v: 'mlb-compare', l: 'Compare' }, { v: 'arcade', l: 'Arcade' },
+        { group: 'Tools' },
+        { v: 'mlb-compare', l: 'Compare' }, { v: 'mlb-builder', l: 'Builder' },
+        { v: 'mlb-prep', l: 'Prep' }, { v: 'arcade', l: 'Arcade' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players' }, { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-trending', l: 'Trending' },
-        { v: 'nfl-games', l: 'Scores' }, { v: 'nfl-standings', l: 'Standings' },
-        { divider: true },
-        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-compare', l: 'Compare' },
+        { group: 'Stats' },
+        { v: 'nfl-players', l: 'Players' }, { v: 'nfl-leaders', l: 'Leaders' },
+        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-standings', l: 'Standings' },
+        { group: 'Fantasy' },
+        { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-mock', l: 'Mock Draft' },
+        { v: 'nfl-trending', l: 'Trending' },
+        { group: 'Tools' },
+        { v: 'nfl-compare', l: 'Compare' },
     ],
 };
 
@@ -780,8 +800,8 @@ function _renderSubNav(sport) {
     if (!nav) return;
     const tabs = SUB_NAV_TABS[sport] || SUB_NAV_TABS.mlb;
     nav.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
-    nav.innerHTML = tabs.map(t => t.divider
-        ? '<span class="sub-nav-divider" aria-hidden="true"></span>'
+    nav.innerHTML = tabs.map(t => t.group
+        ? `<span class="sub-nav-group" role="presentation">${t.group}</span>`
         : `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }
@@ -801,17 +821,24 @@ const _NAV_ICONS = {
 
 const MENU_TABS = {
     mlb: [
+        { group:'Stats' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
-        { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-games', l:'Scores', i:'scores' },
-        { v:'mlb-standings', l:'Standings', i:'standings' }, { v:'mlb-builder', l:'Builder', i:'builder' },
-        { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'mlb-compare', l:'Compare', i:'compare' },
-        { v:'arcade', l:'Arcade', i:'arcade' },
+        { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-standings', l:'Standings', i:'standings' },
+        { v:'mlb-games', l:'Scores', i:'scores' },
+        { group:'Tools' },
+        { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'mlb-builder', l:'Builder', i:'builder' },
+        { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
     ],
     nfl: [
-        { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
-        { v:'nfl-trending', l:'Trending', i:'trending' }, { v:'nfl-teams', l:'Teams', i:'teams' },
-        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-standings', l:'Standings', i:'standings' },
-        { v:'nfl-mock', l:'Mock Draft', i:'extra' }, { v:'nfl-compare', l:'Compare', i:'compare' },
+        { group:'Stats' },
+        { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
+        { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
+        { v:'nfl-games', l:'Scores', i:'scores' },
+        { group:'Fantasy' },
+        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+        { v:'nfl-trending', l:'Trending', i:'trending' },
+        { group:'Tools' },
+        { v:'nfl-compare', l:'Compare', i:'compare' },
     ],
 };
 
@@ -821,22 +848,23 @@ function _renderMenuPanel(sport) {
     if (!grid) return;
     const tabs = MENU_TABS[sport] || MENU_TABS.mlb;
     grid.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
-    grid.innerHTML = tabs.map(t =>
-        `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
+    grid.innerHTML = tabs.map(t => t.group
+        ? `<div class="menu-section" role="presentation">${t.group}</div>`
+        : `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
     ).join('');
     grid.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }
 
 const BOTTOM_NAV_TABS = {
     mlb: [
-        { v: 'mlb-players', l: 'Players', i: 'players' }, { v: 'mlb-leaders', l: 'Leaders', i: 'leaders' },
-        { v: 'mlb-games', l: 'Scores', i: 'scores' }, { v: 'mlb-standings', l: 'Standings', i: 'standings' },
-        { v: 'mlb-prep', l: 'Prep', i: 'extra' },
+        { v: 'mlb-games', l: 'Scores', i: 'scores' }, { v: 'mlb-players', l: 'Players', i: 'players' },
+        { v: 'mlb-leaders', l: 'Leaders', i: 'leaders' }, { v: 'mlb-standings', l: 'Standings', i: 'standings' },
+        { more: true, l: 'More', i: 'extra' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players', i: 'players' }, { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' },
-        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
-        { v: 'nfl-mock', l: 'Draft', i: 'extra' },
+        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-players', l: 'Players', i: 'players' },
+        { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
+        { more: true, l: 'More', i: 'extra' },
     ],
 };
 
@@ -844,8 +872,9 @@ function _renderBottomNav(sport) {
     const nav = document.getElementById('bottomNav');
     if (!nav) return;
     const tabs = BOTTOM_NAV_TABS[sport] || BOTTOM_NAV_TABS.mlb;
-    nav.innerHTML = tabs.map(t =>
-        `<button class="nav-tab" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
+    nav.innerHTML = tabs.map(t => t.more
+        ? `<button class="nav-tab bottom-more" type="button" aria-label="More options"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
+        : `<button class="nav-tab" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
     ).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }
@@ -857,6 +886,8 @@ function _applySportUI(sport) {
     const brandSub  = document.getElementById('brandSub');
     if (brandIcon) brandIcon.textContent = icon;
     if (brandSub)  brandSub.textContent  = sub;
+    const tickerScoresBtn = document.getElementById('tickerScoresBtn');
+    if (tickerScoresBtn) tickerScoresBtn.dataset.view = (sport === 'nba' ? 'games' : `${sport}-games`);
     _renderSubNav(sport);
     _renderBottomNav(sport);
     _renderMenuPanel(sport);
