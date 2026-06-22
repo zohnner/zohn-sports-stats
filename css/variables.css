@@ -22,6 +22,7 @@
     --border-mid:         rgba(255, 255, 255, 0.11);
     --border-strong:      rgba(255, 255, 255, 0.18);
     --border-accent:      rgba(255, 129, 0, 0.32);
+    --border-subtle:      var(--border-default);  /* N-10: referenced across nfl/css but never defined → border shorthands were voided (invisible separators). Alias to the lightest defined border; resolves lazily per theme. */
     --border-accent-hov:  rgba(255, 129, 0, 0.55);
 
     /* ── Text ── */

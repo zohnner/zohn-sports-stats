@@ -133,6 +133,21 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 
 ---
 
+## P3-030 — NFL Team Landing Page Redesign — Three Gates
+**Contributors:** Kael (visual, lead), Vera (behavioral), Axiom (feasibility) | **Date:** 2026-06-21
+
+**Trigger (owner):** make the team landing pages clean and on-brand, inspired by the MLB team page without copying it. The NFL team page was functional but plain — back button, small logo + name·record·count line, roster grid; no team-color branding, no hero, no fantasy angle, no in-season scaffolding.
+
+**Visual spec (Kael):** a sport-agnostic `.team-*` component family (components.css), tokens only; the team's own color drives accents via a `--team` custom property + `color-mix` (no hardcoded hex). Deliberately distinct from MLB's radial-hero + 7-cell bio grid: a **team-identity banner** (team-color top stripe + tinted gradient wash, large logo, display-font name, abbr + division chips, season label), a compact **facts grid** (players / offense / defense / special teams / division — offseason-safe), a **Top Fantasy Assets** band (position-colored cards by ADP — an NFL-native section MLB has no equivalent of), a brand-styled **roster by unit** (depth-chart order, projected-starter ★, injury flag), and a **Schedule** section (next-game card, else a clean in-season empty-state). The SportStrata accent threads the section titles/chips.
+
+**Behavioral spec (Vera):** job-to-be-done — "who are they, who are their key players, how's their season." States: loading skeleton (existing), default, roster-empty message (not blank), error (existing `ErrorHandler.handle` retry). Asset + roster items are keyboard-focusable `<button>`s → player detail; `:focus-visible` rings; hover states; image fallbacks via `data-hide-on-error`. Offseason: season label "Enters the {season} season"; facts/assets/roster populate from Sleeper year-round; record/results render an empty-state. Color is never the sole signal.
+
+**Feasibility (Axiom):** no architecture change. Generic `_renderTeamPage(model)` + `_renderNFLTeamDetail` builds a normalized model from existing data (nflTeams, Sleeper pool, nflGames) + a static `_NFL_DIVISIONS` map (32 teams, stable; conference/division isn't in the ESPN payload and standings are offseason-empty). `color-mix` already in use; no new fetches/CSP/files. **Reusable:** `_renderTeamPage` + `.team-*` are sport-agnostic — NHL/NBA adopt by feeding the same model shape (`{name,logo,teamColor,division,record,facts,assets,groups,scheduleHtml,playerPrefix,backView}`).
+
+**All three gates present. Implementation shipped 2026-06-21 (Finn).** Verified: `node --check` clean; live computed-style + screenshot check (Cowboys). Reusable contract documented for NHL/NBA.
+
+---
+
 ## NFL Improvement Backlog — Cross-Domain Audit (2026-06-21)
 **Contributors:** Vera (UX), Kael (visual), Axiom (architecture/data) | Evidence gathered against current source (post-P3-029).
 
@@ -185,6 +200,10 @@ Axiom's call: **don't split now** — no module system means a split adds load-o
 **Finding:** `var(--bg-elevated)` is used 23× (7 in `js/nfl.js`, 13 in `css/*`, 3 in `js/nhl.js`) but the token is **not defined** in `variables.css` — confirmed live via `getComputedStyle(:root).getPropertyValue('--bg-elevated')` → `""`, and by grep (no `--bg-elevated:` anywhere). Every reference resolves to nothing, so those surfaces (NFL panel headers, the leader-season `<select>`, standings header, etc.) render transparent instead of the intended raised surface. **Pre-existing — not from N-5.** Surfaced while verifying Phase 2: `.nfl-card-head` background came back transparent, exactly matching the old inline `var(--bg-elevated)` → confirms no regression, but exposes the latent bug.
 **Fix direction (Kael owns the value):** define `--bg-elevated` in both `:root` and `[data-theme="light"]` (likely ≈ `--bg-raised`). **Not a unilateral fix** — it would change the background of 20+ spots that have silently been transparent, so it needs Kael's value choice + a visual review across MLB and NFL before shipping.
 **✅ SHIPPED 2026-06-21 (Kael decision):** defined `--bg-elevated: var(--bg-raised)` once in `:root`. Custom properties resolve lazily, so every `var(--bg-elevated)` now follows the active theme's own `--bg-raised` across all 14 themes with no per-theme edits. All 13 css usages + nfl/nhl are `background:` contexts wanting a raised surface, so this restores intended behavior (hover rows, prep rows, panel headers) rather than changing design.
+
+### N-10 — `--border-subtle` referenced but never defined — **[Kael + Folio]** · priority 2 · ✅ SHIPPED 2026-06-21
+**Finding:** parallel to N-9 — `var(--border-subtle)` is used 16× (11 `js`, 5 `css`) but never defined in `variables.css` (defined border tokens are default/mid/strong/accent). An undefined `var()` with no fallback voids the whole `border` shorthand, so every `border: 1px solid var(--border-subtle)` rendered with **no border** — invisible row separators in trending/leader/roster lists and avatar rings. Found while building P3-030 (also explains the 0px separators seen during N-5 phase-2 verification).
+**Shipped (Kael decision):** `--border-subtle: var(--border-default)` defined once in `:root` (lazy-resolves per theme), restoring the intended light separators app-wide.
 
 **Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
 

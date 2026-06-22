@@ -1080,6 +1080,78 @@ async function showNFLTeamDetail(abbr) {
     _renderNFLTeamDetail(abbr);
 }
 
+// Conference/division is stable NFL data, not in the ESPN team payload and empty
+// in the offseason standings — a small static map keeps the team hero populated year-round.
+const _NFL_DIVISIONS = {
+    BUF:'AFC East', MIA:'AFC East', NE:'AFC East', NYJ:'AFC East',
+    BAL:'AFC North', CIN:'AFC North', CLE:'AFC North', PIT:'AFC North',
+    HOU:'AFC South', IND:'AFC South', JAX:'AFC South', TEN:'AFC South',
+    DEN:'AFC West', KC:'AFC West', LV:'AFC West', LAC:'AFC West',
+    DAL:'NFC East', NYG:'NFC East', PHI:'NFC East', WSH:'NFC East',
+    CHI:'NFC North', DET:'NFC North', GB:'NFC North', MIN:'NFC North',
+    ATL:'NFC South', CAR:'NFC South', NO:'NFC South', TB:'NFC South',
+    ARI:'NFC West', LAR:'NFC West', SF:'NFC West', SEA:'NFC West',
+};
+
+// Generic, sport-agnostic team landing page (P3-030). Feed it a normalized model
+// and NHL/NBA can reuse it; team color drives accents via the --team custom prop.
+function _renderTeamPage(m) {
+    const esc = _escHtml;
+    const chip = (txt, isTeam) => txt ? `<span class="team-chip${isTeam ? ' team-chip--team' : ''}">${esc(txt)}</span>` : '';
+
+    const facts = (m.facts || []).map(f =>
+        `<div class="team-fact"><div class="team-fact__label">${esc(f.label)}</div><div class="team-fact__value">${esc(String(f.value))}</div></div>`
+    ).join('');
+
+    const assets = (m.assets || []).map(a =>
+        `<button class="team-asset" style="--pc:${a.posColor}" onclick="navigateTo('${m.playerPrefix}${a.id}')">
+            <div class="team-asset__av">${a.headshot ? `<img src="${a.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+            <div class="team-asset__name">${esc(a.name)}</div>
+            <div class="team-asset__meta">${esc(a.pos)}${a.number ? ' · #' + esc(String(a.number)) : ''}</div>
+            ${a.adp ? `<div class="team-asset__adp">#${esc(String(a.adp))} ADP</div>` : ''}
+            ${a.injury ? `<div class="team-asset__inj">${esc(a.injury)}</div>` : ''}
+        </button>`
+    ).join('');
+
+    const groups = (m.groups || []).map(grp => {
+        if (!grp.players.length) return '';
+        const rows = grp.players.map(p =>
+            `<button class="team-roster-row" onclick="navigateTo('${m.playerPrefix}${p.id}')">
+                <div class="team-roster-av">${p.headshot ? `<img src="${p.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+                <span class="team-roster-name">${esc(p.name)}</span>
+                ${p.starter ? '<span class="team-roster-star" title="Projected starter">★</span>' : ''}
+                ${p.injury ? `<span class="team-roster-inj" title="${esc(p.injury)}">${esc(p.injury)}</span>` : ''}
+                <span class="team-roster-pos">${esc(p.pos)}${p.number ? ' · #' + esc(String(p.number)) : ''}</span>
+            </button>`
+        ).join('');
+        return `<div class="team-roster-group">
+            <h4 class="team-roster-head">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h4>
+            <div class="team-roster-grid">${rows}</div>
+        </div>`;
+    }).join('');
+
+    return `<div class="team-page" style="--team:${m.teamColor || 'var(--accent)'}">
+        <div class="team-hero">
+            <div class="team-hero__top">
+                <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
+                ${m.record ? `<span class="team-hero__rec">${esc(m.record)}</span>` : ''}
+            </div>
+            <div class="team-hero__body">
+                <img class="team-hero__logo" src="${m.logo}" alt="${esc(m.name)}" loading="lazy" data-hide-on-error>
+                <div class="team-hero__id">
+                    <h1 class="team-hero__name">${esc(m.name)}</h1>
+                    <div class="team-chips">${chip(m.abbr, true)}${chip(m.division)}</div>
+                    ${m.seasonLabel ? `<div class="team-hero__meta">${esc(m.seasonLabel)}</div>` : ''}
+                </div>
+            </div>
+        </div>
+        ${facts ? `<div class="team-facts">${facts}</div>` : ''}
+        ${assets ? `<section class="team-section"><h3 class="team-section__title">Top Fantasy Assets <span class="team-section__count">by ADP</span></h3><div class="team-assets">${assets}</div></section>` : ''}
+        ${groups ? `<section class="team-section"><h3 class="team-section__title">Roster</h3>${groups}</section>` : (m.rosterEmpty ? `<div class="team-empty">${esc(m.rosterEmpty)}</div>` : '')}
+        ${m.scheduleHtml || ''}
+    </div>`;
+}
+
 function _renderNFLTeamDetail(abbr) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
@@ -1091,59 +1163,71 @@ function _renderNFLTeamDetail(abbr) {
     const roster = Object.values(_nflPoolMap || {})
         .filter(p => p && p.active && p.team === sAbbr && p.position && p.position !== 'DEF');
 
-    let oppHtml = '';
+    const sortFn = (a, b) =>
+        (a.depth_chart_order || 99) - (b.depth_chart_order || 99) ||
+        (a.search_rank || 1e9) - (b.search_rank || 1e9) ||
+        (a.full_name || '').localeCompare(b.full_name || '');
+
+    const groups = _NFL_ROSTER_GROUPS.map(([label, positions]) => ({
+        label,
+        players: roster.filter(p => positions.includes(p.position)).sort(sortFn).map(p => ({
+            id: p.player_id, name: p.full_name, pos: p.position, number: p.number,
+            starter: p.depth_chart_order === 1, injury: p.injury_status,
+            headshot: getNFLSleeperHeadshot(p.player_id),
+        })),
+    }));
+
+    const assets = roster
+        .filter(p => p.search_rank && p.search_rank < 9999)
+        .sort((a, b) => a.search_rank - b.search_rank)
+        .slice(0, 6)
+        .map(p => ({
+            id: p.player_id, name: p.full_name, pos: p.position, number: p.number,
+            adp: p._adp, injury: p.injury_status,
+            posColor: _NFL_POS_COLOR[p.position] || 'var(--accent)',
+            headshot: getNFLSleeperHeadshot(p.player_id),
+        }));
+
+    let nextGame = null;
     const g = (AppState.nflGames || []).find(x => x.homeTeam.abbr === abbr || x.awayTeam.abbr === abbr);
     if (g) {
         const home = g.homeTeam.abbr === abbr;
         const opp  = home ? g.awayTeam : g.homeTeam;
         let dateStr = '';
         try { dateStr = new Date(g.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
-        oppHtml = `<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-secondary)">
-            <span style="color:var(--text-muted)">Next:</span> ${home ? 'vs' : '@'}
-            <img src="${getNFLTeamLogoUrl(opp.abbr)}" alt="" style="width:18px;height:18px;object-fit:contain" loading="lazy" data-hide-on-error>
-            <strong>${_escHtml(opp.abbr)}</strong>${dateStr ? ' · ' + dateStr : ''}</div>`;
+        nextGame = { home, oppAbbr: opp.abbr, oppLogo: getNFLTeamLogoUrl(opp.abbr), dateStr };
     }
 
-    const sortFn = (a, b) =>
-        (a.depth_chart_order || 99) - (b.depth_chart_order || 99) ||
-        (a.search_rank || 1e9) - (b.search_rank || 1e9) ||
-        (a.full_name || '').localeCompare(b.full_name || '');
+    const division = _NFL_DIVISIONS[abbr] || '';
+    const scheduleHtml = `<section class="team-section">
+        <h3 class="team-section__title">Schedule</h3>
+        ${nextGame
+            ? `<div class="team-next-card">
+                 <span class="team-next-card__label">Next game</span>
+                 <span class="team-next-card__matchup">${nextGame.home ? 'vs' : '@'}
+                   <img src="${nextGame.oppLogo}" alt="" loading="lazy" data-hide-on-error>
+                   <strong>${_escHtml(nextGame.oppAbbr)}</strong></span>
+                 ${nextGame.dateStr ? `<span class="team-next-card__date">${_escHtml(nextGame.dateStr)}</span>` : ''}
+               </div>`
+            : `<div class="team-empty">Full schedule & results post once the ${NFL_FANTASY_SEASON} season nears.</div>`}
+    </section>`;
 
-    const groupsHtml = _NFL_ROSTER_GROUPS.map(([label, positions]) => {
-        const players = roster.filter(p => positions.includes(p.position)).sort(sortFn);
-        if (!players.length) return '';
-        const rows = players.map(p => {
-            const hs = getNFLSleeperHeadshot(p.player_id);
-            return `<button onclick="navigateTo('nfl-player-${p.player_id}')" style="display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0.6rem;background:none;border:none;border-bottom:1px solid var(--border-subtle);width:100%;text-align:left;cursor:pointer">
-                <div style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
-                    <img src="${hs}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
-                </div>
-                <span style="flex:1;min-width:0;font-weight:600;font-size:0.82rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(p.full_name)}</span>
-                <span style="font-size:0.68rem;font-weight:700;color:var(--text-muted)">${_escHtml(p.position)}${p.number ? ' · #' + p.number : ''}</span>
-            </button>`;
-        }).join('');
-        return `<div style="margin-bottom:1.25rem">
-            <h3 style="font-size:0.74rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:var(--accent);margin:0 0 0.5rem;padding-bottom:0.3rem;border-bottom:2px solid var(--border-mid)">${label} <span style="color:var(--text-subtle)">(${players.length})</span></h3>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.15rem 1rem">${rows}</div>
-        </div>`;
-    }).join('');
-
-    grid.innerHTML = `
-        <div style="max-width:1000px;margin:0 auto">
-            <div class="player-detail-header" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-                <button onclick="navigateTo('nfl-teams')" class="back-button">← Teams</button>
-                ${oppHtml}
-            </div>
-            <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0 1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border-default)">
-                <img src="${team.logo}" alt="${_escHtml(team.name)}" style="width:64px;height:64px;object-fit:contain" loading="lazy" data-hide-on-error>
-                <div>
-                    <h1 class="player-detail-name" style="margin:0">${_escHtml(team.name)}</h1>
-                    <p style="margin:0.2rem 0 0;color:var(--text-muted);font-size:0.84rem">${_escHtml(team.abbr)}${team.record ? ' · ' + _escHtml(team.record) : ''} · ${roster.length} players</p>
-                </div>
-            </div>
-            ${groupsHtml || '<p style="color:var(--text-muted);text-align:center;padding:2rem">Roster data unavailable.</p>'}
-        </div>
-    `;
+    grid.innerHTML = _renderTeamPage({
+        sport: 'nfl', abbr, name: team.name, logo: team.logo, teamColor: team.color,
+        division, record: team.record || '',
+        seasonLabel: team.record ? '' : `Enters the ${NFL_FANTASY_SEASON} season`,
+        facts: [
+            { label: 'Players',       value: roster.length },
+            { label: 'Offense',       value: groups[0].players.length },
+            { label: 'Defense',       value: groups[1].players.length },
+            { label: 'Special Teams', value: groups[2].players.length },
+            ...(division ? [{ label: 'Division', value: division }] : []),
+        ],
+        assets, groups,
+        rosterEmpty: 'Roster data unavailable for this team right now.',
+        scheduleHtml,
+        backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-',
+    });
 }
 
 // ── Display: Rankings (Sleeper ADP — overall + positional ranks + tiers) ──
