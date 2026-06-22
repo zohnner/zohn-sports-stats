@@ -585,3 +585,31 @@ Desktop sub-nav: flat row with small uppercase group labels acting as separators
 1. Where should news live — a dedicated "News" nav item, a home rail, team-page sections, or all three?
 2. Is ESPN's insider roster (Schefter et al.) acceptable, or is a *specific* pundit voice (Rapoport) a hard requirement? Only the latter forces the X path (and its costs/risks).
 3. First scope: league-wide, team-scoped, or player-scoped?
+
+## D-025 — Competitive NFL player-data display (Savant-style percentile profile) — PROPOSED
+**Raised by:** owner | Recorded by: Finn | Date: 2026-06-21 | Status: proposed — needs owner direction
+
+**The question:** MLB player pages show a Savant-style "Key Metrics" percentile-slider profile (P3-028). How do we present NFL player data to compete with the big stats sites?
+
+**What we already have:** NFL player detail has an "Advanced · Next Gen Stats" card (D-018, `_loadNFLAdvanced` → nflverse NGS) with percentile bars — but it's a simpler bar (no numbered bubble), skill-positions only, narrow metric set. MLB's `.pct-row` component (track + fill + numbered bubble, diverging blue→gray→red, red=elite) is more polished and computed client-side from the qualified pool.
+
+**Relay (data):** percentiles need a *pool*. MLB derives them client-side from `mlbLeaderSplits`; NFL already has nflverse powering `/api/nfladv` with server-side percentiles among qualified players — extend that to a broader, position-curated metric set (NGS + standard season stats) rather than re-deriving on the client. nflverse covers 2016+; pre-2016 degrades to raw values. No new vendor needed (nflverse + ESPN + Sleeper already in place).
+
+**Kael (visual):** unify on ONE percentile component — promote MLB's `.pct-row`/`.pct-track`/`.pct-bubble` sliders to a shared, sport-agnostic component and have NFL adopt it (replacing the simpler advanced bar). Same diverging scale (red = elite). A "Key Metrics" card per position, grouped (Efficiency / Volume / Advanced). A radar/spider chart could echo competitors, but sliders scan cleaner — recommend sliders as the hero, radar deferred.
+
+**Vera (UX):** position-aware metric sets (ties into N-12) so the page shows only what matters. Always label the qualified pool + sample size + "red = elite" for trust. States: loading skeleton, graceful fallback to raw values when sample/era is thin (pre-2016), error. Keep the season counting-stat line separate from the percentile Key Metrics; link out to source.
+
+**Axiom (feasibility):** mostly reuse — the `.pct-*` CSS already exists. Extend `/api/nfladv` (or add `/api/nflmetrics`) to return a curated per-position metric set with percentiles; client renders via a shared `_pctRow` helper. Edge-cached per D-019. Effort: medium (server metric curation is the bulk).
+
+**Per-position metric sets (draft):**
+- QB — Pass YDS, TD, Comp%, CPOE, YPA, Passer Rtg, Time-to-Throw, Air Yards/Att, Sack%, INT%
+- RB — Rush YDS, YPC, Rush Yds-Over-Expected, TD, Broken Tackles, Rec, YAC, Efficiency
+- WR/TE — Rec, YDS, TD, Target Share, Separation, YAC-over-expected, Catch%, Air Yards
+  (all available from nflverse NGS + season stats)
+
+**Recommendation:** (1) promote MLB's percentile slider to a shared component; (2) build an NFL "Key Metrics" card using it — position-curated, powered by the extended nflverse endpoint; (3) keep the season line + game log as-is. This matches Savant's hallmark, beats most free sites (NGS depth behind clean sliders), and unifies MLB + NFL on one component. Radar deferred.
+
+**Open questions for owner:**
+1. Slider profile as the hero (recommended), or add a radar/spider chart too?
+2. Metric depth — fantasy-relevant only, or full NGS depth?
+3. Build now, or after the D-024 news feed?
