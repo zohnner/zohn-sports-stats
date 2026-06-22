@@ -54,6 +54,14 @@ function openGlobalSearch() {
             if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
         }).catch(() => {});
     }
+    // Warm the NFL team list so teams are searchable before visiting an NFL view (N-2).
+    if (typeof fetchNFLTeams === 'function' && !(AppState.nflTeams && AppState.nflTeams.length)) {
+        fetchNFLTeams().then(t => {
+            AppState.nflTeams = t;
+            const box = document.getElementById('searchModalInput');
+            if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
+        }).catch(() => {});
+    }
     _renderResults('');
     // Delay so backdrop paint doesn't steal the focus event
     requestAnimationFrame(() => input.focus());
@@ -220,6 +228,20 @@ function _buildGroups(q) {
                 action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'mlb') switchSport('mlb'); showMLBTeamDetail(t.id); },
             };
         }),
+        ...(AppState.nflTeams || []).filter(t => {
+            const n = (t.name || t.shortName || '').toLowerCase();
+            return n.includes(q) || (t.abbr || '').toLowerCase().startsWith(q);
+        }).slice(0, 3).map(t => ({
+            id:     t.abbr,
+            sport:  'nfl',
+            type:   'team',
+            name:   t.name,
+            sub:    `NFL · ${t.abbr || ''}`,
+            badge:  'NFL',
+            avatarUrl: t.logo || (typeof getNFLTeamLogoUrl === 'function' ? getNFLTeamLogoUrl(t.abbr) : ''),
+            teamColor: t.color,
+            action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'nfl') { AppState.currentSport = 'nfl'; if (typeof _applySportUI === 'function') _applySportUI('nfl'); } navigateTo('nfl-team-' + t.abbr); },
+        })),
     ];
     if (teamHits.length) groups.push({ label: 'Teams', items: teamHits });
 

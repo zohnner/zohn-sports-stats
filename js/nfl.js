@@ -420,7 +420,8 @@ let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
 let _nflPosFilter = 'ALL';
 
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
-const _NFL_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
+const _NFL_POS_COLOR = { QB: 'var(--nfl-pos-qb)', RB: 'var(--nfl-pos-rb)', WR: 'var(--nfl-pos-wr)', TE: 'var(--nfl-pos-te)', K: 'var(--nfl-pos-k)' };
+const _nflAlpha = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
 
 async function fetchNFLSleeperPool() {
     if (_nflPool) return _nflPool;
@@ -508,7 +509,7 @@ function _createNFLPlayerCard(p) {
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
-    card.style.borderTop = `3px solid ${posColor}cc`;
+    card.style.borderTop = `3px solid ${_nflAlpha(posColor, 80)}`;
 
     const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshot = getNFLSleeperHeadshot(p.player_id);
@@ -534,7 +535,7 @@ function _createNFLPlayerCard(p) {
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${posColor}cc,${posColor}55)">
+            <div class="player-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)})">
                 ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
             </div>
@@ -659,7 +660,7 @@ function updateNFLTicker(games) {
 }
 
 // ── Display: Stat Leaders (real season stats via /api/nflstats) ──
-const _NFL_STAT_COLORS = ['#ef4444','#f97316','#34d399','#10b981','#60a5fa','#3b82f6','#a78bfa','#f43f5e','#22d3ee'];
+const _NFL_STAT_COLORS = ['var(--nfl-cat-1)','var(--nfl-cat-2)','var(--nfl-cat-3)','var(--nfl-cat-4)','var(--nfl-cat-5)','var(--nfl-cat-6)','var(--nfl-cat-7)','var(--nfl-cat-8)','var(--nfl-cat-9)'];
 
 let _nflLeaderSeason = null;  // null = current season (server auto-detects)
 
@@ -816,13 +817,13 @@ function _renderNFLPlayerDetail(p) {
                 <button class="share-btn" onclick="window._shareCurrentPage && window._shareCurrentPage()" title="Copy link">Share</button>
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${posColor}cc,${posColor}55);color:#fff;font-size:2.5rem;font-weight:800">
+                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)});color:#fff;font-size:2.5rem;font-weight:800">
                     ${headshotImg}${initials}
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${_escHtml(p.full_name)}</h1>
-                        <span class="player-hero-pos" style="background:${posColor}33;color:${posColor}">${_escHtml(pos)}</span>
+                        <span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>
                         ${adpBadge}
                     </div>
                     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
@@ -913,30 +914,39 @@ async function _loadNFLCareer(espnId) {
 
         host.className = 'stats-card';
         host.innerHTML = `<h2 class="detail-section-title">Career</h2>${tables}<p style="color:var(--text-muted);font-size:0.72rem;margin:0.3rem 0 0">Regular season · tap a row to load that season above · Source: ESPN.</p>`;
-    } catch (_) {}
+    } catch (e) { Logger.warn('NFL career load failed', e, 'NFL'); }
 }
 
-const _NFL_STAT_GROUP_COLOR = { passing:'#60a5fa', rushing:'#34d399', receiving:'#f59e0b', defense:'#a78bfa', kicking:'#f43f5e' };
+const _NFL_STAT_GROUP_COLOR = { passing:'var(--nfl-stat-passing)', rushing:'var(--nfl-stat-rushing)', receiving:'var(--nfl-stat-receiving)', defense:'var(--nfl-stat-defense)', kicking:'var(--nfl-stat-kicking)' };
+
+// Explicit placeholder when the Sleeper->ESPN name match yields no stats, so a
+// real player never shows a blank stat area with no explanation (N-1).
+function _nflStatsUnavailable(host, name) {
+    if (!host || !document.body.contains(host)) return;
+    host.className = 'stats-card';
+    host.innerHTML = `<h2 class="detail-section-title">Season Stats</h2>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin:0;line-height:1.5">Season stats aren't available for ${_escHtml(name || 'this player')} right now — we couldn't match this player to a stats source. This is common for free agents and recent roster moves.</p>`;
+}
 
 // Season stat line on the player-detail page. Sleeper has no game stats, so we
 // bridge to ESPN via /api/nflplayer (team roster name-match -> athlete stats).
 async function _loadNFLPlayerStats(p, season) {
-    if (!p || !p.team) return;
     season = season || NFL_STATS_SEASON;
     const host = document.getElementById('nfl-stat-line');
     if (!host) return;
+    if (!p || !p.team) { _nflStatsUnavailable(host, p && p.full_name); return; }
     try {
         const cacheKey = `nfl:pstats2:${p.player_id}:${season}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
             const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}&season=${season}`);
-            if (!res.ok) return;
+            if (!res.ok) { Logger.warn('NFL player stats fetch ' + res.status, null, 'NFL'); _nflStatsUnavailable(host, p.full_name); return; }
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (data.espnId) _loadNFLGameLog(data.espnId, season);
         if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId); }
-        if (!data.found || !data.groups || !data.groups.length) return;
+        if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name); return; }
         if (!document.body.contains(host)) return;  // user navigated away
 
         const groupsHtml = data.groups.map(g => {
@@ -958,7 +968,7 @@ async function _loadNFLPlayerStats(p, season) {
             ${groupsHtml}
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
         `;
-    } catch (_) {}
+    } catch (e) { Logger.warn('NFL player stats load failed', e, 'NFL'); _nflStatsUnavailable(host, p.full_name); }
 }
 
 // Game-by-game log on the player-detail page (ESPN, via the resolved athlete id).
@@ -1007,7 +1017,7 @@ async function _loadNFLGameLog(espnId, season) {
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.5rem 0 0">Game-by-game · Source: ESPN.</p>`;
         const _glChart = (window.StatsCharts && StatsCharts.nflGameTrend) ? StatsCharts.nflGameTrend('nfl-gl-chart', data.games, data.columns) : null;
         if (!_glChart) { const w = document.getElementById('nfl-gl-chart-wrap'); if (w) w.remove(); }
-    } catch (_) {}
+    } catch (e) { Logger.warn('NFL game log load failed', e, 'NFL'); }
 }
 
 const _NFL_NGS_LABEL = { receiving: 'receivers', passing: 'passers', rushing: 'rushers' };
@@ -1053,7 +1063,7 @@ async function _loadNFLAdvanced(p, season) {
             <h2 class="detail-section-title">Advanced · Next Gen Stats</h2>
             <div style="max-width:560px">${rows}</div>
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.4rem 0 0">${data.season} · percentile vs qualified ${_escHtml(_NFL_NGS_LABEL[data.type] || data.type)} (n=${data.qualifiedPlayers}) · Data via nflverse Next Gen Stats (CC-BY)</p>`;
-    } catch (_) {}
+    } catch (e) { Logger.warn('NFL advanced stats load failed', e, 'NFL'); }
 }
 
 // ── Team detail (header + roster grouped by position) ─────────
@@ -1370,13 +1380,13 @@ async function showNFLEspnPlayer(espnId) {
                 ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${posColor}cc,${posColor}55);color:#fff;font-size:2.5rem;font-weight:800">
+                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)});color:#fff;font-size:2.5rem;font-weight:800">
                     ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}${initials}
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${_escHtml(prof.name)}</h1>
-                        <span class="player-hero-pos" style="background:${posColor}33;color:${posColor}">${_escHtml(pos)}</span>
+                        <span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>
                     </div>
                     <p class="player-detail-meta" style="color:var(--text-muted)">${_escHtml(bits.join(' · '))}</p>
                 </div>

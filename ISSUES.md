@@ -133,6 +133,48 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 
 ---
 
+## NFL Improvement Backlog — Cross-Domain Audit (2026-06-21)
+**Contributors:** Vera (UX), Kael (visual), Axiom (architecture/data) | Evidence gathered against current source (post-P3-029).
+
+Candidates in priority order. **N-1, N-2, N-3 promoted (three gates) and SHIPPED 2026-06-21 — see Finn's report at the end of this section.**
+
+### N-1 — Player detail shows nothing (and swallows the error) when the ESPN name-match fails — **[Vera + Relay/Axiom]** · priority 1 · ✅ SHIPPED 2026-06-21
+**Finding:** NFL player stats/career/game-log/advanced all bridge Sleeper→ESPN by **name match**. When the match fails — free agents, name mismatches, retired players — the loaders bailed silently (`if (!res.ok) return;` / `if (!data.found …) return;` / `catch (_) {}` in `js/nfl.js`). The user landed on a real player, saw the profile, and **no stats, no reason why.** The bare `catch (_) {}` also violated "never suppress; Logger everywhere."
+**Shipped:** `_nflStatsUnavailable(host, name)` placeholder renders in `#nfl-stat-line` on every no-match/empty/error path of `_loadNFLPlayerStats` (incl. the no-team free-agent case); the four detail loaders' bare catches now `Logger.warn(..., 'NFL')`.
+
+### N-2 — NFL teams weren't searchable in ⌘K (players were) — **[Vera + Relay]** · priority 1 · ✅ SHIPPED 2026-06-21
+**Finding:** ⌘K surfaced NFL players but had no NFL Teams group (NBA & MLB both did). Typing "Cowboys" returned nothing despite NFL team detail pages existing.
+**Shipped:** NFL Teams group added to the `teamHits` builder in `search.js` (filters `AppState.nflTeams`, routes to `nfl-team-{abbr}` after ensuring NFL context); `AppState.nflTeams` is now warmed on overlay open like the player pool.
+**Doc note:** CLAUDE.md/DECISIONS still list "⌘K NFL search" as deferred — it shipped for players earlier; teams now close it. Logged as N-7 for Folio.
+
+### N-3 — NFL hardcoded a color vocabulary that bypassed the token system — **[Kael]** · priority 2 · ✅ SHIPPED 2026-06-21
+**Finding:** `_NFL_POS_COLOR`, `_NFL_STAT_COLORS`, `_NFL_STAT_GROUP_COLOR` were literal hex in `js/nfl.js`, against "always use vars." The inline alpha-concat (`${posColor}cc`) also produced invalid CSS for the `var(--accent)` fallback case (latent bug).
+**Shipped:** 19 NFL color tokens added to `css/variables.css` (`--nfl-pos-*`, `--nfl-stat-*`, `--nfl-cat-1..9`); the three JS maps now reference `var(--…)`; alpha shades go through a new `_nflAlpha(c, pct)` helper using `color-mix(in srgb, … transparent)` instead of hex concat (also fixes the fallback bug). `color-mix` is supported across current evergreen browsers (Axiom feasibility).
+
+### N-4 — Players position filter resets every visit — **[Vera]** · priority 3
+`_nflPosFilter` (`js/nfl.js`) is not persisted. Persist to `sessionStorage`. Low effort. Not yet started.
+
+### N-5 — Inline-style sprawl across NFL views — **[Kael + Axiom]** · priority 3 (phased)
+~178 `style="…"` + 23 `style.cssText` in `js/nfl.js`. Extract repeated patterns to `css/components.css` classes incrementally. Not yet started.
+
+### N-6 — Decide offseason-strip scope — **[Vera + Kael]** · priority 3
+Finn's open P3-029 question: strip shows on all 7 NFL list views vs scope to empty-ish surfaces. Decision only. Not yet started.
+
+### N-7 — Docs stale: ⌘K NFL search listed as deferred but shipped — **[Folio]** · priority 4
+Reconcile CLAUDE.md/DECISIONS; N-2 closed the teams gap. Not yet started.
+
+### N-8 — `nfl.js` monolith (1,400+ lines) — **[Axiom]** · priority 5 (discuss, don't action yet)
+Possible split (e.g. `nflFantasy.js`); weigh against the global-scope script-load-order architecture first.
+
+**Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
+
+*Shipped:* `js/nfl.js` (N-1 placeholder + Logger.warn in the 4 player-detail loaders; N-3 maps→tokens + `_nflAlpha` color-mix), `js/search.js` (N-2 NFL Teams group + warm), `css/variables.css` (N-3 19 tokens).
+*Verification:* `node --check` clean on `nfl.js` + `search.js`; zero NUL bytes; `variables.css` braces balanced; every `var(--nfl-*)` referenced in `nfl.js` confirmed present in `variables.css`; NFL color maps contain no remaining hex.
+*Not done — live browser render:* recommend `/screenshot` of an NFL player-detail (force a no-match to see the N-1 placeholder), the ⌘K overlay (search a team), and the player cards (color parity) after deploy.
+*Secondary finding (flagged, not fixed — for Axiom):* 5 more bare `catch (_) {}` remain in `js/nfl.js` outside the player-detail loaders (team detail, ESPN-player path). Same Logger-suppression issue as N-1; out of N-1's scope. Worth a small follow-up. — Finn
+
+---
+
 ## Design Issues
 
 ### WCAG Audit Results — mlb-player-{id} (Priority 1)

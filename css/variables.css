@@ -87,6 +87,29 @@
     --color-al-border:        rgba(96,165,250,0.30);
     --color-nl-border:        rgba(239,68,68,0.25);
 
+    /* ── NFL position & stat colors ──
+       Single source of truth for NFL color (was hardcoded hex in js/nfl.js — N-3).
+       Referenced via var(); alpha shades come from color-mix() in js, not hex concat. ── */
+    --nfl-pos-qb:          #ef4444;
+    --nfl-pos-rb:          #34d399;
+    --nfl-pos-wr:          #60a5fa;
+    --nfl-pos-te:          #fbbf24;
+    --nfl-pos-k:           #a78bfa;
+    --nfl-stat-passing:    #60a5fa;
+    --nfl-stat-rushing:    #34d399;
+    --nfl-stat-receiving:  #f59e0b;
+    --nfl-stat-defense:    #a78bfa;
+    --nfl-stat-kicking:    #f43f5e;
+    --nfl-cat-1:           #ef4444;
+    --nfl-cat-2:           #f97316;
+    --nfl-cat-3:           #34d399;
+    --nfl-cat-4:           #10b981;
+    --nfl-cat-5:           #60a5fa;
+    --nfl-cat-6:           #3b82f6;
+    --nfl-cat-7:           #a78bfa;
+    --nfl-cat-8:           #f43f5e;
+    --nfl-cat-9:           #22d3ee;
+
     /* ── Performance tiers ──
        For power rankings, scout grades, and any badge that scores performance
        along an elite→poor axis.
