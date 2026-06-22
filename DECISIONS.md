@@ -561,3 +561,27 @@ Desktop sub-nav: flat row with small uppercase group labels acting as separators
 **If/when we revisit** (≈2.5k lines, or fantasy grows): cleanest seam is the **fantasy surface** — `js/nflFantasy.js` for Rankings + Trending + Mock Draft + the Sleeper pool helpers (`fetchNFLSleeperPool`, `_nflPool`, ADP), leaving stats/scores/standings/detail in `nfl.js`. Fewest cross-references. Load after `nfl.js`, before `app.js`; update the `index.html` chain and `sw.js` STATIC_ASSETS together.
 
 **Decision:** N-8 closed as "won't do now." Prioritize N-5 (inline→classes), which addresses the real maintainability cost.
+
+## D-024 — News / "what's happening" feed (injuries, hot players) — PROPOSED (brainstorm)
+**Raised by:** owner | Recorded by: Finn | Date: 2026-06-21 | Status: proposed — needs owner direction
+
+**The question:** with NFL added, users want to know who's hurt, who's hot, what's the latest. Two sources floated: (a) a news API, or (b) reading the X/Twitter feeds of pundits (e.g. Ian Rapoport for NFL + an MLB equivalent).
+
+**Relay (data/API):** ESPN already gives us a clean, free, no-auth news feed on the host we proxy — `site.api.espn.com/apis/site/v2/sports/{football/nfl|baseball/mlb}/news`. Verified live (NFL): `articles[]` with headline, description, image, byline, published timestamp, links, and league/team/athlete tags — so a feed can be scoped to a team or even a player by filtering tags. MLB is the same endpoint shape. There are also `/injuries` endpoints, and we already pull NFL `injury_status` from Sleeper. "Who's hot" is largely derivable from data we already have (Sleeper trending add/drop; MLB/NFL leaders). Net: a feed needs ~1 new Pages Function. **X is the opposite:** its API is paid (and pricey), automated reading/scraping of accounts violates ToS, and account-reading is brittle and legally exposed. Strong recommend ESPN; avoid X.
+
+**Cipher (security):** any external text is untrusted → `_escHtml` every field, never inject raw HTML, and if we ever LLM-summarize, treat it as a prompt-injection surface. Show headline + description + attribution + link-out (don't republish full articles → copyright-safe). X scraping adds ToS/legal risk and credential handling on top. Hard no on scraping X; ESPN's public, attributed API is the low-risk path.
+
+**Vera (UX):** job-to-be-done — "what's the latest on my team / players, who's hurt, who's hot." Glanceable and scoped: a league feed, a team-news section on the team page, player news on player detail. Injuries deserve a distinct scannable treatment, not buried prose. "Hot" should lean on existing trending/leaders, not narrative. Full states (loading skeleton / empty / error); links open out (new tab, `rel=noopener`). News complements stats — don't bury them.
+
+**Kael (visual):** news cards in the existing system — thumbnail, headline, source/byline, relative timestamp ("2h ago"), team-color tag. A compact "Latest" rail on home + team pages. Tokens only; brand accent on the section title.
+
+**Axiom (feasibility):** one Pages Function `/api/news?sport=&team=` proxying ESPN `/news` (+ optional `/injuries`), edge-cached SHORT (~10m), per D-019 (no auth, no D1). Client `loadNews()` + a render module. Injuries = ESPN injuries ∪ Sleeper status; "hot" = reuse trending/leaders. Effort: small–medium.
+
+**Recommendation:** build the feed on **ESPN's news API**, decisively over X. Phase it: (1) league news feed + team-scoped news on the team page; (2) injuries surface (ESPN ∪ Sleeper); (3) "hot" via existing trending/leaders. Republish only headline + blurb + attribution + link (copyright-safe). Do **not** scrape or read X (ToS, cost, legal, security).
+
+**Confidence flags:** ESPN MLB `/news` is the same documented pattern as the verified NFL endpoint but wasn't fetched here (egress-blocked) — confirm at build. X API pricing/ToS specifics move fast; the "paid + no-scraping" constraint is longstanding but verify current terms before any X path is reconsidered.
+
+**Open questions for owner:**
+1. Where should news live — a dedicated "News" nav item, a home rail, team-page sections, or all three?
+2. Is ESPN's insider roster (Schefter et al.) acceptable, or is a *specific* pundit voice (Rapoport) a hard requirement? Only the latter forces the X path (and its costs/risks).
+3. First scope: league-wide, team-scoped, or player-scoped?
