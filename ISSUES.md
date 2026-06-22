@@ -148,6 +148,19 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 
 ---
 
+## P3-031 — Teams Index by Conference & Division — Three Gates
+**Contributors:** Kael (visual, lead), Vera (behavioral), Axiom (feasibility) | **Date:** 2026-06-21
+
+**Trigger (owner):** the teams page was filler — a flat 32-card grid. Needed a comprehensive, scannable index so users can find a team by conference/division.
+
+**Visual spec (Kael):** AFC and NFC sections (display-font accent titles), each a responsive grid of the 4 divisions; each division a labeled vertical list of `.team-pick` rows (logo, short name, abbr·record) with a team-color left accent. On-brand, tokens only.
+**Behavioral spec (Vera):** keyboard-focusable `<button>` rows → team page; hover + `:focus-visible`; offseason 0–0 note retained; teams with no mapped division fall into an "Other" group (no data lost); image fallbacks via `data-hide-on-error`.
+**Feasibility (Axiom):** reuses the `_NFL_DIVISIONS` map from P3-030; pure `displayNFLTeams` rewrite + `.teams-*` CSS. No new fetch/CSP/files.
+
+**All three gates present. Shipped 2026-06-21 (Finn).** Verified node --check + live.
+
+---
+
 ## NFL Improvement Backlog — Cross-Domain Audit (2026-06-21)
 **Contributors:** Vera (UX), Kael (visual), Axiom (architecture/data) | Evidence gathered against current source (post-P3-029).
 
@@ -204,6 +217,14 @@ Axiom's call: **don't split now** — no module system means a split adds load-o
 ### N-10 — `--border-subtle` referenced but never defined — **[Kael + Folio]** · priority 2 · ✅ SHIPPED 2026-06-21
 **Finding:** parallel to N-9 — `var(--border-subtle)` is used 16× (11 `js`, 5 `css`) but never defined in `variables.css` (defined border tokens are default/mid/strong/accent). An undefined `var()` with no fallback voids the whole `border` shorthand, so every `border: 1px solid var(--border-subtle)` rendered with **no border** — invisible row separators in trending/leader/roster lists and avatar rings. Found while building P3-030 (also explains the 0px separators seen during N-5 phase-2 verification).
 **Shipped (Kael decision):** `--border-subtle: var(--border-default)` defined once in `:root` (lazy-resolves per theme), restoring the intended light separators app-wide.
+
+### N-11 — Headshot bleeds over the initials/abbr behind it — **[Kael + Vera]** · priority 2 · ✅ SHIPPED 2026-06-21
+**Finding:** NFL avatars rendered initials as raw text under the `.player-headshot` img; the CSS comment promised "hidden by JS once headshot loads" but config.js only had an *error* handler — no *load* handler — so transparent headshot PNGs showed the initials/abbr bleeding through (sloppy).
+**Shipped:** global capture-phase `load` listener in config.js hides the sibling `.avatar-text` when a `.player-headshot` loads; NFL avatar initials (card + both detail heroes) wrapped in `.avatar-text`.
+
+### N-12 — Player stats shown regardless of position — **[Vera + Relay]** · priority 2 · ✅ SHIPPED 2026-06-21
+**Finding:** season + career stat blocks were gated only by a volume threshold, not by position, so off-position lines could surface (e.g. a QB's kicking/scoring row).
+**Shipped:** `_NFL_STAT_POS` map + `_nflStatByPos()` filter applied to season groups (`_loadNFLPlayerStats`) and career categories (`_loadNFLCareer`, now position-aware). A QB shows passing/rushing, a K shows kicking, defenders show defense — falls back to the full set if a filter would empty it.
 
 **Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
 

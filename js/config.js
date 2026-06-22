@@ -99,6 +99,14 @@ if (typeof window !== 'undefined') {
         }
     }, true);
 
+    // When a headshot finishes loading, hide the initials/abbr behind it — a transparent
+    // cutout should never bleed over the fallback text. load doesn't bubble → capture phase.
+    document.addEventListener('load', e => {
+        if (e.target.tagName !== 'IMG' || !e.target.classList.contains('player-headshot')) return;
+        const txt = e.target.parentElement && e.target.parentElement.querySelector('.avatar-text');
+        if (txt) txt.style.visibility = 'hidden';
+    }, true);
+
     window.NBA_TEAM_COLORS    = NBA_TEAM_COLORS;
     window.getTeamColors      = getTeamColors;
     window.getAvatarStyle     = getAvatarStyle;

@@ -204,37 +204,55 @@ async function loadNFLTeams() {
 
 function displayNFLTeams(teams) {
     const grid = document.getElementById('playersGrid');
-    grid.className = 'games-grid';
+    grid.className = '';
+    grid.style.cssText = '';
 
     if (!teams?.length) {
         ErrorHandler.renderEmptyState(grid, 'No NFL team data available', '🏈');
         return;
     }
 
-    const fragment = document.createDocumentFragment();
-    teams.forEach(team => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
-        card.style.cssText = 'cursor:pointer;padding:1.25rem 1rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem;text-align:center;border-top:3px solid ' + team.color + '99';
-        card.onclick = () => navigateTo('nfl-team-' + team.abbr);
-        card.innerHTML = `
-            <div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center">
-                <img src="${team.logo}" alt="${_escHtml(team.shortName)}" style="width:100%;height:100%;object-fit:contain" loading="lazy" data-hide-on-error>
-            </div>
-            <div style="font-weight:800;font-size:0.88rem;color:var(--text-primary)">${_escHtml(team.shortName)}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted)">${_escHtml(team.abbr)}</div>
-            ${team.record ? `<div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">${_escHtml(team.record)}</div>` : ''}
-        `;
-        fragment.appendChild(card);
+    const confs = { AFC: { East: [], North: [], South: [], West: [] }, NFC: { East: [], North: [], South: [], West: [] } };
+    const other = [];
+    teams.forEach(t => {
+        const d = _NFL_DIVISIONS[t.abbr];
+        if (!d) { other.push(t); return; }
+        const [conf, div] = d.split(' ');
+        (confs[conf] && confs[conf][div] ? confs[conf][div] : other).push(t);
     });
-    grid.innerHTML = '';
-    if (_nflIsOffseason() && teams.every(t => !t.record)) {
-        const note = document.createElement('div');
-        note.className = 'nfl-teams-note';
-        note.textContent = `Records show 0–0 until the ${NFL_FANTASY_SEASON} season starts.`;
-        grid.appendChild(note);
+
+    const card = t => `
+        <button class="team-pick" style="--team:${t.color || 'var(--accent)'}" onclick="navigateTo('nfl-team-${t.abbr}')">
+            <img class="team-pick__logo" src="${t.logo}" alt="${_escHtml(t.shortName)}" loading="lazy" data-hide-on-error>
+            <span class="team-pick__name">${_escHtml(t.shortName)}</span>
+            <span class="team-pick__abbr">${_escHtml(t.abbr)}${t.record ? ' · ' + _escHtml(t.record) : ''}</span>
+        </button>`;
+
+    const divOrder = ['East', 'North', 'South', 'West'];
+    const confHtml = conf => `
+        <section class="teams-conf">
+            <h2 class="teams-conf__title">${conf}</h2>
+            <div class="teams-divs">
+                ${divOrder.map(div => {
+                    const list = (confs[conf][div] || []).slice().sort((a, b) => (a.shortName || '').localeCompare(b.shortName || ''));
+                    if (!list.length) return '';
+                    return `<div class="teams-div">
+                        <h3 class="teams-div__title">${conf} ${div}</h3>
+                        <div class="teams-div__list">${list.map(card).join('')}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </section>`;
+
+    const offNote = (_nflIsOffseason() && teams.every(t => !t.record))
+        ? `<div class="nfl-teams-note">Records show 0–0 until the ${NFL_FANTASY_SEASON} season starts.</div>` : '';
+
+    let html = `<div class="teams-page">${offNote}${confHtml('AFC')}${confHtml('NFC')}`;
+    if (other.length) {
+        html += `<section class="teams-conf"><h2 class="teams-conf__title">Other</h2><div class="teams-div__list" style="max-width:280px">${other.map(card).join('')}</div></section>`;
     }
-    grid.appendChild(fragment);
+    html += '</div>';
+    grid.innerHTML = html;
 }
 
 // ── Display: Scores ───────────────────────────────────────────
@@ -537,7 +555,7 @@ function _createNFLPlayerCard(p) {
             ${rankBadge}
             <div class="player-avatar nfl-pos-grad" style="--pc:${posColor}">
                 ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                ${initials}
+                <span class="avatar-text">${initials}</span>
             </div>
             <div class="player-name">${_escHtml(p.full_name)}</div>
             <div class="player-team">${p.team ? _escHtml(p.team) + ' · ' : ''}${_escHtml(pos)}${p.number ? ' · #' + p.number : ''}</div>
@@ -808,7 +826,7 @@ function _renderNFLPlayerDetail(p) {
             </div>
             <div class="player-hero">
                 <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
-                    ${headshotImg}${initials}
+                    ${headshotImg}<span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
@@ -867,8 +885,25 @@ function _nflChangeDetailSeason(season) {
     if (_nflDetailPlayer) { _loadNFLPlayerStats(_nflDetailPlayer, season); _loadNFLAdvanced(_nflDetailPlayer, season); }
 }
 
+// Stat groups/categories that make sense per position — a QB never shows kicking,
+// a kicker never shows receiving. Falls back to the full set if filtering empties it.
+const _NFL_STAT_POS = {
+    QB:['passing','rushing'],
+    RB:['rushing','receiving'], FB:['rushing','receiving'],
+    WR:['receiving','rushing'], TE:['receiving','rushing'],
+    K:['kicking','scoring'],
+    DL:['defense','defensive'], DE:['defense','defensive'], DT:['defense','defensive'], NT:['defense','defensive'],
+    LB:['defense','defensive'], DB:['defense','defensive'], CB:['defense','defensive'], S:['defense','defensive'],
+};
+function _nflStatByPos(items, pos, keyOf) {
+    const allow = _NFL_STAT_POS[pos];
+    if (!allow) return items;
+    const f = items.filter(x => allow.includes(keyOf(x)));
+    return f.length ? f : items;
+}
+
 // Career year-by-year table (ESPN /api/nflcareer) — season-independent.
-async function _loadNFLCareer(espnId) {
+async function _loadNFLCareer(espnId, pos) {
     if (!espnId) return;
     const host = document.getElementById('nfl-career');
     if (!host) return;
@@ -884,7 +919,7 @@ async function _loadNFLCareer(espnId) {
         if (!data.found || !data.categories || !data.categories.length) return;
         if (!document.body.contains(host)) return;
 
-        const tables = data.categories.map(c => {
+        const tables = _nflStatByPos(data.categories, pos, c => c.name).map(c => {
             const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">SZN</th><th style="text-align:left">TM</th>` +
                 (c.labels || []).map(l => `<th>${_escHtml(l)}</th>`).join('');
             const rows = (c.seasons || []).map(sn => `<tr onclick="_nflCareerRowClick('${sn.year}')" style="cursor:pointer">
@@ -935,11 +970,12 @@ async function _loadNFLPlayerStats(p, season) {
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (data.espnId) _loadNFLGameLog(data.espnId, season);
-        if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId); }
+        if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId, p.position); }
         if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name); return; }
         if (!document.body.contains(host)) return;  // user navigated away
 
-        const groupsHtml = data.groups.map(g => {
+        const _statPos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
+        const groupsHtml = _nflStatByPos(data.groups, _statPos, g => g.key).map(g => {
             const color = _NFL_STAT_GROUP_COLOR[g.key] || 'var(--accent)';
             const chips = g.stats.map(([l, v]) =>
                 `<div style="text-align:center;min-width:54px">
@@ -1455,7 +1491,7 @@ async function showNFLEspnPlayer(espnId) {
             </div>
             <div class="player-hero">
                 <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
-                    ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}${initials}
+                    ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}<span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">
                     <div class="player-hero-top">
@@ -1474,7 +1510,7 @@ async function showNFLEspnPlayer(espnId) {
         <div id="nfl-gamelog"></div>
         <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
     `;
-    _loadNFLCareer(espnId);
+    _loadNFLCareer(espnId, (prof && prof.pos) || '');
     if (years.length) _loadNFLGameLog(espnId, _nflEspnSeason);
 }
 
