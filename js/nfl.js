@@ -14,6 +14,40 @@ const NFL_FANTASY_SEASON     = (_nflNow.getMonth() + 1 >= 3) ? _nflNow.getFullYe
 const NFL_LEADERS_MIN_SEASON = 2000;  // ESPN core-API leaders depth
 const NFL_NGS_MIN_SEASON     = 2016;  // Next Gen Stats depth
 
+// ── Offseason state (P3-029) ──────────────────────────────────
+// Mar–Aug is unambiguously offseason; Sep–Feb covers regular season + playoffs.
+// A schedule (Scores) and the fantasy surfaces stay populated year-round, so the
+// offseason component is a fallback for genuinely-empty surfaces, not a gate.
+function _nflIsOffseason() {
+    const m = new Date().getMonth() + 1;
+    return m >= 3 && m <= 8;
+}
+
+const _NFL_OFFSEASON_GLYPH = '<svg class="nfl-offseason-glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5.6" transform="rotate(-45 12 12)"/><path d="M8.5 8.5l7 7M10.6 7.4l1.4 1.4M7.4 10.6l1.4 1.4"/></svg>';
+
+function _nflOffseasonState(surface) {
+    const copy = {
+        standings: `Standings populate once the ${NFL_FANTASY_SEASON} regular season is underway. Until kickoff in September, browse the upcoming schedule and all 32 teams.`,
+        scores:    `No games on the board right now. The ${NFL_FANTASY_SEASON} schedule appears here the moment the league releases it — until then, get a head start on the draft.`,
+        generic:   `Live ${NFL_FANTASY_SEASON} data returns when the regular season kicks off in September. In the meantime, the fantasy tools are open year-round.`,
+    };
+    const actions = {
+        standings: `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-games')">View schedule</button>
+            <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
+        scores:    `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-mock')">Mock draft</button>
+            <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
+        generic:   `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-players')">Browse players</button>
+            <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-rankings')">Rankings</button>`,
+    };
+    const s = copy[surface] ? surface : 'generic';
+    return `<div class="nfl-offseason">
+        ${_NFL_OFFSEASON_GLYPH}
+        <h2 class="nfl-offseason-title">NFL is in the offseason</h2>
+        <p class="nfl-offseason-text">${copy[s]}</p>
+        <div class="nfl-offseason-actions">${actions[s]}</div>
+    </div>`;
+}
+
 // ── Fetch helper ──────────────────────────────────────────────
 
 async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM) {
@@ -194,6 +228,12 @@ function displayNFLTeams(teams) {
         fragment.appendChild(card);
     });
     grid.innerHTML = '';
+    if (_nflIsOffseason() && teams.every(t => !t.record)) {
+        const note = document.createElement('div');
+        note.className = 'nfl-teams-note';
+        note.textContent = `Records show 0–0 until the ${NFL_FANTASY_SEASON} season starts.`;
+        grid.appendChild(note);
+    }
     grid.appendChild(fragment);
 }
 
@@ -223,7 +263,11 @@ function displayNFLGames(games) {
     grid.className = 'games-grid';
 
     if (!games?.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL games this week — the NFL season runs September through February.', '🏈');
+        grid.className = '';
+        grid.innerHTML = _nflIsOffseason()
+            ? _nflOffseasonState('scores')
+            : '';
+        if (!_nflIsOffseason()) ErrorHandler.renderEmptyState(grid, 'No NFL games scheduled right now.', '🏈');
         return;
     }
 
@@ -298,15 +342,7 @@ function displayNFLStandings(rows) {
     grid.innerHTML = '';
 
     if (!rows?.length) {
-        grid.innerHTML = `<div class="nfl-offseason">
-            <svg class="nfl-offseason-glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5.6" transform="rotate(-45 12 12)"/><path d="M8.5 8.5l7 7M10.6 7.4l1.4 1.4M7.4 10.6l1.4 1.4"/></svg>
-            <h2 class="nfl-offseason-title">NFL is in the offseason</h2>
-            <p class="nfl-offseason-text">Standings populate once the ${NFL_FANTASY_SEASON} regular season is underway. Until kickoff in September, browse the upcoming schedule and all 32 teams.</p>
-            <div class="nfl-offseason-actions">
-                <button class="nfl-offseason-btn" onclick="navigateTo('nfl-games')">View schedule</button>
-                <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>
-            </div>
-        </div>`;
+        grid.innerHTML = _nflOffseasonState('standings');
         return;
     }
 

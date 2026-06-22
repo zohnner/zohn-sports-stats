@@ -3613,6 +3613,44 @@ a:focus:not(:focus-visible),
     background: var(--accent); color: var(--text-on-accent); cursor: pointer;
 }
 .nfl-offseason-btn--ghost { background: transparent; color: var(--accent); }
+.nfl-offseason-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Teams offseason annotation (P3-029) */
+.nfl-teams-note {
+    grid-column: 1 / -1;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    padding: 0 0.25rem 0.6rem;
+}
+
+/* Cross-surface offseason strip (P3-029) */
+.nfl-offseason-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.85rem;
+    background: var(--accent-subtle);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.nfl-offseason-strip__msg { flex: 1; line-height: 1.45; }
+.nfl-offseason-strip__link {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--accent); font-weight: 700; font-size: inherit;
+}
+.nfl-offseason-strip__link:hover { text-decoration: underline; }
+.nfl-offseason-strip__link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.nfl-offseason-strip__close {
+    flex-shrink: 0;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 0.85rem; line-height: 1;
+    padding: 0.25rem;
+}
+.nfl-offseason-strip__close:hover { color: var(--text-primary); }
+.nfl-offseason-strip__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 /* ── NFL Mock Draft simulator ──────────────────────────────── */
 .md-wrap { max-width: 1100px; margin: 0 auto; }

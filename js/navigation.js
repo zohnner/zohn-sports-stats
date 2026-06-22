@@ -478,10 +478,47 @@ function _renderMLBView(view) {
     }
 }
 
+// Cross-surface offseason signal (P3-029): one strip pointing users to the
+// surfaces that work year-round. Session-dismissible, re-surfaces next session.
+const _NFL_STRIP_VIEWS = new Set(['nfl-players', 'nfl-leaders', 'nfl-trending', 'nfl-rankings', 'nfl-teams', 'nfl-standings', 'nfl-games']);
+
+function _syncNFLOffseasonStrip(view) {
+    document.getElementById('nflOffseasonStrip')?.remove();
+    if (!_NFL_STRIP_VIEWS.has(view)) return;
+    if (typeof _nflIsOffseason !== 'function' || !_nflIsOffseason()) return;
+    if (sessionStorage.getItem('ss_nfl_offseason_dismissed') === '1') return;
+
+    const main = document.querySelector('main');
+    const grid = document.getElementById('playersGrid');
+    if (!main || !grid) return;
+
+    const strip = document.createElement('div');
+    strip.id = 'nflOffseasonStrip';
+    strip.className = 'nfl-offseason-strip';
+    strip.setAttribute('role', 'status');
+    strip.setAttribute('aria-live', 'polite');
+    strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is between seasons — live scores &amp; standings return in September. Open year-round:
+            <button class="nfl-offseason-strip__link" data-view="nfl-players">Players</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-leaders">2025 Leaders</button></span>
+        <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">✕</button>`;
+    main.insertBefore(strip, grid);
+
+    strip.querySelector('.nfl-offseason-strip__close').addEventListener('click', () => {
+        sessionStorage.setItem('ss_nfl_offseason_dismissed', '1');
+        strip.remove();
+    });
+    strip.querySelectorAll('.nfl-offseason-strip__link').forEach(b => {
+        b.addEventListener('click', () => navigateTo(b.dataset.view));
+    });
+}
+
 function _renderNFLView(view) {
     const viewCount = document.getElementById('viewResultCount');
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    _syncNFLOffseasonStrip(view);
 
     if (view.startsWith('nfl-player-espn-')) {
         if (viewCount) viewCount.textContent = 'NFL Player';
@@ -886,6 +923,7 @@ function _applySportUI(sport) {
     const brandSub  = document.getElementById('brandSub');
     if (brandIcon) brandIcon.textContent = icon;
     if (brandSub)  brandSub.textContent  = sub;
+    if (sport !== 'nfl') document.getElementById('nflOffseasonStrip')?.remove();
     const tickerScoresBtn = document.getElementById('tickerScoresBtn');
     if (tickerScoresBtn) tickerScoresBtn.dataset.view = (sport === 'nba' ? 'games' : `${sport}-games`);
     _renderSubNav(sport);

@@ -98,6 +98,41 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 **All three gates present. Implementation approved.**
 ---
 
+## P3-029 — NFL Offseason & Empty-State Unification — Three Gates
+**Contributors:** Vera (behavioral, lead), Kael (visual), Axiom (feasibility) | **Date:** 2026-06-21
+
+**Trigger (UX, owner request):** During the ~7-month NFL offseason (now), the nine NFL surfaces answer the same user question — "is there anything worth my time here right now?" — three different ways. Standings renders a designed offseason hero (`.nfl-offseason`) with CTAs. Scores falls through to a flat one-line `ErrorHandler.renderEmptyState` ("No NFL games this week…"). Teams renders 32 record-less cards with no explanation of why every record is blank. Meanwhile Players, Rankings, Leaders (2025 finals), Trending, Mock Draft, and Compare all work year-round and never say so. A first-timer who lands on Scores or Standings can reasonably conclude the whole beta is dead and bounce — before discovering the five surfaces that deliver. This is a trust + discoverability failure, squarely Vera's domain: empty states are the real design, and consistency is a feature.
+
+**Behavioral spec (Vera):**
+- **Job-to-be-done (offseason):** "I came for NFL — is anything live, and where do I go that works today?" Every surface must answer in <10s, not just Standings.
+- **One shared empty/offseason component** replaces the three divergent treatments. It always answers three things: what the surface shows in-season, why it's empty now, and where to go that has data today (real CTAs to Players / Rankings / Mock Draft / 2025 Leaders).
+- **States, specified for every NFL surface:** loading = existing skeleton shimmer (keep); live-season default = existing renders (no change); offseason (legitimately empty, pre-kickoff) = shared offseason component, copy parameterized per surface; empty-but-should-have-data (Leaders returns no categories, Sleeper pool empty) = a distinct "unavailable right now" message that must NOT wear the offseason skin (a fetch failure is not the offseason; dressing a fault as a schedule hides a real bug); error = existing `ErrorHandler.handle` with retry (keep).
+- **Per-surface offseason copy:** Scores — "No NFL games until Week 1 kicks off in September…" (see Axiom's schedule-vs-empty check); Standings — keep current hero copy, routed through the shared component; Teams — do NOT hide the grid (rosters/logos have offseason value); add one muted line above it: "Records show 0–0 until the {NFL_FANTASY_SEASON} season starts."
+- **Cross-surface offseason strip:** slim, non-blocking, top of NFL content while the season model reports offseason; "NFL is between seasons — live scores & standings return in September. Open year-round: Players · Rankings · Mock Draft · 2025 Leaders." Dismiss is **session-scoped** (`sessionStorage` `ss_nfl_offseason_dismissed`), not permanent — the offseason is the dominant state for 7 months, so re-surfacing once per session is correct.
+- **Interactive states:** CTAs reuse `.nfl-offseason-btn` with visible `:hover`, `:focus-visible` (2px accent outline — gap to close), keyboard reachability. Strip dismiss: `aria-label="Dismiss offseason notice"`, focusable, non-modal. Strip is `role="status"` / `aria-live="polite"`. Glyph `aria-hidden`, title a real `<h2>`, color never the sole signal. No dead-end empty state on any surface.
+
+**Visual spec (Kael):** Promote the existing `.nfl-offseason` block (`main.css`) to the canonical shared component — no second look. Tokens only (`--text-subtle` glyph, `--text-primary`/`--font-display` title, `--text-secondary` body, `.nfl-offseason-btn` accent + ghost). The cross-surface strip reuses the first-visit value-strip visual language (`--accent-subtle` bg, 1px accent border, ~40px) so it reads as the same family. Teams line: `--text-muted` 0.74rem inline caption. Add the missing `:focus-visible` ring to `.nfl-offseason-btn`. **Confidence flag:** not screenshotted against the live deploy — most NFL work is "pending push," so live trails source; sign-off is against current source + token system. Run `/screenshot` post-implementation before final visual sign-off.
+
+**Feasibility (Axiom):** Confirmed — no architecture changes. Season-model values already exist in `nfl.js`. Add one `_nflOffseasonState({surface})` helper called from `displayNFLGames`, `displayNFLStandings` (replacing the inline hero), and the Teams annotation — *removes* duplicated markup. Strip renders on NFL view entry / `_applySportUI('nfl')`, guarded by `sessionStorage` + the offseason flag, reusing the `ss_welcomed` first-visit wiring. No new CSP domains, no new fetches, no new files; `sw.js` STATIC_ASSETS unaffected. Verify: `node --check` + `/screenshot` + keyboard pass.
+- **Open check before Finn wires (flagged, <90% confident):** Scores in offseason may already render the 2026 Week-1 schedule (D-013) rather than empty. Show the schedule when present; fall to the offseason component only when genuinely empty. Confirm which path fires before implementing.
+
+**All three gates present. Implementation approved** — Finn may implement after confirming the Scores schedule-vs-empty path above. No silent fixes; gaps return here as named entries.
+
+**Finn — implementation | Date: 2026-06-21**
+
+*Open check resolved first:* hit ESPN `/scoreboard` live — in the offseason it returns the **2026 Week 1 regular-season schedule** (NE @ SEA, TB @ CIN, NO @ DET… season type 2, week 1, dated Sep 9–13). So Scores is populated, not empty. I did **not** replace the Scores schedule with an offseason card — the offseason component is only its empty *fallback*. Axiom's flag was correct to catch this.
+
+*What shipped:*
+- `js/nfl.js` — new `_nflIsOffseason()` (Mar–Aug) + `_nflOffseasonState(surface)` helper (promotes the old inline Standings hero to one reusable component, per-surface copy/CTAs). Standings empty → `_nflOffseasonState('standings')` (visually identical, now shared). Scores empty fallback → offseason card in offseason, plain empty-state otherwise (schedule path untouched). Teams → muted `.nfl-teams-note` caption above the grid in offseason when all records are blank.
+- `js/navigation.js` — `_syncNFLOffseasonStrip(view)` renders the session-dismissible cross-surface strip above `#playersGrid` on the 7 NFL list views during offseason; removed on non-NFL sport switch in `_applySportUI`. `sessionStorage` key `ss_nfl_offseason_dismissed`.
+- `css/main.css` — `.nfl-offseason-btn:focus-visible` ring (Kael's gap), `.nfl-teams-note`, `.nfl-offseason-strip` (reuses `--accent-subtle`/`--accent-border`). All tokens confirmed present in `variables.css`.
+
+*Verification:* new code passes `node --check` + logic exercised (offseason=true for June, all surface states + generic fallback render, strip set = 7 views); every edited region balanced; `.games-grid` confirmed `display:grid` so the note spans. **Not done — live browser render:** the live deploy trails source (NFL work pending push), so `/screenshot` end-to-end wasn't run. Recommend an owner/Axiom `/syntax-check` + `/screenshot` pass on the real working tree before push.
+
+*Escalation:* none blocking. One judgment call for Kael/Vera: the strip shows on all 7 list views including the year-round ones (Players/Rankings/Trending) where it's slightly redundant. Kept per Vera's "any surface" spec; flagging in case you'd rather scope it to the emptier surfaces (Scores/Standings/Teams). — Finn
+
+---
+
 ## Design Issues
 
 ### WCAG Audit Results — mlb-player-{id} (Priority 1)
