@@ -637,3 +637,15 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 **Feasibility (Axiom):** data-driven configs (`SPORTS`, category-grouped sub-nav) + a dropdown render/controller in `navigation.js`; switcher binding moves to event delegation (was direct-bound) so N sports work. `.nav-tab`+`data-view` contract and 3-row header intact. **Phased build to contain blast radius (nav is the backbone):** P1 — scalable prominent switcher + context-aware search (no structural change); P2 — desktop category dropdowns; P3 (deferred) — Explore/sidebar/hubs. Each phase = own commit + `/screenshot` verify.
 
 **Gate status:** Vera ✅ · Kael ✅ · Axiom ✅. **P1 shipped 2026-06-21** (this commit). P2 next.
+
+## D-027 — Mock Draft "next level" (differentiator) — ACCEPTED + SHIPPED 2026-06-21
+**Owner:** "set us apart from other NFL fantasy/stat sites; take the mock draft to the next level" — picked all four upgrades. Vera/Kael/Axiom/Relay. Supersedes the spirit of D-021 (drag-drop board proposal).
+
+**Shipped (all client-side in `js/fantasy.js` + `.md-*` CSS):**
+- **Draft Assistant** — real-time recommended pick + one-line reasoning blending value-vs-current-pick, lineup-aware need, tier scarcity, and Monte-Carlo survival; shown as a banner + ★ on the row. The standout differentiator (builds on the MC few free tools have).
+- **Tiers + cliffs** — per-position ADP-gap tiers; list shows the tier and "N left in tier" with cliff urgency.
+- **Format awareness** — Superflex (2-QB) + scoring (PPR/Half/Standard) now actually shift value, AI behavior, and needs via a documented position-multiplier heuristic; lineup-aware needs (starters → FLEX → bench). Previously scoring was a dead control.
+- **Full draft board** — Players/Board toggle; all-teams × rounds snake grid with your column highlighted; also viewable post-draft.
+- **Deep post-draft analysis** — projected finish vs league, positional-strength rank, best value / biggest reach, lineup-gap check (the old letter grade is kept as a sub-stat).
+
+**Data reality (Relay):** Sleeper ADP only → tiers/value/need/Monte-Carlo are real; scoring/Superflex value is a labeled heuristic weighting, not fabricated projections. Future: a ToS-clean projections source would upgrade value/VORP. Verify on the `nfl-mock` route.

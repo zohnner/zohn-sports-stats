@@ -3726,6 +3726,51 @@ a:focus:not(:focus-visible),
 .md-fr-row { font-size: 0.78rem; color: var(--text-secondary); padding: 1px 0; }
 @media (max-width: 760px) { .md-draft-grid { grid-template-columns: 1fr; } .md-roster { order: -1; } }
 
+/* Mock Draft next-level (D-027) */
+.md-check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); }
+.md-check input { width: 15px; height: 15px; accent-color: var(--accent); }
+.md-head-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.md-viewtoggle { display: inline-flex; gap: 2px; padding: 2px; background: var(--bg-raised); border: 1px solid var(--border-mid); border-radius: var(--radius-full); }
+.md-vt { font-size: 0.74rem; font-weight: 700; padding: 3px 12px; border: none; background: transparent; color: var(--text-secondary); border-radius: var(--radius-full); cursor: pointer; }
+.md-vt--on { background: var(--accent); color: var(--text-on-accent); }
+
+.md-rec { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.9rem; padding: 0.7rem 0.9rem; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--bg-card)), var(--bg-card)); border: 1px solid var(--accent-border); border-radius: var(--radius-md); cursor: pointer; }
+.md-rec:hover { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--bg-card)), var(--bg-card)); }
+.md-rec-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.md-rec-body { flex: 1; min-width: 0; font-size: 0.9rem; color: var(--text-primary); }
+.md-rec-pos { font-weight: 800; font-size: 0.72rem; margin-right: 0.3rem; }
+.md-rec-why { display: block; font-size: 0.74rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.md-rec-draft { flex-shrink: 0; }
+
+.md-tier { font-size: 0.62rem; font-weight: 700; color: var(--text-subtle); width: 26px; text-align: center; flex-shrink: 0; }
+.md-cliff { font-size: 0.62rem; font-weight: 800; color: var(--color-live, #f59e0b); flex-shrink: 0; white-space: nowrap; }
+.md-row--rec { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+.md-board { overflow: auto; max-height: 64vh; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.md-board-scroll { min-width: max-content; }
+.md-bd-row { display: flex; }
+.md-bd-head { position: sticky; top: 0; z-index: 1; }
+.md-bd-rd { width: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 800; color: var(--text-subtle); background: var(--bg-raised); border-bottom: 1px solid var(--border-default); }
+.md-bd-cell { width: 92px; flex-shrink: 0; padding: 0.3rem 0.4rem; font-size: 0.7rem; border-bottom: 1px solid var(--border-default); border-right: 1px solid var(--border-default); overflow: hidden; }
+.md-bd-th { font-weight: 800; color: var(--text-secondary); background: var(--bg-raised); text-align: center; }
+.md-bd-me { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.md-bd-th.md-bd-me { color: var(--accent); }
+.md-bd-empty { min-height: 30px; }
+.md-bd-pos { font-weight: 800; font-size: 0.6rem; margin-right: 0.25rem; }
+.md-bd-name { color: var(--text-primary); }
+
+.md-analysis { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 1.25rem 0; text-align: left; }
+.md-an-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.8rem; }
+.md-an-card h3 { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--text-primary); }
+.md-an-pos { display: flex; flex-direction: column; gap: 0.25rem; }
+.md-an-prow { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; }
+.md-an-rank { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.md-an-line { font-size: 0.8rem; color: var(--text-secondary); margin: 0.35rem 0; line-height: 1.4; }
+.md-an-tag { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: var(--radius-full); margin-right: 0.4rem; }
+.md-an-tag--good { color: var(--color-win); background: var(--color-win-subtle, color-mix(in srgb, var(--color-win) 14%, transparent)); }
+.md-an-tag--bad { color: var(--color-loss); background: var(--color-loss-subtle, color-mix(in srgb, var(--color-loss) 14%, transparent)); }
+@media (max-width: 560px) { .md-analysis { grid-template-columns: 1fr; } }
+
 
 /* ── Nav categorization (D-022) — grouped sub-nav labels, menu section headers, mobile More ── */
 .sub-nav-group {
