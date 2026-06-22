@@ -535,7 +535,7 @@ function _createNFLPlayerCard(p) {
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)})">
+            <div class="player-avatar nfl-pos-grad" style="--pc:${posColor}">
                 ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
             </div>
@@ -817,7 +817,7 @@ function _renderNFLPlayerDetail(p) {
                 <button class="share-btn" onclick="window._shareCurrentPage && window._shareCurrentPage()" title="Copy link">Share</button>
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)});color:#fff;font-size:2.5rem;font-weight:800">
+                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
                     ${headshotImg}${initials}
                 </div>
                 <div class="player-hero-info">
@@ -1380,7 +1380,7 @@ async function showNFLEspnPlayer(espnId) {
                 ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${_nflAlpha(posColor, 80)},${_nflAlpha(posColor, 33)});color:#fff;font-size:2.5rem;font-weight:800">
+                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
                     ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}${initials}
                 </div>
                 <div class="player-hero-info">
