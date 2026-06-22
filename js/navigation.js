@@ -38,8 +38,10 @@ function setupNavigation() {
         const t = e.target.closest('.nav-tab[data-view]');
         if (t) { navigateTo(t.dataset.view); _closeMenu(); }
     });
-    document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
-        b.addEventListener('click', () => switchSport(b.dataset.sport));
+    // Delegated so a re-rendered (data-driven) switcher keeps working — D-026.
+    document.querySelector('.sport-switch')?.addEventListener('click', e => {
+        const b = e.target.closest('.sport-switch-btn[data-sport]');
+        if (b) switchSport(b.dataset.sport);
     });
 
     initMenu();
@@ -923,6 +925,30 @@ function _renderBottomNav(sport) {
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }
 
+// Data-driven sport switcher (D-026) — add a sport by adding one entry here.
+// Only functional sports are listed: NBA waits on P1-006 (BDL key), NHL on
+// promotion from preview — surfacing a broken sport tab is worse than omitting it.
+const SPORTS = [
+    { id: 'mlb', label: 'MLB' },
+    { id: 'nfl', label: 'NFL' },
+];
+
+function _renderSportSwitch(sport) {
+    const wrap = document.getElementById('sportSwitch') || document.querySelector('.sport-switch');
+    if (!wrap) return;
+    wrap.innerHTML = SPORTS.map(s => {
+        const on = s.id === sport;
+        return `<button class="sport-switch-btn${on ? ' sport-switch-btn--active' : ''}" data-sport="${s.id}" aria-pressed="${on}">${s.label}</button>`;
+    }).join('');
+}
+
+function _applySportSearchPlaceholder(sport) {
+    const label = (SPORTS.find(s => s.id === sport) || {}).label || '';
+    const ph = label ? `Search ${label} players, teams, stats…` : 'Search players, teams, stats…';
+    const box = document.getElementById('searchBox'); if (box) box.placeholder = ph;
+    const modal = document.getElementById('searchModalInput'); if (modal) modal.placeholder = ph;
+}
+
 function _applySportUI(sport) {
     const brands = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
     const [icon, sub] = brands[sport] || brands.mlb;
@@ -936,11 +962,8 @@ function _applySportUI(sport) {
     _renderSubNav(sport);
     _renderBottomNav(sport);
     _renderMenuPanel(sport);
-    document.querySelectorAll('.sport-switch-btn[data-sport]').forEach(b => {
-        const on = b.dataset.sport === sport;
-        b.classList.toggle('sport-switch-btn--active', on);
-        b.setAttribute('aria-pressed', String(on));
-    });
+    _renderSportSwitch(sport);
+    _applySportSearchPlaceholder(sport);
 }
 
 // ── Utility ──────────────────────────────────────────────────

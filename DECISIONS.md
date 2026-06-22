@@ -615,3 +615,25 @@ Desktop sub-nav: flat row with small uppercase group labels acting as separators
 1. Slider profile as the hero (recommended), or add a radar/spider chart too?
 2. Metric depth — fantasy-relevant only, or full NGS depth?
 3. Build now, or after the D-024 news feed?
+
+## D-026 — Navigation IA v2: category dropdowns + scalable multi-sport switcher — ACCEPTED (build)
+**Owner-approved 2026-06-21:** "more sports coming" + "full category-dropdown reorg now." Supersedes the deferred scope of D-022 (which parked dropdowns/hubs until a 3rd live sport). Vera (lead), Kael, Axiom.
+
+**Why now.** Owner confirmed NBA/NHL (and possibly NCAA) are on the roadmap — the trigger D-022 named. The flat per-sport run of ~10 buttons mixes object types (Players/Teams), analytics (Leaders/Stats), fantasy (Rankings/ADP/Mock Draft) and tools (Compare); it won't scale to N sports.
+
+**Sport switcher = primary context.** Promote from the small filter-style pill to the primary "what am I browsing" control: a prominent segmented switcher, **data-driven from a `SPORTS` config** (one entry per sport). Only *functional* sports show — MLB, NFL today; **NBA gated until P1-006 (BDL key) is restored, NHL until promoted from preview** (don't surface broken sport tabs). Switching sport swaps the secondary nav + search context.
+
+**Top-level categories (parents); contents vary by sport, identical order:**
+- **Players · Teams · Standings · News** — direct
+- **Analytics ▾** — Leaders, Compare, (MLB: Builder, Prep)
+- **Fantasy ▾** (sports that have it; NFL today) — Rankings, Mock Draft, Trending
+- Scores stays on the ticker SCORES button (per D-022)
+Deferred until they have real content: an **Explore** hub, a sidebar, section landing pages. No empty "coming soon" menus (no Trade Analyzer/DFS/Projections/Sleepers stubs).
+
+**Behavioral spec (Vera):** parents with children open a dropdown (click + desktop hover) with `aria-haspopup`/`aria-expanded`, `role=menu`/`menuitem`, keyboard support (Enter/Space/Arrow/Esc, focus handling, click-outside close); a parent reads active when one of its children is the active view. Direct categories navigate immediately. **Mobile pattern unchanged** — the menu-panel already groups by section (the mobile equivalent of dropdowns); bottom-nav unchanged. Active-state still keys off `.nav-tab[data-view]`. Search placeholder becomes sport-aware on the header box and the ⌘K modal.
+
+**Visual spec (Kael):** prominent segmented switcher (brand-accent active); category parents styled like current sub-nav items with a caret where a menu exists; dropdown panel reuses menu-panel/card tokens; no new colors; **3-row header height preserved** (switcher stays in row 1 — no new row, so JS scroll offsets are untouched).
+
+**Feasibility (Axiom):** data-driven configs (`SPORTS`, category-grouped sub-nav) + a dropdown render/controller in `navigation.js`; switcher binding moves to event delegation (was direct-bound) so N sports work. `.nav-tab`+`data-view` contract and 3-row header intact. **Phased build to contain blast radius (nav is the backbone):** P1 — scalable prominent switcher + context-aware search (no structural change); P2 — desktop category dropdowns; P3 (deferred) — Explore/sidebar/hubs. Each phase = own commit + `/screenshot` verify.
+
+**Gate status:** Vera ✅ · Kael ✅ · Axiom ✅. **P1 shipped 2026-06-21** (this commit). P2 next.
