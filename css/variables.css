@@ -9,6 +9,7 @@
     --bg-base:            #060c18;
     --bg-surface:         #0c1629;
     --bg-raised:          #111e38;
+    --bg-elevated:        var(--bg-raised);  /* N-9: referenced across nfl/nhl/css but never defined → rendered transparent. Alias to the raised surface; resolves lazily so it follows each theme's own --bg-raised. */
     --bg-card:            rgba(12, 22, 41, 0.85);
     --bg-card-hover:      rgba(17, 30, 56, 0.95);
     --bg-overlay:         rgba(6, 12, 24, 0.96);
