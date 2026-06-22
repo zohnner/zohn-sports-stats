@@ -2097,6 +2097,22 @@
 .team-pick__name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.86rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .team-pick__abbr { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
 
+/* ── News feed (D-024) ── */
+.news-page { max-width: 760px; margin: 0 auto; }
+.news-page__title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin: 0 0 0.9rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border-mid); }
+.news-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.news-card { display: flex; gap: 0.85rem; text-decoration: none; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.7rem; }
+.news-card:hover { background: var(--bg-card-hover); }
+.news-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.news-card__thumb { width: 104px; height: 68px; flex-shrink: 0; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); }
+.news-card__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.news-card__body { min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.news-card__headline { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); line-height: 1.25; }
+.news-card__desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.news-card__meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; }
+.news-empty { color: var(--text-muted); text-align: center; padding: 2rem; }
+@media (max-width: 560px) { .news-card__thumb { width: 76px; height: 56px; } }
+
 /* ── MLB Game Detail ──────────────────────────────────────── */
 
 /* ── Park factor badges ────────────────────────────────── */

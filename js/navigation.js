@@ -388,6 +388,11 @@ function renderCurrentView(view) {
             loadArcade();
             break;
 
+        case 'news':
+            if (viewCount) viewCount.textContent = 'News';
+            loadNews(AppState.currentSport);
+            break;
+
         default:
             Logger.error(`Unknown view: ${view}`, undefined, 'NAV');
     }
@@ -792,7 +797,7 @@ function _loadFromHash() {
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
         const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
-        const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home'];
+        const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
             _applySportUI('mlb');
@@ -817,7 +822,7 @@ const SUB_NAV_TABS = {
     mlb: [
         { group: 'Stats' },
         { v: 'mlb-players', l: 'Players' }, { v: 'mlb-leaders', l: 'Leaders' },
-        { v: 'mlb-teams', l: 'Teams' }, { v: 'mlb-standings', l: 'Standings' },
+        { v: 'mlb-teams', l: 'Teams' }, { v: 'mlb-standings', l: 'Standings' }, { v: 'news', l: 'News' },
         { group: 'Tools' },
         { v: 'mlb-compare', l: 'Compare' }, { v: 'mlb-builder', l: 'Builder' },
         { v: 'mlb-prep', l: 'Prep' }, { v: 'arcade', l: 'Arcade' },
@@ -825,7 +830,7 @@ const SUB_NAV_TABS = {
     nfl: [
         { group: 'Stats' },
         { v: 'nfl-players', l: 'Players' }, { v: 'nfl-leaders', l: 'Leaders' },
-        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-standings', l: 'Standings' },
+        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-standings', l: 'Standings' }, { v: 'news', l: 'News' },
         { group: 'Fantasy' },
         { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-mock', l: 'Mock Draft' },
         { v: 'nfl-trending', l: 'Trending' },
@@ -863,7 +868,7 @@ const MENU_TABS = {
         { group:'Stats' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
         { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-standings', l:'Standings', i:'standings' },
-        { v:'mlb-games', l:'Scores', i:'scores' },
+        { v:'mlb-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Tools' },
         { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'mlb-builder', l:'Builder', i:'builder' },
         { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
@@ -872,7 +877,7 @@ const MENU_TABS = {
         { group:'Stats' },
         { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
-        { v:'nfl-games', l:'Scores', i:'scores' },
+        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Fantasy' },
         { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
         { v:'nfl-trending', l:'Trending', i:'trending' },
@@ -954,6 +959,7 @@ const _PAGE_META = {
     'mlb-compare':   { title: 'SportStrata — Compare Players', desc: 'Side-by-side MLB player comparison with stat bars and percentile rings.' },
     'mlb-scorecard': { title: 'SportStrata — Game Scorecard',  desc: 'Play-by-play baseball scorecard for any MLB game.' },
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
+    'news':          { title: 'SportStrata — News',           desc: 'Latest NFL and MLB headlines, injuries, and storylines.' },
 };
 
 function _updatePageMeta(view) {

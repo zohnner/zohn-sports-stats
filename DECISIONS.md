@@ -586,6 +586,8 @@ Desktop sub-nav: flat row with small uppercase group labels acting as separators
 2. Is ESPN's insider roster (Schefter et al.) acceptable, or is a *specific* pundit voice (Rapoport) a hard requirement? Only the latter forces the X path (and its costs/risks).
 3. First scope: league-wide, team-scoped, or player-scoped?
 
+**Phase 1 shipped 2026-06-21 (Finn):** ESPN-backed league news, no X. New `functions/api/news.js` (`?sport=nfl|mlb` proxy, edge-cached 10m) + `js/news.js` + a sport-aware **News** view (sub-nav + mobile menu, both sports). Cards show headline + blurb + image + byline + relative timestamp and link out to ESPN in a new tab (copyright-safe). CSP unchanged (same-origin proxy; `a.espncdn.com` images already allowed). Open: team-scoped news on team pages, an injuries surface (ESPN ∪ Sleeper), and a "hot" rail (reuse trending/leaders).
+
 ## D-025 — Competitive NFL player-data display (Savant-style percentile profile) — PROPOSED
 **Raised by:** owner | Recorded by: Finn | Date: 2026-06-21 | Status: proposed — needs owner direction
 
