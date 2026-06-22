@@ -97,6 +97,7 @@ export async function onRequest(context) {
     const cRec = col('receptions'), cRecYd = col('receiving_yards'), cRecTD = col('receiving_tds', 'rec_touchdowns');
     const cFumL = col('fumbles_lost'), cSackFumL = col('sack_fumbles_lost'), cRushFumL = col('rushing_fumbles_lost'), cRecFumL = col('receiving_fumbles_lost');
     const c2pt = col('passing_2pt_conversions');
+    const cGames = col('games', 'g');
 
     if (cName < 0) return json({ found: false, reason: 'no name column', ...(debug ? { _meta: { usedUrl, header: hdr.slice(0, 40) } } : {}) }, 200);
 
@@ -118,12 +119,12 @@ export async function onRequest(context) {
         a.std  += base;
         a.half += base + rec * 0.5;
         a.ppr  += base + rec * 1;
-        // weekly file → count games; season file → one row per player (g stays 0, fixed below)
-        if (cWeek >= 0) a.g += 1;
+        if (cWeek >= 0) a.g += 1;                        // weekly file → count rows
+        else if (cGames >= 0) a.g = Math.max(a.g, num(r, cGames)); // season file → real games column
     }
     let players = Object.values(agg);
     const weekly = cWeek >= 0;
-    if (!weekly) players.forEach(p => { p.g = 17; });   // season-totals file: assume full slate for PPG
+    players.forEach(p => { if (!p.g || p.g < 1) p.g = weekly ? 1 : 17; });
     players = players
         .map(p => ({ name: p.name, pos: p.pos, team: p.team || 'FA', g: p.g || 1,
                      ppr: Math.round(p.ppr * 10) / 10, half: Math.round(p.half * 10) / 10, std: Math.round(p.std * 10) / 10 }))

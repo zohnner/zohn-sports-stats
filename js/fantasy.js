@@ -10,6 +10,46 @@
 let _mdPool = null;
 let _md = null;
 
+// ── Value engine (VBD / VORP) — D-028 ─────────────────────────
+// Transparent: projects last-season production (per-game x 17, format-aware)
+// and values each player OVER positional replacement. Opponents draft to ADP
+// (the crowd); your Assistant drafts to value (the edge).
+let _vbd = null;
+function _vbdKey(name, pos) {
+    return (name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .replace(/[^a-z ]/g,' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'').replace(/\s+/g,' ').trim() + '|' + pos;
+}
+async function _vbdLoad() {
+    if (_vbd) return _vbd;
+    try {
+        const r = await (await fetch('/api/nflfp')).json();
+        const map = {};
+        (r.players || []).forEach(p => { map[_vbdKey(p.name, p.pos)] = p; });
+        _vbd = { season: r.season || null, map, ok: !!(r.found && r.players && r.players.length) };
+    } catch (_) { _vbd = { season: null, map: {}, ok: false }; }
+    return _vbd;
+}
+function _vbdProj(fp, scoring) {
+    if (!fp) return null;
+    const k = scoring === 'Standard' ? 'std' : scoring === 'Half-PPR' ? 'half' : 'ppr';
+    return (fp[k] / (fp.g || 1)) * 17;        // per-game projected over a full season
+}
+function _vbdReplacement(scoring, teams, superflex) {
+    const base = { QB: superflex ? teams * 2 : teams, RB: Math.round(teams * 2.5), WR: Math.round(teams * 2.5), TE: teams };
+    const rep = {};
+    ['QB','RB','WR','TE'].forEach(pos => {
+        const proj = Object.values(_vbd.map).filter(p => p.pos === pos).map(p => _vbdProj(p, scoring)).filter(v => v != null).sort((a,b)=>b-a);
+        const n = Math.max(0, Math.min(proj.length - 1, (base[pos] || teams) - 1));
+        rep[pos] = proj.length ? proj[n] : 0;
+    });
+    return rep;
+}
+function _mdVorp(p) {
+    if (!_md || !_md.rep || !p._fp) return null;
+    const proj = _vbdProj(p._fp, _md.scoring);
+    return proj == null ? null : Math.round(proj - (_md.rep[p.pos] || 0));
+}
+
 const _MD_POS = ['QB', 'RB', 'WR', 'TE', 'K'];
 const _MD_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
 const _MD_FLEX = ['RB', 'WR', 'TE'];
@@ -27,6 +67,8 @@ async function _mdFetchPool() {
         .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
     _mdPool.forEach((p, i) => { p.adp = i + 1; });  // dense ADP (search_rank has ties)
     _mdAssignTiers(_mdPool);
+    await _vbdLoad();
+    _mdPool.forEach(p => { p._fp = _vbd.map[_vbdKey(p.name, p.pos)] || null; });
     return _mdPool;
 }
 
@@ -147,6 +189,7 @@ function _mdStart(cfg) {
         rosters: Array.from({ length: cfg.teams }, () => []),
         view: 'players',
     };
+    _md.rep = (_vbd && _vbd.ok) ? _vbdReplacement(_md.scoring, _md.teams, _md.superflex) : null;
     _mdAdvance();
 }
 
@@ -228,13 +271,15 @@ function _mdRecommend(surv) {
         const valueVsPick = (_md.overall + 1) - p.adp;     // + = sliding past ADP (value)
         const sv = surv[p.id];
         const tierLeft = _mdTierLeft(p);
+        const vorp = _mdVorp(p);
         let score = 0;
         score += -_mdAdjRank(p) * 0.04;                    // raw quality
+        if (vorp != null) score += vorp * 0.06;            // value over replacement (the edge)
         score += need * 4;                                 // roster need
         score += Math.max(0, valueVsPick) * 0.45;          // value falling to you
         if (sv != null) score += (100 - sv) * 0.045;       // scarcity (won't last)
         if (tierLeft <= 2) score += (3 - tierLeft) * 2.5;  // tier-cliff urgency
-        return { p, score, need, sv, tierLeft, valueVsPick };
+        return { p, score, need, sv, tierLeft, valueVsPick, vorp };
     }).filter(Boolean).sort((a, b) => b.score - a.score);
     return scored[0] || null;
 }
@@ -249,6 +294,7 @@ function _mdRecReason(rec) {
     if (rec.sv != null && rec.sv <= 45) r.push(`only ${rec.sv}% to return at your next pick`);
     if (rec.tierLeft <= 2) r.push(rec.tierLeft <= 1 ? `last in the ${rec.p.pos} tier` : `only ${rec.tierLeft} left in this ${rec.p.pos} tier`);
     if (rec.valueVsPick >= 6) r.push(`slipping ${rec.valueVsPick} spots past ADP`);
+    if (rec.vorp != null && rec.vorp >= 12) r.unshift(`+${rec.vorp} pts over replacement`);
     if (!r.length) r.push(`best value on the board`);
     return r.slice(0, 3).join(' · ');
 }
@@ -342,6 +388,7 @@ function _mdListHtml(players, surv) {
             <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
             <span class="md-row-team">${p.team}</span>
             ${cliff}
+            ${(()=>{const v=_mdVorp(p);return v!=null?`<span class="md-row-vorp" style="color:${v>0?'var(--color-win)':'var(--text-subtle)'}" title="Projected points over positional replacement (VORP)">${v>0?'+':''}${v}</span>`:'<span class="md-row-vorp"></span>';})()}
             <span class="md-row-adp">ADP ${p.adp}</span>${sv}
         </button>`;
     }).join('') || '<p class="md-note" style="padding:1rem">No players match.</p>';

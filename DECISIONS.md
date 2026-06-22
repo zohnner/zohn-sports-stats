@@ -649,3 +649,14 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 - **Deep post-draft analysis** — projected finish vs league, positional-strength rank, best value / biggest reach, lineup-gap check (the old letter grade is kept as a sub-stat).
 
 **Data reality (Relay):** Sleeper ADP only → tiers/value/need/Monte-Carlo are real; scoring/Superflex value is a labeled heuristic weighting, not fabricated projections. Future: a ToS-clean projections source would upgrade value/VORP. Verify on the `nfl-mock` route.
+
+## D-028 — Competitive edge: value-based drafting (VORP) — ACCEPTED, building
+**Owner:** "we need this to be a competitive tool that gives users an edge." Chose: transparent model now; build the VBD value engine + mock-draft integration, a Draft Kit/Rankings page, and Strength of Schedule. Vera/Kael/Axiom/Relay.
+
+**Data (Relay — confirmed live):** no clean public *forward* projections, so we model from last-season production, transparently. `/api/nflfp` pulls nflverse `stats_player_reg_{season}` — **confirmed current (2025)** via `?debug=1`, with a real `games` column + opportunity metrics (target_share, air_yards_share, wopr) — and computes PPR/Half/Standard server-side. Labeled as "last-season production, projected," never as proprietary projections.
+
+**Value engine (shipped):** `_vbd*` in `js/fantasy.js` — project (per-game × 17, format-aware) → **VORP over positional replacement** (baseline scales with teams + Superflex). Decoupled from the endpoint's upstream naming via `/api/nflfp`'s fixed output shape.
+
+**Mock draft (shipped):** opponents still draft to ADP (the crowd); the user's **Draft Assistant now factors VORP** (the edge) and its reasoning leads with "+N pts over replacement," and the player list shows a **VORP column** (green = positive value). Graceful: if nflfp is unavailable, it falls back to the ADP-only behavior.
+
+**Next (this decision):** Draft Kit / Rankings page (value board, tiers, **sleepers/traps = VORP-rank vs ADP-rank**, printable cheat sheet) + **SOS** (fantasy-playoff-weighted). Both reuse the engine.

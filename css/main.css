@@ -3706,6 +3706,7 @@ a:focus:not(:focus-visible),
 .md-row-name { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .md-row-team { color: var(--text-muted); font-size: 0.72rem; width: 34px; flex-shrink: 0; }
 .md-row-adp { color: var(--text-subtle); font-size: 0.7rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.md-row-vorp { font-size: 0.7rem; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .md-surv { font-size: 0.7rem; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .md-surv--low { color: var(--color-loss); }
 .md-surv--high { color: var(--color-win); }
