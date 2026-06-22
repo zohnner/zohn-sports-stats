@@ -417,7 +417,7 @@ function displayNFLStandings(rows) {
 // NFL data comes from Sleeper's public API via the same-origin /api/sleeper proxy.
 let _nflPool    = null;     // active fantasy players sorted by ADP (search_rank)
 let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
-let _nflPosFilter = 'ALL';
+let _nflPosFilter = sessionStorage.getItem('ss_nfl_pos_filter') || 'ALL';
 
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
 const _NFL_POS_COLOR = { QB: 'var(--nfl-pos-qb)', RB: 'var(--nfl-pos-rb)', WR: 'var(--nfl-pos-wr)', TE: 'var(--nfl-pos-te)', K: 'var(--nfl-pos-k)' };
@@ -497,7 +497,7 @@ function displayNFLPlayers() {
     grid.appendChild(cards);
 
     grid.querySelectorAll('[data-nfl-pos]').forEach(btn => {
-        btn.addEventListener('click', () => { _nflPosFilter = btn.dataset.nflPos; displayNFLPlayers(); });
+        btn.addEventListener('click', () => { _nflPosFilter = btn.dataset.nflPos; sessionStorage.setItem('ss_nfl_pos_filter', _nflPosFilter); displayNFLPlayers(); });
     });
 }
 

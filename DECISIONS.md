@@ -443,7 +443,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 
 **IA change:** NFL sub-nav now splits **Leaders** (real stats, `nfl-leaders` → `loadNFLStatLeaders`) from **Trending** (fantasy add/drop, moved to `nfl-trending` → `loadNFLLeaderboards`). Bottom-nav (mobile) = Players · Leaders · Scores · Standings · Draft.
 
-**Deferred:** per-player game logs / stat lines on the player-detail page (same core-API athlete `statistics` ref — next iteration); ⌘K NFL search; mobile menu-panel per-sport swap.
+**Deferred:** per-player game logs / stat lines on the player-detail page (same core-API athlete `statistics` ref — next iteration); ~~⌘K NFL search~~ (shipped — players, then teams via N-2, 2026-06-21); mobile menu-panel per-sport swap.
 
 ---
 
@@ -547,3 +547,17 @@ Desktop sub-nav: flat row with small uppercase group labels acting as separators
 - **Vera (behavioral):** group labels are non-interactive (`role="presentation"`, not focusable, not in tab order). Active-state sync unchanged (still `.nav-tab[data-view]`). More button toggles the menu panel; Escape + outside-click + item-tap still close it. Bottom-nav order stable across sports so muscle memory holds.
 - **Kael (visual):** group labels = 0.6rem uppercase `--text-subtle`, left-border separator, first label borderless. Menu section headers span full grid width with a bottom rule. No new colors; reuses existing tokens.
 - **Axiom (feasibility):** config-only data changes + 3 render-fn tweaks + 1 `_applySportUI` line + `_openMenu()` helper + bottom-nav More handler with `stopPropagation` (avoids the document close-handler race). No routing changes; `.nav-tab`+`data-view` contract intact.
+
+## D-023 — nfl.js module split — recommendation: defer (proposed 2026-06-21)
+**Owner:** Axiom | Backlog ref: N-8
+
+**Question:** `js/nfl.js` (~1,440 lines) covers teams, scores, standings, players, leaders, rankings, trending, compare, player/team detail, career, game log, advanced, and the offseason helpers. Split it?
+
+**Recommendation: do NOT split yet.**
+- No module system — files share global scope via ordered `<script>` tags. A split buys no encapsulation; it only adds another load-order dependency to maintain in `index.html` + `sw.js` STATIC_ASSETS.
+- ~1,440 lines is far under `mlb.js` (~9k). Size isn't the pain; the *inline-style sprawl* (N-5) is, and a split wouldn't fix it.
+- For a single maintainer the split's upside (smaller blast radius) is outweighed by the load-order risk.
+
+**If/when we revisit** (≈2.5k lines, or fantasy grows): cleanest seam is the **fantasy surface** — `js/nflFantasy.js` for Rankings + Trending + Mock Draft + the Sleeper pool helpers (`fetchNFLSleeperPool`, `_nflPool`, ADP), leaving stats/scores/standings/detail in `nfl.js`. Fewest cross-references. Load after `nfl.js`, before `app.js`; update the `index.html` chain and `sw.js` STATIC_ASSETS together.
+
+**Decision:** N-8 closed as "won't do now." Prioritize N-5 (inline→classes), which addresses the real maintainability cost.

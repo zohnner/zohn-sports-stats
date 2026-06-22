@@ -480,7 +480,9 @@ function _renderMLBView(view) {
 
 // Cross-surface offseason signal (P3-029): one strip pointing users to the
 // surfaces that work year-round. Session-dismissible, re-surfaces next session.
-const _NFL_STRIP_VIEWS = new Set(['nfl-players', 'nfl-leaders', 'nfl-trending', 'nfl-rankings', 'nfl-teams', 'nfl-standings', 'nfl-games']);
+// N-6 (Vera/Kael): only the offseason-affected stat surfaces — Scores/Standings/Teams.
+// Players/Rankings/Trending/Leaders deliver year-round, so the strip is redundant there.
+const _NFL_STRIP_VIEWS = new Set(['nfl-games', 'nfl-standings', 'nfl-teams']);
 
 function _syncNFLOffseasonStrip(view) {
     document.getElementById('nflOffseasonStrip')?.remove();

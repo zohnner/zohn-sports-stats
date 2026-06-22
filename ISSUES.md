@@ -136,7 +136,7 @@ High-value MLB features consistent with the broadcast/fantasy/data-fan audience.
 ## NFL Improvement Backlog — Cross-Domain Audit (2026-06-21)
 **Contributors:** Vera (UX), Kael (visual), Axiom (architecture/data) | Evidence gathered against current source (post-P3-029).
 
-Candidates in priority order. **N-1, N-2, N-3 promoted (three gates) and SHIPPED 2026-06-21 — see Finn's report at the end of this section.**
+Candidates in priority order. **Shipped 2026-06-21:** N-1, N-2, N-3 (three gates → Finn, report below); N-4, N-6 (code), N-7 (docs), N-8 (decision → D-023). **N-5 is gated; implementation deferred to a session where browser verification is possible.**
 
 ### N-1 — Player detail shows nothing (and swallows the error) when the ESPN name-match fails — **[Vera + Relay/Axiom]** · priority 1 · ✅ SHIPPED 2026-06-21
 **Finding:** NFL player stats/career/game-log/advanced all bridge Sleeper→ESPN by **name match**. When the match fails — free agents, name mismatches, retired players — the loaders bailed silently (`if (!res.ok) return;` / `if (!data.found …) return;` / `catch (_) {}` in `js/nfl.js`). The user landed on a real player, saw the profile, and **no stats, no reason why.** The bare `catch (_) {}` also violated "never suppress; Logger everywhere."
@@ -151,20 +151,35 @@ Candidates in priority order. **N-1, N-2, N-3 promoted (three gates) and SHIPPED
 **Finding:** `_NFL_POS_COLOR`, `_NFL_STAT_COLORS`, `_NFL_STAT_GROUP_COLOR` were literal hex in `js/nfl.js`, against "always use vars." The inline alpha-concat (`${posColor}cc`) also produced invalid CSS for the `var(--accent)` fallback case (latent bug).
 **Shipped:** 19 NFL color tokens added to `css/variables.css` (`--nfl-pos-*`, `--nfl-stat-*`, `--nfl-cat-1..9`); the three JS maps now reference `var(--…)`; alpha shades go through a new `_nflAlpha(c, pct)` helper using `color-mix(in srgb, … transparent)` instead of hex concat (also fixes the fallback bug). `color-mix` is supported across current evergreen browsers (Axiom feasibility).
 
-### N-4 — Players position filter resets every visit — **[Vera]** · priority 3
-`_nflPosFilter` (`js/nfl.js`) is not persisted. Persist to `sessionStorage`. Low effort. Not yet started.
+### N-4 — Players position filter resets every visit — **[Vera]** · priority 3 · ✅ SHIPPED 2026-06-21
+`_nflPosFilter` (`js/nfl.js`) now initializes from `sessionStorage` (`ss_nfl_pos_filter`) and saves on chip click — a returning user keeps their position view.
 
-### N-5 — Inline-style sprawl across NFL views — **[Kael + Axiom]** · priority 3 (phased)
-~178 `style="…"` + 23 `style.cssText` in `js/nfl.js`. Extract repeated patterns to `css/components.css` classes incrementally. Not yet started.
+### N-5 — Inline-style sprawl across NFL views — **[Kael + Axiom]** · priority 3 (phased) · GATED — implementation deferred to a verification-capable session
+**Finding:** ~178 `style="…"` literals + 23 `style.cssText` in `js/nfl.js`. Standings cards, trending/leader rows, the career & game-log tables, and the player-detail hero are assembled with inline CSS rather than component classes — fights the design system (Kael) and bloats the monolith (Axiom). MLB reuses `.player-card`, `.leaderboard-*`, `.stats-table`.
 
-### N-6 — Decide offseason-strip scope — **[Vera + Kael]** · priority 3
-Finn's open P3-029 question: strip shows on all 7 NFL list views vs scope to empty-ish surfaces. Decision only. Not yet started.
+**Why not shipped this round:** moving inline styles to classes is the one change that can silently regress layout via the cascade (CLAUDE.md cascade-safety rule) and must be verified in a browser. This session can't screenshot the working tree (mount + deploy-trails-source), so per "don't ship a flow you haven't walked through," implementation — not the spec — is deferred.
 
-### N-7 — Docs stale: ⌘K NFL search listed as deferred but shipped — **[Folio]** · priority 4
-Reconcile CLAUDE.md/DECISIONS; N-2 closed the teams gap. Not yet started.
+**Behavioral spec (Vera):** pure visual/structural refactor — zero interaction or DOM-contract change. Click handlers, `data-view`, `.nav-tab`, route strings, `_escHtml` escaping unchanged. Each extracted block renders byte-identical output (same element tree, same computed styles).
 
-### N-8 — `nfl.js` monolith (1,400+ lines) — **[Axiom]** · priority 5 (discuss, don't action yet)
-Possible split (e.g. `nflFantasy.js`); weigh against the global-scope script-load-order architecture first.
+**Visual spec (Kael):** new classes in `css/components.css` (NFL section), tokens only. Phase by repetition × safety:
+  1. Player-detail hero avatar gradient (3 near-identical blocks: player card, Sleeper detail, ESPN detail) → `.nfl-hero-avatar` taking color via an inline `--pc` custom property; class reproduces the exact `color-mix` gradient + size.
+  2. Leader/trending list row → `.nfl-stat-row` (displayNFLStatLeaders + displayNFLTrending).
+  3. Standings division card + row → `.nfl-standings-card` / `-row`.
+  4. Career / game-log table chrome (largely already `.stats-table`; strip redundant inline).
+  Each phase = its own commit + `/screenshot` diff before the next.
+
+**Feasibility (Axiom):** mechanical; main risk is cascade order — new NFL classes must be defined where they win over any base class they sit on (e.g. `.player-detail-avatar`). Grep each selector before adding. No JS-logic change; `color-mix` already in use post-N-3.
+
+**Gate status:** Vera ✅ · Kael ✅ (phasing) · Axiom ✅ — ready for Finn to implement phase-by-phase with `/screenshot` verification.
+
+### N-6 — Offseason-strip scope — **[Vera + Kael]** · priority 3 · ✅ DECIDED + SHIPPED 2026-06-21
+**Decision:** show the strip only on the offseason-affected stat surfaces — Scores, Standings, Teams. Dropped from Players/Rankings/Trending/Leaders, which deliver year-round and where the strip was redundant noise. `_NFL_STRIP_VIEWS` in `navigation.js` narrowed to `['nfl-games','nfl-standings','nfl-teams']`.
+
+### N-7 — Docs stale: ⌘K NFL search listed as deferred but shipped — **[Folio]** · priority 4 · ✅ DONE 2026-06-21
+DECISIONS.md deferred note struck through with a "shipped — players, then teams via N-2" annotation (history preserved). CLAUDE.md's `search.js` reference was already neutral/accurate — no change needed.
+
+### N-8 — `nfl.js` monolith (1,400+ lines) — **[Axiom]** · priority 5 · ✅ DECIDED 2026-06-21 → DECISIONS D-023
+Axiom's call: **don't split now** — no module system means a split adds load-order risk without encapsulation gain, and the real cost is N-5's inline sprawl, not file size. Revisit ~2.5k lines; clean seam = `nflFantasy.js`. See D-023.
 
 **Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
 
