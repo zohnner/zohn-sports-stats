@@ -3084,12 +3084,14 @@ a:focus:not(:focus-visible),
 /* Optimised for announcer game-prep sheets and booth reference cards */
 
 @media print {
-    /* Hide chrome, nav, interactive elements */
-    .app-header,
-    .app-nav,
-    .mobile-nav,
-    #scoreTicker,
-    .ticker-container,
+    /* Hide site chrome on print: header (brand/search/ticker/sub-nav), mobile
+       menu + bottom bar, in-page search + breadcrumb, interactive controls.
+       Selectors match the live DOM (see index.html header/nav structure). */
+    header,
+    .menu-panel, #menuPanel,
+    .bottom-nav, #bottomNav,
+    .search-container, #searchBar,
+    .view-header, #viewHeader,
     .back-button,
     .share-btn,
     .per36-btn,
@@ -3105,9 +3107,28 @@ a:focus:not(:focus-visible),
     .lb-export-btn,
     .career-trend-controls,
     .career-trend-section > .chart-wrap,
+    .dk-controls,
+    .sos-controls,
+    .dk-head .md-btn,
     .no-print,
     .prep-game-list,
     .prep-page-sub { display: none !important; }
+
+    /* With chrome gone, the active view fills the page */
+    main { padding: 0 !important; margin: 0 !important; }
+    .dk-wrap, .sos-wrap { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+    /* Ink-friendly Draft Kit + SOS surfaces — meaningful colors (position hues,
+       VORP, SOS heatmap cells) sit inline on children, so they survive these. */
+    .dk-board, .dk-row, .dk-row--head, .dk-st-card, .dk-st,
+    .sos-tablewrap, .sos-table, .sos-row {
+        background: #fff !important;
+        border-color: #ccc !important;
+    }
+    .sos-table thead th { background: #eee !important; color: #333 !important; }
+    .dk-row, .sos-row { page-break-inside: avoid; }
+    .md-title { color: #111 !important; }
+    .md-note, .pct-caption, .sos-legend, .sos-legend__split { color: #555 !important; }
 
     /* Page setup */
     @page { size: letter portrait; margin: 1.5cm; }
