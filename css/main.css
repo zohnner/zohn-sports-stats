@@ -3037,7 +3037,7 @@ a:focus:not(:focus-visible),
         font-weight: 500;
     }
     .search-global-btn::after {
-        content: 'Search players & teams…';
+        content: attr(data-label);
         white-space: nowrap;
         color: var(--text-subtle);
         font-weight: 400;

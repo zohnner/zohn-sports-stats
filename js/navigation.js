@@ -947,6 +947,7 @@ function _applySportSearchPlaceholder(sport) {
     const ph = label ? `Search ${label} players, teams, stats…` : 'Search players, teams, stats…';
     const box = document.getElementById('searchBox'); if (box) box.placeholder = ph;
     const modal = document.getElementById('searchModalInput'); if (modal) modal.placeholder = ph;
+    const gbtn = document.getElementById('globalSearchBtn'); if (gbtn) gbtn.setAttribute('data-label', ph);
 }
 
 function _applySportUI(sport) {
