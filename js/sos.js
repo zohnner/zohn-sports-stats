@@ -101,7 +101,7 @@ function _sosRender() {
     }).join('');
 
     const splitNote = split === 'post'
-        ? `Fantasy playoffs — weeks ${d.playoffWeeks.join('–').replace('–', '-')} (${d.playoffWeeks[0]}–${d.playoffWeeks[d.playoffWeeks.length - 1]})`
+        ? `Fantasy playoffs — weeks ${d.playoffWeeks[0]}–${d.playoffWeeks[d.playoffWeeks.length - 1]}`
         : `Full ${d.weeks}-week regular season`;
 
     grid.innerHTML = `
