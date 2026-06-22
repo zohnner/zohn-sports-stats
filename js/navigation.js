@@ -303,6 +303,7 @@ const _NAV_META = {
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
+    'nfl-sos':       { label: 'Strength of Schedule', icon: '🗓️' },
     'nhl-players':   { label: 'NHL Leaders',   icon: '🏒' },
     'nhl-leaders':   { label: 'NHL Leaders',   icon: '🏒' },
     'nhl-teams':     { label: 'NHL Teams',     icon: '🏒' },
@@ -560,6 +561,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'Draft Kit';
             if (typeof loadDraftKit === 'function') loadDraftKit();
             break;
+        case 'nfl-sos':
+            if (viewCount) viewCount.textContent = 'Strength of Schedule';
+            if (typeof loadNFLSOS === 'function') loadNFLSOS();
+            break;
         case 'nfl-players':
             if (viewCount) viewCount.textContent = 'NFL Players';
             loadNFLPlayers();
@@ -807,7 +812,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
+        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
@@ -849,7 +854,7 @@ const SUB_NAV_TABS = {
             { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
         ] },
         { l: 'Fantasy', children: [
-            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-draftkit', l: 'Draft Kit' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
+            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-draftkit', l: 'Draft Kit' }, { v: 'nfl-sos', l: 'Strength of Schedule' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -933,7 +938,7 @@ const MENU_TABS = {
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Fantasy' },
-        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-draftkit', l:'Draft Kit', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-draftkit', l:'Draft Kit', i:'extra' }, { v:'nfl-sos', l:'Strength of Sched', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
         { v:'nfl-trending', l:'Trending', i:'trending' },
         { group:'Tools' },
         { v:'nfl-compare', l:'Compare', i:'compare' },
@@ -1036,6 +1041,7 @@ const _PAGE_META = {
     'mlb-scorecard': { title: 'SportStrata — Game Scorecard',  desc: 'Play-by-play baseball scorecard for any MLB game.' },
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
     'news':          { title: 'SportStrata — News',           desc: 'Latest NFL and MLB headlines, injuries, and storylines.' },
+    'nfl-sos':       { title: 'SportStrata — NFL Strength of Schedule', desc: 'Fantasy strength of schedule by position, weighted for the fantasy playoffs.' },
 };
 
 function _updatePageMeta(view) {
