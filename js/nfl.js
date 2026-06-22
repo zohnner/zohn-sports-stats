@@ -1084,11 +1084,13 @@ async function _loadNFLAdvanced(p, season) {
             </div>`;
         }).join('');
 
+        const _reqSeason = Number(season) || NFL_STATS_SEASON;
+        const _ngsLag = (data.season && Number(data.season) < _reqSeason) ? ' (latest available)' : '';
         host.className = 'stats-card';
         host.innerHTML = `
             <h2 class="detail-section-title">Key Metrics · Next Gen Stats</h2>
             ${rows}
-            <p class="pct-caption">${data.season} · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
+            <p class="pct-caption">${data.season}${_ngsLag} season · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
     } catch (e) { Logger.warn('NFL advanced stats load failed', e, 'NFL'); }
 }
 

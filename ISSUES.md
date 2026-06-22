@@ -226,6 +226,11 @@ Axiom's call: **don't split now** — no module system means a split adds load-o
 **Finding:** season + career stat blocks were gated only by a volume threshold, not by position, so off-position lines could surface (e.g. a QB's kicking/scoring row).
 **Shipped:** `_NFL_STAT_POS` map + `_nflStatByPos()` filter applied to season groups (`_loadNFLPlayerStats`) and career categories (`_loadNFLCareer`, now position-aware). A QB shows passing/rushing, a K shows kicking, defenders show defense — falls back to the full set if a filter would empty it.
 
+### N-13 — NGS Key Metrics lag the current season (resolve to 2023) — **[Relay]** · priority 3 · partially addressed 2026-06-21
+**Finding:** the Key Metrics card (D-025) resolves to **2023** while the season-stats line shows 2025. Diagnosed via the deployed `/api/nfladv` (probed 2022–2025): the nflverse `nextgen_stats` release tops out at **2023** — requests for 2024/2025 404 and the server correctly falls back to the latest available (2023). 2022→2022, 2023→2023, 2024→2023, 2025→2023. So the fallback logic is *correct*; the gap is upstream data availability (nflverse NGS appears frozen/lagging at 2023, likely an NFL/AWS NGS licensing issue — not confirmed).
+**Addressed:** the caption now reads "2023 (latest available) season · …" when the resolved NGS season lags the requested one, so the 2023 metrics don't look like a bug next to the 2025 stat line.
+**Open (Relay):** confirm whether 2024+ NGS exists under a different nflverse release/path (couldn't verify here — web_fetch can't read the binary `.csv.gz` and curl is restricted). If it does, point `/api/nfladv` at the current source; if NGS is genuinely frozen at 2023, consider supplementing advanced metrics from another ToS-clean source for recent seasons.
+
 **Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
 
 *Shipped:* `js/nfl.js` (N-1 placeholder + Logger.warn in the 4 player-detail loaders; N-3 maps→tokens + `_nflAlpha` color-mix), `js/search.js` (N-2 NFL Teams group + warm), `css/variables.css` (N-3 19 tokens).
