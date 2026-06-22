@@ -84,6 +84,15 @@ function _escHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+// Shared Savant-style percentile color: diverging blue → gray → red (red = elite).
+// Fixed hex by design — a data-encoding scale, not a themed surface. Used by MLB + NFL.
+function _pctColor(p) {
+    const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+    if (p >= 50) { const t = (p - 50) / 50; return `rgb(${lerp(138,214,t)},${lerp(141,58,t)},${lerp(147,49,t)})`; }
+    const t = p / 50;
+    return `rgb(${lerp(54,138,t)},${lerp(97,141,t)},${lerp(173,147,t)})`;
+}
+
 // Single capture-phase listener replaces all inline onerror="this.style.display='none'" handlers.
 // Mark any <img> with data-hide-on-error to opt in.
 if (typeof window !== 'undefined') {
@@ -111,6 +120,7 @@ if (typeof window !== 'undefined') {
     window.getTeamColors      = getTeamColors;
     window.getAvatarStyle     = getAvatarStyle;
     window._escHtml           = _escHtml;
+    window._pctColor          = _pctColor;
     window._normName          = _normName;
     window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
 }

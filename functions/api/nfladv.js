@@ -21,6 +21,8 @@ const METRICS = {
             ['percent_share_of_intended_air_yards', 'Air Yards Share', '%', 'hi'],
             ['avg_cushion', 'Avg Cushion', 'yd', 'neutral'],
             ['catch_percentage', 'Catch %', '%', 'hi'],
+            ['avg_yac', 'Avg YAC', 'yd', 'hi'],
+            ['avg_expected_yac', 'Expected YAC', 'yd', 'neutral'],
         ],
     },
     passing: {
@@ -32,6 +34,8 @@ const METRICS = {
             ['aggressiveness', 'Aggressiveness', '%', 'neutral'],
             ['avg_completed_air_yards', 'Completed Air Yds', 'yd', 'hi'],
             ['max_completed_air_distance', 'Max Air Distance', 'yd', 'hi'],
+            ['passer_rating', 'Passer Rating', '', 'hi'],
+            ['completion_percentage', 'Completion %', '%', 'hi'],
         ],
     },
     rushing: {
@@ -43,6 +47,8 @@ const METRICS = {
             ['avg_time_to_los', 'Time to LOS', 's', 'lo'],
             ['percent_attempts_gte_eight_defenders', '8+ in Box %', '%', 'neutral'],
             ['expected_rush_yards', 'Expected Rush Yds', 'yd', 'neutral'],
+            ['avg_rush_yards', 'Yards / Carry', 'yd', 'hi'],
+            ['rush_yards_over_expected', 'RYOE (Total)', 'yd', 'hi'],
         ],
     },
 };

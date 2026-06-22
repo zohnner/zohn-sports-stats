@@ -1069,26 +1069,26 @@ async function _loadNFLAdvanced(p, season) {
         if (!document.body.contains(host)) return;
 
         const fmt = v => { const n = +v; if (!isFinite(n)) return '—'; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
-        const barColor = pct => pct == null ? 'var(--border-mid)' : pct >= 80 ? '#ef4444' : pct >= 60 ? '#f59e0b' : pct >= 40 ? '#64748b' : '#3b82f6';
+        const ord = n => (n % 10 === 1 && n % 100 !== 11) ? 'st' : (n % 10 === 2 && n % 100 !== 12) ? 'nd' : (n % 10 === 3 && n % 100 !== 13) ? 'rd' : 'th';
+        const pool = _NFL_NGS_LABEL[data.type] || 'players';
         const rows = data.metrics.map(m => {
-            const ord = n => (n % 10 === 1 && n % 100 !== 11) ? 'st' : (n % 10 === 2 && n % 100 !== 12) ? 'nd' : (n % 10 === 3 && n % 100 !== 13) ? 'rd' : 'th';
-            const pctTxt = m.pct != null ? ` <span style="color:var(--text-muted);font-weight:700">· ${m.pct}<span style="font-size:0.6rem">${ord(m.pct)}</span></span>` : '';
-            return `<div style="margin-bottom:0.55rem">
-                <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.8rem;margin-bottom:0.25rem">
-                    <span style="color:var(--text-secondary);font-weight:600">${_escHtml(m.label)}</span>
-                    <span style="font-weight:800;color:var(--text-primary)">${_escHtml(fmt(m.value))}${m.unit ? '<span style="color:var(--text-muted);font-size:0.7rem">' + _escHtml(m.unit) + '</span>' : ''}${pctTxt}</span>
-                </div>
-                <div style="height:7px;border-radius:4px;background:var(--bg-subtle);overflow:hidden">
-                    ${m.pct != null ? `<div style="height:100%;width:${m.pct}%;background:${barColor(m.pct)};border-radius:4px"></div>` : ''}
-                </div>
+            const display = `${_escHtml(fmt(m.value))}${m.unit ? ` <span style="font-size:0.7em;color:var(--text-muted)">${_escHtml(m.unit)}</span>` : ''}`;
+            if (m.pct == null) {
+                return `<div class="pct-row pct-row--plain"><span class="pct-label">${_escHtml(m.label)}</span><span class="pct-value">${display}</span></div>`;
+            }
+            const color = (typeof _pctColor === 'function') ? _pctColor(m.pct) : 'var(--accent)';
+            return `<div class="pct-row" role="img" aria-label="${_escHtml(m.label)}: ${m.pct}${ord(m.pct)} percentile of qualified ${_escHtml(pool)}" title="${m.pct}${ord(m.pct)} percentile of qualified ${_escHtml(pool)}">
+                <span class="pct-label">${_escHtml(m.label)}</span>
+                <div class="pct-track"><div class="pct-fill" style="width:${m.pct}%;background:${color}"></div><span class="pct-bubble" style="left:${m.pct}%;background:${color}">${m.pct}</span></div>
+                <span class="pct-value">${display}</span>
             </div>`;
         }).join('');
 
         host.className = 'stats-card';
         host.innerHTML = `
-            <h2 class="detail-section-title">Advanced · Next Gen Stats</h2>
-            <div style="max-width:560px">${rows}</div>
-            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.4rem 0 0">${data.season} · percentile vs qualified ${_escHtml(_NFL_NGS_LABEL[data.type] || data.type)} (n=${data.qualifiedPlayers}) · Data via nflverse Next Gen Stats (CC-BY)</p>`;
+            <h2 class="detail-section-title">Key Metrics · Next Gen Stats</h2>
+            ${rows}
+            <p class="pct-caption">${data.season} · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
     } catch (e) { Logger.warn('NFL advanced stats load failed', e, 'NFL'); }
 }
 
