@@ -496,7 +496,7 @@ function _renderMLBView(view) {
 // surfaces that work year-round. Session-dismissible, re-surfaces next session.
 // N-6 (Vera/Kael): only the offseason-affected stat surfaces — Scores/Standings/Teams.
 // Players/Rankings/Trending/Leaders deliver year-round, so the strip is redundant there.
-const _NFL_STRIP_VIEWS = new Set(['nfl-games', 'nfl-standings', 'nfl-teams']);
+const _NFL_STRIP_VIEWS = new Set(['nfl-games', 'nfl-teams']);
 
 function _syncNFLOffseasonStrip(view) {
     document.getElementById('nflOffseasonStrip')?.remove();
@@ -513,8 +513,9 @@ function _syncNFLOffseasonStrip(view) {
     strip.className = 'nfl-offseason-strip';
     strip.setAttribute('role', 'status');
     strip.setAttribute('aria-live', 'polite');
-    strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is between seasons — live scores &amp; standings return in September. Open year-round:
+    strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is between seasons — live scores return in September. Standings &amp; tools are open year-round:
             <button class="nfl-offseason-strip__link" data-view="nfl-players">Players</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-leaders">2025 Leaders</button></span>

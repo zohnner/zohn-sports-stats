@@ -19,7 +19,7 @@
 .nstd-div-head { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.8rem; background: var(--bg-raised); border-bottom: 1px solid var(--border-default); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-subtle); }
 .nstd-div-head__cols { display: flex; gap: 0.9rem; }
 .nstd-div-head__cols span { width: 2.4rem; text-align: right; }
-.nstd-row { display: grid; grid-template-columns: 22px 1fr 3rem 2.6rem 3.4rem; align-items: center; gap: 0.45rem; padding: 0.5rem 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border-subtle); transition: background 0.12s; }
+.nstd-row { display: grid; grid-template-columns: 20px 1fr 2.9rem 2.6rem 4.7rem; align-items: center; gap: 0.55rem; padding: 0.5rem 0.8rem; cursor: pointer; border-bottom: 1px solid var(--border-subtle); transition: background 0.12s; }
 .nstd-row:last-child { border-bottom: none; }
 .nstd-row:hover { background: var(--bg-card-hover); }
 .nstd-row--winner { background: color-mix(in srgb, var(--accent) 7%, transparent); }
@@ -29,7 +29,7 @@
 .nstd-row__pct { text-align: right; font-size: 0.78rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .nstd-row__diff { display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; font-size: 0.74rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
-.nstd-bar { position: relative; width: 38px; height: 6px; border-radius: 3px; background: var(--bg-raised); flex: none; }
+.nstd-bar { position: relative; width: 28px; height: 6px; border-radius: 3px; background: var(--bg-raised); flex: none; }
 .nstd-bar::before { content: ''; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--border-mid); }
 .nstd-bar__fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
 
