@@ -590,23 +590,18 @@ function displayNFLTrending(adds, drops) {
             const hs   = getNFLSleeperHeadshot(e.player_id);
             const clickAttr = p ? ` onclick="navigateTo('nfl-player-${e.player_id}')"` : '';
             return `
-            <div${clickAttr} style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;cursor:${p ? 'pointer' : 'default'};
-                border-bottom:${i < items.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
-                <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
-                <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
-                    <img src="${hs || ''}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
+            <div${clickAttr} class="nfl-lrow${p ? ' nfl-lrow--link' : ''}">
+                <span class="nfl-lrow-rank">${i + 1}</span>
+                <div class="nfl-lrow-av"><img src="${hs || ''}" alt="" loading="lazy" data-hide-on-error></div>
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(meta)}</div>
                 </div>
-                <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(name)}</div>
-                    <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(meta)}</div>
-                </div>
-                <span style="font-weight:900;font-size:0.92rem;color:${accent}">${Number(e.count || 0).toLocaleString()}</span>
+                <span class="nfl-lrow-val" style="color:${accent}">${Number(e.count || 0).toLocaleString()}</span>
             </div>`;
         }).join('');
         card.innerHTML = `
-            <div style="padding:0.55rem 0.75rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
-                font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
-                display:flex;align-items:center;gap:0.4rem;color:var(--text-secondary)">
+            <div class="nfl-card-head" style="gap:0.4rem">
                 <span>${icon}</span> ${title}
             </div>
             ${rows || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.82rem">No trending data</div>'}`;
@@ -726,23 +721,18 @@ function displayNFLStatLeaders(data) {
             const _sid = _nflLeaderNameIdx[_nflLeaderNrm(l.name)];
             const _clk = _sid ? ` onclick="navigateTo('nfl-player-${_sid}')"` : '';
             return `
-            <div${_clk} style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;cursor:${_sid ? 'pointer' : 'default'};
-                border-bottom:${i < cat.leaders.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
-                <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
-                <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
-                    <img src="${l.headshot}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
+            <div${_clk} class="nfl-lrow${_sid ? ' nfl-lrow--link' : ''}">
+                <span class="nfl-lrow-rank">${i + 1}</span>
+                <div class="nfl-lrow-av"><img src="${l.headshot}" alt="" loading="lazy" data-hide-on-error></div>
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(l.name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
                 </div>
-                <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(l.name)}</div>
-                    <div style="font-size:0.67rem;color:var(--text-muted)">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
-                </div>
-                <span style="font-weight:900;font-size:0.92rem;color:${color}">${_escHtml(String(l.value))}</span>
+                <span class="nfl-lrow-val" style="color:${color}">${_escHtml(String(l.value))}</span>
             </div>`;
         }).join('');
         card.innerHTML = `
-            <div style="padding:0.55rem 0.75rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
-                font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
-                display:flex;align-items:center;justify-content:space-between;color:var(--text-secondary)">
+            <div class="nfl-card-head" style="justify-content:space-between">
                 <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
             </div>
             ${rows}`;

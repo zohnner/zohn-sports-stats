@@ -1989,6 +1989,37 @@
     font-weight: 800;
 }
 
+/* NFL list rows + panel headers — dedup of inline styles (N-5 phase 2),
+   shared by the trending and stat-leader panels. */
+.nfl-card-head {
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+}
+.nfl-lrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.nfl-lrow:last-child { border-bottom: none; }
+.nfl-lrow--link { cursor: pointer; }
+.nfl-lrow-rank { font-size: 0.65rem; font-weight: 800; color: var(--text-subtle); width: 14px; text-align: center; }
+.nfl-lrow-av { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--bg-subtle); border: 1px solid var(--border-subtle); }
+.nfl-lrow-av img { width: 100%; height: 100%; object-fit: cover; }
+.nfl-lrow-main { flex: 1; min-width: 0; }
+.nfl-lrow-name { font-weight: 700; font-size: 0.8rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nfl-lrow-meta { font-size: 0.67rem; color: var(--text-muted); }
+.nfl-lrow-val { font-weight: 900; font-size: 0.92rem; }
+
 /* ── MLB Game Detail ──────────────────────────────────────── */
 
 /* ── Park factor badges ────────────────────────────────── */
