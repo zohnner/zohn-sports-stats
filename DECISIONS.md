@@ -659,4 +659,5 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 **Mock draft (shipped):** opponents still draft to ADP (the crowd); the user's **Draft Assistant now factors VORP** (the edge) and its reasoning leads with "+N pts over replacement," and the player list shows a **VORP column** (green = positive value). Graceful: if nflfp is unavailable, it falls back to the ADP-only behavior.
 
-**Next (this decision):** Draft Kit / Rankings page (value board, tiers, **sleepers/traps = VORP-rank vs ADP-rank**, printable cheat sheet) + **SOS** (fantasy-playoff-weighted). Both reuse the engine.
+**Draft Kit (shipped 2026-06-21):** standalone `nfl-draftkit` view (Fantasy dropdown) reusing the engine — value board (proj pts, VORP, tier, ADP), **Sleepers/Traps** (largest VORP-rank vs ADP-rank gaps), scoring/Superflex/teams/position controls, and a Print cheat-sheet button. Unmatched (rookie/no-2025) players list by ADP below the valued board.
+**Next (this decision):** **SOS** (fantasy-playoff-weighted). Reuses the schedule.

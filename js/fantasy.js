@@ -490,6 +490,108 @@ function _mdRenderComplete() {
 
 function _escFan(s) { return typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s); }
 
+// ============================================================
+// Draft Kit — value rankings, tiers, sleepers/traps, cheat sheet (D-028)
+// Reuses the value engine + the Sleeper ADP pool. Standalone view (nfl-draftkit).
+// ============================================================
+let _dk = { scoring: 'PPR', superflex: false, teams: 12, pos: 'ALL' };
+
+async function loadDraftKit() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('nfl-draftkit', null);
+    grid.innerHTML = `<div class="md-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Building value board…</p></div>`;
+    try { await _mdFetchPool(); } catch (e) {
+        grid.innerHTML = `<div class="md-empty"><p>Couldn't load the value board. Try again.</p><button class="md-btn" onclick="loadDraftKit()">Retry</button></div>`;
+        return;
+    }
+    _dkRender();
+}
+
+function _dkBuild() {
+    const rep = (_vbd && _vbd.ok) ? _vbdReplacement(_dk.scoring, _dk.teams, _dk.superflex) : null;
+    const rows = (_mdPool || []).map(p => {
+        const proj = p._fp ? _vbdProj(p._fp, _dk.scoring) : null;
+        const vorp = (proj != null && rep) ? Math.round(proj - (rep[p.pos] || 0)) : null;
+        return { id: p.id, name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier, proj: proj != null ? Math.round(proj) : null, vorp };
+    });
+    const valued = rows.filter(r => r.vorp != null).sort((a, b) => b.vorp - a.vorp);
+    valued.forEach((r, i) => { r.valRank = i + 1; });
+    const unvalued = rows.filter(r => r.vorp == null).sort((a, b) => a.adp - b.adp);
+    return { valued, unvalued, all: valued.concat(unvalued) };
+}
+
+function _dkRender() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    const { valued, all } = _dkBuild();
+    const ok = _vbd && _vbd.ok;
+    const season = (_vbd && _vbd.season) || '';
+
+    // sleepers = ADP later than value (gap +), traps = ADP earlier than value (gap -)
+    const gap = r => r.adp - r.valRank;
+    const pool = valued.filter(r => r.adp <= 180);
+    const sleepers = pool.slice().sort((a, b) => gap(b) - gap(a)).slice(0, 6);
+    const traps    = pool.slice().sort((a, b) => gap(a) - gap(b)).slice(0, 6);
+
+    const chip = f => `<button class="md-pos-btn ${f === _dk.pos ? 'md-pos-btn--on' : ''}" data-dkpos="${f}">${f}</button>`;
+    const board = (_dk.pos === 'ALL' ? all : all.filter(r => r.pos === _dk.pos)).slice(0, 200);
+
+    const card = (r, kind) => `<button class="dk-st-card" onclick="navigateTo('nfl-player-${r.id}')">
+        <span class="dk-st-pos" style="color:${_MD_POS_COLOR[r.pos] || 'var(--text-muted)'}">${r.pos}</span>
+        <span class="dk-st-name">${_escFan(r.name)}</span>
+        <span class="dk-st-gap ${kind}">${kind === 'sleep' ? '+' : ''}${(r.adp - r.valRank)}</span>
+        <span class="dk-st-sub">ADP ${r.adp} · Val #${r.valRank}</span>
+    </button>`;
+
+    grid.innerHTML = `
+      <div class="dk-wrap">
+        <div class="dk-head">
+          <div><h1 class="md-title" style="margin:0">Draft Kit</h1>
+          <p class="md-note">Value over replacement from ${ok ? season + ' production' : 'ADP'} · ADP from Sleeper${ok ? '' : ' · (production data unavailable — showing ADP)'}</p></div>
+          <button class="md-btn md-btn--ghost" onclick="window.print()">Print cheat sheet</button>
+        </div>
+        <div class="dk-controls">
+          <label>Scoring<select id="dkScoring">${['PPR','Half-PPR','Standard'].map(s=>`<option ${s===_dk.scoring?'selected':''}>${s}</option>`).join('')}</select></label>
+          <label>Teams<select id="dkTeams">${[8,10,12,14].map(n=>`<option ${n===_dk.teams?'selected':''}>${n}</option>`).join('')}</select></label>
+          <label class="md-check"><input type="checkbox" id="dkSF" ${_dk.superflex?'checked':''}> Superflex</label>
+          <div class="md-pos-filters" style="margin-left:auto">${['ALL','QB','RB','WR','TE'].map(chip).join('')}</div>
+        </div>
+
+        ${ok ? `<div class="dk-st-grid">
+          <section class="dk-st"><h3 class="team-section__title">Sleepers <span class="team-section__count">value &gt; ADP</span></h3>${sleepers.map(r=>card(r,'sleep')).join('')||'<p class="md-note">—</p>'}</section>
+          <section class="dk-st"><h3 class="team-section__title">Traps <span class="team-section__count">ADP &gt; value</span></h3>${traps.map(r=>card(r,'trap')).join('')||'<p class="md-note">—</p>'}</section>
+        </div>` : ''}
+
+        <section class="dk-board-sec">
+          <h3 class="team-section__title">Value Rankings <span class="team-section__count">${_dk.scoring}${_dk.superflex?' · SF':''}</span></h3>
+          <div class="dk-board">
+            <div class="dk-row dk-row--head"><span class="dk-c-rk">#</span><span class="dk-c-pos">POS</span><span class="dk-c-name">Player</span><span class="dk-c-team">TM</span><span class="dk-c-tier">TIER</span><span class="dk-c-num">PROJ</span><span class="dk-c-num">VORP</span><span class="dk-c-num">ADP</span></div>
+            ${board.map((r,i)=>`<div class="dk-row" onclick="navigateTo('nfl-player-${r.id}')">
+              <span class="dk-c-rk">${i+1}</span>
+              <span class="dk-c-pos" style="color:${_MD_POS_COLOR[r.pos]||'var(--text-muted)'}">${r.pos}</span>
+              <span class="dk-c-name">${_escFan(r.name)}</span>
+              <span class="dk-c-team">${r.team}</span>
+              <span class="dk-c-tier">${r.tier?'T'+r.tier:'—'}</span>
+              <span class="dk-c-num">${r.proj!=null?r.proj:'—'}</span>
+              <span class="dk-c-num" style="color:${r.vorp!=null?(r.vorp>0?'var(--color-win)':'var(--text-subtle)'):'var(--text-subtle)'};font-weight:700">${r.vorp!=null?(r.vorp>0?'+':'')+r.vorp:'—'}</span>
+              <span class="dk-c-num">${r.adp}</span>
+            </div>`).join('')}
+          </div>
+        </section>
+      </div>`;
+
+    grid.querySelector('#dkScoring').addEventListener('change', e => { _dk.scoring = e.target.value; _dkRender(); });
+    grid.querySelector('#dkTeams').addEventListener('change', e => { _dk.teams = +e.target.value; _dkRender(); });
+    grid.querySelector('#dkSF').addEventListener('change', e => { _dk.superflex = e.target.checked; _dkRender(); });
+    grid.querySelectorAll('[data-dkpos]').forEach(b => b.addEventListener('click', () => { _dk.pos = b.dataset.dkpos; _dkRender(); }));
+}
+
 if (typeof window !== 'undefined') {
     window.loadMockDraft = loadMockDraft;
+    window.loadDraftKit = loadDraftKit;
 }

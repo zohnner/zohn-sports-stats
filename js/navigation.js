@@ -556,6 +556,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'Mock Draft';
             if (typeof loadMockDraft === 'function') loadMockDraft();
             break;
+        case 'nfl-draftkit':
+            if (viewCount) viewCount.textContent = 'Draft Kit';
+            if (typeof loadDraftKit === 'function') loadDraftKit();
+            break;
         case 'nfl-players':
             if (viewCount) viewCount.textContent = 'NFL Players';
             loadNFLPlayers();
@@ -803,7 +807,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
+        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
@@ -845,7 +849,7 @@ const SUB_NAV_TABS = {
             { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
         ] },
         { l: 'Fantasy', children: [
-            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
+            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-draftkit', l: 'Draft Kit' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -929,7 +933,7 @@ const MENU_TABS = {
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Fantasy' },
-        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-draftkit', l:'Draft Kit', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
         { v:'nfl-trending', l:'Trending', i:'trending' },
         { group:'Tools' },
         { v:'nfl-compare', l:'Compare', i:'compare' },
