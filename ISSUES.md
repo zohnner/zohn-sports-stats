@@ -181,6 +181,10 @@ DECISIONS.md deferred note struck through with a "shipped — players, then team
 ### N-8 — `nfl.js` monolith (1,400+ lines) — **[Axiom]** · priority 5 · ✅ DECIDED 2026-06-21 → DECISIONS D-023
 Axiom's call: **don't split now** — no module system means a split adds load-order risk without encapsulation gain, and the real cost is N-5's inline sprawl, not file size. Revisit ~2.5k lines; clean seam = `nflFantasy.js`. See D-023.
 
+### N-9 — `--bg-elevated` referenced but never defined — **[Kael + Folio]** · priority 2 (pre-existing; found during N-5 phase-2 verification)
+**Finding:** `var(--bg-elevated)` is used 23× (7 in `js/nfl.js`, 13 in `css/*`, 3 in `js/nhl.js`) but the token is **not defined** in `variables.css` — confirmed live via `getComputedStyle(:root).getPropertyValue('--bg-elevated')` → `""`, and by grep (no `--bg-elevated:` anywhere). Every reference resolves to nothing, so those surfaces (NFL panel headers, the leader-season `<select>`, standings header, etc.) render transparent instead of the intended raised surface. **Pre-existing — not from N-5.** Surfaced while verifying Phase 2: `.nfl-card-head` background came back transparent, exactly matching the old inline `var(--bg-elevated)` → confirms no regression, but exposes the latent bug.
+**Fix direction (Kael owns the value):** define `--bg-elevated` in both `:root` and `[data-theme="light"]` (likely ≈ `--bg-raised`). **Not a unilateral fix** — it would change the background of 20+ spots that have silently been transparent, so it needs Kael's value choice + a visual review across MLB and NFL before shipping.
+
 **Finn — implementation of N-1/N-2/N-3 | Date: 2026-06-21**
 
 *Shipped:* `js/nfl.js` (N-1 placeholder + Logger.warn in the 4 player-detail loaders; N-3 maps→tokens + `_nflAlpha` color-mix), `js/search.js` (N-2 NFL Teams group + warm), `css/variables.css` (N-3 19 tokens).
