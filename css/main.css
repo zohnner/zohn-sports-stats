@@ -403,6 +403,26 @@ header {
     box-shadow: inset 0 -2px 0 var(--accent);
 }
 
+/* Category dropdowns (D-026 P2) — fixed-position menus escape the sub-nav's overflow */
+.sub-nav-cat { position: relative; display: inline-flex; flex-shrink: 0; }
+.sub-nav-parent { display: inline-flex; align-items: center; gap: 3px; }
+.sub-nav-caret { font-size: 0.6em; opacity: 0.65; }
+.sub-nav-menu {
+    position: fixed;
+    z-index: var(--z-overlay);
+    min-width: 168px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0.3rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+.sub-nav-menu[hidden] { display: none; }
+.sub-nav .sub-nav-drop-item { width: 100%; justify-content: flex-start; text-align: left; }
+
 /* Settings button in header */
 .settings-btn {
     display: flex;

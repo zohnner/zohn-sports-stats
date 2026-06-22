@@ -21,9 +21,14 @@ function setupNavigation() {
         tab.addEventListener('click', () => navigateTo(tab.dataset.view));
     });
     document.getElementById('subNav')?.addEventListener('click', e => {
+        const parent = e.target.closest('.sub-nav-parent');
+        if (parent) { e.stopPropagation(); _toggleSubNavMenu(parent); return; }
         const t = e.target.closest('.nav-tab[data-view]');
-        if (t) navigateTo(t.dataset.view);
+        if (t) { _closeSubNavMenus(); navigateTo(t.dataset.view); }
     });
+    document.addEventListener('click', e => { if (!e.target.closest('.sub-nav-cat')) _closeSubNavMenus(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') _closeSubNavMenus(); });
+    window.addEventListener('scroll', () => _closeSubNavMenus(), { passive: true });
     document.getElementById('bottomNav')?.addEventListener('click', e => {
         if (e.target.closest('.bottom-more')) {
             e.stopPropagation();
@@ -183,6 +188,7 @@ function navigateTo(view, push = true) {
     // Sync all matching nav tabs (waffle panel + mobile)
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll(`.nav-tab[data-view="${view}"]`).forEach(t => t.classList.add('active'));
+    if (typeof _syncSubNavParents === 'function') _syncSubNavParents(view);
     AppState.currentView = view;
 
     // Restore playersGrid class for non-home views
@@ -822,22 +828,26 @@ function _loadFromHash() {
 // Per-sport sub-nav tab sets. NFL is the D-012 light surface: Scores/Standings/Teams.
 const SUB_NAV_TABS = {
     mlb: [
-        { group: 'Stats' },
-        { v: 'mlb-players', l: 'Players' }, { v: 'mlb-leaders', l: 'Leaders' },
-        { v: 'mlb-teams', l: 'Teams' }, { v: 'mlb-standings', l: 'Standings' }, { v: 'news', l: 'News' },
-        { group: 'Tools' },
-        { v: 'mlb-compare', l: 'Compare' }, { v: 'mlb-builder', l: 'Builder' },
-        { v: 'mlb-prep', l: 'Prep' }, { v: 'arcade', l: 'Arcade' },
+        { v: 'mlb-players', l: 'Players' },
+        { v: 'mlb-teams', l: 'Teams' },
+        { v: 'mlb-standings', l: 'Standings' },
+        { l: 'Analytics', children: [
+            { v: 'mlb-leaders', l: 'Leaders' }, { v: 'mlb-compare', l: 'Compare' },
+            { v: 'mlb-builder', l: 'Builder' }, { v: 'mlb-prep', l: 'Prep' }, { v: 'arcade', l: 'Arcade' },
+        ] },
+        { v: 'news', l: 'News' },
     ],
     nfl: [
-        { group: 'Stats' },
-        { v: 'nfl-players', l: 'Players' }, { v: 'nfl-leaders', l: 'Leaders' },
-        { v: 'nfl-teams', l: 'Teams' }, { v: 'nfl-standings', l: 'Standings' }, { v: 'news', l: 'News' },
-        { group: 'Fantasy' },
-        { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-mock', l: 'Mock Draft' },
-        { v: 'nfl-trending', l: 'Trending' },
-        { group: 'Tools' },
-        { v: 'nfl-compare', l: 'Compare' },
+        { v: 'nfl-players', l: 'Players' },
+        { v: 'nfl-teams', l: 'Teams' },
+        { v: 'nfl-standings', l: 'Standings' },
+        { l: 'Analytics', children: [
+            { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
+        ] },
+        { l: 'Fantasy', children: [
+            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
+        ] },
+        { v: 'news', l: 'News' },
     ],
 };
 
@@ -846,10 +856,48 @@ function _renderSubNav(sport) {
     if (!nav) return;
     const tabs = SUB_NAV_TABS[sport] || SUB_NAV_TABS.mlb;
     nav.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
-    nav.innerHTML = tabs.map(t => t.group
-        ? `<span class="sub-nav-group" role="presentation">${t.group}</span>`
-        : `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`).join('');
+    nav.innerHTML = tabs.map((t, i) => {
+        if (t.children) {
+            const menuId = `subcat-${sport}-${i}`;
+            const childViews = t.children.map(c => c.v).join(' ');
+            const items = t.children.map(c => `<button class="nav-tab sub-nav-drop-item" data-view="${c.v}" role="menuitem">${c.l}</button>`).join('');
+            return `<div class="sub-nav-cat" data-children="${childViews}">
+                <button class="nav-tab sub-nav-parent" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="${menuId}">${t.l}<span class="sub-nav-caret" aria-hidden="true">▾</span></button>
+                <div class="sub-nav-menu" id="${menuId}" role="menu" hidden>${items}</div>
+            </div>`;
+        }
+        return `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`;
+    }).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
+    _syncSubNavParents(AppState.currentView);
+}
+
+// Category-dropdown controller (D-026 P2). Menus are position:fixed (the sub-nav
+// is overflow-x:auto, which would clip an absolute menu) and positioned on open.
+function _syncSubNavParents(view) {
+    document.querySelectorAll('#subNav .sub-nav-cat').forEach(cat => {
+        const kids = (cat.dataset.children || '').split(' ');
+        const parent = cat.querySelector('.sub-nav-parent');
+        if (parent) parent.classList.toggle('active', kids.includes(view));
+    });
+}
+function _closeSubNavMenus() {
+    document.querySelectorAll('#subNav .sub-nav-menu:not([hidden])').forEach(m => { m.hidden = true; });
+    document.querySelectorAll('#subNav .sub-nav-parent[aria-expanded="true"]').forEach(p => p.setAttribute('aria-expanded', 'false'));
+}
+function _toggleSubNavMenu(parent) {
+    const cat = parent.closest('.sub-nav-cat');
+    const menu = cat && cat.querySelector('.sub-nav-menu');
+    if (!menu) return;
+    const willOpen = menu.hidden;
+    _closeSubNavMenus();
+    if (willOpen) {
+        const r = parent.getBoundingClientRect();
+        menu.style.left = `${Math.round(r.left)}px`;
+        menu.style.top = `${Math.round(r.bottom + 4)}px`;
+        menu.hidden = false;
+        parent.setAttribute('aria-expanded', 'true');
+    }
 }
 
 const _NAV_ICONS = {
