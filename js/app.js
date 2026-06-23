@@ -124,6 +124,26 @@ setupNavigation();
 })();
 
 // ── Ticker click → game detail ────────────────────────────────
+// Live score polling — NFL (60s; mirrors MLB)
+(function setupNFLLivePolling() {
+    async function _poll() {
+        try {
+            if (AppState.currentSport !== 'nfl') return;
+            if (typeof fetchNFLScoreboard !== 'function') return;
+            const cached = AppState.nflGames || [];
+            const hasLive = cached.some(g => g.isLive);
+            if (cached.length > 0 && !hasLive) return;
+            const games = await fetchNFLScoreboard();
+            AppState.nflGames = games;
+            if (typeof updateNFLTicker === 'function') updateNFLTicker(games);
+            if (AppState.currentView === 'nfl-games' && typeof displayNFLGames === 'function') displayNFLGames(games);
+            const liveCount = games.filter(g => g.isLive).length;
+            if (liveCount > 0 && window.Logger) Logger.info(`NFL live poll: ${liveCount} live`, undefined, 'POLL');
+        } catch (err) { if (window.Logger) Logger.warn('NFL live poll failed', err.message, 'POLL'); }
+    }
+    setInterval(_poll, 60000);
+})();
+
 (function setupTickerClicks() {
     const tickerEl = document.getElementById('scoreTicker');
     if (!tickerEl) return;
@@ -138,7 +158,9 @@ setupNavigation();
             if (typeof openMLBGame === 'function') openMLBGame(gamePk, item.classList.contains('ticker__item--live'));
             else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(gamePk);
         } else if (sport === 'nfl') {
+            const gid = item.dataset.gameId;
             if (AppState.currentSport !== 'nfl') switchSport('nfl');
+            if (gid) navigateTo('nfl-game-' + gid);
             else navigateTo('nfl-games');
         } else if (sport === 'nhl') {
             if (AppState.currentSport !== 'nhl') switchSport('nhl');

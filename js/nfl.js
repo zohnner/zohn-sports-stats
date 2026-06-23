@@ -289,16 +289,27 @@ function displayNFLGames(games) {
         return;
     }
 
+    const rank = (g) => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
+    const ordered = games.slice().sort((a, b) => rank(a) - rank(b));
+    const liveCount = games.filter(g => g.isLive).length;
     const fragment = document.createDocumentFragment();
-    games.forEach(game => fragment.appendChild(_createNFLGameCard(game)));
+    if (liveCount) {
+        const h = document.createElement('div');
+        h.className = 'nfl-gameday-head';
+        h.innerHTML = `<span class="nlg-livebadge">● LIVE NOW</span> ${liveCount} game${liveCount > 1 ? 's' : ''} in progress`;
+        fragment.appendChild(h);
+    }
+    ordered.forEach(game => fragment.appendChild(_createNFLGameCard(game)));
     grid.innerHTML = '';
     grid.appendChild(fragment);
 }
 
 function _createNFLGameCard(game) {
     const card = document.createElement('div');
-    card.className = 'game-card';
+    card.className = 'game-card' + (game.isLive ? ' game-card--live' : '');
     card.dataset.gameId = game.id;
+    card.style.cursor = 'pointer';
+    card.onclick = () => navigateTo('nfl-game-' + game.id);
 
     const hs = game.homeTeam.score;
     const as = game.awayTeam.score;
@@ -669,7 +680,7 @@ function updateNFLTicker(games) {
         const pillCls = g.isFinal ? 'final' : g.isLive ? 'live' : 'sched';
         const pillLbl = g.isFinal ? 'F' : g.isLive ? (g.clock || 'LIVE') : 'SCH';
         return `
-            <div class="ticker__item" data-game-id="${g.id}" data-sport="nfl" style="cursor:pointer">
+            <div class="ticker__item ${g.isLive ? 'ticker__item--live' : ''}" data-game-id="${g.id}" data-sport="nfl" style="cursor:pointer">
                 <img class="ticker-logo" src="${g.awayTeam.logo}" alt="" loading="lazy" data-hide-on-error>
                 <span class="ticker-team">${_escHtml(g.awayTeam.abbr)}</span>
                 <span class="ticker-score ${g.awayTeam.winner && g.isFinal ? 'ticker-score--win' : ''}">${g.awayTeam.score}</span>

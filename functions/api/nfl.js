@@ -8,10 +8,11 @@
  * Only an allowlisted set of ESPN NFL paths is permitted (no open proxy).
  */
 const ESPN_NFL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
-const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news)\/?$/;
+const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news|summary)\/?$/;
 
 function ttlFor(path) {
     if (path.startsWith('/scoreboard')) return 60;    // live scores
+    if (path.startsWith('/summary'))    return 20;    // live game detail
     if (path.startsWith('/standings'))  return 1800;  // 30 min
     if (path.startsWith('/teams'))      return 3600;  // 1 hr
     return 600;

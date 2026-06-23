@@ -181,6 +181,7 @@ function navigateTo(view, push = true) {
     if (window.StatsCharts) StatsCharts.destroyAll();
     if (typeof stopLiveGamePolling === 'function') stopLiveGamePolling();
     if (typeof stopLiveScorecardPolling === 'function') stopLiveScorecardPolling();
+    if (typeof stopNFLLiveGame === 'function') stopNFLLiveGame();
 
     // Scroll to top on every navigation
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -552,6 +553,11 @@ function _renderNFLView(view) {
         showNFLTeamDetail(view.slice('nfl-team-'.length));
         return;
     }
+    if (view.startsWith('nfl-game-')) {
+        if (viewCount) viewCount.textContent = 'NFL Game';
+        if (typeof showNFLGame === 'function') showNFLGame(view.slice('nfl-game-'.length));
+        return;
+    }
 
     switch (view) {
         case 'nfl-mock':
@@ -760,6 +766,7 @@ function _loadFromHash() {
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
+    const nflGameMatch       = hash.match(/^nfl-game-([A-Za-z0-9]+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -802,6 +809,10 @@ function _loadFromHash() {
         _applySportUI('nfl');
         AppState.currentView = 'nfl-compare';
         loadNFLCompare();
+    } else if (nflGameMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        navigateTo('nfl-game-' + nflGameMatch[1], false);
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
         const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-', 'mlb-live-', 'mlb-scorecard-'];
