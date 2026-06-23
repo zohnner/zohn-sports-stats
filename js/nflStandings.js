@@ -10,7 +10,7 @@
 // ============================================================
 
 const _NSTD_MIN_SEASON = 2002;
-const _nstd = { season: null, view: 'div', bySeason: {} };
+const _nstd = { season: null, view: 'div', bySeason: {}, postBySeason: {} };
 
 // Super Bowl winners & runners-up by SEASON (game played the following Feb),
 // in modern abbreviations. 2002 = first year of the current 32-team alignment.
@@ -79,6 +79,38 @@ async function fetchNFLStandings(season) {
     return rows;
 }
 
+// Real postseason results from the ESPN scoreboard (seasontype=3). Weeks map to
+// rounds: 1 Wild Card, 2 Divisional, 3 Conference, 5 Super Bowl (4 is the Pro
+// Bowl — its "AFC"/"NFC" sides fail the real-team check and are dropped).
+async function fetchNFLPostseason(season) {
+    const out = { wc: [], div: [], conf: [], sb: [] };
+    const parseGame = (e) => {
+        const cs = (e.competitions && e.competitions[0] && e.competitions[0].competitors) || [];
+        if (cs.length !== 2) return null;
+        const teams = cs.map(x => ({
+            abbr: _nstdCanon(x.team && x.team.abbreviation),
+            score: (x.score != null && x.score !== '') ? parseInt(x.score, 10) : null,
+            win: !!x.winner,
+            logo: (x.team && x.team.logos && x.team.logos[0] && x.team.logos[0].href)
+                || (typeof getNFLTeamLogoUrl === 'function' ? getNFLTeamLogoUrl(x.team && x.team.abbreviation) : ''),
+        }));
+        return { teams, done: teams.some(t => t.win) };
+    };
+    const isReal = (g) => g && g.teams.every(t => t.abbr && t.abbr.length <= 3 && t.abbr !== 'AFC' && t.abbr !== 'NFC');
+    const fetchWk = async (wk) => {
+        try {
+            const r = await fetch(`/api/nfl?path=/scoreboard&seasontype=3&week=${wk}&dates=${season}`);
+            if (!r.ok) return [];
+            const j = await r.json();
+            return (j.events || []).map(parseGame).filter(isReal);
+        } catch (_) { return []; }
+    };
+    const [w1, w2, w3, w5, w4] = await Promise.all([fetchWk(1), fetchWk(2), fetchWk(3), fetchWk(5), fetchWk(4)]);
+    out.wc = w1; out.div = w2; out.conf = w3;
+    out.sb = (w5.length ? w5 : w4).slice(0, 1);
+    return out;
+}
+
 // Assign 1..N conference seeds. Trust ESPN's playoffSeed when it's a clean 1..16
 // permutation; otherwise apply the NFL rule (4 division winners seed above all
 // wildcards), tie-broken by win%, then point differential.
@@ -110,6 +142,10 @@ async function loadNFLStandings() {
     grid.innerHTML = `<div class="nstd-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Loading ${_nstd.season} standings…</p></div>`;
     try {
         if (!_nstd.bySeason[_nstd.season]) _nstd.bySeason[_nstd.season] = await fetchNFLStandings(_nstd.season);
+        if (_nstd.postBySeason[_nstd.season] === undefined) {
+            try { _nstd.postBySeason[_nstd.season] = await fetchNFLPostseason(_nstd.season); }
+            catch (_) { _nstd.postBySeason[_nstd.season] = null; }
+        }
         displayNFLStandings(_nstd.bySeason[_nstd.season], _nstd.season);
     } catch (err) {
         if (window.ErrorHandler && ErrorHandler.handle) ErrorHandler.handle(grid, err, loadNFLStandings, { tag: 'NFL', title: 'Failed to Load Standings' });
@@ -178,7 +214,7 @@ function displayNFLStandings(rows, season) {
         <div class="nstd-controls">
           <div class="nstd-seg-group">${seg('div', 'Division')}${seg('conf', 'Playoff Seeding')}</div>
         </div>
-        ${_nstdBracket(confs, confOrder, season)}
+        ${_nstdBracket(confs, confOrder, season, _nstd.postBySeason[season])}
         ${body}
         <p class="pct-caption">Records, points and tiebreak seeds via ESPN. Seeds 1–4 are division winners; the line marks the ${_nstdCut(season)}-team playoff cut${season >= 2020 ? '' : ' (6 teams pre-2020)'}. Click a team for its page.</p>
       </div>`;
@@ -254,7 +290,53 @@ function _nstdConferenceView(confs, confOrder, season, maxAbs) {
     }).join('') + `</div>`;
 }
 
-function _nstdBracket(confs, confOrder, season) {
+// Bracket: real postseason results when we have them, else a seed-based preview.
+function _nstdBracket(confs, confOrder, season, post) {
+    const hasResults = post && ((post.wc && post.wc.length) || (post.div && post.div.length) || (post.sb && post.sb.length));
+    return hasResults ? _nstdRealBracket(confs, confOrder, season, post)
+                      : _nstdSeedBracket(confs, confOrder, season);
+}
+
+function _nstdRealBracket(confs, confOrder, season, post) {
+    const seedMap = {}, confMap = {};
+    confOrder.forEach(c => (confs[c] || []).forEach(t => {
+        seedMap[_nstdCanon(t.abbr)] = t.seed; confMap[_nstdCanon(t.abbr)] = c;
+    }));
+    const gameConf = (g) => { for (const t of g.teams) { const c = confMap[t.abbr]; if (c) return c; } return null; };
+    const teamRow = (t) => `<div class="nstd-bkr-team ${t.win ? 'nstd-bkr-team--win' : ''}" onclick="${_nstdNav(t.abbr)}">
+        <span class="nstd-bk-seed">${seedMap[t.abbr] || ''}</span>
+        <img src="${_escHtml(t.logo)}" alt="" data-hide-on-error>
+        <span class="nstd-bk-abbr">${_escHtml(t.abbr)}</span>
+        <span class="nstd-bkr-score">${t.score != null ? t.score : ''}</span></div>`;
+    const game = (g) => `<div class="nstd-bkr-game">${g.teams.map(teamRow).join('')}</div>`;
+    const col = (label, games) => `<div class="nstd-bkr-col"><div class="nstd-bkr-rnd">${label}</div>${games.length ? games.map(game).join('') : '<div class="nstd-bkr-empty">—</div>'}</div>`;
+    const byConf = (arr, conf) => (arr || []).filter(g => gameConf(g) === conf);
+    const A = confOrder[0], N = confOrder[1];
+
+    const sbG = post.sb[0];
+    const sbWinner = sbG && sbG.teams.find(t => t.win);
+    const sbCol = `<div class="nstd-bkr-col nstd-bkr-col--sb">
+        <div class="nstd-bkr-rnd nstd-bkr-rnd--sb">🏆 Super Bowl</div>
+        ${sbG ? `<div class="nstd-bkr-game nstd-bkr-game--sb">${sbG.teams.map(teamRow).join('')}</div>
+            ${sbWinner ? `<div class="nstd-bkr-champtag">${_escHtml(sbWinner.abbr)} champions</div>` : ''}`
+            : `<div class="nstd-bkr-empty">${season >= _nstdSeasonDefault() ? 'TBD' : '—'}</div>`}
+    </div>`;
+
+    return `<details class="nstd-bracket" open>
+        <summary class="nstd-bracket__sum">Playoff bracket <span class="nstd-bracket__hint">${season} postseason results · AFC left · NFC right</span></summary>
+        <div class="nstd-bracket__scroll"><div class="nstd-bkr-body">
+            ${col(A + ' Wild Card', byConf(post.wc, A))}
+            ${col('Divisional', byConf(post.div, A))}
+            ${col('Championship', byConf(post.conf, A))}
+            ${sbCol}
+            ${col('Championship', byConf(post.conf, N))}
+            ${col('Divisional', byConf(post.div, N))}
+            ${col(N + ' Wild Card', byConf(post.wc, N))}
+        </div></div>
+    </details>`;
+}
+
+function _nstdSeedBracket(confs, confOrder, season) {
     const cut = _nstdCut(season), byes = _nstdByes(season);
     const sb = _NSTD_SB[season];
     const chipsFor = (conf) => {

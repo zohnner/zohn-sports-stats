@@ -438,6 +438,23 @@ let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
 let _nflPosFilter = sessionStorage.getItem('ss_nfl_pos_filter') || 'ALL';
 
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
+// NFL team primary colors (curated for visibility on the dark UI) — drives player
+// card + profile accents so they read as the team, not the position.
+const _NFL_TEAM_COLOR = {
+    ARI: '#C41E3A', ATL: '#E31837', BAL: '#5B43A8', BUF: '#0E63D6', CAR: '#0085CA',
+    CHI: '#E64100', CIN: '#FB4F14', CLE: '#FF6A00', DAL: '#2A6FDB', DEN: '#FB4F14',
+    DET: '#0095DB', GB: '#FFB612', HOU: '#E31837', IND: '#0A5BD6', JAX: '#00A39B',
+    KC: '#E31837', LV: '#C4CDD3', LAC: '#0080C6', LAR: '#FFA300', MIA: '#00B2BE',
+    MIN: '#7A5BC2', NE: '#C8102E', NO: '#D3BC8D', NYG: '#1A45C2', NYJ: '#1C8A5B',
+    PHI: '#1A8C8C', PIT: '#FFB612', SEA: '#69BE28', SF: '#C8102E', TB: '#D50A0A',
+    TEN: '#4B92DB', WAS: '#C9243F',
+};
+const _NFL_TEAM_COLOR_ALIAS = { OAK: 'LV', SD: 'LAC', STL: 'LAR', LA: 'LAR', WSH: 'WAS', ARZ: 'ARI', JAC: 'JAX' };
+function getNFLTeamColor(abbr) {
+    if (!abbr) return null;
+    const a = String(abbr).toUpperCase();
+    return _NFL_TEAM_COLOR[_NFL_TEAM_COLOR_ALIAS[a] || a] || null;
+}
 const _NFL_POS_COLOR = { QB: 'var(--nfl-pos-qb)', RB: 'var(--nfl-pos-rb)', WR: 'var(--nfl-pos-wr)', TE: 'var(--nfl-pos-te)', K: 'var(--nfl-pos-k)' };
 const _nflAlpha = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
 
@@ -526,7 +543,7 @@ function _createNFLPlayerCard(p) {
     card.onclick = () => navigateTo('nfl-player-' + p.player_id);
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
-    const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
+    const posColor = getNFLTeamColor(p.team) || _NFL_POS_COLOR[pos] || 'var(--accent)';
     card.style.borderTop = `3px solid ${_nflAlpha(posColor, 80)}`;
 
     const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
@@ -788,6 +805,7 @@ function _renderNFLPlayerDetail(p) {
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
+    const teamColor = getNFLTeamColor(p.team) || posColor;
     const headshot = getNFLSleeperHeadshot(p.player_id);
     const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const inches   = parseInt(p.height, 10);
@@ -825,7 +843,7 @@ function _renderNFLPlayerDetail(p) {
                 <button class="share-btn" onclick="window._shareCurrentPage && window._shareCurrentPage()" title="Copy link">Share</button>
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
+                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${teamColor}">
                     ${headshotImg}<span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">
@@ -1492,7 +1510,7 @@ async function showNFLEspnPlayer(espnId) {
                 ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
             </div>
             <div class="player-hero">
-                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${posColor}">
+                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${teamColor}">
                     ${prof.headshot ? `<img class="player-headshot" src="${prof.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}<span class="avatar-text">${initials}</span>
                 </div>
                 <div class="player-hero-info">

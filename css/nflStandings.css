@@ -89,3 +89,26 @@
     .nstd-bracket__body { grid-template-columns: 1fr; }
     .nstd-bk-sb { order: -1; }
 }
+
+/* Real playoff bracket (postseason results) */
+.nstd-bracket__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.nstd-bkr-body { display: flex; gap: 0.6rem; min-width: max-content; padding: 0 1rem 1rem; align-items: flex-start; }
+.nstd-bkr-col { display: flex; flex-direction: column; gap: 0.5rem; min-width: 122px; }
+.nstd-bkr-col--sb { align-self: center; justify-content: center; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid var(--accent-border); border-radius: var(--radius-lg); padding: 0.5rem; min-width: 146px; }
+.nstd-bkr-rnd { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-subtle); }
+.nstd-bkr-rnd--sb { color: var(--accent); text-align: center; }
+.nstd-bkr-game { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+.nstd-bkr-game--sb { background: transparent; border-color: var(--accent-border); }
+.nstd-bkr-team { display: flex; align-items: center; gap: 0.35rem; padding: 0.32rem 0.45rem; cursor: pointer; border-bottom: 1px solid var(--border-subtle); }
+.nstd-bkr-team:last-child { border-bottom: none; }
+.nstd-bkr-team:hover { background: var(--bg-card-hover); }
+.nstd-bkr-team img { width: 18px; height: 18px; object-fit: contain; }
+.nstd-bkr-team .nstd-bk-abbr { font-size: 0.78rem; font-weight: 700; }
+.nstd-bkr-team--win { background: color-mix(in srgb, var(--color-win) 9%, transparent); }
+.nstd-bkr-team--win .nstd-bk-abbr { color: var(--text-primary); }
+.nstd-bkr-team:not(.nstd-bkr-team--win) { opacity: 0.6; }
+.nstd-bkr-score { margin-left: auto; font-size: 0.78rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.nstd-bkr-team--win .nstd-bkr-score { color: var(--color-win); }
+.nstd-bkr-empty { font-size: 0.72rem; color: var(--text-subtle); padding: 0.4rem; text-align: center; }
+.nstd-bkr-champtag { margin-top: 0.35rem; text-align: center; font-size: 0.66rem; font-weight: 800; color: var(--accent-light); letter-spacing: 0.03em; }
+@media (max-width: 768px) { .nstd-bkr-col { min-width: 108px; } }
