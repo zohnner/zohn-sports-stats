@@ -2993,3 +2993,21 @@ D-022. Owner: nav lacked direction / industry-standard categorization across MLB
 - Files: js/navigation.js (configs + 3 render fns + `_openMenu` + handler + `_applySportUI`), css/main.css, sw.js v21→v22.
 
 **Verification:** node --check clean (NUL 0); static render sim confirms identical cross-sport order. Live desktop+mobile screenshots pending push.
+
+---
+
+## D-031 Phase 1 — Accounts foundation (GATED — specs before code)
+
+**Scope:** accounts + followed teams/players + synced preferences. No payments, no gated features, no notifications (freemium + monetization come in a later phase). Auth is **optional and non-blocking** — the no-login experience must not regress.
+
+**Gate 0 — Secrets hygiene:** P1-006 already resolved (`api.js` key removed, proxy set). All auth/provider/session secrets via `wrangler secret`, never committed. ✅ verified / carry forward.
+
+**Gates (all required before implementation):**
+- **A-031 Cipher (security):** threat model; sessions = HttpOnly/Secure/SameSite cookies backed by D1; CSRF tokens; auth-endpoint rate limiting; passkey/OAuth approach; secret management. — PENDING
+- **A-031 Relay (data):** D1 schema (`users`, `sessions`, `follows`, `prefs`); data export + hard-delete; retention policy. — PENDING
+- **A-031 Axiom (feasibility):** better-auth on Workers/D1 spike (per-request instantiation; evaluate session-refresh bug #4203) vs `workers-oauth-provider`/`jose`; Functions npm-dependency + build-step impact; session middleware. — PENDING
+- **A-031 Vera (UX):** optional sign-in flow; states (signed-out, signing-in, signed-in, error, account mgmt); follows UI; account menu. — PENDING
+- **A-031 Kael (visual):** on-brand sign-in surface + account menu in header. — PENDING
+- **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — PENDING
+
+**Finn:** implements Phase 1 only once all gates above are signed off. Then a full `/security-review` before launch.
