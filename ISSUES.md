@@ -3006,8 +3006,8 @@ D-022. Owner: nav lacked direction / industry-standard categorization across MLB
 - **A-031 Cipher (security):** threat model; sessions = HttpOnly/Secure/SameSite cookies backed by D1; CSRF tokens; auth-endpoint rate limiting; passkey/OAuth approach; secret management. — **DRAFTED** (docs/auth-security-spec.md; pending team review).
 - **A-031 Relay (data):** D1 schema (`users`, `sessions`, `follows`, `prefs`); data export + hard-delete; retention policy. — **DRAFTED** (docs/auth-data-schema.md; pending team review).
 - **A-031 Axiom (feasibility):** better-auth on Workers/D1 spike (per-request instantiation; evaluate session-refresh bug #4203) vs `workers-oauth-provider`/`jose`; Functions npm-dependency + build-step impact; session middleware. — **DRAFTED** (docs/auth-feasibility-spike.md; pending team review).
-- **A-031 Vera (UX):** optional sign-in flow; states (signed-out, signing-in, signed-in, error, account mgmt); follows UI; account menu. — PENDING
-- **A-031 Kael (visual):** on-brand sign-in surface + account menu in header. — PENDING
-- **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — PENDING
+- **A-031 Vera (UX):** optional sign-in flow; states (signed-out, signing-in, signed-in, error, account mgmt); follows UI; account menu. — **DRAFTED** (docs/auth-ux-visual-spec.md; pending review).
+- **A-031 Kael (visual):** on-brand sign-in surface + account menu in header. — **DRAFTED** (docs/auth-ux-visual-spec.md; pending review).
+- **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — **DRAFTED** (docs/auth-legal-checklist.md; pending review).
 
 **Finn:** implements Phase 1 only once all gates above are signed off. Then a full `/security-review` before launch.
