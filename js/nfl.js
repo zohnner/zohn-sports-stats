@@ -600,7 +600,7 @@ async function loadNFLLeaderboards() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
     grid.style.cssText = '';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-trending', null);
 
     grid.innerHTML = Array.from({ length: 2 }, () =>
         `<div class="skeleton-card" style="min-height:360px"></div>`
@@ -622,7 +622,7 @@ function displayNFLTrending(adds, drops) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
     grid.style.cssText = '';
-    grid.innerHTML = '';
+    grid.innerHTML = (typeof _hqStrip === 'function') ? _hqStrip('nfl-trending') : '';
 
     const panel = (title, icon, list, accent) => {
         const card = document.createElement('div');
@@ -1369,7 +1369,7 @@ function displayNFLRankings() {
         </div>`;
     });
     html += `</div>`;
-    grid.innerHTML = html;
+    grid.innerHTML = ((typeof _hqStrip === 'function') ? _hqStrip('nfl-rankings') : '') + html;
     grid.querySelectorAll('[data-nfl-rank-pos]').forEach(b => b.addEventListener('click', () => { _nflRankPos = b.dataset.nflRankPos; displayNFLRankings(); }));
 }
 

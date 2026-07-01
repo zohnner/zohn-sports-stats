@@ -565,11 +565,11 @@ function _renderNFLView(view) {
             if (typeof loadMockDraft === 'function') loadMockDraft();
             break;
         case 'nfl-draftkit':
-            if (viewCount) viewCount.textContent = 'Draft Kit';
+            if (viewCount) viewCount.textContent = 'Draft HQ · Value Board';
             if (typeof loadDraftKit === 'function') loadDraftKit();
             break;
         case 'nfl-sos':
-            if (viewCount) viewCount.textContent = 'Strength of Schedule';
+            if (viewCount) viewCount.textContent = 'Draft HQ · Schedule';
             if (typeof loadNFLSOS === 'function') loadNFLSOS();
             break;
         case 'nfl-players':
@@ -577,7 +577,7 @@ function _renderNFLView(view) {
             loadNFLPlayers();
             break;
         case 'nfl-rankings':
-            if (viewCount) viewCount.textContent = 'NFL Rankings';
+            if (viewCount) viewCount.textContent = 'Draft HQ · Rankings';
             loadNFLRankings();
             break;
         case 'nfl-compare':
@@ -589,7 +589,7 @@ function _renderNFLView(view) {
             loadNFLStatLeaders();
             break;
         case 'nfl-trending':
-            if (viewCount) viewCount.textContent = 'NFL Trending';
+            if (viewCount) viewCount.textContent = 'Draft HQ · Trending';
             loadNFLLeaderboards();
             break;
         case 'nfl-teams':
@@ -866,7 +866,8 @@ const SUB_NAV_TABS = {
             { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
         ] },
         { l: 'Fantasy', children: [
-            { v: 'nfl-rankings', l: 'Rankings' }, { v: 'nfl-draftkit', l: 'Draft Kit' }, { v: 'nfl-sos', l: 'Strength of Schedule' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-trending', l: 'Trending' },
+            { v: 'nfl-draftkit', l: 'Draft HQ', also: ['nfl-rankings', 'nfl-sos', 'nfl-trending', 'nfl-mock'] },
+            { v: 'nfl-mock', l: 'Mock Draft' },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -880,7 +881,7 @@ function _renderSubNav(sport) {
     nav.innerHTML = tabs.map((t, i) => {
         if (t.children) {
             const menuId = `subcat-${sport}-${i}`;
-            const childViews = t.children.map(c => c.v).join(' ');
+            const childViews = t.children.flatMap(c => [c.v, ...(c.also || [])]).join(' ');
             const items = t.children.map(c => `<button class="nav-tab sub-nav-drop-item" data-view="${c.v}" role="menuitem">${c.l}</button>`).join('');
             return `<div class="sub-nav-cat" data-children="${childViews}">
                 <button class="nav-tab sub-nav-parent" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="${menuId}">${t.l}<span class="sub-nav-caret" aria-hidden="true">▾</span></button>
@@ -950,8 +951,7 @@ const MENU_TABS = {
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Fantasy' },
-        { v:'nfl-rankings', l:'Rankings', i:'leaders' }, { v:'nfl-draftkit', l:'Draft Kit', i:'extra' }, { v:'nfl-sos', l:'Strength of Sched', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
-        { v:'nfl-trending', l:'Trending', i:'trending' },
+        { v:'nfl-draftkit', l:'Draft HQ', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
         { group:'Tools' },
         { v:'nfl-compare', l:'Compare', i:'compare' },
     ],

@@ -386,7 +386,7 @@ Hosted on **Cloudflare Pages**. Key deployment artifacts:
 - **`_headers`** — Cloudflare Pages headers file; sets CSP and security headers. Must stay in sync with the `<meta http-equiv="Content-Security-Policy">` tag in `index.html`. Adding any new external domain to a fetch or `<img>` requires updating **both**.
 - **`worker/`** — Cloudflare Worker for the BDL proxy (P1-006 fix target).
 
-**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically. Also run `node --test tests/` — the stat-math unit tests (wOBA/wRC+/FIP/derived rates) must pass; they guard against stale-constant regressions.
+**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically. Also run `node --test tests/stats.test.js` — the stat-math unit tests (wOBA/wRC+/FIP/derived rates) must pass; they guard against stale-constant regressions.
 
 ---
 

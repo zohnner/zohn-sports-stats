@@ -4325,3 +4325,42 @@
     border-color: var(--accent-border);
     background: var(--accent-subtle);
 }
+
+/* ── Draft HQ strip (D-035) ──────────────────────────────────
+   Spans full width inside .players-grid contexts; horizontal
+   scroll on narrow screens. Active tab baked at render time. */
+.hq-strip {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.hq-strip::-webkit-scrollbar { display: none; }
+.hq-title {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--text-subtle);
+    margin-right: 0.35rem;
+    white-space: nowrap;
+}
+.hq-tab {
+    flex: 0 0 auto;
+    padding: 0.32rem 0.75rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 120ms ease-out, border-color 120ms ease-out, background 120ms ease-out;
+}
+.hq-tab:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--bg-card-hover); }
+.hq-tab--on { color: var(--accent); border-color: var(--border-accent); background: var(--accent-subtle); }
+@media print { .hq-strip { display: none; } }

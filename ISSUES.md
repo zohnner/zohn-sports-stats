@@ -3030,3 +3030,7 @@ Deep-review initiatives 2+3 (D-032, D-033). Lightweight process per owner.
 
 ### Constitution v2 (2026-07-01) — SHIPPED (pending push)
 D-034: GOALS.md v2 (barbell identity + no-login constitutional rule, R1–R5 retired), CLAUDE.md truth-audit (P1-006 section, script chain, doc-sync rule, tests in checklist), `docs/archive/` pruning (fixit/suggestions/reflection).
+
+### Draft HQ consolidation (2026-07-01) — SHIPPED (pending push)
+D-035. Fantasy dropdown: 5 sibling views → **Draft HQ + Mock Draft**; shared `.hq-strip` tab bar rendered by each member view (Value Board · Rankings · Schedule · Trending · Mock Draft). Old routes unchanged = deep links safe. Latent trending-breadcrumb bug fixed (`nfl-leaders` → `nfl-trending`). Strip print-hidden (Draft Kit cheat sheet unaffected). SW v48.
+**Live verify after push:** all five views show the strip with correct active pill; Fantasy parent stays lit across member views; mobile menu shows 2 fantasy tiles; mock draft strip disappears once a draft starts.

@@ -138,8 +138,25 @@ async function loadMockDraft() {
     _renderMockSetup(grid);
 }
 
+// ── Draft HQ strip (D-035) — one home for the fantasy research views ──
+// Rendered by each member view at the top of its own output, so routes,
+// deep links, and .nav-tab[data-view] active-state all keep working.
+const _HQ_TABS = [
+    { v: 'nfl-draftkit', l: 'Value Board' },
+    { v: 'nfl-rankings', l: 'Rankings' },
+    { v: 'nfl-sos',      l: 'Schedule' },
+    { v: 'nfl-trending', l: 'Trending' },
+    { v: 'nfl-mock',     l: 'Mock Draft' },
+];
+function _hqStrip(active) {
+    const tabs = _HQ_TABS.map(t =>
+        `<button type="button" class="hq-tab${t.v === active ? ' hq-tab--on' : ''}"${t.v === active ? ' aria-current="page"' : ''} onclick="navigateTo('${t.v}')">${t.l}</button>`
+    ).join('');
+    return `<nav class="hq-strip" aria-label="Draft HQ sections"><span class="hq-title">DRAFT HQ</span>${tabs}</nav>`;
+}
+
 function _renderMockSetup(grid) {
-    grid.innerHTML = `
+    grid.innerHTML = _hqStrip('nfl-mock') + `
       <div class="md-wrap">
         <div class="md-setup">
           <h1 class="md-title">Mock Draft</h1>
@@ -548,7 +565,7 @@ function _dkRender() {
         <span class="dk-st-sub">ADP ${r.adp} · Val #${r.valRank}</span>
     </button>`;
 
-    grid.innerHTML = `
+    grid.innerHTML = _hqStrip('nfl-draftkit') + `
       <div class="dk-wrap">
         <div class="dk-head">
           <div><h1 class="md-title" style="margin:0">Draft Kit</h1>

@@ -104,7 +104,7 @@ function _sosRender() {
         ? `Fantasy playoffs — weeks ${d.playoffWeeks[0]}–${d.playoffWeeks[d.playoffWeeks.length - 1]}`
         : `Full ${d.weeks}-week regular season`;
 
-    grid.innerHTML = `
+    grid.innerHTML = ((typeof _hqStrip === 'function') ? _hqStrip('nfl-sos') : '') + `
       <div class="sos-wrap">
         <div class="sos-head">
           <div>
