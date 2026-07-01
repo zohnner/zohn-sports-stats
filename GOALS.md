@@ -5,12 +5,20 @@
 
 ---
 
-## Vision
+## Vision (v2 — ratified 2026-07-01, owner + all seniors; supersedes v1)
 
-Build the best browser-based **baseball stats experience** — no paywalls, no accounts, no clutter.  
-Every stat a broadcaster needs should load in under 2 seconds and be shareable as a URL.
+SportStrata runs a deliberate **two-season barbell**:
 
-MLB is the core product. NBA, NFL, and NHL exist as preview features and will expand once MLB reaches full depth.
+- **Baseball months:** the broadcast/desk reference for MLB — serious, printable, provably accurate, announcer-ready.
+- **Football months:** the **no-login fantasy edge tool** for NFL — mock draft, VORP value engine, Draft Kit, SOS.
+
+Both legs share one spine: **no friction, visible provenance, correct math.** Every stat a broadcaster or drafter needs should load in under 2 seconds and be shareable as a URL.
+
+MLB is the flagship; NFL is a live public beta (D-012). NBA and NHL are parked previews — no investment without an explicit owner decision reviving them.
+
+### Constitutional rule — the no-login experience must never regress
+
+Accounts (D-031) are **additive-only**. Every current capability stays available logged-out, forever. Sign-in may add things (follows, sync, league-aware tools); it may never gate what is free today. Any proposal that would violate this rule is out of scope until GOALS.md is re-ratified again.
 
 ---
 
@@ -63,62 +71,30 @@ Print layout (`⌘P`) produces a clean game-prep sheet with no chrome.
 **Completed:** Game Prep view with pitcher matchups, lineup context, print button. Search (⌘K) surfaces players with AVG/ERA hint. Player detail with full stat bars, career chart, Statcast percentile card, predictive analytics badge (Breakout/Regression/Sell High/Buy Low). Side-by-side comparison with shareable URL (P3-001). Broadcast Blurb button on player detail (Cloudflare Worker, needs deployment — P2-005). All G3 depth targets met.  
 **Remaining:** Broadcast Blurb Worker deployment (P2-005 — authorization pending).
 
-### G4 — Zero Friction
-No login, no cookies banner, no paywall.  
-Favorites, notes, and preferences save to `localStorage`; nothing leaves the browser unless the user explicitly shares a link.
+### G4 — Zero Friction (amended 2026-07-01)
+The logged-out product has no login wall, no paywall, and full functionality — governed by the constitutional rule above.  
+Favorites, notes, and preferences save to `localStorage`; nothing leaves the browser unless the user explicitly shares a link or opts into an account (D-031, optional and additive-only).
 
 ### G5 — Maintainable Solo Codebase
 No frameworks, no build step, no CI pipeline complexity.  
 Vanilla JS + CSS modules. Each sport is one file (or at most two).  
 The codebase should be readable by a future contributor in 30 minutes.
 
-### G6 — Other Sports as Preview
-NBA, NFL, and NHL are functional preview features — accessible but clearly secondary.  
-They receive no new feature investment until MLB depth goals (G2) are met.
+### G6 — Sport Scope (amended 2026-07-01)
+MLB (flagship) and NFL (live beta, D-012) are the two invested sports — the barbell. G2 depth goals were met 2026-06-08, which released the old preview freeze.  
+NBA and NHL are parked: no feature work, and their currently-unreachable client code should be delivery-gated or removed (deep-review 2026-07-01, finding X5). Reviving either requires an owner decision in DECISIONS.md.
 
 ---
 
 ---
 
-## Revenue & Growth Goals
+## Monetization (re-scoped 2026-07-01 — supersedes R1–R5)
 
-### R1 — Freemium Conversion
-Launch a **Pro tier at $9.99/month** gating:
-- Full Statcast metrics (exit velocity, barrel%, xBA, xSLG, xwOBA, sprint speed)
-- Historical data — any season back to 2015, season-over-season trend charts
-- Unlimited custom Stat Builder formulas with save/share
-- CSV/PDF export of any leaderboard or player card
-- No ads, priority cache (edge-pinned data)
+The former revenue goals (Pro tier, $499 Enterprise seats, paid API, DFS affiliate deals) were aspiration written ahead of any foundation, and several contradicted G4. They are retired. What stands:
 
-Free tier stays fully functional for current-season standard stats — never bait-and-switch the core product.
+**Freemium on top of accounts, later (D-031).** Reference and analytics stay free forever (constitutional rule). A future paid tier may unlock the fantasy edge that depends on per-user infrastructure — league sync, projections, alerts, advanced tools. Monetization work starts only after the auth foundation is shipped, hardened, and security-reviewed, and it gets its own decision entry when it does.
 
-### R2 — Broadcast Professional SaaS
-**$499/month Enterprise plan** for regional sports networks, radio stations, and TV production teams:
-- 10-seat shared workspace with team logins
-- Branded PDF game-prep sheets (station logo, commentator name on header)
-- One-click "broadcast card" — oversized stat graphic ready for on-air lower-third
-- Scheduled email digests: "Tonight's pitching matchup" delivered 3h before first pitch
-- Dedicated Slack/email support channel
-
-Target: sell 10 enterprise seats at launch = $5K MRR on day 1.
-
-### R3 — Developer Data API
-**$99/month for 100K requests** to a versioned REST API wrapping the SportStrata stat engine:
-- Returns computed stats (FIP, BABIP, ISO, LOB%, RC, etc.) not available directly from MLB Stats API
-- JSON responses with league rank, percentile, and rolling averages
-- Powers fantasy app integrations, sports betting research tools, custom dashboards
-
-### R4 — Fantasy Platform Partnerships
-Affiliate agreements with **DraftKings, FanDuel, Yahoo Fantasy** for contextual referral links:
-- "Build a lineup" button on player cards that deep-links to the platform with the player pre-selected
-- Commission per signup: target $15–30 CPA
-- DFS lineup optimizer page (Pro feature): optimal 8-man slate using SportStrata's stat model
-
-### R5 — Shareable Stat Cards (Viral Growth)
-Auto-generated **branded PNG/SVG cards** shareable to Twitter, Instagram, and iMessage:
-- "Share this stat" button on any leaderboard entry → generates a SportStrata-watermarked graphic
-- Cards show: player photo, stat rank (#1 in MLB), sparkline of last 30 days
-- Each shared card links back to the live view — organic acquisition funnel
+**Share cards remain the organic-growth channel** (scorecard PNGs, stat cards, draft cheat sheets) — every exported artifact is branded and links back to the live view. No ads, no trackers, no data sales — ever.
 
 ---
 
@@ -220,7 +196,8 @@ Unified player search across all sports — type any name, get any sport.
 ## Annual Maintenance
 
 - **Park factors refresh (each April):** `_PARK_FACTORS` in `js/mlb.js` reflects 2022–2024 Baseball Reference averages. Re-verify at season start — relocations (Athletics) and park changes shift values. (Relay, 2026-06-04)
-- **wRC+ guts constants:** `_MLB_WRC_CONSTANTS` needs each new season's FanGuts values when published; current-season values are preliminary (dagger shown in UI).
+- **wRC+ guts constants:** self-healing as of 2026-07-01 — seasons without a static entry derive lgwOBA/lgR-PA from MLB Stats API league totals (`_ensureWrcConstants`, † shown in UI). Optionally add the official FanGraphs entry when published to drop the dagger.
+- **Park factors (OPEN):** `_PARK_FACTORS` still reflects 2022–2024 B-Ref averages; needs a manual source pull each spring (Athletics relocation unverified). Tracked in ISSUES.md.
 
 ---
 

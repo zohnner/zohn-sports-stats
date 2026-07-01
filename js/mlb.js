@@ -137,6 +137,8 @@ const _MLB_ABBR_ALIASES = {
 // 1.00 = league avg; >1.05 hitter-friendly; <0.95 pitcher-friendly
 // Source: Baseball Reference multi-year park factors (2022–2024 avg) | Season: 2024
 // Review annually at season start — values shift as parks change or teams relocate.
+// 2026-07-01 review (Relay): still the 2022–2024 B-Ref averages — refresh requires a manual
+// source pull (no fetchable feed); tracked in ISSUES.md (P2 park-factor refresh).
 const _PARK_FACTORS = {
     115: 1.15, // Rockies — Coors Field
     113: 1.08, // Reds — Great American Ball Park
@@ -344,8 +346,51 @@ function getMLBPlayerHeadshotUrl(playerId) {
 // I'm flagging <90% confidence on the 2025 values — drawn from historical FanGraphs data.
 const _MLB_WRC_CONSTANTS = {
     2024: { lgwOBA: 0.310, wOBAscale: 1.157, lgRPA: 0.115 },
-    2025: { lgwOBA: 0.309, wOBAscale: 1.157, lgRPA: 0.113 }, // † preliminary
+    2025: { lgwOBA: 0.309, wOBAscale: 1.157, lgRPA: 0.113, preliminary: true },
 };
+
+// ── wRC+ constants derivation (Relay, 2026-07-01) ────────────
+// Static entries go stale each season (2026 silently fell back to 2024
+// values before this). For any season without a static entry, derive
+// lgwOBA and lgR/PA from MLB Stats API league hitting totals using the
+// SAME 2024 linear weights as _computeBattingRates — self-consistent
+// with player wOBA. wOBAscale carried from the latest static year.
+// Derived entries are marked { derived: true } and render with †.
+const _wrcDerive = {};
+function _ensureWrcConstants(season = MLB_SEASON) {
+    if (_MLB_WRC_CONSTANTS[season]) return Promise.resolve();
+    if (_wrcDerive[season]) return _wrcDerive[season];
+    _wrcDerive[season] = mlbFetch('/teams/stats', { season, sportId: 1, group: 'hitting', stats: 'season' }, ApiCache.TTL.DAILY)
+        .then(data => {
+            const splits = data?.stats?.[0]?.splits || [];
+            if (splits.length < 24) return; // partial league response — keep fallback
+            const t = { bb: 0, ibb: 0, hbp: 0, h: 0, d2: 0, t3: 0, hr: 0, ab: 0, sf: 0, r: 0, pa: 0 };
+            splits.forEach(s => {
+                const st = s.stat || {};
+                t.bb += st.baseOnBalls || 0;  t.ibb += st.intentionalWalks || 0;
+                t.hbp += st.hitByPitch || 0;  t.h  += st.hits || 0;
+                t.d2 += st.doubles || 0;      t.t3 += st.triples || 0;
+                t.hr += st.homeRuns || 0;     t.ab += st.atBats || 0;
+                t.sf += st.sacFlies || 0;     t.r  += st.runs || 0;
+                t.pa += st.plateAppearances || 0;
+            });
+            const sing  = t.h - t.d2 - t.t3 - t.hr;
+            const denom = t.ab + t.bb - t.ibb + t.sf + t.hbp;
+            if (denom <= 0 || t.pa <= 0) return;
+            const lgwOBA = (0.69 * (t.bb - t.ibb) + 0.72 * t.hbp + 0.89 * sing + 1.27 * t.d2 + 1.62 * t.t3 + 2.10 * t.hr) / denom;
+            _MLB_WRC_CONSTANTS[season] = { lgwOBA: +lgwOBA.toFixed(4), wOBAscale: 1.157, lgRPA: +(t.r / t.pa).toFixed(4), derived: true };
+            Logger.info(`wRC+ constants derived for ${season}`, _MLB_WRC_CONSTANTS[season], 'MLB');
+        })
+        .catch(err => { Logger.warn(`wRC+ constants derivation failed for ${season} — using latest static year`, err?.message, 'MLB'); })
+        .finally(() => { delete _wrcDerive[season]; });
+    return _wrcDerive[season];
+}
+
+function _wrcDagger(season = MLB_SEASON) {
+    const c = _MLB_WRC_CONSTANTS[season];
+    return (!c || c.derived || c.preliminary) ? '†' : '';
+}
+
 
 // ── Core fetch helper ─────────────────────────────────────────
 const MLB_BASE_URL    = 'https://statsapi.mlb.com/api/v1';
@@ -915,6 +960,7 @@ async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit
     const params = { stats: statsType, season, group, sportId: 1, limit, playerPool: 'All' };
     if (statsType === 'season') params.sortStat = sortStat;
     const ttl  = statsType === 'season' && _activeGameHours() ? ApiCache.TTL.SHORT : ApiCache.TTL.MEDIUM;
+    if (group === 'hitting' && statsType === 'season') await _ensureWrcConstants(season);
     const data = await mlbFetch('/stats', params, ttl);
     return data.stats?.[0]?.splits || [];
 }
@@ -1519,7 +1565,7 @@ function _computeBattingRates(s) {
 
     // wRC+ — park-neutral, league-average-scaled offensive rate
     // Uses FanGraphs guts constants. Display with "†" if using preliminary constants.
-    const wrcConst = _MLB_WRC_CONSTANTS[MLB_SEASON] || _MLB_WRC_CONSTANTS[2024];
+    const wrcConst = _MLB_WRC_CONSTANTS[MLB_SEASON] || _MLB_WRC_CONSTANTS[2025];
     const wrcPlus = wobaRaw != null && wrcConst && wrcConst.lgRPA > 0
         ? Math.round(((wobaRaw - wrcConst.lgwOBA) / wrcConst.wOBAscale + wrcConst.lgRPA) / wrcConst.lgRPA * 100)
         : null;
@@ -1528,7 +1574,8 @@ function _computeBattingRates(s) {
 }
 
 function _computePitchingRates(s) {
-    const ip  = parseFloat(s.inningsPitched)  || 0;
+    // parseFloat reads "100.2" (100⅔ IP) as 100.2 — _mlbIpToNum converts thirds correctly
+    const ip  = _mlbIpToNum(s.inningsPitched);
     const bf  = parseFloat(s.battersFaced)    || 1;
     const so  = parseFloat(s.strikeOuts)      || 0;
     const bb  = parseFloat(s.baseOnBalls)     || 0;
@@ -1676,7 +1723,7 @@ function _mlbHittingBars(stats, rates = {}) {
         _mlbPctRow('Slugging %',   stats.slg,         { ...g, statKey: 'slg', fmt: _fmtAvg }),
         _mlbPctRow('OPS',          stats.ops,         { ...g, statKey: 'ops', fmt: _fmtAvg }),
         _mlbPctRow('wOBA',         rates.woba,        { ...g, statKey: 'woba' }),
-        _mlbPctRow('wRC+',         rates.wrcPlus,     { ...g, statKey: 'wrcPlus', fmt: v => v + ((_MLB_WRC_CONSTANTS[MLB_SEASON]?.lgwOBA === undefined) ? '†' : (MLB_SEASON === 2025 ? '†' : '')) }),
+        _mlbPctRow('wRC+',         rates.wrcPlus,     { ...g, statKey: 'wrcPlus', fmt: v => v + _wrcDagger() }),
         _mlbPctRow('ISO',          rates.iso,         { ...g, statKey: 'iso' }),
         _mlbPctRow('BABIP',        rates.babip,       { ...g, statKey: 'babip' }),
         _mlbPctRow('BB%',          rates.bbPct,       { ...g, statKey: 'bbPct', fmt: v => `${v}%` }),
@@ -7221,7 +7268,7 @@ Object.assign(AppState, {
     _mlbTeamRosters:       {},
 });
 
-function setMLBSeason(year) { MLB_SEASON = year; }
+function setMLBSeason(year) { MLB_SEASON = year; _ensureWrcConstants(year); }
 
 if (typeof window !== 'undefined') {
     window.MLB_SEASON              = MLB_SEASON;
@@ -7320,3 +7367,7 @@ if (typeof window !== 'undefined') {
 
 // Init MLB favorites after AppState is available (mlb.js loads after navigation.js)
 _initMLBFavs();
+
+// Warm current-season wRC+ constants at boot so early stat computes use derived,
+// not fallback, values (DAILY-cached; harmless no-op when a static entry exists)
+if (typeof window !== 'undefined') _ensureWrcConstants();

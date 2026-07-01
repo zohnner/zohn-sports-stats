@@ -3011,3 +3011,22 @@ D-022. Owner: nav lacked direction / industry-standard categorization across MLB
 - **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — **DRAFTED** (docs/auth-legal-checklist.md; pending review).
 
 **Finn:** implements Phase 1 only once all gates above are signed off. Then a full `/security-review` before launch.
+
+---
+
+### Wave 1 accuracy + hardening (2026-07-01) — SHIPPED (pending push)
+Deep-review initiatives 2+3 (D-032, D-033). Lightweight process per owner.
+
+- **wRC+ stale-constants bug fixed:** 2026 was silently computed with 2024 guts constants. `_ensureWrcConstants(season)` now derives lgwOBA/lgR-PA from MLB Stats API league totals for any season without a static entry (DAILY cache, † dagger via `_wrcDagger()`). Awaited in `fetchMLBLeagueStats`, warmed at boot + on season change.
+- **FIP IP-thirds fixed:** `_computePitchingRates` used `parseFloat("100.2")` = 100.2 instead of 100⅔ — now `_mlbIpToNum()`.
+- **First test suite:** `tests/stats.test.js` (`node --test tests/`, zero deps, vm-sandboxed mlb.js). 7 tests, hand-verified fixtures. Added to pre-push checklist.
+- **/api/* rate limiting:** `functions/api/_middleware.js` (120/min/IP best-effort, 429 + Retry-After). Owner dashboard WAF rule pending — steps in `docs/ops-rate-limiting.md`.
+- SW v46 → v47 (mlb.js changed).
+
+**Verification:** node --check clean on mlb.js + middleware; 7/7 tests pass; NUL checks clean. Live verify after push: wRC+ values on player detail should show † and shift slightly (they were computed against the 2024 run environment before).
+
+### P2 — Park factors refresh (2026 season) — OPEN
+`_PARK_FACTORS` in `js/mlb.js` is still the 2022–2024 Baseball Reference average (comment says "Season: 2024"). The Athletics' West Sacramento park factor is unverified guesswork by inheritance. No fetchable feed exists (B-Ref/FanGraphs park pages are not proxyable) → needs a **manual source pull** each spring. Owner/Relay: pull 2023–2025 B-Ref (or FanGraphs Guts park factors), update the map + source comment. The GOALS.md annual-maintenance note now points here.
+
+### Constitution v2 (2026-07-01) — SHIPPED (pending push)
+D-034: GOALS.md v2 (barbell identity + no-login constitutional rule, R1–R5 retired), CLAUDE.md truth-audit (P1-006 section, script chain, doc-sync rule, tests in checklist), `docs/archive/` pruning (fixit/suggestions/reflection).

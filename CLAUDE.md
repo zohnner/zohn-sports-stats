@@ -46,7 +46,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `search.js` → `navigation.js` → `news.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 
@@ -91,7 +91,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/scorecard.js` | Baseball scorecard (P3-022): historical + live modes, 9×9 grid render, html2canvas PNG export |
 | `js/shareCard.js` | Shareable stat cards (P3-027): `shareStatCard()`, offscreen 600×315 card → 2× PNG via html2canvas, Web Share / download. Reuses `_scLoadHtml2Canvas()` from scorecard.js |
 | `js/math.min.js` | Vendored math.js (formula evaluation). **Not in the script chain** — lazy-loaded by `statBuilder.js` on Builder open (D-011) |
-| `js/api.js` | BDL API + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. **⚠ BDL_API_KEY hardcoded — see P1-006 below** |
+| `js/api.js` | BDL API via Worker proxy (`BDL_PROXY_URL`) + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. P1-006 resolved 2026-06-09 — key removed from source |
 | `js/navigation.js` | `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |
 | `js/app.js` | Bootstrap: ticker, season selector, cache-bust on season change, `setupNavigation()`, `loadHome()` (landing page) |
 | `js/cache.js` | `ApiCache` — localStorage cache with TTL buckets (SHORT 5m, MEDIUM 30m, LONG 60m, DAILY 12h) |
@@ -233,7 +233,8 @@ Sticky row in header. 8 items: Players | Leaders | Teams | Standings | [divider]
 
 - Always use `_escHtml()` for any API string going into `innerHTML`
 - Image error handlers use `data-hide-on-error` or `data-logo-fallback` attributes + the capture-phase listener in `config.js` — never use inline `onerror=` attributes
-- BDL API key must not be hardcoded in committed source; use Worker proxy (P1-006 below)
+- No secrets in committed source, ever — the BDL key goes through the Worker proxy, all other secrets through `wrangler secret` (P1-006, resolved 2026-06-09)
+- All `/api/*` Pages Functions are rate-limited by `functions/api/_middleware.js` (120 req/min/IP best-effort) — do not add an unthrottled route outside `/api/`
 
 ---
 
@@ -324,6 +325,8 @@ Key formulas (follow this pattern when adding new derived stats):
 - **FIP** = `(13*HR + 3*(BB+HBP) - 2*SO) / IP + 3.10`
 - **K-BB%** = `(SO - BB) / battersFaced * 100`
 
+**wRC+ league constants are self-healing (2026-07-01):** `_MLB_WRC_CONSTANTS` holds static FanGraphs guts entries (2024 final, 2025 preliminary). For any other season, `_ensureWrcConstants(season)` derives `lgwOBA`/`lgR/PA` from MLB Stats API league hitting totals (`/teams/stats`, DAILY cache) using the same 2024 linear weights as player wOBA — self-consistent, and it can never silently fall back to a stale year again. Derived or preliminary constants render wRC+ with a `†` (see `_wrcDagger()`). IP strings like `"100.2"` mean 100⅔ — always convert with `_mlbIpToNum()`, never `parseFloat`. Tests: `tests/stats.test.js`.
+
 ---
 
 ## MLB Stats API Field Reference
@@ -383,16 +386,16 @@ Hosted on **Cloudflare Pages**. Key deployment artifacts:
 - **`_headers`** — Cloudflare Pages headers file; sets CSP and security headers. Must stay in sync with the `<meta http-equiv="Content-Security-Policy">` tag in `index.html`. Adding any new external domain to a fetch or `<img>` requires updating **both**.
 - **`worker/`** — Cloudflare Worker for the BDL proxy (P1-006 fix target).
 
-**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically.
+**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically. Also run `node --test tests/` — the stat-math unit tests (wOBA/wRC+/FIP/derived rates) must pass; they guard against stale-constant regressions.
 
 ---
 
-## Known Critical Bug — DO NOT IGNORE
+## Secrets Hygiene (P1-006 — RESOLVED 2026-06-09)
 
-**P1-006:** `js/api.js:11` — `BDL_API_KEY` is a plaintext string in source. Any public push leaks it.
-- Fix: deploy `worker/bdl-proxy.js`, set `BDL_PROXY_URL` in `api.js`, remove the raw key.
-- Always flag this if working in `api.js` or reviewing commits.
-- Run `/deploy-check` before any push — it automates this check.
+The BDL key leak is fixed: `js/api.js` has `BDL_API_KEY = ''`, the Worker proxy is deployed, and `BDL_PROXY_URL` is set. The old key was rotated and is dead.
+- The rule stands: no secret ever appears in committed source. Provider/auth/session secrets go through `wrangler secret` (D-031 carries this forward).
+- Run `/deploy-check` before any push — it verifies this automatically.
+- **Doc-sync rule (Folio, 2026-07-01):** any decision that ships must touch CLAUDE.md in the same commit if it changes architecture, load order, key files, or a rule on this page. Stale instructions here actively misdirect future sessions.
 
 ---
 
