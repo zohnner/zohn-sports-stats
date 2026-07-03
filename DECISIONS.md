@@ -743,3 +743,17 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 - `tools/join-health.cjs` — LIVE probe (run against the deployed site): Sleeper⇄nflverse veteran name-join rate among top-200 ADP skill players, rookies excluded from the denominator (legitimately unmatched). WARN <90%, FAIL <80%. Mirrors `_vbdKey` — keep in sync. Deploy-check #13, recommended weekly in-season.
 - Deploy-check additions #9 (unit tests) and #12 (NUL-byte corruption scan on changed files — this working tree has a corrupted-write history).
 **Verification:** manifest checker green after the sw.js fix; theme checker 0 errors / 14 themes; 12/12 unit tests pass; all tools `node --check` clean. Join probe validates against the live deploy after push.
+
+## D-038 — Design & UX cohesion program (Kael + Vera live audit) — ACCEPTED 2026-07-02
+**Trigger:** owner: "polished and cohesive across sports and aspects, not vibe-coded; theme viability; how to move forward with UX and design."
+**Method:** live browser audit of sportstrata.cc (home, Leaders, player detail, Draft HQ, Mock Draft × dark/light/cc-braves) + source-level token scan of all JS render strings. Full findings with evidence: `design-review-2026-07-02.md`.
+**Headline findings (all observed live):**
+- **V1 CRITICAL** — Leaders → player click = "Player not found" (pool-dependent resolution; cold deep-links work — the click path must fall back to the deep-link fetch). The announcer's primary flow breaks on first contact.
+- **V2 CRITICAL** — no `hashchange` handling: URL/state desync (player view with `#mlb-leaders` hash) and cross-sport chimera states (NFL ticker + MLB content + broken layout).
+- V3 "Storage Disabled" toast false positive; V4 SP/RP/CL leaders panels bare "No data" mid-season (qualification bug + empty-state copy); V5 duplicate search on home.
+- **K1** raw route ids ("nfl-draftkit") rendered as page titles (view-meta gaps); **K2** amber = live AND = Pirates on card borders (rule adopted: *border channel = identity, badge channel = state*); **K3** quantified inline-style debt: ~550 static inline styles + 28 hex-in-style across JS render strings (mlb 193, nfl 112, teams 58, playerDetail 48) — migrate per-view to component classes, NFL first, folded into the CSP nonce migration (touch each render string once).
+- **D-036 follow-ups:** retired FA players get implied values (Gurley #31 est); trap-gap numbers absurd (-927); dk-board clips <~1150px.
+**Theme verdict (Kael):** system stays as a bounded brand asset. Freeze at 13+default (re-affirms D-034); tighten `tools/check-themes.cjs` with composed-surface pairs until cc-braves' observed wash-out registers as errors (the 5-pair contract passes a theme the eye fails); manual per-theme pass against a fixed surface checklist; codified identity rule: **the wordmark never changes, the icon may**.
+**What's right and protected:** player detail is the posture benchmark; leaders panels, Draft HQ strip, light mode, D-026 dropdowns all verified clean.
+**Execution order (lightweight process):** Wave A "flow integrity" = V1, V2, K1, V4, V3, D-036 guards (all S). Wave B "visual rules" = K2 border/badge rule + V5 search de-dup. Track C (behind features) = theme contract tightening + inline-style→class migration with CSP nonce work. Mobile audit still owed (window-resize blocked during session).
+**Gates:** lightweight per owner — Vera behavior-verifies Wave A on live; Kael reviews Wave B visuals; specs inline in the review doc.

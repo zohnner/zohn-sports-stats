@@ -3041,3 +3041,34 @@ D-036. Players with ADP but no production join (the whole 2026 rookie class) now
 
 ### /deploy-check hardening + SW precache drift fix (2026-07-01) — SHIPPED (pending push)
 D-037. New `tools/` checkers (manifest sync, theme contrast contract, live join-health) + deploy-check steps 9–13 (tests, manifest, themes, NUL scan, join probe). **Bug fixed:** `js/fantasy.js` + `js/sos.js` were never added to `sw.js` STATIC_ASSETS — found by the manifest checker on its first run. Post-push: run `node tools/join-health.cjs https://sportstrata.cc` for the first live join-rate baseline and record it here.
+
+---
+
+## D-038 audit findings (2026-07-02) — OPEN until fixed; evidence in design-review-2026-07-02.md
+
+### P1 — Leaders → player detail "Player not found" (V1) — OPEN
+Click path resolves via `AppState.mlbPlayers` (empty unless Players view visited); cold deep-link path fetches directly and works. Fix: `showMLBPlayerDetail` falls back to the deep-link resolution on pool miss; also write the player hash on this path (hash stayed `#mlb-leaders`). Verified live: `currentView: mlb-player-665742`, `hash: #mlb-leaders`, `hittingPool: 0`, `leaderSplits: 600`.
+
+### P1 — No hashchange routing (V2) — OPEN
+Hash edits on a live page don't remap the view; cross-sport hash jumps create chimera states (NFL ticker + MLB content + ~340px column). Add a `hashchange` listener routing through `_loadFromHash` logic, sport-aware.
+
+### P2 — View-meta labels missing for NFL fantasy routes (K1) — OPEN
+`nfl-draftkit` / `nfl-mock` render raw route ids as the visible view header on cold load.
+
+### P2 — Leaders By-Position SP/RP/CL panels empty mid-season (V4) — OPEN
+All three pitching boxes "No data" on Jul 2 with 600 pitching splits loaded — trace qualification/field path; empty state needs contextual copy either way.
+
+### P2 — "Storage Disabled" toast false positive (V3) — OPEN
+Fired while localStorage tested writable. Trace trigger (IndexedDB conflation? init race); copy must state only what's actually degraded.
+
+### P2 — D-036 guards (Relay) — OPEN
+(a) exclude team-less veterans from implied pricing (Gurley FA #31 est); (b) trap-gap computed within ADP-comparable pool or reframed ("market #99 · model #501"); (c) `.dk-board` horizontal overflow below ~1150px.
+
+### P3 — Border=identity / badge=state rule (K2) — OPEN
+Amber live-border indistinguishable from Pirates team border. Kael spec: card borders always team color; liveness lives only in the badge (pulse retained).
+
+### P3 — Home search duplication (V5) — OPEN
+Hero search + header search stacked ~100px apart on home. Spec: hero is primary on home; header search hidden on home only.
+
+### P3 — Theme contract tightening (Kael verdict) — OPEN
+check-themes.cjs passes cc-braves while the composed page is washed out. Add composed-surface pairs + calibrate until observed failures register; then per-theme manual pass (fixed checklist: game card, starters row, leaders panel, detail chips). Freeze at 13+default holds. Identity rule codified: wordmark never changes, icon may.
