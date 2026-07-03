@@ -723,3 +723,14 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 - `css/components.css` — `.hq-strip` / `.hq-tab` (existing tokens only, full-width in grid contexts, print-hidden).
 - CLAUDE.md test command corrected to `node --test tests/stats.test.js` (the bare directory form doesn't resolve on Node 22 here). SW v47 → v48.
 **Verification:** `node --check` clean on all five touched JS files; 7/7 tests pass; NUL checks clean. Visual + interaction pass on the live deploy after push (offseason data renders all five views).
+
+## D-036 — Rookie-inclusive value board: market-implied projections — SHIPPED 2026-07-01
+**Trigger:** deep-review 2026-07-01 (initiative 4, deadline Aug 1). The VBD engine projects from last-season production, so the 2026 rookie class had no value, no VORP, no tier — relegated to an ADP-only afterlist below the board, and the Draft Assistant was structurally anti-rookie (rookies contributed zero VORP to its score). A value board that goes silent on the picks drafters agonize over most fails its core August use case.
+**Decision (Relay design, Axiom implementation, Vera/Kael labeling — lightweight process):** **market-implied projection** for any player with ADP but no production join. `_vbdImplied(p, scoring)` prices the player off up to 3 production-projected ADP neighbors each side *at the same position*, inverse-distance weighted (`_vbdImpTable` caches per scoring format, invalidated on pool refetch). Transparent by construction: it is market pricing, never presented as a production projection.
+**Honesty rules (the important part):**
+- Every implied number is tagged — `est` chip on the name, `~` prefix on PROJ/VORP, muted/italic styling (`.dk-val--est`), explanatory `title` tooltips, and a provenance line in the Draft Kit header.
+- **Sleepers/Traps exclude implied rows** — their value ≈ ADP by construction, so a gap signal from them would be circular.
+- **Draft Assistant weights implied VORP at half** (0.03 vs 0.06): it stops rookies from being invisibly penalized without double-counting ADP as "edge". Its reasoning string says "~+N pts over replacement (market est)".
+- Positions with <4 production-matched players (e.g. K) stay unvalued — no neighbors, no fabrication.
+**Shipped:** `js/fantasy.js` (`_vbdImpTable`/`_vbdImplied`/`_mdVorp` fallback/`_mdVorpIsImplied`, `_dkBuild` implied rows, `_dkRender` tags, `_mdListHtml` + `_mdRecReason`/`_mdRecommend` est-aware), `css/components.css` (`.dk-est`, `.dk-val--est`), `tests/vbd.test.js` (implied-math fixtures). SW v48 → v49.
+**Verification:** `node --check js/fantasy.js` clean; 12/12 tests pass (5 new VBD + 7 stat tests); NUL checks clean. Live verify after push: rookies with `est` chips in the value board, `~` VORP in the mock list, assistant "(market est)" reasoning.

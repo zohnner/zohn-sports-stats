@@ -3034,3 +3034,7 @@ D-034: GOALS.md v2 (barbell identity + no-login constitutional rule, R1–R5 ret
 ### Draft HQ consolidation (2026-07-01) — SHIPPED (pending push)
 D-035. Fantasy dropdown: 5 sibling views → **Draft HQ + Mock Draft**; shared `.hq-strip` tab bar rendered by each member view (Value Board · Rankings · Schedule · Trending · Mock Draft). Old routes unchanged = deep links safe. Latent trending-breadcrumb bug fixed (`nfl-leaders` → `nfl-trending`). Strip print-hidden (Draft Kit cheat sheet unaffected). SW v48.
 **Live verify after push:** all five views show the strip with correct active pill; Fantasy parent stays lit across member views; mobile menu shows 2 fantasy tiles; mock draft strip disappears once a draft starts.
+
+### Rookie-inclusive value board (2026-07-01) — SHIPPED (pending checks + push)
+D-036. Players with ADP but no production join (the whole 2026 rookie class) now get a **market-implied projection** (`_vbdImplied`: up to 3 production-projected ADP neighbors per side at the position, inverse-distance weighted) and appear ON the value board and in the Draft Assistant — tagged `est`/`~`/muted everywhere, half-weight in assistant scoring, excluded from Sleepers/Traps (circular). Positions with <4 matched players stay unvalued. Tests: `tests/vbd.test.js`. SW v49.
+**Verified 2026-07-01:** `node --check` clean, 12/12 tests pass. Live-verify after push: Draft Kit shows rookies with `est` chips in the board (not just the afterlist), mock draft VORP column shows `~` values for rookies, assistant can recommend a rookie with "(market est)" reasoning.

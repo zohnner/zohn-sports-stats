@@ -44,11 +44,44 @@ function _vbdReplacement(scoring, teams, superflex) {
     });
     return rep;
 }
+// ── Market-implied projection (D-036) — rookies / no-production players ──
+// A rookie has no prior-season stat line, so the value model was silent about
+// the picks drafters agonize over most. Implied projection = the production-
+// projected points of similarly-drafted players at the same position (up to
+// 3 ADP neighbors each side, inverse-distance weighted). This is transparent
+// market pricing — every surface tags it "est", never as a real projection.
+let _vbdImp = { pool: null, tables: {} };
+function _vbdImpTable(scoring) {
+    if (_vbdImp.pool !== _mdPool) _vbdImp = { pool: _mdPool, tables: {} };
+    if (_vbdImp.tables[scoring]) return _vbdImp.tables[scoring];
+    const t = {};
+    (_mdPool || []).forEach(p => {
+        if (!p._fp) return;
+        const proj = _vbdProj(p._fp, scoring);
+        if (proj == null) return;
+        (t[p.pos] = t[p.pos] || []).push({ adp: p.adp, proj });
+    });
+    Object.values(t).forEach(list => list.sort((a, b) => a.adp - b.adp));
+    _vbdImp.tables[scoring] = t;
+    return t;
+}
+function _vbdImplied(p, scoring) {
+    const list = _vbdImpTable(scoring)[p.pos];
+    if (!list || list.length < 4) return null;
+    const below = list.filter(e => e.adp <= p.adp).slice(-3);
+    const above = list.filter(e => e.adp > p.adp).slice(0, 3);
+    const nbrs = below.concat(above);
+    if (!nbrs.length) return null;
+    let wSum = 0, vSum = 0;
+    nbrs.forEach(e => { const w = 1 / (1 + Math.abs(e.adp - p.adp)); wSum += w; vSum += w * e.proj; });
+    return wSum > 0 ? vSum / wSum : null;
+}
 function _mdVorp(p) {
-    if (!_md || !_md.rep || !p._fp) return null;
-    const proj = _vbdProj(p._fp, _md.scoring);
+    if (!_md || !_md.rep) return null;
+    const proj = p._fp ? _vbdProj(p._fp, _md.scoring) : _vbdImplied(p, _md.scoring);
     return proj == null ? null : Math.round(proj - (_md.rep[p.pos] || 0));
 }
+function _mdVorpIsImplied(p) { return !p._fp && _mdVorp(p) != null; }
 
 const _MD_POS = ['QB', 'RB', 'WR', 'TE', 'K'];
 const _MD_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
@@ -291,12 +324,14 @@ function _mdRecommend(surv) {
         const vorp = _mdVorp(p);
         let score = 0;
         score += -_mdAdjRank(p) * 0.04;                    // raw quality
-        if (vorp != null) score += vorp * 0.06;            // value over replacement (the edge)
+        // Implied VORP is market-derived (ADP neighbors), so half weight — it keeps
+        // rookies from being invisibly penalized without double-counting ADP as "edge"
+        if (vorp != null) score += vorp * (p._fp ? 0.06 : 0.03);
         score += need * 4;                                 // roster need
         score += Math.max(0, valueVsPick) * 0.45;          // value falling to you
         if (sv != null) score += (100 - sv) * 0.045;       // scarcity (won't last)
         if (tierLeft <= 2) score += (3 - tierLeft) * 2.5;  // tier-cliff urgency
-        return { p, score, need, sv, tierLeft, valueVsPick, vorp };
+        return { p, score, need, sv, tierLeft, valueVsPick, vorp, vorpImp: vorp != null && !p._fp };
     }).filter(Boolean).sort((a, b) => b.score - a.score);
     return scored[0] || null;
 }
@@ -311,7 +346,7 @@ function _mdRecReason(rec) {
     if (rec.sv != null && rec.sv <= 45) r.push(`only ${rec.sv}% to return at your next pick`);
     if (rec.tierLeft <= 2) r.push(rec.tierLeft <= 1 ? `last in the ${rec.p.pos} tier` : `only ${rec.tierLeft} left in this ${rec.p.pos} tier`);
     if (rec.valueVsPick >= 6) r.push(`slipping ${rec.valueVsPick} spots past ADP`);
-    if (rec.vorp != null && rec.vorp >= 12) r.unshift(`+${rec.vorp} pts over replacement`);
+    if (rec.vorp != null && rec.vorp >= 12) r.unshift(rec.vorpImp ? `~+${rec.vorp} pts over replacement (market est)` : `+${rec.vorp} pts over replacement`);
     if (!r.length) r.push(`best value on the board`);
     return r.slice(0, 3).join(' · ');
 }
@@ -405,7 +440,7 @@ function _mdListHtml(players, surv) {
             <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
             <span class="md-row-team">${p.team}</span>
             ${cliff}
-            ${(()=>{const v=_mdVorp(p);return v!=null?`<span class="md-row-vorp" style="color:${v>0?'var(--color-win)':'var(--text-subtle)'}" title="Projected points over positional replacement (VORP)">${v>0?'+':''}${v}</span>`:'<span class="md-row-vorp"></span>';})()}
+            ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP)'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
             <span class="md-row-adp">ADP ${p.adp}</span>${sv}
         </button>`;
     }).join('') || '<p class="md-note" style="padding:1rem">No players match.</p>';
@@ -532,8 +567,11 @@ function _dkBuild() {
     const rep = (_vbd && _vbd.ok) ? _vbdReplacement(_dk.scoring, _dk.teams, _dk.superflex) : null;
     const rows = (_mdPool || []).map(p => {
         const proj = p._fp ? _vbdProj(p._fp, _dk.scoring) : null;
-        const vorp = (proj != null && rep) ? Math.round(proj - (rep[p.pos] || 0)) : null;
-        return { id: p.id, name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier, proj: proj != null ? Math.round(proj) : null, vorp };
+        const imp = (proj == null && rep) ? _vbdImplied(p, _dk.scoring) : null;
+        const eff = proj != null ? proj : imp;
+        const vorp = (eff != null && rep) ? Math.round(eff - (rep[p.pos] || 0)) : null;
+        return { id: p.id, name: p.name, pos: p.pos, team: p.team, adp: p.adp, tier: p.tier,
+                 proj: eff != null ? Math.round(eff) : null, vorp, imp: proj == null && imp != null };
     });
     const valued = rows.filter(r => r.vorp != null).sort((a, b) => b.vorp - a.vorp);
     valued.forEach((r, i) => { r.valRank = i + 1; });
@@ -550,8 +588,10 @@ function _dkRender() {
     const season = (_vbd && _vbd.season) || '';
 
     // sleepers = ADP later than value (gap +), traps = ADP earlier than value (gap -)
+    // Implied (market-priced) rows are excluded: their value ≈ ADP by construction,
+    // so a sleeper/trap signal from them would be circular.
     const gap = r => r.adp - r.valRank;
-    const pool = valued.filter(r => r.adp <= 180);
+    const pool = valued.filter(r => r.adp <= 180 && !r.imp);
     const sleepers = pool.slice().sort((a, b) => gap(b) - gap(a)).slice(0, 6);
     const traps    = pool.slice().sort((a, b) => gap(a) - gap(b)).slice(0, 6);
 
@@ -569,7 +609,7 @@ function _dkRender() {
       <div class="dk-wrap">
         <div class="dk-head">
           <div><h1 class="md-title" style="margin:0">Draft Kit</h1>
-          <p class="md-note">Value over replacement from ${ok ? season + ' production' : 'ADP'} · ADP from Sleeper${ok ? '' : ' · (production data unavailable — showing ADP)'}</p></div>
+          <p class="md-note">Value over replacement from ${ok ? season + ' production' : 'ADP'} · rookies &amp; no-data players market-priced from ADP (<span class="dk-est">est</span>) · ADP from Sleeper${ok ? '' : ' · (production data unavailable — showing ADP)'}</p></div>
           <button class="md-btn md-btn--ghost" onclick="window.print()">Print cheat sheet</button>
         </div>
         <div class="dk-controls">
@@ -591,11 +631,11 @@ function _dkRender() {
             ${board.map((r,i)=>`<div class="dk-row" onclick="navigateTo('nfl-player-${r.id}')">
               <span class="dk-c-rk">${i+1}</span>
               <span class="dk-c-pos" style="color:${_MD_POS_COLOR[r.pos]||'var(--text-muted)'}">${r.pos}</span>
-              <span class="dk-c-name">${_escFan(r.name)}</span>
+              <span class="dk-c-name">${_escFan(r.name)}${r.imp?' <span class="dk-est" title="No prior-season production — market-priced from ADP neighbors at the position">est</span>':''}</span>
               <span class="dk-c-team">${r.team}</span>
               <span class="dk-c-tier">${r.tier?'T'+r.tier:'—'}</span>
-              <span class="dk-c-num">${r.proj!=null?r.proj:'—'}</span>
-              <span class="dk-c-num" style="color:${r.vorp!=null?(r.vorp>0?'var(--color-win)':'var(--text-subtle)'):'var(--text-subtle)'};font-weight:700">${r.vorp!=null?(r.vorp>0?'+':'')+r.vorp:'—'}</span>
+              <span class="dk-c-num${r.imp?' dk-val--est':''}">${r.proj!=null?(r.imp?'~':'')+r.proj:'—'}</span>
+              <span class="dk-c-num${r.imp?' dk-val--est':''}" style="color:${r.vorp!=null&&!r.imp?(r.vorp>0?'var(--color-win)':'var(--text-subtle)'):'var(--text-subtle)'};font-weight:700">${r.vorp!=null?(r.imp?'~':'')+(r.vorp>0?'+':'')+r.vorp:'—'}</span>
               <span class="dk-c-num">${r.adp}</span>
             </div>`).join('')}
           </div>

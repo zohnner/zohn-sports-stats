@@ -4364,3 +4364,18 @@
 .hq-tab:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--bg-card-hover); }
 .hq-tab--on { color: var(--accent); border-color: var(--border-accent); background: var(--accent-subtle); }
 @media print { .hq-strip { display: none; } }
+
+/* ── Market-implied value tags (D-036) — rookies / no-production players ── */
+.dk-est {
+    display: inline-block;
+    padding: 0 0.3rem;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-xs);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+.dk-val--est { font-style: italic; opacity: 0.8; }
