@@ -86,6 +86,6 @@ FAIL if any file reports NUL bytes — this working tree has a history of corrup
 
 **13. Post-deploy: name-join health (live, optional but recommended weekly in-season)**
 ```bash
-node tools/join-health.cjs https://zohn-sports-stats.pages.dev
+node tools/join-health.cjs https://sportstrata.cc
 ```
 Measures the Sleeper⇄nflverse veteran name-join rate on the deployed Functions. WARN < 90%, FAIL < 80% — a drop means roster churn broke the normalized-name bridge and player stat/advanced cards are silently emptying.

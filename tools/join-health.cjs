@@ -8,7 +8,7 @@
 // a number, not a bug report.
 //
 // Run AGAINST A DEPLOY (needs the live /api/* Functions):
-//   node tools/join-health.cjs https://zohn-sports-stats.pages.dev
+//   node tools/join-health.cjs https://sportstrata.cc
 // Warns < 90% matched among top-200 ADP skill players; fails < 80%.
 // ============================================================
 const BASE = process.argv[2];
