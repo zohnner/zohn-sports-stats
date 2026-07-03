@@ -46,6 +46,8 @@ const STATIC_ASSETS = [
     '/js/nfl.js',
     '/js/nflStandings.js',
     '/js/nflLiveGame.js',
+    '/js/fantasy.js',
+    '/js/sos.js',
     '/js/nhl.js',
     '/js/glossary.js',
     '/js/arcade.js',

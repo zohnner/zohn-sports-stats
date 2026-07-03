@@ -59,3 +59,33 @@ Print a table:
 ```
 
 End with a summary count and the next recommended action.
+
+**9. Unit tests pass**
+```bash
+node --test tests/stats.test.js tests/vbd.test.js
+```
+FAIL if any test fails. These guard the computed-stat math (wOBA/wRC+/FIP) and the VBD implied-value model against regressions.
+
+**10. Delivery manifest in sync**
+```bash
+node tools/check-manifest.cjs
+```
+FAIL on exit 1 — a file referenced by index.html is missing from `sw.js` STATIC_ASSETS (or from disk). This catches the "shipped a view, forgot the precache entry" drift class (fantasy.js and sos.js were missing for weeks before this check existed).
+
+**11. Theme contrast contract**
+```bash
+node tools/check-themes.cjs
+```
+Report-only for now (advisory). Once existing theme debts are cleared, switch to `--strict` and FAIL on errors. Any NEW theme must pass clean before merge.
+
+**12. NUL-byte corruption scan (mount-write hazard)**
+```bash
+git diff --name-only origin/HEAD -- '*.js' '*.css' '*.html' '*.md' | while read f; do [ -f "$f" ] && n=$(tr -cd '\000' < "$f" | wc -c) && [ "$n" -gt 0 ] && echo "CORRUPT: $f ($n NUL bytes)"; done
+```
+FAIL if any file reports NUL bytes — this working tree has a history of corrupted writes (see ISSUES.md).
+
+**13. Post-deploy: name-join health (live, optional but recommended weekly in-season)**
+```bash
+node tools/join-health.cjs https://zohn-sports-stats.pages.dev
+```
+Measures the Sleeper⇄nflverse veteran name-join rate on the deployed Functions. WARN < 90%, FAIL < 80% — a drop means roster churn broke the normalized-name bridge and player stat/advanced cards are silently emptying.

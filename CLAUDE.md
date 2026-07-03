@@ -386,7 +386,7 @@ Hosted on **Cloudflare Pages**. Key deployment artifacts:
 - **`_headers`** — Cloudflare Pages headers file; sets CSP and security headers. Must stay in sync with the `<meta http-equiv="Content-Security-Policy">` tag in `index.html`. Adding any new external domain to a fetch or `<img>` requires updating **both**.
 - **`worker/`** — Cloudflare Worker for the BDL proxy (P1-006 fix target).
 
-**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, and committed state of all critical files automatically. Also run `node --test tests/stats.test.js` — the stat-math unit tests (wOBA/wRC+/FIP/derived rates) must pass; they guard against stale-constant regressions.
+**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, committed state of critical files, unit tests (`node --test tests/stats.test.js tests/vbd.test.js`), delivery-manifest sync (`tools/check-manifest.cjs` — index.html ⇄ sw.js STATIC_ASSETS ⇄ disk), theme contrast (`tools/check-themes.cjs`), and NUL-byte corruption on changed files. After deploy, `tools/join-health.cjs <site-url>` measures the Sleeper⇄nflverse name-join rate (weekly in-season). Never add a js/css file without updating BOTH index.html and sw.js — check #10 fails otherwise.
 
 ---
 
