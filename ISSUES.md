@@ -3075,3 +3075,6 @@ check-themes.cjs passes cc-braves while the composed page is washed out. Add com
 
 ### Wave A live verification (2026-07-02) — PASSED
 Vera checklist run on sportstrata.cc post-deploy (SW v50): V1 cold Leaders entry → Schwarber row click → full player page, hash `#mlb-player-656941-hitting` (was: "Player not found" + stale hash). V2 `location.hash = '#nfl-draftkit'` from an MLB player page → clean full sport switch, no chimera. V4 SP/RP/CL panels populated with role-classified pitchers (Misiorowski/Minter/Suarez lead). K1 title "Draft HQ · Value Board". A4: Gurley absent from valued board (`_dkBuild` check), trap chips bounded ("Val #104 of 154"). V3: no false toast across the session. All six fixes confirmed.
+
+### Wave B live verification (2026-07-02) — PASSED
+K2: live LAD–SD card border-left = rgb(0,90,156) (Dodger blue, its own --hgc-team-color) + amber --shadow-live glow; badge pulse intact. Team borders everywhere else (PIT gold reads as identity, unambiguous). V5: body.view-home set, header .search-global-btn display:none on home, present elsewhere; hero search primary. D-038 now 8/9 closed — Track C (theme contract tightening + inline-style→class migration with CSP nonce) remains, plus the owed mobile audit.
