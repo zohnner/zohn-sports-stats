@@ -3078,3 +3078,23 @@ Vera checklist run on sportstrata.cc post-deploy (SW v50): V1 cold Leaders entry
 
 ### Wave B live verification (2026-07-02) — PASSED
 K2: live LAD–SD card border-left = rgb(0,90,156) (Dodger blue, its own --hgc-team-color) + amber --shadow-live glow; badge pulse intact. Team borders everywhere else (PIT gold reads as identity, unambiguous). V5: body.view-home set, header .search-global-btn display:none on home, present elsewhere; hero search primary. D-038 now 8/9 closed — Track C (theme contract tightening + inline-style→class migration with CSP nonce) remains, plus the owed mobile audit.
+
+---
+
+## Ask Bar v1 (D-039 Track 1) — GATED task entry — specs below, implementation on owner ratification
+
+### Gate 1 — Vera: job-to-be-done + behavioral spec ✅ DRAFTED
+**JTBD:** "Who leads in X?" answered in one keystroke flow — typed the way an announcer thinks, not the way a database is shaped. Target queries (v1 grammar): `<stat> leaders` · `<team> <stat>` · `<position> <stat> leaders` · `<stat> under|over <n>` (qualification) · `hitting|pitching` group inference from the stat · season inference (current). Examples that must parse: "hr leaders", "dodgers ops", "SS batting average", "era leaders min 50 ip", "rookies hr" (rookie = flag if data allows, else v1.1).
+**Flow:** lives INSIDE the existing ⌘K overlay as an additive result section — the focus trap, keyboard nav, and player-name search are untouched (search.js do-not-rewire honored). As the user types, if the query parses, an **answer panel** renders ABOVE name matches: top-10 list for the parsed query + an "Understood as:" echo line. Enter on the panel opens the full leaderboard view filtered accordingly; Enter on a row opens the player.
+**States (all required):** *no-parse* → silent fallback to today's name search (never an error — the bar must never punish trying); *partial parse* → parse what's recognized, echo shows what was used; *loading* → skeleton rows in the panel (data usually cached — leaders splits); *empty result* → "No qualified players match — try removing 'min 50 IP'" (actionable, names the filter); *first-use teach* → 3 example-query chips shown when the overlay opens empty (dismiss forever after first successful parse, localStorage).
+**Keyboard:** arrows traverse answer rows then name results as one list; Esc unchanged; no new shortcuts.
+**A11y:** answer panel is `role="region"` `aria-label="Query answer"`; echo line is `aria-live="polite"` so screen readers hear the interpretation change.
+
+### Gate 2 — Kael: visual spec ✅ DRAFTED
+Reuses the leaderboard panel row anatomy (rank chip, headshot, name, value in the stat's category color) inside the overlay — the answer should look like the product answering, not a new widget. "Understood as:" echo renders the parse as **tokens-as-chips** (stat chip in its category color, team chip with logo, position chip) — the interpretation is visible, which is our provenance pattern doing trust work (D-038 lineage). Teach chips use `.md-pos-btn` chip styling. **No sparkle icons, no "AI" badges, no gradient glows** — the intelligence reads through precision and speed, per the posture rule. Empty/loading states use existing skeleton tokens. One new CSS block (`.qa-*` prefix), tokens only, grep-checked before landing (cascade-safety rule).
+
+### Gate 3 — Axiom: feasibility ✅ DRAFTED
+**Architecture:** new `js/query.js` — a pure function `parseStatQuery(text) → { group, statKey, filters:{team, pos, qual}, confidence } | null` + `runStatQuery(parsed) → rows` reading `AppState.mlbLeaderSplits` (already fetched/cached by leaders + warmed by ⌘K open via `_fetchMLBLeaderSplits`). Zero new endpoints (Relay confirms: season splits cover the v1 grammar; "last 30 days" timeframes need `stats=byDateRange` — deferred to v1.1 with its own gate). Entity tables reuse `MLB_LEADER_CATS` (stat names/aliases), team abbr/alias maps, and position lists — single sources of truth, no duplication. search.js integration is additive: one render hook in the results builder, no focus-trap changes. Load order: after `mlb.js`, before `search.js`; index.html + sw.js updated together (manifest check #10 enforces). Pure-function parser = fully unit-testable → `tests/query.test.js` with a fixture table of query→parse pairs, wired into the pre-push suite.
+**Effort:** M (parser + fixtures S/M, overlay integration S, polish S). **Risk:** low — additive, feature-flagged by "does it parse", NFL grammar is v2 (same parser, different entity tables).
+
+**Finn implements only after owner ratifies D-039 Track 1. All three gates then flip to signed-off in this entry.**
