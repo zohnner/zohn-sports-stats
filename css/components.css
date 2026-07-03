@@ -4379,3 +4379,29 @@
     vertical-align: middle;
 }
 .dk-val--est { font-style: italic; opacity: 0.8; }
+
+/* ── Ask Bar (D-039) — answer panel inside the ⌘K overlay ─────
+   Rows reuse .search-result-item; only the echo/chips/values are new.
+   No AI glitter: the intelligence reads through precision, not decoration. */
+.qa-panel { border-left: 2px solid var(--accent-border); }
+.qa-echo { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.qa-chip {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.qa-chip--muted { color: var(--text-muted); font-weight: 600; }
+.qa-chip--teach { cursor: pointer; transition: color 120ms ease-out, border-color 120ms ease-out; }
+.qa-chip--teach:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.qa-teach { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem 0.2rem; flex-wrap: wrap; }
+.qa-teach-label { font-size: 0.68rem; font-weight: 700; color: var(--text-subtle); letter-spacing: 0.08em; text-transform: uppercase; }
+.qa-rank { width: 22px; text-align: right; font-weight: 800; font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; }
+.qa-val { margin-left: auto; font-family: var(--font-mono, monospace); font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+.qa-more { justify-content: center; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; }
+.qa-loading { padding: 0.5rem 1rem; }

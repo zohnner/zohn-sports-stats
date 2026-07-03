@@ -762,7 +762,7 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 **D-038 update 2026-07-02 — Wave B (visual rules) SHIPPED:** K2 — live state no longer claims the border channel: `.home-game-card--live` and NFL `.game-card--live` keep team-identity borders; liveness = badge pulse + `--shadow-live` glow (rule codified in CSS comments at both sites; MLB scores-view cards were already compliant). V5 — `renderCurrentView` toggles `body.view-home`; the header search button hides on home where the hero search is primary (⌘K everywhere). SW v50 → v51. Tests 12/12, manifest + themes checkers green. Live-verify: home with live games shows team borders + amber glow; header search absent on home, present on all other views.
 
-## D-039 — AI without metered inference: three tracks — PROPOSED 2026-07-02 (owner ratification pending)
+## D-039 — AI without metered inference: three tracks — RATIFIED 2026-07-02 (owner: Track 1 approved + built; Tracks 2–3 pending separate ratification)
 **Trigger (owner):** "make this site cutting edge using AI, while not having a usage API tied in to limit cost. Brainstorm."
 **Framing principle (all seniors):** intelligence ships from three free places — **authoring time** (generated in subscription-covered sessions, committed as static data), **training time** (models fit offline, shipped as coefficient JSON), and **client time** (user's own compute). Nothing meters per user action, ever — one viral day must not decide the bill. No "AI-powered" labels on plain code (Kael: posture kill).
 

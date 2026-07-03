@@ -62,6 +62,13 @@ function openGlobalSearch() {
             if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
         }).catch(() => {});
     }
+    // Warm MLB leader splits so Ask-bar answers work before visiting Leaders (D-039).
+    if (typeof _fetchMLBLeaderSplits === 'function' && !AppState.mlbLeaderSplits) {
+        _fetchMLBLeaderSplits(MLB_SEASON).then(() => {
+            const box = document.getElementById('searchModalInput');
+            if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
+        }).catch(() => {});
+    }
     _renderResults('');
     // Delay so backdrop paint doesn't steal the focus event
     requestAnimationFrame(() => input.focus());
@@ -258,25 +265,30 @@ function _renderResults(q) {
 
     if (!q) {
         const recents = _loadRecents();
+        const teach = (typeof qaTeachHtml === 'function') ? qaTeachHtml() : '';
         if (!recents.length) {
-            container.innerHTML = `<div class="search-empty">Start typing to search players &amp; teams</div>`;
+            container.innerHTML = teach + `<div class="search-empty">Start typing to search players &amp; teams</div>`;
             return;
         }
         // Rebuild action closures (they're stripped on JSON serialisation)
         _searchFlatItems = recents.map(r => ({ ...r, action: _recentAction(r) }));
-        container.innerHTML = _groupHtml('Recently Viewed', recents.map((r, i) => _itemHtml(r, i)));
+        container.innerHTML = teach + _groupHtml('Recently Viewed', recents.map((r, i) => _itemHtml(r, i)));
         _attachHandlers();
         return;
     }
 
     const groups = _buildGroups(q);
-    if (!groups.length) {
+    // Ask-bar answer panel (D-039) — additive; qa items are pushed FIRST so
+    // the data-idx values qaBuild writes align with _searchFlatItems order.
+    const qa = (typeof qaBuild === 'function') ? qaBuild(q) : null;
+    if (!groups.length && !qa) {
         container.innerHTML = `<div class="search-empty">No results for <strong>${_esc(q)}</strong></div>`;
         _appendNflAllTime(q);
         return;
     }
 
     let html = '';
+    if (qa) { _searchFlatItems.push(...qa.items); html += qa.html; }
     groups.forEach(g => {
         const base = _searchFlatItems.length;
         _searchFlatItems.push(...g.items);
