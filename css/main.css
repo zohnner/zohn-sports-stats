@@ -3745,7 +3745,8 @@ a:focus:not(:focus-visible),
 .dk-st-gap.sleep { color: var(--color-win); }
 .dk-st-gap.trap { color: var(--color-loss); }
 .dk-st-sub { grid-column: 2 / 4; font-size: 0.66rem; color: var(--text-muted); }
-.dk-board { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+.dk-board { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow-x: auto; }
+.dk-row .dk-c-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dk-row { display: grid; grid-template-columns: 34px 38px 1fr 40px 46px 50px 52px 46px; align-items: center; gap: 0.4rem; padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border-default); font-size: 0.82rem; cursor: pointer; }
 .dk-row:last-child { border-bottom: none; }
 .dk-row:hover:not(.dk-row--head) { background: var(--bg-card-hover); }

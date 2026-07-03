@@ -66,6 +66,10 @@ function _vbdImpTable(scoring) {
     return t;
 }
 function _vbdImplied(p, scoring) {
+    // No market pricing for team-less veterans — retired/unsigned players
+    // linger in Sleeper ADP (e.g. a retired FA back priced at #31). Rookies
+    // (exp 0) keep implied value, signed or not (D-038).
+    if ((p.exp ?? 0) > 0 && (!p.team || p.team === 'FA')) return null;
     const list = _vbdImpTable(scoring)[p.pos];
     if (!list || list.length < 4) return null;
     const below = list.filter(e => e.adp <= p.adp).slice(-3);
@@ -590,8 +594,11 @@ function _dkRender() {
     // sleepers = ADP later than value (gap +), traps = ADP earlier than value (gap -)
     // Implied (market-priced) rows are excluded: their value ≈ ADP by construction,
     // so a sleeper/trap signal from them would be circular.
-    const gap = r => r.adp - r.valRank;
     const pool = valued.filter(r => r.adp <= 180 && !r.imp);
+    // Rank within the draftable pool, not the full 600-player model — global
+    // value ranks made gap chips read as noise ("-927") (D-038).
+    const _poolRank = new Map(pool.slice().sort((a, b) => b.vorp - a.vorp).map((r, i) => [r.id, i + 1]));
+    const gap = r => r.adp - _poolRank.get(r.id);
     const sleepers = pool.slice().sort((a, b) => gap(b) - gap(a)).slice(0, 6);
     const traps    = pool.slice().sort((a, b) => gap(a) - gap(b)).slice(0, 6);
 
@@ -601,8 +608,8 @@ function _dkRender() {
     const card = (r, kind) => `<button class="dk-st-card" onclick="navigateTo('nfl-player-${r.id}')">
         <span class="dk-st-pos" style="color:${_MD_POS_COLOR[r.pos] || 'var(--text-muted)'}">${r.pos}</span>
         <span class="dk-st-name">${_escFan(r.name)}</span>
-        <span class="dk-st-gap ${kind}">${kind === 'sleep' ? '+' : ''}${(r.adp - r.valRank)}</span>
-        <span class="dk-st-sub">ADP ${r.adp} · Val #${r.valRank}</span>
+        <span class="dk-st-gap ${kind}">${kind === 'sleep' ? '+' : ''}${gap(r)}</span>
+        <span class="dk-st-sub">ADP ${r.adp} · Val #${_poolRank.get(r.id)} of ${pool.length}</span>
     </button>`;
 
     grid.innerHTML = _hqStrip('nfl-draftkit') + `

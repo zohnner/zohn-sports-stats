@@ -76,7 +76,10 @@ function setupNavigation() {
     // Browser back / forward
     window.addEventListener('popstate', e => {
         const s = e.state;
-        if (!s)                  { navigateTo('home', false); return; }
+        // Null state = address-bar hash edit or a history entry we didn't
+        // write. Route through the hash router (sport-aware) — blindly going
+        // home here caused cross-sport chimera states (D-038 V2).
+        if (!s)                  { _loadFromHash(); return; }
         if (s.view === 'player')    { _restorePlayerDetail(s.id);             return; }
         if (s.view === 'team')      { _restoreTeamDetail(s.id);              return; }
         if (s.view === 'team-game') { _restoreTeamGameDetail(s.teamId, s.gameId); return; }
@@ -297,14 +300,16 @@ const _NAV_META = {
     'mlb-compare':   { label: 'Compare',       icon: '⚡' },
     'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
-    'nfl-rankings':  { label: 'NFL Rankings',  icon: '📊' },
+    'nfl-rankings':  { label: 'Draft HQ · Rankings', icon: '📊' },
+    'nfl-draftkit':  { label: 'Draft HQ · Value Board', icon: '📋' },
+    'nfl-mock':      { label: 'Mock Draft',    icon: '🏈' },
     'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
-    'nfl-trending':  { label: 'NFL Trending',  icon: '🔥' },
+    'nfl-trending':  { label: 'Draft HQ · Trending', icon: '🔥' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
-    'nfl-sos':       { label: 'Strength of Schedule', icon: '🗓️' },
+    'nfl-sos':       { label: 'Draft HQ · Schedule', icon: '🗓️' },
     'nhl-players':   { label: 'NHL Leaders',   icon: '🏒' },
     'nhl-leaders':   { label: 'NHL Leaders',   icon: '🏒' },
     'nhl-teams':     { label: 'NHL Teams',     icon: '🏒' },

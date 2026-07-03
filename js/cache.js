@@ -72,6 +72,7 @@ class ApiCache {
      * @param {number} ttl    — lifetime in ms (default: TTL.MEDIUM)
      */
     static #cacheWarnFired = false;
+    static #evictRetried   = false;
 
     static set(raw, data, ttl = this.TTL.MEDIUM) {
         try {
@@ -80,16 +81,31 @@ class ApiCache {
                 JSON.stringify({ data, exp: Date.now() + ttl, ts: Date.now() })
             );
         } catch (e) {
+            // Quota exhaustion is the common case (large stat payloads), not
+            // disabled storage — evict our namespace once and retry before
+            // declaring caching unusable (D-038 V3: the old toast cried
+            // "Storage Disabled" while storage worked fine).
+            if (!ApiCache.#evictRetried) {
+                ApiCache.#evictRetried = true;
+                try {
+                    this.invalidate('');
+                    localStorage.setItem(
+                        this.#key(raw),
+                        JSON.stringify({ data, exp: Date.now() + ttl, ts: Date.now() })
+                    );
+                    Logger.info('Cache quota hit — evicted zs_* entries and retried OK', undefined, 'CACHE');
+                    return;
+                } catch (_) { /* genuinely unavailable — fall through */ }
+            }
             Logger.warn('Cache write failed (quota or disabled)', e.message, 'CACHE');
-            // Fire a one-time toast so the user knows why loads may be slower
             if (!this.#cacheWarnFired) {
                 this.#cacheWarnFired = true;
                 // Defer until ErrorHandler is guaranteed to exist
                 requestAnimationFrame(() => {
                     ErrorHandler?.toast(
-                        'Cache unavailable — stats will reload each visit.',
+                        'Browser storage is full or unavailable — stats will reload each visit.',
                         'warn',
-                        { title: 'Storage Disabled', duration: 6000 }
+                        { title: 'Caching off', duration: 6000 }
                     );
                 });
             }

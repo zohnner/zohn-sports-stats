@@ -1880,6 +1880,15 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
     const players = AppState.mlbPlayers[group] || [];
     const player  = players.find(p => p.id === playerId);
     if (!player) {
+        // Pool never loaded on this session path (e.g. Leaders as the entry
+        // view) — defer to the deep-link restore path, which fetches the pool
+        // directly and re-renders (D-038 V1).
+        if (!players.length && typeof _restoreMLBPlayerDetail === 'function' && !showMLBPlayerDetail._restoring) {
+            showMLBPlayerDetail._restoring = true;
+            Promise.resolve(_restoreMLBPlayerDetail(playerId, group))
+                .finally(() => { showMLBPlayerDetail._restoring = false; });
+            return;
+        }
         const grid = document.getElementById('playersGrid');
         if (grid) {
             grid.className = '';
@@ -4413,9 +4422,21 @@ function _appendMLBByPositionGrid(fragment, splits, season) {
 
         const top = pool
             .filter(s => {
+                if (isPit) {
+                    // Stats API reports every pitcher as position "P" — SP/RP/CL
+                    // must be classified from role stats, not the position field
+                    // (this left all three panels empty since ship — D-038 V4).
+                    const st = s.stat || {};
+                    const gs = parseFloat(st.gamesStarted) || 0;
+                    const g  = parseFloat(st.gamesPlayed) || parseFloat(st.gamesPitched) || 0;
+                    const sv = parseFloat(st.saves) || 0;
+                    const role = gs >= Math.max(3, g * 0.5) ? 'sp' : (sv >= 3 ? 'cl' : 'rp');
+                    if (role !== pos) return false;
+                    if (isNaN(parseFloat(st[stat]))) return false;
+                    return _mlbIpToNum(st.inningsPitched) >= (minIP || 0);
+                }
                 if (!_mlbPosMatch((s.position?.abbreviation || '').toLowerCase(), pos)) return false;
                 if (isNaN(parseFloat(s.stat?.[stat]))) return false;
-                if (isPit) return parseFloat(s.stat?.inningsPitched || 0) >= (minIP || 0);
                 return (s.stat?.plateAppearances ?? s.stat?.atBats ?? 0) >= (minPA || 0);
             })
             .sort((a, b) => {
@@ -4430,7 +4451,7 @@ function _appendMLBByPositionGrid(fragment, splits, season) {
 
         let rows = '';
         if (!top.length) {
-            rows = `<div class="lb-pos-empty">No data</div>`;
+            rows = `<div class="lb-pos-empty">No qualified ${label} yet (min ${isPit ? (minIP + ' IP') : (minPA + ' PA')})</div>`;
         } else {
             top.forEach((s, i) => {
                 const pid      = s.player?.id;
