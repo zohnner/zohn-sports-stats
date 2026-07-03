@@ -3072,3 +3072,6 @@ Hero search + header search stacked ~100px apart on home. Spec: hero is primary 
 
 ### P3 — Theme contract tightening (Kael verdict) — OPEN
 check-themes.cjs passes cc-braves while the composed page is washed out. Add composed-surface pairs + calibrate until observed failures register; then per-theme manual pass (fixed checklist: game card, starters row, leaders panel, detail chips). Freeze at 13+default holds. Identity rule codified: wordmark never changes, icon may.
+
+### Wave A live verification (2026-07-02) — PASSED
+Vera checklist run on sportstrata.cc post-deploy (SW v50): V1 cold Leaders entry → Schwarber row click → full player page, hash `#mlb-player-656941-hitting` (was: "Player not found" + stale hash). V2 `location.hash = '#nfl-draftkit'` from an MLB player page → clean full sport switch, no chimera. V4 SP/RP/CL panels populated with role-classified pitchers (Misiorowski/Minter/Suarez lead). K1 title "Draft HQ · Value Board". A4: Gurley absent from valued board (`_dkBuild` check), trap chips bounded ("Val #104 of 154"). V3: no false toast across the session. All six fixes confirmed.
