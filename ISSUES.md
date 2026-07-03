@@ -3064,10 +3064,10 @@ Fired while localStorage tested writable. Trace trigger (IndexedDB conflation? i
 ### P2 — D-036 guards (Relay) — FIXED 2026-07-02 (Wave A: team-less veterans excluded from implied pricing; sleeper/trap gaps ranked within the ≤180-ADP pool ("Val #N of M"); dk-board overflow-x + min-width:0 on the name cell — the grid-blowout culprit)
 (a) exclude team-less veterans from implied pricing (Gurley FA #31 est); (b) trap-gap computed within ADP-comparable pool or reframed ("market #99 · model #501"); (c) `.dk-board` horizontal overflow below ~1150px.
 
-### P3 — Border=identity / badge=state rule (K2) — OPEN
+### P3 — Border=identity / badge=state rule (K2) — FIXED 2026-07-02 (Wave B: live border overrides removed from .home-game-card--live and NFL .game-card--live; state = badge pulse + --shadow-live glow only. MLB scores-view cards were already compliant — no live border class)
 Amber live-border indistinguishable from Pirates team border. Kael spec: card borders always team color; liveness lives only in the badge (pulse retained).
 
-### P3 — Home search duplication (V5) — OPEN
+### P3 — Home search duplication (V5) — FIXED 2026-07-02 (Wave B: renderCurrentView toggles body.view-home; header .search-global-btn hidden on home only. ⌘K unaffected)
 Hero search + header search stacked ~100px apart on home. Spec: hero is primary on home; header search hidden on home only.
 
 ### P3 — Theme contract tightening (Kael verdict) — OPEN

@@ -1743,9 +1743,10 @@ main {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
+/* Live state never claims the border — that channel belongs to team
+   identity (the Pirates' amber was indistinguishable from --color-live,
+   D-038 K2). State lives in the badge (pulse) + this glow only. */
 .home-game-card--live {
-    border-color: var(--color-live-border);
-    border-left-color: var(--color-live);
     box-shadow: var(--shadow-live);
 }
 
@@ -3888,3 +3889,7 @@ td.sos-bye, th.sos-bye { text-align: center; color: var(--text-muted); font-size
 .sos-rank { font-weight: 700; font-size: .92rem; }
 .sos-empty, .sos-loading { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 @media (max-width: 768px) { .sos-wrap { padding: .75rem .5rem 3rem; } .sos-table { font-size: .8rem; } .sos-legend__split { width: 100%; margin: .25rem 0 0; order: 3; } }
+
+/* On home the hero search is the primary affordance — the header button
+   duplicates it directly above (D-038 V5). Hidden here only; ⌘K unaffected. */
+body.view-home .search-global-btn { display: none; }

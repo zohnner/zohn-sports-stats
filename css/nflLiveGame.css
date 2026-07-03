@@ -47,7 +47,8 @@
 .nlg-bx-head span:not(:first-child), .nlg-bx-row span:not(.nlg-bx-name) { flex: 1; text-align: right; }
 .nlg-bx-name { color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 .nlg-loading, .nlg-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
-.game-card--live { border-color: color-mix(in srgb, var(--color-live) 45%, var(--border-default)); }
+/* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
+.game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }
 .nfl-gameday-head--sub { color: var(--text-subtle); }
 @media (max-width: 640px) { .nlg-bx { grid-template-columns: 1fr; } .nlg-team img { width: 42px; height: 42px; } .nlg-team-score { font-size: 1.6rem; } }

@@ -341,6 +341,10 @@ function setBreadcrumb(root, current) {
 function renderCurrentView(view) {
     Logger.info(`View → ${view}`, undefined, 'NAV');
 
+    // Home has a hero search — two identical search affordances 100px apart
+    // is one decision nobody made (D-038 V5). ⌘K still works everywhere.
+    document.body.classList.toggle('view-home', view === 'home');
+
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
     if (view.startsWith('nfl-')) { _renderNFLView(view); return; }
