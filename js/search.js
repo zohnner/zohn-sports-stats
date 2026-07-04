@@ -148,7 +148,18 @@ function _buildGroups(q) {
 
     // ── MLB Players (deduplicate hitting vs pitching by id) ──
     const mlbSeen = new Set();
-    const mlbPool = [...(AppState.mlbPlayers?.hitting || []), ...(AppState.mlbPlayers?.pitching || [])];
+    let mlbPool = [...(AppState.mlbPlayers?.hitting || []), ...(AppState.mlbPlayers?.pitching || [])];
+    // Cold sessions: the Players view hasn't populated the pools yet, so MLB
+    // name search found NOBODY until the user visited Players (D-038-class
+    // gap, surfaced by the Ask Bar verification). The leader splits are
+    // warmed on overlay open (D-039) — search names from them instead.
+    if (!mlbPool.length && AppState.mlbLeaderSplits) {
+        mlbPool = ['hitting', 'pitching'].flatMap(g => (AppState.mlbLeaderSplits[g] || []).map(s => ({
+            id: s.player?.id, fullName: s.player?.fullName || '',
+            teamName: s.team?.name || '', teamAbbr: s.team?.abbreviation || '',
+            position: s.position?.abbreviation || '', _qGroup: g,
+        })));
+    }
     const mlbHits = mlbPool.filter(p => {
         if (mlbSeen.has(p.id)) return false;
         mlbSeen.add(p.id);
@@ -175,7 +186,7 @@ function _buildGroups(q) {
             badge:  'MLB',
             avatarUrl,
             teamColor,
-            action: () => { closeGlobalSearch(); showMLBPlayerDetail(p.id); },
+            action: () => { closeGlobalSearch(); showMLBPlayerDetail(p.id, p._qGroup); },
         };
     });
     if (mlbHits.length) groups.push({ label: 'MLB Players', items: mlbHits });

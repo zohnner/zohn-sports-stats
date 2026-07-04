@@ -3107,3 +3107,7 @@ Reuses the leaderboard panel row anatomy (rank chip, headshot, name, value in th
 
 ### Ask Bar v1 live verification (2026-07-02) — PASSED, one gap found & fixed
 Verified on sportstrata.cc: teach chips render on the empty overlay ("Try asking:"); "hr leaders" → UNDERSTOOD AS: HOME RUNS chip + instant top-10 (Schwarber 30); "era leaders min 50 ip" → ERA + MIN 50 IP chips, ascending sort (Misiorowski 1.47); teach chips dismissed after first parse; 11 answer rows keyboard-reachable. **Gap:** "judge hr" rendered the panel but name search matched the full string, so Aaron Judge didn't surface. Fixed same session: `qaBuild` returns the leftover tokens and `_renderResults` runs the name search on them ("judge hr" → HR board + Judge). Tests 23/23. SW v53.
+
+### ⌘K MLB name search dead on cold sessions — FOUND & FIXED 2026-07-02
+Surfaced by the Ask Bar live verification ("judge hr" leftover fix worked, but `_buildGroups('judge')` was EMPTY): MLB name search sourced `AppState.mlbPlayers`, which only populates on the Players view — so searching any MLB player by name silently returned nothing for cold visitors (NFL warmed on open; MLB never did). Fix: when pools are empty, `_buildGroups` searches a pool derived from `mlbLeaderSplits` (warmed on overlay open since D-039), entries carry `_qGroup` so pitcher clicks restore the right pool. SW v54.
+**Live verify after push:** fresh tab → ⌘K → "judge" → Aaron Judge appears; click → player page (group-correct for pure pitchers, e.g. "skenes").
