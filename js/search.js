@@ -277,10 +277,12 @@ function _renderResults(q) {
         return;
     }
 
-    const groups = _buildGroups(q);
     // Ask-bar answer panel (D-039) — additive; qa items are pushed FIRST so
     // the data-idx values qaBuild writes align with _searchFlatItems order.
+    // When a parse leaves leftover tokens ("judge hr"), the name search runs
+    // on the leftovers so both the answer AND the player surface.
     const qa = (typeof qaBuild === 'function') ? qaBuild(q) : null;
+    const groups = _buildGroups(qa && qa.leftover ? qa.leftover : q);
     if (!groups.length && !qa) {
         container.innerHTML = `<div class="search-empty">No results for <strong>${_esc(q)}</strong></div>`;
         _appendNflAllTime(q);

@@ -233,11 +233,14 @@ function qaBuild(qText) {
         rowsHtml = `<div class="qa-loading"><div class="skeleton-line" style="height:34px;margin-bottom:4px"></div><div class="skeleton-line" style="height:34px"></div></div>`;
     }
 
+    // Leftover tokens (e.g. "judge" in "judge hr") are handed back so the
+    // name search below the panel runs on THEM, not the full query — that's
+    // how "judge hr" shows both the HR board and Aaron Judge.
     const html = `<div class="search-group qa-panel" role="region" aria-label="Query answer">
         <div class="search-group-label qa-echo" aria-live="polite">Understood as: ${chips}</div>
         ${rowsHtml}
     </div>`;
-    return { html, items };
+    return { html, items, leftover: (p.leftover || []).join(' ') };
 }
 
 // Teach chips for the empty overlay — until the first successful parse.
