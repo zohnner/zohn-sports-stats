@@ -3893,3 +3893,18 @@ td.sos-bye, th.sos-bye { text-align: center; color: var(--text-muted); font-size
 /* On home the hero search is the primary affordance — the header button
    duplicates it directly above (D-038 V5). Hidden here only; ⌘K unaffected. */
 body.view-home .search-global-btn { display: none; }
+
+/* ── Seasonal moment band (D-040 1a) — slim, above Today's Games ── */
+.home-moment { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1.1rem; }
+.hm-row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.5rem 0.85rem; }
+.hm-kicker { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.hm-text { color: var(--text-secondary); font-size: 0.82rem; }
+.hm-chip { padding: 0.28rem 0.7rem; border: 1px solid var(--border-mid); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: color 130ms ease-out, border-color 130ms ease-out; }
+.hm-chip:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.hm-race { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border-default); border-radius: var(--radius-full); background: var(--bg-card); cursor: pointer; font-size: 0.78rem; color: var(--text-secondary); transition: border-color 130ms ease-out; }
+.hm-race:hover { border-color: var(--border-strong); }
+.hm-race strong { color: var(--text-primary); font-weight: 800; }
+.hm-race-div { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text-subtle); text-transform: uppercase; }
+.hm-race-gb { color: var(--text-muted); font-size: 0.74rem; }
+.hm-race-oct { color: var(--color-win); font-size: 0.74rem; font-weight: 700; }
+@media (max-width: 768px) { .hm-text { display: none; } .hm-race-div { display: none; } }

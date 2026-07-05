@@ -3147,3 +3147,10 @@ Gates (lightweight, static surface): Vera ✅ one-job pages, single CTA into the
 Four pages: `/mock-draft` `/draft-kit` `/playoff-odds` `/ask` (Cloudflare Pages serves .html at clean URLs). The SPA's hash routing meant Google saw one page and every share carried one generic preview — this is the whole top of the acquisition funnel.
 **Follow-ups:** proper 1200×630 OG card images (og:image is the 192px icon for now); submit sitemap in Google Search Console (owner).
 **Live verify after push:** each clean URL renders; CTA lands on the right app view; `curl -s https://sportstrata.cc/mock-draft | grep og:` shows per-page meta.
+
+### D-040 1a+1c — seasonal home moment + welcome copy (2026-07-03) — SHIPPED (pending push)
+Gates (lightweight): Vera ✅ moment band is additive above Today's Games, skeleton while the sim runs, **absent beats broken** (any failure removes the row, never an error on the front door), cross-sport chips route through `_hmGo` (sets sport UI first — the D-038 V2 chimera lesson applied proactively); Kael ✅ slim rows on surface tokens, accent kicker, race chips reuse the pill vocabulary, mobile drops the prose spans; Axiom ✅ `_homeMomentFor(date)` pure config (add a season window + a renderer branch, nothing else), reuses `fetchMLBStandingsFull` (SHORT cache) + `_mlbOddsEnsure` — the first D-040 2a synergy hook (odds on home).
+1a: Jul–Oct "Pennant Races" row — 3 tightest divisions (leader, chaser GB, leader DIV% from the live sim) → standings; Jun–Sep "NFL Draft Season" row — Draft Kit + Mock Draft chips.
+1c: first-visit welcome rewritten for the barbell: "Serious stats for serious fans — no login, ever." + receipts language.
+SW v58. Suite 29/29, manifest + themes green.
+**Live verify after push:** home shows both rows (July = overlap window); pennant chips carry real GB + div%; Draft Kit chip lands on NFL Draft HQ with full sport switch (no chimera); first-visit copy visible in a fresh profile/incognito.

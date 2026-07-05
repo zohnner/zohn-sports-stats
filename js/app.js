@@ -217,8 +217,8 @@ function loadHome() {
     grid.innerHTML = `
         ${isFirstVisit ? `
         <div class="home-welcome">
-            <strong class="home-welcome-headline">Advanced MLB stats for announcers, fantasy players, and data fans.</strong>
-            <span class="home-welcome-sub">FIP, BABIP, ISO, Statcast percentiles, and 50+ leaderboard categories — free, no account, no paywall.</span>
+            <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
+            <span class="home-welcome-sub">Broadcast-grade MLB analytics with the receipt on every number, and no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
         </div>` : ''}
         <!-- Search prompt bar (P2-004) -->
         <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
@@ -226,6 +226,9 @@ function loadHome() {
             <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
             <kbd class="home-search-kbd">⌘K</kbd>
         </button>
+
+        <!-- Seasonal moment band (D-040 1a) — knows the calendar -->
+        <div class="home-moment" id="homeMoment" hidden></div>
 
         <!-- Today's Games — dominant first module -->
         <div class="home-today" id="homeTodayGames">
@@ -339,6 +342,7 @@ function loadHome() {
         </footer>
     `;
 
+    _renderHomeMoment();
     _renderHomeRecents();
     _renderHomeStarred();
     _renderHotStrip();
@@ -1193,3 +1197,71 @@ if (typeof window !== 'undefined') {
         Logger.info('A2HS prompt shown', undefined, 'APP');
     });
 })();
+
+// ── Seasonal home moment (D-040 1a) — the front door knows the calendar ──
+// Add a season window here and a renderer branch below; nothing else changes.
+function _homeMomentFor(d = new Date()) {
+    const m = d.getMonth(); // 0-based
+    const moments = [];
+    if (m >= 6 && m <= 9) moments.push('pennant');   // Jul–Oct: the race is the story
+    if (m >= 5 && m <= 8) moments.push('draft');     // Jun–Sep: NFL draft-prep ramp
+    return moments;
+}
+
+// Cross-sport navigation needs the sport UI switched first — a bare
+// navigateTo from MLB home to an nfl-* view recreates the D-038 V2 chimera.
+function _hmGo(view) {
+    const sport = view.split('-')[0];
+    if (['mlb', 'nfl', 'nhl'].includes(sport) && AppState.currentSport !== sport) {
+        AppState.currentSport = sport;
+        if (typeof _applySportUI === 'function') _applySportUI(sport);
+    }
+    navigateTo(view);
+}
+
+async function _renderHomeMoment() {
+    const host = document.getElementById('homeMoment');
+    if (!host) return;
+    const moments = _homeMomentFor();
+    if (!moments.length) return;
+
+    const draftRow = moments.includes('draft') ? `
+        <div class="hm-row">
+            <span class="hm-kicker">NFL Draft Season</span>
+            <span class="hm-text">Build your board before your league does.</span>
+            <button class="hm-chip" onclick="_hmGo('nfl-draftkit')">Draft Kit →</button>
+            <button class="hm-chip" onclick="_hmGo('nfl-mock')">Mock Draft →</button>
+        </div>` : '';
+
+    host.hidden = false;
+    host.innerHTML = `<div id="hmPennant">${moments.includes('pennant') ? `
+        <div class="hm-row"><span class="hm-kicker">Pennant Races</span><span class="skeleton-line" style="height:14px;flex:1;max-width:380px"></span></div>` : ''}</div>${draftRow}`;
+
+    if (!moments.includes('pennant')) return;
+    try {
+        if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
+        if (typeof _mlbOddsEnsure === 'function') await _mlbOddsEnsure(AppState.mlbStandings);
+        const races = [];
+        (AppState.mlbStandings || []).forEach(d => {
+            const [lead, second] = d.teams || [];
+            if (!lead || !second) return;
+            const gb = parseFloat(second.gb);
+            if (isNaN(gb)) return;
+            races.push({ div: d.division, lead, second, gb, divOdds: AppState.mlbOdds?.byTeam?.[lead.teamId]?.div });
+        });
+        races.sort((a, b) => a.gb - b.gb);
+        const chips = races.slice(0, 3).map(r => `
+            <button class="hm-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
+                <span class="hm-race-div">${_escHtml(r.div)}</span>
+                <strong>${_escHtml(r.lead.teamAbbr)}</strong>
+                <span class="hm-race-gb">${_escHtml(r.second.teamAbbr)} ${r.gb === 0 ? 'tied' : r.gb + ' back'}</span>
+                ${r.divOdds != null && typeof _oddsFmtPct === 'function' ? `<span class="hm-race-oct">${_oddsFmtPct(r.divOdds)}% div</span>` : ''}
+            </button>`).join('');
+        const p = document.getElementById('hmPennant');
+        if (p) p.innerHTML = chips ? `<div class="hm-row"><span class="hm-kicker">Pennant Races</span>${chips}<button class="hm-chip" onclick="navigateTo('mlb-standings')">All odds →</button></div>` : '';
+    } catch (_) {
+        const p = document.getElementById('hmPennant');
+        if (p) p.innerHTML = '';
+        if (!draftRow) host.hidden = true;   // absent beats broken on the front door
+    }
+}
