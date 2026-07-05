@@ -772,3 +772,25 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 **Explicitly deferred:** in-browser LLMs (WebLLM/transformers.js) — real but 100MB+ downloads, WebGPU-only, no-build tension. Revisit as an opt-in "Labs" only after Tracks 1–2 ship.
 **Cipher note:** Track 1 is client-only parsing — the only new surface is echoing user input (escape via `_escHtml`, no innerHTML of raw query). Track 3 content is repo-committed and reviewed like code — no user-generated content path.
 **Sequencing recommendation:** Track 1 first (highest edge-per-effort, deepens G3 announcer-readiness), Track 2b comps + 2c playoff odds next (July-timed), 2a projections before August draft season, Track 3 rolling behind.
+
+## D-040 — The Front Door, the Thread, and the House Style — PROPOSED 2026-07-03
+**Trigger (owner):** "consider landing pages, synergy across the site, and having a site dedicated theme/style."
+**Framing (Kael lead, Vera + Axiom consulted):** these are one problem seen from three angles. The product now has genuinely strong rooms (player detail, Draft HQ, standings-with-odds, the Ask bar) but no designed *arrival*, no designed *connections between rooms*, and an identity that lives in tokens rather than in a written, enforceable style. Three programs:
+
+### Program 1 — The Front Door (landing + arrival)
+1a. **Seasonal home hero.** The home page doesn't know the calendar. One hero module driven by a small `SEASON_MOMENTS` config: pennant-race mode (Jul–Oct: October Odds movers + deadline countdown), draft-season mode (Jul–Aug NFL surface: Draft HQ CTA + days-to-kickoff), postseason/offseason modes. Barbell made visible on arrival. (Vera lead; S/M)
+1b. **Static SEO landing stubs.** The SPA is hash-routed → Google effectively sees ONE page; every share link lands on generic OG tags. Ship 4 prerendered static pages — `/mock-draft.html`, `/draft-kit.html`, `/playoff-odds.html`, `/ask.html` — real copy, per-page OG image/meta, one CTA into the app route. No framework, no build step: 4 hand-held HTML files + `_headers` cache rules. This is the entire top of the acquisition funnel for ~2 days of work. (Kael copy/visual, Folio meta discipline; M)
+1c. **First-visit orientation refresh** (Vera's 2026-05-17 note, still true): the one-time value line, rewritten for the barbell, A/B'd against nothing because we're not liars — just make it good. (S)
+
+### Program 2 — The Thread (synergy system)
+2a. **"One dataset, many surfaces" hooks.** October Odds exists only in standings; it belongs on team detail (hero stat), game prep ("tonight swings the division race ±2.1%"), and the pennant-race home hero. Same for Ask-bar reach (leaders link pre-filtered — the v1.1 item) and share cards (odds-aware). Each hook is small; together they make the site feel like one organism. (Axiom; S each, rolling)
+2b. **The "receipt" pattern, named and universal.** est chips, †, "Understood as:", sim timestamps — the house provenance pattern that already exists in four places. Name it in the design doc, give it one CSS vocabulary, apply it to every computed number (FIP, xW, VORP, odds). Trust is the brand; receipts are how it shows. (Kael; S spec + rolling)
+2c. **Cross-sport component parity** — the NFL/MLB twin surfaces (standings, leaders, cards) converge on shared component classes as the Track C inline-style migration proceeds; parity is the acceptance test, not an afterthought. (Kael+Axiom; part of Track C)
+
+### Program 3 — The House Style (site-dedicated theme)
+3a. **Position: the default dark theme IS the SportStrata brand.** No fourteenth theme, no redesign. The CC themes are collectibles — opt-in flavor, already frozen (D-038). The move is to *elevate the default*: one polish pass over hero, empty states, motion timing (150ms ease-out standard), and density rhythm on the flagship views. (Kael; M)
+3b. **DESIGN.md — the identity written down and enforceable.** Today the style lives in variables.css + scattered GOALS notes + D-038 rules. One page: posture statement (Savant × broadcast lower-thirds), the type ramp and when each face is used, the four house patterns (receipts, border=identity/badge=state, skeleton language, stat-category color discipline), copy voice rules (no hype, no "AI-powered", numbers never lie about precision), logo/wordmark rules (wordmark never themed). New-contributor onboarding AND the checklist Kael reviews against. (Kael writes, Folio maintains; S/M)
+3c. **Standings column priority** (from the odds verification): DIV%/OCT% out-earn HOME/AWAY at constrained widths — reorder so odds are visible without horizontal scroll; splits move behind the scroll. (Kael+Vera; S)
+
+**Sequencing recommendation:** 3b DESIGN.md first (it's the constitution the other programs cite), then 1b SEO stubs (highest acquisition leverage per effort), 1a seasonal hero + 3c column fix together (one standings/home pass), then 2a hooks rolling behind feature work. 3a polish pass after DESIGN.md exists to define "polished."
+**Owner ratification pending on program scope + sequencing.**
