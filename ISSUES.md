@@ -3157,3 +3157,30 @@ SW v58. Suite 29/29, manifest + themes green.
 
 ### D-040 1a+1c live verification (2026-07-05) — PASSED
 Home moment band live: PENNANT RACES row with 3 real races sorted by tightness (AL West SEA · TEX 0.5 back · 59% div; NL East ATL 88%; AL East TB 62%) + All odds link; NFL DRAFT SEASON row with chips. Draft Kit chip → full clean sport switch via _hmGo (sport nfl, view/hash/title/strip all correct — no chimera). Barbell welcome copy confirmed in fresh loadHome. **D-040 Program 1 (Front Door) complete.**
+
+---
+
+## SESSION HANDOFF — 2026-07-05 (clean shutdown, full state)
+
+**Everything below is committed. Pending push at handoff: `caaacc4` (1a+1c moment band) + `cb9bfaa` (verification log) + this handoff commit.**
+
+### Shipped + live-verified this arc (all decision-logged)
+D-032 accuracy hotfix + first tests · D-033 /api rate limiting · D-034 GOALS v2 barbell constitution · D-035 Draft HQ · D-036 rookie value board · D-037 CI tools (manifest/themes/join-health) · D-038 audit + Waves A/B (8/9 closed) · D-039 Track 1 Ask Bar + Track 2c October Odds (+ cold-search fix, leftover-token fix, 99.5 boundary fix) · D-040 Program 1 complete (DESIGN.md, column priority, 4 SEO stubs + sitemap, seasonal moment band, barbell welcome). Test suite: 29/29 across 4 files. SW at v58.
+
+### Ratified queue (in order — D-040/D-039 hold the detail)
+1. **D-040 2a hooks, rolling:** odds on team detail + game prep; Ask Bar pre-filtered leaders link (v1.1); share cards odds-aware.
+2. **D-040 3a:** default-theme polish pass (DESIGN.md defines "polished").
+3. **D-039 2a:** trained rest-of-season projections replacing "last season × 17" in VBD — **deadline: before August draft season.** 2b similarity comps after. Track 3 authored narrative pending ratification.
+4. **D-038 Track C:** theme-contract tightening (check-themes composed pairs) + inline-style→class migration folded into **CSP nonce work — which gates D-031 auth launch**.
+5. **D-031 auth Phase 1:** all six gates DRAFTED (docs/auth-*.md); implementation blocked on nonce work + owner dev secrets/DB.
+
+### Owner to-dos (nobody else can)
+- Cloudflare WAF rate rule on /api/* (docs/ops-rate-limiting.md)
+- Google Search Console: submit https://sportstrata.cc/sitemap.xml
+- Post-push spot check: home moment band + welcome copy in incognito
+
+### Still owed (small)
+Mobile audit (session window-resize was blocked — use devtools device mode) · 1200×630 OG card images for the stubs · park-factor manual refresh (P2) · join-health baseline run (`node tools/join-health.cjs https://sportstrata.cc`).
+
+### Working conventions for the next session
+TEAM.md three-gate rule; lightweight process per owner; DESIGN.md is visual law; live-verify every wave on sportstrata.cc post-push; SW CACHE_NAME bump per deploy (next: v59); commit via the Node/plumbing workaround (memory: sportstrata-commit-workaround); tests + checkers via /deploy-check.
