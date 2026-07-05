@@ -83,6 +83,9 @@ test('sim: wild card rescues the division loser', () => {
 test('formatting: no false precision at the extremes', () => {
     const ctx = load();
     assert.equal(ctx._oddsFmtPct(99.7), '&gt;99');
+    assert.equal(ctx._oddsFmtPct(99.5), '&gt;99', 'boundary: 99.5 exactly must not round to 100 (live TB bug)');
+    assert.equal(ctx._oddsFmtPct(100), '100', 'true 100 (all sims) may say so');
+    assert.equal(ctx._oddsFmtPct(0.5), '&lt;1');
     assert.equal(ctx._oddsFmtPct(0.2), '&lt;1');
     assert.equal(ctx._oddsFmtPct(0), '0');
     assert.equal(ctx._oddsFmtPct(42.4), '42');

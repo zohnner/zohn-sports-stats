@@ -3138,3 +3138,6 @@ Sim confirmed on sportstrata.cc: 4,000 seasons × 1,098 remaining games, values 
 
 ### D-040 3b+3c (2026-07-03) — SHIPPED (pending push)
 DESIGN.md house-style constitution at repo root (Kael, Folio-maintained); standings column priority: OCT% after GB always visible, DIV% wide-only, splits behind the fold. SW v56. **Live verify:** standings shows OCT% without horizontal scroll at 3-panel widths; tooltips intact; wild-card view unaffected.
+
+### D-040 3b+3c live verification (2026-07-03) — PASSED, one boundary bug found & fixed
+Column order verified live: W L PCT GB **OCT%** visible without scroll at 3-panel widths (Rays green, Royals "<1"), DIV% wide-only, splits behind the fold. **Boundary bug caught by the verification:** TB's oct = exactly 99.5 → `v > 99.5` false → rendered "100" — the precise value the no-false-precision rule bans. Fixed to inclusive boundaries (`>= 99.5 && < 100`; true 100 from all sims may say so); pinned in tests/odds.test.js. SW v57.

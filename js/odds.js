@@ -124,8 +124,10 @@ async function _mlbOddsEnsure(divisions) {
 }
 
 function _oddsFmtPct(v) {
-    if (v > 99.5) return '&gt;99';
-    if (v > 0 && v < 0.5) return '&lt;1';
+    // Inclusive boundaries — 99.5 exactly must NOT round to "100" (a Monte
+    // Carlo estimate never renders certainty; DESIGN.md no-false-precision).
+    if (v >= 99.5 && v < 100) return '&gt;99';
+    if (v > 0 && v <= 0.5) return '&lt;1';
     return String(Math.round(v));
 }
 
