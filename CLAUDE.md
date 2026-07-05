@@ -46,7 +46,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `news.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `odds.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `news.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 
@@ -104,6 +104,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/games.js` | NBA/scores views |
 | `js/search.js` | `initGlobalSearch()` — ⌘K overlay |
 | `js/query.js` | Ask Bar (D-039): `parseStatQuery()` grammar + `runStatQuery()` over `mlbLeaderSplits`; renders the answer panel inside ⌘K. Entity tables only — no model, no inference |
+| `js/odds.js` | October Odds (D-039 2c): seeded Monte Carlo playoff odds (`_mlbOddsSim` pure core, `_mlbOddsEnsure` fetch+sim, `_mlbOddsCell` render hook) — standings DIV%/OCT% columns |
 | `js/charts.js` | `StatsCharts` — Chart.js wrappers; always call `StatsCharts.destroyAll()` before re-rendering |
 | `js/schema.js` | `ApiShape` — API response validation helpers |
 | `js/errorHandler.js` | Global error boundary; exposes `Logger` |
@@ -387,7 +388,7 @@ Hosted on **Cloudflare Pages**. Key deployment artifacts:
 - **`_headers`** — Cloudflare Pages headers file; sets CSP and security headers. Must stay in sync with the `<meta http-equiv="Content-Security-Policy">` tag in `index.html`. Adding any new external domain to a fetch or `<img>` requires updating **both**.
 - **`worker/`** — Cloudflare Worker for the BDL proxy (P1-006 fix target).
 
-**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, committed state of critical files, unit tests (`node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js`), delivery-manifest sync (`tools/check-manifest.cjs` — index.html ⇄ sw.js STATIC_ASSETS ⇄ disk), theme contrast (`tools/check-themes.cjs`), and NUL-byte corruption on changed files. After deploy, `tools/join-health.cjs <site-url>` measures the Sleeper⇄nflverse name-join rate (weekly in-season). Never add a js/css file without updating BOTH index.html and sw.js — check #10 fails otherwise.
+**Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, committed state of critical files, unit tests (`node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js`), delivery-manifest sync (`tools/check-manifest.cjs` — index.html ⇄ sw.js STATIC_ASSETS ⇄ disk), theme contrast (`tools/check-themes.cjs`), and NUL-byte corruption on changed files. After deploy, `tools/join-health.cjs <site-url>` measures the Sleeper⇄nflverse name-join rate (weekly in-season). Never add a js/css file without updating BOTH index.html and sw.js — check #10 fails otherwise.
 
 ---
 

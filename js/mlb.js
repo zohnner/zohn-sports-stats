@@ -5471,6 +5471,14 @@ async function loadMLBStandings() {
             AppState.mlbStandings = await fetchMLBStandingsFull();
         }
         displayMLBStandings(AppState.mlbStandings, _mlbStandingsLeague);
+        // October odds fill in on one re-render when the sim lands (D-039 2c)
+        if (typeof _mlbOddsEnsure === 'function') {
+            _mlbOddsEnsure(AppState.mlbStandings).then(changed => {
+                if (changed && AppState.currentView === 'mlb-standings') {
+                    displayMLBStandings(AppState.mlbStandings, _mlbStandingsLeague);
+                }
+            }).catch(() => {});
+        }
     } catch (err) {
         ErrorHandler.handle(grid, err, loadMLBStandings, { tag: 'MLB', title: 'Failed to Load MLB Standings' });
     }
@@ -5572,6 +5580,8 @@ function displayMLBStandings(divisions, league = 'AL') {
                         const deltaStr = delta > 0 ? `<span class="standings-xw-delta standings-xw-delta--over">+${delta}</span>` : delta < 0 ? `<span class="standings-xw-delta standings-xw-delta--under">${delta}</span>` : '';
                         return `${xW}${deltaStr}`;
                     })()}</td>
+                    <td class="standings-num standings-col--wide">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'div') : '—'}</td>
+                    <td class="standings-num">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'oct') : '—'}</td>
                     <td class="standings-num standings-col--wide standings-mn">${magicNum}</td>
                     <td class="standings-num ${streakCls}">${team.streak || '—'}</td>
                     <td class="standings-num standings-l10 ${_l10Cls(team.l10)}">${team.l10 || '—'}</td>
@@ -5601,6 +5611,8 @@ function displayMLBStandings(divisions, league = 'AL') {
                                 <th title="Games behind division leader">GB</th>
                                 <th title="Run differential">RDIFF</th>
                                 <th class="standings-col--wide" title="Pythagorean expected wins based on run differential">xW</th>
+                                <th class="standings-col--wide" title="Chance to win the division — 4,000 Monte Carlo simulations of the remaining schedule (pythagorean strength; ties coin-flipped)">DIV%</th>
+                                <th title="Chance to reach the postseason — division title or wild card">OCT%</th>
                                 <th class="standings-col--wide" title="Magic number to clinch division (leader only)">M#</th>
                                 <th title="Current streak">STRK</th>
                                 <th title="Record in last 10 games">L10</th>
@@ -5622,7 +5634,7 @@ function displayMLBStandings(divisions, league = 'AL') {
             <span class="legend-item"><span class="legend-dot legend-dot--playoff"></span>Division Leader</span>
             <span class="legend-item"><span class="clinch-badge clinch-badge--div">z</span>Clinched Division</span>
             <span class="legend-item"><span class="clinch-badge clinch-badge--po">x</span>Clinched Playoff</span>
-            <span class="legend-item standings-legend-note">xW = Pythagorean expected wins · M# = magic number to clinch</span>
+            <span class="legend-item standings-legend-note">xW = Pythagorean expected wins · M# = magic number to clinch · DIV%/OCT% = odds from 4,000 simulated seasons (pythagorean strength, simulated ${AppState.mlbOdds ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : '…'})</span>
         </div>
     `;
 }

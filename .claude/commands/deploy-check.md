@@ -62,7 +62,7 @@ End with a summary count and the next recommended action.
 
 **9. Unit tests pass**
 ```bash
-node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js
+node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js
 ```
 FAIL if any test fails. These guard the computed-stat math (wOBA/wRC+/FIP) and the VBD implied-value model against regressions.
 

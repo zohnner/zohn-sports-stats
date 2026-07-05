@@ -4405,3 +4405,8 @@
 .qa-val { margin-left: auto; font-family: var(--font-mono, monospace); font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
 .qa-more { justify-content: center; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; }
 .qa-loading { padding: 0.5rem 1rem; }
+
+/* ── October Odds (D-039 2c) — standings DIV%/OCT% values ── */
+.standings-odds { font-weight: 700; }
+.standings-odds--high { color: var(--color-win); }
+.standings-odds--low { color: var(--text-subtle); font-weight: 600; }

@@ -3114,3 +3114,21 @@ Surfaced by the Ask Bar live verification ("judge hr" leftover fix worked, but `
 
 ### Ask Bar + cold-search final verification (2026-07-02) — PASSED
 Cold session on sportstrata.cc (SW v54): "judge hr" → HOME RUNS panel + Aaron Judge in MLB name results (both halves of the Vera gate). Cold-session MLB name search confirmed working via the splits-derived pool. D-039 Track 1 fully verified live.
+
+---
+
+## October Odds (D-039 Track 2c) — GATED task entry — ratified 2026-07-02
+
+### Gate 1 — Vera: JTBD + behavioral ✅
+**Job:** "What are my team's October chances, and what did last night do to them?" — answered where the user already looks: the MLB Standings view. Two new columns (DIV%, OCT%) on the division tables; no new route. **States:** columns show — while the sim runs (standings render immediately, odds fill in on one re-render); fetch failure → columns stay —, view unaffected; season over → 100/0 from final standings (0-game sim degrades gracefully); provenance caption in the legend names the method and sim count. Values must never imply false precision: >99.5% renders ">99", <0.5% renders "<1".
+
+### Gate 2 — Kael: visual ✅
+Two `standings-num` columns after xW (DIV% wide-screen only, OCT% always). Mono numerals; ≥75% takes `--color-win`, <5% takes `--text-subtle`, else `--text-primary` — the same restraint as RDIFF coloring. Methodology lives in `th title` tooltips + one legend-note sentence. No charts, no gradients, no "AI" labels (posture rule).
+
+### Gate 3 — Axiom + Relay: feasibility + data contract ✅
+**Data (Relay):** standings already carry W-L + runs scored/allowed (`fetchMLBStandingsFull`, SHORT TTL). One new fetch: remaining regular-season schedule via `mlbFetch('/schedule', {sportId:1, gameTypes:'R', startDate:today, endDate:season-end}, DAILY)` filtered to `abstractGameState === 'Preview'` — immutable-ish daily payload, edge-cached.
+**Model (documented, transparent):** strength = pythagorean win% (runs^1.83) regressed 30% to .500; per-game home win prob = log5 + 3.5% home bump, clamped [.25,.75]; 4,000 season sims; field = 3 division winners + 3 WC per league; ties broken by random jitter (v1 simplification — real MLB tiebreakers are head-to-head; noted in tooltip).
+**Architecture (Axiom):** new `js/odds.js` — pure sim (`_mlbOddsSim`, seeded `mulberry32` RNG for tests) + `_mlbOddsEnsure()` (fetch, precompute per-game probabilities once, sim ~150ms, store `AppState.mlbOdds`) + `_mlbOddsCell(teamId, kind)` render hook. mlb.js integration ≤ 12 lines (two th, two td via typeof-guarded hook, one kick in `loadMLBStandings`, legend note). Chain after mlb.js; index.html + sw.js together (check #10). Tests: `tests/odds.test.js` seeded fixtures.
+
+**SHIPPED 2026-07-02 — all gates signed (Vera ✅ Kael ✅ Axiom/Relay ✅).** `js/odds.js` (138 lines), standings DIV%/OCT% columns + provenance legend with sim timestamp, `.standings-odds` tokens-only CSS, chain + sw.js v55, CLAUDE.md synced. `tests/odds.test.js`: 6 seeded cases (pythag regression, log5 symmetry/clamps, deterministic zero-game sim, ~53.5% home-bump convergence, wild-card rescue, no-false-precision formatting). Full suite 29/29.
+**Live verify after push:** MLB Standings shows DIV%/OCT% filling in ~1s after first paint; leader ≥75% reads green; legend shows sim time; values sane vs the eye test (runaway leaders >90, cellar dwellers <1).
