@@ -3154,3 +3154,6 @@ Gates (lightweight): Vera ✅ moment band is additive above Today's Games, skele
 1c: first-visit welcome rewritten for the barbell: "Serious stats for serious fans — no login, ever." + receipts language.
 SW v58. Suite 29/29, manifest + themes green.
 **Live verify after push:** home shows both rows (July = overlap window); pennant chips carry real GB + div%; Draft Kit chip lands on NFL Draft HQ with full sport switch (no chimera); first-visit copy visible in a fresh profile/incognito.
+
+### D-040 1a+1c live verification (2026-07-05) — PASSED
+Home moment band live: PENNANT RACES row with 3 real races sorted by tightness (AL West SEA · TEX 0.5 back · 59% div; NL East ATL 88%; AL East TB 62%) + All odds link; NFL DRAFT SEASON row with chips. Draft Kit chip → full clean sport switch via _hmGo (sport nfl, view/hash/title/strip all correct — no chimera). Barbell welcome copy confirmed in fresh loadHome. **D-040 Program 1 (Front Door) complete.**
