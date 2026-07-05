@@ -3141,3 +3141,9 @@ DESIGN.md house-style constitution at repo root (Kael, Folio-maintained); standi
 
 ### D-040 3b+3c live verification (2026-07-03) — PASSED, one boundary bug found & fixed
 Column order verified live: W L PCT GB **OCT%** visible without scroll at 3-panel widths (Rays green, Royals "<1"), DIV% wide-only, splits behind the fold. **Boundary bug caught by the verification:** TB's oct = exactly 99.5 → `v > 99.5` false → rendered "100" — the precise value the no-false-precision rule bans. Fixed to inclusive boundaries (`>= 99.5 && < 100`; true 100 from all sims may say so); pinned in tests/odds.test.js. SW v57.
+
+### D-040 1b — SEO landing stubs (2026-07-03) — SHIPPED (pending push)
+Gates (lightweight, static surface): Vera ✅ one-job pages, single CTA into the app route, cross-links between tools; Kael ✅ DESIGN.md voice (kicker "Free · No login · No ads", receipts paragraph on every page, no hype adjectives, brand dark hardcoded so the pages are self-contained); Folio ✅ canonical + OG + twitter meta per page, sitemap.xml, robots.txt Sitemap line; Axiom ✅ zero app impact — no JS, no app CSS, not precached, SW untouched (no version bump needed).
+Four pages: `/mock-draft` `/draft-kit` `/playoff-odds` `/ask` (Cloudflare Pages serves .html at clean URLs). The SPA's hash routing meant Google saw one page and every share carried one generic preview — this is the whole top of the acquisition funnel.
+**Follow-ups:** proper 1200×630 OG card images (og:image is the 192px icon for now); submit sitemap in Google Search Console (owner).
+**Live verify after push:** each clean URL renders; CTA lands on the right app view; `curl -s https://sportstrata.cc/mock-draft | grep og:` shows per-page meta.
