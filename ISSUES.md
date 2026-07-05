@@ -3135,3 +3135,6 @@ Two `standings-num` columns after xW (DIV% wide-screen only, OCT% always). Mono 
 
 ### October Odds live verification (2026-07-03) — PASSED, one placement note
 Sim confirmed on sportstrata.cc: 4,000 seasons × 1,098 remaining games, values pass the eye test (ARI 9.0% OCT, BAL 11.8% from 12 GB, LAA <1%), legend stamped with sim time. **Note → D-040:** at 3-panel desktop widths the DIV%/OCT% columns sit behind the table's horizontal scroll (visible columns end at RDIFF). Column priority decision needed: odds likely out-earn HOME/AWAY splits for default visibility.
+
+### D-040 3b+3c (2026-07-03) — SHIPPED (pending push)
+DESIGN.md house-style constitution at repo root (Kael, Folio-maintained); standings column priority: OCT% after GB always visible, DIV% wide-only, splits behind the fold. SW v56. **Live verify:** standings shows OCT% without horizontal scroll at 3-panel widths; tooltips intact; wild-card view unaffected.

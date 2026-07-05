@@ -773,7 +773,7 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 **Cipher note:** Track 1 is client-only parsing — the only new surface is echoing user input (escape via `_escHtml`, no innerHTML of raw query). Track 3 content is repo-committed and reviewed like code — no user-generated content path.
 **Sequencing recommendation:** Track 1 first (highest edge-per-effort, deepens G3 announcer-readiness), Track 2b comps + 2c playoff odds next (July-timed), 2a projections before August draft season, Track 3 rolling behind.
 
-## D-040 — The Front Door, the Thread, and the House Style — PROPOSED 2026-07-03
+## D-040 — The Front Door, the Thread, and the House Style — RATIFIED 2026-07-03 (owner: all three programs; sequenced per recommendation)
 **Trigger (owner):** "consider landing pages, synergy across the site, and having a site dedicated theme/style."
 **Framing (Kael lead, Vera + Axiom consulted):** these are one problem seen from three angles. The product now has genuinely strong rooms (player detail, Draft HQ, standings-with-odds, the Ask bar) but no designed *arrival*, no designed *connections between rooms*, and an identity that lives in tokens rather than in a written, enforceable style. Three programs:
 
@@ -794,3 +794,6 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 **Sequencing recommendation:** 3b DESIGN.md first (it's the constitution the other programs cite), then 1b SEO stubs (highest acquisition leverage per effort), 1a seasonal hero + 3c column fix together (one standings/home pass), then 2a hooks rolling behind feature work. 3a polish pass after DESIGN.md exists to define "polished."
 **Owner ratification pending on program scope + sequencing.**
+
+**D-040 update 2026-07-03 — 3b + 3c SHIPPED:** `DESIGN.md` written — the house-style constitution (posture, the default-dark-is-the-brand position, color language incl. border=identity/badge=state and category-color discipline, type ramp roles, the four house patterns with **receipts** named as the universal provenance pattern, copy voice incl. the no-false-precision rule, motion standard 120–150ms ease-out, density/column-priority principle, enforcement pointers). CLAUDE.md key-files table links it (doc-sync). 3c: standings columns reordered — OCT% sits right after GB (always visible), DIV% wide-only beside it; RDIFF/xW/splits carry the fold. SW v56. Suite 29/29.
+**Next per sequence:** 1b SEO landing stubs → 1a seasonal hero + first-visit copy → 2a synergy hooks rolling → 3a default polish pass (now that DESIGN.md defines "polished").

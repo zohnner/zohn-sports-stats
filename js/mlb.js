@@ -5573,6 +5573,8 @@ function displayMLBStandings(divisions, league = 'AL') {
                     <td class="standings-num">${team.losses}</td>
                     <td class="standings-num standings-pct">${team.pct}</td>
                     <td class="standings-num standings-gb">${team.gb}</td>
+                    <td class="standings-num">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'oct') : '—'}</td>
+                    <td class="standings-num standings-col--wide">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'div') : '—'}</td>
                     <td class="standings-num ${_rdiffCls(team.rdiff)}">${team.rdiff}</td>
                     <td class="standings-num standings-xw standings-col--wide">${(() => {
                         if (xW == null) return '—';
@@ -5580,8 +5582,6 @@ function displayMLBStandings(divisions, league = 'AL') {
                         const deltaStr = delta > 0 ? `<span class="standings-xw-delta standings-xw-delta--over">+${delta}</span>` : delta < 0 ? `<span class="standings-xw-delta standings-xw-delta--under">${delta}</span>` : '';
                         return `${xW}${deltaStr}`;
                     })()}</td>
-                    <td class="standings-num standings-col--wide">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'div') : '—'}</td>
-                    <td class="standings-num">${typeof _mlbOddsCell === 'function' ? _mlbOddsCell(team.teamId, 'oct') : '—'}</td>
                     <td class="standings-num standings-col--wide standings-mn">${magicNum}</td>
                     <td class="standings-num ${streakCls}">${team.streak || '—'}</td>
                     <td class="standings-num standings-l10 ${_l10Cls(team.l10)}">${team.l10 || '—'}</td>
@@ -5609,10 +5609,10 @@ function displayMLBStandings(divisions, league = 'AL') {
                                 <th title="Losses">L</th>
                                 <th title="Win percentage">PCT</th>
                                 <th title="Games behind division leader">GB</th>
+                                <th title="Chance to reach the postseason — division title or wild card">OCT%</th>
+                                <th class="standings-col--wide" title="Chance to win the division — 4,000 Monte Carlo simulations of the remaining schedule (pythagorean strength; ties coin-flipped)">DIV%</th>
                                 <th title="Run differential">RDIFF</th>
                                 <th class="standings-col--wide" title="Pythagorean expected wins based on run differential">xW</th>
-                                <th class="standings-col--wide" title="Chance to win the division — 4,000 Monte Carlo simulations of the remaining schedule (pythagorean strength; ties coin-flipped)">DIV%</th>
-                                <th title="Chance to reach the postseason — division title or wild card">OCT%</th>
                                 <th class="standings-col--wide" title="Magic number to clinch division (leader only)">M#</th>
                                 <th title="Current streak">STRK</th>
                                 <th title="Record in last 10 games">L10</th>

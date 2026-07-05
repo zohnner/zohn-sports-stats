@@ -84,6 +84,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 
 | File | Purpose |
 |---|---|
+| `DESIGN.md` | **The house style constitution (D-040)** — posture, color language, type ramp, the four house patterns (receipts, border=identity/badge=state, skeletons, category-color discipline), copy voice, motion rules. Visual review checks against it |
 | `index.html` | Static shell: `<script>` load order (defines global scope), 3-row header structure, nav markup, CSP `<meta>` |
 | `js/config.js` | Shared utilities: `_escHtml()`, `_normName()` + NBA team colors, `getTeamColors()`, `getNBATeamLogoUrl()` |
 | `js/mlb.js` | All MLB logic: team colors/logos, API calls, all MLB view renderers, `MLB_SEASON`, `MLB_LEADER_CATS`, `_computeBattingRates`, `_computePitchingRates` |
