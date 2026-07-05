@@ -3808,6 +3808,33 @@ async function showMLBTeamDetail(teamId, push = true) {
                 }
             }).catch(() => {}); // silent — roster is already visible, stats are a bonus
         }
+
+        // October Odds synergy hook (D-040 2a): ensure the sim, then fill the
+        // header's Playoff Odds slot in place. Mirrors the standings hook;
+        // any failure leaves the slot absent — never an error on the page.
+        if (typeof _mlbOddsEnsure === 'function') {
+            (async () => {
+                try {
+                    if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
+                    const changed = await _mlbOddsEnsure(AppState.mlbStandings);
+                    if (location.hash !== `#mlb-team-${teamId}`) return;
+                    // On a cold deep-link the standings record (rec) is also absent;
+                    // recompute it from the now-loaded standings so both the record
+                    // bio and the Playoff Odds surface on one re-render.
+                    let freshRec = rec;
+                    if (!freshRec && AppState.mlbStandings) {
+                        for (const div of AppState.mlbStandings) {
+                            const found = (div.teams || []).find(t => t.teamId === teamId);
+                            if (found) { freshRec = found; break; }
+                        }
+                    }
+                    if (changed || freshRec !== rec) {
+                        const hdr = grid.querySelector('.player-detail-header');
+                        if (hdr) hdr.outerHTML = _mlbTeamHeader(team, teamId, colors, freshRec);
+                    }
+                } catch (_) { /* absent beats broken */ }
+            })();
+        }
     } catch (err) {
         Logger.error('Failed to load MLB team detail', err, 'MLB');
         grid.innerHTML = `
@@ -3949,6 +3976,20 @@ function _mlbTeamUpcomingCard(games, teamId, colors) {
         </div>`;
 }
 
+// October Odds synergy hook (D-040 2a): playoff-odds bio item for the team
+// header. Reads the already-computed sim (AppState.mlbOdds); returns '' when
+// odds are unavailable so the header degrades cleanly (absent beats broken).
+function _mlbTeamOddsBio(teamId) {
+    const o = AppState.mlbOdds?.byTeam?.[teamId];
+    if (!o) return '';
+    const v = o.oct;
+    const clr = v >= 75 ? 'var(--color-win)' : v < 5 ? 'var(--text-muted)' : 'var(--text-primary)';
+    const val = (typeof _oddsFmtPct === 'function') ? _oddsFmtPct(v) : String(Math.round(v));
+    const stamp = AppState.mlbOdds?.ts ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+    const sims = AppState.mlbOdds?.sims || 4000;
+    return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-display)">${val}%</span></div>`;
+}
+
 function _mlbTeamHeader(team, teamId, colors, rec) {
     const name    = team?.name || `Team ${teamId}`;
     const abbr    = team?.abbreviation || '?';
@@ -3960,11 +4001,13 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
         .replace('American League', 'AL')
         .replace('National League', 'NL');
 
+    const _octBio = _mlbTeamOddsBio(teamId);
     const standingsBio = rec ? `
         <div class="player-bio-grid" style="margin-top:0.75rem">
             <div class="player-bio-item"><span class="bio-label">Record</span><span class="bio-value" style="font-weight:800">${rec.wins}–${rec.losses}</span></div>
             <div class="player-bio-item"><span class="bio-label">PCT</span><span class="bio-value">${rec.pct}</span></div>
             <div class="player-bio-item"><span class="bio-label">GB</span><span class="bio-value">${rec.gb}</span></div>
+            ${_octBio}
             ${rec.streak ? `<div class="player-bio-item"><span class="bio-label">Streak</span><span class="bio-value" style="color:${rec.streak.startsWith('W') ? '#10b981' : '#f87171'};font-weight:700">${rec.streak}</span></div>` : ''}
             <div class="player-bio-item"><span class="bio-label">Last 10</span><span class="bio-value">${rec.last10}</span></div>
             <div class="player-bio-item"><span class="bio-label">Home</span><span class="bio-value">${rec.home}</span></div>

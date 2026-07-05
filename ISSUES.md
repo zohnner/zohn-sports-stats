@@ -3184,3 +3184,20 @@ Mobile audit (session window-resize was blocked — use devtools device mode) ·
 
 ### Working conventions for the next session
 TEAM.md three-gate rule; lightweight process per owner; DESIGN.md is visual law; live-verify every wave on sportstrata.cc post-push; SW CACHE_NAME bump per deploy (next: v59); commit via the Node/plumbing workaround (memory: sportstrata-commit-workaround); tests + checkers via /deploy-check.
+
+---
+
+### D-040 2a Hook 1 — October Odds on team detail (Playoff Odds hero stat) — SHIPPED (pending push)
+**Contributor:** Vera / Kael / Axiom / Finn | **Date:** 2026-07-05
+
+First of the four D-040 2a "one dataset, many surfaces" hooks. October Odds (D-039 2c) lived only in standings; it now surfaces as a **Playoff Odds** item in the MLB team-detail header bio grid.
+
+**Gate 1 — Vera (behavioral) ✅** Job-to-be-done: a fan on a team page learns "are they making October?" without a trip to standings. States: *default* shows OCT% beside Record/PCT/GB; the header paints before the sim lands, so the slot is simply absent until odds fill in on one in-place re-render; **absent beats broken** — partial standings (<24 teams), offseason, no remaining games, or any fetch failure omits the item entirely (never an error on the team page). Threshold ≥75% green, <5% muted. Receipt: title tooltip "Playoff odds · 4,000 simulated seasons · {time}". No false precision (>99 / <1 via `_oddsFmtPct`). Color is reinforcement, not the only signal (value + "Playoff Odds" label carry it). Mobile inherits the responsive bio grid.
+
+**Gate 2 — Kael (visual, vs DESIGN.md) ✅** Extends the existing `player-bio-item` pattern — no new component. Value in Barlow (`--font-display`); thresholded green borrow (`--color-win`) is the sanctioned semantic-trio use; it is a value color, not a border state (border=identity holds). OCT% only in the header (DIV% stays a standings-table detail — the headline a fan checks is "do they make October"). No new token. Watch item: verify green-on-light contrast in review.
+
+**Gate 3 — Axiom (feasibility) ✅** No architectural change. New `_mlbTeamOddsBio(teamId)` reads `AppState.mlbOdds.byTeam[teamId]`. `showMLBTeamDetail` gains a guarded post-render hook mirroring the standings hook (`mlb.js` loadMLBStandings): lazily `fetchMLBStandingsFull()` if absent (MEDIUM cache) → `_mlbOddsEnsure` (30-min memo + DAILY schedule cache) → replace `.player-detail-header` in place, guarded on `location.hash === #mlb-team-{id}`. typeof-guards keep mlb.js decoupled from odds.js load order. Reuses the standings odds engine + `_oddsFmtPct` → **no new external fetch (no Relay gate), no user input (no Cipher surface)**. Cost on first team visit: one cached standings fetch.
+
+**SHIPPED 2026-07-05 (pending push).** `js/mlb.js`: `+_mlbTeamOddsBio`, `+`Playoff Odds bio item, `+`guarded odds-ensure/in-place header re-render in `showMLBTeamDetail`. No CSS file touched (reuses `player-bio-item` + tokens). SW v58 → v59 (mlb.js is precached). `node --check` clean, 0 NUL bytes. Odds core unchanged; full suite green.
+**Live verify after push:** open a contender's page (e.g. `#mlb-team-119`) → "Playoff Odds" appears in the header bio within ~1s, value matches that team's OCT% in standings; a cellar team reads "<1"; tooltip shows sim time; offseason/pre-season shows no odds item and no error.
+**Follow-ups (remaining D-040 2a hooks):** Ask Bar pre-filtered leaders link (v1.1); odds-aware share cards; game-prep division-swing line (needs a conditional-sim spike — log separately, not a quick display hook).
