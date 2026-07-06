@@ -797,3 +797,47 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 **D-040 update 2026-07-03 — 3b + 3c SHIPPED:** `DESIGN.md` written — the house-style constitution (posture, the default-dark-is-the-brand position, color language incl. border=identity/badge=state and category-color discipline, type ramp roles, the four house patterns with **receipts** named as the universal provenance pattern, copy voice incl. the no-false-precision rule, motion standard 120–150ms ease-out, density/column-priority principle, enforcement pointers). CLAUDE.md key-files table links it (doc-sync). 3c: standings columns reordered — OCT% sits right after GB (always visible), DIV% wide-only beside it; RDIFF/xW/splits carry the fold. SW v56. Suite 29/29.
 **Next per sequence:** 1b SEO landing stubs → 1a seasonal hero + first-visit copy → 2a synergy hooks rolling → 3a default polish pass (now that DESIGN.md defines "polished").
+
+---
+
+## D-041 — SEO & Traffic Growth: make the content indexable, then compound it
+**Status:** proposed — owner ratification pending
+**Contributors:** Relay, Axiom, Folio, Kael, Vera (drafted 2026-07-05 at owner request)
+**Date opened:** 2026-07-05 | **Date resolved:** —
+
+**Trigger (owner):** "consider SEO and ways to increase traffic."
+
+**Decision needed:**
+How to grow organic + referral traffic given the site is a deliberately no-build, hash-routed vanilla SPA on Cloudflare Pages — specifically, how to make the content library discoverable by search AND AI crawlers without violating the no-bundler / no-framework / no-build constitution.
+
+**Current state (audit 2026-07-05):**
+- App shell has title/description/OG/canonical + per-view `document.title`; robots.txt + sitemap valid; the four D-040 landing stubs are strong keyword pages.
+- **But hash routing** (`#mlb-team-119`, `#nfl-player-…`) means crawlers see ONE URL (`/`). Thousands of content pages — players, teams, leaderboards, standings, games, historical stat leaders back to 2000 — are invisible to search. This is the ceiling on organic growth.
+- `index.html` has **no `og:image`**; stubs use a 192px icon + `twitter:card: summary` (small). Share previews are weak despite `shareCard.js` already producing 1200×630 cards.
+- **Zero JSON-LD** structured data.
+- (2026) AI crawlers (OpenAI OAI-SearchBot, PerplexityBot) don't execute JS at all → the SPA is invisible to AI search too, not just Google. Raises the stakes.
+
+**Options considered (indexability):**
+- **A. Edge static-render at real path URLs — RECOMMENDED.** A Cloudflare Pages Function serves real paths (e.g. `/mlb/player/aaron-judge-592450`) returning prerendered static HTML — correct title/description/canonical/JSON-LD + a real content snapshot — to *everyone*, which hydrates into the existing SPA for humans. Same HTML for users and bots (no cloaking risk; captures AI crawlers). Uses infra we already run; adds no bundler/framework/build step. Matches Google's current preference for static/server rendering.
+- **B. Dynamic rendering (UA-sniff bots → prerender snapshot).** Works, but Google deprecated it as a long-term approach (workaround only — "no rush to switch," but not the target), adds complexity, and risks cloaking if content diverges. At most an interim shim, not the goal.
+- **C. Adopt an SSR framework (Next/Nuxt).** Best-in-class SEO but violates the no-build constitution outright. Rejected.
+- **D. Do nothing (stay hash-only).** Caps the organic ceiling near zero for deep content. Rejected.
+
+**Decision (proposed):** Option A — real path URLs with edge static-rendered meta + content snapshot that hydrate into the SPA. Hash routes keep working but canonicalize/redirect to the path URL to avoid duplicate content.
+
+**Rationale:** Highest ceiling; preserves the no-build rule; reuses Cloudflare Functions we already operate; serves identical HTML to humans and every crawler type (Google + AI); and is the direction Google actually recommends now (static/server rendering over dynamic rendering).
+
+**Sequencing (phases):**
+- **Phase 0 — quick wins (no architecture change, ~days):** real 1200×630 `og:image` (from `shareCard.js`) + `summary_large_image` on shell and stubs; add `og:image` to `index.html`; JSON-LD `Organization` + `WebSite`(SearchAction) on the shell; expand `sitemap.xml` beyond the five stubs. Independent of everything else. (Folio + Axiom)
+- **Phase 1 — indexability foundation:** URL scheme (Relay owns the path contract), one Cloudflare Function rendering shell + per-page meta + JSON-LD + content snapshot for two flagship templates — **MLB player** and **MLB team**. Hash→path canonical/redirect. Search Console verification + submit. (Relay + Axiom; Folio meta/schema)
+- **Phase 2 — programmatic + content expansion:** extend the template to leaderboards, standings, games, and NFL player/team/leaders; auto-generate the sitemap from data; turn the **stat glossary into evergreen explainer pages** (what is FIP / wRC+ / VORP) and build seasonal hubs (pennant race, draft season). (Relay + Axiom + Kael/Vera content)
+- **Phase 3 — measure + iterate:** Search Console impressions/clicks/indexed count, share CTR; iterate titles/descriptions per query data. (Folio + owner)
+
+**Implications:**
+- Preserves no-build/no-framework — new surface is one edge Function + a URL contract + JSON-LD; the human SPA is untouched beyond a hydration entry point.
+- Canonical discipline: every hash route must canonicalize to its path URL (duplicate-content guard). `_headers`/CSP unaffected (no new external domains).
+- Cross-domain: touches URL parsing / routing → **Relay + Axiom consensus required before Phase 1 build** (this entry becomes that consensus once ratified).
+- Unblocks/aligns with existing owner to-dos: Search Console property + sitemap submission.
+- Success metrics: indexed-page count (→ thousands), organic impressions/clicks (Search Console), share-link CTR, AI-crawler visibility.
+
+**Next:** owner ratifies scope + Phase 0 go-ahead (quick wins can start immediately, independent of the Phase 1 architecture decision); Relay + Axiom sign off on the URL contract before Phase 1 implementation.
