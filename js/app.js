@@ -1006,7 +1006,6 @@ function enterSport(sport) {
     }
 }
 
-if (typeof window !== 'undefined') {
 function _sportPickerStatus(id) {
     const m = new Date().getMonth() + 1; // 1=Jan
     if (id === 'mlb')   return (m >= 3 && m <= 10) ? { cls: 'active', label: 'Regular season' } : { cls: 'idle', label: 'Offseason' };
@@ -1048,6 +1047,7 @@ function _renderSportPicker() {
     }));
 }
 
+if (typeof window !== 'undefined') {
     window._renderSportPicker = _renderSportPicker;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
