@@ -778,6 +778,11 @@ function _loadFromHash() {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
             if (typeof _restoreMLBPlayerDetail === 'function') { _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
+        } else if (/^(mlb|nfl|nhl)-[a-z]+$/.test(_r)) {
+            const _sp = _r.split('-')[0];
+            AppState.currentSport = _sp;
+            if (typeof _applySportUI === 'function') _applySportUI(_sp);
+            navigateTo(_r); return;
         }
     }
     const hash = window.location.hash.slice(1);

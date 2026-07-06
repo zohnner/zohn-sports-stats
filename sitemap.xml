@@ -5,6 +5,7 @@
     <url><loc>https://sportstrata.cc/draft-kit</loc><lastmod>2026-07-05</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
     <url><loc>https://sportstrata.cc/playoff-odds</loc><lastmod>2026-07-05</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
     <url><loc>https://sportstrata.cc/ask</loc><lastmod>2026-07-05</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/standings</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/ath</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/atl</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/az</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
