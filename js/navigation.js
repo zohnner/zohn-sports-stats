@@ -769,11 +769,15 @@ function _loadFromHash() {
     // so the SPA boots straight to the entity. Additive — normal loads never set it.
     if (window.__SS_ROUTE) {
         const _r = window.__SS_ROUTE; window.__SS_ROUTE = '';
-        const _mt = /^mlb-team-(\d+)$/.exec(_r);
-        if (_mt) {
+        let _m;
+        if ((_m = /^mlb-team-(\d+)$/.exec(_r))) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
-            if (typeof _restoreMLBTeamDetail === 'function') { _restoreMLBTeamDetail(parseInt(_mt[1], 10)); return; }
+            if (typeof _restoreMLBTeamDetail === 'function') { _restoreMLBTeamDetail(parseInt(_m[1], 10)); return; }
+        } else if ((_m = /^mlb-player-(\d+)(?:-(hitting|pitching))?$/.exec(_r))) {
+            AppState.currentSport = 'mlb';
+            if (typeof _applySportUI === 'function') _applySportUI('mlb');
+            if (typeof _restoreMLBPlayerDetail === 'function') { _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
         }
     }
     const hash = window.location.hash.slice(1);
