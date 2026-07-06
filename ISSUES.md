@@ -3221,3 +3221,36 @@ Reported: the NFL switcher dumped users straight onto NFL Scores; no designed ar
 
 **Gate 3 — Axiom (feasibility) ✅** New `loadNFLHome()` + `_nflKickoffDate()`/`_nflDaysToKickoff()` in `nfl.js`; four wire-ups in `navigation.js` (brandConfig defaultView → `nfl-home`; `_renderNFLView` case; `_loadFromHash` nflViews for `#nfl-home` deep links; `_NAV_META` breadcrumb). Reuses `fetchNFLScoreboard` (existing `/api/nfl`, cached) → no new external fetch, no CSP change. typeof-guarded, re-render guarded on `currentView`. Commit adds SW v61 (precached JS changed). Suite green (odds/stats/query/vbd), manifest + themes clean.
 **Live verify after push:** click the NFL switcher → lands on NFL Home (not Scores); offseason hero shows the kickoff countdown; tiles route correctly; `#nfl-home` deep link works; MLB switcher unaffected.
+
+---
+
+### D-041 Phase 0 — SEO quick wins — SHIPPED (pending push)
+**Contributor:** Folio / Kael / Axiom | **Date:** 2026-07-05
+
+No-architecture-change items from D-041. **Social cards:** five on-brand 1200×630 OG images generated (`assets/og-default|mock-draft|draft-kit|playoff-odds|ask.png`); `index.html` had **no `og:image` at all** — added it plus `twitter:card: summary_large_image` + twitter title/desc/image; the four stubs upgraded from the 192px icon + small card to their per-page 1200×630 card + large card. **Structured data:** `Organization` + `WebSite` JSON-LD on the shell; `WebApplication` (free, SportsApplication) JSON-LD on each stub — all parse-validated. **Sitemap:** lastmod refreshed + changefreq/priority hints (real expansion is gated on Phase 1 path URLs — no crawlable content URLs exist to add yet). SW v62→v63 (index.html precached). check-manifest + check-themes green.
+**Live verify after push:** `curl -s https://sportstrata.cc/ | grep -E 'og:image|summary_large_image|ld\+json'` shows the tags; paste a link into the X/Slack/iMessage preview debuggers → large card renders, not the icon.
+
+### D-041 Phase 1 prep — URL contract + edge-render design (for Relay + Axiom sign-off)
+**Contributor:** Relay / Axiom (draft for consensus) | **Date:** 2026-07-05
+
+Per D-041, Phase 1 needs Relay + Axiom sign-off on the URL contract before implementation. Draft below — **not yet accepted**.
+
+**Proposed path URL scheme** (id-first for stable resolution, slug for keywords):
+- MLB player: `/mlb/player/{id}/{slug}` (e.g. `/mlb/player/592450/aaron-judge`)
+- MLB team: `/mlb/team/{abbr}` (e.g. `/mlb/team/nyy`)
+- MLB leaders / standings / scores / game: `/mlb/leaders/{category}`, `/mlb/standings`, `/mlb/scores`, `/mlb/game/{gamePk}`
+- NFL mirror: `/nfl/player/{id}/{slug}`, `/nfl/team/{abbr}`, `/nfl/leaders/{category}/{season}`, `/nfl/standings`, `/nfl/scores`
+- Glossary (Phase 2 content): `/glossary/{term}`
+- Existing stubs keep their clean paths.
+
+**Edge-render approach (Axiom):** a Cloudflare Pages Function on the content routes returns ONE HTML for all clients — server-injected `<title>`/description/canonical(self)/og:image/JSON-LD (`Person` for players, `SportsTeam` for teams, `Dataset`/`ItemList` for leaderboards) **plus a real prerendered content snapshot** (key stats as HTML so JS-less crawlers — Google + AI bots — get content), then boots the existing SPA which hydrates to the matching state. No UA sniffing (avoids cloaking; the deprecated dynamic-rendering path). Reuses existing `/api/*` proxies + edge cache for the data fetch.
+
+**Open questions to resolve before build:**
+1. **Routing model:** migrate the SPA to History API path routing, or keep hash routing in-app with path URLs only as crawlable entry points that set SPA state on load? (Affects `navigation.js` `navigateTo`/`_loadFromHash` scope.) — **Axiom**
+2. **Team key:** `{abbr}` vs `{id}/{slug}` — abbr is cleaner but the alias drift (`_MLB_ABBR_ALIASES`) must map. — **Relay**
+3. **Data + TTL per template** at the edge (which fields, which cache bucket). — **Relay**
+4. **Canonical/duplicate-content:** every hash route must `rel=canonical` to its path URL; confirm one canonical per entity. — **Folio**
+5. **Sitemap generation:** build-time script over the data vs edge-generated `/sitemap-*.xml` (players/teams likely need index sitemaps). — **Relay + Axiom**
+6. **og:image:** static default for Phase 1; per-entity dynamic cards (edge-generated from the shareCard template) as a fast-follow. — **Kael**
+
+**Sign-off needed:** Relay (URL contract, data/TTL, sitemap source) + Axiom (routing model, edge Function architecture) before Phase 1 implementation begins. Then two flagship templates first — MLB player + MLB team.
