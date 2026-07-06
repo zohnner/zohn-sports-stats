@@ -3201,3 +3201,23 @@ First of the four D-040 2a "one dataset, many surfaces" hooks. October Odds (D-0
 **SHIPPED 2026-07-05 (pending push).** `js/mlb.js`: `+_mlbTeamOddsBio`, `+`Playoff Odds bio item, `+`guarded odds-ensure/in-place header re-render in `showMLBTeamDetail`. No CSS file touched (reuses `player-bio-item` + tokens). SW v58 → v59 (mlb.js is precached). `node --check` clean, 0 NUL bytes. Odds core unchanged; full suite green.
 **Live verify after push:** open a contender's page (e.g. `#mlb-team-119`) → "Playoff Odds" appears in the header bio within ~1s, value matches that team's OCT% in standings; a cellar team reads "<1"; tooltip shows sim time; offseason/pre-season shows no odds item and no error.
 **Follow-ups (remaining D-040 2a hooks):** Ask Bar pre-filtered leaders link (v1.1); odds-aware share cards; game-prep division-swing line (needs a conditional-sim spike — log separately, not a quick display hook).
+
+---
+
+### NFL/MLB ticker — no-scores placeholder rode the marquee under the SCORES pill — FIXED (pending push)
+**Contributor:** Kael (visual) / Axiom (fix) / Finn (repro) | **Date:** 2026-07-05
+
+Reported: in NFL offseason the ticker's placeholder ("No NFL scores — season runs Sep–Feb") overlapped the "SCORES" pill. Root cause: `tickerScroll` transforms `#scoreTicker` by −50% of its full flex width; with a single short placeholder item that dragged the element ~450px left, over the pill. MLB had the identical latent bug (hidden in-season). Fix: toggle `.ticker--idle` (`animation:none; transform:none`) whenever the ticker shows only the placeholder, in both `updateNFLTicker` and `updateMLBTicker`; new rule in `css/ticker.css`. NHL/NBA share the pattern but were left untouched (preview surfaces). Commit `2d89bf7`, SW v60.
+**Live verify after push:** switch to NFL in offseason → placeholder sits cleanly after the SCORES pill, no overlap; in-season MLB ticker still scrolls normally.
+
+### NFL landing page — season-aware `nfl-home` view — SHIPPED (pending push)
+**Contributor:** Vera / Kael / Axiom / Finn | **Date:** 2026-07-05
+
+Reported: the NFL switcher dumped users straight onto NFL Scores; no designed arrival. Built a dedicated `nfl-home` and routed `switchSport('nfl')` to it (D-040 Front-Door pattern, NFL edition).
+
+**Gate 1 — Vera (behavioral) ✅** JTBD: "I switched to NFL — where do I go?" Season-aware. Offseason: hero = "NFL Draft Season · N days to kickoff" + Mock Draft / Draft HQ / Leaders chips; games section titled "Upcoming Games". In-season: hero = "{season} Season" + Scores/Standings/Leaders chips; games titled "This Week". States: games row shows a skeleton then fills; **absent beats broken** — if the scoreboard is empty or the fetch fails, the whole games section is removed, never a broken shell. Quick-access tiles (always present, no data dependency) cover all eight NFL surfaces. First-visit welcome line (once per browser).
+
+**Gate 2 — Kael (visual, vs DESIGN.md) ✅** Reuses the existing home vocabulary only — `home-container`, `home-welcome`, `home-moment`/`hm-*` hero, `home-today`/`home-section-hdr`, native `games-grid` cards (`_createNFLGameCard`), and `home-feature-item` tiles. No new component, no new token, no new CSS. Accent kicker, receipts-style plain copy, no hype adjectives. Text-forward tiles (title + desc) render clean without icons.
+
+**Gate 3 — Axiom (feasibility) ✅** New `loadNFLHome()` + `_nflKickoffDate()`/`_nflDaysToKickoff()` in `nfl.js`; four wire-ups in `navigation.js` (brandConfig defaultView → `nfl-home`; `_renderNFLView` case; `_loadFromHash` nflViews for `#nfl-home` deep links; `_NAV_META` breadcrumb). Reuses `fetchNFLScoreboard` (existing `/api/nfl`, cached) → no new external fetch, no CSP change. typeof-guarded, re-render guarded on `currentView`. Commit adds SW v61 (precached JS changed). Suite green (odds/stats/query/vbd), manifest + themes clean.
+**Live verify after push:** click the NFL switcher → lands on NFL Home (not Scores); offseason hero shows the kickoff countdown; tiles route correctly; `#nfl-home` deep link works; MLB switcher unaffected.

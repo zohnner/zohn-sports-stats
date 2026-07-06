@@ -249,7 +249,7 @@ function switchSport(sport) {
     const brandConfig = {
         nba: { icon: '🏀', sub: 'NBA Analytics',  defaultView: 'players'     },
         mlb: { icon: '⚾',  sub: 'MLB Analytics',  defaultView: 'mlb-players' },
-        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-games' },
+        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-home' },
         nhl: { icon: '🏒',  sub: 'NHL Analytics',  defaultView: 'nhl-players' },
     };
     const cfg = brandConfig[sport] || brandConfig.mlb;
@@ -284,6 +284,7 @@ function switchSport(sport) {
 
 const _NAV_META = {
     home:            { label: 'Home',          icon: '🏠' },
+    'nfl-home':      { label: 'NFL Home',      icon: '🏈' },
     players:         { label: 'Players',       icon: '👤' },
     leaders:         { label: 'Leaders',       icon: '🏆' },
     teams:           { label: 'Teams',         icon: '🏟' },
@@ -615,6 +616,10 @@ function _renderNFLView(view) {
             if (AppState.nflStandings?.length) displayNFLStandings(AppState.nflStandings);
             else loadNFLStandings();
             break;
+        case 'nfl-home':
+            if (viewCount) viewCount.textContent = 'NFL Home';
+            if (typeof loadNFLHome === 'function') loadNFLHome();
+            break;
         default:
             Logger.error(`Unknown NFL view: ${view}`, undefined, 'NAV');
     }
@@ -833,7 +838,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {

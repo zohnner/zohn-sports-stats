@@ -257,6 +257,106 @@ function displayNFLTeams(teams) {
 
 // ── Display: Scores ───────────────────────────────────────────
 
+// ── NFL season opener (≈ Thursday after Labor Day) + countdown ──
+function _nflKickoffDate() {
+    const y = NFL_FANTASY_SEASON;
+    const sep1 = new Date(y, 8, 1);
+    const firstThu = 1 + ((4 - sep1.getDay() + 7) % 7);
+    return new Date(y, 8, firstThu + 7);
+}
+function _nflDaysToKickoff() {
+    return Math.max(0, Math.ceil((_nflKickoffDate() - new Date()) / 86400000));
+}
+
+// ── NFL home — season-aware landing (the sport's front door) ──
+async function loadNFLHome() {
+    if (typeof _applySportUI === 'function') _applySportUI('nfl');
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'home-container';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-home', null);
+
+    const offseason = _nflIsOffseason();
+    const firstVisit = !localStorage.getItem('zs_seen_nfl_home');
+    if (firstVisit) localStorage.setItem('zs_seen_nfl_home', '1');
+
+    const days = _nflDaysToKickoff();
+    const kicker = offseason ? 'NFL Draft Season' : `${NFL_FANTASY_SEASON} Season`;
+    const heroText = offseason
+        ? (days > 0 ? `${days} day${days === 1 ? '' : 's'} to kickoff — build your board before your league does.`
+                    : 'Kickoff week — lock in your draft.')
+        : 'Live scores, standings, and stat leaders — the season is on.';
+    const heroChips = offseason
+        ? `<button class="hm-chip" onclick="navigateTo('nfl-mock')">Mock Draft →</button>
+           <button class="hm-chip" onclick="navigateTo('nfl-rankings')">Draft HQ →</button>
+           <button class="hm-chip" onclick="navigateTo('nfl-leaders')">${NFL_STATS_SEASON} Leaders →</button>`
+        : `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
+           <button class="hm-chip" onclick="navigateTo('nfl-standings')">Standings →</button>
+           <button class="hm-chip" onclick="navigateTo('nfl-leaders')">Leaders →</button>`;
+
+    const tiles = [
+        ['nfl-games', 'Scores', offseason ? 'Upcoming schedule' : 'Live & recent'],
+        ['nfl-standings', 'Standings', offseason ? 'Opens at kickoff' : 'Division races'],
+        ['nfl-rankings', 'Draft HQ', 'Rankings · value board'],
+        ['nfl-mock', 'Mock Draft', 'Practice vs ADP-based AI'],
+        ['nfl-players', 'Players', 'Profiles & season stats'],
+        ['nfl-leaders', 'Leaders', `${NFL_STATS_SEASON} stat leaders`],
+        ['nfl-teams', 'Teams', 'All 32'],
+        ['nfl-compare', 'Compare', 'Player vs player'],
+    ];
+    const tileHtml = tiles.map(([v, t, d]) => `
+        <button class="home-feature-item" onclick="navigateTo('${v}')">
+            <div class="home-feature-text">
+                <div class="home-feature-title">${t}</div>
+                <div class="home-feature-desc">${_escHtml(d)}</div>
+            </div>
+        </button>`).join('');
+
+    grid.innerHTML = `
+        ${firstVisit ? `<div class="home-welcome">
+            <strong class="home-welcome-headline">NFL on SportStrata — no login, ever.</strong>
+            <span class="home-welcome-sub">Draft tools with an edge, stat leaders back to 2000, and live scores in season. Free, no account, no ads.</span>
+        </div>` : ''}
+        <div class="home-moment">
+            <div class="hm-row">
+                <span class="hm-kicker">${kicker}</span>
+                <span class="hm-text">${heroText}</span>
+                ${heroChips}
+            </div>
+        </div>
+        <div class="home-today" id="nflHomeGames">
+            <div class="home-section-hdr">
+                <span class="home-section-title">${offseason ? 'Upcoming Games' : 'This Week'}</span>
+                <button class="home-section-link" onclick="navigateTo('nfl-games')">All scores →</button>
+            </div>
+            <div class="games-grid" id="nflHomeGamesGrid">
+                ${Array.from({ length: 4 }, () => `<div class="skeleton-card" style="min-height:120px"></div>`).join('')}
+            </div>
+        </div>
+        <div class="home-features">${tileHtml}</div>
+    `;
+
+    if (typeof fetchNFLScoreboard === 'function') {
+        try {
+            const games = (AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard();
+            AppState.nflGames = games;
+            if (AppState.currentView !== 'nfl-home') return;
+            const host = document.getElementById('nflHomeGamesGrid');
+            const wrap = document.getElementById('nflHomeGames');
+            if (games && games.length && host) {
+                const rank = g => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
+                const top = games.slice().sort((a, b) => rank(a) - rank(b)).slice(0, 6);
+                host.innerHTML = '';
+                top.forEach(g => host.appendChild(_createNFLGameCard(g)));
+            } else if (wrap) {
+                wrap.remove();
+            }
+        } catch (_) {
+            document.getElementById('nflHomeGames')?.remove();
+        }
+    }
+}
+
 async function loadNFLGames() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'games-grid';
@@ -1565,5 +1665,6 @@ if (typeof window !== 'undefined') {
     window.displayNFLStatLeaders = displayNFLStatLeaders;
     window.loadNFLPlayers      = loadNFLPlayers;
     window.displayNFLPlayers   = displayNFLPlayers;
+    window.loadNFLHome         = loadNFLHome;
     window.updateNFLTicker     = updateNFLTicker;
 }
