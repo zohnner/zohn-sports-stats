@@ -769,7 +769,7 @@ function _loadFromHash() {
     // so the SPA boots straight to the entity. Additive — normal loads never set it.
     if (window.__SS_ROUTE) {
         const _r = window.__SS_ROUTE; window.__SS_ROUTE = '';
-        const _mt = /^mlb-team-(d+)$/.exec(_r);
+        const _mt = /^mlb-team-(\d+)$/.exec(_r);
         if (_mt) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
