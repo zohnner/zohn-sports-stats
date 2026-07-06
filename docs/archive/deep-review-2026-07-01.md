@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-07-06** — point-in-time review, preserved for history. Its recommendations were actioned via DECISIONS.md (D-038/D-039/D-040) and DESIGN.md. Reflects the project on its original date; do not treat as current.
+
+---
+
 # SportStrata Deep Review — 2026-07-01
 
 **Format:** Six-persona strategic + technical review. Big picture first, then per-persona findings, cross-cutting issues, and one ranked initiative list.

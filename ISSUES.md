@@ -3044,7 +3044,7 @@ D-037. New `tools/` checkers (manifest sync, theme contrast contract, live join-
 
 ---
 
-## D-038 audit findings (2026-07-02) — OPEN until fixed; evidence in design-review-2026-07-02.md
+## D-038 audit findings (2026-07-02) — OPEN until fixed; evidence in docs/archive/design-review-2026-07-02.md
 
 ### P1 — Leaders → player detail "Player not found" (V1) — FIXED 2026-07-02 (Wave A)
 Click path resolves via `AppState.mlbPlayers` (empty unless Players view visited); cold deep-link path fetches directly and works. Fix: `showMLBPlayerDetail` falls back to the deep-link resolution on pool miss; also write the player hash on this path (hash stayed `#mlb-leaders`). Verified live: `currentView: mlb-player-665742`, `hash: #mlb-leaders`, `hittingPool: 0`, `leaderSplits: 600`.

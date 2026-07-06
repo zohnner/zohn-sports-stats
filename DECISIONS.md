@@ -746,7 +746,7 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 ## D-038 — Design & UX cohesion program (Kael + Vera live audit) — ACCEPTED 2026-07-02
 **Trigger:** owner: "polished and cohesive across sports and aspects, not vibe-coded; theme viability; how to move forward with UX and design."
-**Method:** live browser audit of sportstrata.cc (home, Leaders, player detail, Draft HQ, Mock Draft × dark/light/cc-braves) + source-level token scan of all JS render strings. Full findings with evidence: `design-review-2026-07-02.md`.
+**Method:** live browser audit of sportstrata.cc (home, Leaders, player detail, Draft HQ, Mock Draft × dark/light/cc-braves) + source-level token scan of all JS render strings. Full findings with evidence: `docs/archive/design-review-2026-07-02.md`.
 **Headline findings (all observed live):**
 - **V1 CRITICAL** — Leaders → player click = "Player not found" (pool-dependent resolution; cold deep-links work — the click path must fall back to the deep-link fetch). The announcer's primary flow breaks on first contact.
 - **V2 CRITICAL** — no `hashchange` handling: URL/state desync (player view with `#mlb-leaders` hash) and cross-sport chimera states (NFL ticker + MLB content + broken layout).

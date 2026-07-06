@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-07-06** — point-in-time review, preserved for history. Its recommendations were actioned via DECISIONS.md (D-038/D-039/D-040) and DESIGN.md. Reflects the project on its original date; do not treat as current.
+
+---
+
 # Design & UX Review — Kael + Vera — 2026-07-02
 
 **Method:** live audit of https://sportstrata.cc (Chrome, desktop ~1100–1280px) across home, Leaders, player detail, Draft HQ (Value Board + Mock Draft), in dark default, light, and cc-braves themes — plus a source-level token-discipline scan of every JS render string. Screenshots taken this session; every finding below was observed, not inferred.
