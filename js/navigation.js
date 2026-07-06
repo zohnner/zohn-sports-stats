@@ -765,6 +765,17 @@ async function _restoreTeamGameDetail(teamId, gameId) {
 }
 
 function _loadFromHash() {
+    // D-041 Phase 1: edge-prerendered path URLs (e.g. /mlb/team/nyy) set window.__SS_ROUTE
+    // so the SPA boots straight to the entity. Additive — normal loads never set it.
+    if (window.__SS_ROUTE) {
+        const _r = window.__SS_ROUTE; window.__SS_ROUTE = '';
+        const _mt = /^mlb-team-(d+)$/.exec(_r);
+        if (_mt) {
+            AppState.currentSport = 'mlb';
+            if (typeof _applySportUI === 'function') _applySportUI('mlb');
+            if (typeof _restoreMLBTeamDetail === 'function') { _restoreMLBTeamDetail(parseInt(_mt[1], 10)); return; }
+        }
+    }
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('home', false); return; }
 

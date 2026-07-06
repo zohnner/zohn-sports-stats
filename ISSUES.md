@@ -3254,3 +3254,20 @@ Per D-041, Phase 1 needs Relay + Axiom sign-off on the URL contract before imple
 6. **og:image:** static default for Phase 1; per-entity dynamic cards (edge-generated from the shareCard template) as a fast-follow. — **Kael**
 
 **Sign-off needed:** Relay (URL contract, data/TTL, sitemap source) + Axiom (routing model, edge Function architecture) before Phase 1 implementation begins. Then two flagship templates first — MLB player + MLB team.
+
+---
+
+### D-041 Phase 1 — open questions resolved + first slice (MLB team) SHIPPED (pending push)
+**Contributor:** Relay / Axiom / Folio / Finn | **Date:** 2026-07-05
+
+Resolutions to the six Phase 1 prep questions (Relay + Axiom sign-off):
+1. **Routing model:** keep hash routing in-app; add path URLs as **additive** crawler entry points via edge Functions that set `window.__SS_ROUTE`, honored once in `_loadFromHash`. No History-API migration — lowest risk, no core rewrite.
+2. **Team key:** `{abbr}` (statsapi abbreviation, lowercased), resolved to team id at the edge from the cached `/teams` list.
+3. **Data + TTL:** teams list `cf.cacheTtl 3600`; rendered page `cache-control max-age 300`.
+4. **Canonical:** the path URL is the entity's canonical; in-app hash nav is transient and fine.
+5. **Sitemap:** add the 30 team URLs **after live-verify**; data-driven generation deferred.
+6. **og:image:** static default for Phase 1; per-entity edge-generated cards a fast-follow.
+
+**First slice — `functions/mlb/team/[abbr].js`:** fetches the team from statsapi, pulls the real SPA shell via `env.ASSETS`, injects per-team `<title>`/description/canonical/OG/twitter/`SportsTeam` JSON-LD + a crawlable `<h1>`/snapshot into `#playersGrid` + a `window.__SS_ROUTE` hint; returns one HTML to all clients (no UA sniff). **Fail-safe:** any error returns the untouched app (or a redirect), so a broken render can't dead-page. Fully additive: `/mlb/team/*` is a brand-new route, nothing links to it yet, existing traffic untouched. SW v63→v64 (navigation.js precached).
+**Live verify after push (before wiring links/sitemap):** `curl -s https://sportstrata.cc/mlb/team/nyy | grep -E '<title>|canonical|SportsTeam|__SS_ROUTE'` shows Yankees meta; loading `/mlb/team/nyy` in a browser boots the SPA straight to the Yankees page; a bad abbr (`/mlb/team/zzz`) falls back to the app, not a 500.
+**Next once verified:** extend to MLB player (`/mlb/player/{id}/{slug}`), then add team + player URLs to the sitemap; NFL mirror; glossary content pages (Phase 2).
