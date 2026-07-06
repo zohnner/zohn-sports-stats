@@ -4410,3 +4410,26 @@
 .standings-odds { font-weight: 700; }
 .standings-odds--high { color: var(--color-win); }
 .standings-odds--low { color: var(--text-subtle); font-weight: 600; }
+
+/* ── NCAAF teams-by-conference grid (D-042) — display-only chips ── */
+.ncaaf-team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.5rem;
+}
+.ncaaf-team-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+.ncaaf-team-chip-name {
+    font-size: 0.86rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

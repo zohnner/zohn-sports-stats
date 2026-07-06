@@ -3908,3 +3908,45 @@ body.view-home .search-global-btn { display: none; }
 .hm-race-gb { color: var(--text-muted); font-size: 0.74rem; }
 .hm-race-oct { color: var(--color-win); font-size: 0.74rem; font-weight: 700; }
 @media (max-width: 768px) { .hm-text { display: none; } .hm-race-div { display: none; } }
+
+/* ── Sport-picker band (D-042) — sport-agnostic launchpad on home ──
+   border-left = sport identity (K2 rule); status dot = state. */
+.home-sport-picker {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 0 0 1.25rem;
+}
+@media (max-width: 640px) {
+    .home-sport-picker { grid-template-columns: 1fr; }
+}
+.sport-card {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--sport-accent, var(--accent));
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-primary);
+    transition: background 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.sport-card:hover { background: var(--bg-card-hover); transform: translateY(-1px); box-shadow: var(--shadow-card-hov); }
+.sport-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sport-card-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+.sport-card-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+.sport-card-name { font-family: var(--font-display, inherit); font-weight: 700; font-size: 0.98rem; letter-spacing: 0.01em; }
+.sport-card-status { display: flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; color: var(--text-muted); }
+.sport-card-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-disabled); flex-shrink: 0; }
+.sport-card--active .sport-card-dot { background: var(--color-win); }
+.sport-card--live .sport-card-dot {
+    background: var(--color-live);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-live) 30%, transparent);
+    animation: pulseDot 1.6s ease-in-out infinite;
+}
+.sport-card--live .sport-card-status { color: var(--color-live); }
+.sport-card-go { margin-left: auto; color: var(--text-subtle); font-size: 1.1rem; flex-shrink: 0; transition: transform 150ms ease-out, color 150ms ease-out; }
+.sport-card:hover .sport-card-go { transform: translateX(2px); color: var(--sport-accent, var(--accent)); }

@@ -112,6 +112,7 @@ function setupNavigation() {
         if (typeof s.view === 'string') {
             const sportFromView = s.view.startsWith('mlb-') ? 'mlb'
                 : s.view.startsWith('nfl-') ? 'nfl'
+                : s.view.startsWith('ncaaf-') ? 'ncaaf'
                 : s.view.startsWith('nhl-') ? 'nhl'
                 : 'nba';
             if (AppState.currentSport !== sportFromView) {
@@ -246,13 +247,7 @@ function switchSport(sport) {
     document.getElementById('positionFilters')?.remove();
     document.getElementById('mlbGroupToggle')?.remove();
 
-    const brandConfig = {
-        nba: { icon: '🏀', sub: 'NBA Analytics',  defaultView: 'players'     },
-        mlb: { icon: '⚾',  sub: 'MLB Analytics',  defaultView: 'mlb-players' },
-        nfl: { icon: '🏈',  sub: 'NFL Analytics',  defaultView: 'nfl-home' },
-        nhl: { icon: '🏒',  sub: 'NHL Analytics',  defaultView: 'nhl-players' },
-    };
-    const cfg = brandConfig[sport] || brandConfig.mlb;
+    const cfg = SPORTS_META[sport] || SPORTS_META.mlb;
 
     _applySportUI(sport);
 
@@ -273,6 +268,13 @@ function switchSport(sport) {
             fetchNHLScoreboard().then(data => {
                 AppState.nhlGames = data.games;
                 updateNHLTicker(data.games);
+            }).catch(() => {});
+        }
+    } else if (sport === 'ncaaf') {
+        if (typeof fetchNCAAFScoreboard === 'function') {
+            fetchNCAAFScoreboard().then(games => {
+                AppState.ncaafGames = games;
+                if (typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
             }).catch(() => {});
         }
     }
@@ -350,6 +352,7 @@ function renderCurrentView(view) {
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
     if (view.startsWith('nfl-')) { _renderNFLView(view); return; }
     if (view.startsWith('nhl-')) { _renderNHLView(view); return; }
+    if (view.startsWith('ncaaf-')) { _renderNCAAFView(view); return; }
 
     // NBA views
     const viewCount = document.getElementById('viewResultCount');
@@ -860,6 +863,7 @@ function _loadFromHash() {
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
+        const ncaafViews = ['ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -872,6 +876,10 @@ function _loadFromHash() {
         } else if (nhlViews.includes(hash)) {
             AppState.currentSport = 'nhl';
             _applySportUI('nhl');
+            navigateTo(hash, false);
+        } else if (ncaafViews.includes(hash)) {
+            AppState.currentSport = 'ncaaf';
+            _applySportUI('ncaaf');
             navigateTo(hash, false);
         } else {
             navigateTo(nbaViews.includes(hash) ? hash : 'home', false);
@@ -903,6 +911,13 @@ const SUB_NAV_TABS = {
             { v: 'nfl-draftkit', l: 'Draft HQ', also: ['nfl-rankings', 'nfl-sos', 'nfl-trending', 'nfl-mock'] },
             { v: 'nfl-mock', l: 'Mock Draft' },
         ] },
+        { v: 'news', l: 'News' },
+    ],
+    ncaaf: [
+        { v: 'ncaaf-scores', l: 'Scores' },
+        { v: 'ncaaf-standings', l: 'Standings' },
+        { v: 'ncaaf-teams', l: 'Teams' },
+        { v: 'ncaaf-rankings', l: 'Rankings' },
         { v: 'news', l: 'News' },
     ],
 };
@@ -989,6 +1004,12 @@ const MENU_TABS = {
         { group:'Tools' },
         { v:'nfl-compare', l:'Compare', i:'compare' },
     ],
+    ncaaf: [
+        { group:'College Football' },
+        { v:'ncaaf-scores', l:'Scores', i:'scores' }, { v:'ncaaf-standings', l:'Standings', i:'standings' },
+        { v:'ncaaf-teams', l:'Teams', i:'teams' }, { v:'ncaaf-rankings', l:'Rankings', i:'leaders' },
+        { v:'news', l:'News', i:'extra' },
+    ],
 };
 
 function _renderMenuPanel(sport) {
@@ -1015,6 +1036,11 @@ const BOTTOM_NAV_TABS = {
         { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
         { more: true, l: 'More', i: 'extra' },
     ],
+    ncaaf: [
+        { v: 'ncaaf-scores', l: 'Scores', i: 'scores' }, { v: 'ncaaf-standings', l: 'Standings', i: 'standings' },
+        { v: 'ncaaf-rankings', l: 'Rankings', i: 'leaders' }, { v: 'ncaaf-teams', l: 'Teams', i: 'teams' },
+        { more: true, l: 'More', i: 'extra' },
+    ],
 };
 
 function _renderBottomNav(sport) {
@@ -1031,10 +1057,15 @@ function _renderBottomNav(sport) {
 // Data-driven sport switcher (D-026) — add a sport by adding one entry here.
 // Only functional sports are listed: NBA waits on P1-006 (BDL key), NHL on
 // promotion from preview — surfacing a broken sport tab is worse than omitting it.
-const SPORTS = [
-    { id: 'mlb', label: 'MLB' },
-    { id: 'nfl', label: 'NFL' },
-];
+const SPORTS_META = {
+    nba:   { id: 'nba',   label: 'NBA',   icon: '🏀', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
+    mlb:   { id: 'mlb',   label: 'MLB',   icon: '⚾', sub: 'MLB Analytics',    defaultView: 'mlb-players',  accent: '#ff8100' },
+    nfl:   { id: 'nfl',   label: 'NFL',   icon: '🏈', sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
+    nhl:   { id: 'nhl',   label: 'NHL',   icon: '🏒', sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
+    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: '🏈', sub: 'College Football', defaultView: 'ncaaf-scores', accent: '#c8452b' },
+};
+// Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
+const SPORTS = ['mlb', 'nfl', 'ncaaf'].map(id => SPORTS_META[id]);
 
 function _renderSportSwitch(sport) {
     const wrap = document.getElementById('sportSwitch') || document.querySelector('.sport-switch');
@@ -1054,12 +1085,26 @@ function _applySportSearchPlaceholder(sport) {
 }
 
 function _applySportUI(sport) {
-    const brands = { nba: ['🏀','NBA Analytics'], mlb: ['⚾','MLB Analytics'], nfl: ['🏈','NFL Analytics'], nhl: ['🏒','NHL Analytics'] };
-    const [icon, sub] = brands[sport] || brands.mlb;
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
-    if (brandIcon) brandIcon.textContent = icon;
-    if (brandSub)  brandSub.textContent  = sub;
+    // Home is the sport-agnostic front door (D-042): neutral brand, no sport forced
+    // active in the switcher; the home picker band is the launchpad. Nav context
+    // defaults to mlb so the sub-nav is never empty. Amends the old CLAUDE.md rule
+    // that loadHome must call _applySportUI('mlb').
+    if (sport === 'home') {
+        if (brandIcon) brandIcon.textContent = '🏟';
+        if (brandSub)  brandSub.textContent  = 'Multi-Sport Analytics';
+        document.getElementById('nflOffseasonStrip')?.remove();
+        _renderSubNav('mlb');
+        _renderBottomNav('mlb');
+        _renderMenuPanel('mlb');
+        _renderSportSwitch(null);
+        _applySportSearchPlaceholder('mlb');
+        return;
+    }
+    const meta = SPORTS_META[sport] || SPORTS_META.mlb;
+    if (brandIcon) brandIcon.textContent = meta.icon;
+    if (brandSub)  brandSub.textContent  = meta.sub;
     if (sport !== 'nfl') document.getElementById('nflOffseasonStrip')?.remove();
     const tickerScoresBtn = document.getElementById('tickerScoresBtn');
     if (tickerScoresBtn) tickerScoresBtn.dataset.view = (sport === 'nba' ? 'games' : `${sport}-games`);

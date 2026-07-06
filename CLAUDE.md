@@ -10,7 +10,7 @@ All user-facing text uses "SportStrata". Never revert to "ZohnStats".
 ## Sport Focus — READ THIS FIRST
 **MLB is the primary product; NFL is now a live public-beta surface (as of 2026-06-14).** Per D-012/D-013/D-014, NFL was promoted from preview to beta. Shipped: a header sport switcher, NFL Scores / Standings / Teams (ESPN via the `/api/nfl` Pages Function proxy), an offseason state, and a no-login **Mock Draft simulator** (`js/fantasy.js`, Sleeper data via `/api/sleeper`, ADP + Monte Carlo). NFL feature work is in scope and expected.
 
-**NBA and NHL remain preview-only** — do not propose NBA/NHL feature work unprompted.
+**NBA and NHL remain preview-only** — do not propose NBA/NHL feature work unprompted. **NCAA Football is a live surface (D-042, 2026-07-06):** Scores (offseason-aware), Rankings (AP/Coaches/CFP), conference-grouped Standings + Teams, and the home sport-picker band all shipped. Player leaders/detail were deferred (CFB player data too sparse). NCAAF feature work is in scope.
 
 Both MLB depth and NFL beta build-out count as forward progress. NFL roadmap (leaderboards, player cards/detail reusing MLB component patterns; later fantasy grades + league import behind an accounts tier) lives in DECISIONS.md D-012/D-014.
 
@@ -46,7 +46,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `odds.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `news.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `config.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `odds.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `ncaaf.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `news.js` → `app.js`. Each file can reference globals defined by files loaded before it.
 
 ---
 
@@ -55,7 +55,7 @@ Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts s
 `AppState` in `api.js` holds all runtime state. Key fields:
 
 ```js
-AppState.currentSport   // 'nba' | 'mlb' | 'nfl' | 'nhl'  (default: 'mlb')
+AppState.currentSport   // 'nba' | 'mlb' | 'nfl' | 'nhl' | 'ncaaf'  (default: 'mlb')
 AppState.currentView    // current route string e.g. 'mlb-players'
 // MLB
 AppState.mlbTeams       // array of team objects
@@ -114,6 +114,9 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/db.js` | IndexedDB persistence layer (favorites, recents) |
 | `js/nfl.js` | NFL preview (ESPN public API) |
 | `js/nhl.js` | NHL preview (api-web.nhle.com) |
+| `js/ncaaf.js` | NCAA Football (D-042) — ESPN college-football via `/api/ncaaf` (+ `/api/ncaafstandings`); season model, Scores (offseason-aware), Rankings (AP/Coaches/CFP), conference-grouped Standings + Teams |
+| `functions/api/ncaaf.js` | Pages Function — same-origin ESPN college-football proxy (clone of `nfl.js`), allowlisted paths, no keys/D1 |
+| `functions/api/ncaafstandings.js` | Pages Function — CFB standings via `site.web.api` (the `site.api` standings feed is a stub, same as NFL/D-029); season-parameterized conference tree, no keys/D1 |
 | `functions/api/mlb.js` | Cloudflare Pages Function — D1 edge cache proxy for `statsapi.mlb.com` + Savant |
 
 ---
@@ -144,9 +147,10 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 - **NBA.com stats:** `https://stats.nba.com/stats/leagueLeaders` — requires `Referer: https://www.nba.com/` header.
 - **ESPN headshots:** `https://a.espncdn.com/i/headshots/nba/players/full/{espn_id}.png`
 
-### NFL / NHL (preview)
+### NFL / NHL / NCAAF (preview)
 - **NFL:** ESPN public API — `https://site.api.espn.com/apis/site/v2/sports/football/nfl/`
 - **NHL:** `https://api-web.nhle.com/`
+- **NCAAF (D-042):** ESPN college-football — `https://site.api.espn.com/apis/site/v2/sports/football/college-football/` via `/api/ncaaf` (scoreboard, rankings). Same host as NFL → no CSP change. Standings + conference-grouped Teams read `site.web.api.espn.com/.../college-football/standings` via `/api/ncaafstandings` (season-parameterized; the `site.api` standings feed is a stub). Shipped: Scores, Rankings, Standings, Teams. Player leaders/detail deferred (CFB player data too sparse — D-042).
 
 ---
 
@@ -160,6 +164,7 @@ Hash-based routing. `navigateTo(view)` → updates `AppState.currentView`, syncs
 - `view.startsWith('mlb-')` → `_renderMLBView(view)`
 - `view.startsWith('nfl-')` → `_renderNFLView(view)`
 - `view.startsWith('nhl-')` → `_renderNHLView(view)`
+- `view.startsWith('ncaaf-')` → `_renderNCAAFView(view)`
 - All other views (including `'home'`) → NBA/shared switch statement
 
 **MLB views → functions called:**
@@ -178,7 +183,7 @@ Hash-based routing. `navigateTo(view)` → updates `AppState.currentView`, syncs
 
 **`_loadFromHash` behavior:** On first load, reads `location.hash`, matches against regex patterns for player/team detail views, then falls through to view arrays. `home` is in the `nbaViews` legacy array — navigating to it does NOT auto-call `_applySportUI`.
 
-**`home` view — CRITICAL RULE:** `home` is in `nbaViews` in `_loadFromHash`. This means loading the home view does NOT automatically call `_applySportUI('mlb')`. `loadHome()` in `app.js` **must** call `_applySportUI('mlb')` as its first line — never remove or move that call.
+**`home` view — CRITICAL RULE (amended by D-042):** `home` is the sport-agnostic front door. `loadHome()` in `app.js` **must** call `_applySportUI('home')` as its first line (was `'mlb'` before D-042) — never remove or move that call. `_applySportUI('home')` sets a neutral SportStrata brand, renders the sport-picker band as the launchpad, and highlights no sport in the switcher; the sub-nav still defaults to MLB context so it is never empty.
 
 **`_applySportUI(sport)` — what it does:**
 Updates `#brandIcon` and `#brandSub` text only. Falls back to mlb brand if sport is unrecognized — always pass a valid sport string.
@@ -451,7 +456,7 @@ This is a small vanilla JS/CSS SPA. Most tasks are well-scoped enough to handle 
 - Do not create intermediate planning docs — work from conversation context
 - Do not add comments that describe what the code does; only add them when the WHY is non-obvious
 - Do not call `fetch(statsapi.mlb.com/...)` directly — always use `mlbFetch()`
-- Do not remove `_applySportUI('mlb')` from the top of `loadHome()` in `app.js`
+- Do not remove the `_applySportUI('home')` call from the top of `loadHome()` in `app.js` (D-042 — was `'mlb'`; the neutral home brand + sport-picker band is intentional, do not revert it to a forced MLB default)
 
 ---
 

@@ -183,7 +183,7 @@ Logger.info('App bootstrap complete', undefined, 'APP');
 // ── Home / Landing page ───────────────────────────────────────
 
 function loadHome() {
-    if (typeof _applySportUI === 'function') _applySportUI('mlb');
+    if (typeof _applySportUI === 'function') _applySportUI('home');
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -226,6 +226,9 @@ function loadHome() {
             <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
             <kbd class="home-search-kbd">⌘K</kbd>
         </button>
+
+        <!-- Sport-picker band (D-042) — the sport-agnostic launchpad -->
+        <div class="home-sport-picker" id="homeSportPicker" role="group" aria-label="Choose a sport"></div>
 
         <!-- Seasonal moment band (D-040 1a) — knows the calendar -->
         <div class="home-moment" id="homeMoment" hidden></div>
@@ -343,6 +346,7 @@ function loadHome() {
     `;
 
     _renderHomeMoment();
+    _renderSportPicker();
     _renderHomeRecents();
     _renderHomeStarred();
     _renderHotStrip();
@@ -1003,6 +1007,48 @@ function enterSport(sport) {
 }
 
 if (typeof window !== 'undefined') {
+function _sportPickerStatus(id) {
+    const m = new Date().getMonth() + 1; // 1=Jan
+    if (id === 'mlb')   return (m >= 3 && m <= 10) ? { cls: 'active', label: 'Regular season' } : { cls: 'idle', label: 'Offseason' };
+    if (id === 'nfl')   { if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
+                          if (m >= 7 && m <= 8)  return { cls: 'active', label: 'Draft season' };
+                          return { cls: 'idle', label: 'Offseason' }; }
+    if (id === 'ncaaf') { if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
+                          if (m === 8)           return { cls: 'active', label: 'Kicks off soon' };
+                          return { cls: 'idle', label: 'Preview · starts Aug' }; }
+    return { cls: 'idle', label: 'Explore' };
+}
+
+function _renderSportPicker() {
+    const el = document.getElementById('homeSportPicker');
+    if (!el || typeof SPORTS === 'undefined') return;
+    el.innerHTML = SPORTS.map(s => {
+        const st = _sportPickerStatus(s.id);
+        return `<button class="sport-card sport-card--${st.cls}" data-sport="${s.id}" style="--sport-accent:${s.accent}" aria-label="${_escHtml(s.label)} \u2014 ${_escHtml(st.label)}">
+            <span class="sport-card-icon" aria-hidden="true">${s.icon}</span>
+            <span class="sport-card-body">
+                <span class="sport-card-name">${_escHtml(s.label)}</span>
+                <span class="sport-card-status"><span class="sport-card-dot"></span>${_escHtml(st.label)}</span>
+            </span>
+            <span class="sport-card-go" aria-hidden="true">\u2192</span>
+        </button>`;
+    }).join('');
+    el.querySelectorAll('.sport-card').forEach(b => b.addEventListener('click', () => {
+        const sp = b.dataset.sport;
+        const meta = (typeof SPORTS_META !== 'undefined') ? SPORTS_META[sp] : null;
+        // From the neutral home, currentSport may already equal sp (default 'mlb'),
+        // which would make switchSport early-return. Apply the sport UI + go to its
+        // default view directly in that case; otherwise switchSport does both.
+        if (AppState.currentSport === sp) {
+            if (typeof _applySportUI === 'function') _applySportUI(sp);
+            navigateTo(meta ? meta.defaultView : sp + '-players');
+        } else {
+            switchSport(sp);
+        }
+    }));
+}
+
+    window._renderSportPicker = _renderSportPicker;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
 }
