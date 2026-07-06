@@ -65,6 +65,10 @@ export async function onRequest(context) {
             .replace('</head>', `<script type="application/ld+json">${jsonld}</script><script>window.__SS_ROUTE=${JSON.stringify('mlb-team-' + id)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
 
+        // Absolutize relative asset URLs (css/js/assets/manifest/favicon) so they
+        // resolve from root at a deep path like /mlb/team/nyy — otherwise CSS/JS 404.
+        html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
+
         return new Response(html, {
             headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' }
         });
