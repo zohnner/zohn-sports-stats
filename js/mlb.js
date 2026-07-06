@@ -5365,6 +5365,7 @@ function updateMLBTicker(games) {
     );
 
     if (scored.length === 0) {
+        ticker.classList.add('ticker--idle');
         ticker.innerHTML = `<div class="ticker__item">No recent MLB scores — check back during the season</div>`;
         return;
     }
@@ -5402,6 +5403,7 @@ function updateMLBTicker(games) {
         `;
     }).join('');
 
+    ticker.classList.remove('ticker--idle');
     ticker.innerHTML = items;
 
     // Proportional scroll speed — same logic as NBA ticker in games.js

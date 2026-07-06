@@ -672,6 +672,7 @@ function updateNFLTicker(games) {
     const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0);
 
     if (!scored.length) {
+        ticker.classList.add('ticker--idle');
         ticker.innerHTML = `<div class="ticker__item">No NFL scores — season runs Sep–Feb</div>`;
         return;
     }
@@ -693,6 +694,7 @@ function updateNFLTicker(games) {
         `;
     }).join('');
 
+    ticker.classList.remove('ticker--idle');
     ticker.innerHTML = items;
     requestAnimationFrame(() => requestAnimationFrame(() => {
         const w = ticker.scrollWidth;

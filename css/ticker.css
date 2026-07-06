@@ -172,3 +172,11 @@
     .ticker__item { padding: 0 12px; font-size: 0.72rem; }
     .ticker-logo  { width: 15px; height: 15px; }
 }
+
+/* No-scores placeholder: a single static message must not ride the marquee
+   transform (which is -50% of the full track width) — that dragged the message
+   left under the SCORES pill. Idle = no scroll, message sits after the pill. */
+.ticker.ticker--idle {
+    animation: none;
+    transform: none;
+}
