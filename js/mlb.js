@@ -3984,7 +3984,8 @@ function _mlbTeamOddsBio(teamId) {
     if (!o) return '';
     const v = o.oct;
     const clr = v >= 75 ? 'var(--color-win)' : v < 5 ? 'var(--text-muted)' : 'var(--text-primary)';
-    const val = (typeof _oddsFmtPct === 'function') ? _oddsFmtPct(v) : String(Math.round(v));
+    // DESIGN.md: the hero number never renders 100% — a true 100 (all sims) still reads >99 (owner ruling 2026-07-05).
+    const val = v >= 99.5 ? '&gt;99' : ((typeof _oddsFmtPct === 'function') ? _oddsFmtPct(v) : String(Math.round(v)));
     const stamp = AppState.mlbOdds?.ts ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
     const sims = AppState.mlbOdds?.sims || 4000;
     return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-display)">${val}%</span></div>`;
