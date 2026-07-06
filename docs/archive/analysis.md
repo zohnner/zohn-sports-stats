@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-07-06** — point-in-time document, preserved for history. It reflects the project at its original date and is now superseded: current direction lives in GOALS.md and DECISIONS.md, architecture in CLAUDE.md. Do not treat as current.
+
+---
+
 # analysis.md
 
 # SportStrata – Claude Code Improvement Specification

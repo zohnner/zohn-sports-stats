@@ -2283,7 +2283,7 @@ Both cleared in `stopLiveGamePolling()`.
 
 ## Relay — Analytics & Data Presentation Items (2026-06-08)
 
-The following items were identified in Relay's full data architecture deep dive (`relay-deep-dive-2026-06-08.md`). Implemented items are noted. Items requiring spec gates or further verification are parked here.
+The following items were identified in Relay's full data architecture deep dive (`docs/archive/relay-deep-dive-2026-06-08.md`). Implemented items are noted. Items requiring spec gates or further verification are parked here.
 
 ---
 
