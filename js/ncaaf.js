@@ -188,7 +188,9 @@ const _ncaaf = { season: NCAAF_LAST_SEASON, poll: 0 };
 // ── Rankings (AP / Coaches / CFP polls) ───────────────────────
 async function fetchNCAAFRankings() {
     const data = await espnNCAAFFetch('/rankings', {}, ApiCache.TTL.LONG);
-    return (data.rankings || []).map(r => ({
+    // FBS product: keep AP / Coaches (FBS) / Playoff Committee; drop FCS + Div II/III polls.
+    const _fbsPoll = (n) => !!n && !/\bFCS\b|Div(ision)?\s*(II|III)\b/i.test(n);
+    return (data.rankings || []).filter(r => _fbsPoll(r.shortName || r.name)).map(r => ({
         name: r.shortName || r.name || 'Poll',
         headline: r.headline || '',
         occurrence: r.occurrence?.displayValue || '',
@@ -282,7 +284,7 @@ function _ncaafCollectConfs(node, trail, out) {
     const t2 = nm ? [...trail, nm] : trail;
     const entries = (node.standings && node.standings.entries) || [];
     if (entries.length) {
-        const label = (t2.length > 1 ? t2.slice(1).join(' — ') : t2[0]) || nm || 'Conference';
+        const label = t2.join(' — ') || nm || 'Conference';
         out.push({ name: label, teams: entries.map(_ncaafStandingRow).filter(Boolean) });
     }
     for (const c of (node.children || [])) _ncaafCollectConfs(c, t2, out);
