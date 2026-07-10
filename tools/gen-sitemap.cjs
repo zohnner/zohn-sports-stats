@@ -12,7 +12,7 @@
  *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug}
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
- * (NFL content templates are the remaining P2 work — add here when they ship.)
+ *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug}
  */
 const fs = require('fs');
 const path = require('path');
@@ -97,6 +97,25 @@ async function main() {
             }
         } catch (e2) { console.error('NCAAF players:', e.message, '/', e2.message); }
     }
+
+    // 6) NFL teams
+    try {
+        const nt = await jget('https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams');
+        const teams = (nt.sports && nt.sports[0] && nt.sports[0].leagues && nt.sports[0].leagues[0] && nt.sports[0].leagues[0].teams) || [];
+        for (const w of teams) {
+            const t = w.team;
+            if (t && t.abbreviation) add(urlTag(`/nfl/team/${t.abbreviation.toLowerCase()}/${slug(t.displayName || t.name)}`, 'daily', '0.6'));
+        }
+    } catch (e) { console.error('NFL teams:', e.message); }
+
+    // 7) NFL players (top fantasy-relevant by Sleeper search_rank)
+    try {
+        const players = await jget('https://api.sleeper.app/v1/players/nfl');
+        const rows = Object.values(players)
+            .filter(p => p && p.player_id && p.full_name && p.search_rank && p.search_rank < 400 && p.position && p.position !== 'DEF')
+            .sort((a, b) => a.search_rank - b.search_rank);
+        for (const p of rows) add(urlTag(`/nfl/player/${p.player_id}/${slug(p.full_name)}`, 'weekly', '0.5'));
+    } catch (e) { console.error('NFL players:', e.message); }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
     if (DRY) { console.log(`[dry] ${urls.length} urls (nothing written)`); return; }
