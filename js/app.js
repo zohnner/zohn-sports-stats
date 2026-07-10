@@ -1047,7 +1047,54 @@ function _renderSportPicker() {
     }));
 }
 
+const _SPORT_LANDING = {
+    mlb:   { tag: 'Broadcast-grade baseball analytics — the receipt on every number.', cards: [
+        ['mlb-leaders', '\U0001F3C6', 'Leaders', 'AVG · OPS · ERA · FIP · wRC+'],
+        ['mlb-standings', '\U0001F4CA', 'Standings & Odds', 'Divisions + Monte Carlo playoff odds'],
+        ['mlb-players', '\U0001F464', 'Players', 'Statcast profiles, splits, compare'],
+        ['mlb-prep', '\U0001F4CB', 'Game Prep', 'Matchups · lineups · print-ready'] ] },
+    nfl:   { tag: 'No-login fantasy tools that give you the edge.', cards: [
+        ['nfl-mock', '\U0001F3C8', 'Mock Draft', 'Live Monte Carlo + value board'],
+        ['nfl-draftkit', '\U0001F4CB', 'Draft HQ', 'VORP rankings, tiers, sleepers'],
+        ['nfl-standings', '\U0001F4CA', 'Standings', 'Divisions, seeds, playoff picture'],
+        ['nfl-games', '\U0001F4C5', 'Scores', 'Live scoreboard + game viewer'] ] },
+    ncaaf: { tag: 'College football, the whole board — free, no login.', cards: [
+        ['ncaaf-rankings', '\U0001F3C6', 'Rankings', 'AP · Coaches · CFP polls'],
+        ['ncaaf-standings', '\U0001F4CA', 'Standings', 'Every conference, one page'],
+        ['ncaaf-leaders', '\U0001F3C8', 'Leaders', 'Passing · rushing · receiving · defense'],
+        ['ncaaf-scores', '\U0001F4C5', 'Scores', 'Top 25 scoreboard'] ] },
+};
+
+// Clean per-sport landing (D-045): one hero + seasonal line + 4 entry cards. Nothing else.
+function _renderSportLanding(sport) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    if (typeof _applySportUI === 'function') _applySportUI(sport);
+    const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: '\U0001F3DF', label: sport.toUpperCase(), accent: 'var(--accent)' };
+    const cfg = _SPORT_LANDING[sport] || { tag: '', cards: [] };
+    const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
+    grid.className = 'sport-landing';
+    grid.style.cssText = '';
+    grid.innerHTML = `
+        <div class="sl-hero" style="--sport-accent:${meta.accent}">
+            <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
+            <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
+            <p class="sl-hero-tag">${_escHtml(cfg.tag)}</p>
+            <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
+        </div>
+        <div class="sl-cards">
+            ${cfg.cards.map(([v, ic, t, d]) => `
+                <button class="sl-card" style="--sport-accent:${meta.accent}" onclick="navigateTo('${v}')" aria-label="${_escHtml(t)}: ${_escHtml(d)}">
+                    <span class="sl-card-icon" aria-hidden="true">${ic}</span>
+                    <span class="sl-card-body"><span class="sl-card-title">${_escHtml(t)}</span><span class="sl-card-desc">${_escHtml(d)}</span></span>
+                    <span class="sl-card-go" aria-hidden="true">→</span>
+                </button>`).join('')}
+        </div>`;
+    if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
+}
+
 if (typeof window !== 'undefined') {
+    window._renderSportLanding = _renderSportLanding;
     window._renderSportPicker = _renderSportPicker;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;

@@ -323,6 +323,8 @@ const _NAV_META = {
     'ncaaf-teams':     { label: 'College Teams',     icon: '🏈' },
     'ncaaf-rankings':  { label: 'CFB Rankings',      icon: '🏆' },
     'ncaaf-leaders':   { label: 'CFB Leaders',       icon: '🏈' },
+    'mlb-home':        { label: 'MLB',               icon: '⚾' },
+    'ncaaf-home':      { label: 'College Football',  icon: '🏈' },
     'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
 
@@ -363,6 +365,10 @@ function renderCurrentView(view) {
     // Home has a hero search — two identical search affordances 100px apart
     // is one decision nobody made (D-038 V5). ⌘K still works everywhere.
     document.body.classList.toggle('view-home', view === 'home');
+
+    // Sport landing pages (D-045) — clean per-sport home
+    const _homeMatch = view.match(/^(mlb|nfl|ncaaf)-home$/);
+    if (_homeMatch && typeof _renderSportLanding === 'function') { _renderSportLanding(_homeMatch[1]); return; }
 
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
@@ -886,10 +892,10 @@ function _loadFromHash() {
             return;
         }
 
-        const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
+        const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
-        const ncaafViews = ['ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
+        const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -1086,10 +1092,10 @@ function _renderBottomNav(sport) {
 // promotion from preview — surfacing a broken sport tab is worse than omitting it.
 const SPORTS_META = {
     nba:   { id: 'nba',   label: 'NBA',   icon: '🏀', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
-    mlb:   { id: 'mlb',   label: 'MLB',   icon: '⚾', sub: 'MLB Analytics',    defaultView: 'mlb-players',  accent: '#ff8100' },
+    mlb:   { id: 'mlb',   label: 'MLB',   icon: '⚾', sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
     nfl:   { id: 'nfl',   label: 'NFL',   icon: '🏈', sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
     nhl:   { id: 'nhl',   label: 'NHL',   icon: '🏒', sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
-    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: '🏈', sub: 'College Football', defaultView: 'ncaaf-scores', accent: '#c8452b' },
+    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: '🏈', sub: 'College Football', defaultView: 'ncaaf-home',   accent: '#c8452b' },
 };
 // Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
 const SPORTS = ['mlb', 'nfl', 'ncaaf'].map(id => SPORTS_META[id]);
