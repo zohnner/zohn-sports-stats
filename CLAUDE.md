@@ -396,6 +396,15 @@ Hosted on **Cloudflare Pages**. Key deployment artifacts:
 
 **Before any push:** run `/deploy-check` — it validates the BDL key, CSP consistency, committed state of critical files, unit tests (`node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js`), delivery-manifest sync (`tools/check-manifest.cjs` — index.html ⇄ sw.js STATIC_ASSETS ⇄ disk), theme contrast (`tools/check-themes.cjs`), and NUL-byte corruption on changed files. After deploy, `tools/join-health.cjs <site-url>` measures the Sleeper⇄nflverse name-join rate (weekly in-season). Never add a js/css file without updating BOTH index.html and sw.js — check #10 fails otherwise.
 
+### Path URLs & Edge Rendering (SEO — D-041 / D-045)
+
+Real crawlable path URLs are served by Cloudflare Pages Functions that prerender the SPA shell with a per-page `<head>` (title/description/canonical/OG/JSON-LD) + a crawlable content snapshot injected into `#playersGrid`, then set `window.__SS_ROUTE` (honored in `js/navigation.js` `_loadFromHash`) so the SPA hydrates the right view on boot. **Same HTML for humans and bots** (no UA sniffing); any error **fails safe** to the untouched app; relative `href`/`src` are absolutized so deep paths resolve.
+
+- **Sport landings (D-045):** `functions/{mlb,nfl,ncaaf}/index.js` → `/mlb` `/nfl` `/ncaaf`; each sets `__SS_ROUTE={sport}-home` → the clean `_renderSportLanding(sport)` view in `js/app.js` (one hero + seasonal line + 4 entry cards). `SPORTS_META.defaultView` is `{sport}-home`, so entering a sport lands on its landing page (NFL's old `loadNFLHome` is kept but bypassed).
+- **MLB content (D-041 Phase 1):** `functions/mlb/team/[abbr].js`, `functions/mlb/player/[id]/[[slug]].js`, `functions/mlb/standings.js`.
+- `sitemap.xml` lists the path URLs; hash routes should canonicalize to their path URL. NFL/NCAAF content templates (player/team) are the D-045 **P2** remainder.
+- No new external hosts (same-origin `env.ASSETS` + already-allowlisted upstreams) → CSP unaffected. These Functions live outside `/api/`, so they are **not** covered by `functions/api/_middleware.js` rate limiting.
+
 ---
 
 ## Secrets Hygiene (P1-006 — RESOLVED 2026-06-09)
