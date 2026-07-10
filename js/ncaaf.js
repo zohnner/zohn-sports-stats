@@ -512,9 +512,9 @@ async function showNCAAFTeam(id) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     AppState.currentView = 'ncaaf-team-' + id;
-    grid.className = 'team-page';
-    grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    let team, stats = null;
+    grid.className = '';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
+    let team;
     try {
         const data = await espnNCAAFFetch(`/teams/${id}`, {}, ApiCache.TTL.LONG);
         team = data && data.team;
@@ -524,48 +524,87 @@ async function showNCAAFTeam(id) {
         return;
     }
     if (!team) { grid.innerHTML = _ncaafErr('Team not found.', 'displayNCAAFTeams'); return; }
+    let roster = [], sched = [], stats = null;
+    try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (_) {}
+    try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (_) {}
     try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (_) {}
-    displayNCAAFTeamDetail(team, stats);
+    displayNCAAFTeamDetail(team, roster, sched, stats);
 }
 
-function displayNCAAFTeamDetail(team, stats) {
+function displayNCAAFTeamDetail(team, roster, sched, stats) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
-    grid.className = 'team-page';
+    grid.className = '';
     if (window.setBreadcrumb) setBreadcrumb('ncaaf-teams', _escHtml(team.displayName || team.name || 'Team'));
-    const color = '#' + String(team.color || 'c8452b').replace('#', '');
-    const logo = (team.logos && team.logos[0] && team.logos[0].href) || '';
-    const abbr = team.abbreviation || '';
+    const color   = '#' + String(team.color || 'c8452b').replace('#', '');
+    const abbr    = team.abbreviation || '';
     const summary = team.standingSummary || '';
+    const conf    = (summary.match(/\bin\s+(.+)$/) || [])[1] || '';
+    const record  = (team.record && team.record.items && team.record.items[0] && team.record.items[0].summary) || '';
 
-    const seen = new Set(), teamLeaders = [];
+    const GLABEL = { offense: 'Offense', defense: 'Defense', specialTeam: 'Special Teams' };
+    const mapItem = p => ({
+        id: p.id, name: p.fullName || p.displayName || '',
+        pos: (p.position && p.position.abbreviation) || '', number: p.jersey || '',
+        starter: false, injury: '', headshot: (p.headshot && p.headshot.href) || '',
+    });
+    const groups = (roster || []).map(g => ({
+        label: GLABEL[g.position] || g.position || 'Squad',
+        players: (g.items || []).map(mapItem),
+    })).filter(g => g.players.length);
+    const rosterCount = groups.reduce((n, g) => n + g.players.length, 0);
+
+    const seen = new Set(), assets = [];
     if (stats && stats.categories) {
         stats.categories.forEach(cat => (cat.leaders || []).forEach(l => {
-            if (l.team === abbr && !seen.has(l.id)) { seen.add(l.id); teamLeaders.push({ ...l, statLabel: cat.label, statUnit: cat.unit }); }
+            if (l.team === abbr && !seen.has(l.id)) {
+                seen.add(l.id);
+                assets.push({ id: l.id, name: l.name, pos: l.pos || '', number: '', adp: null, posColor: color, headshot: l.headshot || '' });
+            }
         }));
     }
-    const leadersHtml = teamLeaders.length ? `<div class="stats-card">
-        <h2 class="detail-section-title">Team Leaders · ${_ncaaf.season}</h2>
-        ${teamLeaders.slice(0, 12).map(l => `<div class="nfl-lrow nfl-lrow--link" role="button" tabindex="0" aria-label="${_escHtml(l.name)}" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
-            <div class="nfl-lrow-av">${l.headshot ? `<img src="${_escHtml(l.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
-            <div class="nfl-lrow-main"><div class="nfl-lrow-name">${_escHtml(l.name)}</div><div class="nfl-lrow-meta">${l.pos ? _escHtml(l.pos) + ' · ' : ''}${_escHtml(l.statLabel)}</div></div>
-            <span class="nfl-lrow-val">${_escHtml(String(l.value))}</span>
-        </div>`).join('')}
-    </div>` : `<div class="stats-card"><p class="detail-prose">No ${_ncaaf.season} leader data for this team yet.</p></div>`;
 
-    grid.innerHTML = `
-        <div class="ncf-team-banner" style="--team:${color}">
-            <button onclick="navigateTo('ncaaf-teams')" class="back-button" style="margin-bottom:0.75rem">← Teams</button>
-            <div class="ncf-team-hero">
-                ${logo ? `<img class="ncf-team-logo" src="${_escHtml(logo)}" alt="" data-hide-on-error>` : ''}
-                <div>
-                    <h1 class="player-detail-name">${_escHtml(team.displayName || team.name || 'Team')}</h1>
-                    <p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' · ' + _escHtml(summary) : ''}</p>
-                </div>
-            </div>
-        </div>
-        ${leadersHtml}
-        <p class="detail-note" style="margin-top:0.75rem">College Football · Source: ESPN.</p>`;
+    let scheduleHtml;
+    const nowMs = Date.now();
+    const upcoming = (sched || []).map(ev => {
+        const comp = ev.competitions && ev.competitions[0];
+        const d = ev.date ? new Date(ev.date).getTime() : 0;
+        return { ev, comp, d };
+    }).filter(x => x.comp && x.d >= nowMs - 6 * 3600 * 1000).sort((a, b) => a.d - b.d)[0];
+    if (upcoming) {
+        const comps = upcoming.comp.competitors || [];
+        const me  = comps.find(c => c.team && c.team.id === team.id) || comps.find(c => c.homeAway === 'home');
+        const opp = comps.find(c => c !== me) || {};
+        const home = me && me.homeAway === 'home';
+        const ot = opp.team || {};
+        let dateStr = '';
+        try { dateStr = new Date(upcoming.ev.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
+        scheduleHtml = `<section class="team-section"><h3 class="team-section__title">Schedule</h3>
+            <div class="team-next-card"><span class="team-next-card__label">Next game</span>
+            <span class="team-next-card__matchup">${home ? 'vs' : '@'} ${(ot.logos && ot.logos[0]) ? `<img src="${_escHtml(ot.logos[0].href)}" alt="" loading="lazy" data-hide-on-error>` : ''}<strong>${_escHtml(ot.abbreviation || ot.displayName || 'TBD')}</strong></span>
+            ${dateStr ? `<span class="team-next-card__date">${_escHtml(dateStr)}</span>` : ''}</div></section>`;
+    } else {
+        scheduleHtml = `<section class="team-section"><h3 class="team-section__title">Schedule</h3><div class="team-empty">The ${_ncaaf.season} schedule appears here once released.</div></section>`;
+    }
+
+    const model = {
+        sport: 'ncaaf', abbr, name: team.displayName || team.name || 'Team',
+        logo: (team.logos && team.logos[0] && team.logos[0].href) || '', teamColor: color,
+        division: conf, record,
+        seasonLabel: record ? '' : (summary || `${_ncaaf.season} season`),
+        facts: [
+            { label: 'Players', value: rosterCount },
+            ...groups.map(g => ({ label: g.label, value: g.players.length })),
+            ...(conf ? [{ label: 'Conference', value: conf }] : []),
+        ],
+        assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String(_ncaaf.season),
+        groups, rosterEmpty: 'Roster data unavailable for this team right now.',
+        scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
+    };
+
+    grid.innerHTML = (typeof _renderTeamPage === 'function')
+        ? _renderTeamPage(model)
+        : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
 }
 
 window.fetchNCAAFScoreboard = fetchNCAAFScoreboard;

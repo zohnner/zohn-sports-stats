@@ -9,7 +9,7 @@
  * Only an allowlisted set of ESPN CFB paths is permitted (no open proxy).
  */
 const ESPN_NCAAF = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
-const ALLOWED_PATHS = /^\/(teams(\/\d+)?|scoreboard|standings|rankings|news|summary)\/?$/;
+const ALLOWED_PATHS = /^\/(teams(\/\d+(\/(roster|schedule))?)?|scoreboard|standings|rankings|news|summary)\/?$/;
 
 function ttlFor(path) {
     if (path.startsWith('/scoreboard')) return 60;    // live scores

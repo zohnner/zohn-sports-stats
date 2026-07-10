@@ -1301,7 +1301,7 @@ function _renderTeamPage(m) {
             </div>
         </div>
         ${facts ? `<div class="team-facts">${facts}</div>` : ''}
-        ${assets ? `<section class="team-section"><h3 class="team-section__title">Top Fantasy Assets <span class="team-section__count">by ADP</span></h3><div class="team-assets">${assets}</div></section>` : ''}
+        ${assets ? `<section class="team-section"><h3 class="team-section__title">${esc(m.assetsTitle || 'Top Fantasy Assets')} <span class="team-section__count">${esc(m.assetsCountLabel || 'by ADP')}</span></h3><div class="team-assets">${assets}</div></section>` : ''}
         ${groups ? `<section class="team-section"><h3 class="team-section__title">Roster</h3>${groups}</section>` : (m.rosterEmpty ? `<div class="team-empty">${esc(m.rosterEmpty)}</div>` : '')}
         ${m.scheduleHtml || ''}
     </div>`;
