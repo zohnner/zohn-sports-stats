@@ -949,30 +949,21 @@ function _renderNFLPlayerDetail(p) {
     let _seasonOpts = '';
     for (let _y = NFL_STATS_SEASON; _y >= _rookieSeason; _y--) _seasonOpts += `<option value="${_y}" ${_y === NFL_STATS_SEASON ? 'selected' : ''}>${_y}</option>`;
 
+    const _nflHeader = detailHeader({
+        back: { view: 'nfl-players', label: 'Players' },
+        actions: [{ label: 'Share', onclick: "window._shareCurrentPage && window._shareCurrentPage()", title: 'Copy link' }],
+        avatar: { headshotHtml: headshotImg, initials, accent: teamColor, className: 'nfl-hero-avatar' },
+        name: p.full_name,
+        chips: [
+            { html: `<span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>` },
+            ...(adpBadge ? [{ html: adpBadge }] : []),
+        ],
+        teamRow: `${teamLogo ? `<img src="${teamLogo}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}${teamBtn}`,
+        meta: [`${NFL_FANTASY_SEASON} NFL Season \u00b7 Fantasy profile`],
+    });
+
     grid.innerHTML = `
-        <div class="player-detail-header">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-                <button onclick="navigateTo('nfl-players')" class="back-button">← Players</button>
-                <button class="share-btn" onclick="window._shareCurrentPage && window._shareCurrentPage()" title="Copy link">Share</button>
-            </div>
-            <div class="player-hero">
-                <div class="player-detail-avatar nfl-hero-avatar" style="--pc:${teamColor}">
-                    ${headshotImg}<span class="avatar-text">${initials}</span>
-                </div>
-                <div class="player-hero-info">
-                    <div class="player-hero-top">
-                        <h1 class="player-detail-name">${_escHtml(p.full_name)}</h1>
-                        <span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>
-                        ${adpBadge}
-                    </div>
-                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
-                        ${teamLogo ? `<img src="${teamLogo}" alt="" style="width:24px;height:24px;object-fit:contain" loading="lazy" data-hide-on-error>` : ''}
-                        ${teamBtn}
-                    </div>
-                    <p class="player-detail-meta" style="color:var(--text-muted)">${NFL_FANTASY_SEASON} NFL Season · Fantasy profile</p>
-                </div>
-            </div>
-        </div>
+        ${_nflHeader}
 
         <div class="stats-card">
             <h2 class="detail-section-title">Player Profile</h2>

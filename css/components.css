@@ -4433,3 +4433,32 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ── Shared detail-frame chrome (D-044 P1) — named classes replacing
+   the per-sport inline styles on the player/team detail header. ── */
+.detail-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.player-hero-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.player-hero-teamrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+.detail-season-select {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.3rem 0.5rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.player-hero-team-logo { width: 24px; height: 24px; object-fit: contain; }
