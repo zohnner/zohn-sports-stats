@@ -504,7 +504,9 @@ function displayNCAAFPlayerDetail(data) {
         : '';
 
     grid.innerHTML = header + profile + statSections + noStats +
+        `<div id="ncaaf-gamelog-host"></div>` +
         `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
+    if (typeof _loadNCAAFGameLog === 'function') _loadNCAAFGameLog(data.id, data.season);
 }
 
 // ── Team detail (D-044 P4) — banner + team leaders ───────────
@@ -607,6 +609,44 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
         : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
 }
 
+// ── Player game log (D-044 follow-on) — per-game table via /api/ncaafgamelog ──
+async function _loadNCAAFGameLog(id, season) {
+    const host = document.getElementById('ncaaf-gamelog-host');
+    if (!host || !id) return;
+    let data;
+    try {
+        const cacheKey = `ncaaf:gamelog:${id}:${season}`;
+        data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/ncaafgamelog?id=${encodeURIComponent(id)}&season=${season}`);
+            if (!res.ok) return;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+    } catch (_) { return; }
+    if (!data || !data.found || !data.games || !data.games.length) return;
+    if (!document.body.contains(host)) return;
+    const cols = data.columns || [];
+    const head = `<th class="gl-l">Date</th><th class="gl-l">Opp</th><th class="gl-l">Res</th>` +
+        cols.map(c => `<th>${_escHtml(c.label)}</th>`).join('');
+    const rows = data.games.map(g => {
+        let dt = '';
+        try { dt = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        const resCls = /^w/i.test(g.res) ? 'gl-res--w' : /^l/i.test(g.res) ? 'gl-res--l' : '';
+        return `<tr>
+            <td class="gl-l">${_escHtml(dt)}</td>
+            <td class="gl-l">${_escHtml(g.atVs || '')}${g.atVs ? ' ' : ''}${_escHtml(g.opp || '')}</td>
+            <td class="gl-l ${resCls}">${_escHtml(g.res || '')} ${_escHtml(g.score || '')}</td>
+            ${(g.stats || []).map(v => `<td>${_escHtml(String(v))}</td>`).join('')}
+        </tr>`;
+    }).join('');
+    host.innerHTML = detailSection({
+        title: 'Game Log',
+        body: `<div class="table-wrapper" style="overflow-x:auto"><table class="stats-table gl-table" style="white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`,
+    });
+}
+
+window._loadNCAAFGameLog    = _loadNCAAFGameLog;
 window.fetchNCAAFScoreboard = fetchNCAAFScoreboard;
 window.displayNCAAFScores   = displayNCAAFScores;
 window.displayNCAAFRankings = displayNCAAFRankings;

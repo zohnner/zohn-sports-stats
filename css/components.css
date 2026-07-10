@@ -4480,3 +4480,9 @@
 .ncf-team-banner { background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--team, var(--accent)); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin-bottom: 1rem; }
 .ncf-team-hero { display: flex; align-items: center; gap: 0.9rem; }
 .ncf-team-logo { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
+
+/* ── NCAAF player game-log table (D-044 follow-on) ── */
+.gl-table th, .gl-table td { text-align: center; }
+.gl-table th.gl-l, .gl-table td.gl-l { text-align: left; }
+.gl-res--w { color: var(--color-win); font-weight: 700; }
+.gl-res--l { color: var(--color-loss); }
