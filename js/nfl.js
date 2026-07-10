@@ -962,30 +962,25 @@ function _renderNFLPlayerDetail(p) {
         meta: [`${NFL_FANTASY_SEASON} NFL Season \u00b7 Fantasy profile`],
     });
 
+    const _profileBody = `<div class="player-details detail-bio-wide">${bio}</div>`;
+    const _seasonRow = `<div class="detail-season-row">
+            <span class="detail-season-label">Stats season</span>
+            <select onchange="_nflChangeDetailSeason(this.value)" class="detail-season-select">${_seasonOpts}</select>
+        </div>`;
+    const _fantasyBody = `<p class="detail-prose">
+                ${_escHtml(p.full_name)} enters ${NFL_FANTASY_SEASON} ${p._adp ? `as the <strong>#${p._adp}</strong> player off the board by Sleeper ADP` : 'as an undrafted-tier option'}${p.fantasy_positions && p.fantasy_positions.length ? `, eligible at <strong>${_escHtml(p.fantasy_positions.join(', '))}</strong>` : ''}.${p.depth_chart_order === 1 ? ' Currently atop the depth chart.' : p.depth_chart_order ? ` Listed ${_escHtml((p.depth_chart_position || pos) + ' ' + p.depth_chart_order)} on the depth chart.` : ''}${p.injury_status ? ` <span style="color:var(--color-loss)">Injury watch: ${_escHtml(p.injury_status)}.</span>` : ''}
+            </p>
+            <p class="detail-note">Fantasy/ADP and depth chart via Sleeper; season stats via ESPN.</p>`;
+
     grid.innerHTML = `
         ${_nflHeader}
-
-        <div class="stats-card">
-            <h2 class="detail-section-title">Player Profile</h2>
-            <div class="player-details" style="max-width:520px">${bio}</div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:0.5rem;margin:0.1rem 0 0.55rem">
-            <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Stats season</span>
-            <select onchange="_nflChangeDetailSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${_seasonOpts}</select>
-        </div>
+        ${detailSection({ title: 'Player Profile', body: _profileBody })}
+        ${_seasonRow}
         <div id="nfl-advanced"></div>
         <div id="nfl-stat-line"></div>
         <div id="nfl-gamelog"></div>
         <div id="nfl-career"></div>
-
-        <div class="stats-card">
-            <h2 class="detail-section-title">Fantasy Outlook</h2>
-            <p style="color:var(--text-secondary);font-size:0.88rem;line-height:1.6;margin:0">
-                ${_escHtml(p.full_name)} enters ${NFL_FANTASY_SEASON} ${p._adp ? `as the <strong>#${p._adp}</strong> player off the board by Sleeper ADP` : 'as an undrafted-tier option'}${p.fantasy_positions && p.fantasy_positions.length ? `, eligible at <strong>${_escHtml(p.fantasy_positions.join(', '))}</strong>` : ''}.${p.depth_chart_order === 1 ? ' Currently atop the depth chart.' : p.depth_chart_order ? ` Listed ${_escHtml((p.depth_chart_position || pos) + ' ' + p.depth_chart_order)} on the depth chart.` : ''}${p.injury_status ? ` <span style="color:var(--color-loss)">Injury watch: ${_escHtml(p.injury_status)}.</span>` : ''}
-            </p>
-            <p style="color:var(--text-muted);font-size:0.78rem;margin:0.75rem 0 0">Fantasy/ADP and depth chart via Sleeper; season stats via ESPN.</p>
-        </div>
+        ${detailSection({ title: 'Fantasy Outlook', body: _fantasyBody })}
     `;
 
     _nflDetailPlayer = p;

@@ -4462,3 +4462,8 @@
     cursor: pointer;
 }
 .player-hero-team-logo { width: 24px; height: 24px; object-fit: contain; }
+.detail-bio-wide { max-width: 520px; }
+.detail-season-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.1rem 0 0.55rem; }
+.detail-season-label { font-size: 0.74rem; font-weight: 700; color: var(--text-secondary); }
+.detail-prose { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0; }
+.detail-note { color: var(--text-muted); font-size: 0.78rem; margin: 0.75rem 0 0; }
