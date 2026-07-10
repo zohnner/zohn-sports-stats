@@ -804,6 +804,7 @@ function _loadFromHash() {
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
     const nflGameMatch       = hash.match(/^nfl-game-([A-Za-z0-9]+)$/);
+    const ncaafPlayerMatch   = hash.match(/^ncaaf-player-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -837,6 +838,10 @@ function _loadFromHash() {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
         navigateTo('nfl-player-' + nflPlayerMatch[1], false);
+    } else if (ncaafPlayerMatch) {
+        AppState.currentSport = 'ncaaf';
+        _applySportUI('ncaaf');
+        navigateTo('ncaaf-player-' + ncaafPlayerMatch[1], false);
     } else if (nflTeamMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
@@ -863,7 +868,7 @@ function _loadFromHash() {
         const mlbViews = ['mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
-        const ncaafViews = ['ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings'];
+        const ncaafViews = ['ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -918,6 +923,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaaf-standings', l: 'Standings' },
         { v: 'ncaaf-teams', l: 'Teams' },
         { v: 'ncaaf-rankings', l: 'Rankings' },
+        { v: 'ncaaf-leaders', l: 'Leaders' },
         { v: 'news', l: 'News' },
     ],
 };
@@ -1008,7 +1014,7 @@ const MENU_TABS = {
         { group:'College Football' },
         { v:'ncaaf-scores', l:'Scores', i:'scores' }, { v:'ncaaf-standings', l:'Standings', i:'standings' },
         { v:'ncaaf-teams', l:'Teams', i:'teams' }, { v:'ncaaf-rankings', l:'Rankings', i:'leaders' },
-        { v:'news', l:'News', i:'extra' },
+        { v:'ncaaf-leaders', l:'Leaders', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
 };
 
@@ -1038,7 +1044,7 @@ const BOTTOM_NAV_TABS = {
     ],
     ncaaf: [
         { v: 'ncaaf-scores', l: 'Scores', i: 'scores' }, { v: 'ncaaf-standings', l: 'Standings', i: 'standings' },
-        { v: 'ncaaf-rankings', l: 'Rankings', i: 'leaders' }, { v: 'ncaaf-teams', l: 'Teams', i: 'teams' },
+        { v: 'ncaaf-leaders', l: 'Leaders', i: 'leaders' }, { v: 'ncaaf-teams', l: 'Teams', i: 'teams' },
         { more: true, l: 'More', i: 'extra' },
     ],
 };

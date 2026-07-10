@@ -4467,3 +4467,9 @@
 .detail-season-label { font-size: 0.74rem; font-weight: 700; color: var(--text-secondary); }
 .detail-prose { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0; }
 .detail-note { color: var(--text-muted); font-size: 0.78rem; margin: 0.75rem 0 0; }
+
+/* ── NCAAF player-detail stat groups (D-044 P3) ── */
+.ncf-statline { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; }
+.ncf-stat { display: flex; flex-direction: column; min-width: 52px; }
+.ncf-stat-v { font-size: 1.15rem; font-weight: 800; font-family: var(--font-display, inherit); color: var(--text-primary); line-height: 1.1; }
+.ncf-stat-l { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.15rem; }

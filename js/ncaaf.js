@@ -171,10 +171,12 @@ function updateNCAAFTicker(games) {
 }
 
 function _renderNCAAFView(view) {
+    if (view.startsWith('ncaaf-player-')) { showNCAAFPlayer(view.slice('ncaaf-player-'.length)); return; }
     switch (view) {
         case 'ncaaf-standings': displayNCAAFStandings(); break;
         case 'ncaaf-teams':     displayNCAAFTeams();     break;
         case 'ncaaf-rankings':  displayNCAAFRankings();  break;
+        case 'ncaaf-leaders':   displayNCAAFLeaders();   break;
         case 'ncaaf-scores':
         default:                displayNCAAFScores();
     }
@@ -387,10 +389,126 @@ function _ncaafErr(msg, retryFn) {
     return `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">${_escHtml(msg)}</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="${retryFn}()">Retry</button></div></div>`;
 }
 
+// ── Leaders (real season stats via /api/ncaafstats) ──────────
+const _NCF_LCOLORS = ['#c8452b','#3b7dd8','#2e9e6b','#b0842f','#8b5cf6','#d6455f','#0d9488','#c2410c','#6366f1','#0891b2'];
+
+async function displayNCAAFLeaders() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'players-grid';
+    grid.innerHTML = Array.from({ length: 6 }, () => `<div class="skeleton-card" style="min-height:240px"></div>`).join('');
+    let data;
+    try {
+        const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
+        data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`);
+            if (!res.ok) throw new Error('leaders ' + res.status);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+    } catch (err) {
+        Logger.warn('NCAAF leaders failed', err, 'NCAAF');
+        grid.className = 'standings-container';
+        grid.innerHTML = _ncaafErr("Couldn't load college leaders.", 'displayNCAAFLeaders');
+        return;
+    }
+    if (!data.categories || !data.categories.length) {
+        grid.className = 'standings-container';
+        grid.innerHTML = _ncaafOffseasonState();
+        return;
+    }
+    grid.innerHTML = data.categories.map((cat, ci) => {
+        const color = _NCF_LCOLORS[ci % _NCF_LCOLORS.length];
+        const rows = cat.leaders.map((l, i) => `
+            <div class="nfl-lrow nfl-lrow--link" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
+                <span class="nfl-lrow-rank">${i + 1}</span>
+                <div class="nfl-lrow-av">${l.headshot ? `<img src="${_escHtml(l.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(l.name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
+                </div>
+                <span class="nfl-lrow-val" style="color:${color}">${_escHtml(String(l.value))}</span>
+            </div>`).join('');
+        return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
+            <div class="nfl-card-head" style="justify-content:space-between">
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+            </div>${rows}</div>`;
+    }).join('');
+}
+
+// ── Player detail on the shared frame (D-044) ────────────────
+async function showNCAAFPlayer(id) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    AppState.currentView = 'ncaaf-player-' + id;
+    grid.className = 'player-detail-container';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
+    let data;
+    try {
+        const cacheKey = `ncaaf:athlete:${id}:${_ncaaf.season}`;
+        data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${_ncaaf.season}`);
+            if (!res.ok) throw new Error('athlete ' + res.status);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+    } catch (err) {
+        Logger.warn('NCAAF athlete failed', err, 'NCAAF');
+        grid.innerHTML = _ncaafErr("Couldn't load this player.", 'displayNCAAFLeaders');
+        return;
+    }
+    displayNCAAFPlayerDetail(data);
+}
+
+function displayNCAAFPlayerDetail(data) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'player-detail-container';
+    const bio = (data && data.bio) || {};
+    if (!bio.name) { grid.innerHTML = _ncaafErr('Player not found.', 'displayNCAAFLeaders'); return; }
+
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+    const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
+    const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';
+    const teamRow = `${bio.teamLogo ? `<img src="${_escHtml(bio.teamLogo)}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}<span>${_escHtml(bio.team || '')}</span>`;
+
+    const header = detailHeader({
+        back: { view: 'ncaaf-leaders', label: 'Leaders' },
+        actions: [{ label: 'Share', onclick: "window._shareCurrentPage && window._shareCurrentPage()", title: 'Copy link' }],
+        avatar: { headshotHtml: headshotImg, initials, accent, className: 'nfl-hero-avatar' },
+        name: bio.name,
+        chips: bio.pos ? [{ text: bio.pos }] : [],
+        teamRow,
+        meta: [`${data.season} College Football${data.gp ? ` · ${_escHtml(String(data.gp))} GP` : ''}`],
+    });
+
+    const bioRows = [
+        ['Position', bio.pos], ['Class', bio.classYr], ['Jersey', bio.jersey ? '#' + bio.jersey : ''],
+        ['Height', bio.height], ['Weight', bio.weight], ['Team', bio.team],
+    ].filter(r => r[1]).map(([l, v]) => `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-value">${_escHtml(String(v))}</span></div>`).join('');
+    const profile = detailSection({ title: 'Player Profile', body: `<div class="player-details detail-bio-wide">${bioRows}</div>` });
+
+    const statSections = (data.groups || []).map(g => {
+        const cells = g.stats.map(([l, v]) => `<div class="ncf-stat"><span class="ncf-stat-v">${_escHtml(String(v))}</span><span class="ncf-stat-l">${_escHtml(l)}</span></div>`).join('');
+        return detailSection({ title: g.label, body: `<div class="ncf-statline">${cells}</div>` });
+    }).join('');
+
+    const noStats = (!data.groups || !data.groups.length)
+        ? detailSection({ title: 'Season Stats', body: `<p class="detail-prose">No ${data.season} season stats for ${_escHtml(bio.name)} yet — common for reserves and early-career players.</p>` })
+        : '';
+
+    grid.innerHTML = header + profile + statSections + noStats +
+        `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
+}
+
 window.fetchNCAAFScoreboard = fetchNCAAFScoreboard;
 window.displayNCAAFScores   = displayNCAAFScores;
 window.displayNCAAFRankings = displayNCAAFRankings;
 window.displayNCAAFStandings = displayNCAAFStandings;
 window.displayNCAAFTeams    = displayNCAAFTeams;
+window.displayNCAAFLeaders  = displayNCAAFLeaders;
+window.showNCAAFPlayer      = showNCAAFPlayer;
 window._renderNCAAFView     = _renderNCAAFView;
 window.updateNCAAFTicker    = updateNCAAFTicker;
