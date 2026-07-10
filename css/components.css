@@ -4473,3 +4473,10 @@
 .ncf-stat { display: flex; flex-direction: column; min-width: 52px; }
 .ncf-stat-v { font-size: 1.15rem; font-weight: 800; font-family: var(--font-display, inherit); color: var(--text-primary); line-height: 1.1; }
 .ncf-stat-l { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.15rem; }
+
+/* ── NCAAF team detail (D-044 P4) ── */
+.ncaaf-team-chip--link { cursor: pointer; transition: background 150ms ease-out, border-color 150ms ease-out; }
+.ncaaf-team-chip--link:hover { background: var(--bg-card-hover); border-color: var(--border-mid); }
+.ncf-team-banner { background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--team, var(--accent)); border-radius: var(--radius-md); padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.ncf-team-hero { display: flex; align-items: center; gap: 0.9rem; }
+.ncf-team-logo { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }

@@ -805,6 +805,7 @@ function _loadFromHash() {
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
     const nflGameMatch       = hash.match(/^nfl-game-([A-Za-z0-9]+)$/);
     const ncaafPlayerMatch   = hash.match(/^ncaaf-player-(\d+)$/);
+    const ncaafTeamMatch     = hash.match(/^ncaaf-team-(\d+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -842,6 +843,10 @@ function _loadFromHash() {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');
         navigateTo('ncaaf-player-' + ncaafPlayerMatch[1], false);
+    } else if (ncaafTeamMatch) {
+        AppState.currentSport = 'ncaaf';
+        _applySportUI('ncaaf');
+        navigateTo('ncaaf-team-' + ncaafTeamMatch[1], false);
     } else if (nflTeamMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
