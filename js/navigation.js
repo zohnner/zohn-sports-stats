@@ -318,6 +318,11 @@ const _NAV_META = {
     'nhl-teams':     { label: 'NHL Teams',     icon: '🏒' },
     'nhl-games':     { label: 'NHL Scores',    icon: '📅' },
     'nhl-standings': { label: 'NHL Standings', icon: '📊' },
+    'ncaaf-scores':    { label: 'College Scores',    icon: '🏈' },
+    'ncaaf-standings': { label: 'College Standings', icon: '📊' },
+    'ncaaf-teams':     { label: 'College Teams',     icon: '🏈' },
+    'ncaaf-rankings':  { label: 'CFB Rankings',      icon: '🏆' },
+    'ncaaf-leaders':   { label: 'CFB Leaders',       icon: '🏈' },
     'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
 
@@ -338,6 +343,17 @@ function setBreadcrumb(root, current) {
         document.title = label === 'Home' ? 'SportStrata — MLB Analytics' : `${label} — SportStrata`;
     }
 }
+
+// A11y: make onclick "link" rows/chips keyboard-activatable (Enter/Space).
+// They carry role="button" tabindex="0" so they're focusable; this fires their click.
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target;
+    if (t && t.classList && (t.classList.contains('nfl-lrow--link') || t.classList.contains('ncaaf-team-chip--link'))) {
+        e.preventDefault();
+        t.click();
+    }
+});
 
 // ── View renderer ────────────────────────────────────────────
 

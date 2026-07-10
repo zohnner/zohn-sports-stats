@@ -173,6 +173,7 @@ function updateNCAAFTicker(games) {
 function _renderNCAAFView(view) {
     if (view.startsWith('ncaaf-player-')) { showNCAAFPlayer(view.slice('ncaaf-player-'.length)); return; }
     if (view.startsWith('ncaaf-team-')) { showNCAAFTeam(view.slice('ncaaf-team-'.length)); return; }
+    if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'ncaaf-standings': displayNCAAFStandings(); break;
         case 'ncaaf-teams':     displayNCAAFTeams();     break;
@@ -379,7 +380,7 @@ async function displayNCAAFTeams() {
     document.getElementById('ncaafTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
             <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
-            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
+            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
             </div>`).join('')}</div>
@@ -423,7 +424,7 @@ async function displayNCAAFLeaders() {
     grid.innerHTML = data.categories.map((cat, ci) => {
         const color = _NCF_LCOLORS[ci % _NCF_LCOLORS.length];
         const rows = cat.leaders.map((l, i) => `
-            <div class="nfl-lrow nfl-lrow--link" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
+            <div class="nfl-lrow nfl-lrow--link" role="button" tabindex="0" aria-label="${_escHtml(l.name)}${l.pos ? ', ' + _escHtml(l.pos) : ''}" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
                 <span class="nfl-lrow-rank">${i + 1}</span>
                 <div class="nfl-lrow-av">${l.headshot ? `<img src="${_escHtml(l.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
                 <div class="nfl-lrow-main">
@@ -470,6 +471,7 @@ function displayNCAAFPlayerDetail(data) {
     grid.className = 'player-detail-container';
     const bio = (data && data.bio) || {};
     if (!bio.name) { grid.innerHTML = _ncaafErr('Player not found.', 'displayNCAAFLeaders'); return; }
+    if (window.setBreadcrumb) setBreadcrumb('ncaaf-leaders', _escHtml(bio.name));
 
     const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
@@ -530,6 +532,7 @@ function displayNCAAFTeamDetail(team, stats) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'team-page';
+    if (window.setBreadcrumb) setBreadcrumb('ncaaf-teams', _escHtml(team.displayName || team.name || 'Team'));
     const color = '#' + String(team.color || 'c8452b').replace('#', '');
     const logo = (team.logos && team.logos[0] && team.logos[0].href) || '';
     const abbr = team.abbreviation || '';
@@ -543,7 +546,7 @@ function displayNCAAFTeamDetail(team, stats) {
     }
     const leadersHtml = teamLeaders.length ? `<div class="stats-card">
         <h2 class="detail-section-title">Team Leaders · ${_ncaaf.season}</h2>
-        ${teamLeaders.slice(0, 12).map(l => `<div class="nfl-lrow nfl-lrow--link" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
+        ${teamLeaders.slice(0, 12).map(l => `<div class="nfl-lrow nfl-lrow--link" role="button" tabindex="0" aria-label="${_escHtml(l.name)}" onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')">
             <div class="nfl-lrow-av">${l.headshot ? `<img src="${_escHtml(l.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
             <div class="nfl-lrow-main"><div class="nfl-lrow-name">${_escHtml(l.name)}</div><div class="nfl-lrow-meta">${l.pos ? _escHtml(l.pos) + ' · ' : ''}${_escHtml(l.statLabel)}</div></div>
             <span class="nfl-lrow-val">${_escHtml(String(l.value))}</span>
