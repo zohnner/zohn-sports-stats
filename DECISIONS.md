@@ -928,3 +928,43 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Next:** owner ratifies scope + sequencing; Relay verifies the two broadcast-field contracts before 3a build.
 
 **D-042 update 2026-07-06 — live-verified (browser) + refinements:** Home regression fixed (v70) confirmed live — picker band renders all 3 sports, no console errors, neutral "Multi-Sport Analytics" brand. NCAAF views verified against live 2025 data: Rankings (AP top-3 Indiana/Miami/Ole Miss), Standings (12 conferences, full names, 136 teams), Teams (12 sections, 136 chips). **Relay owed shape-check CLOSED:** `/api/ncaafstandings?season=2025&debug=1` returns 11 conference groups directly (no FBS/FCS super-group); entries sit at the conference node except Sun Belt (2 divisions nested one level deeper) — the recursive collector handles both. Two refinements shipped (v71): Rankings now filters to FBS-relevant polls (drops FCS / Div II / Div III noise ESPN returns); conference label uses the full trail so Sun Belt divisions read "Sun Belt — East" not a bare "East".
+
+---
+
+## D-044 — Cross-sport frame parity: unify player + team detail (and view chrome) across MLB/NFL/NCAAF
+**Status:** proposed — owner ratification pending
+**Contributors:** Kael (frame/visual), Vera (JTBD/states), Axiom (architecture), Relay (NCAAF data)
+**Date opened:** 2026-07-06 | **Date resolved:** —
+
+**Trigger (owner):** "use the MLB frame and player-detail structure to expand NFL and NCAAF — similar across sports, different when needed for different metrics or graph types." Owner scope answers: NCAAF = *investigate ESPN athletes* (build players if the data holds); surfaces = *full frame* (player + team detail + shared chrome).
+
+**The frame, defined (Kael, from the MLB benchmark — D-038's posture reference):** `.player-detail-container` → `.player-detail-header` (back + action buttons) → `.player-hero` (avatar w/ headshot-or-initials, name, position chip, team logo+link, meta lines, bio strip) → repeated `.stats-card` sections, each `.detail-section-title` + one of: a **radar** "stat profile," a `.stats-grid` of totals with sparklines, a **game-trend** line, a **career-trend** line. `StatsCharts.mlbRadar / mlbGameTrend / careerTrend` are MLB-named but the chart *types* are sport-agnostic. **What's shared = the frame; what varies per sport = which stats fill the grid, the radar axes, and the game-log metric.** That's the whole design thesis.
+
+**Relay finding — NCAAF players are feasible (softens the D-042 deferral):** live-probed the ESPN core API for the completed 2025 CFB season. `.../seasons/2025/types/2/leaders` returns fully-populated passing/rushing/receiving/defense leaders, each linking `athlete` + `team` + a per-athlete `statistics` ref **by ID**. Team rosters (`site.api .../teams/{id}/roster`) return 62 players with bio (position, jersey, height/weight, experience) but **no stats** and ~30% headshot coverage. Verdict: **player pages are buildable** — star/rotation players have real season stats, and because roster/leaders/stats are all ESPN-native the join is **by ID, no fragile name-match** (cleaner than NFL, D-016). D-042's "too sparse" concern narrows to two real, manageable gaps: **depth/walk-on players have thin or empty stats** (→ empty states) and **headshots are sparse** (→ initials-avatar fallback, the P3-013 pattern). Cost: the core API is ref-based (N+1) → refs must be **resolved server-side** in a Pages Function, exactly like `/api/nflstats` (D-016). This entry supersedes D-042's blanket player-data deferral, with scope documented.
+
+**Options considered:**
+- Per-sport bespoke detail pages (status quo — MLB rich, NFL ad-hoc inline styles, NCAAF none). Rejected: no parity, no reuse, three code paths drift (already the D-038 K3 finding).
+- **One shared frame builder + per-sport data adapters (chosen).** A sport-agnostic `renderDetailFrame(config)` emits the standard markup; each sport supplies `{avatar, name, position, teamLink, metaLines, bioStrip, actions, sections:[{title, type, data}]}`. Charts generalized to `radarProfile / gameTrend / careerTrend`. Parity is the acceptance test (D-040 2c).
+
+**Decision (proposed):** build the shared frame builder and bring NFL and NCAAF onto it, adapting metrics/charts per sport; add the NCAAF player data layer server-resolved from the ESPN core API. MLB stays the reference and is refactored onto the shared classes only where it's non-destabilizing (it's the posture benchmark — do not risk it for cosmetic unification).
+
+**Phasing (contain blast radius — player detail is high-traffic):**
+- **P1 — extract the frame (Kael + Axiom).** Audit + name the shared CSS (`.player-detail-*`, `.player-hero`, `.stats-card`, `.detail-section-*`) as documented house classes (DESIGN.md); build `renderDetailFrame()` in a shared file; migrate **NFL player detail** off its inline styles/`back-button` onto it (data already exists — the D-038 K3 "NFL first" migration). Reference implementation, no new data. `/screenshot` parity check vs MLB.
+- **P2 — NCAAF player data layer (Relay + Axiom).** New `functions/api/ncaafathlete.js` + `functions/api/ncaafstats.js` mirroring `/api/nflplayer` + `/api/nflstats`: server-resolve core-API refs (roster, athlete, season stats, gamelog), cache by volatility, ID-join. Initials fallback + thin-data empty states.
+- **P3 — NCAAF players + leaders (Axiom).** NCAAF player list, player detail on the shared frame, and a Leaders view (the probed leaders endpoint). Routes `ncaaf-players`, `ncaaf-player-{id}`, `ncaaf-leaders`; add to nav + `SPORTS`/`SUB_NAV_TABS`.
+- **P4 — team detail parity (Kael + Axiom).** Unify NFL's `.team-*` (P3-030), MLB team detail, and a new NCAAF team detail into one team frame.
+- **P5 — shared view chrome (Vera + Kael).** Breadcrumbs, tabs, containers unified across sports; accessibility pass (focus, keyboard, headshot alt/fallback).
+
+**Gates (Finn does not implement a phase until its gates are in ISSUES.md):**
+- **Vera** — JTBD + states for player/team detail across sports: loading (skeleton), **thin-CFB-player empty state**, error, **no-headshot** fallback, no-games-yet (preseason).
+- **Kael** — the frame as a named DESIGN.md house pattern; sport adapts stat-category color language + radar axes; wordmark/identity rules hold.
+- **Axiom** — `renderDetailFrame()` builder architecture; generalize `StatsCharts` names; NCAAF Pages Functions feasibility; per-phase commits + screenshot.
+- **Relay** — NCAAF core-API contract (confirmed feasible here): server-resolved refs, ID-join, caching by volatility, documented coverage (leaders + rotation yes; walk-ons thin; ~30% headshots).
+
+**Implications:** touches high-traffic detail views and adds NCAAF Functions + client files (index.html + sw.js + manifest per D-010; SW bump). No new CSP host (ESPN core API is `sports.core.api.espn.com` — server-side only, no browser connect-src; **verify this host isn't needed client-side** before build). Doc-sync CLAUDE.md (D-034). Overturns D-042's player deferral — record there too.
+
+**Sequencing recommendation:** P1 first (pure refactor, no data risk, proves the frame + pays down D-038 K3 debt), then P2→P3 (NCAAF players, the net-new value), then P4 team parity, then P5 chrome. MLB refactor is opportunistic, never on the critical path.
+
+**Next:** owner ratifies scope + phasing; then P1 gates (Kael frame spec + Axiom builder design) land in ISSUES.md and P1 builds.
+
+**D-044 update 2026-07-06 — P1 done + P2 (NCAAF player data layer) built:** P1 shipped (b371595, 75dbec6): `js/detailFrame.js` builder (`detailHeader`/`detailSection`) + NFL player detail (header + Player Profile/Fantasy Outlook cards) migrated onto it, inline styles → named classes (D-038 K3 "NFL first"); MLB untouched. P2 built: `functions/api/ncaafstats.js` (CFB leaders, ESPN core-API server-resolved — athletes + a one-shot teams-map to stay under the subrequest budget) and `functions/api/ncaafathlete.js` (`?id=&season=` → bio + season stat groups by ID, no name-match). Both validated against live 2025 payloads: leaders populated; athlete bio carries name/pos/headshot/jersey/ht/wt/class/team-ref; `statistics` (types/2) returns `splits.categories` (passing/rushing/receiving/defensive/general). Two shape corrections applied: CFB keeps defensive INTs in a separate `defensiveInterceptions` category, and there is no `kicking` category on offensive players (kicking lives under `scoring`) — the unverified kicking group was dropped rather than risk wrong FG numbers. Next: P3 (NCAAF Leaders + player list + player detail on the shared frame + routing).
