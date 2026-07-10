@@ -402,7 +402,7 @@ Real crawlable path URLs are served by Cloudflare Pages Functions that prerender
 
 - **Sport landings (D-045):** `functions/{mlb,nfl,ncaaf}/index.js` → `/mlb` `/nfl` `/ncaaf`; each sets `__SS_ROUTE={sport}-home` → the clean `_renderSportLanding(sport)` view in `js/app.js` (one hero + seasonal line + 4 entry cards). `SPORTS_META.defaultView` is `{sport}-home`, so entering a sport lands on its landing page (NFL's old `loadNFLHome` is kept but bypassed).
 - **MLB content (D-041 Phase 1):** `functions/mlb/team/[abbr].js`, `functions/mlb/player/[id]/[[slug]].js`, `functions/mlb/standings.js`.
-- `sitemap.xml` lists the path URLs; hash routes should canonicalize to their path URL. NFL/NCAAF content templates (player/team) are the D-045 **P2** remainder.
+- `sitemap.xml` lists the path URLs; regenerate it from live data with `node tools/gen-sitemap.cjs` (owner/CI-run — needs network; landings + MLB teams/players + all FBS teams + NCAAF leaders). Hash routes should canonicalize to their path URL. NFL/NCAAF content templates (player/team) are the D-045 **P2** remainder.
 - No new external hosts (same-origin `env.ASSETS` + already-allowlisted upstreams) → CSP unaffected. These Functions live outside `/api/`, so they are **not** covered by `functions/api/_middleware.js` rate limiting.
 
 ---
