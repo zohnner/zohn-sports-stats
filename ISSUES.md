@@ -3309,3 +3309,69 @@ Owner ratified Resolution 3 (front door). Shipped P1 (SPORTS registry refactor, 
 
 ### D-042 P2 remainder (Rankings/Standings/Teams) — SHIPPED (pending push) 2026-07-06
 `js/ncaaf.js`: Rankings (poll tabs AP/Coaches/CFP + movement), conference-grouped Standings (season selector) + Teams, all reusing `.standings-*`. New `functions/api/ncaafstandings.js` (site.web.api tree — the site.api standings feed is a stub, per D-029). Nav expanded. SW v68→v69. **Verify:** node --check clean, 29/29 tests, manifest green, NUL clean. **Owed:** live shape check via `/api/ncaafstandings?season=2025&debug=1` after push (web_fetch was down at build time — parser is defensive/recursive but the exact CFB tree depth is unconfirmed); `/screenshot` visual pass. Full detail: DECISIONS.md D-042 update 2026-07-06.
+
+---
+
+## D-043 — Home hub follow-on (3 keepers) — GATED task entry (specs in DECISIONS.md D-043, implementation on owner ratification)
+
+Three independent sub-items from the 2026-07-06 homepage critique that survived review (the rest was rejected for fighting the barbell — see D-043 trigger). Each ships behind its own gates; sequencing 3c → 3b → 3a per the decision. Finn does not start any sub-item until its gates are ratified.
+
+### 3a — Tabbed home scoreboard `[All | MLB | NFL | NCAAF]`
+- **Vera ✅ DRAFTED** — default All; league glyph per game; per-sport offseason empty state; remember tab within session.
+- **Kael ✅ DRAFTED** — reuse `.standings-tabs`; muted league glyph (not a badge); football games show broadcast network as `--text-muted` caption.
+- **Relay ⚠ CONTRACT PENDING VERIFY** — ESPN `competitions[].broadcasts`/`geoBroadcasts`; MLB schedule needs `hydrate=broadcasts`. Exact field shapes unverified live (web_fetch down at spec) — confirm before build, degrade to no-network if absent.
+- **Axiom ✅ DRAFTED** — unified game-card (or per-sport renderers into `#homeTodayGrid`); **lazy per-tab fetch** (don't fetch dormant football on July load); payoff is seasonal (Sept–Oct overlap).
+
+### 3b — Seasonal promo slot
+- **Vera ✅ DRAFTED** — one calendar-driven promo, always a real destination (summer → Draft Kit; fall → NFL/NCAAF; Oct → October Odds).
+- **Kael ✅ DRAFTED** — full-width band beneath the sport-picker band; brand-accent, one CTA, no carousel.
+- **Axiom ✅ DRAFTED** — `PROMO_MOMENTS` config off the season models (generalized seasonal-hero pattern). **Scope caveat:** no "CFP Predictor" exists — fall NCAAF promo routes to Rankings/Scores.
+
+### 3c — Cross-sport ⌘K search with sport badges
+- **Vera ✅ DRAFTED** — results grouped by sport + badges; sport-aware placeholder stays (additive, not replacement).
+- **Axiom ✅ DRAFTED** — `initGlobalSearch` already spans NBA/MLB/NFL pools; gaps = lazy-load other sports' pools on first cross-sport query, add badges/grouping, add NCAAF teams.
+- **Relay ✅ HARD LIMIT** — NCAAF has no player data (D-042 deferred): cross-sport = MLB/NFL players + MLB/NFL/NCAAF teams only; UI must not imply NCAAF players exist.
+
+**Status:** all gates DRAFTED, pending owner ratification of D-043. No implementation started.
+
+---
+
+## D-044 — Cross-sport frame parity (player + team detail + chrome) — GATED, phased (specs in DECISIONS.md D-044)
+
+Owner scope: NCAAF = investigate ESPN athletes (feasible — see D-044 Relay finding); surfaces = full frame. Phased P1→P5; each phase gated before Finn implements.
+
+### Relay probe result (NCAAF players) ✅ FEASIBLE
+ESPN core API 2025 CFB leaders fully populated (passing/rushing/receiving/defense); athlete→statistics join **by ID** (no name-match). Rosters give bio + ~30% headshots, no stats. Gaps: depth-player stats thin, headshots sparse → empty states + initials fallback. Refs must be **server-resolved** (Pages Function, like /api/nflstats). Supersedes D-042's blanket player deferral.
+
+### P1 — Extract the shared frame + refactor NFL player detail (reference impl)
+- **Kael** ⏳ frame spec: name `.player-detail-*` / `.player-hero` / `.stats-card` / `.detail-section-*` as DESIGN.md house classes; sport adapts stat colors + radar axes.
+- **Axiom** ⏳ `renderDetailFrame(config)` builder + generalize `StatsCharts` (radarProfile/gameTrend/careerTrend); migrate NFL player detail off inline styles/back-button (D-038 K3 "NFL first"). Data already exists — no new fetches. Screenshot parity vs MLB.
+
+### P2 — NCAAF player data layer (Relay contract + Axiom) — new `/api/ncaafathlete` + `/api/ncaafstats` (core-API server-resolved, ID-join, volatility cache).
+### P3 — NCAAF players + player detail (shared frame) + Leaders view; routes ncaaf-players / ncaaf-player-{id} / ncaaf-leaders + nav.
+### P4 — Team detail parity (unify NFL `.team-*` P3-030 + MLB team detail + new NCAAF team detail).
+### P5 — Shared view chrome (breadcrumbs/tabs/containers) + a11y pass (Vera + Kael).
+
+**Status:** D-044 pending owner ratification. P1 gates drafted above; nothing built yet.
+
+---
+
+## D-045 — Path-URL SEO foundation + per-sport landing pages — GATED, phased (specs in DECISIONS.md D-045)
+
+Owner ratified: real-URL per-sport pages (`/mlb` `/nfl` `/ncaaf`) that are BOTH the SEO entry point and the in-app landing; full path-URL foundation (ratifies D-041 Option A). Landing pages ship first as the flagship. Each phase gated before Finn implements.
+
+### P0 — SEO quick wins (no routing change; can start now)
+- **Folio + Axiom** ⏳ og:image on shell; JSON-LD Organization/WebSite(+SearchAction) on shell; expand sitemap.xml. Independent of everything else.
+
+### P1 — Per-sport landing pages on real URLs (flagship)
+- **Relay** ⏳ URL contract: `/mlb` `/nfl` `/ncaaf` landing + hash↔path canonical/redirect map.
+- **Axiom** ⏳ one Cloudflare Pages Function: prerendered shell + meta/JSON-LD + content snapshot → hydrates the SPA; no build step; SPA untouched.
+- **Kael** ⏳ clean per-sport landing: one hero (sport identity) + seasonal strip + 3–4 primary entry cards, nothing else ("not too busy" = acceptance test).
+- **Vera** ⏳ landing JTBD + states; meaningful **without JS** (crawler + first paint); a11y.
+- **Folio** ⏳ per-page title/desc/canonical/OG + JSON-LD (WebPage/BreadcrumbList); sitemap adds the 3 pages.
+- **Cipher** ⏳ redirect allowlist (no open redirect); CSP intact; no secrets.
+
+### P2 — Extend edge-render to content templates (player/team/leaders/standings) — thousands of indexable pages. (Relay + Axiom + Folio)
+### P3 — Search Console verify/submit; measure indexed count / impressions / share CTR; iterate. (Folio + owner)
+
+**Status:** D-045 pending owner ratification of scope + P1 go-ahead. Relay + Axiom URL-contract consensus required before P1 build. P0 may proceed in parallel. Nothing built yet.
