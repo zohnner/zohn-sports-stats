@@ -701,6 +701,26 @@ function _renderTonightSPSection() {
     });
 }
 
+// ── Team favorites (D-046 P5) — localStorage only, no PII ──
+const _FAV_TEAMS_KEY = 'zs_fav_teams';
+function _getFavTeams() {
+    if (!AppState._favTeams) {
+        try { AppState._favTeams = new Set(JSON.parse(localStorage.getItem(_FAV_TEAMS_KEY) || '[]')); }
+        catch (_) { AppState._favTeams = new Set(); }
+    }
+    return AppState._favTeams;
+}
+function _isFavTeam(abbr) { return !!abbr && _getFavTeams().has(abbr); }
+function _toggleFavTeam(abbr) {
+    if (!abbr) return;
+    const s = _getFavTeams();
+    if (s.has(abbr)) s.delete(abbr); else s.add(abbr);
+    try { localStorage.setItem(_FAV_TEAMS_KEY, JSON.stringify([...s])); } catch (_) {}
+}
+function _gameHasFav(g) {
+    return _isFavTeam(g.teams?.home?.team?.abbreviation) || _isFavTeam(g.teams?.away?.team?.abbreviation);
+}
+
 async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
@@ -798,6 +818,10 @@ async function _loadHomeTodayGames() {
         const liveCls    = isLive ? ' home-game-card--live' : '';
         const ariaLive   = activeHalf
             ? `, ${inningTag || 'live'}, ${outs} out${outs === 1 ? '' : 's'}` : '';
+        const _favStar = (abbr) => {
+            const on = _isFavTeam(abbr);
+            return `<button class="hgc-star${on ? ' hgc-star--on' : ''}" data-fav-team="${_esc(abbr)}" aria-label="${on ? 'Remove' : 'Add'} ${_esc(abbr)} favorite" title="${on ? 'Remove favorite' : 'Favorite team'}">${on ? '★' : '☆'}</button>`;
+        };
         return `
             <div class="home-game-card${liveCls}" data-game-key="${gameKey}" data-game-status="${pillCls}" role="button" tabindex="0"
                  aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}${ariaLive}"
@@ -806,11 +830,13 @@ async function _loadHomeTodayGames() {
                     ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="${awayAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
                     <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}" title="${awayName}">${awayAbbr}</span>
                     <span class="hgc-score${awayWon ? ' hgc-score--win' : ''}">${fmt(awayScore)}</span>
+                    ${_favStar(awayAbbr)}
                 </div>
                 <div class="hgc-row">
                     ${homeLogo ? `<img class="hgc-team-logo" src="${homeLogo}" alt="${homeAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
                     <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}" title="${homeName}">${homeAbbr}</span>
                     <span class="hgc-score${homeWon ? ' hgc-score--win' : ''}">${fmt(homeScore)}</span>
+                    ${_favStar(homeAbbr)}
                 </div>
                 ${liveState}
                 ${matchLine}
@@ -826,12 +852,16 @@ async function _loadHomeTodayGames() {
         const cards = [];
 
         if (mlbResult) {
-            // Live games sort to the front; stable sort preserves the date-desc
-            // sub-order for everything else (fetchMLBSchedule already sorts).
-            const liveRank = g => (g.status?.abstractGameState === 'Live'
-                && !/final/i.test(g.status?.detailedState || '')) ? 0 : 1;
+            // Favorite-team games pin first (D-046 P5), then live, then the rest.
+            // Stable sort preserves the date-desc sub-order (fetchMLBSchedule sorts).
+            const rank = g => {
+                if (_gameHasFav(g)) return 0;
+                const live = g.status?.abstractGameState === 'Live'
+                    && !/final/i.test(g.status?.detailedState || '');
+                return live ? 1 : 2;
+            };
             [...mlbResult]
-                .sort((a, b) => liveRank(a) - liveRank(b))
+                .sort((a, b) => rank(a) - rank(b))
                 .slice(0, 15)
                 .forEach(g => cards.push(_gameCard(g)));
         }
@@ -883,6 +913,15 @@ async function _loadHomeTodayGames() {
                 });
             });
         }
+
+        gridEl.querySelectorAll('.hgc-star').forEach(star => {
+            star.addEventListener('click', e => {
+                e.stopPropagation();
+                _toggleFavTeam(star.dataset.favTeam);
+                _loadHomeTodayGames();
+                if (typeof updateMLBTicker === 'function' && AppState.mlbGames) updateMLBTicker(AppState.mlbGames);
+            });
+        });
 
         gridEl.querySelectorAll('.home-game-card').forEach(card => {
             const open = () => {
@@ -1048,14 +1087,16 @@ async function _renderHomeHero(games) {
         const leverage = g => {
             const inn  = g.linescore?.currentInning || 1;
             const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
-            return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4;
+            return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4
+                + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
         };
         hero = _heroFromGame(live.slice().sort((x, y) => leverage(y) - leverage(x))[0], 'live');
     } else {
         const up = list.filter(isUpcoming);
         if (up.length) {
             const marquee = g => combinedPct(g) * 4
-                + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0);
+                + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
+                + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
             hero = _heroFromGame(up.slice().sort((x, y) => marquee(y) - marquee(x))[0], 'upcoming');
         }
     }

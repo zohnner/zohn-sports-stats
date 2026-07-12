@@ -1888,6 +1888,26 @@ main {
     font-weight: 600;
 }
 
+/* Favorite-team star (D-046 P5) — subtle, reveals on card hover, persists when on */
+.hgc-star {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0 0 0 0.3rem;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 0.12s ease, color 0.12s ease;
+}
+.home-game-card:hover .hgc-star { opacity: 0.5; }
+.hgc-star:hover { color: var(--accent); opacity: 1; }
+.hgc-star:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
+.hgc-star--on { color: var(--accent); opacity: 1; }
+@media (hover: none) { .hgc-star { opacity: 0.45; } }
+
 .home-no-games {
     color: var(--text-muted);
     font-size: 0.85rem;

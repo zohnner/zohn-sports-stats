@@ -5366,6 +5366,12 @@ function updateMLBTicker(games) {
         g.teams?.away?.score != null
     );
 
+    // Favorite-team games pin to the front of the ticker (D-046 P5).
+    if (typeof _isFavTeam === 'function') {
+        const favRank = g => (_isFavTeam(_mlbTeamAbbr(g.teams?.home?.team)) || _isFavTeam(_mlbTeamAbbr(g.teams?.away?.team))) ? 0 : 1;
+        scored.sort((a, b) => favRank(a) - favRank(b));
+    }
+
     if (scored.length === 0) {
         ticker.classList.add('ticker--idle');
         ticker.innerHTML = `<div class="ticker__item">No recent MLB scores — check back during the season</div>`;
@@ -7445,8 +7451,4 @@ if (typeof window !== 'undefined') {
     };
 }
 
-// Init MLB favorites after AppState is available (mlb.js loads after navigation.js)
-_initMLBFavs();
-
-// Warm current-season wRC+ constants at boot so early stat computes use derived,
-// not fallback, values (DAILY-cached; harmless no
+// Init MLB 
