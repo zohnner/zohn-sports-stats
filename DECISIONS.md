@@ -1025,3 +1025,36 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **(2) Radar — deferred on purpose (prep for next):** a raw-stat radar would be **false precision** — a meaningful radar needs a per-position percentile baseline, and CFB player data has no clean qualified-player corpus for that. The honest version is a **"% of FBS leader" radar** (normalize each of the player's stats against the national leader from `/api/ncaafstats`); it needs `/api/ncaafathlete` to also emit the raw stat *names + numeric values* (today it returns display-only `[label, value]` pairs) so the client can map player→leader per stat. That endpoint tweak + client radar is the concrete next slice — no fabricated axes ship in the meantime.
 
 **D-044 follow-on 2026-07-06 — NCAAF player "Season Profile" radar shipped (honest normalization):** The radar deferred last commit is now built on a defensible baseline. `/api/ncaafathlete` groups now also carry `raw: {statName: numericValue}` (additive, non-breaking — display `stats` unchanged). New generic `StatsCharts.radarProfile(canvas, labels, values, color)` plots pre-normalized 0–100 values with custom axes (no hardcoded keys, unlike the NBA-specific `radar`). Client `_loadNCAAFRadar` fetches `/api/ncaafstats`, takes the #1 value per category as the baseline, and plots each of the player's production stats as **% of the FBS leader** (Pass/Rush/Rec yds+TD, Rec, Tackles, Sacks, INT) — capped at 100, ≥3 axes required, self-removes otherwise. Caption states the normalization explicitly ("% of the FBS leader"), honoring the no-false-precision rule. NCAAF player page now: hero + profile + season groups + **Season Profile radar** + **game-trend chart** + game log — full MLB/NFL depth. SW v80→v81. Math sanity-checked (leader → 100%).
+
+---
+
+## D-046 — Homepage overhaul: analytics-first landing, gap-analysis P1–6 (ad-free)
+**Status:** proposed — owner ratified direction (ad-free; P1–6 scope); per-phase gates + build pending
+**Contributors:** Vera (JTBD/states), Kael (hierarchy/hero/visual), Axiom (feasibility/live/ticker/edge), Relay (news+live+insights data), Folio (SEO/footer/meta), Cipher (favorites/privacy)
+**Date opened:** 2026-07-06 | **Date resolved:** —
+**Reference:** `docs/landing-page-gap-analysis.md` (ESPN gap analysis, audited 2026-07-12).
+
+**Trigger (owner):** "I don't like the main home page / landing zone — complete overhaul." Owner scope answers: **stay ad-free** (skip the doc's ad slots + premium upsell — the clean, no-ads feel is the brand, per D-034 + the marketing); cover **Phases 1–6** (everything except monetization).
+
+**Design principle (Kael, from the doc):** don't clone ESPN's editorial-first home — build the **analytics-first equivalent**: every module ESPN fills with *stories*, SportStrata fills with *data narratives*. **Protect the existing strengths** the doc flags: score ticker with finals, probable pitchers on cards, the Pennant Races strip, prominent ⌘K search, the clean no-ad feel, the dark identity. This is restructure + elevate, not rebuild — the news pipeline (`/api/news`, `loadNews`), MLB live-card states (`isLive`/`liveCount` in `_loadHomeTodayGames`), favorites/recents (IndexedDB `db.js` + `homeStarred`), and the per-sport ticker already exist to build on.
+
+**Gates (Finn does not implement a phase until its gates are in ISSUES.md):**
+- **Vera** — JTBD for the landing ("what matters today, in data"); hero **selection logic** (live-leverage → marquee matchup → yesterday's statistical anomaly, graceful fallback to standings/odds on no-games days); the three live-card states (UPCOMING/LIVE/FINAL) with win-prob/base-state/outs; favorites reorder behavior; all empty/loading/error states; a11y (F-pattern, focus, live-region for score updates).
+- **Kael** — visual hierarchy pass (break the uniform density into 4–5 weights: hero > live games > pennant-races-as-viz > headlines rail > ticker); the Data-Story hero visual (generated data graphics + logo lockups, **no licensed photos**); demote sport-status cards to compact pills; hero must pass all active themes (`THEME_REVIEW.md`); every above-the-fold module gets ≥1 non-text visual (the doc's rule).
+- **Axiom** — feasibility: live-card polling ≤30s (reuse `liveGame.js` infra, D-009); **sport-agnostic ticker schema** (`{sport,status,period,clock,...}`) refactor so NFL season needs no rewrite; home **edge-render** of today's games + headlines snapshot (D-041/D-045 pattern at `/` — the biggest SEO lever, doc 6.3); no layout shift (CLS < 0.1) when cards change state.
+- **Relay** — data contracts: headlines from `/api/news` (relative timestamps); **Insights** templated stat bullets from the existing stat engine (no editorial staff — e.g. "whiff rate up 6pts over last 3 starts"); live game data (score/inning/outs/base/win-prob) source + TTL; ticker normalized schema.
+- **Folio** — SEO/footer: dynamic-date-aware landing `<title>`/meta ("MLB Scores & Analytics — {date}"); full crawlable footer (teams, standings, tools, about, privacy/terms); freshness timestamps everywhere ("Updated Nm ago").
+- **Cipher** — favorites in `localStorage`/IndexedDB (no PII, no account yet); no new external hosts (news/live reuse existing allowlisted upstreams); live-region announcements don't leak.
+
+**Phasing (the doc's order, ads dropped):**
+- **P1 — Live game states + ticker live parity** (Vera states, Kael live treatment, Axiom polling, Relay live data). Highest engagement ROI; MLB is mid-season so it's testable now. Acceptance: live game shows score/inning/outs/base within 30s; live cards sort first; no layout shift on state change.
+- **P2 — Data-Story hero** (Vera selection logic, Kael visual, Axiom render). Fixes the "no focal point" problem; search moves below hero / into sticky header. Graceful no-games fallback.
+- **P3 — Headlines + Insights rail** (Relay data, Kael layout). Fills the dead right side; reuses `/api/news`; Insights = templated data bullets.
+- **P4 — Density/hierarchy + freshness pass** (Kael + Vera). Mostly CSS/layout + timestamps; Pennant Races promoted from thin strip to a viz module; sport-status cards → compact pills. Keep CLS < 0.1.
+- **P5 — Favorites MVP** (localStorage first): star on any game/team → persists → reorders ticker + grid + weights hero + a "My Team" headlines tab.
+- **P6 — Home SEO edge-render + sport-agnostic ticker schema** (Axiom + Folio): prerender today's games + headlines into the `/` shell for crawlers; ticker schema refactor before NFL-season traffic.
+- **(P7 ads — dropped by owner.)**
+
+**Cross-domain:** touches the home render, the ticker (backbone), and adds an edge-render at `/` → **Vera + Kael + Axiom consensus per phase**; live/news reuse keeps CSP unchanged. Doc-sync CLAUDE.md when the home render/ticker schema change (D-034 rule).
+
+**Next:** owner ratifies the phasing; then P1 gates (Vera live-state spec + Kael live treatment + Relay live-data contract) land in ISSUES.md and P1 builds. Recommend starting P1 (live states) — highest ROI and live-testable during the current MLB season.

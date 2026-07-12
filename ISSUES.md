@@ -3375,3 +3375,29 @@ Owner ratified: real-URL per-sport pages (`/mlb` `/nfl` `/ncaaf`) that are BOTH 
 ### P3 — Search Console verify/submit; measure indexed count / impressions / share CTR; iterate. (Folio + owner)
 
 **Status:** D-045 pending owner ratification of scope + P1 go-ahead. Relay + Axiom URL-contract consensus required before P1 build. P0 may proceed in parallel. Nothing built yet.
+
+---
+
+## D-046 — Homepage overhaul (analytics-first landing) — GATED, phased (specs in DECISIONS.md D-046 + docs/landing-page-gap-analysis.md)
+
+Owner: **ad-free** (drop the doc's ad slots/upsell); scope **P1–6**. Restructure + elevate — reuse `/api/news`, MLB live-card states, favorites (IndexedDB), the per-sport ticker. Analytics-first, not an ESPN clone. Each phase gated before Finn implements.
+
+### P1 — Live game states + ticker live parity (highest ROI; MLB in-season, live-testable)
+- **Vera** ⏳ UPCOMING/LIVE/FINAL states; LIVE = score+inning/half+outs+base-state+win-prob; live-region a11y.
+- **Kael** ⏳ live treatment (accent pulse/badge, live cards front-sorted, no CLS).
+- **Axiom** ⏳ ≤30s polling (reuse liveGame.js infra); ticker shows live inning state, not just finals.
+- **Relay** ⏳ live data contract (score/inning/outs/base/win-prob) + TTL.
+
+### P2 — Data-Story hero (fixes "no focal point")
+- **Vera** ⏳ selection logic (live-leverage → marquee → anomaly; no-games fallback). **Kael** ⏳ hero visual (generated graphics + logo lockups, no photos; passes all themes). **Axiom** ⏳ render; search moves below hero.
+
+### P3 — Headlines + Insights rail (fills the dead right side)
+- **Relay** ⏳ headlines from /api/news (relative ts) + templated Insights bullets from the stat engine. **Kael** ⏳ rail layout.
+
+### P4 — Density/hierarchy + freshness pass (mostly CSS)
+- **Kael+Vera** ⏳ 4–5 visual weights; Pennant Races → viz module; sport-status cards → pills; "Updated Nm ago" everywhere; CLS < 0.1.
+
+### P5 — Favorites MVP (localStorage) — star → persist → reorder ticker+grid + weight hero + "My Team" headlines tab. **Cipher** ⏳ no-PII.
+### P6 — Home SEO edge-render (prerender today's games+headlines into `/`) + sport-agnostic ticker schema. **Axiom+Folio** ⏳.
+
+**Status:** D-046 pending owner ratification of phasing. Ads dropped (owner). P1 gates draft next; nothing built yet.
