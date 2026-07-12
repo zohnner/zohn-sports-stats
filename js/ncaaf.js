@@ -504,9 +504,11 @@ function displayNCAAFPlayerDetail(data) {
         ? detailSection({ title: 'Season Stats', body: `<p class="detail-prose">No ${data.season} season stats for ${_escHtml(bio.name)} yet — common for reserves and early-career players.</p>` })
         : '';
 
-    grid.innerHTML = header + profile + statSections + noStats +
+    grid.innerHTML = header + profile + statSections +
+        `<div id="ncaaf-radar-host"></div>` + noStats +
         `<div id="ncaaf-gamelog-host"></div>` +
         `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
+    if (typeof _loadNCAAFRadar === 'function') _loadNCAAFRadar(data.groups);
     if (typeof _loadNCAAFGameLog === 'function') _loadNCAAFGameLog(data.id, data.season);
 }
 
@@ -610,6 +612,46 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
         : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
 }
 
+// ── Player season profile radar (honest: % of FBS leader per stat) ──
+async function _loadNCAAFRadar(groups) {
+    const host = document.getElementById('ncaaf-radar-host');
+    if (!host || !groups || !groups.length || !window.Chart || !(window.StatsCharts && StatsCharts.radarProfile)) return;
+    const raw = {};
+    groups.forEach(g => Object.assign(raw, g.raw || {}));
+    if (!Object.keys(raw).length) return;
+    let stats;
+    try {
+        const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
+        stats = ApiCache.get(cacheKey);
+        if (!stats) { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); ApiCache.set(cacheKey, stats, ApiCache.TTL.DAILY); }
+    } catch (_) { return; }
+    const max = {};
+    (stats.categories || []).forEach(cat => {
+        const top = (cat.leaders || [])[0];
+        if (top) { const v = parseFloat(String(top.value).replace(/[^0-9.]/g, '')); if (v > 0) max[cat.key] = v; }
+    });
+    const AXES = [
+        ['passingYards', 'Pass Yds'], ['passingTouchdowns', 'Pass TD'],
+        ['rushingYards', 'Rush Yds'], ['rushingTouchdowns', 'Rush TD'],
+        ['receivingYards', 'Rec Yds'], ['receivingTouchdowns', 'Rec TD'], ['receptions', 'Rec'],
+        ['totalTackles', 'Tackles'], ['sacks', 'Sacks'], ['interceptions', 'INT'],
+    ];
+    const labels = [], values = [];
+    for (const [k, lab] of AXES) {
+        if (raw[k] != null && max[k]) { labels.push(lab); values.push(Math.min(100, Math.round((raw[k] / max[k]) * 100))); }
+    }
+    if (labels.length < 3) return;
+    if (!document.body.contains(host)) return;
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+    host.innerHTML = detailSection({
+        title: 'Season Profile', id: 'ncaaf-radar-sec',
+        body: `<div style="position:relative;height:260px"><canvas id="ncaaf-radar-chart"></canvas></div>` +
+              `<p class="detail-note" style="margin-top:0.4rem">Each axis is this player's ${_ncaaf.season} total as a % of the FBS leader in that stat.</p>`,
+    });
+    const chart = StatsCharts.radarProfile('ncaaf-radar-chart', labels, values, accent);
+    if (!chart) { const sec = document.getElementById('ncaaf-radar-sec'); if (sec) sec.remove(); }
+}
+
 // ── Player game log (D-044 follow-on) — per-game table via /api/ncaafgamelog ──
 async function _loadNCAAFGameLog(id, season) {
     const host = document.getElementById('ncaaf-gamelog-host');
@@ -657,6 +699,7 @@ async function _loadNCAAFGameLog(id, season) {
     }
 }
 
+window._loadNCAAFRadar      = _loadNCAAFRadar;
 window._loadNCAAFGameLog    = _loadNCAAFGameLog;
 window.fetchNCAAFScoreboard = fetchNCAAFScoreboard;
 window.displayNCAAFScores   = displayNCAAFScores;

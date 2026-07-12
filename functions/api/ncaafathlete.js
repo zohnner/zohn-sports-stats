@@ -131,8 +131,10 @@ export async function onRequest(context) {
         }
         if (!show) continue;
         const line = g.stats.map(([n, l]) => [l, cm[n] ? cm[n].d : '—']);
-        if (g.key === 'defense' && di && di.interceptions) line.push(['INT', di.interceptions.d]);
-        groups.push({ key: g.key, label: g.label, stats: line });
+        const raw = {};
+        g.stats.forEach(([n]) => { if (cm[n] && typeof cm[n].v === 'number') raw[n] = cm[n].v; });
+        if (g.key === 'defense' && di && di.interceptions) { line.push(['INT', di.interceptions.d]); raw.interceptions = di.interceptions.v; }
+        groups.push({ key: g.key, label: g.label, stats: line, raw });
     }
 
     return json({ found: groups.length > 0, season: Number(season), id, bio, gp, groups }, 200, 21600);

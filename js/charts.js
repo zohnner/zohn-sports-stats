@@ -253,6 +253,31 @@ class StatsCharts {
      * @param {'hitting'|'pitching'} group
      * @returns {Chart|null}
      */
+    // Generic radar for pre-normalized (0–100) values with custom axes.
+    // Used by NCAAF "% of FBS leader" profile — no hardcoded keys/maxes.
+    static radarProfile(canvasId, labels, values, color = '#c8452b') {
+        if (!window.Chart || !labels || labels.length < 3) return null;
+        const t = this.#getTheme();
+        const fill = color.startsWith('#') ? color + '26' : color.replace(/[\d.]+\)$/, '0.15)');
+        return this.#create(canvasId, {
+            type: 'radar',
+            data: { labels, datasets: [{
+                data: values, borderColor: color, backgroundColor: fill,
+                pointBackgroundColor: color, pointBorderColor: 'transparent',
+                pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
+            }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { r: { min: 0, max: 100,
+                    ticks: { display: false, stepSize: 25 },
+                    grid: { color: 'rgba(255,255,255,0.08)' },
+                    angleLines: { color: 'rgba(255,255,255,0.06)' },
+                    pointLabels: { color: t.tick, font: { family: t.font, size: 11, weight: '600' } } } },
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
+
     static mlbRadar(canvasId, datasets, group, position = '') {
         const t = this.#getTheme();
 
