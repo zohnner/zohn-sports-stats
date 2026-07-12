@@ -171,6 +171,7 @@ function updateNCAAFTicker(games) {
 }
 
 function _renderNCAAFView(view) {
+    if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
     if (view.startsWith('ncaaf-player-')) { showNCAAFPlayer(view.slice('ncaaf-player-'.length)); return; }
     if (view.startsWith('ncaaf-team-')) { showNCAAFTeam(view.slice('ncaaf-team-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
@@ -640,10 +641,20 @@ async function _loadNCAAFGameLog(id, season) {
             ${(g.stats || []).map(v => `<td>${_escHtml(String(v))}</td>`).join('')}
         </tr>`;
     }).join('');
-    host.innerHTML = detailSection({
+    const tableSection = detailSection({
         title: 'Game Log',
         body: `<div class="table-wrapper" style="overflow-x:auto"><table class="stats-table gl-table" style="white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`,
     });
+    const canChart = (window.StatsCharts && typeof StatsCharts.nflGameTrend === 'function' && window.Chart);
+    const chartSection = canChart
+        ? detailSection({ title: 'Game Trend', id: 'ncaaf-gl-trend', body: `<div style="position:relative;height:220px"><canvas id="ncaaf-gl-chart"></canvas></div>` })
+        : '';
+    host.innerHTML = chartSection + tableSection;
+    if (canChart) {
+        const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+        const chart = StatsCharts.nflGameTrend('ncaaf-gl-chart', data.games, cols, accent);
+        if (!chart) { const sec = document.getElementById('ncaaf-gl-trend'); if (sec) sec.remove(); }
+    }
 }
 
 window._loadNCAAFGameLog    = _loadNCAAFGameLog;
