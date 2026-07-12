@@ -243,6 +243,7 @@ function loadHome() {
             <div class="home-section-hdr">
                 <span class="home-section-title">Today's Games</span>
                 <span class="home-section-date">${dateStr}</span>
+                <span class="home-updated" id="homeUpdatedAt"></span>
                 <button class="home-section-link" onclick="navigateTo('mlb-games')">All scores →</button>
             </div>
             <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
@@ -821,7 +822,7 @@ async function _loadHomeTodayGames() {
 
     try {
         const mlbResult = await fetchMLBSchedule(2).catch(() => null);
-        if (mlbResult) AppState._homeGames = mlbResult;
+        if (mlbResult) { AppState._homeGames = mlbResult; AppState._homeGamesFetchedAt = Date.now(); }
         const cards = [];
 
         if (mlbResult) {
@@ -897,6 +898,7 @@ async function _loadHomeTodayGames() {
 
         _renderTonightSPSection();
         _renderHomeHero(mlbResult);
+        _updateHomeFreshness();
 
     } catch (_) {
         if (gridEl.isConnected) {
@@ -1164,6 +1166,21 @@ function _renderHomeInsights() {
         `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`
     ).join('') + `<p class="pct-caption">Season leaders through today · computed from MLB Stats API</p>`;
 }
+
+// ── Freshness signals (D-046 P4) — "Updated Nm ago" from real fetch time ──
+function _homeAgo(ts) {
+    if (!ts) return '';
+    const s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 45)   return 'just now';
+    if (s < 3600) return Math.round(s / 60) + 'm ago';
+    return Math.round(s / 3600) + 'h ago';
+}
+function _updateHomeFreshness() {
+    const el = document.getElementById('homeUpdatedAt');
+    if (el && AppState._homeGamesFetchedAt) el.textContent = 'Updated ' + _homeAgo(AppState._homeGamesFetchedAt);
+}
+// Keep the relative label honest between polls (cheap; only touches text when on home).
+setInterval(() => { if (AppState.currentView === 'home') _updateHomeFreshness(); }, 30_000);
 
 // ── On This Day (ANN-005) ─────────────────────────────────────
 // Fetches MLB games from today's date in the last 3 seasons,
@@ -1684,15 +1701,27 @@ async function _renderHomeMoment() {
             races.push({ div: d.division, lead, second, gb, divOdds: AppState.mlbOdds?.byTeam?.[lead.teamId]?.div });
         });
         races.sort((a, b) => a.gb - b.gb);
-        const chips = races.slice(0, 3).map(r => `
-            <button class="hm-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
-                <span class="hm-race-div">${_escHtml(r.div)}</span>
-                <strong>${_escHtml(r.lead.teamAbbr)}</strong>
-                <span class="hm-race-gb">${_escHtml(r.second.teamAbbr)} ${r.gb === 0 ? 'tied' : r.gb + ' back'}</span>
-                ${r.divOdds != null && typeof _oddsFmtPct === 'function' ? `<span class="hm-race-oct">${_oddsFmtPct(r.divOdds)}% div</span>` : ''}
-            </button>`).join('');
+        // Viz (D-046 P4): each race a division-win% bar (Monte Carlo divOdds),
+        // leader logo + gap label. Bar falls back to a neutral width if odds absent.
+        const viz = races.slice(0, 3).map(r => {
+            const color   = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr).primary : 'var(--accent)';
+            const logo    = (typeof getMLBTeamLogoById === 'function' && r.lead.teamId) ? getMLBTeamLogoById(r.lead.teamId) : '';
+            const odds    = r.divOdds;
+            const pctW    = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
+            const gapLbl  = r.gb === 0 ? 'tied atop' : `+${r.gb} on ${_escHtml(r.second.teamAbbr)}`;
+            const oddsLbl = (odds != null && typeof _oddsFmtPct === 'function') ? ` · ${_oddsFmtPct(odds)}% div` : '';
+            return `
+                <button class="pennant-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
+                    <span class="pr-div">${_escHtml(r.div)}</span>
+                    <span class="pr-lead">${logo ? `<img class="pr-logo" src="${logo}" alt="" data-hide-on-error>` : ''}<strong>${_escHtml(r.lead.teamAbbr)}</strong></span>
+                    <span class="pr-bar" style="--tc:${color}"><span class="pr-bar-fill" style="width:${pctW}%"></span></span>
+                    <span class="pr-gap">${gapLbl}${oddsLbl}</span>
+                </button>`;
+        }).join('');
         const p = document.getElementById('hmPennant');
-        if (p) p.innerHTML = chips ? `<div class="hm-row"><span class="hm-kicker">Pennant Races</span>${chips}<button class="hm-chip" onclick="navigateTo('mlb-standings')">All odds →</button></div>` : '';
+        if (p) p.innerHTML = viz
+            ? `<div class="hm-row hm-row--pennant"><span class="hm-kicker">Pennant Races</span><button class="hm-chip" onclick="navigateTo('mlb-standings')">All odds →</button></div><div class="pennant-viz">${viz}</div>`
+            : '';
     } catch (_) {
         const p = document.getElementById('hmPennant');
         if (p) p.innerHTML = '';

@@ -2127,6 +2127,76 @@ main {
 }
 .rail-panel .pct-caption { padding: 0.5rem 0.75rem 0.6rem; margin: 0; }
 
+/* Freshness signal (D-046 P4) */
+.home-updated {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+}
+
+/* Pennant Races viz (D-046 P4) — division-win% bar per race */
+.hm-row--pennant { display: flex; align-items: center; }
+.pennant-viz {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+}
+.pennant-race {
+    display: grid;
+    grid-template-columns: minmax(74px, auto) minmax(50px, auto) 1fr minmax(120px, auto);
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.65rem;
+    cursor: pointer;
+    transition: border-color 0.12s ease;
+}
+.pennant-race:hover { border-color: var(--border-strong); }
+.pr-div {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+.pr-lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+.pr-logo { width: 18px; height: 18px; object-fit: contain; }
+.pr-bar {
+    position: relative;
+    height: 8px;
+    background: var(--bg-interactive);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.pr-bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--tc, var(--accent));
+    border-radius: var(--radius-full);
+}
+.pr-gap {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    text-align: right;
+}
+@media (max-width: 560px) {
+    .pennant-race { grid-template-columns: 1fr auto; row-gap: 0.3rem; }
+    .pr-bar { grid-column: 1 / -1; order: 5; }
+    .pr-gap { grid-column: 1 / -1; text-align: left; order: 6; }
+}
+
 .home-search-bar {
     display: flex;
     align-items: center;
