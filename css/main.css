@@ -1935,6 +1935,8 @@ main {
 .home-hero:hover { border-color: var(--border-strong); transform: translateY(-1px); }
 .home-hero:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .home-hero--live { box-shadow: var(--shadow-live); }
+/* [hidden] must win over the explicit display below (UA [hidden] is display:none) */
+.home-hero[hidden] { display: none; }
 .hero-main {
     flex: 1 1 58%;
     min-width: 0;
@@ -2078,6 +2080,8 @@ main {
     border-radius: var(--radius-md);
     overflow: hidden;
 }
+/* Inactive tab panel must stay hidden — explicit display above overrides UA [hidden] */
+.rail-panel[hidden] { display: none; }
 .rail-headline {
     display: flex;
     align-items: center;
