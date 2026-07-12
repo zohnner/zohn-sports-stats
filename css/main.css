@@ -2055,6 +2055,78 @@ main {
     .hero-row { flex: 1; }
 }
 
+/* Headlines + Insights rail (D-046 P3) — news + templated data bullets */
+.home-rail { margin-bottom: 0.25rem; }
+.rail-tabs { display: inline-flex; gap: 0.25rem; margin-left: auto; }
+.rail-tab {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+}
+.rail-tab:hover { color: var(--text-secondary); }
+.rail-tab.active { color: var(--accent); background: var(--accent-subtle); }
+.rail-panel {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+.rail-headline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-default);
+    transition: background 0.12s ease;
+}
+.rail-headline:last-of-type { border-bottom: none; }
+.rail-headline:hover { background: var(--bg-interactive); }
+.rail-hl-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.35;
+}
+.rail-hl-time {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+.rail-insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+}
+.rail-insight:last-of-type { border-bottom: none; }
+.rail-insight-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.35rem;
+    border-radius: 50%;
+    background: var(--c, var(--accent));
+}
+.rail-insight-text {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.rail-panel .pct-caption { padding: 0.5rem 0.75rem 0.6rem; margin: 0; }
+
 .home-search-bar {
     display: flex;
     align-items: center;

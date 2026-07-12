@@ -1029,11 +1029,12 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 ---
 
 ## D-046 — Homepage overhaul: analytics-first landing, gap-analysis P1–6 (ad-free)
-**Status:** in progress — **P1 shipped** (`89f7015`, live game states + ticker parity), **P2 shipped** (Data-Story hero); P3–P6 pending. Owner ratified direction (ad-free; P1–6 scope).
+**Status:** in progress — **P1 shipped** (`89f7015`, live game states + ticker parity), **P2 shipped** (`ef59029`, Data-Story hero), **P3 shipped** (Headlines + Insights rail); P4–P6 pending. Owner ratified direction (ad-free; P1–6 scope).
 
 **Progress log:**
 - **P1 (shipped `89f7015`):** `fetchMLBSchedule` hydrates `linescore`; home `_gameCard(g)` renders UPCOMING/LIVE/FINAL (inning tag ▲/▼/MID/END, outs dots, base-state diamond from `linescore.offense.first/second/third`, live pitcher·batter); live-first sort; polling 60s→30s (guarded); ticker inning parity for free (render logic already existed). Win probability deferred — Phase-1 acceptance covers score/inning/outs/base only; WP needs a per-live-game fetch, better placed in the expanded live view + the P2 hero. Verified vs the 2026-07-11 live feed; base/outs shown only during an active Top/Bottom half.
-- **P2 (shipped):** `_renderHomeHero(games)` above the search bar — selection logic live-leverage → marquee upcoming (combined win% + division rivalry) → tightest-division-race fallback (`_heroFromStandings`); generated matchup board + logo lockups, no photos, token-only theme safety; refreshes on the 30s live poll. Harness-verified selection over the real slate.
+- **P2 (shipped `ef59029`):** `_renderHomeHero(games)` above the search bar — selection logic live-leverage → marquee upcoming (combined win% + division rivalry) → tightest-division-race fallback (`_heroFromStandings`); generated matchup board + logo lockups, no photos, token-only theme safety; refreshes on the 30s live poll. Harness-verified selection over the real slate.
+- **P3 (shipped):** tabbed `#homeRail` after Today's Games — **Headlines** from `/api/news` (relative timestamps, link-out) + **Insights** = templated leader-plus-margin bullets from `mlbLeaderSplits` (K, RBI, SB, WHIP; categories the Hot Strip doesn't spotlight, honest gap-to-runner-up, WHIP qualified). Placed in-flow rather than a floating right-rail — the true two-column right-rail layout is deferred to P4 (the density/hierarchy pass), keeping this phase low-risk. `_wireRailTabs()` handles panel toggle.
 **Contributors:** Vera (JTBD/states), Kael (hierarchy/hero/visual), Axiom (feasibility/live/ticker/edge), Relay (news+live+insights data), Folio (SEO/footer/meta), Cipher (favorites/privacy)
 **Date opened:** 2026-07-06 | **Date resolved:** —
 **Reference:** `docs/landing-page-gap-analysis.md` (ESPN gap analysis, audited 2026-07-12).

@@ -248,6 +248,23 @@ function loadHome() {
             <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
         </div>
 
+        <!-- Headlines + Insights rail (D-046 P3) — news pipeline + templated data bullets -->
+        <div class="home-rail" id="homeRail">
+            <div class="home-section-hdr">
+                <span class="home-section-title">The Latest</span>
+                <div class="rail-tabs" role="tablist" aria-label="Latest news and insights">
+                    <button class="rail-tab active" data-tab="headlines" role="tab" aria-selected="true">Headlines</button>
+                    <button class="rail-tab" data-tab="insights" role="tab" aria-selected="false">Insights</button>
+                </div>
+            </div>
+            <div class="rail-panel" id="railHeadlines" role="tabpanel">
+                ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+            </div>
+            <div class="rail-panel" id="railInsights" role="tabpanel" hidden>
+                ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+            </div>
+        </div>
+
         <!-- Tonight's Starting Pitchers — populated by _renderTonightSPSection() -->
         <div id="homeTonightSP">
             <div class="home-section-hdr">
@@ -357,6 +374,9 @@ function loadHome() {
     _renderHotStrip();
     _loadOnThisDay();
     _loadHomeTodayGames();
+    _wireRailTabs();
+    _renderHomeHeadlines();
+    _renderHomeInsights();
 
     // Background-load leaderboard data for Hot Strip if not yet cached
     if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
@@ -364,6 +384,7 @@ function loadHome() {
             .then(() => {
                 _renderHotStrip();
                 _renderTonightSPSection();
+                _renderHomeInsights();
             }).catch(err => {
                 Logger.warn('Leader splits failed — removing home async sections', err, 'APP');
                 document.getElementById('homeHotStrip')?.remove();
@@ -1048,6 +1069,100 @@ async function _renderHomeHero(games) {
         host.onclick = hero.onClick;
         host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
     }
+}
+
+// ── Headlines + Insights rail (D-046 P3) ──────────────────────
+// Headlines reuse the /api/news pipeline; Insights are templated data bullets
+// computed from AppState.mlbLeaderSplits — no editorial staff, honest margins.
+function _wireRailTabs() {
+    const rail = document.getElementById('homeRail');
+    if (!rail || rail._wired) return;
+    rail._wired = true;
+    rail.addEventListener('click', e => {
+        const tab = e.target.closest('.rail-tab');
+        if (!tab) return;
+        const name = tab.dataset.tab;
+        rail.querySelectorAll('.rail-tab').forEach(t => {
+            const on = t === tab;
+            t.classList.toggle('active', on);
+            t.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        const hl = document.getElementById('railHeadlines');
+        const ins = document.getElementById('railInsights');
+        if (hl)  hl.hidden  = name !== 'headlines';
+        if (ins) ins.hidden = name !== 'insights';
+    });
+}
+
+let _homeNewsCache = null;
+async function _renderHomeHeadlines() {
+    const host = document.getElementById('railHeadlines');
+    if (!host) return;
+    const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
+    try {
+        let data = _homeNewsCache;
+        if (!data) {
+            const res = await fetch('/api/news?sport=mlb');
+            if (!res.ok) throw new Error('news ' + res.status);
+            data = await res.json();
+            _homeNewsCache = data;
+        }
+        const articles = ((data && data.articles) || [])
+            .filter(a => a && a.headline && a.links?.web?.href)
+            .slice(0, 8);
+        if (!articles.length) { host.innerHTML = `<p class="pct-caption">No headlines right now.</p>`; return; }
+        host.innerHTML = articles.map(a => {
+            const when = _ago(a.published || a.lastModified);
+            return `<a class="rail-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
+                <span class="rail-hl-text">${_escHtml(a.headline)}</span>
+                ${when ? `<span class="rail-hl-time">${_escHtml(when)}</span>` : ''}
+            </a>`;
+        }).join('') + `<p class="pct-caption">Headlines via ESPN · tap to read the full story</p>`;
+    } catch (err) {
+        if (window.Logger) Logger.warn('home headlines failed', err, 'APP');
+        host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
+    }
+}
+
+function _renderHomeInsights() {
+    const host = document.getElementById('railInsights');
+    if (!host) return;
+    const hitting  = AppState.mlbLeaderSplits?.hitting  || [];
+    const pitching = AppState.mlbLeaderSplits?.pitching || [];
+    if (!hitting.length && !pitching.length) return; // keep skeleton until splits load
+
+    const _teamColor = ab => (typeof getMLBTeamColors === 'function' ? getMLBTeamColors(ab).primary : '#7c8df0');
+    const _top2 = (arr, key, desc = true) => {
+        const s = arr.filter(x => x.stat?.[key] != null && !isNaN(parseFloat(x.stat[key])))
+            .sort((a, b) => { const av = parseFloat(a.stat[key]), bv = parseFloat(b.stat[key]); return desc ? bv - av : av - bv; });
+        return [s[0], s[1]];
+    };
+    const teamG  = Math.max(0, ...hitting.map(s => parseInt(s.stat?.gamesPlayed, 10) || 0));
+    const qPit   = (() => { const q = pitching.filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= teamG); return q.length ? q : pitching; })();
+
+    const insights = [];
+    const counting = (arr, key, word) => {
+        const [a, b] = _top2(arr, key);
+        if (!a) return;
+        const lv = parseInt(a.stat[key], 10);
+        if (!isFinite(lv) || lv <= 0) return;
+        const nm = a.player?.fullName || '—', tm = a.team?.abbreviation || '';
+        const gap = b ? lv - parseInt(b.stat[key], 10) : 0;
+        const tail = gap > 0 ? ` — ${gap} clear of the field` : '';
+        insights.push({ c: _teamColor(tm), t: `${nm} (${tm}) leads MLB with ${lv} ${word}${tail}` });
+    };
+    counting(pitching, 'strikeOuts', 'strikeouts');
+    counting(hitting, 'rbi', 'RBI');
+    counting(hitting, 'stolenBases', 'steals');
+    const [wa] = _top2(qPit, 'whip', false);
+    if (wa && parseFloat(wa.stat.whip) > 0) {
+        insights.push({ c: _teamColor(wa.team?.abbreviation || ''),
+            t: `${wa.player?.fullName || '—'} (${wa.team?.abbreviation || ''}) owns the lowest WHIP among qualified starters at ${parseFloat(wa.stat.whip).toFixed(2)}` });
+    }
+    if (!insights.length) return;
+    host.innerHTML = insights.slice(0, 4).map(i =>
+        `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`
+    ).join('') + `<p class="pct-caption">Season leaders through today · computed from MLB Stats API</p>`;
 }
 
 // ── On This Day (ANN-005) ─────────────────────────────────────
