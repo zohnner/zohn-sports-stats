@@ -222,6 +222,9 @@ function loadHome() {
             <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
             <span class="home-welcome-sub">Broadcast-grade MLB analytics with the receipt on every number, and no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
         </div>` : ''}
+        <!-- Data-Story hero (D-046 P2) — the day's focal narrative; hidden until populated -->
+        <div class="home-hero" id="homeHero" hidden></div>
+
         <!-- Search prompt bar (P2-004) -->
         <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -872,11 +875,178 @@ async function _loadHomeTodayGames() {
         });
 
         _renderTonightSPSection();
+        _renderHomeHero(mlbResult);
 
     } catch (_) {
         if (gridEl.isConnected) {
             gridEl.innerHTML = `<p class="home-no-games">Scores unavailable.</p>`;
         }
+    }
+}
+
+// ── Data-Story hero (D-046 P2) ────────────────────────────────
+// One focal narrative per load, chosen by real signal, no licensed photos:
+//   1) highest-leverage live game  2) marquee upcoming game today
+//   3) fallback: tightest division race (standings). Hidden if nothing to show.
+function _heroTeamInfo(side, g) {
+    const tm     = g.teams?.[side]?.team || {};
+    const abbr   = tm.abbreviation || '?';
+    const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr) : { primary: '#7c8df0' };
+    const logo   = (typeof getMLBTeamLogoById === 'function' && tm.id) ? getMLBTeamLogoById(tm.id) : '';
+    return { abbr, id: tm.id, name: colors.name || abbr, color: colors.primary,
+             score: g.teams?.[side]?.score, logo };
+}
+function _heroBoard(g, showScore) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const row = (t, winner) => `
+        <div class="hero-row${winner ? ' hero-row--win' : ''}" style="--tc:${t.color}">
+            ${t.logo ? `<img class="hero-row-logo" src="${t.logo}" alt="${_esc(t.abbr)}" data-hide-on-error>` : `<span class="hero-row-logo"></span>`}
+            <span class="hero-row-abbr">${_esc(t.abbr)}</span>
+            <span class="hero-row-score">${showScore ? (t.score ?? 0) : ''}</span>
+        </div>`;
+    const a = _heroTeamInfo('away', g), h = _heroTeamInfo('home', g);
+    const aw = showScore && (a.score ?? 0) > (h.score ?? 0);
+    const hw = showScore && (h.score ?? 0) > (a.score ?? 0);
+    return `<div class="hero-board">${row(a, aw)}${row(h, hw)}</div>`;
+}
+function _heroInningPhrase(ls) {
+    if (!ls || !ls.currentInning) return 'the game';
+    const ord = ls.currentInningOrdinal || `${ls.currentInning}`;
+    if (/middle|end/i.test(ls.inningState || '')) return `the ${ord}-inning break`;
+    return `the ${ls.isTopInning ? 'top' : 'bottom'} of the ${ord}`;
+}
+function _heroLiveHook(g) {
+    const hs = g.teams?.home?.score ?? 0, as = g.teams?.away?.score ?? 0;
+    const a = _heroTeamInfo('away', g), h = _heroTeamInfo('home', g);
+    const where = _heroInningPhrase(g.linescore);
+    const diff = Math.abs(hs - as);
+    if (diff === 0) return `Tied ${as}–${hs} in ${where}`;
+    const lead = hs > as ? h : a;
+    if (diff === 1) return `${lead.name} lead by 1 in ${where}`;
+    return `${lead.name} lead ${Math.max(hs, as)}–${Math.min(hs, as)} in ${where}`;
+}
+function _heroClockET(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const etH = (d.getUTCHours() - 4 + 24) % 24;
+    return `${etH % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
+}
+function _openMLBGameFromHero(gamePk, live) {
+    if (!gamePk) return;
+    if (AppState.currentSport !== 'mlb' && typeof switchSport === 'function') switchSport('mlb');
+    if (typeof openMLBGame === 'function') openMLBGame(gamePk, !!live);
+    else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(gamePk);
+}
+async function _heroFromStandings() {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    let divs = AppState.mlbStandings;
+    if (!divs && typeof fetchMLBStandingsFull === 'function') {
+        divs = await fetchMLBStandingsFull();
+        AppState.mlbStandings = divs;
+    }
+    if (!Array.isArray(divs) || !divs.length) return null;
+    let best = null;
+    divs.forEach(d => {
+        const teams = d.teams || [];
+        if (teams.length < 2) return;
+        const gb = parseFloat(teams[1].gb);
+        if (!isFinite(gb)) return;
+        if (!best || gb < best.gb) best = { div: d.division, leader: teams[0], second: teams[1], gb };
+    });
+    if (!best) return null;
+    const logo = (typeof getMLBTeamLogoById === 'function' && best.leader.teamId) ? getMLBTeamLogoById(best.leader.teamId) : '';
+    const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(best.leader.teamAbbr) : { primary: '#7c8df0' };
+    const lead = best.gb <= 0 ? 'tied atop' : `${best.gb === 1 ? '1 game' : best.gb + ' games'} up in`;
+    const headline = best.gb <= 0
+        ? `${_esc(best.leader.teamName)} tied atop the ${_esc(best.div)}`
+        : `${_esc(best.leader.teamName)} lead the ${_esc(best.div)}`;
+    const hook = best.gb <= 0
+        ? `Dead heat with ${_esc(best.second.teamName)} — ${_esc(best.leader.wins)}–${_esc(best.leader.losses)} apiece at the top`
+        : `${best.gb === 1 ? '1 game' : best.gb + ' games'} clear of ${_esc(best.second.teamName)} at ${_esc(best.leader.wins)}–${_esc(best.leader.losses)}`;
+    const html = `
+        <div class="hero-main">
+            <span class="hero-kicker hero-kicker--race">${_esc(best.div)} RACE</span>
+            <h2 class="hero-headline">${headline}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">See the standings →</span></div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-standings" style="--tc:${colors.primary}">
+                ${logo ? `<img class="hero-standings-logo" src="${logo}" alt="${_esc(best.leader.teamAbbr)}" data-hide-on-error>` : ''}
+                <div class="hero-standings-rec"><span class="hero-standings-rank">1st</span><span class="hero-standings-wl">${_esc(best.leader.wins)}–${_esc(best.leader.losses)}</span></div>
+            </div>
+        </div>`;
+    return { kind: 'race', html, onClick: () => navigateTo('mlb-standings') };
+}
+function _heroFromGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const a = _heroTeamInfo('away', g), h = _heroTeamInfo('home', g);
+    const matchupTitle = `${_esc(a.name)} at ${_esc(h.name)}`;
+    let kicker, hook, board, cta;
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        hook   = _heroLiveHook(g);
+        board  = _heroBoard(g, true);
+        cta    = 'Watch live →';
+    } else {
+        const time = _heroClockET(g.gameDate);
+        const awayPP = g.teams?.away?.probablePitcher?.fullName;
+        const homePP = g.teams?.home?.probablePitcher?.fullName;
+        const rivals = g.teams?.away?.team?.division?.id
+            && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id;
+        kicker = `<span class="hero-kicker">TODAY · ${_esc(time)}</span>`;
+        const ppStr = (awayPP && homePP) ? `${_esc(awayPP.split(' ').slice(-1)[0])} vs ${_esc(homePP.split(' ').slice(-1)[0])}` : '';
+        hook = [ppStr, rivals ? 'division rivals' : ''].filter(Boolean).join(' · ') || 'First pitch soon';
+        board = _heroBoard(g, false);
+        cta = 'Game preview →';
+    }
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${_esc(hook)}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}</div>`;
+    return { kind, html, onClick: () => _openMLBGameFromHero(g.gamePk, kind === 'live') };
+}
+async function _renderHomeHero(games) {
+    const host = document.getElementById('homeHero');
+    if (!host) return;
+    const list = Array.isArray(games) ? games : (AppState._homeGames || []);
+
+    const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
+    const isUpcoming = g => g.status?.abstractGameState === 'Preview';
+    const combinedPct = g => (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
+
+    let hero = null;
+    const live = list.filter(isLive);
+    if (live.length) {
+        const leverage = g => {
+            const inn  = g.linescore?.currentInning || 1;
+            const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
+            return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4;
+        };
+        hero = _heroFromGame(live.slice().sort((x, y) => leverage(y) - leverage(x))[0], 'live');
+    } else {
+        const up = list.filter(isUpcoming);
+        if (up.length) {
+            const marquee = g => combinedPct(g) * 4
+                + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0);
+            hero = _heroFromGame(up.slice().sort((x, y) => marquee(y) - marquee(x))[0], 'upcoming');
+        }
+    }
+    if (!hero) hero = await _heroFromStandings().catch(() => null);
+
+    if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
+    host.className = `home-hero home-hero--${hero.kind}`;
+    host.innerHTML = hero.html;
+    host.hidden = false;
+    if (hero.onClick) {
+        host.setAttribute('role', 'button');
+        host.tabIndex = 0;
+        host.onclick = hero.onClick;
+        host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
     }
 }
 
