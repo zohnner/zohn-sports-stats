@@ -1846,6 +1846,48 @@ main {
     color: var(--accent);
 }
 
+/* Live inline state (D-046 P1) — base diamond + outs + count.
+   State lives here and in the pulsing pill, never on the border (D-038 K2). */
+.hgc-live {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.2rem 0 0.05rem;
+}
+.hgc-diamond { display: block; flex-shrink: 0; }
+.hgc-base {
+    fill: var(--bg-interactive);
+    stroke: var(--border-mid);
+    stroke-width: 1;
+}
+.hgc-base--on {
+    fill: var(--color-live);
+    stroke: var(--color-live);
+}
+.hgc-outs {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+}
+.hgc-out-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-mid);
+}
+.hgc-out-dot--on { background: var(--color-live); }
+.hgc-count {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.hgc-pitchers--live {
+    color: var(--color-live);
+    font-weight: 600;
+}
+
 .home-no-games {
     color: var(--text-muted);
     font-size: 0.85rem;

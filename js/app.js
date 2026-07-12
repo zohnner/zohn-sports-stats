@@ -93,7 +93,9 @@ setupNavigation();
 
 // Live score polling — MLB (60s; same pattern as NBA above)
 (function setupMLBLivePolling() {
-    const INTERVAL = 60_000;
+    // 30s satisfies the ≤30s live-refresh target (D-046 P1). The poll early-returns
+    // when no games are live, so idle ticks cost nothing.
+    const INTERVAL = 30_000;
 
     async function _poll() {
         try {
@@ -683,18 +685,55 @@ async function _loadHomeTodayGames() {
         return colors?.name || abbr;
     };
 
-    const _gameCard = (homeAbbr, awayAbbr, homeScore, awayScore, status, homeId, awayId, gameKey, gameDate, awayPP, homePP) => {
-        const isFinal   = /final|^f$/i.test(status);
-        const isLive    = !isFinal && /in progress|live/i.test(status);
+    const _esc     = (s) => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const _lastName = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
+
+    // Live-state readers off the schedule linescore hydrate.
+    // Baserunner keys (offense.first/second/third) exist only when occupied;
+    // during Middle/End breaks the half is inactive, so bases/outs are hidden.
+    const _inningTag = (ls) => {
+        if (!ls || !ls.currentInning) return null;
+        const n = ls.currentInning, s = ls.inningState || '';
+        if (/middle/i.test(s)) return `MID ${n}`;
+        if (/end/i.test(s))    return `END ${n}`;
+        return `${ls.isTopInning ? '▲' : '▼'}${n}`;
+    };
+    const _baseDiamond = (b) => {
+        const d = (cx, cy, on) =>
+            `<polygon class="hgc-base${on ? ' hgc-base--on' : ''}" points="${cx},${cy - 4.2} ${cx + 4.2},${cy} ${cx},${cy + 4.2} ${cx - 4.2},${cy}"/>`;
+        return `<svg class="hgc-diamond" width="30" height="20" viewBox="0 0 30 20" aria-hidden="true">`
+            + d(15, 6, b.second) + d(8, 12, b.third) + d(22, 12, b.first) + `</svg>`;
+    };
+    const _outsDots = (o) =>
+        `<span class="hgc-outs" aria-hidden="true">${[0, 1, 2].map(i => `<span class="hgc-out-dot${i < o ? ' hgc-out-dot--on' : ''}"></span>`).join('')}</span>`;
+
+    const _gameCard = (g) => {
+        const t         = g.teams || {};
+        const homeAbbr  = t.home?.team?.abbreviation ?? '?';
+        const awayAbbr  = t.away?.team?.abbreviation ?? '?';
+        const homeScore = t.home?.score ?? 0;
+        const awayScore = t.away?.score ?? 0;
+        const status    = g.status?.detailedState || '';
+        const abstract  = g.status?.abstractGameState || '';
+        const gameKey   = `mlb-${g.gamePk}`;
+        const gameDate  = g.gameDate;
+        const ls        = g.linescore || null;
+        const awayPP    = t.away?.probablePitcher?.fullName;
+        const homePP    = t.home?.probablePitcher?.fullName;
+
+        const isFinal   = abstract === 'Final' || /final|game over|completed/i.test(status);
+        const isLive    = !isFinal && (abstract === 'Live' || /in progress/i.test(status));
         const hasScore  = isFinal || isLive || homeScore > 0 || awayScore > 0;
         const homeWon   = isFinal && homeScore > awayScore;
         const awayWon   = isFinal && awayScore > homeScore;
         const pillCls   = isFinal ? 'final' : isLive ? 'live' : 'sched';
+
+        const inningTag = isLive ? _inningTag(ls) : null;
         let pillLabel;
         if (isFinal) {
             pillLabel = 'Final';
         } else if (isLive) {
-            pillLabel = 'Live';
+            pillLabel = inningTag || 'Live';
         } else if (gameDate) {
             const d = new Date(gameDate);
             const etH = (d.getUTCHours() - 4 + 24) % 24;
@@ -703,6 +742,28 @@ async function _loadHomeTodayGames() {
         } else {
             pillLabel = 'Scheduled';
         }
+
+        // Active half (Top/Bottom) → show bases, outs, count, live matchup.
+        const inState    = ls?.inningState || '';
+        const activeHalf = isLive && /top|bottom/i.test(inState);
+        const off        = ls?.offense || {};
+        const bases      = { first: !!off.first, second: !!off.second, third: !!off.third };
+        const outs       = Number.isFinite(ls?.outs) ? ls.outs : 0;
+        const balls      = Number.isFinite(ls?.balls) ? ls.balls : null;
+        const strikes    = Number.isFinite(ls?.strikes) ? ls.strikes : null;
+        const countHtml  = (balls != null && strikes != null)
+            ? `<span class="hgc-count">${balls}-${strikes}</span>` : '';
+        const liveState  = activeHalf
+            ? `<div class="hgc-live">${_baseDiamond(bases)}${_outsDots(outs)}${countHtml}</div>` : '';
+
+        const pitcherNm  = ls?.defense?.pitcher?.fullName;
+        const batterNm   = ls?.offense?.batter?.fullName;
+        const matchLine  = (activeHalf && (pitcherNm || batterNm))
+            ? `<div class="hgc-pitchers hgc-pitchers--live">P ${_esc(_lastName(pitcherNm))} · AB ${_esc(_lastName(batterNm))}</div>`
+            : (!isFinal && !isLive && (awayPP || homePP)
+                ? `<div class="hgc-pitchers">${_esc(_lastName(awayPP))} vs ${_esc(_lastName(homePP))}</div>`
+                : '');
+
         const homeLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
         const awayLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
         const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeAbbr) : { primary: '#7c8df0' };
@@ -710,13 +771,11 @@ async function _loadHomeTodayGames() {
         const awayName   = _teamFullName(awayAbbr);
         const fmt        = (n) => hasScore ? n : '–';
         const liveCls    = isLive ? ' home-game-card--live' : '';
-        const lastName   = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
-        const ppLine     = !isFinal && (awayPP || homePP)
-            ? `<div class="hgc-pitchers">${lastName(awayPP)} vs ${lastName(homePP)}</div>`
-            : '';
+        const ariaLive   = activeHalf
+            ? `, ${inningTag || 'live'}, ${outs} out${outs === 1 ? '' : 's'}` : '';
         return `
             <div class="home-game-card${liveCls}" data-game-key="${gameKey}" data-game-status="${pillCls}" role="button" tabindex="0"
-                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}"
+                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}${ariaLive}"
                  style="--hgc-team-color:${homeColors.primary}">
                 <div class="hgc-row">
                     ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="${awayAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
@@ -728,7 +787,8 @@ async function _loadHomeTodayGames() {
                     <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}" title="${homeName}">${homeAbbr}</span>
                     <span class="hgc-score${homeWon ? ' hgc-score--win' : ''}">${fmt(homeScore)}</span>
                 </div>
-                ${ppLine}
+                ${liveState}
+                ${matchLine}
                 <div class="hgc-card-footer">
                     <span class="hgc-pill hgc-pill--${pillCls}">${pillLabel}</span>
                 </div>
@@ -741,19 +801,14 @@ async function _loadHomeTodayGames() {
         const cards = [];
 
         if (mlbResult) {
-            mlbResult.slice(0, 15).forEach(g => cards.push(_gameCard(
-                g.teams?.home?.team?.abbreviation ?? '?',
-                g.teams?.away?.team?.abbreviation ?? '?',
-                g.teams?.home?.score ?? 0,
-                g.teams?.away?.score ?? 0,
-                g.status?.detailedState || '',
-                g.teams?.home?.team?.id,
-                g.teams?.away?.team?.id,
-                `mlb-${g.gamePk}`,
-                g.gameDate,
-                g.teams?.away?.probablePitcher?.fullName,
-                g.teams?.home?.probablePitcher?.fullName,
-            )));
+            // Live games sort to the front; stable sort preserves the date-desc
+            // sub-order for everything else (fetchMLBSchedule already sorts).
+            const liveRank = g => (g.status?.abstractGameState === 'Live'
+                && !/final/i.test(g.status?.detailedState || '')) ? 0 : 1;
+            [...mlbResult]
+                .sort((a, b) => liveRank(a) - liveRank(b))
+                .slice(0, 15)
+                .forEach(g => cards.push(_gameCard(g)));
         }
 
         if (!gridEl.isConnected) return;
@@ -766,7 +821,8 @@ async function _loadHomeTodayGames() {
         gridEl.innerHTML = cards.join('');
 
         // Update section header with live count badge + filter pills (idempotent)
-        const liveCount = mlbResult ? mlbResult.filter(g => /in progress|live/i.test(g.status?.detailedState || '')).length : 0;
+        const liveCount = mlbResult ? mlbResult.filter(g => g.status?.abstractGameState === 'Live'
+            && !/final/i.test(g.status?.detailedState || '')).length : 0;
         const hdrEl = document.querySelector('#homeTodayGames .home-section-hdr');
         if (hdrEl) {
             // Strip stale live badge before re-inserting

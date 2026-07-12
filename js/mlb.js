@@ -948,7 +948,8 @@ async function fetchMLBSchedule(daysBack = 7) {
         sportId:   1,
         startDate: fmt(fromET),
         endDate:   fmt(nowET),
-        hydrate:   'team,probablePitcher',
+        // linescore powers live ticker/home states (inning, outs, baserunners)
+        hydrate:   'team,probablePitcher,linescore',
     }, ApiCache.TTL.SHORT);
     return (data.dates || [])
         .flatMap(d => d.games || [])
@@ -7448,5 +7449,4 @@ if (typeof window !== 'undefined') {
 _initMLBFavs();
 
 // Warm current-season wRC+ constants at boot so early stat computes use derived,
-// not fallback, values (DAILY-cached; harmless no-op when a static entry exists)
-if (typeof window !== 'undefined') _ensureWrcConstants();
+// not fallback, values (DAILY-cached; harmless no
