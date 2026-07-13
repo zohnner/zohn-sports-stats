@@ -1,0 +1,44 @@
+/* Montreal Expos (Retro 1969–2004) — Olympic Stadium nights, tricolor pride */
+[data-theme="retro-expos"] {
+    --bg-base:            #06091f;
+    --bg-surface:         #090f2c;
+    --bg-raised:          #0f163a;
+    --bg-card:            rgba(9, 15, 44, 0.87);
+    --bg-card-hover:      rgba(15, 22, 58, 0.96);
+    --bg-overlay:         rgba(4, 7, 30, 0.97);
+    --bg-subtle:          rgba(206, 17, 38, 0.05);
+    --bg-interactive:     rgba(206, 17, 38, 0.09);
+    --bg-interactive-hov: rgba(206, 17, 38, 0.15);
+    --border-default:     rgba(255, 255, 255, 0.06);
+    --border-mid:         rgba(255, 255, 255, 0.10);
+    --border-strong:      rgba(255, 255, 255, 0.17);
+    --border-accent:      rgba(206, 17, 38, 0.38);
+    --border-accent-hov:  rgba(206, 17, 38, 0.62);
+    --text-primary:       #f0f4ff;
+    --text-secondary:     #96aadc;
+    --text-muted:         #4c62a0;
+    --text-subtle:        #283268;
+    --text-disabled:      #131930;
+    --accent:             #CE1126;
+    --accent-light:       #e82040;
+    --accent-dark:        #a00d1e;
+    --accent-subtle:      rgba(206, 17, 38, 0.10);
+    --accent-border:      rgba(206, 17, 38, 0.28);
+    --accent-glow:        rgba(206, 17, 38, 0.20);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.04);
+    --skeleton-mid:       rgba(255,255,255,0.08);
+    --bg-header:          rgba(4, 7, 30, 0.97);
+    --bg-waffle-panel:    rgba(2, 5, 20, 0.98);
+    --bg-table-head:      rgba(4, 7, 30, 0.90);
+    --bg-table-sub:       rgba(4, 7, 30, 0.55);
+    --bg-mobile-nav:      rgba(4, 7, 30, 0.97);
+    --bg-toast:           rgba(4, 7, 30, 0.97);
+    --shadow-header:      0 1px 0 rgba(0,48,135,0.38), 0 4px 24px rgba(0,0,0,0.50);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
+}

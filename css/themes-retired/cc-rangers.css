@@ -1,0 +1,44 @@
+/* Texas Rangers — "Tejas" cochineal red / cream */
+[data-theme="cc-rangers"] {
+    --bg-base:            #0d0203;
+    --bg-surface:         #1a0507;
+    --bg-raised:          #280809;
+    --bg-card:            rgba(26, 5, 7, 0.87);
+    --bg-card-hover:      rgba(40, 8, 9, 0.96);
+    --bg-overlay:         rgba(13, 2, 3, 0.97);
+    --bg-subtle:          rgba(157, 32, 36, 0.06);
+    --bg-interactive:     rgba(157, 32, 36, 0.10);
+    --bg-interactive-hov: rgba(157, 32, 36, 0.16);
+    --border-default:     rgba(255, 255, 255, 0.05);
+    --border-mid:         rgba(255, 255, 255, 0.09);
+    --border-strong:      rgba(255, 255, 255, 0.16);
+    --border-accent:      rgba(157, 32, 36, 0.40);
+    --border-accent-hov:  rgba(157, 32, 36, 0.65);
+    --text-primary:       #f5f5dc;
+    --text-secondary:     #d0b888;
+    --text-muted:         #8a6040;
+    --text-subtle:        #4e2e18;
+    --text-disabled:      #2a1508;
+    --accent:             #C23035;
+    --accent-light:       #e04548;
+    --accent-dark:        #8a1e22;
+    --accent-subtle:      rgba(194, 48, 53, 0.10);
+    --accent-border:      rgba(194, 48, 53, 0.32);
+    --accent-glow:        rgba(194, 48, 53, 0.22);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.45), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.03);
+    --skeleton-mid:       rgba(255,255,255,0.06);
+    --bg-header:          rgba(13, 2, 3, 0.97);
+    --bg-waffle-panel:    rgba(9, 1, 2, 0.98);
+    --bg-table-head:      rgba(13, 2, 3, 0.90);
+    --bg-table-sub:       rgba(13, 2, 3, 0.55);
+    --bg-mobile-nav:      rgba(13, 2, 3, 0.97);
+    --bg-toast:           rgba(13, 2, 3, 0.97);
+    --shadow-header:      0 1px 0 rgba(157,32,36,0.25), 0 4px 24px rgba(0,0,0,0.55);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.65);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.70);
+}

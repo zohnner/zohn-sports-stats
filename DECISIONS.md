@@ -1068,3 +1068,26 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Cross-domain:** touches the home render, the ticker (backbone), and adds an edge-render at `/` → **Vera + Kael + Axiom consensus per phase**; live/news reuse keeps CSP unchanged. Doc-sync CLAUDE.md when the home render/ticker schema change (D-034 rule).
 
 **Next:** owner ratifies the phasing; then P1 gates (Vera live-state spec + Kael live treatment + Relay live-data contract) land in ISSUES.md and P1 builds. Recommend starting P1 (live states) — highest ROI and live-testable during the current MLB season.
+
+---
+
+## D-047 — Brand cohesion: prune themes, unify the scorebug, one definable brand
+**Status:** in progress — **S1 shipped** (theme prune); S2 (scorebug unification) → S6 (measure) pending.
+**Source:** owner-approved `brand-cohesion-directive.md`, itself built on the `INQUISITION_RESPONSES.md` verdict (§X). `style-theme-direction.md` never reached the repo; the directive is self-contained.
+**Date opened:** 2026-07-12
+
+**⚠ Supersedes D-038** on themes: D-038 framed the City Connect themes as "collectibles, frozen at the current set." D-047 (owner-approved) **retires** them. DESIGN.md amended in the same commit (house rule: a change that violates DESIGN.md either is wrong or amends the page — never neither).
+
+**Brand definition (now in DESIGN.md "Brand invariants"):** *broadcast graphics package meets a trading terminal* — one visual voice across MLB/NFL/NCAAF. Cohesion test = a scorebug from any sport is indistinguishable by sport except by content. Invariants: state language, numeric voice (mono scores / display+tabular stats), orange = brand only, one `.eyebrow`, no naked logos.
+
+**Correction to INQUISITION_RESPONSES.md §26:** the checker's header comment claims "existing themes have known debts," but `node tools/check-themes.cjs --strict` actually reports **0 errors/warnings across all themes** — the debts were already cleared. So flipping to `--strict` was safe regardless of the kept set (verified before pruning).
+
+**Phasing (directive S1–S6):**
+- **S1 — Theme prune (shipped).** Kept `:root` (dark) + `light` + `nl-monarchs` (KC Monarchs — kept per the directive's brand-resonance recommendation; the sole tribute, and it passes `--strict`). Retired 8 City Connect + Bananas/Expos/Trash-Pandas → **archived** (not deleted) in `css/themes-retired/*.css` + README (future premium-unlockable candidates, zero runtime cost). Touched all reference sites: `variables.css` blocks, `_CC_TEAM_LOGOS`/`_CC_THEME_ALTS` + a `_KEPT_THEMES` fallback guard in `app.js`, the inline `<head>` theme script + swatch buttons in `index.html`. **Migration:** a retired theme in `localStorage['zs_theme']` falls back to `dark` silently (guarded in both the head script and `_applyTheme`). **Payoff:** `/deploy-check` check #11 flipped to `check-themes.cjs --strict` (hard gate; all 3 kept themes pass clean).
+- **S2 — Scorebug unification (M/L, next).** `js/scorebug.js` — `renderScoreCard`/`renderTickerItem` + sport-agnostic `{sport,status,period,clock,situation}` state model (folds in the deferred D-046 P6b ticker schema). Migrate consumers in traffic order, one commit each with a live check. Excludes the Expanded View.
+- **S3 — Color hygiene:** migrate the 96 raw hex in `main.css`/`components.css` onto tokens (protect `shareCard.css`/`arcade.css`); re-scope orange to brand/CTA/nav only.
+- **S4 — Type discipline:** one `.eyebrow` utility; inline `rem` → `--text-*` (landing first); formalize the numeric convention in DESIGN.md.
+- **S5 — Dark-logo treatment:** logo chip on `.hgc-team-logo`/`.ticker-logo`; `darkSafe` flag in the team-color maps (NYY/COL/MIL/CLE/DET). Lands inside the S2 component if merged.
+- **S6 — Measure & lock:** Lighthouse/CLS in deploy-check; token-coverage lint (the `--bg-elevated` bug class); visual-regression baselines committed.
+
+**Standing rules (from the directive):** one phase per PR (S2 = one commit per consumer); constitution (CLAUDE.md/DESIGN.md) wins conflicts — flag, don't silently pick; no scope creep into arcade/shareCard/Expanded View; live-verify after each phase; stop-and-report if a phase changes the plan.

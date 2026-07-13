@@ -1504,39 +1504,20 @@ if (typeof window !== 'undefined') {
 
 // ── Theme & Settings Panel ────────────────────────────────────
 
+// D-047: live theme set. Retired themes are archived in css/themes-retired/.
+const _KEPT_THEMES = { dark: 1, light: 1, 'nl-monarchs': 1 };
+
 const _CC_TEAM_LOGOS = {
-    // MLB CC 2026 — standard team logos (no official CC-specific CDN paths exist)
-    'cc-braves':       'https://www.mlbstatic.com/team-logos/144.svg',
-    'cc-orioles':      'https://www.mlbstatic.com/team-logos/110.svg',
-    'cc-reds':         'https://www.mlbstatic.com/team-logos/113.svg',
-    'cc-royals':       'assets/themes/royals-cc-forever.jpg',
-    'cc-brewers':      'https://www.mlbstatic.com/team-logos/158.svg',
-    'cc-pirates':      'https://www.mlbstatic.com/team-logos/134.svg',
-    'cc-padres':       'https://www.mlbstatic.com/team-logos/135.svg',
-    'cc-rangers':      'https://www.mlbstatic.com/team-logos/140.svg',
-    // Tribute & independent — actual uploaded logos
-    'cc-bananas':      'assets/themes/SavannahBananas.png',
-    'retro-expos':     'assets/themes/exposlogo.webp',
     'nl-monarchs':     'assets/themes/images.png',
-    'aa-trash-pandas': 'assets/themes/trash-pandas-logo.png',
 };
 
 const _CC_THEME_ALTS = {
-    'cc-braves':       'Atlanta Braves City Connect',
-    'cc-orioles':      'Baltimore Orioles City Connect',
-    'cc-reds':         'Cincinnati Reds City Connect',
-    'cc-royals':       'Kansas City Royals City Connect',
-    'cc-brewers':      'Milwaukee Brewers City Connect',
-    'cc-pirates':      'Pittsburgh Pirates City Connect',
-    'cc-padres':       'San Diego Padres City Connect',
-    'cc-rangers':      'Texas Rangers City Connect',
-    'cc-bananas':      'Savannah Bananas',
-    'retro-expos':     'Montreal Expos Retro',
     'nl-monarchs':     'Kansas City Monarchs — Negro Leagues',
-    'aa-trash-pandas': 'Rocket City Trash Pandas',
 };
 
 function _applyTheme(theme) {
+    // A retired theme in a returning user's localStorage falls back to dark, silently.
+    if (!_KEPT_THEMES[theme]) theme = 'dark';
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('zs_theme', theme); } catch (_) {}
     document.querySelectorAll('.theme-swatch').forEach(btn => {

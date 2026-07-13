@@ -1,0 +1,44 @@
+/* Cincinnati Reds — monochromatic crimson */
+[data-theme="cc-reds"] {
+    --bg-base:            #0e0003;
+    --bg-surface:         #1c0007;
+    --bg-raised:          #2a000b;
+    --bg-card:            rgba(28, 0, 7, 0.87);
+    --bg-card-hover:      rgba(42, 0, 11, 0.96);
+    --bg-overlay:         rgba(14, 0, 3, 0.97);
+    --bg-subtle:          rgba(198, 1, 31, 0.05);
+    --bg-interactive:     rgba(198, 1, 31, 0.08);
+    --bg-interactive-hov: rgba(198, 1, 31, 0.14);
+    --border-default:     rgba(255, 255, 255, 0.06);
+    --border-mid:         rgba(255, 255, 255, 0.10);
+    --border-strong:      rgba(255, 255, 255, 0.17);
+    --border-accent:      rgba(198, 1, 31, 0.40);
+    --border-accent-hov:  rgba(198, 1, 31, 0.65);
+    --text-primary:       #ffeef0;
+    --text-secondary:     #e0a0a8;
+    --text-muted:         #a05060;
+    --text-subtle:        #5a2030;
+    --text-disabled:      #2e0f18;
+    --accent:             #E8203A;
+    --accent-light:       #ff4560;
+    --accent-dark:        #a80018;
+    --accent-subtle:      rgba(232, 32, 58, 0.10);
+    --accent-border:      rgba(232, 32, 58, 0.32);
+    --accent-glow:        rgba(232, 32, 58, 0.25);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.03);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.03);
+    --skeleton-mid:       rgba(255,255,255,0.07);
+    --bg-header:          rgba(14, 0, 3, 0.97);
+    --bg-waffle-panel:    rgba(10, 0, 2, 0.98);
+    --bg-table-head:      rgba(14, 0, 3, 0.90);
+    --bg-table-sub:       rgba(14, 0, 3, 0.55);
+    --bg-mobile-nav:      rgba(14, 0, 3, 0.97);
+    --bg-toast:           rgba(14, 0, 3, 0.97);
+    --shadow-header:      0 1px 0 rgba(198,1,31,0.25), 0 4px 24px rgba(0,0,0,0.50);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
+}

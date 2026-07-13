@@ -1,0 +1,44 @@
+/* San Diego Padres — "Día de los Muertos" obsidian / aqua coast / marigold altar */
+[data-theme="cc-padres"] {
+    --bg-base:            #0c0e13;
+    --bg-surface:         #131620;
+    --bg-raised:          #1c1f2a;
+    --bg-card:            rgba(19, 22, 32, 0.87);
+    --bg-card-hover:      rgba(28, 31, 42, 0.96);
+    --bg-overlay:         rgba(12, 14, 19, 0.97);
+    --bg-subtle:          rgba(0, 181, 184, 0.04);
+    --bg-interactive:     rgba(0, 181, 184, 0.07);
+    --bg-interactive-hov: rgba(0, 181, 184, 0.12);
+    --border-default:     rgba(255, 255, 255, 0.06);
+    --border-mid:         rgba(255, 255, 255, 0.10);
+    --border-strong:      rgba(255, 255, 255, 0.17);
+    --border-accent:      rgba(0, 181, 184, 0.30);
+    --border-accent-hov:  rgba(0, 181, 184, 0.55);
+    --text-primary:       #eff0ea;
+    --text-secondary:     #88c0c5;
+    --text-muted:         #4e7880;
+    --text-subtle:        #283e44;
+    --text-disabled:      #141e20;
+    --accent:             #00B5B8;
+    --accent-light:       #00d4d8;
+    --accent-dark:        #008a8d;
+    --accent-subtle:      rgba(0, 181, 184, 0.10);
+    --accent-border:      rgba(0, 181, 184, 0.28);
+    --accent-glow:        rgba(0, 181, 184, 0.22);
+    --shadow-sm:          0 1px 8px  rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04);
+    --shadow-md:          0 4px 20px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-lg:          0 8px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+    --shadow-card:        0 2px 12px rgba(0,0,0,0.40), 0 0 0 1px var(--border-default);
+    --shadow-card-hov:    0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px var(--border-accent);
+    --skeleton-from:      rgba(255,255,255,0.04);
+    --skeleton-mid:       rgba(255,255,255,0.08);
+    --bg-header:          rgba(12, 14, 19, 0.97);
+    --bg-waffle-panel:    rgba(8, 9, 13, 0.98);
+    --bg-table-head:      rgba(12, 14, 19, 0.90);
+    --bg-table-sub:       rgba(12, 14, 19, 0.55);
+    --bg-mobile-nav:      rgba(12, 14, 19, 0.97);
+    --bg-toast:           rgba(12, 14, 19, 0.97);
+    --shadow-header:      0 1px 0 rgba(0,181,184,0.20), 0 4px 24px rgba(0,0,0,0.50);
+    --shadow-mobile-nav:  0 -4px 24px rgba(0,0,0,0.60);
+    --shadow-waffle-panel:0 8px 32px rgba(0,0,0,0.65);
+}
