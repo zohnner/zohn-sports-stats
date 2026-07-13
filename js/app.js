@@ -852,12 +852,15 @@ async function _loadHomeTodayGames() {
         const cards = [];
 
         if (mlbResult) {
-            // Favorite-team games pin first (D-046 P5), then live, then the rest.
-            // Stable sort preserves the date-desc sub-order (fetchMLBSchedule sorts).
+            // Favorite-team games pin first (D-046 P5) — but only today's/live ones,
+            // so a favorite's prior-day finals in the ±2d window don't crowd the top.
+            // Then live, then the rest. Stable sort preserves date-desc sub-order.
+            const _todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
             const rank = g => {
-                if (_gameHasFav(g)) return 0;
                 const live = g.status?.abstractGameState === 'Live'
                     && !/final/i.test(g.status?.detailedState || '');
+                const isToday = (g.officialDate || (g.gameDate || '').slice(0, 10)) === _todayET;
+                if (_gameHasFav(g) && (isToday || live)) return 0;
                 return live ? 1 : 2;
             };
             [...mlbResult]
