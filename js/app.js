@@ -733,118 +733,16 @@ async function _loadHomeTodayGames() {
     const _esc     = (s) => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const _lastName = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
 
-    // Live-state readers off the schedule linescore hydrate.
-    // Baserunner keys (offense.first/second/third) exist only when occupied;
-    // during Middle/End breaks the half is inactive, so bases/outs are hidden.
-    const _inningTag = (ls) => {
-        if (!ls || !ls.currentInning) return null;
-        const n = ls.currentInning, s = ls.inningState || '';
-        if (/middle/i.test(s)) return `MID ${n}`;
-        if (/end/i.test(s))    return `END ${n}`;
-        return `${ls.isTopInning ? '▲' : '▼'}${n}`;
+    // D-047 S2: home grid cards are built by the shared Scorebug component
+    // (js/scorebug.js) — one scorebug anatomy across sports. The favorites star
+    // is passed as a hook so the builder stays sport-agnostic.
+    const _favStar = (abbr) => {
+        const on = _isFavTeam(abbr);
+        return `<button class="hgc-star${on ? ' hgc-star--on' : ''}" data-fav-team="${_esc(abbr)}" aria-label="${on ? 'Remove' : 'Add'} ${_esc(abbr)} favorite" title="${on ? 'Remove favorite' : 'Favorite team'}">${on ? '★' : '☆'}</button>`;
     };
-    const _baseDiamond = (b) => {
-        const d = (cx, cy, on) =>
-            `<polygon class="hgc-base${on ? ' hgc-base--on' : ''}" points="${cx},${cy - 4.2} ${cx + 4.2},${cy} ${cx},${cy + 4.2} ${cx - 4.2},${cy}"/>`;
-        return `<svg class="hgc-diamond" width="30" height="20" viewBox="0 0 30 20" aria-hidden="true">`
-            + d(15, 6, b.second) + d(8, 12, b.third) + d(22, 12, b.first) + `</svg>`;
-    };
-    const _outsDots = (o) =>
-        `<span class="hgc-outs" aria-hidden="true">${[0, 1, 2].map(i => `<span class="hgc-out-dot${i < o ? ' hgc-out-dot--on' : ''}"></span>`).join('')}</span>`;
-
-    const _gameCard = (g) => {
-        const t         = g.teams || {};
-        const homeAbbr  = t.home?.team?.abbreviation ?? '?';
-        const awayAbbr  = t.away?.team?.abbreviation ?? '?';
-        const homeScore = t.home?.score ?? 0;
-        const awayScore = t.away?.score ?? 0;
-        const status    = g.status?.detailedState || '';
-        const abstract  = g.status?.abstractGameState || '';
-        const gameKey   = `mlb-${g.gamePk}`;
-        const gameDate  = g.gameDate;
-        const ls        = g.linescore || null;
-        const awayPP    = t.away?.probablePitcher?.fullName;
-        const homePP    = t.home?.probablePitcher?.fullName;
-
-        const isFinal   = abstract === 'Final' || /final|game over|completed/i.test(status);
-        const isLive    = !isFinal && (abstract === 'Live' || /in progress/i.test(status));
-        const hasScore  = isFinal || isLive || homeScore > 0 || awayScore > 0;
-        const homeWon   = isFinal && homeScore > awayScore;
-        const awayWon   = isFinal && awayScore > homeScore;
-        const pillCls   = isFinal ? 'final' : isLive ? 'live' : 'sched';
-
-        const inningTag = isLive ? _inningTag(ls) : null;
-        let pillLabel;
-        if (isFinal) {
-            pillLabel = 'Final';
-        } else if (isLive) {
-            pillLabel = inningTag || 'Live';
-        } else if (gameDate) {
-            const d = new Date(gameDate);
-            const etH = (d.getUTCHours() - 4 + 24) % 24;
-            const etM = d.getUTCMinutes();
-            pillLabel = `${etH % 12 || 12}:${String(etM).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
-        } else {
-            pillLabel = 'Scheduled';
-        }
-
-        // Active half (Top/Bottom) → show bases, outs, count, live matchup.
-        const inState    = ls?.inningState || '';
-        const activeHalf = isLive && /top|bottom/i.test(inState);
-        const off        = ls?.offense || {};
-        const bases      = { first: !!off.first, second: !!off.second, third: !!off.third };
-        const outs       = Number.isFinite(ls?.outs) ? ls.outs : 0;
-        const balls      = Number.isFinite(ls?.balls) ? ls.balls : null;
-        const strikes    = Number.isFinite(ls?.strikes) ? ls.strikes : null;
-        const countHtml  = (balls != null && strikes != null)
-            ? `<span class="hgc-count">${balls}-${strikes}</span>` : '';
-        const liveState  = activeHalf
-            ? `<div class="hgc-live">${_baseDiamond(bases)}${_outsDots(outs)}${countHtml}</div>` : '';
-
-        const pitcherNm  = ls?.defense?.pitcher?.fullName;
-        const batterNm   = ls?.offense?.batter?.fullName;
-        const matchLine  = (activeHalf && (pitcherNm || batterNm))
-            ? `<div class="hgc-pitchers hgc-pitchers--live">P ${_esc(_lastName(pitcherNm))} · AB ${_esc(_lastName(batterNm))}</div>`
-            : (!isFinal && !isLive && (awayPP || homePP)
-                ? `<div class="hgc-pitchers">${_esc(_lastName(awayPP))} vs ${_esc(_lastName(homePP))}</div>`
-                : '');
-
-        const homeLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(homeAbbr) : '';
-        const awayLogo   = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(awayAbbr) : '';
-        const homeColors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(homeAbbr) : { primary: '#7c8df0' };
-        const homeName   = _teamFullName(homeAbbr);
-        const awayName   = _teamFullName(awayAbbr);
-        const fmt        = (n) => hasScore ? n : '–';
-        const liveCls    = isLive ? ' home-game-card--live' : '';
-        const ariaLive   = activeHalf
-            ? `, ${inningTag || 'live'}, ${outs} out${outs === 1 ? '' : 's'}` : '';
-        const _favStar = (abbr) => {
-            const on = _isFavTeam(abbr);
-            return `<button class="hgc-star${on ? ' hgc-star--on' : ''}" data-fav-team="${_esc(abbr)}" aria-label="${on ? 'Remove' : 'Add'} ${_esc(abbr)} favorite" title="${on ? 'Remove favorite' : 'Favorite team'}">${on ? '★' : '☆'}</button>`;
-        };
-        return `
-            <div class="home-game-card${liveCls}" data-game-key="${gameKey}" data-game-status="${pillCls}" role="button" tabindex="0"
-                 aria-label="${awayName} ${fmt(awayScore)} at ${homeName} ${fmt(homeScore)}, ${pillLabel}${ariaLive}"
-                 style="--hgc-team-color:${homeColors.primary}">
-                <div class="hgc-row">
-                    ${awayLogo ? `<img class="hgc-team-logo" src="${awayLogo}" alt="${awayAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
-                    <span class="hgc-abbr${awayWon ? ' hgc-abbr--win' : ''}" title="${awayName}">${awayAbbr}</span>
-                    <span class="hgc-score${awayWon ? ' hgc-score--win' : ''}">${fmt(awayScore)}</span>
-                    ${_favStar(awayAbbr)}
-                </div>
-                <div class="hgc-row">
-                    ${homeLogo ? `<img class="hgc-team-logo" src="${homeLogo}" alt="${homeAbbr}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
-                    <span class="hgc-abbr${homeWon ? ' hgc-abbr--win' : ''}" title="${homeName}">${homeAbbr}</span>
-                    <span class="hgc-score${homeWon ? ' hgc-score--win' : ''}">${fmt(homeScore)}</span>
-                    ${_favStar(homeAbbr)}
-                </div>
-                ${liveState}
-                ${matchLine}
-                <div class="hgc-card-footer">
-                    <span class="hgc-pill hgc-pill--${pillCls}">${pillLabel}</span>
-                </div>
-            </div>`;
-    };
+    const _gameCard = (g) => (typeof Scorebug !== 'undefined')
+        ? Scorebug.renderScoreCard(Scorebug.normalizeMLBGame(g), { favStar: _favStar })
+        : '';
 
     try {
         const mlbResult = await fetchMLBSchedule(2).catch(() => null);
