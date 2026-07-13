@@ -5378,38 +5378,9 @@ function updateMLBTicker(games) {
         return;
     }
 
-    const items = [...scored, ...scored].map(g => {
-        const hs      = g.teams?.home?.score ?? 0;
-        const vs      = g.teams?.away?.score ?? 0;
-        const ha      = _mlbTeamAbbr(g.teams?.home?.team);
-        const va      = _mlbTeamAbbr(g.teams?.away?.team);
-        const homeId  = g.teams?.home?.team?.id;
-        const awayId  = g.teams?.away?.team?.id;
-        const st      = g.status?.detailedState || 'Final';
-        const isFinal = st === 'Final';
-        const isLive  = g.status?.abstractGameState === 'Live';
-        const pillCls = isFinal ? 'final' : isLive ? 'live' : 'sched';
-        // For live games show inning from linescore if available
-        const inning  = g.linescore?.currentInning ? `${g.linescore.isTopInning ? '▲' : '▼'}${g.linescore.currentInning}` : null;
-        const pillLbl = isFinal ? 'F' : isLive ? (inning || 'LIVE') : 'SCH';
-        const homeLogo = homeId ? `https://www.mlbstatic.com/team-logos/${homeId}.svg` : null;
-        const awayLogo = awayId ? `https://www.mlbstatic.com/team-logos/${awayId}.svg` : null;
-        const homeWon  = hs > vs;
-        const awayWon  = vs > hs;
-        const itemCls = isLive ? 'ticker__item--live' : isFinal ? 'ticker__item--final' : '';
-        return `
-            <div class="ticker__item${itemCls ? ' ' + itemCls : ''}" data-game-pk="${g.gamePk}" data-sport="mlb" style="cursor:pointer">
-                ${homeLogo ? `<img class="ticker-logo" src="${homeLogo}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="ticker-team">${ha}</span>
-                <span class="ticker-score ${homeWon && isFinal ? 'ticker-score--win' : ''}">${hs}</span>
-                <span class="ticker-divider">–</span>
-                <span class="ticker-score ${awayWon && isFinal ? 'ticker-score--win' : ''}">${vs}</span>
-                <span class="ticker-team">${va}</span>
-                ${awayLogo ? `<img class="ticker-logo" src="${awayLogo}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="ticker-status-pill ticker-status-pill--${pillCls}">${pillLbl}</span>
-            </div>
-        `;
-    }).join('');
+    const items = [...scored, ...scored]
+        .map(g => Scorebug.renderTickerItem(Scorebug.normalizeMLBGame(g)))
+        .join('');
 
     ticker.classList.remove('ticker--idle');
     ticker.innerHTML = items;
