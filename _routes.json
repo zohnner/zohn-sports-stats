@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/", "/api/*", "/mlb", "/mlb/*", "/nfl", "/nfl/*", "/ncaaf", "/ncaaf/*"],
+  "exclude": []
+}
