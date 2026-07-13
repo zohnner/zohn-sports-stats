@@ -777,22 +777,9 @@ function updateNFLTicker(games) {
         return;
     }
 
-    const items = [...scored, ...scored].map(g => {
-        const pillCls = g.isFinal ? 'final' : g.isLive ? 'live' : 'sched';
-        const pillLbl = g.isFinal ? 'F' : g.isLive ? (g.clock || 'LIVE') : 'SCH';
-        return `
-            <div class="ticker__item ${g.isLive ? 'ticker__item--live' : ''}" data-game-id="${g.id}" data-sport="nfl" style="cursor:pointer">
-                <img class="ticker-logo" src="${g.awayTeam.logo}" alt="" loading="lazy" data-hide-on-error>
-                <span class="ticker-team">${_escHtml(g.awayTeam.abbr)}</span>
-                <span class="ticker-score ${g.awayTeam.winner && g.isFinal ? 'ticker-score--win' : ''}">${g.awayTeam.score}</span>
-                <span class="ticker-divider">–</span>
-                <span class="ticker-score ${g.homeTeam.winner && g.isFinal ? 'ticker-score--win' : ''}">${g.homeTeam.score}</span>
-                <span class="ticker-team">${_escHtml(g.homeTeam.abbr)}</span>
-                <img class="ticker-logo" src="${g.homeTeam.logo}" alt="" loading="lazy" data-hide-on-error>
-                <span class="ticker-status-pill ticker-status-pill--${pillCls}">${_escHtml(pillLbl)}</span>
-            </div>
-        `;
-    }).join('');
+    const items = [...scored, ...scored]
+        .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNFLGame(g)))
+        .join('');
 
     ticker.classList.remove('ticker--idle');
     ticker.innerHTML = items;

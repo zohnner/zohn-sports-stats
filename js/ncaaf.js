@@ -150,18 +150,9 @@ function updateNCAAFTicker(games) {
         ticker.innerHTML = `<div class="ticker__item">No college scores — season runs late Aug–Jan</div>`;
         return;
     }
-    const items = [...scored, ...scored].map(g => {
-        const pillCls = g.isFinal ? 'final' : g.isLive ? 'live' : 'sched';
-        const pillLbl = g.isFinal ? 'F' : g.isLive ? 'LIVE' : 'SCH';
-        return `<div class="ticker__item ${g.isLive ? 'ticker__item--live' : ''}" data-sport="ncaaf">
-            <span class="ticker-team">${_escHtml(g.awayTeam.abbr)}</span>
-            <span class="ticker-score">${g.awayTeam.score}</span>
-            <span class="ticker-divider">–</span>
-            <span class="ticker-score">${g.homeTeam.score}</span>
-            <span class="ticker-team">${_escHtml(g.homeTeam.abbr)}</span>
-            <span class="ticker-status-pill ticker-status-pill--${pillCls}">${_escHtml(pillLbl)}</span>
-        </div>`;
-    }).join('');
+    const items = [...scored, ...scored]
+        .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNCAAFGame(g)))
+        .join('');
     ticker.classList.remove('ticker--idle');
     ticker.innerHTML = items;
     requestAnimationFrame(() => requestAnimationFrame(() => {

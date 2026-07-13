@@ -6,9 +6,9 @@
 //     liveHtml, matchHtml, ariaExtra }
 // Builders own brand invariants (D-047): state language (pill class + LIVE pulse),
 // numeric voice (scores in the mono .*-score classes), team-color edge, logo slot.
-// Sport-specific live payloads (MLB inning/outs/bases; NFL down-and-distance) are
-// baked into `liveHtml`/`matchHtml` by that sport's normalizer, so the builders
-// stay identical across sports. Consumers migrate to these one at a time (S2).
+// Sport-specific live payloads (MLB inning/outs/bases; football down-and-distance)
+// bake into `liveHtml`/`matchHtml` by that sport's normalizer, so the builders stay
+// identical across sports. Consumers migrate to these one at a time (S2).
 
 (function (global) {
     'use strict';
@@ -89,6 +89,27 @@
         };
     }
 
+    // ── Normalizer: football (NFL / NCAAF share the same scoreboard shape) → model ──
+    // g: { id, isFinal, isLive, clock?, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
+    function _normalizeFootball(g, sport) {
+        const mk = t => ({
+            abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
+            score: t ? t.score : 0, logo: (t && t.logo) || '', color: '', winner: !!(t && t.winner),
+        });
+        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal;
+        return {
+            sport, key: `${sport}-${g.id}`, id: g.id,
+            status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
+            pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
+            pillLabel: isLive ? (g.clock || 'LIVE') : isFinal ? 'Final' : 'Scheduled',
+            hasScore: true,
+            home: mk(g.homeTeam), away: mk(g.awayTeam),
+            liveHtml: '', matchHtml: '', ariaExtra: '',
+        };
+    }
+    function normalizeNFLGame(g) { return _normalizeFootball(g, 'nfl'); }
+    function normalizeNCAAFGame(g) { return _normalizeFootball(g, 'ncaaf'); }
+
     // ── Builder: grid/landing score card (reproduces the .home-game-card anatomy) ──
     function renderScoreCard(m, opts) {
         opts = opts || {};
@@ -120,8 +141,11 @@
         const itemCls = m.status === 'live' ? ' ticker__item--live' : m.status === 'final' ? ' ticker__item--final' : '';
         const pillLbl = m.status === 'final' ? 'F' : m.status === 'live' ? m.pillLabel : 'SCH';
         const scoreCls = w => w && m.status === 'final' ? ' ticker-score--win' : '';
+        // MLB click wiring reads data-game-pk; the others read data-game-id (setupTickerClicks).
+        const idName = m.sport === 'mlb' ? 'data-game-pk' : 'data-game-id';
+        const idAttr = (m.id != null && m.id !== '') ? `${idName}="${esc(m.id)}" ` : '';
         return `
-            <div class="ticker__item${itemCls}" data-game-pk="${m.id}" data-sport="${m.sport}" style="cursor:pointer">
+            <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
                 ${m.home.logo ? `<img class="ticker-logo" src="${m.home.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="ticker-team">${esc(m.home.abbr)}</span>
                 <span class="ticker-score${scoreCls(m.home.winner)}">${m.home.score ?? 0}</span>
@@ -133,5 +157,5 @@
             </div>`;
     }
 
-    global.Scorebug = { normalizeMLBGame, renderScoreCard, renderTickerItem };
+    global.Scorebug = { normalizeMLBGame, normalizeNFLGame, normalizeNCAAFGame, renderScoreCard, renderTickerItem };
 })(typeof window !== 'undefined' ? window : globalThis);

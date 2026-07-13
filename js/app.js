@@ -164,6 +164,9 @@ setupNavigation();
             if (AppState.currentSport !== 'nfl') switchSport('nfl');
             if (gid) navigateTo('nfl-game-' + gid);
             else navigateTo('nfl-games');
+        } else if (sport === 'ncaaf') {
+            if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
+            navigateTo('ncaaf-scores');
         } else if (sport === 'nhl') {
             if (AppState.currentSport !== 'nhl') switchSport('nhl');
             else navigateTo('nhl-games');

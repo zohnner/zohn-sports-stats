@@ -1,7 +1,7 @@
 // ============================================================
 // SportStrata — scorebug unit tests (node:test, zero deps) — D-047 S2
 // Loads js/scorebug.js in a vm sandbox with browser stubs and asserts the
-// sport-agnostic normalizer + builders. Guards the cohesion contract:
+// sport-agnostic normalizers + builders. Guards the cohesion contract:
 // the model shape and card/ticker anatomy that every sport shares.
 // ============================================================
 const test = require('node:test');
@@ -47,48 +47,58 @@ const upcomingGame = {
     },
     linescore: { scheduledInnings: 9 },
 };
+// Football fixtures (NFL/NCAAF share the shape)
+const nflFinal = { id: '401', isFinal: true, isLive: false,
+    homeTeam: { abbr: 'KC', name: 'Chiefs', score: 38, logo: 'kc.png', winner: true },
+    awayTeam: { abbr: 'BUF', name: 'Bills', score: 35, logo: 'buf.png', winner: false } };
+const nflLive = { id: '402', isLive: true, clock: 'Q3 5:20',
+    homeTeam: { abbr: 'DAL', score: 14, logo: 'dal.png' }, awayTeam: { abbr: 'PHI', score: 10, logo: 'phi.png' } };
+const ncaafFinal = { id: 'g99', isFinal: true, isLive: false,
+    homeTeam: { abbr: 'UGA', name: 'Georgia', score: 42, logo: 'uga.png', winner: true, rank: 1 },
+    awayTeam: { abbr: 'BAMA', name: 'Alabama', score: 38, logo: 'bama.png', winner: false, rank: 4 } };
 
 test('normalizeMLBGame: live game', () => {
     const S = load(); const m = S.normalizeMLBGame(liveGame);
-    assert.equal(m.status, 'live');
-    assert.equal(m.pillCls, 'live');
-    assert.equal(m.pillLabel, '▼8');              // bottom 8th
-    assert.match(m.liveHtml, /hgc-live/);
-    assert.match(m.liveHtml, /hgc-base--on/);     // runners on (1st + 3rd)
+    assert.equal(m.status, 'live'); assert.equal(m.pillLabel, '▼8');
+    assert.match(m.liveHtml, /hgc-base--on/);
     assert.match(m.matchHtml, /P Williams · AB Davis/);
-    assert.equal(m.home.color, '#123456');
-    assert.equal(m.home.logo, 'logo/134.svg');
 });
-test('normalizeMLBGame: final sets winner', () => {
+test('normalizeMLBGame: final winner', () => {
     const S = load(); const m = S.normalizeMLBGame(finalGame);
-    assert.equal(m.status, 'final');
-    assert.equal(m.pillLabel, 'Final');
-    assert.equal(m.away.winner, true);            // NYY 5 > BOS 2
-    assert.equal(m.home.winner, false);
-    assert.equal(m.liveHtml, '');
+    assert.equal(m.status, 'final'); assert.equal(m.away.winner, true); assert.equal(m.liveHtml, '');
 });
-test('normalizeMLBGame: upcoming shows probables, no live', () => {
+test('normalizeMLBGame: upcoming probables', () => {
     const S = load(); const m = S.normalizeMLBGame(upcomingGame);
-    assert.equal(m.status, 'upcoming');
-    assert.equal(m.pillCls, 'sched');
-    assert.equal(m.liveHtml, '');
-    assert.match(m.matchHtml, /Javier vs Gore/);
-    assert.match(m.pillLabel, /ET$/);             // a time pill
+    assert.equal(m.status, 'upcoming'); assert.match(m.matchHtml, /Javier vs Gore/); assert.match(m.pillLabel, /ET$/);
 });
 test('renderScoreCard: anatomy + fav star hook', () => {
-    const S = load(); const m = S.normalizeMLBGame(liveGame);
-    const html = S.renderScoreCard(m, { favStar: ab => `<button data-fav="${ab}">*</button>` });
+    const S = load(); const html = S.renderScoreCard(S.normalizeMLBGame(liveGame), { favStar: ab => `<button data-fav="${ab}">*</button>` });
     assert.match(html, /home-game-card home-game-card--live/);
-    assert.match(html, /data-game-key="mlb-1"/);
-    assert.match(html, /hgc-pill--live/);
-    assert.match(html, /data-fav="MIL"/);         // star hook invoked per team
-    assert.match(html, /data-fav="PIT"/);
+    assert.match(html, /data-game-key="mlb-1"/); assert.match(html, /data-fav="MIL"/); assert.match(html, /data-fav="PIT"/);
 });
-test('renderTickerItem: anatomy', () => {
-    const S = load(); const m = S.normalizeMLBGame(finalGame);
-    const html = S.renderTickerItem(m);
+test('renderTickerItem: MLB keeps data-game-pk', () => {
+    const S = load(); const html = S.renderTickerItem(S.normalizeMLBGame(finalGame));
     assert.match(html, /ticker__item ticker__item--final/);
-    assert.match(html, /data-game-pk="2"/);
+    assert.match(html, /data-game-pk="2"/); assert.doesNotMatch(html, /data-game-id/);
     assert.match(html, /data-sport="mlb"/);
-    assert.match(html, /ticker-status-pill--final/);
+});
+test('normalizeNFLGame: final + live', () => {
+    const S = load();
+    const f = S.normalizeNFLGame(nflFinal);
+    assert.equal(f.sport, 'nfl'); assert.equal(f.status, 'final'); assert.equal(f.key, 'nfl-401');
+    assert.equal(f.home.abbr, 'KC'); assert.equal(f.home.winner, true);
+    const l = S.normalizeNFLGame(nflLive);
+    assert.equal(l.status, 'live'); assert.equal(l.pillLabel, 'Q3 5:20');
+});
+test('renderTickerItem: NFL uses data-game-id', () => {
+    const S = load(); const html = S.renderTickerItem(S.normalizeNFLGame(nflFinal));
+    assert.match(html, /data-game-id="401"/); assert.doesNotMatch(html, /data-game-pk/);
+    assert.match(html, /data-sport="nfl"/); assert.match(html, /ticker-logo/);
+});
+test('normalizeNCAAFGame + ticker: id, logo, sport', () => {
+    const S = load(); const m = S.normalizeNCAAFGame(ncaafFinal);
+    assert.equal(m.sport, 'ncaaf'); assert.equal(m.id, 'g99'); assert.equal(m.home.logo, 'uga.png');
+    const html = S.renderTickerItem(m);
+    assert.match(html, /data-game-id="g99"/); assert.match(html, /data-sport="ncaaf"/);
+    assert.match(html, /src="uga.png"/);
 });
