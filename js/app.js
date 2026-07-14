@@ -1352,20 +1352,32 @@ function _renderSportPicker() {
 
 const _SPORT_LANDING = {
     mlb:   { tag: 'Broadcast-grade baseball analytics — the receipt on every number.', cards: [
-        ['mlb-leaders', '\U0001F3C6', 'Leaders', 'AVG · OPS · ERA · FIP · wRC+'],
-        ['mlb-standings', '\U0001F4CA', 'Standings & Odds', 'Divisions + Monte Carlo playoff odds'],
-        ['mlb-players', '\U0001F464', 'Players', 'Statcast profiles, splits, compare'],
-        ['mlb-prep', '\U0001F4CB', 'Game Prep', 'Matchups · lineups · print-ready'] ] },
+        ['mlb-leaders', 'bars', 'Leaders', 'AVG · OPS · ERA · FIP · wRC+'],
+        ['mlb-standings', 'table', 'Standings & Odds', 'Divisions + Monte Carlo playoff odds'],
+        ['mlb-players', 'player', 'Players', 'Statcast profiles, splits, compare'],
+        ['mlb-prep', 'clipboard', 'Game Prep', 'Matchups · lineups · print-ready'] ] },
     nfl:   { tag: 'No-login fantasy tools that give you the edge.', cards: [
-        ['nfl-mock', '\U0001F3C8', 'Mock Draft', 'Live Monte Carlo + value board'],
-        ['nfl-draftkit', '\U0001F4CB', 'Draft HQ', 'VORP rankings, tiers, sleepers'],
-        ['nfl-standings', '\U0001F4CA', 'Standings', 'Divisions, seeds, playoff picture'],
-        ['nfl-games', '\U0001F4C5', 'Scores', 'Live scoreboard + game viewer'] ] },
+        ['nfl-mock', 'board', 'Mock Draft', 'Live Monte Carlo + value board'],
+        ['nfl-draftkit', 'clipboard', 'Draft HQ', 'VORP rankings, tiers, sleepers'],
+        ['nfl-standings', 'table', 'Standings', 'Divisions, seeds, playoff picture'],
+        ['nfl-games', 'scores', 'Scores', 'Live scoreboard + game viewer'] ] },
     ncaaf: { tag: 'College football, the whole board — free, no login.', cards: [
-        ['ncaaf-rankings', '\U0001F3C6', 'Rankings', 'AP · Coaches · CFP polls'],
-        ['ncaaf-standings', '\U0001F4CA', 'Standings', 'Every conference, one page'],
-        ['ncaaf-leaders', '\U0001F3C8', 'Leaders', 'Passing · rushing · receiving · defense'],
-        ['ncaaf-scores', '\U0001F4C5', 'Scores', 'Top 25 scoreboard'] ] },
+        ['ncaaf-rankings', 'trophy', 'Rankings', 'AP · Coaches · CFP polls'],
+        ['ncaaf-standings', 'table', 'Standings', 'Every conference, one page'],
+        ['ncaaf-leaders', 'bars', 'Leaders', 'Passing · rushing · receiving · defense'],
+        ['ncaaf-scores', 'scores', 'Scores', 'Top 25 scoreboard'] ] },
+};
+
+// Broadcast-grade inline card icons (16x16 stroke, match the home feature cards).
+// Replaces emoji that mojibake'd to "U0001F3C6" from invalid \U escapes.
+const _SL_ICON = {
+    bars:      '<path d="M2 14V9M7 14V6M12 14V2"/><path d="M1 14h14" opacity=".5"/>',
+    table:     '<rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6.5h12M6 3v10"/>',
+    player:    '<circle cx="8" cy="5.5" r="2.5"/><path d="M3.5 13.5c0-2.8 2-4.2 4.5-4.2s4.5 1.4 4.5 4.2"/>',
+    clipboard: '<rect x="3.5" y="3" width="9" height="11" rx="1.5"/><path d="M6 3V2.2a2 2 0 0 1 4 0V3"/><path d="M6 8h4M6 11h2.5"/>',
+    board:     '<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M5.5 6h5M5.5 9h5M5.5 12h3"/>',
+    scores:    '<rect x="2" y="4" width="12" height="8.5" rx="1.5"/><path d="M8 4v8.5M4.5 7.7h1.5M10 7.7h1.5"/>',
+    trophy:    '<path d="M4.5 3h7v2.5a3.5 3.5 0 0 1-7 0V3z"/><path d="M4.5 4H2.6v.8A2.2 2.2 0 0 0 4.8 7M11.5 4h1.9v.8A2.2 2.2 0 0 1 11.2 7M6.5 11h3M5.5 13.5h5"/>',
 };
 
 // Clean per-sport landing (D-045): one hero + seasonal line + 4 entry cards. Nothing else.
@@ -1373,7 +1385,7 @@ function _renderSportLanding(sport) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     if (typeof _applySportUI === 'function') _applySportUI(sport);
-    const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: '\U0001F3DF', label: sport.toUpperCase(), accent: 'var(--accent)' };
+    const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: '🏟️', label: sport.toUpperCase(), accent: 'var(--accent)' };
     const cfg = _SPORT_LANDING[sport] || { tag: '', cards: [] };
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
     grid.className = 'sport-landing';
@@ -1388,7 +1400,7 @@ function _renderSportLanding(sport) {
         <div class="sl-cards">
             ${cfg.cards.map(([v, ic, t, d]) => `
                 <button class="sl-card" style="--sport-accent:${meta.accent}" onclick="navigateTo('${v}')" aria-label="${_escHtml(t)}: ${_escHtml(d)}">
-                    <span class="sl-card-icon" aria-hidden="true">${ic}</span>
+                    <span class="sl-card-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${_SL_ICON[ic] || ''}</svg></span>
                     <span class="sl-card-body"><span class="sl-card-title">${_escHtml(t)}</span><span class="sl-card-desc">${_escHtml(d)}</span></span>
                     <span class="sl-card-go" aria-hidden="true">→</span>
                 </button>`).join('')}
