@@ -4029,6 +4029,20 @@ body.view-home .search-global-btn { display: none; }
 .sl-hero-status--active .sl-status-dot { background: var(--color-win); }
 .sl-hero-status--live .sl-status-dot { background: var(--color-live); }
 .sl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.25rem; }
+/* Landing mini-dashboard (enriched sport landing) */
+.sl-data { width: 100%; max-width: 940px; margin: 1.75rem auto 0; display: flex; flex-direction: column; gap: 1.5rem; }
+.sl-section { display: flex; flex-direction: column; gap: 0.6rem; }
+.sl-section-hdr { display: flex; align-items: baseline; justify-content: space-between; }
+.sl-section-link { background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 700; color: var(--accent); padding: 0; }
+.sl-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; }
+.sl-leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
+.sl-leader { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; padding: 0.7rem 0.85rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); cursor: pointer; text-align: left; transition: border-color 0.12s ease; }
+.sl-leader:hover { border-color: var(--border-strong); }
+.sl-leader-val { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
+.sl-leader-unit { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); margin-left: 0.3rem; letter-spacing: 0.04em; }
+.sl-leader-name { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-top: 0.25rem; }
+.sl-leader-team { font-size: 0.68rem; color: var(--text-muted); font-family: var(--font-mono); }
+@media (max-width: 560px) { .sl-data { margin-top: 1.25rem; } }
 @media (max-width: 560px) { .sl-cards { grid-template-columns: 1fr; } }
 .sl-card { display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--sport-accent, var(--accent)); border-radius: var(--radius-md); cursor: pointer; text-align: left; color: var(--text-primary); transition: background 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out; }
 .sl-card:hover { background: var(--bg-card-hover); transform: translateY(-1px); box-shadow: var(--shadow-card-hov); }

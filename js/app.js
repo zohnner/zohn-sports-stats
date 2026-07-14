@@ -1404,8 +1404,70 @@ function _renderSportLanding(sport) {
                     <span class="sl-card-body"><span class="sl-card-title">${_escHtml(t)}</span><span class="sl-card-desc">${_escHtml(d)}</span></span>
                     <span class="sl-card-go" aria-hidden="true">→</span>
                 </button>`).join('')}
-        </div>`;
+        </div>
+        <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
+    if (sport === 'mlb' && typeof _loadMLBLandingData === 'function') _loadMLBLandingData();
+}
+
+// Sport-landing enrichment (mini-dashboard) — reuses the shared Scorebug for
+// today's games + a compact league-leaders teaser from mlbLeaderSplits.
+async function _loadMLBLandingData() {
+    const host = document.getElementById('slData');
+    if (!host || typeof Scorebug === 'undefined') return;
+    try {
+        const games = await fetchMLBSchedule(1).catch(() => []);
+        const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+        const todays = (games || []).filter(g => (g.officialDate || (g.gameDate || '').slice(0, 10)) === todayET);
+        const liveFirst = g => (g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '')) ? 0 : 1;
+        const pick = (todays.length ? todays : (games || [])).slice().sort((a, b) => liveFirst(a) - liveFirst(b)).slice(0, 6);
+        const gamesHtml = pick.map(g => Scorebug.renderScoreCard(Scorebug.normalizeMLBGame(g))).join('');
+
+        if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
+            await _fetchMLBLeaderSplits(MLB_SEASON).catch(() => {});
+        }
+        const leadersHtml = _mlbLandingLeaders();
+        if (!host.isConnected) return;
+        host.innerHTML = `
+            ${gamesHtml ? `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">Today's Games</span><button class="sl-section-link" onclick="navigateTo('mlb-games')">All scores →</button></div>
+                <div class="sl-games">${gamesHtml}</div></section>` : ''}
+            ${leadersHtml ? `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">League Leaders</span><button class="sl-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button></div>
+                <div class="sl-leaders">${leadersHtml}</div></section>` : ''}`;
+        host.querySelectorAll('.home-game-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const id = parseInt((card.dataset.gameKey || '').replace('mlb-', ''), 10);
+                if (id && typeof openMLBGame === 'function') openMLBGame(id, card.classList.contains('home-game-card--live'));
+            });
+        });
+    } catch (_) {}
+}
+function _mlbLandingLeaders() {
+    const hitting = AppState.mlbLeaderSplits?.hitting || [];
+    const pitching = AppState.mlbLeaderSplits?.pitching || [];
+    if (!hitting.length && !pitching.length) return '';
+    const top = (arr, key, desc = true) => arr
+        .filter(x => x.stat?.[key] != null && !isNaN(parseFloat(x.stat[key])))
+        .sort((a, b) => { const av = parseFloat(a.stat[key]), bv = parseFloat(b.stat[key]); return desc ? bv - av : av - bv; })[0];
+    const teamG = Math.max(0, ...hitting.map(s => parseInt(s.stat?.gamesPlayed, 10) || 0));
+    const qH = hitting.filter(s => (parseFloat(s.stat?.plateAppearances) || 0) >= 3.1 * teamG);
+    const qP = pitching.filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= teamG);
+    const fmtAvg = v => v >= 1 ? v.toFixed(2) : '.' + String(Math.round(v * 1000)).padStart(3, '0');
+    const specs = [
+        { s: top(hitting, 'homeRuns'), key: 'homeRuns', label: 'HR', fmt: v => String(v) },
+        { s: top(qH.length ? qH : hitting, 'avg'), key: 'avg', label: 'AVG', fmt: fmtAvg },
+        { s: top(qP.length ? qP : pitching, 'era', false), key: 'era', label: 'ERA', fmt: v => parseFloat(v).toFixed(2) },
+        { s: top(pitching, 'strikeOuts'), key: 'strikeOuts', label: 'K', fmt: v => String(v) },
+    ].filter(x => x.s);
+    return specs.map(({ s, key, label, fmt }) => {
+        const val = fmt(parseFloat(s.stat[key])); const nm = s.player?.fullName || '—';
+        const abbr = s.team?.abbreviation || ''; const pid = s.player?.id;
+        return `<button class="sl-leader"${pid ? ` onclick="showMLBPlayerDetail(${pid})"` : ''}>
+            <span class="sl-leader-val">${val}<span class="sl-leader-unit">${label}</span></span>
+            <span class="sl-leader-name">${_escHtml(nm)}</span>
+            <span class="sl-leader-team">${_escHtml(abbr)}</span></button>`;
+    }).join('');
 }
 
 if (typeof window !== 'undefined') {
