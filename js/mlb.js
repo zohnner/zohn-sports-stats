@@ -5431,7 +5431,7 @@ async function fetchMLBStandingsFull(season = MLB_SEASON) {
         leagueId:       '103,104',
         season,
         standingsTypes: 'regularSeason',
-        hydrate:        'team,league,division,sport,conference,record(overallRecords)',
+        hydrate:        'team,league,division,sport,conference,record(overallRecords,splitRecords)',
     }, ApiCache.TTL.SHORT);
 
     return (data.records || []).map(rec => {
@@ -5446,7 +5446,8 @@ async function fetchMLBStandingsFull(season = MLB_SEASON) {
             division: divName,
             league,
             teams: (rec.teamRecords || []).map(tr => {
-                const findRec = type => (tr.records?.overallRecords || []).find(r => r.type === type);
+                const findRec = type => (tr.records?.splitRecords || []).find(r => r.type === type)
+                    || (tr.records?.overallRecords || []).find(r => r.type === type);
                 const home    = findRec('home');
                 const away    = findRec('away');
                 const last10  = findRec('lastTen');
