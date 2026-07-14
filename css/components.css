@@ -1861,8 +1861,8 @@
 
 /* ── MLB Standings Grid ───────────────────────────────────── */
 .mlb-standings-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 1.25rem;
     margin-top: 0;
 }
@@ -1946,12 +1946,7 @@
     .standings-col--wide { display: none; }
 }
 
-@media (max-width: 900px) {
-    .mlb-standings-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
 @media (max-width: 600px) {
-    .mlb-standings-grid { grid-template-columns: 1fr; }
     .mlb-division-panel .standings-table { font-size: 0.75rem; }
 }
 
