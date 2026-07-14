@@ -803,7 +803,19 @@ function _loadFromHash() {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
             if (typeof _restoreMLBPlayerDetail === 'function') { _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
-        } else if (/^(mlb|nfl|nhl)-[a-z]+$/.test(_r)) {
+        } else if (/^nfl-team-([A-Za-z]+)$/.test(_r)) {
+            AppState.currentSport = 'nfl';
+            if (typeof _applySportUI === 'function') _applySportUI('nfl');
+            navigateTo(_r); return;
+        } else if (/^nfl-player-([A-Za-z0-9]+)$/.test(_r)) {
+            AppState.currentSport = 'nfl';
+            if (typeof _applySportUI === 'function') _applySportUI('nfl');
+            navigateTo(_r); return;
+        } else if (/^ncaaf-(team|player)-(\d+)$/.test(_r)) {
+            AppState.currentSport = 'ncaaf';
+            if (typeof _applySportUI === 'function') _applySportUI('ncaaf');
+            navigateTo(_r); return;
+        } else if (/^(mlb|nfl|nhl|ncaaf)-[a-z]+$/.test(_r)) {
             const _sp = _r.split('-')[0];
             AppState.currentSport = _sp;
             if (typeof _applySportUI === 'function') _applySportUI(_sp);

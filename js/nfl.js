@@ -1210,7 +1210,7 @@ async function showNFLTeamDetail(abbr) {
     grid.className = '';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-team', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-teams', null);
     try {
         if (!AppState.nflTeams.length) AppState.nflTeams = await fetchNFLTeams();
         await fetchNFLSleeperPool();
@@ -1301,6 +1301,7 @@ function _renderNFLTeamDetail(abbr) {
 
     const team = (AppState.nflTeams || []).find(t => t.abbr === abbr)
         || { abbr, name: abbr, logo: getNFLTeamLogoUrl(abbr), color: '#334155', record: '' };
+    if (window.setBreadcrumb) setBreadcrumb('nfl-teams', team.name || abbr);
     const sAbbr  = _nflSleeperAbbr(abbr);
     const roster = Object.values(_nflPoolMap || {})
         .filter(p => p && p.active && p.team === sAbbr && p.position && p.position !== 'DEF');
