@@ -66,126 +66,6 @@ body::after {
    intensity are chosen per-uniform's conceptual source.
    ─────────────────────────────────────────────────────────── */
 
-/* Atlanta Braves — 1980s Superstation nostalgia
-   Powder blue broadcast warmth from the upper-left,
-   classic red trim glow from the lower-right corner. */
-[data-theme="cc-braves"] body::before {
-    background:
-        radial-gradient(ellipse 88% 62% at 5% 0%,   rgba(124,185,232,0.28) 0%, transparent 65%),
-        radial-gradient(ellipse 55% 75% at 92% 95%, rgba(206,17,65,0.12)   0%, transparent 58%);
-}
-
-/* Baltimore Orioles — Camden Yards atmosphere
-   Camden green overhead like ballpark ivy; orange brickwork warmth
-   rising from the lower-right, a Baltimore summer night. */
-[data-theme="cc-orioles"] body::before {
-    background:
-        radial-gradient(ellipse 75% 55% at 50% -8%, rgba(0,90,60,0.24)    0%, transparent 62%),
-        radial-gradient(ellipse 45% 60% at 85% 92%, rgba(223,70,1,0.13)   0%, transparent 52%);
-}
-
-/* Cincinnati Reds — total crimson commitment
-   Red descends from above and rises from below — the whole
-   environment belongs to the color. No other hue enters. */
-[data-theme="cc-reds"] body::before {
-    background:
-        radial-gradient(ellipse 100% 55% at 50% -2%,  rgba(165,0,21,0.24)  0%, transparent 62%),
-        radial-gradient(ellipse 100% 45% at 50% 102%, rgba(198,1,31,0.18)  0%, transparent 55%);
-}
-/* Authentic vertical pinstripes replace the horizontal scanline */
-[data-theme="cc-reds"] body::after {
-    background: repeating-linear-gradient(
-        180deg,
-        transparent 0px,
-        transparent 15px,
-        rgba(165,0,21,0.12) 15px,
-        rgba(165,0,21,0.12) 16px
-    );
-}
-
-/* Kansas City Royals — Kauffman Fountains
-   Royal blue pool glow from below, gold stadium lights from above —
-   night game at the K, fountains behind center field. */
-/* Kansas City Royals — Forever Fountains: fuchsia crests from top, royal blue wells from below */
-[data-theme="cc-royals"] body::before {
-    background:
-        radial-gradient(ellipse 80% 50% at 20%   0%, rgba(255,0,175,0.18) 0%, transparent 55%),
-        radial-gradient(ellipse 70% 50% at 80%   0%, rgba(120,81,169,0.14) 0%, transparent 55%),
-        radial-gradient(ellipse 80% 55% at 50% 110%, rgba(0,70,135,0.22)  0%, transparent 60%);
-}
-
-/* Milwaukee Brewers — Wisco Way
-   Wild Mango sunset burns at the top; Great Lakes blue rises
-   from below. The horizon lives in the middle of every screen. */
-[data-theme="cc-brewers"] body::before {
-    background:
-        radial-gradient(ellipse 90% 45% at 50% -15%,  rgba(255,122,0,0.24)   0%, transparent 58%),
-        radial-gradient(ellipse 100% 68% at 50% 110%,  rgba(35,107,142,0.28)  0%, transparent 64%);
-    /* Explicit transparent midpoint so orange and blue don't clash at the viewport center */
-    background:
-        radial-gradient(ellipse 90% 50% at 50% -10%, rgba(255,122,0,0.22)   0%, transparent 100%),
-        radial-gradient(ellipse 100% 50% at 50% 110%, rgba(35,107,142,0.26)  0%, transparent 100%);
-}
-
-/* Pittsburgh Pirates — Steel City grit
-   Gold glints cold from above, like stadium lights over black
-   steel. A second dim source at the lower-left: industrial depth. */
-[data-theme="cc-pirates"] body::before {
-    background:
-        radial-gradient(ellipse 60% 35% at 50% 0%,  rgba(253,184,39,0.11) 0%, transparent 50%),
-        radial-gradient(ellipse 35% 55% at 5%  95%, rgba(253,184,39,0.07) 0%, transparent 42%);
-}
-/* Diagonal crosshatch simulating steel-beam construction geometry */
-[data-theme="cc-pirates"] body::after {
-    background: repeating-linear-gradient(
-        -45deg,
-        transparent 0px,
-        transparent 23px,
-        rgba(253,184,39,0.04) 23px,
-        rgba(253,184,39,0.04) 24px
-    );
-}
-
-/* San Diego Padres — Día de los Muertos
-   Pacific aqua from the upper-left horizon; marigold altar warmth
-   from the lower-right; a whisper of Fireberry at center depth.
-   will-change promotes to GPU to prevent banding on three-gradient overlap. */
-[data-theme="cc-padres"] body::before {
-    will-change: background;
-    background:
-        radial-gradient(ellipse 60% 50% at 2%   2%,  rgba(0,181,184,0.17)  0%, transparent 56%),
-        radial-gradient(ellipse 65% 55% at 98%  98%, rgba(252,161,32,0.14) 0%, transparent 58%),
-        radial-gradient(ellipse 40% 30% at 50%  50%, rgba(200,43,79,0.06)  0%, transparent 48%);
-}
-
-/* Texas Rangers — Tejas
-   Cochineal earth rises from the ground up like a West Texas
-   sunset; cream sky light touches the very top edge. */
-[data-theme="cc-rangers"] body::before {
-    background:
-        radial-gradient(ellipse 90% 55% at 50% 115%, rgba(157,32,36,0.26)  0%, transparent 62%),
-        radial-gradient(ellipse 60% 30% at 50% -5%,  rgba(245,245,220,0.04) 0%, transparent 48%);
-}
-
-/* ── Bonus Themes — Atmospheric Layer ─────────────────────── */
-
-/* Savannah Bananas — stadium floodlights blazing hot yellow-white
-   overhead, scattered crowd warmth from the lower corner. */
-[data-theme="cc-bananas"] body::before {
-    background:
-        radial-gradient(ellipse 90% 50% at 50% -8%,  rgba(255,224,51,0.30) 0%, transparent 62%),
-        radial-gradient(ellipse 40% 35% at 10% 94%,  rgba(255,200,0,0.12)  0%, transparent 44%);
-}
-
-/* Montreal Expos (Retro) — Olympic Stadium night game.
-   Deep royal blue roof overhead; Expos red logo warmth rising
-   from the lower-left like the crowd energy at le Big O. */
-[data-theme="retro-expos"] body::before {
-    background:
-        radial-gradient(ellipse 82% 62% at 50% -5%,  rgba(0,48,135,0.30)  0%, transparent 64%),
-        radial-gradient(ellipse 52% 42% at 5%  96%,  rgba(206,17,38,0.16) 0%, transparent 50%);
-}
-
 /* Kansas City Monarchs (Negro Leagues, 1920–1965) — classic red & cream pinstripes.
    Warm incandescent light from above like evening at Muehlebach Field;
    deep crimson glow rises from the base as the crowd fills the stands. */
@@ -204,15 +84,6 @@ body::after {
         rgba(180,20,36,0.08) 26px,
         rgba(180,20,36,0.08) 27px
     );
-}
-
-/* Rocket City Trash Pandas — rocket engine ignition.
-   NASA orange erupts from directly below; the cold void of space
-   presses down from above. Most dramatic atmosphere in the set. */
-[data-theme="aa-trash-pandas"] body::before {
-    background:
-        radial-gradient(ellipse 100% 48% at 50% 112%, rgba(232,104,48,0.30) 0%, transparent 62%),
-        radial-gradient(ellipse 82% 62% at 50% -5%,   rgba(0,30,100,0.24)  0%, transparent 56%);
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -260,23 +131,8 @@ header {
 }
 
 /* Accent ring on logo signals active theme mode — fades in/out when switching */
-[data-theme^="cc-"] .brand-logo-img,
-[data-theme="retro-expos"] .brand-logo-img,
-[data-theme="nl-monarchs"] .brand-logo-img,
-[data-theme="aa-trash-pandas"] .brand-logo-img {
+[data-theme="nl-monarchs"] .brand-logo-img {
     box-shadow: 0 0 0 2px var(--accent);
-}
-
-/* Expos logo has a white background — pad it so it reads on dark surfaces */
-[data-theme="retro-expos"] .brand-logo-img {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 3px;
-    box-sizing: border-box;
-}
-
-/* Royals CC logo (JPEG) — dark jersey background, no treatment needed */
-[data-theme="cc-royals"] .brand-logo-img {
-    background: transparent;
 }
 
 .brand-icon { display: none; }
@@ -3425,7 +3281,6 @@ a:focus:not(:focus-visible),
     }
 }
 
-
 /* ── Print Layout (ANN-004) ──────────────────────────────────── */
 /* Optimised for announcer game-prep sheets and booth reference cards */
 
@@ -3735,123 +3590,8 @@ a:focus:not(:focus-visible),
     pointer-events: none;
     user-select: none;
 }
-/* Per-team accent color on the abbreviation */
-.theme-swatch[data-theme-set="cc-braves"]      .swatch-abbr { color: #7CB9E8; }
-.theme-swatch[data-theme-set="cc-orioles"]     .swatch-abbr { color: #DF4601; }
-.theme-swatch[data-theme-set="cc-brewers"]     .swatch-abbr { color: #FF7A00; }
-.theme-swatch[data-theme-set="cc-pirates"]     .swatch-abbr { color: #FDB827; }
-.theme-swatch[data-theme-set="cc-padres"]      .swatch-abbr { color: #00B5B8; }
-.theme-swatch[data-theme-set="cc-rangers"]     .swatch-abbr { color: #F5F5DC; }
-.theme-swatch[data-theme-set="cc-bananas"]     .swatch-abbr { color: #FFE033; }
-.theme-swatch[data-theme-set="retro-expos"]    .swatch-abbr { color: #CE1126; }
-.theme-swatch[data-theme-set="nl-monarchs"]    .swatch-abbr { color: #B41428; }
-.theme-swatch[data-theme-set="aa-trash-pandas"].swatch-abbr { color: #E86830; }
-
-/* Uniform stripe height for all CC / tribute swatches */
-.theme-swatch[data-theme-set^="cc-"] .swatch-preview::after,
-.theme-swatch[data-theme-set^="retro-"] .swatch-preview::after,
-.theme-swatch[data-theme-set^="nl-"] .swatch-preview::after,
-.theme-swatch[data-theme-set^="aa-"] .swatch-preview::after { height: 9px; }
-
-/* Atlanta Braves — powder blue from top, dark base below. Commit to the color. */
-.theme-swatch[data-theme-set="cc-braves"] .swatch-preview {
-    background: linear-gradient(180deg, rgba(124,185,232,0.70) 0%, rgba(124,185,232,0.15) 55%, #0e1929 100%);
-}
-.theme-swatch[data-theme-set="cc-braves"] .swatch-preview::after {
-    background: linear-gradient(90deg, #7CB9E8 55%, #CE1141 100%);
-    height: 5px;
-}
-
-/* Baltimore Orioles — Camden green descending, orange warmth at base */
-.theme-swatch[data-theme-set="cc-orioles"] .swatch-preview {
-    background: linear-gradient(180deg, rgba(0,90,60,0.32) 0%, #0a1a11 55%);
-}
-.theme-swatch[data-theme-set="cc-orioles"] .swatch-preview::after {
-    background: linear-gradient(90deg, #005A3C 0%, #DF4601 100%);
-    height: 5px;
-}
-
-/* Cincinnati Reds — monochromatic crimson, all in */
-.theme-swatch[data-theme-set="cc-reds"] .swatch-preview {
-    background: linear-gradient(180deg, #1c0007 0%, rgba(165,0,21,0.18) 100%);
-}
-.theme-swatch[data-theme-set="cc-reds"] .swatch-preview::after {
-    background: #E8203A;
-    height: 5px;
-}
-
-/* Kansas City Royals — Forever Fountains: fuchsia-to-royal-blue, purple */
-.theme-swatch[data-theme-set="cc-royals"] .swatch-preview {
-    background: linear-gradient(135deg, #06011a 0%, #160848 50%, #004687 100%);
-}
-.theme-swatch[data-theme-set="cc-royals"] .swatch-preview::after {
-    background: linear-gradient(90deg, #FF00AF 0%, #7851A9 50%, #004687 100%);
-    height: 6px;
-}
-.theme-swatch[data-theme-set="cc-royals"] .swatch-preview img {
-    mix-blend-mode: lighten;
-}
-
-/* Milwaukee Brewers — Wild Mango sunset bleeding into Great Lakes blue */
-.theme-swatch[data-theme-set="cc-brewers"] .swatch-preview {
-    background: linear-gradient(180deg, rgba(255,122,0,0.80) 0%, rgba(255,122,0,0.20) 38%, rgba(35,107,142,0.70) 70%, #0b2a3e 100%);
-}
-.theme-swatch[data-theme-set="cc-brewers"] .swatch-preview::after {
-    background: linear-gradient(90deg, #FF7A00 0%, #236B8E 100%);
-    height: 5px;
-}
-
-/* Pittsburgh Pirates — gold crown from top, Steel City dark below. Make the gold earn its place. */
-.theme-swatch[data-theme-set="cc-pirates"] .swatch-preview {
-    background: linear-gradient(180deg, rgba(253,184,39,0.55) 0%, rgba(253,184,39,0.08) 50%, #1c1a10 100%);
-}
-.theme-swatch[data-theme-set="cc-pirates"] .swatch-preview::after {
-    background: #FDB827;
-    height: 5px;
-}
-
-/* San Diego Padres — Día de los Muertos: aqua Pacific left, marigold altar right, obsidian center */
-.theme-swatch[data-theme-set="cc-padres"] .swatch-preview {
-    background:
-        radial-gradient(ellipse 75% 65% at 5%  0%,   rgba(0,181,184,0.75) 0%, transparent 55%),
-        radial-gradient(ellipse 65% 55% at 95% 100%, rgba(252,161,32,0.70) 0%, transparent 55%),
-        radial-gradient(ellipse 55% 45% at 50% 55%,  rgba(200,43,79,0.40) 0%, transparent 60%),
-        #0c0e13;
-}
-.theme-swatch[data-theme-set="cc-padres"] .swatch-preview::after {
-    background: linear-gradient(90deg, #00B5B8 0%, #C82B4F 50%, #FCA120 100%);
-    height: 5px;
-}
-
-/* Texas Rangers — cochineal earth rising, cream sky above (red lifted for 4-col visibility) */
-.theme-swatch[data-theme-set="cc-rangers"] .swatch-preview {
-    background: linear-gradient(180deg, rgba(245,245,220,0.06) 0%, #1a0507 20%, rgba(157,32,36,0.42) 100%);
-}
-.theme-swatch[data-theme-set="cc-rangers"] .swatch-preview::after {
-    background: linear-gradient(90deg, #C23035 0%, rgba(245,245,220,0.65) 100%);
-    height: 5px;
-}
-
-/* Savannah Bananas — actual logo on near-black */
-.theme-swatch[data-theme-set="cc-bananas"] .swatch-preview {
-    background: #191600;
-}
-.theme-swatch[data-theme-set="cc-bananas"] .swatch-preview::after {
-    background: #FFE033;
-    height: 5px;
-}
-
-/* Montreal Expos — actual logo on deep navy */
-.theme-swatch[data-theme-set="retro-expos"] .swatch-preview {
-    background: #04071e;
-}
-.theme-swatch[data-theme-set="retro-expos"] .swatch-preview::after {
-    background: linear-gradient(90deg, #CE1126 0%, #003087 50%, #FFFFFF 100%);
-    height: 5px;
-}
-.theme-swatch[data-theme-set="retro-expos"] .swatch-preview img {
-    mix-blend-mode: lighten;
-}
+/* Per-team swatch — only the live tribute remains (D-047 S1/S3a: retired-theme swatch CSS removed) */
+.theme-swatch[data-theme-set="nl-monarchs"] .swatch-abbr { color: #B41428; }
 
 /* Kansas City Monarchs — classic red/cream on near-black */
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview {
@@ -3860,22 +3600,6 @@ a:focus:not(:focus-visible),
 .theme-swatch[data-theme-set="nl-monarchs"] .swatch-preview::after {
     background: linear-gradient(90deg, #B41428 0%, #f5ece0 50%, #B41428 100%);
     height: 5px;
-}
-
-/* Rocket City Trash Pandas — actual mascot logo on near-void */
-.theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview {
-    background: #02030e;
-}
-.theme-swatch[data-theme-set="aa-trash-pandas"] .swatch-preview::after {
-    background: linear-gradient(90deg, #002F6C 0%, #E86830 100%);
-    height: 5px;
-}
-
-/* Trash Pandas logo has white background — pad it for dark surface display */
-[data-theme="aa-trash-pandas"] .brand-logo-img {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 3px;
-    box-sizing: border-box;
 }
 
 /* Light theme needs a visible inset border so it reads against a dark drawer */
@@ -3897,7 +3621,6 @@ a:focus:not(:focus-visible),
 @media (max-width: 480px) {
     .settings-panel-drawer { width: 100vw; }
 }
-
 
 /* ── F5: Add-to-Home-Screen strip ─────────────────────────────
    position: fixed is intentional (floating prompt over content,
@@ -4168,7 +3891,6 @@ a:focus:not(:focus-visible),
 .md-an-tag--good { color: var(--color-win); background: var(--color-win-subtle, color-mix(in srgb, var(--color-win) 14%, transparent)); }
 .md-an-tag--bad { color: var(--color-loss); background: var(--color-loss-subtle, color-mix(in srgb, var(--color-loss) 14%, transparent)); }
 @media (max-width: 560px) { .md-analysis { grid-template-columns: 1fr; } }
-
 
 /* ── Nav categorization (D-022) — grouped sub-nav labels, menu section headers, mobile More ── */
 .sub-nav-group {
