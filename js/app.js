@@ -1407,7 +1407,8 @@ function _renderSportLanding(sport) {
         </div>
         <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
-    if (sport === 'mlb' && typeof _loadMLBLandingData === 'function') _loadMLBLandingData();
+    if (sport === 'mlb') { if (typeof _loadMLBLandingData === 'function') _loadMLBLandingData(); }
+    else if ((sport === 'nfl' || sport === 'ncaaf') && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
 }
 
 // Sport-landing enrichment (mini-dashboard) — reuses the shared Scorebug for
@@ -1468,6 +1469,34 @@ function _mlbLandingLeaders() {
             <span class="sl-leader-name">${_escHtml(nm)}</span>
             <span class="sl-leader-team">${_escHtml(abbr)}</span></button>`;
     }).join('');
+}
+
+// NFL / NCAAF landing enrichment — a Stat Leaders teaser from the sport's stats
+// API (last-completed season in offseason). The Today's-Games strip populates
+// in-season via the shared Scorebug football normalizers (added when they open).
+async function _loadFootballLandingData(sport) {
+    const host = document.getElementById('slData');
+    if (!host) return;
+    const statsPath = sport === 'ncaaf' ? '/api/ncaafstats' : '/api/nflstats';
+    let data = null;
+    try { const r = await fetch(statsPath); if (r.ok) data = await r.json(); } catch (_) {}
+    const cats = (data && data.categories) || [];
+    if (!cats.length || !host.isConnected) return;
+    const tiles = cats.slice(0, 4).map(cat => {
+        const l = (cat.leaders || [])[0];
+        if (!l || l.value == null) return '';
+        const clk = (sport === 'ncaaf' && l.id)
+            ? ` onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')"`
+            : ` onclick="navigateTo('${sport}-leaders')"`;
+        return `<button class="sl-leader"${clk}>
+            <span class="sl-leader-val">${_escHtml(String(l.value))}<span class="sl-leader-unit">${_escHtml(cat.unit || '')}</span></span>
+            <span class="sl-leader-name">${_escHtml(l.name || '')}</span>
+            <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
+    }).filter(Boolean).join('');
+    if (!tiles || !host.isConnected) return;
+    host.innerHTML = `<section class="sl-section">
+        <div class="sl-section-hdr"><span class="eyebrow">Stat Leaders</span><button class="sl-section-link" onclick="navigateTo('${sport}-leaders')">Full leaderboards →</button></div>
+        <div class="sl-leaders">${tiles}</div></section>`;
 }
 
 if (typeof window !== 'undefined') {
