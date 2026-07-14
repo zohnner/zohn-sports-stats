@@ -1698,8 +1698,8 @@ main {
     50%       { opacity: 0.35; transform: scale(0.65); }
 }
 .hgc-pill--sched {
-    background: var(--accent-subtle);
-    color: var(--accent);
+    background: var(--bg-subtle);
+    color: var(--text-muted);
 }
 
 /* Live inline state (D-046 P1) — base diamond + outs + count.
@@ -1827,8 +1827,8 @@ main {
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent);
-    background: var(--accent-subtle);
+    color: var(--text-muted);
+    background: var(--bg-interactive);
     padding: 0.15rem 0.5rem;
     border-radius: var(--radius-full);
 }
@@ -1947,7 +1947,7 @@ main {
     border-radius: var(--radius-full);
 }
 .rail-tab:hover { color: var(--text-secondary); }
-.rail-tab.active { color: var(--accent); background: var(--accent-subtle); }
+.rail-tab.active { color: var(--color-chip); background: var(--color-chip-bg); }
 .rail-panel {
     display: flex;
     flex-direction: column;
@@ -3202,9 +3202,9 @@ a:focus:not(:focus-visible),
     color: var(--text-secondary);
 }
 .home-filter-pill.active {
-    background: var(--accent-subtle);
-    border-color: var(--accent-border);
-    color: var(--accent);
+    background: var(--color-chip-bg);
+    border-color: var(--color-chip-border);
+    color: var(--color-chip);
 }
 .home-filter-pill--live.active {
     background: var(--color-live-subtle);
@@ -3964,7 +3964,7 @@ body.view-home .search-global-btn { display: none; }
 /* ── Seasonal moment band (D-040 1a) — slim, above Today's Games ── */
 .home-moment { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1.1rem; }
 .hm-row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.5rem 0.85rem; }
-.hm-kicker { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.hm-kicker { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
 .hm-text { color: var(--text-secondary); font-size: 0.82rem; }
 .hm-chip { padding: 0.28rem 0.7rem; border: 1px solid var(--border-mid); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: color 130ms ease-out, border-color 130ms ease-out; }
 .hm-chip:hover { color: var(--text-primary); border-color: var(--border-strong); }

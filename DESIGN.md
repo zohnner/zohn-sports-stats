@@ -22,7 +22,7 @@ Orange-gold (`--accent #ff8100`) on deep navy, Barlow numerals, minimal chrome �
 
 SportStrata reads as *a broadcast graphics package meets a trading terminal* — live, precise, quantitative; one visual voice regardless of sport. **The cohesion test:** a scorebug screenshot from any sport (MLB grid card, NFL ticker, NCAAF row) should be indistinguishable by sport except by its content — same anatomy, type, state language, accent logic. These never vary by sport or theme:
 
-1. **State language.** live = `--color-live` + pulse + a LIVE badge; final = muted/receded; upcoming = accent scheduled pill. Identical vocabulary in ticker, grid, hero, and landings.
+1. **State language.** live = `--color-live` + pulse + a LIVE badge; final = muted/receded; upcoming = **neutral** scheduled pill (`--bg-subtle`/`--text-muted`, distinguished by its time/"Scheduled" label). Identical vocabulary in ticker, grid, hero, and landings. *(D-047 S3c amended this from "accent scheduled pill" — that conflicted with invariant #3, "orange = brand only"; the owner-approved orange re-scope resolves it in favor of #3.)*
 2. **Numeric voice.** live scores render in `--font-mono`; stat values in `--font-display` + `tabular-nums`. Numerals never fall back to the body face.
 3. **Brand orange = brand only.** logo/wordmark, primary CTA, active nav. Every other job it drifted into (scheduled pills, eyebrows, section titles, filters) moves to semantic tokens (S3).
 4. **Eyebrow labels.** one `.eyebrow` utility, one recipe, everywhere (S4).
