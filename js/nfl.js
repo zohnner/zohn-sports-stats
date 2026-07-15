@@ -1239,64 +1239,73 @@ const _NFL_DIVISIONS = {
 // and NHL/NBA can reuse it; team color drives accents via the --team custom prop.
 function _renderTeamPage(m) {
     const esc = _escHtml;
-    const chip = (txt, isTeam) => txt ? `<span class="team-chip${isTeam ? ' team-chip--team' : ''}">${esc(txt)}</span>` : '';
+    const color = m.teamColor || 'var(--accent)';
+    const logo = m.logo;
+    const initials = s => (s || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
 
-    const facts = (m.facts || []).map(f =>
-        `<div class="team-fact"><div class="team-fact__label">${esc(f.label)}</div><div class="team-fact__value">${esc(String(f.value))}</div></div>`
-    ).join('');
+    // Hero — mirrors MLB _mlbTeamHeader: chipped avatar + bio-grid facts.
+    const skip = new Set(['Division', 'Conference']); // shown in the meta line already
+    const factItems = [];
+    if (m.record) factItems.push(`<div class="player-bio-item"><span class="bio-label">Record</span><span class="bio-value" style="font-weight:800">${esc(m.record)}</span></div>`);
+    (m.facts || []).forEach(f => { if (skip.has(f.label)) return; factItems.push(`<div class="player-bio-item"><span class="bio-label">${esc(f.label)}</span><span class="bio-value">${esc(String(f.value))}</span></div>`); });
+    const factGrid = factItems.length ? `<div class="player-bio-grid" style="margin-top:0.75rem">${factItems.join('')}</div>` : '';
+
+    const header = `
+        <div class="player-detail-header" style="background:radial-gradient(ellipse at top left,${color}1a 0%,rgba(15,23,42,0.85) 55%);border-top:3px solid ${color}88">
+            <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
+            <div class="player-hero">
+                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${color}cc,${color}55);color:#fff;font-size:1.5rem;font-weight:800">
+                    ${logo ? `<img class="player-headshot player-headshot--detail" src="${esc(logo)}" alt="${esc(m.name)}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : esc(m.abbr || '?')}
+                </div>
+                <div class="player-hero-info">
+                    <div class="player-hero-top">
+                        <h1 class="player-detail-name">${esc(m.name)}</h1>
+                        ${m.abbr ? `<span class="player-hero-pos">${esc(m.abbr)}</span>` : ''}
+                    </div>
+                    ${m.division ? `<p class="player-detail-meta" style="color:var(--color-text-secondary)">${esc(m.division)}</p>` : ''}
+                    ${m.seasonLabel ? `<p class="player-detail-meta" style="color:var(--color-text-muted)">${esc(m.seasonLabel)}</p>` : ''}
+                    ${factGrid}
+                </div>
+            </div>
+        </div>`;
 
     const assets = (m.assets || []).map(a =>
         `<button class="team-asset" style="--pc:${a.posColor}" onclick="navigateTo('${m.playerPrefix}${a.id}')">
-            <div class="team-asset__av">${a.headshot ? `<img src="${a.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+            <div class="team-asset__av">${a.headshot ? `<img src="${esc(a.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
             <div class="team-asset__name">${esc(a.name)}</div>
             <div class="team-asset__meta">${esc(a.pos)}${a.number ? ' · #' + esc(String(a.number)) : ''}</div>
             ${a.adp ? `<div class="team-asset__adp">#${esc(String(a.adp))} ADP</div>` : ''}
             ${a.injury ? `<div class="team-asset__inj">${esc(a.injury)}</div>` : ''}
         </button>`
     ).join('');
+    const assetsCard = assets ? `<div class="stats-card" style="grid-column:1/-1;--team:${color}"><h3 class="detail-section-title">${esc(m.assetsTitle || 'Top Fantasy Assets')} <span class="team-section__count">${esc(m.assetsCountLabel || 'by ADP')}</span></h3><div class="team-assets">${assets}</div></div>` : '';
 
     const groups = (m.groups || []).map(grp => {
         if (!grp.players.length) return '';
         const rows = grp.players.map(p =>
-            `<button class="team-roster-row" onclick="navigateTo('${m.playerPrefix}${p.id}')">
-                <div class="team-roster-av">${p.headshot ? `<img src="${p.headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
-                <span class="team-roster-name">${esc(p.name)}</span>
-                ${p.starter ? '<span class="team-roster-star" title="Projected starter">★</span>' : ''}
-                ${p.injury ? `<span class="team-roster-inj" title="${esc(p.injury)}">${esc(p.injury)}</span>` : ''}
-                <span class="team-roster-pos">${esc(p.pos)}${p.number ? ' · #' + esc(String(p.number)) : ''}</span>
-            </button>`
-        ).join('');
-        return `<div class="team-roster-group">
-            <h4 class="team-roster-head">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h4>
-            <div class="team-roster-grid">${rows}</div>
-        </div>`;
-    }).join('');
-
-    return `<div class="team-page" style="--team:${m.teamColor || 'var(--accent)'}">
-        <div class="team-hero">
-            <div class="team-hero__top">
-                <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
-                ${m.record ? `<span class="team-hero__rec">${esc(m.record)}</span>` : ''}
-            </div>
-            <div class="team-hero__body">
-                <img class="team-hero__logo" src="${m.logo}" alt="${esc(m.name)}" loading="lazy" data-hide-on-error>
-                <div class="team-hero__id">
-                    <h1 class="team-hero__name">${esc(m.name)}</h1>
-                    <div class="team-chips">${chip(m.abbr, true)}${chip(m.division)}</div>
-                    ${m.seasonLabel ? `<div class="team-hero__meta">${esc(m.seasonLabel)}</div>` : ''}
+            `<div class="roster-row" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('${m.playerPrefix}${p.id}')" onkeydown="if(event.key==='Enter')this.click()">
+                <div class="roster-avatar" style="background:linear-gradient(135deg,${color}cc,${color}44);position:relative;overflow:hidden">
+                    ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
+                    <span style="position:relative">${esc(initials(p.name))}</span>
                 </div>
-            </div>
-        </div>
-        ${facts ? `<div class="team-facts">${facts}</div>` : ''}
-        ${assets ? `<section class="team-section"><h3 class="team-section__title">${esc(m.assetsTitle || 'Top Fantasy Assets')} <span class="team-section__count">${esc(m.assetsCountLabel || 'by ADP')}</span></h3><div class="team-assets">${assets}</div></section>` : ''}
-        ${groups ? `<section class="team-section"><h3 class="team-section__title">Roster</h3>${groups}</section>` : (m.rosterEmpty ? `<div class="team-empty">${esc(m.rosterEmpty)}</div>` : '')}
-        ${m.scheduleHtml || ''}
-    </div>`;
+                <div class="roster-info">
+                    <span class="roster-name">${esc(p.name)}${p.starter ? ` <span style="color:${color}" title="Projected starter">★</span>` : ''}${p.injury ? ` <span class="roster-il-badge">${esc(p.injury)}</span>` : ''}</span>
+                    <span class="roster-meta">${esc(p.pos)}${p.number ? ' · #' + esc(String(p.number)) : ''}</span>
+                </div>
+            </div>`
+        ).join('');
+        return `<h3 class="detail-section-title" style="font-size:0.9rem;margin-top:1.1rem">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h3><div class="roster-list">${rows}</div>`;
+    }).join('');
+    const rosterCard = groups
+        ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2>${groups}</div>`
+        : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
+
+    return `${header}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
 }
 
 function _renderNFLTeamDetail(abbr) {
     const grid = document.getElementById('playersGrid');
-    grid.className = '';
+    grid.className = 'player-detail-container';
     grid.style.cssText = '';
 
     const team = (AppState.nflTeams || []).find(t => t.abbr === abbr)
@@ -1342,8 +1351,8 @@ function _renderNFLTeamDetail(abbr) {
     }
 
     const division = _NFL_DIVISIONS[abbr] || '';
-    const scheduleHtml = `<section class="team-section">
-        <h3 class="team-section__title">Schedule</h3>
+    const scheduleHtml = `<section class="stats-card" style="grid-column:1/-1">
+        <h3 class="detail-section-title">Schedule</h3>
         ${nextGame
             ? `<div class="team-next-card">
                  <span class="team-next-card__label">Next game</span>

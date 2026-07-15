@@ -575,12 +575,12 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
         const ot = opp.team || {};
         let dateStr = '';
         try { dateStr = new Date(upcoming.ev.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
-        scheduleHtml = `<section class="team-section"><h3 class="team-section__title">Schedule</h3>
+        scheduleHtml = `<section class="stats-card" style="grid-column:1/-1"><h3 class="detail-section-title">Schedule</h3>
             <div class="team-next-card"><span class="team-next-card__label">Next game</span>
             <span class="team-next-card__matchup">${home ? 'vs' : '@'} ${(ot.logos && ot.logos[0]) ? `<img src="${_escHtml(ot.logos[0].href)}" alt="" loading="lazy" data-hide-on-error>` : ''}<strong>${_escHtml(ot.abbreviation || ot.displayName || 'TBD')}</strong></span>
             ${dateStr ? `<span class="team-next-card__date">${_escHtml(dateStr)}</span>` : ''}</div></section>`;
     } else {
-        scheduleHtml = `<section class="team-section"><h3 class="team-section__title">Schedule</h3><div class="team-empty">The ${_ncaaf.season} schedule appears here once released.</div></section>`;
+        scheduleHtml = `<section class="stats-card" style="grid-column:1/-1"><h3 class="detail-section-title">Schedule</h3><div class="team-empty">The ${_ncaaf.season} schedule appears here once released.</div></section>`;
     }
 
     const model = {
@@ -598,6 +598,7 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
         scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
     };
 
+    grid.className = 'player-detail-container';
     grid.innerHTML = (typeof _renderTeamPage === 'function')
         ? _renderTeamPage(model)
         : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
