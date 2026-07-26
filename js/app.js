@@ -1659,6 +1659,7 @@ if (typeof window !== 'undefined') {
     window.addEventListener('appinstalled', () => {
         try { localStorage.setItem(DONE_KEY, '1'); } catch (_) {}
         document.querySelector('.a2hs-strip')?.remove();
+        document.body.classList.remove('a2hs-open');
     });
 
     window.addEventListener('beforeinstallprompt', e => {
@@ -1676,6 +1677,7 @@ if (typeof window !== 'undefined') {
             <button class="a2hs-dismiss" aria-label="Dismiss install prompt">\u00d7</button>`;
         const done = () => {
             strip.remove();
+            document.body.classList.remove('a2hs-open');
             try { localStorage.setItem(DONE_KEY, '1'); } catch (_) {}
         };
         strip.querySelector('.a2hs-install').addEventListener('click', async () => {
@@ -1684,6 +1686,7 @@ if (typeof window !== 'undefined') {
         });
         strip.querySelector('.a2hs-dismiss').addEventListener('click', done);
         document.body.appendChild(strip);
+        document.body.classList.add('a2hs-open');
         Logger.info('A2HS prompt shown', undefined, 'APP');
     });
 })();
@@ -1718,9 +1721,9 @@ async function _renderHomeMoment() {
     const draftRow = moments.includes('draft') ? `
         <div class="hm-row">
             <span class="hm-kicker">NFL Draft Season</span>
-            <span class="hm-text">Build your board before your league does.</span>
+            <span class="hm-text">Mock draft in 60 seconds — no login. Build your board before your league does.</span>
+            <button class="hm-chip hm-chip--primary" onclick="_hmGo('nfl-mock')">Mock Draft →</button>
             <button class="hm-chip" onclick="_hmGo('nfl-draftkit')">Draft Kit →</button>
-            <button class="hm-chip" onclick="_hmGo('nfl-mock')">Mock Draft →</button>
         </div>` : '';
 
     host.hidden = false;

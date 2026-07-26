@@ -396,6 +396,7 @@ function _mdRenderDraft() {
               <input id="mdSearch" class="md-search" placeholder="Search players…" autocomplete="off">
               <div class="md-pos-filters">${['ALL',..._MD_POS].map(p=>`<button class="md-pos-btn ${p==='ALL'?'md-pos-btn--on':''}" data-pos="${p}">${p}</button>`).join('')}</div>
             </div>
+            <div class="md-legend"><span><b>%</b> chance still on the board at your next pick</span><span><b>VORP</b> projected points over replacement</span></div>
             <div class="md-list" id="mdList">${_mdListHtml(top, surv)}</div>`}
           </div>
           <aside class="md-roster">
