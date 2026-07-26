@@ -314,9 +314,9 @@
    ─────────────────────────────────────────────────────────── */
 [data-theme="light"] {
     /* Backgrounds */
-    --bg-base:              #f0f4f9;
+    --bg-base:              #f5f7fa;
     --bg-surface:           #ffffff;
-    --bg-raised:            #f8fafc;
+    --bg-raised:            #edf1f6;
     --bg-card:              rgba(255, 255, 255, 1.0);
     --bg-card-hover:        rgba(248, 250, 252, 1.0);
     --bg-overlay:           rgba(248, 250, 252, 0.97);
@@ -332,10 +332,10 @@
     --border-accent-hov:    rgba(217, 106, 0, 0.58);
 
     /* Text */
-    --text-primary:         #0f172a;
-    --text-secondary:       #334155;
-    --text-muted:           #64748b;
-    --text-subtle:          #64748b; /* raised from #94a3b8 — matches --text-muted for AA on white */
+    --text-primary:         #14181d;
+    --text-secondary:       #313944;
+    --text-muted:           #5e6978;
+    --text-subtle:          #5e6978; /* AA on white */
     --text-disabled:        #cbd5e1;
 
     /* Text on accent backgrounds — white on #d96a00 clears AA (~4.7:1) */
@@ -363,15 +363,30 @@
     --chart-tooltip-bg:     rgba(255, 255, 255, 0.98);
     --chart-tooltip-border: rgba(0, 0, 0, 0.10);
 
+    /* Semantic — accessible on light (>= 4.5:1 on #f5f7fa); D-048 P7 */
+    --color-win:            #0a7c4e;
+    --color-loss:           #c4272b;
+    --color-live:           #c7005b;
+    --color-warn:           #8a5e00;
+    --color-info:           #1667c7;
+    --color-error:          #c4272b;
+    --shadow-live:          0 0 0 1px rgba(199,0,91,0.40);
+    /* Chart categorical — darkened for white (D-048 P7); --chart-focal inherits --accent */
+    --chart-1:              #2563eb;
+    --chart-2:              #7c3aed;
+    --chart-3:              #0d9488;
+    --chart-4:              #db2777;
+    --chart-5:              #4d7c0f;
+
     /* Semantic tints — light theme (slightly higher opacity for light-bg readability) */
-    --color-win-subtle:       rgba(16,185,129,0.10);
-    --color-win-border:       rgba(16,185,129,0.28);
-    --color-loss-subtle:      rgba(239,68,68,0.08);
-    --color-loss-border:      rgba(239,68,68,0.25);
-    --color-error-subtle:     rgba(239,68,68,0.06);
-    --color-error-border:     rgba(239,68,68,0.20);
-    --color-live-subtle:      rgba(217,119,6,0.10);
-    --color-live-border:      rgba(217,119,6,0.28);
+    --color-win-subtle:       rgba(10,124,78,0.12);
+    --color-win-border:       rgba(10,124,78,0.30);
+    --color-loss-subtle:      rgba(196,39,43,0.08);
+    --color-loss-border:      rgba(196,39,43,0.25);
+    --color-error-subtle:     rgba(196,39,43,0.06);
+    --color-error-border:     rgba(196,39,43,0.20);
+    --color-live-subtle:      rgba(199,0,91,0.10);
+    --color-live-border:      rgba(199,0,91,0.28);
     --color-pts-subtle:       rgba(217,119,6,0.08);
     --color-pts-border:       rgba(217,119,6,0.22);
     --color-reb-subtle:       rgba(16,185,129,0.08);
