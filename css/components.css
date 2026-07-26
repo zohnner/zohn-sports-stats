@@ -1973,6 +1973,17 @@
     overflow: hidden;
 }
 
+/* Team-logo puck (D-047 S5): a team logo on its own team-color gradient can sit
+   low-contrast (navy-on-navy, crimson-on-crimson). Give the contain-fitted logo img a
+   light backing clipped to its padded content box, so a thin team-color ring still shows
+   and the mark reads cleanly. Player headshots use object-fit:cover (no inline "contain"),
+   so this never touches face photos. */
+.player-detail-avatar img[style*="contain"] {
+    background: rgba(255, 255, 255, 0.92);
+    background-clip: content-box;
+    border-radius: 50%;
+}
+
 /* NFL avatar gradients — dedup of inline styles (N-5 phase 1). Color via --pc. */
 .nfl-pos-grad {
     background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 80%, transparent), color-mix(in srgb, var(--pc) 33%, transparent));
