@@ -193,7 +193,7 @@ class StatsCharts {
                         'rgba(167,139,250,0.55)',
                         'rgba(251,146, 60,0.55)',
                     ],
-                    borderColor: ['#f472b6', '#a78bfa', '#fb923c'],
+                    borderColor: ['#f472b6', '#a78bfa', '#ff7a00'],
                     borderWidth: 1.5,
                     borderRadius: 6,
                     borderSkipped: false,
@@ -255,7 +255,7 @@ class StatsCharts {
      */
     // Generic radar for pre-normalized (0–100) values with custom axes.
     // Used by NCAAF "% of FBS leader" profile — no hardcoded keys/maxes.
-    static radarProfile(canvasId, labels, values, color = '#c8452b') {
+    static radarProfile(canvasId, labels, values, color = '#ff7a00') {
         if (!window.Chart || !labels || labels.length < 3) return null;
         const t = this.#getTheme();
         const fill = color.startsWith('#') ? color + '26' : color.replace(/[\d.]+\)$/, '0.15)');
@@ -409,7 +409,7 @@ class StatsCharts {
      * @param {string} color  — primary player/team color
      * @returns {Chart|null}
      */
-    static mlbGameTrend(canvasId, logs, group, color = '#6366f1') {
+    static mlbGameTrend(canvasId, logs, group, color = '#ff7a00') {
         if (!logs || logs.length === 0) return null;
         const t = this.#getTheme();
 
@@ -425,7 +425,7 @@ class StatsCharts {
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
 
-        const accent2 = '#34d399';
+        const accent2 = '#4da3ff';
         const accent3 = '#f87171';
 
         let datasets;

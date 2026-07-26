@@ -50,6 +50,19 @@
     --color-warn:         #f5b301;
     --color-info:         #4da3ff;
 
+    /* ── Chart chrome + categorical (D-048 P4) ── */
+    --chart-grid:            rgba(255,255,255,0.06);
+    --chart-tick:            var(--text-muted);
+    --chart-tooltip-bg:      rgba(20,24,29,0.95);
+    --chart-tooltip-border:  rgba(255,255,255,0.10);
+    /* Categorical series — orange is the FOCAL series only; rotate the other five. */
+    --chart-focal:           var(--accent);
+    --chart-1:               #4da3ff;
+    --chart-2:               #a78bfa;
+    --chart-3:               #2dd4bf;
+    --chart-4:               #f472b6;
+    --chart-5:               #a3e635;
+
     /* ── Conference ── */
     --color-east:         #3b82f6;
     --color-west:         #f43f5e;
