@@ -21,9 +21,9 @@
     --border-default:     rgba(255, 255, 255, 0.07);
     --border-mid:         rgba(255, 255, 255, 0.11);
     --border-strong:      rgba(255, 255, 255, 0.18);
-    --border-accent:      rgba(255, 129, 0, 0.32);
+    --border-accent:      rgba(255, 122, 0, 0.32);
     --border-subtle:      var(--border-default);  /* N-10: referenced across nfl/css but never defined → border shorthands were voided (invisible separators). Alias to the lightest defined border; resolves lazily per theme. */
-    --border-accent-hov:  rgba(255, 129, 0, 0.55);
+    --border-accent-hov:  rgba(255, 122, 0, 0.55);
 
     /* ── Text ── */
     --text-primary:       #f5f7fa;
@@ -33,12 +33,13 @@
     --text-disabled:      #3a414b;
 
     /* ── Brand (orange-gold) ── */
-    --accent:             #ff8100;
-    --accent-light:       #ffd200;
+    --accent:             #ff7a00;
+    --accent-light:       #ffb347;
     --accent-dark:        #d96a00;
-    --accent-subtle:      rgba(255, 129, 0, 0.10);
-    --accent-border:      rgba(255, 129, 0, 0.28);
-    --accent-glow:        rgba(255, 129, 0, 0.22);
+    --accent-subtle:      rgba(255, 122, 0, 0.10);
+    --accent-border:      rgba(255, 122, 0, 0.28);
+    --accent-glow:        rgba(255, 122, 0, 0.22);
+    --brand-ink:          #b34700; /* D-048 P2: orange for text/icons on LIGHT surfaces (used by light theme / P7) */
 
     /* ── Semantic ── */
     --color-win:          #22d3a0;
