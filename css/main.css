@@ -4053,3 +4053,26 @@ body.view-home .search-global-btn { display: none; }
 .sl-card-desc { font-size: 0.77rem; color: var(--text-muted); }
 .sl-card-go { margin-left: auto; color: var(--text-subtle); font-size: 1.1rem; flex-shrink: 0; transition: transform 150ms ease-out, color 150ms ease-out; }
 .sl-card:hover .sl-card-go { transform: translateX(2px); color: var(--sport-accent, var(--accent)); }
+
+/* Skip-to-content link (F7): visually hidden until focused, then a pill top-left.
+   New utility — the codebase had no sr-only/visually-hidden class to reuse. */
+.skip-link {
+    position: absolute;
+    top: 0;
+    left: -9999px;
+    z-index: 9999;
+    padding: 0.55rem 0.9rem;
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-decoration: none;
+}
+.skip-link:focus {
+    left: 8px;
+    top: 8px;
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}

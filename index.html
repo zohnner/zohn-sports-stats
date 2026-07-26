@@ -67,6 +67,7 @@
 <body>
 
     <header>
+        <a class="skip-link" href="#main" onclick="event.preventDefault();var m=document.getElementById('main');if(m){m.focus();m.scrollIntoView();}">Skip to main content</a>
         <div class="header-inner">
             <button class="brand" onclick="navigateTo('home')" aria-label="SportStrata home">
                 <img class="brand-logo-img" src="assets/icon-64.png" width="64" height="64" alt="SportStrata">
@@ -261,7 +262,7 @@
     <!-- Back to top button -->
     <button class="back-to-top" id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
-    <main>
+    <main id="main" tabindex="-1">
         <!-- Search + filters — shown only on Players view -->
         <div class="search-container" id="searchBar">
             <div class="search-input-wrap">

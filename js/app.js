@@ -1542,6 +1542,12 @@ function _applyTheme(theme) {
         logoEl.src = ccLogo || 'assets/icon-64.png';
         logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
+    // F9: keep the browser UI tint in sync with the active theme background token.
+    const _tc = document.querySelector('meta[name="theme-color"]');
+    if (_tc) {
+        const _bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim();
+        if (_bg) _tc.setAttribute('content', _bg);
+    }
 }
 
 function openSettingsPanel() {
