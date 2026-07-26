@@ -42,13 +42,13 @@
     --brand-ink:          #b34700; /* D-048 P2: orange for text/icons on LIGHT surfaces (used by light theme / P7) */
 
     /* ── Semantic ── */
-    --color-win:          #22d3a0;
-    --color-loss:         #f26b6b;
-    --color-live:         #f59e0b;
-    --shadow-live:        0 0 0 1px rgba(245,158,11,0.45);
-    --color-error:        #ef4444;
-    --color-warn:         #f59e0b;
-    --color-info:         #38bdf8;
+    --color-win:          #16c784;
+    --color-loss:         #e5484d;
+    --color-live:         #ff006e;
+    --shadow-live:        0 0 0 1px rgba(255,0,110,0.45);
+    --color-error:        #e5484d;
+    --color-warn:         #f5b301;
+    --color-info:         #4da3ff;
 
     /* ── Conference ── */
     --color-east:         #3b82f6;
@@ -68,14 +68,14 @@
        Tinted backgrounds and borders derived from semantic colors.
        Rule: never write raw rgba() variations of semantic colors in component files —
        use these tokens instead. Component files must not compute opacity. ── */
-    --color-win-subtle:       rgba(34,211,160,0.10);
-    --color-win-border:       rgba(34,211,160,0.25);
-    --color-loss-subtle:      rgba(242,107,107,0.08);
-    --color-loss-border:      rgba(242,107,107,0.25);
-    --color-error-subtle:     rgba(239,68,68,0.05);
-    --color-error-border:     rgba(239,68,68,0.20);
-    --color-live-subtle:      rgba(245,158,11,0.12);
-    --color-live-border:      rgba(245,158,11,0.30);
+    --color-win-subtle:       rgba(22,199,132,0.10);
+    --color-win-border:       rgba(22,199,132,0.25);
+    --color-loss-subtle:      rgba(229,72,77,0.08);
+    --color-loss-border:      rgba(229,72,77,0.25);
+    --color-error-subtle:     rgba(229,72,77,0.05);
+    --color-error-border:     rgba(229,72,77,0.20);
+    --color-live-subtle:      rgba(255,0,110,0.12);
+    --color-live-border:      rgba(255,0,110,0.30);
     /* Stat-category tints: use ONLY on elements labeled with that stat type */
     --color-pts-subtle:       rgba(251,191,36,0.08);
     --color-pts-border:       rgba(251,191,36,0.22);
