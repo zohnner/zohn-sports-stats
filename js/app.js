@@ -83,6 +83,11 @@ const _SL_ICON = {
     trophy:    '<path d="M4.5 3h7v2.5a3.5 3.5 0 0 1-7 0V3z"/><path d="M4.5 4H2.6v.8A2.2 2.2 0 0 0 4.8 7M11.5 4h1.9v.8A2.2 2.2 0 0 1 11.2 7M6.5 11h3M5.5 13.5h5"/>',
 };
 
+// Boot renders the home view synchronously (setupNavigation -> _loadFromHash -> loadHome), so
+// any module state loadHome touches must be initialized before this call, or it hits the
+// const/let temporal dead zone. _homeNewsCache is read by _renderHomeHeadlines on first paint (F1).
+let _homeNewsCache = null;
+
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
 
@@ -1071,7 +1076,6 @@ function _wireRailTabs() {
     });
 }
 
-let _homeNewsCache = null;
 async function _renderHomeHeadlines() {
     const host = document.getElementById('railHeadlines');
     if (!host) return;
