@@ -1105,3 +1105,13 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Phase 1 shipped (this commit):** variables.css :root dark — bg-base/surface/raised/card/card-hover/overlay → neutral near-black; text-primary/secondary/muted/subtle/disabled → neutral ramp (was navy-tinted). check-themes --strict green (0/0 across dark/light/nl-monarchs). Accent/semantic/stat/NFL/tier tokens unchanged (later phases). Light + nl-monarchs untouched. DESIGN.md navy line amended.
 
 **Supersedes** D-047's "brand = orange on deep navy" and DESIGN.md "no brand refresh to chase." D-047 cohesion machinery (scorebug, token discipline, check-themes gate) retained and reused.
+
+## D-049 — Shareable mock-draft result card (draft-season viral loop)
+
+**Decision (2026-07-26):** Ship a one-tap "Share your draft" card on the mock-draft completion screen to drive new-user acquisition during the Aug fantasy-draft window. Growth-track pick (owner-directed): timed viral loop into league group chats, leaning on the product's no-login wedge. Window closes ~late Sept.
+
+**What ships:** `shareMyDraft()` + `_mdBuildShareCard()` in `js/fantasy.js` render a fixed-hex, theme-invariant card (grade badge, projected finish + value-vs-ADP, position-colored roster, best-value highlight, SPORTSTRATA + "Mock draft in 60s · no login" + domain). `_mdRenderComplete` stashes the computed summary on `_md.summary` so the card reuses it (no duplicated grade/finish/value logic). New reusable `shareCardElement({cardEl,fileName,title,text,btn})` in `js/shareCard.js` generalizes the P3-027 Web Share → download plumbing (spinner/done/toast/error) for any feature card; `shareStatCard` left untouched. `.shc-md-card` layout added to `css/shareCard.css`.
+
+**Why fixed hex:** exported PNG is brand surface — must look identical in any theme (Kael, P3-027). Reuses `_scLoadHtml2Canvas()` + `.shc-stage` + `.shc-spin/.shc-done/.shc-toast`.
+
+**Verify:** node --check (shareCard.js, fantasy.js), check-themes --strict 0/0, check-manifest PASS (no new files), live visual preview of the rendered card, SW v122→v123.

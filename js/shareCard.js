@@ -149,3 +149,58 @@ async function shareStatCard(d) {
 if (typeof window !== 'undefined') {
     window.shareStatCard = shareStatCard;
 }
+
+// ── Reusable: render any card element to a 2x PNG and share/download ──
+// For feature cards that build their own DOM (e.g. the mock-draft result
+// card). Same Web Share -> download fallback + spinner/toast as shareStatCard.
+async function _shcRenderElementBlob(cardEl) {
+    await _scLoadHtml2Canvas();
+    const stage = document.createElement('div');
+    stage.className = 'shc-stage';
+    stage.appendChild(cardEl);
+    document.body.appendChild(stage);
+    try {
+        const canvas = await window.html2canvas(cardEl, { useCORS: true, scale: 2, backgroundColor: _SHC_BG, logging: false });
+        return await new Promise((resolve, reject) =>
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob returned null')), 'image/png'));
+    } finally {
+        stage.remove();
+    }
+}
+
+async function shareCardElement({ cardEl, fileName, title, text, btn }) {
+    if (btn?.dataset.busy) return;
+    const restore = btn ? btn.innerHTML : '';
+    if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.innerHTML = '<span class="shc-spin" aria-hidden="true"></span>'; }
+    try {
+        const blob = await Logger.time('shareCardElement', () => _shcRenderElementBlob(cardEl), 'MLB');
+        const file = new File([blob], fileName, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try { await navigator.share({ files: [file], title, text }); }
+            catch (err) { if (err?.name !== 'AbortError') throw err; }
+        } else {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = url;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            _shcToast('Card saved');
+        }
+        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
+    } catch (err) {
+        Logger.warn('Share card generation failed', err, 'MLB');
+        _shcToast('Couldn’t generate card — try again');
+        if (btn) btn.innerHTML = restore;
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            delete btn.dataset.busy;
+            setTimeout(() => { if (btn.querySelector('.shc-done')) btn.innerHTML = restore; }, 1600);
+        }
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.shareCardElement = shareCardElement;
+}

@@ -90,7 +90,7 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/mlb.js` | All MLB logic: team colors/logos, API calls, all MLB view renderers, `MLB_SEASON`, `MLB_LEADER_CATS`, `_computeBattingRates`, `_computePitchingRates` |
 | `js/liveGame.js` | Live game expanded view (P3-025): `showMLBLiveGame()`, `openLiveGamePanel()`, diff-based linescore polling, pitch zone, box score. Loads after `scorecard.js` |
 | `js/scorecard.js` | Baseball scorecard (P3-022): historical + live modes, 9×9 grid render, html2canvas PNG export |
-| `js/shareCard.js` | Shareable stat cards (P3-027): `shareStatCard()`, offscreen 600×315 card → 2× PNG via html2canvas, Web Share / download. Reuses `_scLoadHtml2Canvas()` from scorecard.js |
+| `js/shareCard.js` | Shareable stat cards (P3-027): `shareStatCard()`, offscreen 600×315 card → 2× PNG via html2canvas, Web Share / download. Reuses `_scLoadHtml2Canvas()` from scorecard.js. **D-049:** reusable `shareCardElement({cardEl,...})` generalizes the render+share plumbing for any feature card (used by the mock-draft result card in `fantasy.js`) |
 | `js/math.min.js` | Vendored math.js (formula evaluation). **Not in the script chain** — lazy-loaded by `statBuilder.js` on Builder open (D-011) |
 | `js/api.js` | BDL API via Worker proxy (`BDL_PROXY_URL`) + `fetchNBAStatsMap()` (NBA.com) + ESPN headshot map. P1-006 resolved 2026-06-09 — key removed from source |
 | `js/navigation.js` | `setupNavigation()`, `navigateTo()`, `renderCurrentView()`, `switchSport()`, `_applySportUI()`, `_loadFromHash()` |

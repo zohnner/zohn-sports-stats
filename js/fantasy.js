@@ -504,6 +504,7 @@ function _mdRenderComplete() {
     // starter check
     const start = _mdStartReq();
     const unfilled = _MD_POS.filter(pos => roster.filter(p=>p.pos===pos).length < (start[pos]||0));
+    _md.summary = { grade, finish, avg, posRank, bestVal, reach, unfilled };
 
     grid.innerHTML = `
       <div class="md-wrap md-complete">
@@ -533,8 +534,9 @@ function _mdRenderComplete() {
           ${_MD_POS.map(pos => { const ps = roster.filter(p=>p.pos===pos); return ps.length?`<div class="md-fr-group"><div class="md-fr-pos" style="color:${_MD_POS_COLOR[pos]}">${pos}</div>${ps.map(p=>`<div class="md-fr-row">${_escFan(p.name)} <span class="md-rl-team">${p.team}</span> <span class="md-row-adp">ADP ${p.adp}</span></div>`).join('')}</div>`:''; }).join('')}
         </div>
         <div class="md-head-actions" style="justify-content:center">
+          <button class="md-btn md-btn--primary" onclick="shareMyDraft(this)">Share your draft</button>
           <button class="md-btn md-btn--ghost" id="mdViewBoard">View full board</button>
-          <button class="md-btn md-btn--primary" onclick="loadMockDraft()">New draft</button>
+          <button class="md-btn md-btn--ghost" onclick="loadMockDraft()">New draft</button>
         </div>
         <div id="mdCompleteBoard"></div>
       </div>`;
@@ -660,3 +662,55 @@ if (typeof window !== 'undefined') {
     window.loadMockDraft = loadMockDraft;
     window.loadDraftKit = loadDraftKit;
 }
+
+// ── Shareable mock-draft result card (viral loop, draft season) ──
+// Reads _md + _md.summary (stashed by _mdRenderComplete). Fixed hex, theme-
+// invariant (Kael P3-027). Rendered by shareCardElement() in shareCard.js.
+function _mdBuildShareCard() {
+    const s = _md.summary || {};
+    const roster = (_md.rosters && _md.rosters[_md.userTeam]) || [];
+    const BG='#0b1526', SURF='#0e1c33', BORDER='#2a3850', TEXT='#f0f4fa', MUTED='#7fa5c8', SUBTLE='#556d8f', ACCENT='#ff8100', ACCENT2='#ffd200', GOOD='#34d399', BAD='#f87171';
+    const ord = n => (n%10===1&&n%100!==11)?'st':(n%10===2&&n%100!==12)?'nd':(n%10===3&&n%100!==13)?'rd':'th';
+    const fmt = `${_md.teams}-team ${_escFan(_md.scoring)}${_md.superflex?' Superflex':''} · Pick ${_md.slot}`;
+    const finishLine = s.finish ? `Projected finish ${s.finish}${ord(s.finish)} of ${_md.teams}` : '';
+    const valLine = (s.avg!=null) ? `${s.avg>=0?'+':''}${s.avg.toFixed(1)} value vs ADP` : '';
+    const rosterHtml = _MD_POS.map(pos => {
+        const ps = roster.filter(p=>p.pos===pos);
+        if (!ps.length) return '';
+        const col = _MD_POS_COLOR[pos]||MUTED;
+        const names = ps.map(p=>`<span style="color:${TEXT}">${_escFan(p.name)}</span> <span style="color:${SUBTLE};font-size:12px">${_escFan(p.team)}</span>`).join(`<span style="color:${BORDER}">  ·  </span>`);
+        return `<div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid ${BORDER};align-items:baseline"><span style="flex:0 0 36px;font-weight:800;font-size:13px;color:${col}">${pos}</span><span style="flex:1;font-size:14px;line-height:1.55">${names}</span></div>`;
+    }).join('');
+    const bv = s.bestVal;
+    const bestLine = bv ? `<span style="color:${ACCENT2};font-weight:800">★ Best value</span> <span style="color:${TEXT}">${_escFan(bv.player.name)}</span> <span style="color:${MUTED}">— pick ${bv.overall} vs ADP ${bv.player.adp}</span>` : '';
+    const card = document.createElement('div');
+    card.className = 'shc-md-card';
+    card.innerHTML = `
+      <div style="padding:26px 28px 18px;background:linear-gradient(135deg,#12243f,${BG})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <div><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:${ACCENT};font-weight:800">My Mock Draft</div><div style="font-size:15px;color:${MUTED};margin-top:6px">${fmt}</div></div>
+          ${s.grade?`<div style="flex:0 0 auto;width:72px;height:72px;border-radius:16px;background:${ACCENT};color:${BG};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800">${_escFan(s.grade)}</div>`:''}
+        </div>
+        ${(finishLine||valLine)?`<div style="margin-top:14px;font-size:15px;color:${TEXT};font-weight:700">${finishLine}${finishLine&&valLine?` <span style="color:${SUBTLE}">·</span> `:''}${valLine?`<span style="color:${s.avg>=0?GOOD:BAD}">${valLine}</span>`:''}</div>`:''}
+      </div>
+      <div style="padding:4px 28px 14px;background:${BG}">${rosterHtml}</div>
+      ${bestLine?`<div style="padding:12px 28px;background:${SURF};font-size:14px;border-top:1px solid ${BORDER}">${bestLine}</div>`:''}
+      <div style="padding:16px 28px;background:${SURF};border-top:1px solid ${BORDER};display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:19px;font-weight:800;color:${TEXT};letter-spacing:.3px">SPORT<span style="color:${ACCENT}">STRATA</span></div><div style="font-size:12px;color:${MUTED};margin-top:3px">Mock draft in 60s · no login</div></div>
+        <div style="font-size:14px;color:${MUTED};font-weight:700">${typeof SITE_DOMAIN!=='undefined'?SITE_DOMAIN:location.hostname}</div>
+      </div>`;
+    return card;
+}
+
+function shareMyDraft(btn) {
+    if (!_md || !_md.summary) return;
+    const g = _md.summary.grade || '';
+    shareCardElement({
+        cardEl: _mdBuildShareCard(),
+        fileName: `sportstrata-mock-draft${g?'-'+g.replace('+','plus'):''}.png`,
+        title: 'My SportStrata mock draft',
+        text: `My ${_md.teams}-team ${_md.scoring} mock draft${g?` — graded ${g}`:''}. Build yours free, no login: ${typeof SITE_DOMAIN!=='undefined'?SITE_DOMAIN:location.hostname}`,
+        btn,
+    });
+}
+if (typeof window !== 'undefined') { window.shareMyDraft = shareMyDraft; }

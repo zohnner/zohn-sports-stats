@@ -162,3 +162,15 @@
 @media (max-width: 768px) {
     .shc-toast { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ── Mock-draft result card (variable height, exported at 2x) ── */
+.shc-md-card {
+    width: 560px;
+    background: #0b1526;
+    border: 1px solid #2a3850;
+    border-radius: 16px;
+    overflow: hidden;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+.shc-md-card * { box-sizing: border-box; }
