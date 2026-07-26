@@ -302,7 +302,7 @@ function _playerHero(player, teamName, stats) {
 
     return `
         <div class="player-detail-header"
-             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
+             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, var(--bg-card) 55%);
                     border-top:3px solid ${colors.primary}88">
             <div style="display:flex;align-items:center;justify-content:space-between">
                 <button onclick="backToPlayers()" class="back-button">← Players</button>

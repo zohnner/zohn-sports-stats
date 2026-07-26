@@ -208,7 +208,7 @@ function _teamHeader(team, colors) {
 
     return `
         <div class="player-detail-header"
-             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, rgba(15,23,42,0.85) 55%);
+             style="background:radial-gradient(ellipse at top left, ${colors.primary}1a 0%, var(--bg-card) 55%);
                     border-top:3px solid ${colors.primary}88">
             <button onclick="backToTeams()" class="back-button">← Back to Teams</button>
             <div class="player-hero">
@@ -424,7 +424,7 @@ function _teamGameDetailHTML(game, playerStats, team, teamId) {
 
         gameHeader = `
             <div class="player-detail-header" style="grid-column:1/-1;
-                background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,rgba(15,23,42,0.85) 55%);
+                background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,var(--bg-card) 55%);
                 border-top:3px solid ${colors.primary}88">
                 <button onclick="showTeamDetail(${teamId})" class="back-button">← ${team.full_name}</button>
                 <div class="player-hero">
