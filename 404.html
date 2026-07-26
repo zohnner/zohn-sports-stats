@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060c18">
+<meta name="robots" content="noindex">
+<title>Page Not Found — SportStrata</title>
+<link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="/assets/icon-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#060c18; --surface:#0c1629; --accent:#ff8100; --text:#e8eef8; --muted:#8b98ad; --border:#1e2b45; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body {
+    background:radial-gradient(ellipse at top, #0c1629 0%, #060c18 60%);
+    color:var(--text); font-family:'Inter',system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1.5rem;
+  }
+  .nf { max-width:520px; width:100%; text-align:center; }
+  .brand { display:inline-flex; align-items:center; gap:.5rem; margin-bottom:2.25rem; text-decoration:none; }
+  .brand img { width:34px; height:34px; }
+  .brand span { font-size:1.15rem; font-weight:900; letter-spacing:-.3px; color:var(--text); }
+  .brand b { color:var(--accent); }
+  .code { font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:6.5rem; line-height:1;
+          background:linear-gradient(180deg,#ffb020,#ff8100 55%,#ff2d00); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  h1 { font-size:1.5rem; font-weight:900; margin:.4rem 0 .6rem; letter-spacing:-.4px; }
+  p { color:var(--muted); font-size:1rem; line-height:1.55; margin-bottom:1.75rem; }
+  .links { display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; }
+  .links a { text-decoration:none; font-weight:700; font-size:.9rem; padding:.6rem 1.05rem; border-radius:10px;
+             border:1px solid var(--border); color:var(--text); background:var(--surface); transition:border-color .15s ease, color .15s ease; }
+  .links a:hover, .links a:focus-visible { border-color:var(--accent); color:var(--accent); outline:none; }
+  .links a.primary { background:var(--accent); color:#1a0f00; border-color:var(--accent); }
+  .links a.primary:hover, .links a.primary:focus-visible { color:#1a0f00; filter:brightness(1.08); }
+</style>
+</head>
+<body>
+  <main class="nf">
+    <a class="brand" href="/"><img src="/assets/icon.svg" alt=""><span>Sport<b>Strata</b></span></a>
+    <div class="code">404</div>
+    <h1>This page isn't on the board.</h1>
+    <p>The team, player, or page you're after may have moved or never existed. Here's the way back in:</p>
+    <div class="links">
+      <a class="primary" href="/">Home</a>
+      <a href="/mlb">MLB</a>
+      <a href="/nfl">NFL</a>
+      <a href="/ncaaf">College Football</a>
+    </div>
+  </main>
+</body>
+</html>
