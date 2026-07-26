@@ -3705,7 +3705,7 @@ async function showMLBTeamDetail(teamId, push = true) {
             <div class="player-detail-avatar" style="background:linear-gradient(135deg,${loadColors.primary}cc,${loadColors.primary}55);margin:0 auto 1.25rem">
                 ${loadLogo ? `<img src="${loadLogo}" style="width:100%;height:100%;object-fit:contain;padding:10px" loading="lazy" data-hide-on-error>` : (team?.abbreviation || '?')}
             </div>
-            <p style="color:var(--color-text-secondary);font-size:1.1rem">Loading roster…</p>
+            ${ssLoader('Loading roster')}
             <div style="max-width:420px;margin:1.25rem auto 0;display:flex;flex-direction:column;gap:0.6rem">
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line"></div>

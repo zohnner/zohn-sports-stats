@@ -120,6 +120,13 @@ if (typeof window !== 'undefined') {
     window.getTeamColors      = getTeamColors;
     window.getAvatarStyle     = getAvatarStyle;
     window._escHtml           = _escHtml;
+    window.ssLoader           = function (label) {
+        var l = label ? _escHtml(label) : 'Loading';
+        return '<div class="ss-loading" role="status" aria-label="' + l + '">' +
+               '<div class="ss-loader" aria-hidden="true"><i></i><i></i><i></i></div>' +
+               (label ? '<span class="ss-loading__label">' + l + '</span>' : '') +
+               '</div>';
+    };
     window._pctColor          = _pctColor;
     window._normName          = _normName;
     window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
