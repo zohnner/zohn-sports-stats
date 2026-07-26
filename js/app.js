@@ -1767,3 +1767,14 @@ async function _renderHomeMoment() {
         if (!draftRow) host.hidden = true;   // absent beats broken on the front door
     }
 }
+
+
+// Boot splash dismiss (D-048): fade the branded splash once the first view has painted.
+(function(){
+    var s = document.getElementById('bootSplash');
+    if (!s) return;
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        s.classList.add('boot-hide');
+        setTimeout(function(){ if (s && s.parentNode) s.parentNode.removeChild(s); }, 500);
+    }); });
+})();

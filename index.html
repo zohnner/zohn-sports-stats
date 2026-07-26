@@ -44,6 +44,25 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <style>
+      /* Boot splash (D-048) — branded loading overlay. Inline + critical so it paints
+         before the deferred script chain; app.js fades it out on first render. */
+      #bootSplash{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:22px;background:#0d1014;transition:opacity .45s ease}
+      html[data-theme="light"] #bootSplash{background:#f5f7fa}
+      #bootSplash.boot-hide{opacity:0;pointer-events:none}
+      #bootSplash .bm{display:flex;flex-direction:column;gap:7px;width:84px}
+      #bootSplash .bm i{height:12px;border-radius:3px;background:#ff7a00;transform-origin:left center;
+        animation:bootbar .9s ease-in-out infinite}
+      #bootSplash .bm i:nth-child(2){width:64%;background:#ffb347;animation-delay:.12s}
+      #bootSplash .bm i:nth-child(3){width:88%;animation-delay:.24s}
+      @keyframes bootbar{0%,100%{transform:scaleX(.28);opacity:.4}50%{transform:scaleX(1);opacity:1}}
+      #bootSplash .bw{font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;font-weight:700;
+        letter-spacing:.02em;font-size:16px;color:#c5cbd3}
+      html[data-theme="light"] #bootSplash .bw{color:#313944}
+      #bootSplash .bw b{color:#ff7a00}
+      @media (prefers-reduced-motion:reduce){#bootSplash .bm i{animation:none;transform:none;opacity:.9}}
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -66,6 +85,11 @@
     </script>
 </head>
 <body>
+    <div id="bootSplash" role="status" aria-label="Loading SportStrata">
+      <div class="bm" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="bw">Sport<b>Strata</b></div>
+    </div>
+    <script>setTimeout(function(){var s=document.getElementById('bootSplash');if(s){s.classList.add('boot-hide');setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},500);}},8000);</script>
 
     <header>
         <a class="skip-link" href="#main" onclick="event.preventDefault();var m=document.getElementById('main');if(m){m.focus();m.scrollIntoView();}">Skip to main content</a>
@@ -296,41 +320,41 @@
             crossorigin="anonymous"></script>
 
     <!-- App scripts — order matters (no bundler, no ES modules) -->
-    <script src="js/config.js"></script>
-    <script src="js/detailFrame.js"></script>
-    <script src="js/errorHandler.js"></script>
-    <script src="js/cache.js"></script>
-    <script src="js/schema.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/glossary.js"></script>
-    <script src="js/players.js"></script>
-    <script src="js/leaderboards.js"></script>
-    <script src="js/teams.js"></script>
-    <script src="js/games.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/playerDetail.js"></script>
-    <script src="js/statBuilder.js"></script>
-    <script src="js/mlb.js"></script>
-    <script src="js/odds.js"></script>
-    <script src="js/scorecard.js"></script>
-    <script src="js/liveGame.js"></script>
-    <script src="js/shareCard.js"></script>
-    <script src="js/nfl.js"></script>
-    <script src="js/nflLiveGame.js"></script>
-    <script src="js/nflStandings.js"></script>
-    <script src="js/fantasy.js"></script>
-    <script src="js/sos.js"></script>
-    <script src="js/nhl.js"></script>
-    <script src="js/ncaaf.js"></script>
-    <script src="js/arcade.js"></script>
-    <script src="js/standings.js"></script>
-    <script src="js/db.js"></script>
-    <script src="js/query.js"></script>
-    <script src="js/search.js"></script>
-    <script src="js/navigation.js"></script>
-    <script src="js/news.js"></script>
-    <script src="js/scorebug.js"></script>
-    <script src="js/app.js"></script>
+    <script defer src="js/config.js"></script>
+    <script defer src="js/detailFrame.js"></script>
+    <script defer src="js/errorHandler.js"></script>
+    <script defer src="js/cache.js"></script>
+    <script defer src="js/schema.js"></script>
+    <script defer src="js/api.js"></script>
+    <script defer src="js/glossary.js"></script>
+    <script defer src="js/players.js"></script>
+    <script defer src="js/leaderboards.js"></script>
+    <script defer src="js/teams.js"></script>
+    <script defer src="js/games.js"></script>
+    <script defer src="js/charts.js"></script>
+    <script defer src="js/playerDetail.js"></script>
+    <script defer src="js/statBuilder.js"></script>
+    <script defer src="js/mlb.js"></script>
+    <script defer src="js/odds.js"></script>
+    <script defer src="js/scorecard.js"></script>
+    <script defer src="js/liveGame.js"></script>
+    <script defer src="js/shareCard.js"></script>
+    <script defer src="js/nfl.js"></script>
+    <script defer src="js/nflLiveGame.js"></script>
+    <script defer src="js/nflStandings.js"></script>
+    <script defer src="js/fantasy.js"></script>
+    <script defer src="js/sos.js"></script>
+    <script defer src="js/nhl.js"></script>
+    <script defer src="js/ncaaf.js"></script>
+    <script defer src="js/arcade.js"></script>
+    <script defer src="js/standings.js"></script>
+    <script defer src="js/db.js"></script>
+    <script defer src="js/query.js"></script>
+    <script defer src="js/search.js"></script>
+    <script defer src="js/navigation.js"></script>
+    <script defer src="js/news.js"></script>
+    <script defer src="js/scorebug.js"></script>
+    <script defer src="js/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
