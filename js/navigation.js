@@ -1187,8 +1187,10 @@ function _updatePageMeta(view) {
     if (descEl) descEl.setAttribute('content', m.desc);
     document.getElementById('ogTitle')?.setAttribute('content', m.title);
     document.getElementById('ogDescription')?.setAttribute('content', m.desc);
-    document.getElementById('ogUrl')?.setAttribute('content', location.href);
-    document.getElementById('canonicalLink')?.setAttribute('href', location.href);
+    const _canonHost = (typeof SITE_DOMAIN !== 'undefined') ? SITE_DOMAIN : location.host;
+    const _canonUrl = `https://${_canonHost}${location.pathname}${location.search}`;
+    document.getElementById('ogUrl')?.setAttribute('content', _canonUrl);
+    document.getElementById('canonicalLink')?.setAttribute('href', _canonUrl);
 }
 
 function debounce(func, timeout = 300) {
