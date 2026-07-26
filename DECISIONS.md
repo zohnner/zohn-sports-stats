@@ -1127,3 +1127,13 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Verify:** node --check (edge fn, navigation.js, index.js); local transform test — all 10 head-injection regexes match the real index.html and inject correctly; SW v124→v125. Live-verify post-deploy: head tags, JSON-LD, snapshot, hydrate.
 
 **Deferred:** NFL/NCAAF game pages (same pattern); client-side path navigation from game cards; per-game OG image. Hash game views still canonicalize to home (F3) — acceptable; the path URL is the indexed/shared one.
+
+## D-051 — Crawlable MLB leaders page (SEO growth)
+
+**Decision (2026-07-26):** Add an edge-rendered `/mlb/leaders` page. "MLB home run leaders", "ERA leaders", "batting average leaders" etc. are among the highest-volume evergreen MLB searches, and the surface was previously hash-only (`#mlb-leaders`) — not indexable (`/mlb/leaders` returned no real page). Continues the growth-track SEO push (after game pages D-050). CLS work (audit F5) was dropped: measured CLS = 0 on home and team pages despite images lacking width/height (all in fixed CSS boxes), so it was a non-problem.
+
+**What ships:** `functions/mlb/leaders.js` mirrors the team/game templates — one statsapi `/stats/leaders` call for HR, AVG, RBI (hitting) + ERA, K, Wins (pitching), top 5 each; builds a crawlable ranked-list snapshot + `ItemList` JSON-LD (headline HR leaders) + per-page `<head>`; sets `window.__SS_ROUTE=mlb-leaders` (single-segment → already routed by `_loadFromHash`, no navigation.js change). Fail-safe to shell. Covered by the existing `/mlb/*` route. **Gotcha:** `/stats/leaders` returns a block per statGroup per category (`homeRuns` → hitting, catching AND pitching), so each category is matched to its expected `statGroup`. Discovery: `functions/index.js` home snapshot links `/mlb/leaders`.
+
+**Verify:** node --check (leaders fn, index.js); local test — statGroup filtering picks the right leader (Alvarez HR not a pitcher; Misiorowski ERA) and head anchors match index.html. No SW bump (server-side only). Live-verify post-deploy.
+
+**Deferred:** per-category pages (`/mlb/leaders/{stat}`) for long-tail; NFL/NCAAF leaders (offseason).

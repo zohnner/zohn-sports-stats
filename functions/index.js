@@ -66,6 +66,7 @@ export async function onRequest(context) {
             `<p>${esc(desc)}</p>` +
             `<h2>Today's MLB Games — ${esc(d.pretty)}</h2>${games}` +
             `<ul><li><a href="/mlb">MLB Stats &amp; Analytics</a></li>` +
+            `<li><a href="/mlb/leaders">MLB Stat Leaders</a></li>` +
             `<li><a href="/mlb/standings">Standings &amp; Playoff Odds</a></li>` +
             `<li><a href="/nfl">NFL</a></li><li><a href="/ncaaf">College Football</a></li></ul></section>`;
 
