@@ -1091,3 +1091,17 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 - **S6 — Measure & lock:** Lighthouse/CLS in deploy-check; token-coverage lint (the `--bg-elevated` bug class); visual-regression baselines committed.
 
 **Standing rules (from the directive):** one phase per PR (S2 = one commit per consumer); constitution (CLAUDE.md/DESIGN.md) wins conflicts — flag, don't silently pick; no scope creep into arcade/shareCard/Expanded View; live-verify after each phase; stop-and-report if a phase changes the plan.
+
+## D-048 — Brand redesign: engineered near-black, Space Grotesk, semantic + chart layers, motion language (phased migration)
+
+**Decision (2026-07-26):** Supersede the "orange on deep navy" identity with a redesigned system aimed at a serious analytics posture (StatMuse × Baseball Savant × Bloomberg Terminal). Owner-driven; verified token set drafted + WCAG-checked before code. **Dark is default; light is a supported, accessible (not default) alternate.**
+
+**What changes:** (1) surfaces off navy #060c18 → engineered near-black ramp (#0d1014 → #f5f7fa); (2) brand orange #ff8100→#FF7A00 + lighter interaction orange + dark "brand-ink" for orange-on-light; (3) semantic layer (win/loss/live/info) carved from brand — rules "never +/- by color alone (▲▼)" and "live = pulse+badge, not a fill"; (4) dedicated 6-color chart categorical (orange = focal series only; min pairwise ΔE ≥ 31; chart-pink ΔE 39 from live-pink); (5) type split — Space Grotesk (display) + Barlow Semi Condensed (numerals) + Inter (body), no Orbitron; (6) control-center visual language — load-bearing 1px borders, restrained shadows, streak-motif motion (animate data, not UI).
+
+**Method:** value-swaps on EXISTING token names in variables.css (components update for free) — no mass rename. One PR per phase, each gated by `check-themes.cjs --strict` + live screenshots, each revertible.
+
+**Phases:** 1 Foundation (surfaces+text→near-black) · 2 Brand orange · 3 Semantic layer · 4 Chart palette + StatsCharts · 5 Typography · 6 Visual language · 7 Light-mode parity + measure/lock.
+
+**Phase 1 shipped (this commit):** variables.css :root dark — bg-base/surface/raised/card/card-hover/overlay → neutral near-black; text-primary/secondary/muted/subtle/disabled → neutral ramp (was navy-tinted). check-themes --strict green (0/0 across dark/light/nl-monarchs). Accent/semantic/stat/NFL/tier tokens unchanged (later phases). Light + nl-monarchs untouched. DESIGN.md navy line amended.
+
+**Supersedes** D-047's "brand = orange on deep navy" and DESIGN.md "no brand refresh to chase." D-047 cohesion machinery (scorebug, token discipline, check-themes gate) retained and reused.

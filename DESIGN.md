@@ -12,7 +12,7 @@ When a user finishes any interaction they should feel *capable and informed*, ne
 
 ## The brand is the default dark theme
 
-Orange-gold (`--accent #ff8100`) on deep navy, Barlow numerals, minimal chrome — that is SportStrata's face. There is no "brand refresh" to chase; there is only sharpening this.
+Orange on an **engineered near-black** — Space Grotesk for display, Barlow for numerals, minimal chrome — that is SportStrata's face. **Amended by D-048 (phased redesign migration, underway):** the base moved off deep navy to a neutral, temperature-controlled dark so the product reads as a precision instrument, not a consumer app. The prior "no brand refresh to chase" line is superseded — the refresh *is* the D-048 palette/type/motion migration, executed as value-swaps on existing tokens, one gated phase at a time.
 
 - The **theme set is deliberately small (D-047, supersedes D-038's "frozen at the current set"):** dark (default) + light + one tribute, `nl-monarchs`. The 8 City Connect + Bananas/Expos/Trash-Pandas themes were **retired** — archived in `css/themes-retired/` as candidates for future premium unlockables. The default is always the argument; themes are never it.
 - **The wordmark is never themed.** The brand icon may wear team colors (jersey rule); "SportStrata" does not (D-038 identity rule).
