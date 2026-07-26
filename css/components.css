@@ -4492,3 +4492,15 @@
 .gl-table th.gl-l, .gl-table td.gl-l { text-align: left; }
 .gl-res--w { color: var(--color-win); font-weight: 700; }
 .gl-res--l { color: var(--color-loss); }
+
+
+/* D-048 P5: Space Grotesk on brand + display headers. Numerals stay Barlow via
+   --font-display. Appended last so it wins over the per-selector title rules. */
+.brand-name,
+.team-hero__name,
+.teams-conf__title,
+.news-page__title,
+.nfl-offseason-title,
+.md-title,
+.detail-section-title,
+.player-detail-name { font-family: var(--font-brand); }
