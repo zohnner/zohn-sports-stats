@@ -40,7 +40,9 @@ async function todaysGamesSnapshot(iso) {
             const st = g.status?.detailedState || '';
             const scored = a?.score != null && h?.score != null;
             const line = scored ? `${an} ${a.score}, ${hn} ${h.score} — ${st}` : `${an} at ${hn} — ${st}`;
-            return `<li>${esc(line)}</li>`;
+            return g.gamePk != null
+                ? `<li><a href="/mlb/game/${g.gamePk}">${esc(line)}</a></li>`
+                : `<li>${esc(line)}</li>`;
         }).join('');
         return `<ul>${rows}</ul>`;
     } catch (_) { return ''; }

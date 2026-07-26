@@ -803,6 +803,10 @@ function _loadFromHash() {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
             if (typeof _restoreMLBPlayerDetail === 'function') { _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
+        } else if ((_m = /^mlb-live-(\d+)$/.exec(_r))) {
+            AppState.currentSport = 'mlb';
+            if (typeof _applySportUI === 'function') _applySportUI('mlb');
+            navigateTo(_r); return;
         } else if (/^nfl-team-([A-Za-z]+)$/.test(_r)) {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');

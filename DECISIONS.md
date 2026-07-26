@@ -1115,3 +1115,15 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Why fixed hex:** exported PNG is brand surface — must look identical in any theme (Kael, P3-027). Reuses `_scLoadHtml2Canvas()` + `.shc-stage` + `.shc-spin/.shc-done/.shc-toast`.
 
 **Verify:** node --check (shareCard.js, fantasy.js), check-themes --strict 0/0, check-manifest PASS (no new files), live visual preview of the rendered card, SW v122→v123.
+
+## D-050 — MLB game pages: crawlable path URLs + SportsEvent schema (SEO growth)
+
+**Decision (2026-07-26):** Add edge-rendered `/mlb/game/{gamePk}` pages so individual games — the highest-volume, highest-intent sports searches and the most-shared sports links — become indexable and produce rich share previews. Growth-track pick #2 (biggest compounding organic + social surface). Previously games were hash-only (`#mlb-live-{pk}`) with no crawlable URL, per-game meta, or structured data (audit F8).
+
+**What ships:** `functions/mlb/game/[pk].js` mirrors the D-041 team/player template — fetches the game from statsapi `schedule?gamePk=`, builds a per-game `<head>` (title `Away @ Home — {Final score / Live / Scheduled} · {date}`, description, canonical, OG/Twitter) + `SportsEvent` JSON-LD (name, startDate, venue, home/away `SportsTeam`), injects a crawlable snapshot into `#playersGrid`, and sets `window.__SS_ROUTE=mlb-live-{pk}`. Fail-safe to the untouched shell on any error. Covered by the existing `/mlb/*` include (no `_routes.json` change).
+
+**SPA wiring:** `navigation.js` `_loadFromHash` gains an `/^mlb-live-(\d+)$/` branch in the `__SS_ROUTE` block so a cold deep-link hydrates the existing game panel (`showMLBLiveGame` re-fetches the feed, so final games render too). Discovery: `functions/index.js` home snapshot now links each day's games to `/mlb/game/{pk}` — crawlers reach every game from the most-crawled, daily-refreshed page (no sitemap churn).
+
+**Verify:** node --check (edge fn, navigation.js, index.js); local transform test — all 10 head-injection regexes match the real index.html and inject correctly; SW v124→v125. Live-verify post-deploy: head tags, JSON-LD, snapshot, hydrate.
+
+**Deferred:** NFL/NCAAF game pages (same pattern); client-side path navigation from game cards; per-game OG image. Hash game views still canonicalize to home (F3) — acceptable; the path URL is the indexed/shared one.
