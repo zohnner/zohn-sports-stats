@@ -4011,7 +4011,7 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
             <div class="player-bio-item"><span class="bio-label">GB</span><span class="bio-value">${rec.gb}</span></div>
             ${_octBio}
             ${rec.streak ? `<div class="player-bio-item"><span class="bio-label">Streak</span><span class="bio-value" style="color:${rec.streak.startsWith('W') ? '#10b981' : '#f87171'};font-weight:700">${rec.streak}</span></div>` : ''}
-            <div class="player-bio-item"><span class="bio-label">Last 10</span><span class="bio-value">${rec.last10}</span></div>
+            <div class="player-bio-item"><span class="bio-label">Last 10</span><span class="bio-value">${rec.l10}</span></div>
             <div class="player-bio-item"><span class="bio-label">Home</span><span class="bio-value">${rec.home}</span></div>
             <div class="player-bio-item"><span class="bio-label">Away</span><span class="bio-value">${rec.away}</span></div>
         </div>
@@ -4019,7 +4019,7 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
 
     return `
         <div class="player-detail-header"
-             style="background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,rgba(15,23,42,0.85) 55%);
+             style="background:radial-gradient(ellipse at top left,${colors.primary}1a 0%,var(--bg-card) 55%);
                     border-top:3px solid ${colors.primary}88">
             <button onclick="backToMLBTeams()" class="back-button">← Teams</button>
             <div class="player-hero">

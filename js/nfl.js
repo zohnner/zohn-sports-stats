@@ -1251,7 +1251,7 @@ function _renderTeamPage(m) {
     const factGrid = factItems.length ? `<div class="player-bio-grid" style="margin-top:0.75rem">${factItems.join('')}</div>` : '';
 
     const header = `
-        <div class="player-detail-header" style="background:radial-gradient(ellipse at top left,${color}1a 0%,rgba(15,23,42,0.85) 55%);border-top:3px solid ${color}88">
+        <div class="player-detail-header" style="background:radial-gradient(ellipse at top left,${color}1a 0%,var(--bg-card) 55%);border-top:3px solid ${color}88">
             <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
             <div class="player-hero">
                 <div class="player-detail-avatar" style="background:linear-gradient(135deg,${color}cc,${color}55);color:#fff;font-size:1.5rem;font-weight:800">
