@@ -3,67 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free NFL Mock Draft Simulator — No Login | SportStrata</title>
-    <meta name="description" content="Practice your fantasy draft against ADP-based AI opponents. Live draft assistant, Monte Carlo pick survival, tier cliffs, Superflex support. Free, no account.">
+    <title>Free Fantasy Football Mock Draft Simulator — No Login | SportStrata</title>
+    <meta name="description" content="Run a fantasy football mock draft in 60 seconds against ADP-based AI — no login, no sign-up. Snake draft, PPR/Standard/Superflex, live draft assistant, Monte Carlo pick-survival odds and a post-draft grade.">
     <link rel="canonical" href="https://sportstrata.cc/mock-draft">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="SportStrata">
-    <meta property="og:title" content="Free NFL Mock Draft Simulator — No Login | SportStrata">
-    <meta property="og:description" content="Practice your fantasy draft against ADP-based AI opponents. Live draft assistant, Monte Carlo pick survival, tier cliffs, Superflex support. Free, no account.">
+    <meta property="og:title" content="Free Fantasy Football Mock Draft Simulator — No Login | SportStrata">
+    <meta property="og:description" content="Mock draft in 60 seconds vs ADP-based AI. No login, no sign-up. Live assistant, Monte Carlo survival odds, PPR/Superflex, instant grade.">
     <meta property="og:url" content="https://sportstrata.cc/mock-draft">
     <meta property="og:image" content="https://sportstrata.cc/assets/og-mock-draft.png">
-        <meta property="og:image:width" content="1200">
+    <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Free NFL Mock Draft Simulator — No Login | SportStrata">
-    <meta name="twitter:description" content="Practice your fantasy draft against ADP-based AI opponents. Live draft assistant, Monte Carlo pick survival, tier cliffs, Superflex support. Free, no account.">
+    <meta name="twitter:title" content="Free Fantasy Football Mock Draft Simulator — No Login | SportStrata">
+    <meta name="twitter:description" content="Mock draft in 60 seconds vs ADP-based AI. No login, no sign-up. Live assistant, Monte Carlo survival odds, PPR/Superflex.">
     <meta name="twitter:image" content="https://sportstrata.cc/assets/og-mock-draft.png">
-    <meta name="theme-color" content="#060c18">
+    <meta name="theme-color" content="#0d1014">
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #060c18; color: #e6edf6; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
-        main { max-width: 640px; margin: 0 auto; padding: 4rem 1.5rem 3rem; flex: 1; }
-        .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 3rem; text-decoration: none; }
-        .brand img { width: 36px; height: 36px; }
-        .brand span { font-weight: 800; font-size: 1.15rem; color: #e6edf6; letter-spacing: 0.01em; }
-        .kicker { color: #ff8100; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.75rem; }
-        h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.15; font-weight: 800; margin-bottom: 1rem; }
-        .tagline { color: #9fb0c8; font-size: 1.05rem; margin-bottom: 2rem; }
-        ul { list-style: none; margin-bottom: 2.5rem; }
-        li { padding: 0.55rem 0 0.55rem 1.4rem; position: relative; color: #c3cfdf; font-size: 0.95rem; }
-        li::before { content: ''; position: absolute; left: 0; top: 1.05rem; width: 7px; height: 7px; border-radius: 2px; background: #ff8100; }
-        li strong { color: #e6edf6; }
-        .cta { display: inline-block; background: #ff8100; color: #12100b; font-weight: 800; font-size: 1rem; padding: 0.8rem 1.8rem; border-radius: 10px; text-decoration: none; }
-        .cta:hover { background: #ffd200; }
-        .receipt { margin-top: 1.1rem; color: #6d8fb8; font-size: 0.8rem; }
-        .also { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); color: #6d8fb8; font-size: 0.85rem; }
-        .also a { color: #9fb0c8; text-decoration: none; margin-right: 1rem; }
-        .also a:hover { color: #ff8100; }
-        footer { text-align: center; padding: 1.5rem; color: #4c5c72; font-size: 0.78rem; }
+        body { background: #0d1014; color: #f5f7fa; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+        main { max-width: 660px; margin: 0 auto; padding: 3.5rem 1.5rem 3rem; flex: 1; }
+        .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2.75rem; text-decoration: none; }
+        .brand img { width: 34px; height: 34px; }
+        .brand span { font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 700; font-size: 1.15rem; color: #f5f7fa; }
+        .brand span b { color: #ff7a00; font-weight: 700; }
+        .kicker { color: #ff7a00; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        h1 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.12; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.01em; }
+        h2 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.25rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+        .tagline { color: #c5cbd3; font-size: 1.08rem; margin-bottom: 2rem; }
+        ul.feat { list-style: none; margin-bottom: 2rem; }
+        ul.feat li { padding: 0.55rem 0 0.55rem 1.4rem; position: relative; color: #c5cbd3; font-size: 0.96rem; }
+        ul.feat li::before { content: ''; position: absolute; left: 0; top: 1.05rem; width: 7px; height: 7px; border-radius: 2px; background: #ff7a00; }
+        ul.feat li strong { color: #f5f7fa; }
+        ol.steps { list-style: none; counter-reset: s; display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+        ol.steps li { counter-increment: s; padding: 0.85rem 1rem 0.85rem 3rem; position: relative; background: #14181d; border: 1px solid rgba(255,255,255,0.11); border-radius: 10px; color: #c5cbd3; font-size: 0.95rem; }
+        ol.steps li::before { content: counter(s); position: absolute; left: 0.85rem; top: 0.8rem; width: 1.5rem; height: 1.5rem; border-radius: 6px; background: #ff7a00; color: #0d1014; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+        .cta { display: inline-block; background: #ff7a00; color: #0d1014; font-weight: 800; font-size: 1rem; padding: 0.85rem 1.9rem; border-radius: 10px; text-decoration: none; margin-top: 0.5rem; }
+        .cta:hover { background: #ffb347; }
+        .receipt { margin-top: 1.1rem; color: #8a93a3; font-size: 0.82rem; }
+        .faq { margin-top: 1rem; }
+        .faq div { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.09); }
+        .faq h3 { font-size: 1rem; font-weight: 700; color: #f5f7fa; margin-bottom: 0.35rem; }
+        .faq p { color: #c5cbd3; font-size: 0.94rem; }
+        .also { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); color: #8a93a3; font-size: 0.85rem; }
+        .also a { color: #c5cbd3; text-decoration: none; margin-right: 1rem; }
+        .also a:hover { color: #ff7a00; }
+        footer { text-align: center; padding: 1.5rem; color: #5e6978; font-size: 0.78rem; }
+        footer a { color: #8a93a3; }
     </style>
     <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Free NFL Mock Draft Simulator — No Login | SportStrata","url":"https://sportstrata.cc/mock-draft","applicationCategory":"SportsApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Practice your fantasy draft against ADP-based AI opponents. Live draft assistant, Monte Carlo pick survival, tier cliffs, Superflex support. Free, no account.","publisher":{"@type":"Organization","name":"SportStrata","url":"https://sportstrata.cc/"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"SportStrata Fantasy Football Mock Draft Simulator","url":"https://sportstrata.cc/mock-draft","applicationCategory":"GameApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free fantasy football mock draft simulator vs ADP-based AI. No login. Live draft assistant, Monte Carlo pick-survival odds, PPR/Standard/Superflex, instant post-draft grade.","featureList":"ADP-based AI opponents, live draft assistant, VORP tiers, Monte Carlo survival odds, PPR/Standard/Superflex, no login","publisher":{"@type":"Organization","name":"SportStrata","url":"https://sportstrata.cc/"}}
+    </script>
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the mock draft simulator free?","acceptedAnswer":{"@type":"Answer","text":"Yes. SportStrata's mock draft is completely free with no login, no sign-up, and no ads. Run as many mocks as you want."}},{"@type":"Question","name":"Do I need an account to mock draft?","acceptedAnswer":{"@type":"Answer","text":"No account is required. You start drafting instantly and nothing is saved to a profile — each mock is a fresh, resettable session."}},{"@type":"Question","name":"Can I choose my scoring and draft slot?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pick 8 to 14 teams, any draft slot, and PPR, Half-PPR, Standard or Superflex scoring before you start."}},{"@type":"Question","name":"How realistic are the AI opponents?","acceptedAnswer":{"@type":"Answer","text":"The AI drafts to current ADP from Sleeper, so the board behaves like a real league. A live assistant also tells you the best available pick by value over replacement and the odds each player returns to your next pick."}}]}
     </script>
 </head>
 <body>
     <main>
-        <a class="brand" href="/"><img src="/assets/icon-64.png" alt=""><span>SportStrata</span></a>
+        <a class="brand" href="/"><img src="/assets/icon-64.png" alt=""><span>Sport<b>Strata</b></span></a>
         <div class="kicker">Free · No login · No ads</div>
-        <h1>Practice your draft before it counts.</h1>
-        <p class="tagline">A full snake mock draft against AI opponents who draft like your league actually drafts — with a live assistant telling you who to take and why.</p>
-        <ul>
-        <li><strong>ADP-realistic opponents</strong> — the AI drafts like the crowd, so your practice reflects your real draft room</li>
-        <li><strong>Live Draft Assistant</strong> — a recommended pick every turn with the reasoning spelled out: value, need, tier scarcity</li>
-        <li><strong>Monte Carlo survival</strong> — the % chance each player makes it back to your next pick — the number that settles reach-or-wait</li>
-        <li><strong>Your format</strong> — PPR, Half, Standard, Superflex, 8–14 teams, any slot</li>
+        <h1>Mock draft in 60 seconds. No login.</h1>
+        <p class="tagline">A full snake mock draft against AI opponents who draft like your league actually drafts — with a live assistant telling you who to take and why. Free fantasy football mock draft practice, no account, unlimited resets.</p>
+        <ul class="feat">
+        <li><strong>ADP-realistic opponents</strong> — the AI drafts to current Sleeper ADP, so practice reflects your real draft room</li>
+        <li><strong>Live Draft Assistant</strong> — a recommended pick every turn with the reasoning: value over replacement, roster need, tier scarcity</li>
+        <li><strong>Monte Carlo survival odds</strong> — the % chance each player makes it back to your next pick, so you know whether to reach or wait</li>
+        <li><strong>Your format</strong> — PPR, Half-PPR, Standard or Superflex; 8–14 teams; any slot</li>
+        <li><strong>Instant grade</strong> — a post-draft grade, projected finish and best-value / biggest-reach breakdown</li>
         </ul>
         <a class="cta" href="/#nfl-mock">Start a mock draft →</a>
-        <p class="receipt">Player pool and ADP from Sleeper, refreshed live. Fully resettable, nothing saved to an account.</p>
-        <nav class="also" aria-label="More SportStrata tools">Also on SportStrata:
-            <a href="/mock-draft">Mock Draft</a><a href="/draft-kit">Draft Kit</a><a href="/playoff-odds">Playoff Odds</a><a href="/ask">Ask Bar</a>
+        <p class="receipt">Player pool and ADP from Sleeper, refreshed live. Nothing saved to an account.</p>
+
+        <h2>How it works</h2>
+        <ol class="steps">
+            <li>Pick your teams, slot and scoring (PPR, Standard or Superflex)</li>
+            <li>Draft against ADP-based AI — the assistant flags the best value each turn</li>
+            <li>Get an instant grade, projected finish and value breakdown, then reset and run it again</li>
+        </ol>
+
+        <h2>Mock draft FAQ</h2>
+        <div class="faq">
+            <div><h3>Is it free?</h3><p>Completely — no login, no sign-up, no ads. Run unlimited mocks.</p></div>
+            <div><h3>Do I need an account?</h3><p>No. You draft instantly and nothing is saved to a profile; every mock is a fresh, resettable session.</p></div>
+            <div><h3>Can I pick my scoring and slot?</h3><p>Yes — 8 to 14 teams, any draft slot, and PPR, Half-PPR, Standard or Superflex.</p></div>
+            <div><h3>How realistic are the AI picks?</h3><p>They draft to live Sleeper ADP, so the board behaves like a real league, and the assistant grades every available player by value over replacement.</p></div>
+        </div>
+
+        <nav class="also" aria-label="More SportStrata tools">More free tools:
+            <a href="/draft-kit">Draft Kit</a><a href="/nfl">NFL Fantasy</a><a href="/mlb">MLB Stats</a>
         </nav>
     </main>
-    <footer>SportStrata — serious stats for serious fans · <a href="/" style="color:#6d8fb8">sportstrata.cc</a></footer>
+    <footer>SportStrata — serious stats for serious fans · <a href="/">sportstrata.cc</a></footer>
 </body>
 </html>

@@ -15,7 +15,7 @@ const DESC  = "Free NFL fantasy tools: live Monte Carlo mock draft, value-based 
 const H1    = "NFL Stats & Fantasy Tools";
 const CANON = 'https://sportstrata.cc/nfl';
 const ROUTE = "nfl-home";
-const CARDS = [["Mock Draft", "#nfl-mock"], ["Draft HQ", "#nfl-draftkit"], ["Standings", "#nfl-standings"], ["Scores", "#nfl-games"]];
+const CARDS = [["Mock Draft", "/mock-draft"], ["Draft Kit", "/draft-kit"], ["Standings", "#nfl-standings"], ["Scores", "#nfl-games"]];
 
 export async function onRequest(context) {
     const { request, env } = context;

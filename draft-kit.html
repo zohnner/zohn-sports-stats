@@ -3,67 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFL Fantasy Draft Kit — VORP Value Board & Cheat Sheet | SportStrata</title>
-    <meta name="description" content="A value-over-replacement draft board: sleepers, traps, tier cliffs, rookies market-priced from ADP, printable cheat sheet. Free, no login.">
+    <title>Free Fantasy Football Draft Kit — VORP Rankings, Tiers & Sleepers | SportStrata</title>
+    <meta name="description" content="Free fantasy football draft kit: value-based (VORP) rankings, position tiers, sleepers and traps, and a printable cheat sheet. PPR, Standard or Superflex. No login, no ads.">
     <link rel="canonical" href="https://sportstrata.cc/draft-kit">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="SportStrata">
-    <meta property="og:title" content="NFL Fantasy Draft Kit — VORP Value Board & Cheat Sheet | SportStrata">
-    <meta property="og:description" content="A value-over-replacement draft board: sleepers, traps, tier cliffs, rookies market-priced from ADP, printable cheat sheet. Free, no login.">
+    <meta property="og:title" content="Free Fantasy Football Draft Kit — VORP Rankings, Tiers & Sleepers | SportStrata">
+    <meta property="og:description" content="Value-based (VORP) rankings, tiers, sleepers and traps, and a printable cheat sheet. PPR/Standard/Superflex. Free, no login.">
     <meta property="og:url" content="https://sportstrata.cc/draft-kit">
     <meta property="og:image" content="https://sportstrata.cc/assets/og-draft-kit.png">
-        <meta property="og:image:width" content="1200">
+    <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="NFL Fantasy Draft Kit — VORP Value Board & Cheat Sheet | SportStrata">
-    <meta name="twitter:description" content="A value-over-replacement draft board: sleepers, traps, tier cliffs, rookies market-priced from ADP, printable cheat sheet. Free, no login.">
+    <meta name="twitter:title" content="Free Fantasy Football Draft Kit — VORP Rankings, Tiers & Sleepers | SportStrata">
+    <meta name="twitter:description" content="Value-based (VORP) rankings, tiers, sleepers and traps, printable cheat sheet. PPR/Standard/Superflex. Free, no login.">
     <meta name="twitter:image" content="https://sportstrata.cc/assets/og-draft-kit.png">
-    <meta name="theme-color" content="#060c18">
+    <meta name="theme-color" content="#0d1014">
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #060c18; color: #e6edf6; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
-        main { max-width: 640px; margin: 0 auto; padding: 4rem 1.5rem 3rem; flex: 1; }
-        .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 3rem; text-decoration: none; }
-        .brand img { width: 36px; height: 36px; }
-        .brand span { font-weight: 800; font-size: 1.15rem; color: #e6edf6; letter-spacing: 0.01em; }
-        .kicker { color: #ff8100; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.75rem; }
-        h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.15; font-weight: 800; margin-bottom: 1rem; }
-        .tagline { color: #9fb0c8; font-size: 1.05rem; margin-bottom: 2rem; }
-        ul { list-style: none; margin-bottom: 2.5rem; }
-        li { padding: 0.55rem 0 0.55rem 1.4rem; position: relative; color: #c3cfdf; font-size: 0.95rem; }
-        li::before { content: ''; position: absolute; left: 0; top: 1.05rem; width: 7px; height: 7px; border-radius: 2px; background: #ff8100; }
-        li strong { color: #e6edf6; }
-        .cta { display: inline-block; background: #ff8100; color: #12100b; font-weight: 800; font-size: 1rem; padding: 0.8rem 1.8rem; border-radius: 10px; text-decoration: none; }
-        .cta:hover { background: #ffd200; }
-        .receipt { margin-top: 1.1rem; color: #6d8fb8; font-size: 0.8rem; }
-        .also { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); color: #6d8fb8; font-size: 0.85rem; }
-        .also a { color: #9fb0c8; text-decoration: none; margin-right: 1rem; }
-        .also a:hover { color: #ff8100; }
-        footer { text-align: center; padding: 1.5rem; color: #4c5c72; font-size: 0.78rem; }
+        body { background: #0d1014; color: #f5f7fa; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+        main { max-width: 660px; margin: 0 auto; padding: 3.5rem 1.5rem 3rem; flex: 1; }
+        .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2.75rem; text-decoration: none; }
+        .brand img { width: 34px; height: 34px; }
+        .brand span { font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 700; font-size: 1.15rem; color: #f5f7fa; }
+        .brand span b { color: #ff7a00; font-weight: 700; }
+        .kicker { color: #ff7a00; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        h1 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.12; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.01em; }
+        h2 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.25rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+        .tagline { color: #c5cbd3; font-size: 1.08rem; margin-bottom: 2rem; }
+        ul.feat { list-style: none; margin-bottom: 2rem; }
+        ul.feat li { padding: 0.55rem 0 0.55rem 1.4rem; position: relative; color: #c5cbd3; font-size: 0.96rem; }
+        ul.feat li::before { content: ''; position: absolute; left: 0; top: 1.05rem; width: 7px; height: 7px; border-radius: 2px; background: #ff7a00; }
+        ul.feat li strong { color: #f5f7fa; }
+        .cta { display: inline-block; background: #ff7a00; color: #0d1014; font-weight: 800; font-size: 1rem; padding: 0.85rem 1.9rem; border-radius: 10px; text-decoration: none; margin-top: 0.5rem; }
+        .cta:hover { background: #ffb347; }
+        .receipt { margin-top: 1.1rem; color: #8a93a3; font-size: 0.82rem; }
+        .faq div { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.09); }
+        .faq h3 { font-size: 1rem; font-weight: 700; color: #f5f7fa; margin-bottom: 0.35rem; }
+        .faq p { color: #c5cbd3; font-size: 0.94rem; }
+        .also { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); color: #8a93a3; font-size: 0.85rem; }
+        .also a { color: #c5cbd3; text-decoration: none; margin-right: 1rem; }
+        .also a:hover { color: #ff7a00; }
+        footer { text-align: center; padding: 1.5rem; color: #5e6978; font-size: 0.78rem; }
+        footer a { color: #8a93a3; }
     </style>
     <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"NFL Fantasy Draft Kit — VORP Value Board & Cheat Sheet | SportStrata","url":"https://sportstrata.cc/draft-kit","applicationCategory":"SportsApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A value-over-replacement draft board: sleepers, traps, tier cliffs, rookies market-priced from ADP, printable cheat sheet. Free, no login.","publisher":{"@type":"Organization","name":"SportStrata","url":"https://sportstrata.cc/"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"SportStrata Fantasy Football Draft Kit","url":"https://sportstrata.cc/draft-kit","applicationCategory":"SportsApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free fantasy football draft kit: value-based (VORP) rankings, position tiers, sleepers and traps, and a printable cheat sheet. PPR/Standard/Superflex. No login.","featureList":"VORP value rankings, position tiers, sleepers and traps, printable cheat sheet, PPR/Standard/Superflex","publisher":{"@type":"Organization","name":"SportStrata","url":"https://sportstrata.cc/"}}
+    </script>
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the draft kit free?","acceptedAnswer":{"@type":"Answer","text":"Yes — the SportStrata draft kit is free with no login, no sign-up and no ads."}},{"@type":"Question","name":"What is VORP and why use it over ADP?","acceptedAnswer":{"@type":"Answer","text":"VORP is value over replacement — a player's projected points above a freely-available player at the same position. It captures positional scarcity that raw ADP or projections miss, so you draft the biggest edge available, not just the highest-ranked name."}},{"@type":"Question","name":"Does it support PPR and Superflex?","acceptedAnswer":{"@type":"Answer","text":"Yes. Rankings, tiers and values recompute for PPR, Half-PPR, Standard and Superflex."}},{"@type":"Question","name":"Can I print a cheat sheet?","acceptedAnswer":{"@type":"Answer","text":"Yes — the kit generates a printable one-page cheat sheet you can bring to your draft."}}]}
     </script>
 </head>
 <body>
     <main>
-        <a class="brand" href="/"><img src="/assets/icon-64.png" alt=""><span>SportStrata</span></a>
+        <a class="brand" href="/"><img src="/assets/icon-64.png" alt=""><span>Sport<b>Strata</b></span></a>
         <div class="kicker">Free · No login · No ads</div>
-        <h1>Draft the player, not the name.</h1>
-        <p class="tagline">Every player valued over positional replacement for your exact format — so you can see who the market is mispricing before your league does.</p>
-        <ul>
-        <li><strong>VORP value board</strong> — projected points over replacement, format-aware (scoring, teams, Superflex)</li>
-        <li><strong>Sleepers & traps</strong> — the largest gaps between market price and modeled value, both directions</li>
-        <li><strong>Rookies included</strong> — market-priced from ADP and honestly tagged 'est' — never fabricated production</li>
-        <li><strong>Print cheat sheet</strong> — one click, clean layout, ready for draft night</li>
+        <h1>Draft the biggest edge, not the biggest name.</h1>
+        <p class="tagline">A free fantasy football draft kit built on value over replacement (VORP) — rankings, tiers, sleepers and a printable cheat sheet, for PPR, Standard or Superflex. No login, no ads.</p>
+        <ul class="feat">
+        <li><strong>VORP value rankings</strong> — points over a replacement-level player at the position, not just ADP</li>
+        <li><strong>Position tiers</strong> — see the drop-offs before they happen and time your runs</li>
+        <li><strong>Sleepers and traps</strong> — players priced wrong versus the market, flagged both ways</li>
+        <li><strong>Printable cheat sheet</strong> — a clean one-pager for draft day</li>
+        <li><strong>Your format</strong> — PPR, Half-PPR, Standard or Superflex; player pool from Sleeper</li>
         </ul>
-        <a class="cta" href="/#nfl-draftkit">Open the Draft Kit →</a>
-        <p class="receipt">Values modeled from last-season production and labeled as such — we show the receipt on every number.</p>
-        <nav class="also" aria-label="More SportStrata tools">Also on SportStrata:
-            <a href="/mock-draft">Mock Draft</a><a href="/draft-kit">Draft Kit</a><a href="/playoff-odds">Playoff Odds</a><a href="/ask">Ask Bar</a>
+        <a class="cta" href="/#nfl-draftkit">Open the draft kit →</a>
+        <p class="receipt">Player pool and ADP from Sleeper, refreshed live. Nothing saved to an account.</p>
+
+        <h2>Draft kit FAQ</h2>
+        <div class="faq">
+            <div><h3>Is it free?</h3><p>Yes — no login, no sign-up, no ads.</p></div>
+            <div><h3>What is VORP?</h3><p>Value over replacement: a player's projected points above a freely-available player at the same position, so you draft the biggest edge, not just the top name.</p></div>
+            <div><h3>PPR and Superflex?</h3><p>Yes — everything recomputes for PPR, Half-PPR, Standard and Superflex.</p></div>
+            <div><h3>Can I print it?</h3><p>Yes — a printable one-page cheat sheet for draft day.</p></div>
+        </div>
+
+        <nav class="also" aria-label="More SportStrata tools">More free tools:
+            <a href="/mock-draft">Mock Draft</a><a href="/nfl">NFL Fantasy</a><a href="/mlb">MLB Stats</a>
         </nav>
     </main>
-    <footer>SportStrata — serious stats for serious fans · <a href="/" style="color:#6d8fb8">sportstrata.cc</a></footer>
+    <footer>SportStrata — serious stats for serious fans · <a href="/">sportstrata.cc</a></footer>
 </body>
 </html>
