@@ -46,6 +46,7 @@ async function main() {
     for (const s of ['mlb', 'nfl', 'ncaaf']) add(urlTag('/' + s, 'daily', '0.9'));
     for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
+    add(urlTag('/mlb/leaders', 'daily', '0.7'));
 
     // 2) MLB teams
     try {
