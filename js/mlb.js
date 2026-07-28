@@ -328,7 +328,9 @@ function getMLBTeamLogoUrl(teamId) {
 }
 
 function getMLBTeamLogoByAbbr(abbr) {
-    if (!abbr) return null;
+    // Guard non-team placeholders (e.g. '?' fallback for unknown teams) — they
+    // otherwise build /mlb/500/?.png → 404 (a spurious failed request).
+    if (!abbr || !/^[a-z]{2,3}$/i.test(abbr)) return null;
     const key = abbr.toLowerCase();
     return `https://a.espncdn.com/i/teamlogos/mlb/500/${key}.png`;
 }
