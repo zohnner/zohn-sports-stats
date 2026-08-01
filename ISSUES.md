@@ -1375,3 +1375,104 @@ To keep this backlog focused on **open** work, the following shipped/historical 
 - D-045 — Path-URL SEO foundation + per-sport landing pages — GATED, phased (specs in DECISIONS.md D-045)
 - D-046 — Homepage overhaul (analytics-first landing) — GATED, phased (specs in DECISIONS.md D-046 + docs/landing-page-gap-analysis.md)
 
+---
+
+## Finn — Project Status Check + Fresh Health Scan (2026-07-31)
+**Contributor:** Finn | **Date:** 2026-07-31
+
+**What I did:** owner asked for a full-team debug + expansion-brainstorm pass. Before touching anything I read DECISIONS.md, ISSUES.md, GOALS.md per the standing session-start sequence, then ran a fresh scan for anything not already logged.
+
+**Open backlog snapshot (nothing new here, just surfaced for the session):**
+- D-038 "Theme contract tightening" (line ~1327) — still OPEN.
+- D-041/D-045 SEO — P3 (Search Console verify/submit + measure) still owner-run, not done.
+- D-047 brand cohesion — S2 (scorebug) has NHL/NBA tickers + NFL/NCAAF scores-grid consumers remaining; S3b/S4 broad migrations deliberately deferred; S5/S6 not started.
+- D-048 brand redesign — only Phase 1 (surface/text near-black) shipped; Phases 2–7 (brand orange, semantic layer, chart palette, typography, visual language, light-mode parity) open.
+- D-043 (tabbed scoreboard / seasonal promo / cross-sport search) — all three gated, still awaiting owner ratification, nothing built.
+- N-13 (NGS lags at 2023) — still open; Relay never confirmed whether newer nflverse NGS exists under another path.
+- N-5 phases 3–4 (NFL standings-card + table-chrome inline-style cleanup) — still pending.
+- Park factors (`_PARK_FACTORS` in mlb.js) — still the 2022–2024 B-Ref average; the GOALS.md annual-maintenance note calls for an each-April refresh and it's now end of July with no pull done this year.
+
+**Fresh finding (not previously logged at this scope):** grepped for `catch (_) {}` across `js/` — **42 instances across 11 files**, not just the 5 in `nfl.js` that N-1's secondary finding (2026-06-21) flagged and left open. Sampled all of them. About 32 are `localStorage`/`Date` formatting guards — defensible, not real error-swallowing (a private-browsing quota failure on a favorites-star write isn't worth a Logger line). But roughly 10 are silent swallows of actual network/data fetches, meaning a real failure produces no console trace and no user-visible signal — just a quietly empty section:
+- `js/nfl.js:821` — `fetchNFLSleeperPool()`
+- `js/nfl.js:1217` — `fetchNFLScoreboard()`
+- `js/nfl.js:1587` — profile/career fetch (part of the "5 more" N-1 flagged and never closed)
+- `js/ncaaf.js:524–526` — **three** in the same team-detail path (roster, schedule, team stats) — if any of the three ESPN calls fail, that part of the NCAAF team page just renders empty with zero diagnostic trail
+- `js/search.js:325` — NFL cross-search fetch
+- `js/app.js:1486` — a stats fetch
+
+This is the same anti-pattern N-1 caught in `nfl.js` and left as a named-but-unfixed secondary finding. It has since spread to `ncaaf.js` (built after N-1) and `search.js`/`app.js`, and nobody re-flagged it. Routing to Axiom.
+
+**Escalation:** none blocking. Recommend Axiom scope this as N-14 below rather than let it sit as an unowned secondary finding a second time.
+
+---
+
+## N-14 — Silent network-fetch swallows beyond nfl.js (Logger-suppression gap, N-1 follow-through)
+**Contributors:** Finn (finding), Axiom (diagnosis) | **Date:** 2026-07-31 | **Priority:** 3
+
+**Axiom's read:** this is mechanical, not architectural — identical fix shape to N-1 (`_nflStatsUnavailable`-style placeholder + `Logger.warn(err, 'NFL'|'NCAAF'|'SEARCH'|'APP')` on each swallow, nothing else touched). No AppState risk, no load-order risk. The `catch (_) {}` around `localStorage`/date-formatting calls should stay as-is — logging every quota-exceeded favorites write would just be noise, and Finn's rule ("never suppress *a real error*") is about hiding failures that matter, not defensive one-liners around browser storage.
+
+**Scope for Finn once gated:** the ~10 network-fetch swallows Finn listed above, one Logger.warn each, same pattern as N-1's implementation. Bundle with N-5 phases 3–4 as one "finish what we started" cleanup pass rather than opening a third parallel NFL/NCAAF workstream — both are debt from features that shipped fast and never got their follow-up commit.
+
+**Gate status:** no visual or interaction spec needed (this is pure observability, not user-facing behavior change) — Axiom's sign-off above is sufficient per the "mechanical fix" carve-out the team has used before (e.g. N-9/N-10 token fixes). **Finn is clear to implement whenever a verification-capable session picks this up** (needs console verification per Finn's own standing rules — confirm a forced-failure case actually logs, not just that the code compiles).
+
+**✅ SHIPPED 2026-07-31 (Finn):** all ~10 swallows fixed, plus one Finn's original scan missed — `arcade.js:396` (daily-puzzle game-performance fetch inside a `Promise.all` map, same silent-degradation shape, now tagged `'ARCADE'`, a module tag that didn't exist before this fix). Final list: `nfl.js` — Sleeper pool fetch on leaders load, scoreboard fetch in team detail, ESPN profile/career fetch on player detail (this last one is the original N-1 "5 more" finding, now finally closed); `ncaaf.js` — roster/schedule/team-stats fetches in team detail (3, one function); `search.js` — NFL all-time search; `app.js` — football landing stats teaser; `arcade.js` — game-performance fetch. Each now does `catch (err) { Logger.warn(msg, err, 'TAG') }` instead of `catch (_) {}` — behavior unchanged (failures still degrade the same way), only the diagnostic trail is new. **Verified:** `node --check` clean on all 5 touched files; full unit suite 37/37 green (no coverage overlap with these files, but confirms nothing else regressed). **Not done — live console verification:** haven't forced an actual failure (e.g. blocked network request) in a browser to confirm the Logger.warn fires as written; recommend a `/screenshot`-adjacent live pass before calling this fully closed per Finn's own standing rule ("verify behavior in the browser or console, not just in the code").
+
+---
+
+## Cipher — Security Sweep (2026-07-31)
+**Contributor:** Cipher | **Date:** 2026-07-31
+
+Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 stays resolved — confirmed `js/api.js` still carries no live key), no PII, no accounts, no payments.
+
+**Checked fresh this session:**
+- CSP `<meta>` in `index.html` and `_headers` — **byte-identical**, both list the same seven allowlisted hosts (workers.dev proxy ×2, BDL, ESPN, NBA.com, MLB Stats API, Savant, NHL, Open-Meteo). No divergence. Clean.
+- No inline `onerror=` attributes introduced anywhere in `js/` (the one `config.js` hit is the capture-phase listener itself, the correct pattern — not a violation).
+- No new `innerHTML +=` usages.
+- No secrets, tokens, or keys found in any grep of `js/` or the diff currently sitting uncommitted in the working tree.
+
+**Verdict:** no new findings. Existing controls hold. Nothing here blocks the expansion brainstorm below.
+
+---
+
+## Relay — Data Sweep (2026-07-31)
+**Contributor:** Relay | **Date:** 2026-07-31
+
+- Park factors (see Finn's note above) — flagging again with a sharper edge: this is now a **data-accuracy** issue, not just a maintenance checkbox. `_PARK_FACTORS` reflects 2022–2024 and the comment still says "Season: 2024." Every hitter/pitcher park-adjusted stat on the site has been quietly wrong-by-inheritance for the length of a full season now. Recommend the owner do the manual B-Ref/FanGraphs pull this belongs to before end of season, not next spring.
+- N-13 (NGS lag) — still unresolved whether 2024+ Next Gen Stats exist under a different nflverse release path. Nobody has been able to verify (`web_fetch` can't read the binary `.csv.gz`, curl restricted in this environment either). Needs an owner-run manual check outside the sandbox, same class of blocker as the Savant `group_by=name` verification (P6/P9/P10) — flagging so it doesn't get silently re-forgotten a third time.
+- No new schema-drift or rate-limit issues found in this pass — MLB/NFL/NCAAF fetch contracts unchanged since the last audit.
+
+---
+
+## Mock Draft — UX/interaction audit + fixes (2026-07-31)
+**Contributors:** Vera (audit + spec), Kael (visual, light), Axiom (feasibility) | **Date:** 2026-07-31
+
+**Vera's audit (walked the actual draft flow in `js/fantasy.js`, not a guess):** three real findings, prioritized by how much they hurt the core loop.
+
+**1. AI picks between your turns are invisible — the draft has no "live" feeling.** `_mdAdvance()` (fantasy.js:268) is a synchronous `while` loop: every AI team's pick between your turns resolves with zero delay, zero animation, zero acknowledgment. In a 12-team draft, that's up to 22 picks vanishing between two clicks — you draft a player, and the screen just jumps to your next turn with a completely different board. The only way to see what happened is to manually flip to the Board tab and compare against memory. For a product whose whole pitch is "a live Draft Assistant" (the setup screen's own subhead), this is the single biggest gap between what it claims to be and what it feels like using it. This isn't a speed problem to fix with a delay (nobody wants to sit through 22 fake picks) — it's a **missing recap**, the same instinct behind the "receipts" pattern this codebase already uses everywhere else for provenance.
+
+**2. Draft board cells identify players by last name only, with no way to confirm who it is.** `_mdBoardHtml()` (fantasy.js:468) truncates to `name.split(' ').slice(-1)[0]` with no tooltip, no full name anywhere on the cell. Common surnames (Williams, Jones, Allen — several active NFL players share these) are genuinely ambiguous on the board with no way to disambiguate short of leaving the view.
+
+**3. Mobile player rows are overloaded — 7 data points in one 0.7–0.85rem-tall flex row.** `.md-row` (main.css:3798) packs position badge, name, team, tier/cliff badge, VORP, ADP, and survival% into one row with no mobile-specific simplification (the only mobile rule at 760px, main.css:3853, stacks the roster panel above the list — it doesn't touch row density). Name is already `text-overflow: ellipsis` at desktop widths; at a 360–390px viewport with six sibling columns eating the row first, name truncation gets materially worse right when mobile drafting is exactly the situation Vera's own standing rule ("consider mobile... even on desktop-primary products") exists for.
+
+**Vera's spec:**
+- **Recap strip:** after `_mdAdvance()` returns control to the user (i.e., every time `_mdRenderDraft()` runs following one or more AI picks), show a dismissible strip above the recommended-pick banner: "Since your last pick" + a compact list of what each AI team took (round · team · pos · name), newest first. Not a modal, not blocking — a scannable strip the user can glance at or ignore. On your very first pick of the draft (nothing to recap), it doesn't render — no empty state needed, just absence, consistent with the arsenal-plot precedent ("absence is preferable to a broken-looking empty state").
+- **Board tooltip:** `title` attribute with the full name on every filled `.md-bd-cell`. Native tooltip, no new component, works identically on desktop hover and (via long-press) mobile.
+- **Mobile row simplification:** below 760px, drop the ADP and tier/cliff badge from `.md-row` — keep position, name, team, VORP, and survival%, the five fields that actually drive a pick decision mid-draft. ADP and tier are still fully available in the Board view and aren't lost, just decluttered from the fast-scan list on small screens.
+- **States:** recap strip needs no loading/error state (it's derived from data already in memory, synchronous). No accessibility regression — the strip is inert text, the tooltip is a native browser affordance, and the mobile column drop doesn't remove any interactive element, only display columns.
+
+**Kael (visual, light sign-off):** none of this needs new visual language — the recap strip reuses the existing `.md-note`/card token vocabulary (`--bg-card`, `--border-default`, `--text-muted`), sized like a compact version of the existing recommended-pick banner but visually subordinate to it (no `--accent` border, this isn't the primary CTA). Tooltip is browser-native, no styling needed. Mobile column drop is a pure `display:none` media-query addition, no new tokens.
+
+**Axiom (feasibility):** all three are additive and contained to `js/fantasy.js` + `css/main.css`, no AppState/architecture touch. Recap needs one new field on `_md` (a marker of `_md.picks.length` at the start of each user turn) and a small diff computed at render time — no new state shape, no persistence. No new fetches, no new CSP surface, no new files (manifest checker unaffected).
+
+**Gate status:** Vera ✅ · Kael ✅ · Axiom ✅. **Finn implementing this session.**
+
+**✅ SHIPPED 2026-07-31 (Finn):**
+- **Recap strip:** `_md.userTurnMark` tracks picks-count at the moment your own pick lands (set in `_mdUserDraft`, right before `_mdAdvance()` runs the AI picks); `_mdRenderDraft` slices `_md.picks` from that mark to build a "Since your last pick" strip (newest first, pos + name + team/round), rendered above the recommended-pick banner. Correctly renders on your very first turn too if you're not drafting 1st overall (shows the picks that happened before you) — a strictly better behavior than the original "never on turn 1" spec, so keeping it.
+- **Board tooltip:** filled `.md-bd-cell` divs now carry `title="{full escaped name}"` — hover on desktop, long-press on mobile, disambiguates the last-name-only board display.
+- **Mobile row density:** `.md-row-adp`, `.md-cliff`, `.md-tier` now `display:none` inside the existing 760px breakpoint — both values remain fully visible in the Board view, nothing interactive was removed.
+- **CSS:** `.md-recap`/`.md-recap-title`/`.md-recap-list`/`.md-recap-item`/`.md-recap-team` added to `main.css`, token-only (`--bg-card`, `--border-default`, `--text-subtle/secondary`), no new component.
+
+**Verified:** `node --check` clean on `fantasy.js`; `main.css` brace-balanced; `check-manifest.cjs` and `check-themes.cjs --strict` both green (0/0 across all 3 kept themes); full unit suite 37/37 (no direct coverage on the draft engine, confirms nothing else regressed). Logic traced by hand against the snake-draft sequencing (`_mdSnakeTeam`) rather than guessed. **Not done — live verify:** haven't run an actual draft in a browser to watch the recap strip render turn-over-turn, or confirmed the mobile row layout at a real 375px viewport. Recommend a `/screenshot` pass (desktop mid-draft + mobile mid-draft) before calling this fully closed, per Vera's own rule ("I won't ship a flow I haven't personally walked through end-to-end").
+
+---
+

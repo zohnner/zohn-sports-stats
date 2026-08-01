@@ -842,6 +842,14 @@ How to grow organic + referral traffic given the site is a deliberately no-build
 
 **Next:** owner ratifies scope + Phase 0 go-ahead (quick wins can start immediately, independent of the Phase 1 architecture decision); Relay + Axiom sign off on the URL contract before Phase 1 implementation.
 
+**D-041 update 2026-07-31 — Phase 2 stat-glossary explainer page shipped:** the one Phase 2 item never built — "turn the stat glossary into evergreen explainer pages" — is live at `/glossary`. `functions/glossary.js` clones the proven team/leaders template (real SPA shell + per-page head + crawlable snapshot), but is simpler than any prior template: zero API calls, zero data-freshness concern, because the content is the ~35 MLB term definitions already shipped to users as in-app tooltips (`js/glossary.js` `StatGlossary.MLB`). `DefinedTermSet`/`DefinedTerm` JSON-LD (the correct schema.org type for a glossary, distinct from `ItemList` on the leaders page). Added to `_routes.json` (`/glossary`), the sitemap generator's static list (next to `/mlb/leaders`), and hand-added to the current `sitemap.xml` since the generator is owner/CI-run and hasn't been regenerated since the leaders addition either. Linked from the home edge snapshot's discovery list alongside leaders/standings.
+
+**Flagged, not silently decided (Folio):** the terms are hand-duplicated into the Function rather than imported from `js/glossary.js`, because Pages Functions run in an isolated edge worker with no access to the client bundle — there's no `require`/`import` path between them. If MLB stat definitions change in `js/glossary.js`, `functions/glossary.js` needs the same edit or the two will drift. Logged as a new engineering debt item rather than left implicit.
+
+**Also flagged:** this page has no interactive SPA view behind it (no `__SS_ROUTE`) — the prerendered snapshot IS the page, for humans and crawlers alike, same as a static reference doc. An interactive glossary (search/filter/category grouping) is a real Kael+Vera design question or a `/screenshot`-verified interaction pass, not something to fold into an SEO-plumbing commit; this ships the indexable content now and leaves the richer version as a named follow-up rather than scope-creeping this session.
+
+**Verify:** `node --check` clean (`functions/glossary.js`, `functions/index.js`); manifest checker still green (Functions aren't part of the JS/CSS static-asset chain, confirmed no false failure); local head-injection transform test against the real `index.html` — all anchors (title, description, canonical, og:url/title/description, twitter title/description, JSON-LD, snapshot injection) matched and replaced correctly. **Not done — live verify:** haven't fetched the deployed `/glossary` post-push to confirm Cloudflare actually routes it (the `_routes.json` include is the mechanism, same as every prior top-level route addition, but D-046 §home rule explicitly warns this file shadows Functions if missed — double check after push).
+
 ---
 
 ## D-042 — NCAA Football as a third live sport + a sport-agnostic front door
@@ -1137,3 +1145,38 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 **Verify:** node --check (leaders fn, index.js); local test — statGroup filtering picks the right leader (Alvarez HR not a pitcher; Misiorowski ERA) and head anchors match index.html. No SW bump (server-side only). Live-verify post-deploy.
 
 **Deferred:** per-category pages (`/mlb/leaders/{stat}`) for long-tail; NFL/NCAAF leaders (offseason).
+
+---
+
+## D-052 — Next league expansion candidate: Men's College Basketball over NBA/NHL revival or net-new sports
+**Status:** proposed — owner ratification pending
+**Contributors:** Vera (JTBD), Kael (visual fit), Axiom (feasibility), Relay (data contract), Cipher (surface check)
+**Date opened:** 2026-07-31 | **Date resolved:** —
+
+**Trigger (owner):** open brainstorm — "debug and brainstorm new features and expansion to additional leagues," scope left to the team (no candidate leagues pre-selected).
+
+**Framing:** GOALS.md G6 already anticipates this moment — NBA/NHL are parked "no feature work... reviving either requires an owner decision," and F6 (multi-sport full parity) is a deferred goal, not a commitment. D-042 (NCAAF) proved the actual cost model for adding a sport: a data-driven `SPORTS` registry entry + an ESPN core-API proxy clone (`functions/api/{sport}.js`) + conference/division-aware standings reusing existing `.standings-*` components. That's the yardstick every candidate below gets measured against, not "which sport is biggest."
+
+**Candidates considered:**
+
+- **NBA revival.** Existing code predates the `SPORTS` registry and the ESPN-proxy pattern — it's built on Ball Don't Lie's free tier, where `/season_averages` and `/stats` are paid (401). Reviving it "properly" isn't reactivating dormant code, it's rebuilding the data layer on ESPN from scratch. Same cost as a net-new sport, none of the "just flip it back on" savings the word "revival" implies.
+- **NHL revival.** Same problem, smaller sunk cost (NHL never went deep) — direct `api-web.nhle.com` client-side fetch, no proxy, pre-dates the registry. Real hockey audience exists but it's the smallest of the candidates considered and doesn't fill a calendar gap the barbell doesn't already cover.
+- **WNBA (net-new).** ESPN core API covers it at the same pattern as NFL/NCAAF. But its season (May–Oct) sits entirely inside MLB's own season — it doesn't extend the barbell into a dead month, it just adds a second thing to build during the month MLB is already the flagship.
+- **Soccer / MLS / EPL (net-new).** Massive audience, ESPN has deep coverage, but the data shape is genuinely different: multiple concurrent competitions per "sport" (the `SPORTS` registry today is one entry = one competition), promotion/relegation, and a stat vocabulary standings/team components don't currently model. Real new architecture, not a clone — and no fantasy-tool angle (soccer fantasy is a different game than roster-construction snake drafts, so it wouldn't extend the NFL Draft HQ pattern either).
+- **Golf / Tennis / F1 (net-new).** Tournament/individual-event data (no teams, no standings, leaderboard-per-event) is the biggest structural mismatch against SportStrata's team/season-shaped component library of any candidate. Thinnest ESPN coverage of the group. Ruled out as poor fit for the current architecture, not on audience size.
+- **Men's College Basketball (net-new).** Reuses the exact NCAAF playbook — ESPN core-API proxy clone, conference-grouped standings, the same team/player detail frame from D-044 — at what Axiom estimates as 60–70% code reuse, the highest of any candidate. Fills a calendar gap the barbell genuinely has: NFL winds down in January, NCAAF ends by mid-January, MLB doesn't start until late March/spring training. Nothing in the current lineup is live Dec–March. March Madness is also the single highest attention-spike moment in non-MLB/NFL sports media, which the current lineup has zero presence for.
+
+**Per-domain read:**
+- **Vera (JTBD):** the Dec–March gap is a real, dated hole in the returning-user habit loop, not a hypothetical — it's the one stretch of the year the barbell currently gives a user no reason to open the app. That's the gap worth filling, over adding a sport that just competes for attention MLB or NFL already have.
+- **Kael (visual fit):** College Basketball needs zero new visual language — the NCAAF conference-grouped standings/teams/rankings components (shipped D-044) drop in directly. NBA's old components predate DESIGN.md (D-040) entirely and would need a full cohesion pass before they could ship, not a revival. Soccer/golf need new card grammars (no innings/quarters/downs equivalent) that don't exist yet — a bigger design lift than the current brainstorm should absorb in one pass.
+- **Axiom (feasibility):** the `SPORTS` registry + ESPN-proxy-clone pattern makes College Basketball close to a copy-paste of `functions/api/ncaaf.js` + `js/ncaaf.js`. NBA/NHL "revival" is actually a rebuild in disguise — don't let the word "revival" imply it's cheaper than net-new, because on this codebase it isn't.
+- **Relay (data contract):** ESPN's public core API has now been proven twice at this depth (NFL, NCAAF) for men's college basketball's same data shape — high confidence, low discovery risk. Soccer's multi-competition-per-sport shape is a genuinely new contract the registry doesn't handle today; NBA revival isn't "reuse the old contract," it's "replace BDL with ESPN," which is new work with old code sitting in the way.
+- **Cipher:** College Basketball, WNBA, and an ESPN-based NBA rebuild all ride existing allowlisted hosts (`site.api.espn.com`, `a.espncdn.com`) — zero new CSP surface. Soccer may need competition-specific asset hosts depending on how ESPN structures international leagues — unverified, flag before scoping if it's ever picked up.
+
+**Team recommendation:** Men's College Basketball is the strongest next-league candidate — lowest engineering cost (near-direct clone of a twice-proven playbook), zero new CSP/security surface, zero brand-cohesion risk, and it fills a calendar gap in the barbell that nothing else on this list does. It doesn't compete with NFL fantasy (different game entirely) and should ship bounded the same way NCAAF did — Scores/Standings/Teams/Rankings first, player-level data deferred pending a data-quality check the same way NCAAF deferred it (D-042 Resolution 1).
+
+NBA/NHL revival and soccer remain real options but are more expensive than their framing suggests (rebuild, not reuse; new multi-competition architecture, respectively) and shouldn't be bundled into this recommendation — either could get its own decision entry if the owner wants to pursue them specifically.
+
+**Nothing implements from this entry.** Per G6 and standing team protocol, sport-scope expansion is an owner decision. If ratified, this becomes a D-042-style entry: Vera/Kael/Axiom/Relay gates drafted in ISSUES.md before Finn touches anything, phased the same way (registry-safe slice → data layer → views → front-door placement).
+
+**Next:** owner ratifies (or redirects) scope; if College Basketball is chosen, gates get drafted in ISSUES.md following the D-042 template before any implementation begins.
