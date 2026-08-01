@@ -38,11 +38,12 @@
         const t = g.teams || {};
         const teamColor = ab => (typeof getMLBTeamColors === 'function' ? getMLBTeamColors(ab).primary : '#7c8df0');
         const teamName = ab => (typeof getMLBTeamColors === 'function' ? (getMLBTeamColors(ab).name || ab) : ab);
-        const logoById = id => (typeof getMLBTeamLogoById === 'function' && id) ? getMLBTeamLogoById(id) : '';
+        const logoById = id => (typeof getMLBTeamLogoUrl === 'function' && id) ? getMLBTeamLogoUrl(id) : '';
+        const darkSafe = ab => !!(typeof getMLBTeamColors === 'function' && getMLBTeamColors(ab).darkSafe);
         const side = k => {
             const tm = t[k]?.team || {};
             const abbr = tm.abbreviation || '?';
-            return { abbr, name: teamName(abbr), score: t[k]?.score, logo: logoById(tm.id), color: teamColor(abbr) };
+            return { abbr, name: teamName(abbr), score: t[k]?.score, logo: logoById(tm.id), color: teamColor(abbr), darkSafe: darkSafe(abbr) };
         };
         const away = side('away'), home = side('home');
         const status = g.status?.detailedState || '', abstract = g.status?.abstractGameState || '';
@@ -117,7 +118,7 @@
         const fmt = n => m.hasScore ? (n ?? 0) : '–';
         const row = (s) => `
                 <div class="hgc-row">
-                    ${s.logo ? `<img class="hgc-team-logo" src="${s.logo}" alt="${esc(s.abbr)}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    ${s.logo ? `<img class="hgc-team-logo${s.darkSafe ? ' hgc-team-logo--chip' : ''}" src="${s.logo}" alt="${esc(s.abbr)}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
                     <span class="hgc-abbr${s.winner ? ' hgc-abbr--win' : ''}" title="${esc(s.name)}">${esc(s.abbr)}</span>
                     <span class="hgc-score${s.winner ? ' hgc-score--win' : ''}">${fmt(s.score)}</span>
                     ${star(s.abbr)}
@@ -146,13 +147,13 @@
         const idAttr = (m.id != null && m.id !== '') ? `${idName}="${esc(m.id)}" ` : '';
         return `
             <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
-                ${m.home.logo ? `<img class="ticker-logo" src="${m.home.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${m.home.logo ? `<img class="ticker-logo${m.home.darkSafe ? ' ticker-logo--chip' : ''}" src="${m.home.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="ticker-team">${esc(m.home.abbr)}</span>
                 <span class="ticker-score${scoreCls(m.home.winner)}">${m.home.score ?? 0}</span>
                 <span class="ticker-divider">–</span>
                 <span class="ticker-score${scoreCls(m.away.winner)}">${m.away.score ?? 0}</span>
                 <span class="ticker-team">${esc(m.away.abbr)}</span>
-                ${m.away.logo ? `<img class="ticker-logo" src="${m.away.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${m.away.logo ? `<img class="ticker-logo${m.away.darkSafe ? ' ticker-logo--chip' : ''}" src="${m.away.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="ticker-status-pill ticker-status-pill--${m.pillCls}">${esc(pillLbl)}</span>
             </div>`;
     }

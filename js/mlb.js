@@ -86,13 +86,13 @@ const _MLB_COLORS_BASE = {
     // American League East
     'BAL': { primary: '#DF4601', secondary: '#000000' },
     'BOS': { primary: '#BD3039', secondary: '#0C2340' },
-    'NYY': { primary: '#132448', secondary: '#C4CED3' },
+    'NYY': { primary: '#132448', secondary: '#C4CED3', darkSafe: true },
     'TB':  { primary: '#092C5C', secondary: '#8FBCE6' },
     'TOR': { primary: '#134A8E', secondary: '#E8291C' },
     // American League Central
     'CWS': { primary: '#27251F', secondary: '#C4CED3' },
-    'CLE': { primary: '#00385D', secondary: '#E50022' },
-    'DET': { primary: '#0C2C56', secondary: '#FA4616' },
+    'CLE': { primary: '#00385D', secondary: '#E50022', darkSafe: true },
+    'DET': { primary: '#0C2C56', secondary: '#FA4616', darkSafe: true },
     'KC':  { primary: '#004687', secondary: '#C09A5B' },
     'MIN': { primary: '#002B5C', secondary: '#D31145' },
     // American League West
@@ -110,12 +110,12 @@ const _MLB_COLORS_BASE = {
     // National League Central
     'CHC': { primary: '#0E3386', secondary: '#CC3433' },
     'CIN': { primary: '#C6011F', secondary: '#000000' },
-    'MIL': { primary: '#12284B', secondary: '#FFC52F' },
+    'MIL': { primary: '#12284B', secondary: '#FFC52F', darkSafe: true },
     'PIT': { primary: '#27251F', secondary: '#FDB827' },
     'STL': { primary: '#C41E3A', secondary: '#FEDB00' },
     // National League West
     'ARI': { primary: '#A71930', secondary: '#E3D4AD' },
-    'COL': { primary: '#33006F', secondary: '#C4CED4' },
+    'COL': { primary: '#33006F', secondary: '#C4CED4', darkSafe: true },
     'LAD': { primary: '#005A9C', secondary: '#EF3E42' },
     'SD':  { primary: '#2F241D', secondary: '#FFC425' },
     'SF':  { primary: '#FD5A1E', secondary: '#27251F' },

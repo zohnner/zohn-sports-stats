@@ -1620,6 +1620,16 @@ main {
     object-fit: contain;
     flex-shrink: 0;
 }
+/* D-047 S5: dark-team logos (navy/deep-purple crests) lose contrast on the
+   near-black card surface (D-048 P1). A small neutral chip restores it —
+   fixed near-white regardless of theme, since it sits behind the logo itself,
+   not the card; harmless on light theme's already-light background. */
+.hgc-team-logo--chip {
+    background: #f5f7fa;
+    border-radius: 50%;
+    padding: 2px;
+    box-sizing: border-box;
+}
 .hgc-logo-ph {
     display: inline-block;
     width: 26px;

@@ -893,7 +893,7 @@ function _heroTeamInfo(side, g) {
     const tm     = g.teams?.[side]?.team || {};
     const abbr   = tm.abbreviation || '?';
     const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr) : { primary: '#7c8df0' };
-    const logo   = (typeof getMLBTeamLogoById === 'function' && tm.id) ? getMLBTeamLogoById(tm.id) : '';
+    const logo   = (typeof getMLBTeamLogoUrl === 'function' && tm.id) ? getMLBTeamLogoUrl(tm.id) : '';
     return { abbr, id: tm.id, name: colors.name || abbr, color: colors.primary,
              score: g.teams?.[side]?.score, logo };
 }
@@ -955,7 +955,7 @@ async function _heroFromStandings() {
         if (!best || gb < best.gb) best = { div: d.division, leader: teams[0], second: teams[1], gb };
     });
     if (!best) return null;
-    const logo = (typeof getMLBTeamLogoById === 'function' && best.leader.teamId) ? getMLBTeamLogoById(best.leader.teamId) : '';
+    const logo = (typeof getMLBTeamLogoUrl === 'function' && best.leader.teamId) ? getMLBTeamLogoUrl(best.leader.teamId) : '';
     const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(best.leader.teamAbbr) : { primary: '#7c8df0' };
     const lead = best.gb <= 0 ? 'tied atop' : `${best.gb === 1 ? '1 game' : best.gb + ' games'} up in`;
     const headline = best.gb <= 0
@@ -1747,7 +1747,7 @@ async function _renderHomeMoment() {
         // leader logo + gap label. Bar falls back to a neutral width if odds absent.
         const viz = races.slice(0, 3).map(r => {
             const color   = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr).primary : 'var(--accent)';
-            const logo    = (typeof getMLBTeamLogoById === 'function' && r.lead.teamId) ? getMLBTeamLogoById(r.lead.teamId) : '';
+            const logo    = (typeof getMLBTeamLogoUrl === 'function' && r.lead.teamId) ? getMLBTeamLogoUrl(r.lead.teamId) : '';
             const odds    = r.divOdds;
             const pctW    = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
             const gapLbl  = r.gb === 0 ? 'tied atop' : `+${r.gb} on ${_escHtml(r.second.teamAbbr)}`;
