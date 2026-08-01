@@ -133,43 +133,47 @@ const _MLB_ABBR_ALIASES = {
     'AZ':  'ARI',  // Arizona Diamondbacks (ESPN abbr)
 };
 
-// ── Park factors by home team ID (2024 run-scoring environment) ─
+// ── Park factors by home team ID (2023–2025 rolling 3yr run-scoring environment) ─
 // 1.00 = league avg; >1.05 hitter-friendly; <0.95 pitcher-friendly
-// Source: Baseball Reference multi-year park factors (2022–2024 avg) | Season: 2024
+// Source: RotoWire "The Z Files" 2026 MLB Park Factors (R column) — same rolling
+// 3-year-average methodology Baseball Reference uses. Pulled 2026-07-31 (Relay).
+// Exceptions to the 3yr window (per source, not a data-entry error):
+//   - Athletics/Sutter Health Park: 2025 only (first season at that park).
+//   - Orioles/Camden Yards: 2024–2025 only ("Walltimore" wall renovation reset it).
+//   - Rays/Tropicana Field: 2022–2024 (2025 home games relocated after hurricane
+//     roof damage, so 2025 isn't representative of the actual venue).
 // Review annually at season start — values shift as parks change or teams relocate.
-// 2026-07-01 review (Relay): still the 2022–2024 B-Ref averages — refresh requires a manual
-// source pull (no fetchable feed); tracked in ISSUES.md (P2 park-factor refresh).
 const _PARK_FACTORS = {
-    115: 1.15, // Rockies — Coors Field
-    113: 1.08, // Reds — Great American Ball Park
-    109: 1.07, // D-backs — Chase Field
-    146: 1.06, // Marlins — loanDepot park
-    147: 1.05, // Yankees — Yankee Stadium
-    143: 1.05, // Phillies — Citizens Bank Park
-    111: 1.04, // Red Sox — Fenway Park
-    112: 1.03, // Cubs — Wrigley Field
-    121: 1.02, // Mets — Citi Field
-    145: 1.01, // White Sox — Guaranteed Rate Field
-    134: 1.00, // Pirates — PNC Park
-    118: 0.99, // Royals — Kauffman Stadium
-    144: 0.99, // Braves — Truist Park
-    108: 0.98, // Angels — Angel Stadium
-    133: 0.97, // Athletics — Sutter Health Park
-    137: 0.97, // Giants — Oracle Park
-    117: 0.97, // Astros — Minute Maid Park
-    116: 0.97, // Tigers — Comerica Park
-    138: 0.96, // Cardinals — Busch Stadium
-    142: 0.96, // Twins — Target Field
-    135: 0.95, // Padres — Petco Park
-    120: 0.95, // Nationals — Nationals Park
-    141: 0.95, // Blue Jays — Rogers Centre
-    110: 0.95, // Orioles — Camden Yards
-    119: 0.94, // Dodgers — Dodger Stadium
+    115: 1.25, // Rockies — Coors Field
+    133: 1.17, // Athletics — Sutter Health Park (2025 only)
+    111: 1.10, // Red Sox — Fenway Park
+    109: 1.06, // D-backs — Chase Field
+    113: 1.06, // Reds — Great American Ball Park
+    142: 1.06, // Twins — Target Field
+    108: 1.02, // Angels — Angel Stadium
+    144: 1.02, // Braves — Truist Park
+    119: 1.02, // Dodgers — Dodger Stadium
+    146: 1.02, // Marlins — loanDepot park
+    120: 1.02, // Nationals — Nationals Park
+    143: 1.02, // Phillies — Citizens Bank Park
+    118: 1.02, // Royals — Kauffman Stadium
+    116: 1.02, // Tigers — Comerica Park
+    117: 1.00, // Astros — Daikin Park
+    141: 1.00, // Blue Jays — Rogers Centre
+    138: 1.00, // Cardinals — Busch Stadium
+    147: 1.00, // Yankees — Yankee Stadium
+    110: 0.98, // Orioles — Camden Yards (2024–2025 only)
+    134: 0.98, // Pirates — PNC Park
+    145: 0.98, // White Sox — Rate Field
+    121: 0.96, // Mets — Citi Field
+    158: 0.94, // Brewers — American Family Field
+    112: 0.94, // Cubs — Wrigley Field
+    137: 0.94, // Giants — Oracle Park
+    114: 0.94, // Guardians — Progressive Field
+    135: 0.94, // Padres — Petco Park
     140: 0.94, // Rangers — Globe Life Field
-    114: 0.93, // Guardians — Progressive Field
-    139: 0.93, // Rays — Tropicana Field
-    136: 0.92, // Mariners — T-Mobile Park
-    158: 0.91, // Brewers — American Family Field
+    139: 0.92, // Rays — Tropicana Field (2022–2024)
+    136: 0.83, // Mariners — T-Mobile Park
 };
 
 // ── Stadium weather lookup (Open-Meteo, keyed by MLB team ID) ─

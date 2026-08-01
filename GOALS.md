@@ -195,9 +195,9 @@ Unified player search across all sports — type any name, get any sport.
 
 ## Annual Maintenance
 
-- **Park factors refresh (each April):** `_PARK_FACTORS` in `js/mlb.js` reflects 2022–2024 Baseball Reference averages. Re-verify at season start — relocations (Athletics) and park changes shift values. (Relay, 2026-06-04)
+- **Park factors refresh (each April):** `_PARK_FACTORS` in `js/mlb.js` — re-verify at season start every year; relocations (e.g. Athletics) and park changes (e.g. Camden Yards' 2024 wall renovation) shift the rolling 3-year window. (Relay)
 - **wRC+ guts constants:** self-healing as of 2026-07-01 — seasons without a static entry derive lgwOBA/lgR-PA from MLB Stats API league totals (`_ensureWrcConstants`, † shown in UI). Optionally add the official FanGraphs entry when published to drop the dagger.
-- **Park factors (OPEN):** `_PARK_FACTORS` still reflects 2022–2024 B-Ref averages; needs a manual source pull each spring (Athletics relocation unverified). Tracked in ISSUES.md.
+- **Park factors — refreshed 2026-07-31 (Relay):** `_PARK_FACTORS` now reflects the 2023–2025 rolling 3-year average (source: RotoWire "The Z Files" 2026 Park Factors, same methodology as B-Ref) — was stuck on 2022–2024 for over a year. Three teams use a non-standard window per the source data itself (Athletics 2025-only, Orioles 2024–2025, Rays 2022–2024) — see the code comment. Next refresh due April 2027.
 
 ---
 
