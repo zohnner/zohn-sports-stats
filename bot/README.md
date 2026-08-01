@@ -43,6 +43,53 @@ python main.py --mode seed --season 2024   # repeat for each season you want
 The more seasons seeded, the more literally true "unprecedented" is. `bot.db` is
 cached between Actions runs.
 
+## Review-first football content queue
+
+`content_engine.py` creates ready-to-produce NFL or NCAA Football YouTube Shorts packages from completed ESPN scoreboard events. Each candidate has a copy-ready voiceover, title, caption, five visual beats to guide the clips you select, its source-game link, and an approval checkbox. It is deliberately deterministic: the only factual claims are the final score, ESPN-supplied ranked-team status, and arithmetic derived from them.
+
+```bash
+cd bot
+python content_engine.py --league nfl --date 2026-09-13
+python content_engine.py --league ncaaf --date 2026-09-05
+```
+
+Drafts land in `content-queue/` (gitignored). Start with `*-todays-pick.md`: it holds the top three unique games, complete with copy-ready packages and machine-readable editor manifests. Pick an approved package, source clips you have permission to use, paste the voiceover into your editor, and follow the visual beats. The tool does not generate video or publish anywhere.
+
+The root [content-queue workflow](../.github/workflows/content-queue.yml) runs after the main NFL/NCAAF result windows and uploads the queue as a GitHub Actions artifact. Use **Run workflow** to generate an on-demand queue; leave the date blank for the previous UTC day.
+
+Run its offline checks with:
+
+```bash
+python -m unittest discover -s tests
+```
+
+## Play visualizer (NFL, feeds the content queue)
+
+`play_visualizer.py` renders an animated top-down field view of a single NFL play
+from real nflverse tracking data — ball/player positions frame-by-frame, route
+trails, coverage lines, ball-carrier speed, a distance-gated ball-carrier guess,
+and a rough (heuristic, not calibrated) completion-probability estimate. Output
+is an MP4, meant to be cut into clips for `content_engine.py`'s Shorts packages
+— it does not run on the live site (Cloudflare Pages has no Python runtime), and
+it does not publish anywhere itself.
+
+Requires `ffmpeg` on PATH (for `FFMpegWriter`) and the extra deps in
+`requirements.txt` (numpy/pandas/matplotlib/nfl_data_py/nflreadpy/rich — not
+needed by the rest of the bot).
+
+```bash
+cd bot
+pip install -r requirements.txt
+python play_visualizer.py --season 2024 --menu   # browse & pick a play interactively
+python play_visualizer.py --season 2024 --game <id> --play <id> --week <n>
+python play_visualizer.py --show-speed --show-cp --show-coverage --route-tree
+```
+
+Downloaded play-by-play and tracking data are pickle-cached under `nfl_cache/`
+(gitignored) so repeat runs against the same season/week don't re-fetch. If
+tracking data can't be fetched or a game/play isn't found, it falls back to a
+labeled synthetic play rather than failing silently.
+
 ## Files
 | File | Purpose |
 |---|---|
@@ -54,6 +101,7 @@ cached between Actions runs.
 | `database.py` | SQLite history for the unprecedented check |
 | `main.py` | Legacy auto-poster (recap/drought/seed); only `seed` is needed now |
 | `config.py`, `x_poster.py` | Config; `x_poster`/`tweepy` only used by the legacy poster |
+| `play_visualizer.py` | NFL play animation (tracking data → MP4) for the content queue — see below |
 
 ## Known caveats
 - **Boxscore parsing is unverified against the live API.** `data_fetcher.extract_batting_lines`

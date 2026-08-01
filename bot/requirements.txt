@@ -3,3 +3,11 @@ tweepy==4.15.0
 python-dotenv==1.0.1
 requests==2.32.3
 schedule==1.2.2
+
+# play_visualizer.py only — not needed by the core auto-poster
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.9.0
+nfl_data_py==0.3.3
+nflreadpy==0.2.0
+rich==13.7.1
