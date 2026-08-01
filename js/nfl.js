@@ -818,7 +818,7 @@ async function loadNFLStatLeaders() {
             ErrorHandler.renderEmptyState(grid, 'Stat leaders are unavailable right now.', '🏈');
             return;
         }
-        try { await fetchNFLSleeperPool(); } catch (_) {}
+        try { await fetchNFLSleeperPool(); } catch (err) { Logger.warn('Sleeper pool fetch failed on leaders load', err, 'NFL'); }
         displayNFLStatLeaders(data);
     } catch (err) {
         ErrorHandler.handle(grid, err, loadNFLStatLeaders, { tag: 'NFL', title: 'Failed to Load NFL Leaders' });
@@ -1214,7 +1214,7 @@ async function showNFLTeamDetail(abbr) {
     try {
         if (!AppState.nflTeams.length) AppState.nflTeams = await fetchNFLTeams();
         await fetchNFLSleeperPool();
-        if (!AppState.nflGames || !AppState.nflGames.length) { try { AppState.nflGames = await fetchNFLScoreboard(); } catch (_) {} }
+        if (!AppState.nflGames || !AppState.nflGames.length) { try { AppState.nflGames = await fetchNFLScoreboard(); } catch (err) { Logger.warn('Scoreboard fetch failed in team detail', err, 'NFL'); } }
     } catch (err) {
         ErrorHandler.handle(grid, err, () => showNFLTeamDetail(abbr), { tag: 'NFL', title: 'Failed to Load Team' });
         return;
@@ -1584,7 +1584,7 @@ async function showNFLEspnPlayer(espnId) {
             fetch(`/api/nflcareer?id=${espnId}`).then(r => r.ok ? r.json() : null),
         ]);
         prof = pr || {}; career = cr;
-    } catch (_) {}
+    } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }
     if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found', '🏈'); return; }
 
     const years = [];

@@ -393,7 +393,7 @@ async function startStatlineShuffle() {
             try {
                 const perfs = await _fetchGamePerformances(pk);
                 allPerfs.push(...perfs);
-            } catch (_) {}
+            } catch (err) { Logger.warn(`Game performances fetch failed for game ${pk}`, err, 'ARCADE'); }
         }));
 
         if (allPerfs.length < 3) throw new Error('Not enough player data for today\'s puzzle');

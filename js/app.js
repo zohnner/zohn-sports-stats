@@ -1483,7 +1483,7 @@ async function _loadFootballLandingData(sport) {
     if (!host) return;
     const statsPath = sport === 'ncaaf' ? '/api/ncaafstats' : '/api/nflstats';
     let data = null;
-    try { const r = await fetch(statsPath); if (r.ok) data = await r.json(); } catch (_) {}
+    try { const r = await fetch(statsPath); if (r.ok) data = await r.json(); } catch (err) { Logger.warn(`Football landing stats fetch failed (${sport})`, err, 'APP'); }
     const cats = (data && data.categories) || [];
     if (!cats.length || !host.isConnected) return;
     const tiles = cats.slice(0, 4).map(cat => {

@@ -322,7 +322,7 @@ function _appendNflAllTime(q) {
         const box = document.getElementById('searchModalInput');
         if (!box || box.value.trim().toLowerCase() !== q) return;          // stale query
         let results = [];
-        try { const r = await fetch(`/api/nflsearch?q=${encodeURIComponent(q)}`); if (r.ok) results = (await r.json()).results || []; } catch (_) {}
+        try { const r = await fetch(`/api/nflsearch?q=${encodeURIComponent(q)}`); if (r.ok) results = (await r.json()).results || []; } catch (err) { Logger.warn('NFL all-time search fetch failed', err, 'SEARCH'); }
         const box2 = document.getElementById('searchModalInput');
         const container = document.getElementById('searchModalResults');
         if (!container || !box2 || box2.value.trim().toLowerCase() !== q) return;

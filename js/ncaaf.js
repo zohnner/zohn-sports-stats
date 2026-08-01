@@ -521,9 +521,9 @@ async function showNCAAFTeam(id) {
     }
     if (!team) { grid.innerHTML = _ncaafErr('Team not found.', 'displayNCAAFTeams'); return; }
     let roster = [], sched = [], stats = null;
-    try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (_) {}
-    try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (_) {}
-    try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (_) {}
+    try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
+    try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (err) { Logger.warn('NCAAF schedule fetch failed', err, 'NCAAF'); }
+    try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
     displayNCAAFTeamDetail(team, roster, sched, stats);
 }
 
