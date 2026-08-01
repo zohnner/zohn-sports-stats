@@ -9,7 +9,7 @@
  *   node tools/gen-sitemap.cjs --dry      # prints the url count, writes nothing
  *
  * Only lists paths that have a real edge-render template today:
- *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings
+ *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings · /glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug}
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug}
@@ -47,6 +47,7 @@ async function main() {
     for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
     add(urlTag('/mlb/leaders', 'daily', '0.7'));
+    add(urlTag('/glossary', 'monthly', '0.6'));
 
     // 2) MLB teams
     try {
