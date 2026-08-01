@@ -1385,8 +1385,8 @@ To keep this backlog focused on **open** work, the following shipped/historical 
 **Open backlog snapshot (nothing new here, just surfaced for the session):**
 - D-038 "Theme contract tightening" (line ~1327) — still OPEN.
 - D-041/D-045 SEO — P3 (Search Console verify/submit + measure) still owner-run, not done.
-- D-047 brand cohesion — S2 (scorebug) has NHL/NBA tickers + NFL/NCAAF scores-grid consumers remaining; S3b/S4 broad migrations deliberately deferred; S5/S6 not started.
-- D-048 brand redesign — only Phase 1 (surface/text near-black) shipped; Phases 2–7 (brand orange, semantic layer, chart palette, typography, visual language, light-mode parity) open.
+- D-047 brand cohesion — **[CORRECTED 2026-07-31, see DECISIONS.md]** this line was stale — S2 (foundation + 4 consumers), S3a, S3c, S4 were already shipped, not pending. Actual remainder: S2's NHL/NBA tickers + NFL/NCAAF scores-grid consumers, S6 (measure & lock). S5 shipped same day this was corrected.
+- D-048 brand redesign — **[CORRECTED 2026-07-31, see DECISIONS.md]** this line was stale — all 7 phases were already shipped (through 2026-07-26), not just Phase 1. D-048 is complete, nothing open.
 - D-043 (tabbed scoreboard / seasonal promo / cross-sport search) — all three gated, still awaiting owner ratification, nothing built.
 - N-13 (NGS lags at 2023) — still open; Relay never confirmed whether newer nflverse NGS exists under another path.
 - N-5 phases 3–4 (NFL standings-card + table-chrome inline-style cleanup) — still pending.
@@ -1473,6 +1473,21 @@ Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 st
 - **CSS:** `.md-recap`/`.md-recap-title`/`.md-recap-list`/`.md-recap-item`/`.md-recap-team` added to `main.css`, token-only (`--bg-card`, `--border-default`, `--text-subtle/secondary`), no new component.
 
 **Verified:** `node --check` clean on `fantasy.js`; `main.css` brace-balanced; `check-manifest.cjs` and `check-themes.cjs --strict` both green (0/0 across all 3 kept themes); full unit suite 37/37 (no direct coverage on the draft engine, confirms nothing else regressed). Logic traced by hand against the snake-draft sequencing (`_mdSnakeTeam`) rather than guessed. **Not done — live verify:** haven't run an actual draft in a browser to watch the recap strip render turn-over-turn, or confirmed the mobile row layout at a real 375px viewport. Recommend a `/screenshot` pass (desktop mid-draft + mobile mid-draft) before calling this fully closed, per Vera's own rule ("I won't ship a flow I haven't personally walked through end-to-end").
+
+---
+
+## D-047 S5 — Dark-logo treatment + N-15 — `getMLBTeamLogoById` never existed (live no-logo bug)
+**Contributors:** Kael (S5 spec, pre-existing per D-047 phasing), Axiom (N-15 finding + fix), Finn (implementation) | **Date:** 2026-07-31 | **N-15 Priority:** 2
+
+**Context:** owner asked the team what should ship next; after a stale-docs correction (D-048 was fully shipped, not 1/7 — see DECISIONS.md) landed on D-047 S5 as the one genuinely open, fully-specified, season-independent piece of brand-cohesion work remaining.
+
+**S5 shipped:** `darkSafe: true` added to `_MLB_COLORS_BASE` for NYY, CLE, DET, MIL, COL (dark navy/teal/purple crests that lose contrast against the D-048 near-black card surface). `Scorebug.normalizeMLBGame` reads it off `getMLBTeamColors` and carries it per-side; `renderScoreCard`/`renderTickerItem` add `.hgc-team-logo--chip`/`.ticker-logo--chip` when set. Chip is a fixed `#f5f7fa` circle (not a theme token) since its job is contrast against the logo image itself, independent of which theme's surface it sits on.
+
+**N-15 — found while wiring S5:** `Scorebug.normalizeMLBGame`'s `logoById` helper calls `getMLBTeamLogoById`, a function name that **has never existed** in `mlb.js` — the real function is `getMLBTeamLogoUrl`. Three more call sites in `app.js` (`_heroTeamInfo`, the insights-rail leader logo, and the pennant-race viz leader logo) made the identical mistake. All four were guarded by `typeof getMLBTeamLogoById === 'function'`, so instead of throwing, every one silently resolved to `''` — no crash, no console error, just a missing `<img>`. Net effect, live since these features shipped (D-046 P2/P4 dated 2026-07-06, D-047 S2 foundation dated on/before 2026-07-26): **the home hero, the insights-rail leader logo, the pennant-race viz leader logo, every scorebug-built home-grid game card, and the MLB ticker have all been rendering without team logos.** Exactly the silent-failure shape N-1/N-14 already named and fixed elsewhere in the codebase — this one just wasn't caught because the failure mode is a missing image, not a missing feature.
+
+**Fix:** renamed all four call sites to `getMLBTeamLogoUrl`. No other code path was affected — `getMLBTeamLogoUrl(teamId)` already existed, already correct, already used at 20+ other call sites across `mlb.js`/`arcade.js`/`scorecard.js`.
+
+**Verified:** `node --check` clean (`mlb.js`, `scorebug.js`, `app.js`); `grep -c getMLBTeamLogoById js/*.js` → 0 everywhere; `check-manifest.cjs` + `check-themes.cjs --strict` both green; full suite 37/37. Built a standalone Node `vm` harness (stubbing `AppState`/`Logger`/`_escHtml`) to actually execute `Scorebug.normalizeMLBGame` + both builders against a real MLB game object rather than trust static review: confirmed `away.logo` resolves a real `espncdn.com` URL, `away.darkSafe` is `true` for NYY and `false` for BOS, and the `--chip` class appears exactly once per render, only on the flagged team. **Not done — live verify:** haven't loaded the deployed site to visually confirm logos now render on the home page/ticker where they were previously blank, or eyeballed the chip's contrast on a real near-black card. Recommend a `/screenshot` pass on home + MLB scores after push — this is a visible regression fix, worth confirming by eye.
 
 ---
 
