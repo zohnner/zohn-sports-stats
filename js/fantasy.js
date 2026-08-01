@@ -242,6 +242,7 @@ function _mdStart(cfg) {
         picks: [],
         rosters: Array.from({ length: cfg.teams }, () => []),
         view: 'players',
+        userTurnMark: 0,
     };
     _md.rep = (_vbd && _vbd.ok) ? _vbdReplacement(_md.scoring, _md.teams, _md.superflex) : null;
     _mdAdvance();
@@ -278,6 +279,7 @@ function _mdUserDraft(playerId) {
     const p = _md.available.find(x => x.id === playerId);
     if (!p) return;
     _mdDraftPlayer(p);
+    _md.userTurnMark = _md.picks.length; // AI picks after this point are "since your last pick"
     _mdAdvance();
 }
 
@@ -365,6 +367,18 @@ function _mdRenderDraft() {
     const rec = _mdRecommend(surv);
     _md._recId = rec ? rec.p.id : null;
 
+    // "Since your last pick" recap — the AI picks between turns resolve instantly with
+    // no animation (nobody wants to sit through 22 fake picks), so this is the substitute
+    // for watching the draft happen. Absent entirely when there's nothing to recap (your
+    // very first turn, picking 1st overall) — no empty state, per the arsenal-plot precedent.
+    const sinceLast = _md.picks.slice(_md.userTurnMark || 0);
+    const recapHtml = sinceLast.length ? `
+        <div class="md-recap">
+          <div class="md-recap-title">Since your last pick</div>
+          <div class="md-recap-list">${sinceLast.slice().reverse().map(pk => `
+            <span class="md-recap-item"><b style="color:${_MD_POS_COLOR[pk.player.pos]||'var(--text-muted)'}">${pk.player.pos}</b> ${_escFan(pk.player.name)} <span class="md-recap-team">${pk.team===_md.userTeam?'You':'T'+(pk.team+1)} · R${pk.round}</span></span>`).join('')}</div>
+        </div>` : '';
+
     const recBanner = rec ? `
         <div class="md-rec" data-pid="${rec.p.id}" role="button" tabindex="0">
             <div class="md-rec-tag">★ Recommended</div>
@@ -388,6 +402,7 @@ function _mdRenderDraft() {
             <button class="md-btn md-btn--ghost" onclick="loadMockDraft()">Reset</button>
           </div>
         </div>
+        ${recapHtml}
         ${recBanner}
         <div class="md-draft-grid">
           <div class="md-available">
@@ -464,7 +479,7 @@ function _mdBoardHtml() {
             const p = cell[`${rd}-${t}`];
             const onClock = (p == null && _mdSnakeTeam((rd-1)*teams + (rd%2===1?t:teams-1-t), teams) === t); // best-effort
             if (!p) return `<div class="md-bd-cell md-bd-empty ${t===_md.userTeam?'md-bd-me':''}"></div>`;
-            return `<div class="md-bd-cell ${t===_md.userTeam?'md-bd-me':''}" style="border-left:3px solid ${_MD_POS_COLOR[p.pos]||'var(--border-mid)'}">
+            return `<div class="md-bd-cell ${t===_md.userTeam?'md-bd-me':''}" style="border-left:3px solid ${_MD_POS_COLOR[p.pos]||'var(--border-mid)'}" title="${_escFan(p.name)}">
                 <span class="md-bd-pos" style="color:${_MD_POS_COLOR[p.pos]}">${p.pos}</span><span class="md-bd-name">${_escFan(p.name.split(' ').slice(-1)[0])}</span></div>`;
         }).join('');
         return `<div class="md-bd-row"><div class="md-bd-rd">${rd}</div>${cells}</div>`;

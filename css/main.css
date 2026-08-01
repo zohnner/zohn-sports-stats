@@ -3785,6 +3785,15 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 .md-draft-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .md-onclock { display: block; font-family: var(--font-display); font-size: 1.15rem; color: var(--accent); font-weight: 700; }
 .md-pickno { font-size: 0.8rem; color: var(--text-muted); }
+
+/* "Since your last pick" recap (Vera, 2026-07-31) — subordinate to the recommended-pick
+   banner: no accent border, this isn't the primary CTA, just a scannable catch-up strip. */
+.md-recap { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.5rem 0.7rem; margin-bottom: 0.6rem; }
+.md-recap-title { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); margin-bottom: 0.35rem; }
+.md-recap-list { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; }
+.md-recap-item { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+.md-recap-team { color: var(--text-subtle); font-size: 0.7rem; }
+
 .md-draft-grid { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; align-items: start; }
 .md-available { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
 .md-avail-controls { padding: 0.6rem; border-bottom: 1px solid var(--border-default); display: flex; flex-direction: column; gap: 0.5rem; }
@@ -3850,7 +3859,14 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 .md-fr-group { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.6rem; }
 .md-fr-pos { font-weight: 800; font-size: 0.75rem; margin-bottom: 0.3rem; }
 .md-fr-row { font-size: 0.78rem; color: var(--text-secondary); padding: 1px 0; }
-@media (max-width: 760px) { .md-draft-grid { grid-template-columns: 1fr; } .md-roster { order: -1; } }
+@media (max-width: 760px) {
+    .md-draft-grid { grid-template-columns: 1fr; }
+    .md-roster { order: -1; }
+    /* Vera, 2026-07-31: 7 data points per row is too dense at mobile widths — drop the
+       two that don't drive an in-the-moment pick decision. Both stay fully available in
+       the Board view; nothing here removes an interactive element, only display columns. */
+    .md-row-adp, .md-cliff, .md-tier { display: none; }
+}
 
 /* Mock Draft next-level (D-027) */
 .md-check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); }
