@@ -402,6 +402,7 @@ function loadHome() {
 
         <footer class="home-footer">
             <span>Stats: MLB Stats API &amp; Baseball Savant. This site is not endorsed by or affiliated with Major League Baseball.</span>
+            <span>Press &amp; partnerships: <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a></span>
             <span>&copy; ${new Date().getFullYear()} SportStrata</span>
         </footer>
     `;

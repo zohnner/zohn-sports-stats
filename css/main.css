@@ -3685,6 +3685,14 @@ body.a2hs-open { padding-bottom: 4.5rem; }
     color: var(--text-subtle);
     line-height: 1.5;
 }
+.home-footer a {
+    color: var(--text-subtle);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.home-footer a:hover {
+    color: var(--text-secondary);
+}
 
 /* ── Sport switcher (header MLB / NFL) ─────────────────────── */
 .sport-switch {
