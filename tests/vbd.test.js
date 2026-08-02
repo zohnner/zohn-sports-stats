@@ -47,6 +47,28 @@ function poolFixture() {
     ];
 }
 
+// D-039 2a — trained rest-of-season regression (2026-08-01). _vbdProj now
+// applies Y = a*X + b per position x scoring format instead of carrying last
+// season's rate forward flat. These fixtures include `pos` on the fp object
+// (nflfp API responses always do) so the coefficient lookup actually fires —
+// unlike the poolFixture() below, whose `_fp` shape intentionally omits `pos`
+// and therefore exercises the flat fallback path instead.
+test('_vbdProj — applies trained RB coefficients when pos is present', () => {
+    const { ctx } = loadFantasy();
+    const fp = { pos: 'RB', ppr: 300, half: 300, std: 300, g: 17 };
+    // rate = 300/17 = 17.6471; RB.ppr {a:0.706,b:2.765} -> rtsRate = 15.2243; *17 = 258.805
+    const v = ctx._vbdProj(fp, 'PPR');
+    assert.ok(Math.abs(v - 258.805) < 0.01, `expected ~258.805, got ${v}`);
+});
+
+test('_vbdProj — falls back to flat carry-forward when pos is missing or untrained (e.g. K)', () => {
+    const { ctx } = loadFantasy();
+    const noPos = { ppr: 300, half: 300, std: 300, g: 17 };
+    assert.equal(ctx._vbdProj(noPos, 'PPR'), 300);
+    const kicker = { pos: 'K', ppr: 170, half: 170, std: 170, g: 17 };
+    assert.equal(ctx._vbdProj(kicker, 'PPR'), 170);
+});
+
 test('_vbdImplied — interpolates between position ADP neighbors', () => {
     const { ctx, evalIn } = loadFantasy();
     evalIn('_mdPool = ' + JSON.stringify(poolFixture()));

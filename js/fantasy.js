@@ -11,9 +11,26 @@ let _mdPool = null;
 let _md = null;
 
 // ── Value engine (VBD / VORP) — D-028 ─────────────────────────
-// Transparent: projects last-season production (per-game x 17, format-aware)
-// and values each player OVER positional replacement. Opponents draft to ADP
-// (the crowd); your Assistant drafts to value (the edge).
+// Transparent: projects rest-of-season production and values each player OVER
+// positional replacement. Opponents draft to ADP (the crowd); your Assistant
+// drafts to value (the edge).
+//
+// D-039 Track 2a (2026-08-01): _vbdProj no longer carries last season's rate
+// flat into next season. It applies a trained regression Y = a*X + b per
+// position x scoring format, fit on 2015-2025 nflverse year-over-year data
+// (10 season transitions, 2850 weighted player-pairs, weighted by
+// min(games_N, games_N+1)). Slopes land 0.57-0.74 — real regression to the
+// mean, not a 1:1 carry-forward. See DECISIONS.md D-039 for the full fit
+// table (N/a/b/R^2 per group) and QB's known-noisier R^2 (~0.30 vs ~0.44-0.54
+// for RB/WR/TE — expected, not a bug: QB output swings hardest on a single
+// benching or injury). Coefficients are a first production pass, not a
+// yearly-refreshed model yet — no auto-retrain job exists.
+const _RTS_COEF = {
+    QB: { ppr: { a: 0.566, b: 6.881 }, half: { a: 0.566, b: 6.876 }, std: { a: 0.566, b: 6.871 } },
+    RB: { ppr: { a: 0.706, b: 2.765 }, half: { a: 0.703, b: 2.500 }, std: { a: 0.697, b: 2.249 } },
+    WR: { ppr: { a: 0.741, b: 2.277 }, half: { a: 0.726, b: 1.965 }, std: { a: 0.699, b: 1.688 } },
+    TE: { ppr: { a: 0.719, b: 1.922 }, half: { a: 0.710, b: 1.594 }, std: { a: 0.691, b: 1.282 } },
+};
 let _vbd = null;
 function _vbdKey(name, pos) {
     return (name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
@@ -32,7 +49,10 @@ async function _vbdLoad() {
 function _vbdProj(fp, scoring) {
     if (!fp) return null;
     const k = scoring === 'Standard' ? 'std' : scoring === 'Half-PPR' ? 'half' : 'ppr';
-    return (fp[k] / (fp.g || 1)) * 17;        // per-game projected over a full season
+    const rate = fp[k] / (fp.g || 1);                                  // last-season per-game rate
+    const coef = _RTS_COEF[fp.pos] && _RTS_COEF[fp.pos][k];
+    const rtsRate = coef ? Math.max(0, coef.a * rate + coef.b) : rate; // trained RoS rate (D-039 2a); flat fallback for K/untrained pos
+    return rtsRate * 17;        // projected over a full season
 }
 function _vbdReplacement(scoring, teams, superflex) {
     const base = { QB: superflex ? teams * 2 : teams, RB: Math.round(teams * 2.5), WR: Math.round(teams * 2.5), TE: teams };
@@ -460,7 +480,7 @@ function _mdListHtml(players, surv) {
             <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
             <span class="md-row-team">${p.team}</span>
             ${cliff}
-            ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP)'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
+            ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP) — trained rest-of-season model'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
             <span class="md-row-adp">ADP ${p.adp}</span>${sv}
         </button>`;
     }).join('') || '<p class="md-note" style="padding:1rem">No players match.</p>';

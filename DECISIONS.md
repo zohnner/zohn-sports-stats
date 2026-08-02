@@ -762,7 +762,7 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 
 **D-038 update 2026-07-02 — Wave B (visual rules) SHIPPED:** K2 — live state no longer claims the border channel: `.home-game-card--live` and NFL `.game-card--live` keep team-identity borders; liveness = badge pulse + `--shadow-live` glow (rule codified in CSS comments at both sites; MLB scores-view cards were already compliant). V5 — `renderCurrentView` toggles `body.view-home`; the header search button hides on home where the hero search is primary (⌘K everywhere). SW v50 → v51. Tests 12/12, manifest + themes checkers green. Live-verify: home with live games shows team borders + amber glow; header search absent on home, present on all other views.
 
-## D-039 — AI without metered inference: three tracks — RATIFIED 2026-07-02 (owner: Track 1 built; Track 2c built; 2a/2b/Track 3 pending)
+## D-039 — AI without metered inference: three tracks — RATIFIED 2026-07-02 (owner: Track 1 built; Track 2a built 2026-08-01; Track 2c built; 2b/Track 3 pending)
 **Trigger (owner):** "make this site cutting edge using AI, while not having a usage API tied in to limit cost. Brainstorm."
 **Framing principle (all seniors):** intelligence ships from three free places — **authoring time** (generated in subscription-covered sessions, committed as static data), **training time** (models fit offline, shipped as coefficient JSON), and **client time** (user's own compute). Nothing meters per user action, ever — one viral day must not decide the bill. No "AI-powered" labels on plain code (Kael: posture kill).
 
@@ -772,6 +772,25 @@ Deferred until they have real content: an **Explore** hub, a sidebar, section la
 **Explicitly deferred:** in-browser LLMs (WebLLM/transformers.js) — real but 100MB+ downloads, WebGPU-only, no-build tension. Revisit as an opt-in "Labs" only after Tracks 1–2 ship.
 **Cipher note:** Track 1 is client-only parsing — the only new surface is echoing user input (escape via `_escHtml`, no innerHTML of raw query). Track 3 content is repo-committed and reviewed like code — no user-generated content path.
 **Sequencing recommendation:** Track 1 first (highest edge-per-effort, deepens G3 announcer-readiness), Track 2b comps + 2c playoff odds next (July-timed), 2a projections before August draft season, Track 3 rolling behind.
+
+**Track 2a — shipped 2026-08-01 (Relay: data + fit; Axiom: wiring).** Trained rest-of-season regression replaces the flat "last season ÷ games × 17" carry-forward in `_vbdProj` (`js/fantasy.js`). Methodology: `Y = a·X + b` weighted least squares, X = per-game rate season N, Y = per-game rate season N+1, fit per position (QB/RB/WR/TE) × scoring format (std/half/ppr) = 12 groups, pooled across all 10 year-transitions in 2015–2025 nflverse data (via `/api/nflfp?season=YYYY`), weighted by `min(games_N, games_N+1)`. 2,850 matched player-pairs total, all 11 seasons individually verified complete (`players.length === count`) before fitting — first-pass fetches for 2015/2023/2024/2025 came back partial (a caching/dedup artifact in the fetch layer, not bad upstream data) and were re-pulled and reconciled before anything was trusted into the model.
+
+| pos | fmt | N pairs | a | b | R² |
+|---|---|---|---|---|---|
+| QB | ppr | 380 | 0.566 | 6.881 | 0.300 |
+| QB | half | 380 | 0.566 | 6.876 | 0.300 |
+| QB | std | 380 | 0.566 | 6.871 | 0.301 |
+| RB | ppr | 722 | 0.706 | 2.765 | 0.458 |
+| RB | half | 722 | 0.703 | 2.500 | 0.450 |
+| RB | std | 722 | 0.697 | 2.249 | 0.440 |
+| WR | ppr | 1148 | 0.741 | 2.277 | 0.536 |
+| WR | half | 1148 | 0.726 | 1.965 | 0.517 |
+| WR | std | 1148 | 0.699 | 1.688 | 0.481 |
+| TE | ppr | 600 | 0.719 | 1.922 | 0.519 |
+| TE | half | 600 | 0.710 | 1.594 | 0.506 |
+| TE | std | 600 | 0.691 | 1.282 | 0.481 |
+
+All 12 slopes fall in the expected 0.3–0.8 regression-to-the-mean band; QB's lower R² (~0.30 vs. ~0.44–0.54 for RB/WR/TE) reflects real position volatility (one benching or injury swings QB per-game rate hard), not a bad fit. Coefficients live in `_RTS_COEF` in `js/fantasy.js`, right above `_vbdProj`. K is untrained (nflfp only aggregates QB/RB/WR/TE) and correctly falls back to the flat carry-forward. Tests: `tests/vbd.test.js` locks in the RB math and the fallback path with `pos`-bearing and `pos`-less fixtures. **Known gap:** this is a first production fit, not a refreshed-yearly model — no retrain job exists yet; re-derive after the 2026 season closes if this stays in use.
 
 ## D-040 — The Front Door, the Thread, and the House Style — RATIFIED 2026-07-03 (owner: all three programs; sequenced per recommendation)
 **Trigger (owner):** "consider landing pages, synergy across the site, and having a site dedicated theme/style."
@@ -1186,3 +1205,28 @@ NBA/NHL revival and soccer remain real options but are more expensive than their
 **Nothing implements from this entry.** Per G6 and standing team protocol, sport-scope expansion is an owner decision. If ratified, this becomes a D-042-style entry: Vera/Kael/Axiom/Relay gates drafted in ISSUES.md before Finn touches anything, phased the same way (registry-safe slice → data layer → views → front-door placement).
 
 **Next:** owner ratifies (or redirects) scope; if College Basketball is chosen, gates get drafted in ISSUES.md following the D-042 template before any implementation begins.
+
+---
+
+## D-053 — Two owner feature proposals: "MetLife effect" (bad-field durability/production factor) and a "Madden mode" player-card toggle
+**Status:** proposed — one accepted for Vera framing, one flagged with a hard IP blocker
+**Contributors:** Relay (data), Cipher (IP/brand-risk read), Axiom (feasibility note)
+**Date opened:** 2026-08-01 | **Date resolved:** —
+
+**Trigger (owner):** two new feature ideas dropped directly, no prior framing — logging per protocol before either goes to Vera/Kael/Axiom.
+
+### 1. "MetLife effect" — venue/surface as a fantasy-value factor
+**Relay's read:** this is real and it's the NFL analogue of the MLB park-factors work just shipped (see GOALS.md Annual Maintenance, `_PARK_FACTORS`). The premise — certain NFL venues correlate with worse outcomes (injury rate, weather exposure, turf-related soft-tissue injury, dome vs. outdoor scoring environments) — is well-documented in public injury-analytics writing (MetLife Stadium's field has drawn specific scrutiny across several seasons). Turning that into a fantasy-value input means: (a) a venue table (surface type, dome/outdoor, historical injury-rate or scoring-environment index per stadium), (b) a join from each player's team schedule to their venue list for the season, (c) a per-game or seasonal multiplier applied alongside — not instead of — the D-039 2a trained rest-of-season model, the same way park factors sit alongside wOBA rather than replacing it.
+
+**Feasibility note (Axiom):** this is schedule data ESPN's core API already exposes (venue per game in the scoreboard/schedule payload) — no new data source needed for the join. The open question is sourcing a defensible per-venue risk index rather than a single anecdote about one stadium; that has to be a documented, cited table (RotoWire/FTN/PFF-style turf reports exist) the same way park factors cite RotoWire, not an invented number. Needs Relay to source it before Axiom builds anything.
+
+**Disposition:** accepted as a real feature direction. Routed to Relay first (data contract + sourcing) rather than Vera, since the job-to-be-done is already clear (adjust projections for venue risk) and the open question is entirely a data-sourcing one, not a UX one. Once Relay has a defensible venue index, this folds into D-039 2a as an additional adjustment factor, same pattern as MLB park factors — Vera/Kael get a pass only if it surfaces as a new UI element (e.g., a venue-risk badge), not if it's purely a projection-math input.
+
+### 2. "Madden mode" toggle — view a player's Madden overall/card/illustration
+**Cipher's read — hard blocker as specified.** "Madden," "Madden NFL," and "MUT" (Madden Ultimate Team) are EA/Tiburon trademarks; player overall ratings, card templates, and MUT/NCAA Football 25-26 illustration art are EA's proprietary, copyrighted assets, not public data. There is no public API for Madden ratings — the ratings exist inside EA's own paywalled game ecosystem. Reproducing "a player's Madden card" on a public, free site means displaying EA-owned artwork and EA-owned derived ratings under EA's own trademark, with no license. That's not a gray area the way an ESPN-sourced stat is — it's the specific failure mode SportStrata has avoided everywhere else in this codebase (no licensed photos, D-046: "generated matchup board + logo lockups only," explicit policy). This does not get built as specified, full stop — not a phasing question, an IP one.
+
+**What's actually buildable:** the underlying user want — a fun, game-card-styled alternate view of a player's stat profile — is legitimate and matches SportStrata's existing player-detail depth (Statcast percentile card, predictive-analytics badges). An **original SportStrata rating card** (own name, own 0–99-style scale computed from real ESPN/nflverse stats, own illustration style, no EA trademarks or card templates referenced) delivers the same toggle-to-a-different-view experience without the exposure. This is a Kael-first item (the visual language/illustration direction is the whole point of the ask) then Vera (toggle interaction, states) then Axiom (rating-formula feasibility) — not Finn, until those three gates exist per the standing three-gate rule.
+
+**Disposition:** the "Madden" framing is rejected as specified. An original-IP "Player Card mode" is a legitimate F-series candidate for GOALS.md if the owner wants to pursue the toggle concept — routed to Kael first for a proposed visual direction, distinct from any EA product, before this goes further.
+
+**Next:** owner confirms whether to proceed with (a) the venue/durability factor as scoped above, and (b) an original-IP player-card toggle in place of the "Madden mode" framing — or redirects either.
