@@ -1077,10 +1077,22 @@ async function _loadNFLAdvanced(p, season) {
 }
 
 // ── Team detail (header + roster grouped by position) ─────────
+// N-16 (2026-08-02): 9 individual-position groups, broadcast-familiar order,
+// instead of the original 3 broad units — lets a fan answer "who's their WR2"
+// without scanning a mixed 18-player Offense list. Each entry's 2nd element
+// is a "side" tag ('off'/'def'/'st') so the hero fact grid (below) can still
+// roll these up into Offense/Defense/Special-Teams counts without hardcoding
+// array indices against a group list that's no longer 3 long.
 const _NFL_ROSTER_GROUPS = [
-    ['Offense',       ['QB', 'RB', 'FB', 'WR', 'TE', 'OL', 'OT', 'G', 'C']],
-    ['Defense',       ['DL', 'DE', 'DT', 'NT', 'LB', 'DB', 'CB', 'S']],
-    ['Special Teams', ['K', 'P', 'LS']],
+    ['QB', ['QB'], 'off'],
+    ['RB', ['RB', 'FB'], 'off'],
+    ['WR', ['WR'], 'off'],
+    ['TE', ['TE'], 'off'],
+    ['OL', ['OL', 'OT', 'T', 'G', 'OG', 'C'], 'off'],
+    ['DL', ['DL', 'DE', 'DT', 'NT'], 'def'],
+    ['LB', ['LB'], 'def'],
+    ['DB', ['DB', 'CB', 'S'], 'def'],
+    ['K/P', ['K', 'P', 'LS'], 'st'],
 ];
 
 async function showNFLTeamDetail(abbr) {
@@ -1198,14 +1210,17 @@ function _renderNFLTeamDetail(abbr) {
         (a.search_rank || 1e9) - (b.search_rank || 1e9) ||
         (a.full_name || '').localeCompare(b.full_name || '');
 
-    const groups = _NFL_ROSTER_GROUPS.map(([label, positions]) => ({
-        label,
+    const groups = _NFL_ROSTER_GROUPS.map(([label, positions, side]) => ({
+        label, side,
         players: roster.filter(p => positions.includes(p.position)).sort(sortFn).map(p => ({
             id: p.player_id, name: p.full_name, pos: p.position, number: p.number,
             starter: p.depth_chart_order === 1, injury: p.injury_status,
             headshot: getNFLSleeperHeadshot(p.player_id),
         })),
     }));
+    // Sum by side-of-ball rather than fixed indices — N-16 widened this from 3
+    // groups to 9, so groups[0]/[1]/[2] no longer mean Offense/Defense/ST.
+    const _sideCount = s => groups.filter(g => g.side === s).reduce((n, g) => n + g.players.length, 0);
 
     const assets = roster
         .filter(p => p.search_rank && p.search_rank < 9999)
@@ -1248,9 +1263,9 @@ function _renderNFLTeamDetail(abbr) {
         seasonLabel: team.record ? '' : `Enters the ${NFL_FANTASY_SEASON} season`,
         facts: [
             { label: 'Players',       value: roster.length },
-            { label: 'Offense',       value: groups[0].players.length },
-            { label: 'Defense',       value: groups[1].players.length },
-            { label: 'Special Teams', value: groups[2].players.length },
+            { label: 'Offense',       value: _sideCount('off') },
+            { label: 'Defense',       value: _sideCount('def') },
+            { label: 'Special Teams', value: _sideCount('st') },
             ...(division ? [{ label: 'Division', value: division }] : []),
         ],
         assets, groups,
