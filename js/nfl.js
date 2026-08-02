@@ -641,6 +641,105 @@ function displayNFLTrending(adds, drops) {
     grid.appendChild(panel('Trending Drops', '📉', drops, 'var(--color-loss)'));
 }
 
+// ── Display: Injury Report (N-17) — cross-team, grouped by status ──
+// Pure client-side filter/group over the already-cached Sleeper pool, same
+// data _renders_ inline elsewhere (roster rows, player cards) but was never
+// browsable league-wide before this. Reuses .nfl-lrow (Trending's row shape)
+// and _NFL_POS_FILTERS (Players' filter pills) rather than inventing either.
+const _NFL_INJ_STATUS_ORDER = ['Questionable', 'IR', 'PUP', 'DNR', 'Sus'];
+let _nflInjPosFilter = 'ALL';
+
+async function loadNFLInjuries() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-injuries', null);
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries') : '') +
+        Array.from({ length: 3 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
+    try {
+        await fetchNFLSleeperPool();
+        displayNFLInjuries();
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLInjuries, { tag: 'NFL', title: 'Failed to Load Injury Report' });
+    }
+}
+
+function displayNFLInjuries() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+
+    // Rostered players only — an unassigned injury_status entry (free agent /
+    // inactive DB record) isn't a "current" injury anyone can act on. Confirmed
+    // live 2026-08-02: ~44% of raw injury_status entries have no team.
+    const pool = Object.values(_nflPoolMap || {})
+        .filter(p => p && p.active && p.team && p.injury_status);
+
+    const filtered = _nflInjPosFilter === 'ALL'
+        ? pool
+        : pool.filter(p => p.position === _nflInjPosFilter);
+
+    const chip = (f) => {
+        const active = f === _nflInjPosFilter;
+        return `<button data-nfl-inj-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);
+            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+            background:${active ? 'var(--accent)' : 'transparent'};
+            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+    };
+    const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
+        ${_NFL_POS_FILTERS.map(chip).join('')}
+        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">${filtered.length} reported</span>
+    </div>`;
+
+    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries') : '') + bar;
+
+    if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'grid-column:1/-1';
+        ErrorHandler.renderEmptyState(empty, 'No injuries currently reported league-wide.', '🩺');
+        grid.innerHTML = html;
+        grid.appendChild(empty);
+        grid.querySelectorAll('[data-nfl-inj-pos]').forEach(btn => {
+            btn.addEventListener('click', () => { _nflInjPosFilter = btn.dataset.nflInjPos; displayNFLInjuries(); });
+        });
+        return;
+    }
+
+    const grouped = {};
+    filtered.forEach(p => { (grouped[p.injury_status] || (grouped[p.injury_status] = [])).push(p); });
+    const order = [..._NFL_INJ_STATUS_ORDER, ...Object.keys(grouped).filter(s => !_NFL_INJ_STATUS_ORDER.includes(s))];
+
+    order.forEach(status => {
+        const rows = grouped[status];
+        if (!rows || !rows.length) return;
+        rows.sort((a, b) => (a.search_rank || 1e9) - (b.search_rank || 1e9) || (a.full_name || '').localeCompare(b.full_name || ''));
+        const color = 'var(--color-loss)';
+        const rowsHtml = rows.map(p => {
+            const hs = getNFLSleeperHeadshot(p.player_id);
+            const detail = [p.injury_body_part, p.injury_notes].filter(Boolean).join(' · ');
+            return `
+            <div onclick="navigateTo('nfl-player-${p.player_id}')" class="nfl-lrow nfl-lrow--link">
+                <div class="nfl-lrow-av"><img src="${hs || ''}" alt="" loading="lazy" data-hide-on-error></div>
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(p.full_name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(p.team || 'FA')}${p.position ? ' · ' + _escHtml(p.position) : ''}${detail ? ' · ' + _escHtml(detail) : ''}</div>
+                </div>
+                <span class="nfl-lrow-val" style="color:${color};font-size:0.7rem">${_escHtml(status)}</span>
+            </div>`;
+        }).join('');
+        html += `<div class="card" style="padding:0;overflow:hidden;grid-column:1/-1">
+            <div class="nfl-card-head" style="gap:0.4rem"><span>${_escHtml(status)}</span> <span class="team-section__count">${rows.length}</span></div>
+            ${rowsHtml}
+        </div>`;
+    });
+
+    grid.innerHTML = html;
+    grid.querySelectorAll('[data-nfl-inj-pos]').forEach(btn => {
+        btn.addEventListener('click', () => { _nflInjPosFilter = btn.dataset.nflInjPos; displayNFLInjuries(); });
+    });
+}
+
 // ── Ticker ────────────────────────────────────────────────────
 
 function updateNFLTicker(games) {
@@ -1538,6 +1637,8 @@ if (typeof window !== 'undefined') {
     // (D-029, loaded after this file) is the sole source of both globals.
     window.loadNFLLeaderboards = loadNFLLeaderboards;
     window.displayNFLTrending  = displayNFLTrending;
+    window.loadNFLInjuries     = loadNFLInjuries;
+    window.displayNFLInjuries  = displayNFLInjuries;
     window.loadNFLStatLeaders  = loadNFLStatLeaders;
     window.displayNFLStatLeaders = displayNFLStatLeaders;
     window.loadNFLPlayers      = loadNFLPlayers;

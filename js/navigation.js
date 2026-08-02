@@ -309,6 +309,7 @@ const _NAV_META = {
     'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
     'nfl-trending':  { label: 'Draft HQ · Trending', icon: '🔥' },
+    'nfl-injuries':  { label: 'Draft HQ · Injury Report', icon: '🩺' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
@@ -627,6 +628,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'Draft HQ · Trending';
             loadNFLLeaderboards();
             break;
+        case 'nfl-injuries':
+            if (viewCount) viewCount.textContent = 'Draft HQ · Injury Report';
+            if (typeof loadNFLInjuries === 'function') loadNFLInjuries();
+            break;
         case 'nfl-teams':
             if (viewCount) viewCount.textContent = 'NFL Teams';
             if (AppState.nflTeams.length) displayNFLTeams(AppState.nflTeams);
@@ -909,7 +914,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
@@ -956,7 +961,7 @@ const SUB_NAV_TABS = {
             { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
         ] },
         { l: 'Fantasy', children: [
-            { v: 'nfl-draftkit', l: 'Draft HQ', also: ['nfl-rankings', 'nfl-sos', 'nfl-trending', 'nfl-mock'] },
+            { v: 'nfl-draftkit', l: 'Draft HQ', also: ['nfl-rankings', 'nfl-sos', 'nfl-trending', 'nfl-injuries', 'nfl-mock'] },
             { v: 'nfl-mock', l: 'Mock Draft' },
         ] },
         { v: 'news', l: 'News' },

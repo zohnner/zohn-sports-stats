@@ -282,7 +282,7 @@ TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/pla
 - Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-subtle`, `--text-disabled`
 - Accent (brand orange-gold): `--accent` (`#ff8100`), `--accent-light` (`#ffd200`), `--accent-dark`, `--accent-subtle`, `--accent-border`
 - Borders: `--border-default`, `--border-mid`, `--border-strong`, `--border-accent`
-- Semantic: `--color-win` (green), `--color-loss` (red), `--color-live` (amber), `--color-error`
+- Semantic: `--color-win` (green), `--color-loss` (red), `--color-live` (hot pink/magenta, `#ff006e` — corrected 2026-08-02; was documented as "amber" but never was, caught while designing N-17's injury-status badges), `--color-error`
 - Stat colors: `--color-pts` (amber), `--color-reb` (emerald), `--color-ast` (sky), `--color-stl` (violet), `--color-blk` (pink), `--color-pct` (orange), `--color-min` (indigo), `--color-tov` (red-light)
 - Layout: `--header-height` (60px), `--ticker-height` (38px), `--header-sub-h` (36px), `--sidebar-w` (280px)
 - Radii: `--radius-xs` through `--radius-full`
