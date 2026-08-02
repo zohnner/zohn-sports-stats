@@ -740,6 +740,105 @@ function displayNFLInjuries() {
     });
 }
 
+// ── Display: Waiver Wire (N-18) — trending adds, curated for pickups ──
+// Adds-only (Trending keeps drops — no content duplication between the two
+// pages). Checked live before designing: search_rank is NOT a usable filter
+// here (every real trending-add entry carries Sleeper's 999/9999999 "no ADP"
+// sentinel, since by definition these are undrafted deep-roster names). The
+// real differentiator is a same-team/same-position injury_status join (N-17
+// data) that surfaces WHY a name might be trending, which a raw add-count
+// list can't. No login/roster on this site (D-031, not started), so this
+// can't know "your" bench — it's a discovery tool, not a personalized one.
+let _nflWaiverPosFilter = 'ALL';
+
+async function loadNFLWaivers() {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-waivers', null);
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers') : '') +
+        Array.from({ length: 3 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
+    try {
+        await fetchNFLSleeperPool();
+        const adds = await fetch('/api/sleeper?path=/v1/players/nfl/trending/add').then(r => r.json());
+        displayNFLWaivers(adds);
+    } catch (err) {
+        ErrorHandler.handle(grid, err, loadNFLWaivers, { tag: 'NFL', title: 'Failed to Load Waiver Wire' });
+    }
+}
+
+function displayNFLWaivers(adds) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = 'players-grid';
+    grid.style.cssText = '';
+
+    const byTeamPos = {};
+    Object.values(_nflPoolMap || {}).forEach(p => {
+        if (p && p.active && p.team && p.position) (byTeamPos[p.team + '|' + p.position] || (byTeamPos[p.team + '|' + p.position] = [])).push(p);
+    });
+
+    const enriched = (adds || []).map(e => {
+        const p = _nflPoolMap?.[e.player_id];
+        if (!p) return null;
+        const teammate = (byTeamPos[p.team + '|' + p.position] || []).find(t => t.player_id !== p.player_id && t.injury_status);
+        return { p, count: e.count, teammate };
+    }).filter(Boolean);
+
+    const filtered = _nflWaiverPosFilter === 'ALL'
+        ? enriched
+        : enriched.filter(e => e.p.position === _nflWaiverPosFilter);
+    const shown = filtered.slice(0, 24);
+
+    const chip = (f) => {
+        const active = f === _nflWaiverPosFilter;
+        return `<button data-nfl-wv-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);
+            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+            background:${active ? 'var(--accent)' : 'transparent'};
+            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+    };
+    const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
+        ${_NFL_POS_FILTERS.map(chip).join('')}
+        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} adds, last 24h · Source: Sleeper</span>
+    </div>`;
+
+    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers') : '') + bar;
+
+    if (!shown.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'grid-column:1/-1';
+        ErrorHandler.renderEmptyState(empty, 'No trending waiver adds right now.', '📈');
+        grid.innerHTML = html;
+        grid.appendChild(empty);
+        grid.querySelectorAll('[data-nfl-wv-pos]').forEach(btn => {
+            btn.addEventListener('click', () => { _nflWaiverPosFilter = btn.dataset.nflWvPos; displayNFLWaivers(adds); });
+        });
+        return;
+    }
+
+    const rowsHtml = shown.map(({ p, count, teammate }) => {
+        const hs = getNFLSleeperHeadshot(p.player_id);
+        const hint = teammate ? `<div class="nfl-lrow-meta">↳ possible opportunity: ${_escHtml(teammate.full_name)} (${_escHtml(teammate.injury_status)})</div>` : '';
+        return `
+        <div onclick="navigateTo('nfl-player-${p.player_id}')" class="nfl-lrow nfl-lrow--link" style="align-items:flex-start">
+            <div class="nfl-lrow-av"><img src="${hs || ''}" alt="" loading="lazy" data-hide-on-error></div>
+            <div class="nfl-lrow-main">
+                <div class="nfl-lrow-name">${_escHtml(p.full_name)}</div>
+                <div class="nfl-lrow-meta">${_escHtml(p.team || 'FA')}${p.position ? ' · ' + _escHtml(p.position) : ''}</div>
+                ${hint}
+            </div>
+            <span class="nfl-lrow-val" style="color:var(--color-win)">+${Number(count || 0).toLocaleString()}</span>
+        </div>`;
+    }).join('');
+
+    html += `<div class="card" style="padding:0;overflow:hidden;grid-column:1/-1">${rowsHtml}</div>`;
+
+    grid.innerHTML = html;
+    grid.querySelectorAll('[data-nfl-wv-pos]').forEach(btn => {
+        btn.addEventListener('click', () => { _nflWaiverPosFilter = btn.dataset.nflWvPos; displayNFLWaivers(adds); });
+    });
+}
+
 // ── Ticker ────────────────────────────────────────────────────
 
 function updateNFLTicker(games) {
@@ -1639,6 +1738,8 @@ if (typeof window !== 'undefined') {
     window.displayNFLTrending  = displayNFLTrending;
     window.loadNFLInjuries     = loadNFLInjuries;
     window.displayNFLInjuries  = displayNFLInjuries;
+    window.loadNFLWaivers      = loadNFLWaivers;
+    window.displayNFLWaivers   = displayNFLWaivers;
     window.loadNFLStatLeaders  = loadNFLStatLeaders;
     window.displayNFLStatLeaders = displayNFLStatLeaders;
     window.loadNFLPlayers      = loadNFLPlayers;
