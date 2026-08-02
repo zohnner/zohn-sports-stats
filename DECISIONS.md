@@ -349,7 +349,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 ---
 
 ## D-012 — NFL Promoted from Preview to Public Beta (Phase 2)
-**Status:** open — owner direction 2026-06-14; v1 scope pending owner ruling
+**Status:** complete — shipped + validated live 2026-06-14 (see D-014's status update below). Scope was set to LIGHT SURFACE (scores/standings/teams) and shipped as specified; deeper NFL work continued under D-015 onward.
 **Contributors:** owner (direction), Vera, Kael, Axiom, Relay, Cipher, Folio
 
 **Direction (owner):** Add NFL as a real, surfaced product in the next public-beta phase. This **amends G2** ("MLB must reach full feature parity before other sports expand") — NFL no longer waits on full MLB depth. GOALS.md G2 and the CLAUDE.md "MLB is the only active product" rule must be reconciled to reflect this (Folio follow-up).
@@ -372,7 +372,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 ---
 
 ## D-013 — NFL Data Source: ESPN via Pages Function Proxy (Sportsipy rejected on ToS)
-**Status:** in progress — owner direction 2026-06-14
+**Status:** complete — ESPN proxy shipped + validated live 2026-06-14 (see D-014's status update below)
 **Contributors:** owner, Cipher, Relay, Axiom, Folio
 
 **Sportsipy rejected.** Sports-Reference's data-use policy explicitly prohibits building websites/tools on scraped data (sports-reference.com/data_use.html). SportStrata is a public site, so Sportsipy (an SR scraper) is a ToS violation — owner confirmed not to use it. It is also Python-only (can't run in the JS frontend) and scraper-fragile. No Sportsipy code ships (the scaffold started under the earlier ruling was left untracked and not committed).
@@ -386,7 +386,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 ---
 
 ## D-014 — NFL Fantasy Roadmap: Mock Draft First; Accounts Are the Pivotal Decision
-**Status:** open — owner direction 2026-06-14; accounts decision + target audience pending
+**Status:** complete (v1) — no-login mock-draft simulator shipped + validated live 2026-06-14; target audience decided (casual/redraft). The accounts/backend-tier decision this entry originally gated is tracked separately under D-031 (accepted, gates drafted, implementation not started).
 **Contributors:** owner, Vera, Kael, Axiom, Relay, Cipher, Folio
 
 **Direction (owner):** make NFL fantasy cutting-edge — mock drafts, fantasy grades, rich interactive graphics, league integration, monetization.
@@ -448,7 +448,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 ---
 
 ## D-017 — NFL Historical / Multi-Season Support
-**Status:** in progress — owner direction 2026-06-15 ("use historical data... go as far back as possible, like MLB")
+**Status:** complete — season selector (2000→latest) shipped; season-aware player stat lines and game logs also shipped (`/api/nflplayer`, `/api/nflgamelog` — see CLAUDE.md "NFL Data Foundation" source→coverage map, which documents both as live for any season)
 **Contributors:** owner, Relay, Finn
 
 **Direction:** make NFL data multi-season — browse past seasons and be ready for the upcoming year, like the MLB season selector.
@@ -513,7 +513,7 @@ Mobile order (Vera, ties off a D-009 open item): on ≤768px the zone column dro
 ---
 
 ## D-021 — Mock Draft: Interactive Drag-and-Drop Board (proposed)
-**Status:** proposed — owner direction 2026-06-15 ("interactive and inviting… pull player tiles onto your board… think outside the box"); approach + priority pending
+**Status:** superseded by D-027 (shipped 2026-06-21) — D-027 explicitly supersedes "the spirit of D-021 (drag-drop board proposal)" with a Players/Board toggle + full snake-grid board, Draft Assistant, tiers, and format awareness, rather than literal drag-and-drop tiles (mobile drag-and-drop was flagged here as a poor touch interaction anyway)
 **Contributors:** owner, Kael, Vera, Axiom
 
 **Direction:** turn the mock draft from a click-a-list tool into an interactive, inviting **draft-board** experience.
@@ -872,7 +872,7 @@ How to grow organic + referral traffic given the site is a deliberately no-build
 ---
 
 ## D-042 — NCAA Football as a third live sport + a sport-agnostic front door
-**Status:** proposed — owner ratification pending
+**Status:** in progress — core scope (P1 registry, P2 NCAAF data layer, P3 front door) shipped and live-verified against real 2025 data (see the entry's own 2026-07-06 update paragraphs below). P4 (NCAAF player surface, path-URL routing integration) was picked up and shipped under D-044/D-045 rather than as a literal D-042 P4 — see those entries.
 **Contributors:** Vera (JTBD/UX), Axiom (architecture/feasibility), Kael (visual/identity), Relay (data/API contract), Cipher (security)
 **Date opened:** 2026-07-06 | **Date resolved:** —
 
@@ -920,6 +920,8 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 
 **D-042 update 2026-07-06 — P2 remainder (Rankings/Standings/Teams) SHIPPED (pending push):** Continuing on ratified D-042 scope. Relay note: ESPN's `site.api` CFB standings feed is a stub (same failure NFL hit in D-029), so Standings + Teams read the `site.web.api` conference tree via a new `functions/api/ncaafstandings.js` (clone of `nflstandings.js`, season-parameterized, `debug=1` envelope for shape verification). Shipped in `js/ncaaf.js`: `displayNCAAFRankings` (AP/Coaches/CFP poll tabs, movement arrows), `displayNCAAFStandings` (season selector + conference sections, reusing the sport-agnostic `.standings-*` component), `displayNCAAFTeams` (conference-grouped chips from the same tree). Nav (sub/bottom/menu) expanded to Scores·Standings·Teams·Rankings·News. Reused existing `.standings-*` classes; added only `.ncaaf-team-grid/-chip` to components.css. SW v68→v69. **Verification:** `node --check` clean (ncaaf.js, navigation.js, ncaafstandings.js); 29/29 tests; manifest green; NUL clean. **Owed (Relay):** confirm the exact CFB conference-tree depth against the deployed `/api/ncaafstandings?season=2025&debug=1` after push (built defensively with a recursive conference collector, but the live tree shape is unverified — web_fetch was down during the build). NCAAF into D-041's path contract remains P4.
 
+**D-042 update 2026-07-06 — live-verified (browser) + refinements (doc-sync 2026-08-02: this paragraph was misfiled under D-043 below; moved here where it belongs — Folio):** Home regression fixed (v70) confirmed live — picker band renders all 3 sports, no console errors, neutral "Multi-Sport Analytics" brand. NCAAF views verified against live 2025 data: Rankings (AP top-3 Indiana/Miami/Ole Miss), Standings (12 conferences, full names, 136 teams), Teams (12 sections, 136 chips). **Relay owed shape-check CLOSED:** `/api/ncaafstandings?season=2025&debug=1` returns 11 conference groups directly (no FBS/FCS super-group); entries sit at the conference node except Sun Belt (2 divisions nested one level deeper) — the recursive collector handles both. Two refinements shipped (v71): Rankings now filters to FBS-relevant polls (drops FCS / Div II / Div III noise ESPN returns); conference label uses the full trail so Sun Belt divisions read "Sun Belt — East" not a bare "East".
+
 ---
 
 ## D-043 — Home hub follow-on: tabbed scoreboard, seasonal promo, cross-sport search
@@ -954,12 +956,10 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 
 **Next:** owner ratifies scope + sequencing; Relay verifies the two broadcast-field contracts before 3a build.
 
-**D-042 update 2026-07-06 — live-verified (browser) + refinements:** Home regression fixed (v70) confirmed live — picker band renders all 3 sports, no console errors, neutral "Multi-Sport Analytics" brand. NCAAF views verified against live 2025 data: Rankings (AP top-3 Indiana/Miami/Ole Miss), Standings (12 conferences, full names, 136 teams), Teams (12 sections, 136 chips). **Relay owed shape-check CLOSED:** `/api/ncaafstandings?season=2025&debug=1` returns 11 conference groups directly (no FBS/FCS super-group); entries sit at the conference node except Sun Belt (2 divisions nested one level deeper) — the recursive collector handles both. Two refinements shipped (v71): Rankings now filters to FBS-relevant polls (drops FCS / Div II / Div III noise ESPN returns); conference label uses the full trail so Sun Belt divisions read "Sun Belt — East" not a bare "East".
-
 ---
 
 ## D-044 — Cross-sport frame parity: unify player + team detail (and view chrome) across MLB/NFL/NCAAF
-**Status:** proposed — owner ratification pending
+**Status:** complete — P1 through P5 all built and verified at the render/data level, per the entry's own final 2026-07-06 update ("D-044 P1–P5 all built and verified"). Remaining items (MLB player detail onto the shared frame, NFL leader-row tabindex parity, a native-load pass) are opportunistic follow-ons, not blocking.
 **Contributors:** Kael (frame/visual), Vera (JTBD/states), Axiom (architecture), Relay (NCAAF data)
 **Date opened:** 2026-07-06 | **Date resolved:** —
 
@@ -1005,7 +1005,7 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 ---
 
 ## D-045 — Path-URL SEO foundation + clean per-sport landing pages (ratifies + extends D-041)
-**Status:** proposed — owner ratified the direction (full path URLs + real-URL per-sport pages); gates + P1 go-ahead pending
+**Status:** in progress — P0 through P2 shipped (three sport landing pages + full content-template edge-render for all three sports: MLB/NFL/NCAAF team+player, per the entry's own 2026-07-06 updates, "P2 is effectively complete"). Remaining: owner runs `tools/gen-sitemap.cjs` to populate discovery, then P3 (Search Console verify/submit + measure, owner-run).
 **Contributors:** Relay (URL contract), Axiom (edge-render architecture), Kael (landing visual), Vera (landing UX), Folio (meta/schema), Cipher (redirect/CSP safety)
 **Date opened:** 2026-07-06 | **Date resolved:** —
 
@@ -1246,7 +1246,7 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 ---
 
 ## D-054 — Long-form video asset pipeline ("Draft Instincts") — new repo, spec accepted, M1 in progress
-**Status:** building — M1 (proof) in progress 2026-08-02
+**Status:** in progress — well past M1. Chromium render, fonts, and the full idea-to-video pipeline are all built and have produced real episodes on the owner's own machine (see update below); this entry's original M1/font/Chromium "not yet verified" language is stale as of the video repo's own `CLAUDE.md`, which is the current source of truth for this pipeline's state.
 **Contributors:** owner (full spec), Axiom (build)
 **Date opened:** 2026-08-02 | **Date resolved:** —
 
@@ -1272,3 +1272,5 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 **Font vendoring is also still open** (see the CLAUDE.md "Fonts — known gap" section) — M1 as scaffolded uses system fallback fonts, not the real Inter/Barlow Semi Condensed/Space Grotesk/JetBrains Mono files.
 
 **Next, in order:** (1) run `npm install && npx playwright install chromium` in `videocreation/` on a normal machine, then `node src/timing.js manifests/ep000.json && node src/render.js manifests/ep000.json && node src/compose.js ep000` to produce the first real rendered clip and confirm the seek contract actually renders as designed; (2) run `node src/determinism-test.js manifests/ep000.json` to confirm the byte-identical-frames acceptance criterion for real; (3) vendor the four font files into `tokens/fonts/`; (4) only then move on to M2 (P1 templates, full episode, shorts derivation) and M3 (forced alignment, live data pull).
+
+**Update 2026-08-02 — well past M1; this is the current state, videocreation/CLAUDE.md is the source of truth.** All three "Next" items above are done and superseded by a much larger build-out: fonts vendored (real Inter/Barlow Semi Condensed/Space Grotesk/JetBrains Mono WOFF2 files, `@fontsource`-sourced, no CDN dependency), Chromium render confirmed working — not just in a sandbox, but on the owner's real machine, which has produced multiple actual finished episodes. Full pipeline now built: `data-brief.js` (live nflfp + Sleeper join, candidate relevance/hard-ceiling guards, real per-player context, enforced script variety), `script.js` (Gemini narration generation with retry + variety enforcement), `episode.js` (idea→script→video orchestrator with `draft`/`build`/`clean` subcommands), `thumbnail.js`, `chapters.js`. **TTS/ElevenLabs was built (`tts.js`, with per-scene checkpointing) then explicitly disconnected from the automatic chain by owner direction 2026-08-02** — narration is recorded externally now and brought in via `cue-tap.js` (manual) or `align.py` (local, free, forced-alignment via faster-whisper — the recommended real-VO path). A fourth timing path, `scratch-audio.js` + `episode.js build --scratch`, produces a real picture-locked video with placeholder silent audio when narration isn't ready yet, writing to a distinctly-named `-scratch-1080p.mp4` so it can't be mistaken for a final render. `align.py` also now emits `alignment.json` (word-level, bucketed per scene), so real YouTube captions (`captions.js`) work off the real-VO path, not just the disconnected ElevenLabs one. This decision entry should be treated as a historical snapshot of the M1 kickoff, not current status — read `videocreation/CLAUDE.md` for what's actually true today.

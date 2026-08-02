@@ -347,7 +347,22 @@ Principle: **lead no-login.** Ship the mock-draft simulator first (Sleeper data,
 
 ---
 
-## Current State — 2026-06-14
+## Current State — 2026-08-02 (resynced by Folio; previous snapshot below was frozen at 2026-06-14/D-034 and had drifted far behind DECISIONS.md)
+
+**MLB (primary):** public beta, full depth, unchanged as the reference sport. Home now has a data-story hero, live-game states, headlines/insights rail, pennant-race viz, team favorites, and edge-rendered SEO surfaces (home + team/player/standings/leaders path URLs, D-045).
+
+**NFL (live beta, far past the light-surface v1 in the old snapshot):** Players, real stat Leaders (ESPN core API, 2000+, season selector), Trending (Sleeper add/drop), Advanced/Next Gen Stats via nflverse (2016+, percentile bars), multi-season player detail + game logs, and Mock Draft "next level" (D-027) — Draft Assistant recommendations, tiers/cliffs, Superflex/scoring-aware AI, full snake draft board, deep post-draft analysis. Value-based drafting (D-028): a transparent VBD engine trained on 2015–2025 real production data, a Draft Kit/Rankings page, and Strength of Schedule. A venue-durability factor (D-053, "MetLife effect") feeds both the VBD engine and a mock-draft badge. Path-URL landing + content pages (team/player) shipped under D-045. Retired/all-time player lookup (D-020) and drag-and-drop-in-spirit board interactivity (D-021, superseded by D-027) are the two oldest open threads still worth revisiting.
+
+**NCAA Football — new since the old snapshot (D-042, opened 2026-07-06):** promoted to a full third live sport, not just previewed. Scores (offseason-aware), conference-grouped Standings + Teams, AP/Coaches/CFP Rankings, and — going further than D-042's original bounded scope once Relay found the data actually supports it (D-044) — a full player surface: Leaders, player detail on the shared cross-sport frame (profile + season stat groups + a "% of the FBS leader" radar + game-trend chart + game log), and rich team pages (roster-by-unit, schedule, team leaders). The home's sport-agnostic front door (a registry-driven sport-picker band beneath the seasonal hero) shipped alongside it and is what makes a third sport a data entry instead of a rewrite.
+
+**Cross-sport plumbing shipped along the way:** a shared `detailFrame.js` builder now backs NFL and NCAAF player/team detail (D-044) so MLB's benchmark structure — hero, stat cards, radar/trend charts — extends to other sports without three divergent code paths. A `SPORTS` registry (D-042) replaced sport-specific if/else chains in navigation. Path-URL edge-render now covers landings + content templates for all three sports (D-045); only Search Console verify/submit + measure (owner-run) remains open there.
+
+**Adjacent, separate repo:** a long-form YouTube pipeline ("Draft Instincts," D-054) renders SportStrata's own tokens/data into episodes — idea → data brief → AI script → video, narration recorded externally and dubbed in (or a picture-locked placeholder render via `--scratch`). Lives in its own repo (`sportstrata-video`), not part of this codebase's build-free constraint.
+
+**Open, owner-gated (not yet ratified — see DECISIONS.md):** D-025 (NFL percentile "Key Metrics" card), D-043 (home hub tabbed scoreboard/seasonal promo/cross-sport search), D-052 (next sport-expansion candidate — team recommends men's college basketball over NBA/NHL revival), D-053 pt. 2 ("Player Card mode" as an original-IP alternative to the rejected Madden mode), D-031 (accounts/auth foundation — all six senior gates drafted, execution not started).
+
+<details>
+<summary>Previous snapshot — 2026-06-14 (kept for history, superseded by the above)</summary>
 
 **MLB (primary):** public beta, full depth. Recent: live-game full-page fix, leader qualification (3.1 PA / 1 IP per game), De-AI passes (no rainbow stat colors, fonts restored), pitcher-Statcast Savant fix, Players-grid + main.css repairs. Data liabilities cleared (old BDL key dead, no PII/trackers, Kalshi off).
 
@@ -356,3 +371,5 @@ Principle: **lead no-login.** Ship the mock-draft simulator first (Sleeper data,
 **NFL Fantasy — Mock Draft v1 SHIPPED + validated live:** no-login snake mock draft (`js/fantasy.js`), Sleeper ADP data via `/api/sleeper`, ADP/need-based AI opponents, Monte Carlo "% to return," roster panel, value-vs-ADP grade. Path: no-login-first, accounts planned in parallel; audience: casual/redraft (D-014).
 
 **Next NFL (in scope):** deepen NFL by reusing existing MLB component logic — NFL leaderboards (leaderboard panels), NFL player cards/detail (player-card pattern) on ESPN data via proxy. Then projections-dependent fantasy (VORP/PAR), DST, year-round standings source, and the accounts tier (grades, league import, multiplayer, monetization).
+
+</details>
