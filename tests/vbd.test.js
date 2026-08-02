@@ -24,6 +24,7 @@ function loadFantasy() {
             addEventListener: noop, createElement: () => ({ style: {}, classList: { add: noop, remove: noop } }),
         },
         fetch: async () => { throw new Error('network disabled in tests'); },
+        _escHtml: str => { if (str == null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); },
     };
     ctx.globalThis = ctx;
     ctx.window = ctx;
@@ -67,6 +68,23 @@ test('_vbdProj — falls back to flat carry-forward when pos is missing or untra
     assert.equal(ctx._vbdProj(noPos, 'PPR'), 300);
     const kicker = { pos: 'K', ppr: 170, half: 170, std: 170, g: 17 };
     assert.equal(ctx._vbdProj(kicker, 'PPR'), 170);
+});
+
+// D-053 — venue context badge, informational only (never feeds VBD math).
+test('_nflVenueBadge — cited outliers get their specific note; plain turf gets the generic note; plain grass gets nothing', () => {
+    const { ctx } = loadFantasy();
+    assert.ok(ctx._nflVenueBadge('MIN').includes('best-rated turf'), 'MIN is a cited turf outlier');
+    assert.ok(ctx._nflVenueBadge('PIT').includes('despite grass'), 'PIT is a cited grass outlier');
+    assert.ok(ctx._nflVenueBadge('BUF').includes('median D vs. B'), 'BUF is plain turf, gets the generic note');
+    assert.equal(ctx._nflVenueBadge('KC'), '', 'KC is plain grass — no decorative badge');
+    assert.equal(ctx._nflVenueBadge('FA'), '', 'no team — no badge');
+});
+
+test('_nflVenueBadge — resolves Sleeper/ESPN abbr aliases before lookup', () => {
+    const { ctx } = loadFantasy();
+    assert.equal(ctx._nflVenueBadge('WSH'), '', 'WSH aliases to WAS (grass, uncited) — no badge');
+    assert.ok(ctx._nflVenueBadge('JAC') === '', 'JAC aliases to JAX (grass, uncited) — no badge');
+    assert.equal(ctx._nflVenueBadge('OAK'), '', 'OAK aliases to LV — Allegiant Stadium is grass, uncited — no badge');
 });
 
 test('_vbdImplied — interpolates between position ADP neighbors', () => {

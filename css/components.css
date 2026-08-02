@@ -4386,6 +4386,26 @@
 }
 .dk-val--est { font-style: italic; opacity: 0.8; }
 
+/* ── Venue context badge (D-053) — informational only, never a value signal.
+   Reuses .dk-est's restrained pill language on purpose: this is context, not
+   a stat, so it must not compete visually with VORP/tier/ADP. No color-coding
+   by team — the badge is neutral for every team; only the tooltip text
+   differentiates a cited outlier from a plain "plays on turf" note. */
+.md-venue-badge {
+    display: inline-block;
+    margin-left: 0.3rem;
+    padding: 0 0.3rem;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-xs);
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    vertical-align: middle;
+    cursor: help;
+}
+
 /* ── Ask Bar (D-039) — answer panel inside the ⌘K overlay ─────
    Rows reuse .search-result-item; only the echo/chips/values are new.
    No AI glitter: the intelligence reads through precision, not decoration. */

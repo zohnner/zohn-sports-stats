@@ -107,6 +107,42 @@ function _mdVorp(p) {
 }
 function _mdVorpIsImplied(p) { return !p._fp && _mdVorp(p) != null; }
 
+// ── Venue/surface context (D-053) — informational only, never feeds VBD math ──
+// Surface split: Pro Football Network, "List of NFL Stadiums With Grass or
+// Turf" (Sept 2025, ahead of the 2025 season — Buffalo's new grass stadium is
+// slated to open for 2026 and will flip BUF once confirmed live). Cited
+// outlier grades: NFLPA's 2026 "Home Game Field" survey category, reported by
+// ESPN/Sportico after an arbitrator barred the NFLPA from publishing it
+// directly over a CBA dispute — see DECISIONS.md D-053 for the full sourcing
+// note. Deliberately NOT a numeric adjustment: injury-rate evidence is
+// contested (the official 2023 joint NFL-NFLPA study found turf/grass
+// non-contact injury rates nearly identical, while a widely-cited 2012-2018
+// NFL dataset found turf carried a 28% higher non-contact lower-extremity
+// injury rate and 69% higher foot/ankle rate) — no stable constant exists to
+// bake into a projection the way MLB park factors have one, so this stays a
+// badge, not a multiplier.
+const _NFL_VENUE_ABBR_ALIAS = { WSH: 'WAS', JAC: 'JAX', OAK: 'LV', SD: 'LAC', STL: 'LAR', LA: 'LAR' };
+const _NFL_TURF_TEAMS = new Set(['ATL','BUF','CAR','CIN','DAL','DET','HOU','IND','LAC','LAR','MIN','NE','NO','NYG','NYJ','SEA','TEN']);
+const _NFL_VENUE_NOTE = {
+    BAL: 'A-graded grass field (2026 NFLPA player survey)',
+    DEN: 'A-graded grass field (2026 NFLPA player survey)',
+    PHI: 'A-graded grass field (2026 NFLPA player survey)',
+    PIT: 'F−-graded field despite grass — lowest in the league (2026 NFLPA player survey)',
+    NYG: 'F−-graded turf — tied lowest in the league (2026 NFLPA player survey)',
+    NYJ: 'F−-graded turf — tied lowest in the league (2026 NFLPA player survey)',
+    TEN: 'F−-graded turf — tied lowest in the league (2026 NFLPA player survey)',
+    MIN: 'B-graded turf — best-rated turf field in the league (2026 NFLPA player survey)',
+};
+function _nflVenueBadge(teamAbbr) {
+    const k = _NFL_VENUE_ABBR_ALIAS[teamAbbr] || teamAbbr;
+    if (!k || k === 'FA') return '';
+    const turf = _NFL_TURF_TEAMS.has(k);
+    const note = _NFL_VENUE_NOTE[k];
+    if (!turf && !note) return '';           // plain grass, nothing notable cited — no decorative badge
+    const title = note || 'Plays on artificial turf — 2026 NFLPA player survey graded turf fields a median D vs. B+ for grass.';
+    return `<span class="md-venue-badge" title="${_escHtml(title)}">${turf ? 'Turf' : 'Grass'}</span>`;
+}
+
 const _MD_POS = ['QB', 'RB', 'WR', 'TE', 'K'];
 const _MD_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
 const _MD_FLEX = ['RB', 'WR', 'TE'];
@@ -478,7 +514,7 @@ function _mdListHtml(players, surv) {
         return `<button class="md-row${isRec}" data-pid="${p.id}">
             <span class="md-row-pos" style="color:${_MD_POS_COLOR[p.pos]||'var(--text-muted)'}">${p.pos}</span>
             <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
-            <span class="md-row-team">${p.team}</span>
+            <span class="md-row-team">${p.team}${_nflVenueBadge(p.team)}</span>
             ${cliff}
             ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP) — trained rest-of-season model'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
             <span class="md-row-adp">ADP ${p.adp}</span>${sv}
@@ -677,7 +713,7 @@ function _dkRender() {
               <span class="dk-c-rk">${i+1}</span>
               <span class="dk-c-pos" style="color:${_MD_POS_COLOR[r.pos]||'var(--text-muted)'}">${r.pos}</span>
               <span class="dk-c-name">${_escFan(r.name)}${r.imp?' <span class="dk-est" title="No prior-season production — market-priced from ADP neighbors at the position">est</span>':''}</span>
-              <span class="dk-c-team">${r.team}</span>
+              <span class="dk-c-team">${r.team}${_nflVenueBadge(r.team)}</span>
               <span class="dk-c-tier">${r.tier?'T'+r.tier:'—'}</span>
               <span class="dk-c-num${r.imp?' dk-val--est':''}">${r.proj!=null?(r.imp?'~':'')+r.proj:'—'}</span>
               <span class="dk-c-num${r.imp?' dk-val--est':''}" style="color:${r.vorp!=null&&!r.imp?(r.vorp>0?'var(--color-win)':'var(--text-subtle)'):'var(--text-subtle)'};font-weight:700">${r.vorp!=null?(r.imp?'~':'')+(r.vorp>0?'+':'')+r.vorp:'—'}</span>
