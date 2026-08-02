@@ -36,3 +36,8 @@ design-review-*.md
 assets/_svgpreview.png
 ZDevNotes
 X Post/
+
+# sportstrata-video (D-054) — its own independent git repo, nested here only
+# because that's where the folder picker landed. Never let the site repo see
+# it or track it — no build step lives in this repo, ever.
+videocreation/
