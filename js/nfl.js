@@ -489,16 +489,15 @@ function displayNFLStandings(rows) {
     };
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:1.5rem;padding:1rem 0';
+    wrap.className = 'nfl-standings-wrap';
 
     for (const conf of confOrder) {
         if (!grouped[conf]) continue;
         const confWrap = document.createElement('div');
-        confWrap.innerHTML = `<h2 style="font-size:1rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;
-            color:var(--accent);margin:0 0 0.75rem;padding:0.5rem 0;border-bottom:2px solid var(--border-mid)">${conf}</h2>`;
+        confWrap.innerHTML = `<h2 class="nfl-standings-conf-title">${conf}</h2>`;
 
         const divsGrid = document.createElement('div');
-        divsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem';
+        divsGrid.className = 'nfl-standings-grid';
 
         for (const div of (divOrder[conf] || Object.keys(grouped[conf] || {}))) {
             const teams = grouped[conf]?.[div];
@@ -506,29 +505,23 @@ function displayNFLStandings(rows) {
             teams.sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 
             const divCard = document.createElement('div');
-            divCard.className = 'card';
-            divCard.style.cssText = 'padding:0;overflow:hidden';
+            divCard.className = 'card nfl-standings-card';
 
-            const header = `<div style="display:grid;grid-template-columns:14px 1fr repeat(4,auto);align-items:center;
-                gap:0.4rem;padding:0.4rem 0.75rem;background:var(--bg-elevated);
-                border-bottom:1px solid var(--border-subtle);font-size:0.64rem;font-weight:800;
-                letter-spacing:0.5px;text-transform:uppercase;color:var(--text-subtle)">
+            const header = `<div class="nfl-standings-head">
                 <span></span><span>${_escHtml(div)}</span><span>W</span><span>L</span><span>T</span><span>PCT</span>
             </div>`;
 
             const teamRows = teams.map((t, i) => `
-                <div style="display:grid;grid-template-columns:14px 1fr repeat(4,auto);align-items:center;
-                    gap:0.4rem;padding:0.45rem 0.75rem;
-                    border-bottom:${i < teams.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
-                    <span style="font-size:0.65rem;color:var(--text-subtle);text-align:center">${i + 1}</span>
-                    <div style="display:flex;align-items:center;gap:0.4rem">
-                        <img src="${getNFLTeamLogoUrl(t.abbr)}" alt="" style="width:18px;height:18px;object-fit:contain" loading="lazy" data-hide-on-error>
-                        <span style="font-weight:700;font-size:0.82rem;color:var(--text-primary)">${_escHtml(t.shortName)}</span>
+                <div class="nfl-standings-row">
+                    <span class="nfl-standings-rank">${i + 1}</span>
+                    <div class="nfl-standings-team">
+                        <img src="${getNFLTeamLogoUrl(t.abbr)}" alt="" class="nfl-standings-logo" loading="lazy" data-hide-on-error>
+                        <span class="nfl-standings-name">${_escHtml(t.shortName)}</span>
                     </div>
-                    <span style="font-weight:700;font-size:0.8rem;color:var(--text-primary);text-align:right">${t.wins}</span>
-                    <span style="font-size:0.78rem;color:var(--text-secondary);text-align:right">${t.losses}</span>
-                    <span style="font-size:0.75rem;color:var(--text-muted);text-align:right">${t.ties}</span>
-                    <span style="font-size:0.74rem;color:var(--text-muted);text-align:right">${t.pct.toFixed(3)}</span>
+                    <span class="nfl-standings-w">${t.wins}</span>
+                    <span class="nfl-standings-l">${t.losses}</span>
+                    <span class="nfl-standings-t">${t.ties}</span>
+                    <span class="nfl-standings-pct">${t.pct.toFixed(3)}</span>
                 </div>
             `).join('');
 
@@ -1024,25 +1017,25 @@ async function _loadNFLCareer(espnId, pos) {
         if (!document.body.contains(host)) return;
 
         const tables = _nflStatByPos(data.categories, pos, c => c.name).map(c => {
-            const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">SZN</th><th style="text-align:left">TM</th>` +
+            const head = `<th class="nfl-tbl-sticky-head">SZN</th><th class="nfl-tbl-left">TM</th>` +
                 (c.labels || []).map(l => `<th>${_escHtml(l)}</th>`).join('');
             const rows = (c.seasons || []).map(sn => `<tr onclick="_nflCareerRowClick('${sn.year}')" style="cursor:pointer">
-                <td style="font-weight:700;position:sticky;left:0;background:var(--bg-card)">${_escHtml(String(sn.year || ''))}</td>
-                <td style="color:var(--text-muted)">${_escHtml(sn.team || '')}</td>
-                ${(sn.stats || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('')}
+                <td class="nfl-tbl-sticky-cell">${_escHtml(String(sn.year || ''))}</td>
+                <td class="nfl-tbl-muted">${_escHtml(sn.team || '')}</td>
+                ${(sn.stats || []).map(v => `<td class="nfl-tbl-center">${_escHtml(String(v))}</td>`).join('')}
             </tr>`).join('');
-            const totals = `<tr style="border-top:2px solid var(--border-mid);font-weight:800">
-                <td style="position:sticky;left:0;background:var(--bg-card)">Career</td><td></td>
-                ${(c.totals || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('')}
+            const totals = `<tr class="nfl-tbl-totals-row">
+                <td class="nfl-tbl-sticky-plain">Career</td><td></td>
+                ${(c.totals || []).map(v => `<td class="nfl-tbl-center">${_escHtml(String(v))}</td>`).join('')}
             </tr>`;
-            return `<div style="margin-bottom:1rem">
-                <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);margin:0 0 0.35rem">${_escHtml(c.displayName)}</div>
+            return `<div class="nfl-tbl-group">
+                <div class="nfl-tbl-group-title">${_escHtml(c.displayName)}</div>
                 <div class="table-wrapper" style="overflow-x:auto"><table class="stats-table" style="min-width:max-content;white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${rows}${totals}</tbody></table></div>
             </div>`;
         }).join('');
 
         host.className = 'stats-card';
-        host.innerHTML = `<h2 class="detail-section-title">Career</h2>${tables}<p style="color:var(--text-muted);font-size:0.72rem;margin:0.3rem 0 0">Regular season · tap a row to load that season above · Source: ESPN.</p>`;
+        host.innerHTML = `<h2 class="detail-section-title">Career</h2>${tables}<p class="nfl-tbl-note">Regular season · tap a row to load that season above · Source: ESPN.</p>`;
     } catch (e) { Logger.warn('NFL career load failed', e, 'NFL'); }
 }
 
@@ -1119,17 +1112,17 @@ async function _loadNFLGameLog(espnId, season) {
         if (!document.body.contains(host)) return;
 
         const cols = data.columns || [];
-        const head = `<th style="text-align:left;position:sticky;left:0;background:var(--bg-elevated)">WK</th>` +
-            `<th style="text-align:left">OPP</th><th>RES</th>` +
+        const head = `<th class="nfl-tbl-sticky-head">WK</th>` +
+            `<th class="nfl-tbl-left">OPP</th><th>RES</th>` +
             cols.map(c => `<th title="${_escHtml(c.full)}">${_escHtml(c.label)}</th>`).join('');
         const rows = data.games.map(gm => {
             const resColor = gm.res === 'W' ? 'var(--color-win)' : gm.res === 'L' ? 'var(--color-loss)' : 'var(--text-muted)';
             const wk = gm.post ? 'P' : (gm.wk != null ? gm.wk : '');
-            const statTds = (gm.stats || []).map(v => `<td style="text-align:center">${_escHtml(String(v))}</td>`).join('');
+            const statTds = (gm.stats || []).map(v => `<td class="nfl-tbl-center">${_escHtml(String(v))}</td>`).join('');
             return `<tr>
-                <td style="font-weight:700;position:sticky;left:0;background:var(--bg-card)">${_escHtml(String(wk))}</td>
-                <td style="white-space:nowrap">${gm.atVs === '@' ? '@' : 'vs'} <strong>${_escHtml(gm.opp)}</strong></td>
-                <td style="text-align:center;white-space:nowrap"><span style="color:${resColor};font-weight:800">${_escHtml(gm.res)}</span> <span style="color:var(--text-muted);font-size:0.7rem">${_escHtml(gm.score)}</span></td>
+                <td class="nfl-tbl-sticky-cell">${_escHtml(String(wk))}</td>
+                <td class="nfl-opp-cell">${gm.atVs === '@' ? '@' : 'vs'} <strong>${_escHtml(gm.opp)}</strong></td>
+                <td class="nfl-res-cell"><span class="nfl-res" style="--rc:${resColor}">${_escHtml(gm.res)}</span> <span class="nfl-res-score">${_escHtml(gm.score)}</span></td>
                 ${statTds}
             </tr>`;
         }).join('');
@@ -1137,14 +1130,14 @@ async function _loadNFLGameLog(espnId, season) {
         host.className = 'stats-card';
         host.innerHTML = `
             <h2 class="detail-section-title">${data.season} Game Log</h2>
-            <div id="nfl-gl-chart-wrap" style="position:relative;height:200px;margin:0 0 0.9rem"><canvas id="nfl-gl-chart"></canvas></div>
+            <div id="nfl-gl-chart-wrap" class="nfl-gl-chart-host"><canvas id="nfl-gl-chart"></canvas></div>
             <div class="table-wrapper" style="overflow-x:auto">
                 <table class="stats-table" style="min-width:max-content;white-space:nowrap">
                     <thead><tr>${head}</tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>
-            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.5rem 0 0">Game-by-game · Source: ESPN.</p>`;
+            <p class="nfl-tbl-note nfl-tbl-note--gl">Game-by-game · Source: ESPN.</p>`;
         const _glChart = (window.StatsCharts && StatsCharts.nflGameTrend) ? StatsCharts.nflGameTrend('nfl-gl-chart', data.games, data.columns) : null;
         if (!_glChart) { const w = document.getElementById('nfl-gl-chart-wrap'); if (w) w.remove(); }
     } catch (e) { Logger.warn('NFL game log load failed', e, 'NFL'); }

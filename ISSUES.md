@@ -184,7 +184,13 @@ Candidates in priority order. **Shipped 2026-06-21:** N-1, N-2, N-3 (three gates
 
 **Feasibility (Axiom):** mechanical; main risk is cascade order — new NFL classes must be defined where they win over any base class they sit on (e.g. `.player-detail-avatar`). Grep each selector before adding. No JS-logic change; `color-mix` already in use post-N-3.
 
-**Gate status:** Vera ✅ · Kael ✅ · Axiom ✅. **Phase 1 SHIPPED 2026-06-21** — the player-detail hero avatars (×2) and the player-card avatar deduped into `.nfl-hero-avatar` / `.nfl-pos-grad` in `components.css` (placed after main.css so they win the `.player-detail-avatar` background cascade); inline gradient blocks removed from `nfl.js`, color passed via a `--pc` custom property. **Phase 2 SHIPPED 2026-06-21** — trending + stat-leader list rows and panel headers deduped into `.nfl-lrow` / `.nfl-lrow-*` / `.nfl-card-head` (components.css); the per-row conditional border is now `.nfl-lrow:last-child`. Phases 3–4 (standings cards, table chrome) pending — each its own commit + `/screenshot` diff.
+**Gate status:** Vera ✅ · Kael ✅ · Axiom ✅. **Phase 1 SHIPPED 2026-06-21** — the player-detail hero avatars (×2) and the player-card avatar deduped into `.nfl-hero-avatar` / `.nfl-pos-grad` in `components.css` (placed after main.css so they win the `.player-detail-avatar` background cascade); inline gradient blocks removed from `nfl.js`, color passed via a `--pc` custom property. **Phase 2 SHIPPED 2026-06-21** — trending + stat-leader list rows and panel headers deduped into `.nfl-lrow` / `.nfl-lrow-*` / `.nfl-card-head` (components.css); the per-row conditional border is now `.nfl-lrow:last-child`.
+
+**Phase 3 SHIPPED 2026-08-02** — `displayNFLStandings` in `nfl.js`: outer wrap/conference-title/grid and the division card/header/row all deduped into `.nfl-standings-*` classes in `components.css`. Per-row conditional border replaced with `.nfl-standings-row:last-child` (same pattern Phase 2 used).
+
+**Phase 4 SHIPPED 2026-08-02** — `_loadNFLCareer` + `_loadNFLGameLog`: the tables already used `.stats-table`/`.table-wrapper`/`.stats-card`/`.detail-section-title`; stripped the remaining redundant per-cell inline styles (sticky first column, alignment, muted text, totals row, group headers, note footers) into `.nfl-tbl-*` classes. Dynamic per-instance win/loss/tie color kept as a CSS custom property (`--rc` on `.nfl-res`), same pattern Phase 1 established for `--pc` — a shared class can't hardcode a value that varies per row. **Regression caught during the refactor, not shipped:** the career table's totals row inherits `font-weight:800` from its own row style; naively reusing the season-row's `.nfl-tbl-sticky-cell` (which sets `font-weight:700`) on the totals row's first cell would have overridden that inherited weight. Split into a separate `.nfl-tbl-sticky-plain` (no font-weight) for the totals row instead.
+
+**All 4 phases now shipped.** Verified: `node --check` clean on `js/nfl.js`; CSS brace-balance clean; `tools/check-manifest.cjs` 0 failures/0 warnings (no new files, nothing orphaned); NUL-byte scan clean on all touched files. **Not yet live-verified in a browser** — this session can run Chrome tools; a `/screenshot` (or equivalent live) diff against the standings and player-detail career/game-log views is the next step before calling this fully closed, per the same "don't ship a flow you haven't walked through" rule that gated this phase originally.
 
 ### N-6 — Offseason-strip scope — **[Vera + Kael]** · priority 3 · ✅ DECIDED + SHIPPED 2026-06-21
 **Decision:** show the strip only on the offseason-affected stat surfaces — Scores, Standings, Teams. Dropped from Players/Rankings/Trending/Leaders, which deliver year-round and where the strip was redundant noise. `_NFL_STRIP_VIEWS` in `navigation.js` narrowed to `['nfl-games','nfl-standings','nfl-teams']`.
@@ -510,19 +516,19 @@ This is not a P1 — the values are close enough for a badge display and gracefu
 
 ---
 
-### Sprint Speed CSV — No Column Schema Guard
-**Contributor:** Relay | **Date:** 2026-06-04
+### Sprint Speed CSV — No Column Schema Guard — SHIPPED (confirmed 2026-08-02)
+**Contributor:** Relay (finding) | Finn (fix) | **Date:** 2026-06-04 | **Confirmed shipped:** 2026-08-02
 
-`fetchSprintSpeedLeaderboard()` at [`js/mlb.js:484`](js/mlb.js#L484) parses Savant's sprint speed CSV by header name. If Savant renames `sprint_speed` to another column name, the `.filter(r => r.player_id && r.sprint_speed)` at line 503 silently returns an empty array — the feature goes dark with no log entry. The HTML-response guard (line 494) handles a different failure mode.
+`fetchSprintSpeedLeaderboard()` in `js/mlb.js` parses Savant's sprint speed CSV by header name. If Savant renames `sprint_speed` to another column name, the row filter would silently return an empty array — the feature goes dark with no log entry.
 
-**Recommended fix (Finn — one line, Axiom review):** After parsing headers at line 497, add:
+**Fix verified in code (`js/mlb.js:578-581`):**
 ```js
 if (!headers.includes('sprint_speed')) {
-    Logger.warn('Savant sprint speed CSV schema changed — column not found', undefined, 'MLB');
+    Logger.warn('Savant sprint speed CSV schema changed — expected column not found', undefined, 'MLB');
     return null;
 }
 ```
-This converts a silent data failure into an observable log event. Route to Axiom if the fix touches anything beyond the one guard line.
+Matches the recommended fix (message wording improved slightly). A schema change now produces an observable `Logger.warn` instead of a silent empty array.
 
 ---
 
@@ -547,7 +553,7 @@ No action needed now. File if the budget exceeds 20 calls on a cold load.
 **Files changed:** [`worker/bdl-proxy.js`](worker/bdl-proxy.js) | [`worker/broadcast-blurb.js`](worker/broadcast-blurb.js)
 
 **Remaining actions:**
-- `wrangler deploy` on the BDL proxy to push the source change to production — Axiom executes when ready.
+- `wrangler deploy` on the BDL proxy to push the source change to production — **confirmed 2026-08-02: source fix is verified correct in `worker/bdl-proxy.js` (`ALLOWED_ORIGINS` allowlist includes `https://sportstrata.cc`/`https://www.sportstrata.cc`/`https://zohn-sports-stats.pages.dev` + local dev ports — the "sportsstrata.com" typo above is stale prose only, not a code bug), but `wrangler whoami` shows this session has no Cloudflare auth, so the deploy itself has NOT run. Owner runs `cd worker && wrangler deploy` to push it live — this can't be executed from an unauthenticated sandbox.**
 - Broadcast-blurb deployment requires project owner authorization per D-006 — source fix is staged, deploy blocked.
 
 **Cipher verification:** Allowlist uses exact string matching (`Array.includes`), no prefix bypass possible. Empty-origin requests fall back to production domain correctly. Control holds.
@@ -1324,8 +1330,14 @@ Amber live-border indistinguishable from Pirates team border. Kael spec: card bo
 ### P3 — Home search duplication (V5) — FIXED 2026-07-02 (Wave B: renderCurrentView toggles body.view-home; header .search-global-btn hidden on home only. ⌘K unaffected)
 Hero search + header search stacked ~100px apart on home. Spec: hero is primary on home; header search hidden on home only.
 
-### P3 — Theme contract tightening (Kael verdict) — OPEN
-check-themes.cjs passes cc-braves while the composed page is washed out. Add composed-surface pairs + calibrate until observed failures register; then per-theme manual pass (fixed checklist: game card, starters row, leaders panel, detail chips). Freeze at 13+default holds. Identity rule codified: wordmark never changes, icon may.
+### P3 — Theme contract tightening (Kael verdict) — CONTRACT TIGHTENED 2026-08-02; new finding needs Kael's color call
+**cc-braves itself is moot** — it was retired entirely in D-047 (2026-07-12, brand-cohesion prune); the live theme set is now just dark (`:root`), light, and `nl-monarchs` (`css/themes-retired/README.md`). The underlying contract gap this item was really about is evergreen, though, so it's still worth closing rather than filing as N/A.
+
+**Shipped:** `tools/check-themes.cjs`'s `PAIRS` array gained 3 composed-surface pairs, each grounded in real usage (grep-confirmed against `components.css`), not hypothetical: `--accent` on `--accent-subtle` (the `.btn-secondary`/badge/pill pattern — a text token checked only against `--bg-base` before, never against the tinted background it actually sits on in real UI), `--text-muted` on `--bg-surface` (muted captions on surface-level panels), `--text-primary` on `--bg-interactive` (nav/tab/list-row text on hover/active backgrounds).
+
+**Real finding from the tightened contract:** `--accent` on `--accent-subtle` comes back **WARN** (not ERROR) for `light` (2.98, min 3.0) and `nl-monarchs` (2.88, min 3.0) — the root/dark theme is clean. This is a genuine near-miss on the badge/pill pattern in two of the three live themes, exactly the class of issue the old contract couldn't see. **Not fixed here** — choosing a new accent or accent-subtle value is Kael's call (visual system/tokens is Kael's R/A domain per the team RACI, not Axiom's), and a value change ripples through every badge/pill/button using that pair. Flagging for Kael's review rather than picking a color unilaterally.
+
+**Still owed:** the per-theme manual pass against a fixed checklist (game card, starters row, leaders panel, detail chips) — the automated contract catches contrast math, not composition/spacing/vibe, so a human pass is still the real acceptance test for "wash-out."
 
 ### Wave A live verification (2026-07-02) — PASSED
 Vera checklist run on sportstrata.cc post-deploy (SW v50): V1 cold Leaders entry → Schwarber row click → full player page, hash `#mlb-player-656941-hitting` (was: "Player not found" + stale hash). V2 `location.hash = '#nfl-draftkit'` from an MLB player page → clean full sport switch, no chimera. V4 SP/RP/CL panels populated with role-classified pitchers (Misiorowski/Minter/Suarez lead). K1 title "Draft HQ · Value Board". A4: Gurley absent from valued board (`_dkBuild` check), trap chips bounded ("Val #104 of 154"). V3: no false toast across the session. All six fixes confirmed.

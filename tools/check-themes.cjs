@@ -47,12 +47,28 @@ function lum([r, g, b]) {
 const ratio = (a, b) => { const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x); return (l1 + 0.05) / (l2 + 0.05); };
 
 // ── the contract: token pairs and minimums ──
+// D-038 finding (2026-07-02): these 5 pairs only ever check a token against a
+// flat, unthemed *base* surface (--bg-base/--bg-card) -- but real UI composes
+// tokens against EACH OTHER (a badge's accent text on its own accent-subtle
+// tint, muted captions on --bg-surface panels, primary text on interactive
+// hover states). cc-braves passed this original contract clean while reading
+// washed-out live in the browser -- the composed surfaces below are grounded
+// in actual usage (grep-confirmed against components.css) rather than
+// hypothetical, and close that specific blind spot. cc-braves itself was
+// separately retired in D-047 (2026-07-12, brand-cohesion prune) -- these
+// pairs stay because the underlying contract gap is evergreen, not specific
+// to one now-gone theme, and a future theme (unlockable/premium) could
+// reintroduce the same failure mode this was built to catch.
 const PAIRS = [
-    ['--text-primary',   '--bg-base',    4.5],
-    ['--text-primary',   '--bg-card',    4.5],
-    ['--text-secondary', '--bg-surface', 4.5],
-    ['--text-muted',     '--bg-card',    3.0],
-    ['--accent',         '--bg-base',    3.0],
+    ['--text-primary',   '--bg-base',      4.5],
+    ['--text-primary',   '--bg-card',      4.5],
+    ['--text-secondary', '--bg-surface',   4.5],
+    ['--text-muted',     '--bg-card',      3.0],
+    ['--accent',         '--bg-base',      3.0],
+    // Composed surfaces (D-038 Track C tightening, added 2026-08-02):
+    ['--accent',         '--accent-subtle', 3.0], // btn-secondary / badge / pill label text on its own tint
+    ['--text-muted',     '--bg-surface',    3.0], // muted captions on surface-level panels
+    ['--text-primary',   '--bg-interactive', 4.5], // nav/tab/list-row text on hover/active backgrounds
 ];
 const REQUIRED = [...new Set(PAIRS.flat().filter(t => String(t).startsWith('--')))];
 
