@@ -2026,33 +2026,10 @@
 .nfl-lrow-meta { font-size: 0.67rem; color: var(--text-muted); }
 .nfl-lrow-val { font-weight: 900; font-size: 0.92rem; }
 
-/* NFL standings division cards + rows (N-5 phase 3) — dedup of inline styles,
-   same pattern as phases 1-2 above. .card stays the outer wrapper class. */
-.nfl-standings-wrap { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem 0; }
-.nfl-standings-conf-title {
-    font-size: 1rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--accent); margin: 0 0 0.75rem; padding: 0.5rem 0; border-bottom: 2px solid var(--border-mid);
-}
-.nfl-standings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-.nfl-standings-card { padding: 0; overflow: hidden; }
-.nfl-standings-head {
-    display: grid; grid-template-columns: 14px 1fr repeat(4, auto); align-items: center; gap: 0.4rem;
-    padding: 0.4rem 0.75rem; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.64rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-subtle);
-}
-.nfl-standings-row {
-    display: grid; grid-template-columns: 14px 1fr repeat(4, auto); align-items: center; gap: 0.4rem;
-    padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border-subtle);
-}
-.nfl-standings-row:last-child { border-bottom: none; }
-.nfl-standings-rank { font-size: 0.65rem; color: var(--text-subtle); text-align: center; }
-.nfl-standings-team { display: flex; align-items: center; gap: 0.4rem; }
-.nfl-standings-logo { width: 18px; height: 18px; object-fit: contain; }
-.nfl-standings-name { font-weight: 700; font-size: 0.82rem; color: var(--text-primary); }
-.nfl-standings-w { font-weight: 700; font-size: 0.8rem; color: var(--text-primary); text-align: right; }
-.nfl-standings-l { font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
-.nfl-standings-t { font-size: 0.75rem; color: var(--text-muted); text-align: right; }
-.nfl-standings-pct { font-size: 0.74rem; color: var(--text-muted); text-align: right; }
+/* .nfl-standings-* (N-5 phase 3) removed 2026-08-02 (Finn, live-verify pass) — the
+   JS that used these classes was dead code (see js/nfl.js ~line 148); the live
+   standings page is rendered entirely by nflStandings.js's own .nstd-* classes.
+   See ISSUES.md N-5 for the full writeup. */
 
 /* NFL career + game-log table cell chrome (N-5 phase 4) — the tables themselves
    already use the shared .stats-table/.table-wrapper/.stats-card/.detail-section-title

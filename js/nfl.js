@@ -145,43 +145,13 @@ async function fetchNFLScoreboard() {
     }).filter(Boolean);
 }
 
-async function fetchNFLStandings() {
-    const data = await espnNFLFetch('/standings', {}, ApiCache.TTL.SHORT);
-    const result = [];
-    for (const conf of (data.children || [])) {
-        const confAbbr = conf.abbreviation || conf.name;
-        for (const div of (conf.children || [])) {
-            const divName = div.name || div.abbreviation;
-            for (const entry of (div.standings?.entries || [])) {
-                const team  = entry.team;
-                const stats = {};
-                (entry.stats || []).forEach(s => { stats[s.name] = s; });
-                result.push({
-                    conference: confAbbr,
-                    division:   divName,
-                    id:         team.id,
-                    abbr:       team.abbreviation,
-                    name:       team.displayName,
-                    shortName:  team.shortDisplayName || team.name,
-                    logo:       team.logos?.[0]?.href || getNFLTeamLogoUrl(team.abbreviation),
-                    wins:       parseInt(stats.wins?.displayValue       || '0', 10),
-                    losses:     parseInt(stats.losses?.displayValue      || '0', 10),
-                    ties:       parseInt(stats.ties?.displayValue        || '0', 10),
-                    pct:        parseFloat(stats.winPercent?.displayValue || '0'),
-                    pf:         parseInt(stats.pointsFor?.displayValue   || '0', 10),
-                    pa:         parseInt(stats.pointsAgainst?.displayValue || '0', 10),
-                    diff:       parseInt(stats.pointDifferential?.displayValue || '0', 10),
-                    homeRec:    stats.home?.displayValue || '',
-                    awayRec:    stats.road?.displayValue || '',
-                    divRec:     stats.vsDiv?.displayValue || '',
-                    streak:     stats.streak?.displayValue || '',
-                    rank:       parseInt(stats.rank?.displayValue || stats.playoffSeed?.displayValue || '0', 10),
-                });
-            }
-        }
-    }
-    return result;
-}
+// fetchNFLStandings/loadNFLStandings/displayNFLStandings removed 2026-08-02 (Finn,
+// live-verify pass): dead code since D-029 shipped js/nflStandings.js, which loads
+// after this file and intentionally redefines all three names in global scope (see
+// that file's own header comment). This block called the ESPN /standings endpoint
+// that D-029's comment notes is a dead stub returning only a fullViewLink — confirmed
+// live that window.displayNFLStandings on production resolves to nflStandings.js's
+// version, never this one. See ISSUES.md N-5 for the full writeup.
 
 // ── Display: Teams ────────────────────────────────────────────
 
@@ -447,91 +417,6 @@ function _createNFLGameCard(game) {
         </div>
     `;
     return card;
-}
-
-// ── Display: Standings ────────────────────────────────────────
-
-async function loadNFLStandings() {
-    const grid = document.getElementById('playersGrid');
-    grid.className = '';
-    grid.innerHTML = `<div class="skeleton-card" style="min-height:400px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-standings', null);
-
-    try {
-        if (!AppState.nflStandings?.length) AppState.nflStandings = await fetchNFLStandings();
-        displayNFLStandings(AppState.nflStandings);
-    } catch (err) {
-        ErrorHandler.handle(grid, err, loadNFLStandings, { tag: 'NFL', title: 'Failed to Load NFL Standings' });
-    }
-}
-
-function displayNFLStandings(rows) {
-    const grid = document.getElementById('playersGrid');
-    grid.className = '';
-    grid.innerHTML = '';
-
-    if (!rows?.length) {
-        grid.innerHTML = _nflOffseasonState('standings');
-        return;
-    }
-
-    const grouped = {};
-    rows.forEach(t => {
-        if (!grouped[t.conference]) grouped[t.conference] = {};
-        if (!grouped[t.conference][t.division]) grouped[t.conference][t.division] = [];
-        grouped[t.conference][t.division].push(t);
-    });
-
-    const confOrder = ['AFC', 'NFC'];
-    const divOrder  = {
-        AFC: ['AFC East', 'AFC North', 'AFC South', 'AFC West'],
-        NFC: ['NFC East', 'NFC North', 'NFC South', 'NFC West'],
-    };
-
-    const wrap = document.createElement('div');
-    wrap.className = 'nfl-standings-wrap';
-
-    for (const conf of confOrder) {
-        if (!grouped[conf]) continue;
-        const confWrap = document.createElement('div');
-        confWrap.innerHTML = `<h2 class="nfl-standings-conf-title">${conf}</h2>`;
-
-        const divsGrid = document.createElement('div');
-        divsGrid.className = 'nfl-standings-grid';
-
-        for (const div of (divOrder[conf] || Object.keys(grouped[conf] || {}))) {
-            const teams = grouped[conf]?.[div];
-            if (!teams?.length) continue;
-            teams.sort((a, b) => b.wins - a.wins || a.losses - b.losses);
-
-            const divCard = document.createElement('div');
-            divCard.className = 'card nfl-standings-card';
-
-            const header = `<div class="nfl-standings-head">
-                <span></span><span>${_escHtml(div)}</span><span>W</span><span>L</span><span>T</span><span>PCT</span>
-            </div>`;
-
-            const teamRows = teams.map((t, i) => `
-                <div class="nfl-standings-row">
-                    <span class="nfl-standings-rank">${i + 1}</span>
-                    <div class="nfl-standings-team">
-                        <img src="${getNFLTeamLogoUrl(t.abbr)}" alt="" class="nfl-standings-logo" loading="lazy" data-hide-on-error>
-                        <span class="nfl-standings-name">${_escHtml(t.shortName)}</span>
-                    </div>
-                    <span class="nfl-standings-w">${t.wins}</span>
-                    <span class="nfl-standings-l">${t.losses}</span>
-                    <span class="nfl-standings-t">${t.ties}</span>
-                    <span class="nfl-standings-pct">${t.pct.toFixed(3)}</span>
-                </div>
-            `).join('');
-
-            divCard.innerHTML = header + teamRows;
-            divsGrid.appendChild(divCard);
-        }
-        confWrap.appendChild(divsGrid);
-        wrap.appendChild(confWrap);
-    }
-    grid.appendChild(wrap);
 }
 
 // ── Sleeper player pool (validated NFL player source) ─────────
@@ -1633,8 +1518,9 @@ if (typeof window !== 'undefined') {
     window.displayNFLTeams     = displayNFLTeams;
     window.loadNFLGames        = loadNFLGames;
     window.displayNFLGames     = displayNFLGames;
-    window.loadNFLStandings    = loadNFLStandings;
-    window.displayNFLStandings = displayNFLStandings;
+    // loadNFLStandings/displayNFLStandings intentionally NOT assigned here — the
+    // functions were removed (see the comment above ~line 148); nflStandings.js
+    // (D-029, loaded after this file) is the sole source of both globals.
     window.loadNFLLeaderboards = loadNFLLeaderboards;
     window.displayNFLTrending  = displayNFLTrending;
     window.loadNFLStatLeaders  = loadNFLStatLeaders;
