@@ -59,18 +59,38 @@ export async function onRequest(context) {
 
     const inUrl = new URL(request.url);
     const qs = inUrl.searchParams.get('season');
-    const season = /^\d{4}$/.test(qs || '') ? qs : String(defaultSeason());
+    const requestedSeason = /^\d{4}$/.test(qs || '') ? qs : String(defaultSeason());
 
     // 1) leaders (athletes + teams are $refs)
-    let leadersJson;
-    try {
-        const r = await fetch(`${CORE}/seasons/${season}/types/2/leaders?lang=en&region=us`, {
+    // Self-healing season fallback: defaultSeason() flips to the new CFB season on
+    // Aug 1, but ESPN's leaders resource for that season doesn't exist until actual
+    // games have been played (Week 0/1, typically late Aug) — a real gap of a few
+    // weeks every year where the "current" season 404s. Without this, the Leaders
+    // page and every team's Leaders card show a bare error state for that whole
+    // window even though a perfectly good prior season exists to show instead. Only
+    // falls back when the season wasn't explicitly requested via ?season= — an
+    // explicit request for a real past/future season still fails honestly.
+    let leadersJson, season = requestedSeason;
+    const fetchLeaders = async (s) => {
+        const r = await fetch(`${CORE}/seasons/${s}/types/2/leaders?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' },
             cf: { cacheTtl: 21600, cacheEverything: true },
         });
-        if (!r.ok) return json({ error: 'leaders fetch failed', status: r.status }, 502);
-        leadersJson = await r.json();
-    } catch { return json({ error: 'leaders fetch failed' }, 502); }
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+    };
+    try {
+        leadersJson = await fetchLeaders(season);
+    } catch (e1) {
+        if (qs) return json({ error: 'leaders fetch failed', detail: e1.message }, 502);
+        const fallback = String(Number(season) - 1);
+        try {
+            leadersJson = await fetchLeaders(fallback);
+            season = fallback;
+        } catch (e2) {
+            return json({ error: 'leaders fetch failed', detail: `${season}: ${e1.message}; ${fallback}: ${e2.message}` }, 502);
+        }
+    }
 
     const cats = leadersJson.categories || [];
     const wanted = CATS.map(c => ({ ...c, raw: cats.find(x => x.name === c.key) })).filter(c => c.raw);
