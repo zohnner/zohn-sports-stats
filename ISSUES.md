@@ -1694,3 +1694,24 @@ Checked the other three new routes against the same dispatcher by hand: `nfl-lea
 
 ---
 
+## D-043 3c — Cross-sport ⌘K search: gates + implementation
+**Contributors:** Vera (JTBD/states), Kael (visual), Axiom (feasibility + implementation) | **Date:** 2026-08-02
+
+D-043 was ratified 2026-08-02 (D-058) with sequencing 3c → 3b → 3a. Gates for 3c, transcribed from the D-043 spec (all three were already drafted at proposal time — nothing new needed before Finn could build):
+
+**Vera (JTBD/states):** results grouped by sport with a small sport badge per row; the sport-aware placeholder stays (higher scent than a generic prompt in-context); cross-sport results are additive, surfaced when the query matches other sports; NCAAF's coverage in this surface is teams-only — the UI must never imply NCAAF player search exists (D-042's data-sparsity deferral).
+
+**Kael (visual):** reuse the existing `.search-badge`/`.search-result-item` vocabulary; the NCAAF badge should read distinctly from NBA/MLB/NFL's existing badge hues (indigo/orange/emerald) — no existing NCAAF brand token to reuse (checked `css/variables.css`, none defined; the sport-switcher pill just reuses `--accent` for whichever sport is active, not sport-specific), so `--color-stl` (violet, `#c084fc`) was picked as a fourth distinct hue, token-based via `color-mix()` rather than a new hardcoded hex.
+
+**Axiom (feasibility — re-confirmed against current code, not just the July spec):** re-reading `js/search.js` before building found the spec **already half-shipped** since it was drafted 2026-07-06 — sport badges (`.search-badge--nba/mlb/nfl`) and per-sport result grouping (`_groupHtml`) were both already live, along with lazy pool-warming for NFL players/teams and MLB (via the leader-splits fallback) on search overlay open. The one real remaining gap: **no NCAAF teams in search at all** — `_buildGroups`'s team block only covered NBA/MLB/NFL. No flat NCAAF team list exists client-side (Teams view fetches fresh from the standings tree every render, no `AppState` cache) — Relay's spec anticipated exactly this ("from the standings tree").
+
+**Shipped:**
+- `openGlobalSearch()`: added a lazy warm that calls `fetchNCAAFStandings(_ncaaf.season)` once, flattens the returned conference tree into `AppState.ncaafTeams`, and re-renders if the overlay is already open with a query — mirrors the existing NFL-teams warm block exactly.
+- `_buildGroups()`: added an NCAAF-teams filter/map block to `teamHits`, mirroring the NFL-teams block — matches on name or abbreviation, badge `NCAAF`, sport-switches on click via `_applySportUI('ncaaf')` before `navigateTo('ncaaf-team-{id}')`. No NCAAF player block added — deliberately, per Vera's gate above.
+- `_itemHtml()`: the team-icon fallback (`🏀`/`⚾`) only covered NBA/MLB — extended so NFL and NCAAF (no logo) fall back to `🏈` instead of silently defaulting to a baseball glyph. Badge-class ternary extended with an `ncaaf` branch.
+- `css/main.css`: added `.search-badge--ncaaf` (`color-mix(in srgb, var(--color-stl) 15%, transparent)` background, `var(--color-stl)` text) — the one net-new CSS class this needed.
+
+**Verified:** `node --check` clean on `js/search.js`. `css/main.css` change confirmed to reference an existing token (`--color-stl`, already defined in `variables.css`) and an existing pattern (`color-mix`, already used by the home hero glow) — no new token invented. Not yet live-verified in Chrome or committed — next step.
+
+---
+

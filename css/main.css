@@ -2986,6 +2986,10 @@ main {
     background: rgba(52, 211, 153, 0.15);
     color: #34d399;
 }
+.search-badge--ncaaf {
+    background: color-mix(in srgb, var(--color-stl) 15%, transparent);
+    color: var(--color-stl);
+}
 
 .search-modal-footer {
     display: flex;

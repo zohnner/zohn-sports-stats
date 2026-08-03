@@ -69,6 +69,18 @@ function openGlobalSearch() {
             if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
         }).catch(() => {});
     }
+    // Warm NCAAF teams (from the standings tree — no flat team list exists
+    // elsewhere, D-043 3c) so NCAAF teams are searchable before visiting an
+    // NCAAF view. No player warm here — NCAAF has no player search surface
+    // (D-042's data-sparsity deferral); adding one would misrepresent coverage.
+    if (typeof fetchNCAAFStandings === 'function' && !(AppState.ncaafTeams && AppState.ncaafTeams.length)) {
+        const season = (typeof _ncaaf !== 'undefined' && _ncaaf.season) || (typeof NCAAF_LAST_SEASON !== 'undefined' ? NCAAF_LAST_SEASON : undefined);
+        fetchNCAAFStandings(season).then(confs => {
+            AppState.ncaafTeams = (confs || []).flatMap(c => c.teams || []).filter(t => t.id);
+            const box = document.getElementById('searchModalInput');
+            if (_searchOpen && box && box.value.trim()) _renderResults(box.value.trim().toLowerCase());
+        }).catch(() => {});
+    }
     _renderResults('');
     // Delay so backdrop paint doesn't steal the focus event
     requestAnimationFrame(() => input.focus());
@@ -260,6 +272,21 @@ function _buildGroups(q) {
             teamColor: t.color,
             action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'nfl') { AppState.currentSport = 'nfl'; if (typeof _applySportUI === 'function') _applySportUI('nfl'); } navigateTo('nfl-team-' + t.abbr); },
         })),
+        // NCAAF teams only — no player search surface (D-042/Relay hard limit,
+        // D-043 3c). Pool is a flattened conference tree, warmed on overlay open.
+        ...(AppState.ncaafTeams || []).filter(t => {
+            const n = (t.name || '').toLowerCase();
+            return n.includes(q) || (t.abbr || '').toLowerCase().startsWith(q);
+        }).slice(0, 3).map(t => ({
+            id:     t.id,
+            sport:  'ncaaf',
+            type:   'team',
+            name:   t.name,
+            sub:    `NCAAF · ${t.abbr || t.conf || ''}`,
+            badge:  'NCAAF',
+            avatarUrl: t.logo || '',
+            action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'ncaaf') { AppState.currentSport = 'ncaaf'; if (typeof _applySportUI === 'function') _applySportUI('ncaaf'); } navigateTo('ncaaf-team-' + t.id); },
+        })),
     ];
     if (teamHits.length) groups.push({ label: 'Teams', items: teamHits });
 
@@ -361,12 +388,12 @@ function _itemHtml(item, idx) {
             <span class="search-avatar-fallback">${_esc(initials)}</span>
         </span>`;
     } else if (isTeam) {
-        const icon = item.sport === 'nba' ? '🏀' : '⚾';
+        const icon = item.sport === 'nba' ? '🏀' : (item.sport === 'nfl' || item.sport === 'ncaaf') ? '🏈' : '⚾';
         avatar = `<span class="search-result-avatar search-result-avatar--team">${icon}</span>`;
     } else {
         avatar = `<span class="search-result-avatar" style="${bgStyle}">${_esc(initials)}</span>`;
     }
-    const bc = item.sport === 'nba' ? 'search-badge--nba' : item.sport === 'nfl' ? 'search-badge--nfl' : 'search-badge--mlb';
+    const bc = item.sport === 'nba' ? 'search-badge--nba' : item.sport === 'nfl' ? 'search-badge--nfl' : item.sport === 'ncaaf' ? 'search-badge--ncaaf' : 'search-badge--mlb';
     return `<button class="search-result-item" data-idx="${idx}">
         ${avatar}
         <span class="search-result-name">${_esc(item.name)}</span>
