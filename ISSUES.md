@@ -1711,7 +1711,11 @@ D-043 was ratified 2026-08-02 (D-058) with sequencing 3c → 3b → 3a. Gates fo
 - `_itemHtml()`: the team-icon fallback (`🏀`/`⚾`) only covered NBA/MLB — extended so NFL and NCAAF (no logo) fall back to `🏈` instead of silently defaulting to a baseball glyph. Badge-class ternary extended with an `ncaaf` branch.
 - `css/main.css`: added `.search-badge--ncaaf` (`color-mix(in srgb, var(--color-stl) 15%, transparent)` background, `var(--color-stl)` text) — the one net-new CSS class this needed.
 
-**Verified:** `node --check` clean on `js/search.js`. `css/main.css` change confirmed to reference an existing token (`--color-stl`, already defined in `variables.css`) and an existing pattern (`color-mix`, already used by the home hero glow) — no new token invented. Not yet live-verified in Chrome or committed — next step.
+**Verified:** `node --check` clean on `js/search.js`. `css/main.css` change confirmed to reference an existing token (`--color-stl`, already defined in `variables.css`) and an existing pattern (`color-mix`, already used by the home hero glow) — no new token invented.
+
+**Committed:** `a26fb4f` (Finn), `sw.js` `CACHE_NAME` bumped v130→v131 in the same commit per the D-058-flagged process fix.
+
+**Update 2026-08-02 — live-verified on production.** First check on the already-open tab found stale `js/search.js` still running (edge confirmed serving the correct file via a `cache:'no-store'` fetch — this was the browser's own disk cache holding the pre-deploy version, the same class of issue as D-057's `/nfl/game/{id}` investigation, not a deploy or SW problem). A genuinely fresh tab picked up the correct code immediately. Confirmed end to end: typing "Georgia" surfaced three real NCAAF teams (Georgia Tech, Georgia Bulldogs, Georgia Southern) each with the violet `search-badge--ncaaf` badge and correct `NCAAF · {abbr}` sub-label; `AppState.ncaafTeams` warmed to 138 real teams with ids/logos on overlay open. Clicking the Georgia Bulldogs result correctly set `AppState.currentSport = 'ncaaf'`, closed the overlay, and navigated to `#ncaaf-team-61`, rendering the real team detail page (Georgia Bulldogs, SEC, 1st in SEC, roster). No console errors. D-043 3c is fully shipped and verified.
 
 ---
 
