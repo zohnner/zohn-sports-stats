@@ -1317,15 +1317,15 @@ Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata h
 
 **Gate 0 — Secrets hygiene:** P1-006 already resolved (`api.js` key removed, proxy set). All auth/provider/session secrets via `wrangler secret`, never committed. ✅ verified / carry forward.
 
-**Gates (all required before implementation):**
-- **A-031 Cipher (security):** threat model; sessions = HttpOnly/Secure/SameSite cookies backed by D1; CSRF tokens; auth-endpoint rate limiting; passkey/OAuth approach; secret management. — **DRAFTED** (docs/auth-security-spec.md; pending team review).
-- **A-031 Relay (data):** D1 schema (`users`, `sessions`, `follows`, `prefs`); data export + hard-delete; retention policy. — **DRAFTED** (docs/auth-data-schema.md; pending team review).
-- **A-031 Axiom (feasibility):** better-auth on Workers/D1 spike (per-request instantiation; evaluate session-refresh bug #4203) vs `workers-oauth-provider`/`jose`; Functions npm-dependency + build-step impact; session middleware. — **DRAFTED** (docs/auth-feasibility-spike.md; pending team review).
-- **A-031 Vera (UX):** optional sign-in flow; states (signed-out, signing-in, signed-in, error, account mgmt); follows UI; account menu. — **DRAFTED** (docs/auth-ux-visual-spec.md; pending review).
-- **A-031 Kael (visual):** on-brand sign-in surface + account menu in header. — **DRAFTED** (docs/auth-ux-visual-spec.md; pending review).
-- **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — **DRAFTED** (docs/auth-legal-checklist.md; pending review).
+**Gates — all REVIEWED and SIGNED OFF 2026-08-02 (cross-team review pass):**
+- **A-031 Cipher (security):** threat model; sessions = HttpOnly/Secure/SameSite cookies backed by D1; CSRF tokens; auth-endpoint rate limiting; passkey/OAuth approach; secret management. — **REVIEWED ✅** (docs/auth-security-spec.md — all 3 open questions resolved, no conflicts found against schema/feasibility docs).
+- **A-031 Relay (data):** D1 schema (`users`, `sessions`, `follows`, `prefs`); data export + hard-delete; retention policy. — **REVIEWED ✅** (docs/auth-data-schema.md — 2 real gaps found and closed: stale `apple` reference in the `auth_accounts.provider` comment removed to match the migration and the Apple-deferred decision; the promised 90-day `audit_log` retention had no purge mechanism defined, now explicitly folded into the same daily sessions-purge cron).
+- **A-031 Axiom (feasibility):** better-auth on Workers/D1 spike (per-request instantiation; evaluate session-refresh bug #4203) vs `workers-oauth-provider`/`jose`; Functions npm-dependency + build-step impact; session middleware. — **REVIEWED ✅** (docs/auth-feasibility-spike.md — consistent with security/schema docs and the applied migration).
+- **A-031 Vera (UX):** optional sign-in flow; states (signed-out, signing-in, signed-in, error, account mgmt); follows UI; account menu. — **REVIEWED ✅** (docs/auth-ux-visual-spec.md — sign-in methods and follows model match the other gates exactly).
+- **A-031 Kael (visual):** on-brand sign-in surface + account menu in header. — **REVIEWED ✅** (docs/auth-ux-visual-spec.md).
+- **A-031 Folio (legal):** privacy policy, terms, cookie consent, GDPR/CCPA data-rights copy. — **REVIEWED ✅** (docs/auth-legal-checklist.md — retention claim now backed by Relay's fixed purge cron; processor list matches the runbook's actual providers).
 
-**Finn:** implements Phase 1 only once all gates above are signed off. Then a full `/security-review` before launch.
+**All six gates signed off — nothing blocking on the spec side.** The only remaining blocker before Finn writes any code is entirely owner-run: **docs/auth-setup-runbook.md** (create the `USER_DB` D1 database, bind it to the Pages project, register the Google OAuth client, verify the Resend sending domain, add Turnstile, and push all five secrets via `wrangler pages secret put`). Per the standing hard boundary, the assistant does not and cannot perform these steps — they require real Cloudflare/Google/Resend credentials the owner holds. Once dev secrets + DB exist, Finn implements Phase 1 against the six reviewed specs, runs the spike acceptance checklist (auth-feasibility-spike.md) on `wrangler pages dev`, then a full `/security-review` before launch.
 
 ---
 

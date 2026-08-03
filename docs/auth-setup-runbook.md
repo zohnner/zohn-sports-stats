@@ -1,5 +1,7 @@
 # A-031 — Phase 1 Setup Runbook (owner-run, detailed)
 
+**All six D-031 Phase 1 gates (Cipher, Relay, Axiom, Vera, Kael, Folio) were cross-reviewed and signed off 2026-08-02 — see the "Review status" note at the bottom of each of the other five docs.** This runbook is the next and only remaining step before Finn writes any code: everything below requires real credentials only the owner holds, per the standing hard boundary (assistant scaffolds integration only, never touches real secrets or provider accounts).
+
 You run these; secrets never pass through the assistant or the repo. Do the **dev**
 pass first end-to-end, confirm it works, then repeat for **production**. Ideally use
 separate Google/Resend/Turnstile credentials for dev vs prod.

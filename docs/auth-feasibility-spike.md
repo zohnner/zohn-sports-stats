@@ -40,3 +40,6 @@ This is the founding "no backend / zero-dependency Functions" constraint changin
 
 ## Recommendation
 **Proceed.** better-auth on D1 is feasible and fits the stack; ratify the Functions-build-step shift, then Vera/Kael (UX/visual) and Folio (legal) gates remain before Finn writes Phase-1 code.
+
+## Review status
+**REVIEWED — signed off 2026-08-02** (cross-team pass ahead of D-031 Phase 1). Consistent with auth-security-spec.md (session/cookie design), auth-data-schema.md (schema, purge cadence), and the applied migration. No open items against this doc.

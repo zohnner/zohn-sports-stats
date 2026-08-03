@@ -37,3 +37,6 @@
 
 ## Gate output
 Behavioral states + visual surfaces above are the contract Finn implements. Nothing renders for signed-out users beyond the unobtrusive account control and the follow stars.
+
+## Review status
+**REVIEWED — signed off 2026-08-02** (cross-team pass ahead of D-031 Phase 1). Three sign-in choices here (passkey/Google/magic-link) match auth-feasibility-spike.md exactly; follows model matches auth-data-schema.md's `follows` table (sport + entity_type + entity_id); "server wins on load, client writes win going forward" preference-conflict rule has no schema conflict since `preferences.data` is a single blob column, not versioned — fine for Phase 1, worth revisiting only if multi-device simultaneous editing becomes a real scenario.

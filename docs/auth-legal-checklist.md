@@ -29,3 +29,6 @@
 - [ ] Export + delete verified working end-to-end.
 - [ ] Processor list + DPAs in place.
 - [ ] Lawyer review complete (liability, ToS, data rights).
+
+## Review status
+**REVIEWED — signed off 2026-08-02** (cross-team pass ahead of D-031 Phase 1). Retention line ("security logs kept 90 days") now has a real mechanism behind it — see auth-data-schema.md's review-status note (audit_log purge folded into the daily sessions cron). Processor list (Cloudflare, Google, Resend) matches the runbook's actual provider choices. This doc's own checklist items remain unchecked by design — they're launch gates, not spec-review gates, and stay open until the owner's lawyer pass and the owner-run setup work (docs/auth-setup-runbook.md) actually happen.

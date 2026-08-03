@@ -23,7 +23,7 @@ CREATE TABLE users (
 CREATE TABLE auth_accounts (
   id           TEXT PRIMARY KEY,
   user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  provider     TEXT NOT NULL,               -- 'google' | 'apple' | 'passkey' | 'email'
+  provider     TEXT NOT NULL,               -- 'google' | 'passkey' | 'email' (Apple deferred — see auth-feasibility-spike.md)
   provider_uid TEXT NOT NULL,
   created_at   INTEGER NOT NULL,
   UNIQUE (provider, provider_uid)
@@ -67,7 +67,7 @@ CREATE TABLE preferences (
 ## Data rights (required at launch)
 - **Export:** authenticated endpoint returns a JSON bundle of all rows for the user (users, auth_accounts, follows, preferences; sessions summarized, tokens never included).
 - **Hard delete:** `DELETE FROM users WHERE id=?` cascades all child rows; explicitly purge sessions; confirm via re-auth. Irreversible, completes synchronously.
-- **Retention:** expired sessions purged by a scheduled Worker (cron) daily; deleted accounts leave no residue; audit log (if added) retained 90d then dropped.
+- **Retention:** expired sessions purged by a scheduled Worker (cron) daily; deleted accounts leave no residue; audit log rows older than 90 days purged by the **same daily cron** (added at cross-team review 2026-08-02 — the 90d figure was already promised in Folio's legal checklist but had no purge mechanism defined against it; the cron job scope is now explicitly both `sessions` and `audit_log`, not sessions alone).
 
 ## Access rules
 - Every read/write is scoped to `session.user_id`. No endpoint accepts a user id from the client. Server authorizes from the session only.
@@ -75,4 +75,7 @@ CREATE TABLE preferences (
 ## Open questions for the team
 1. Preferences as a JSON blob (flexible, recommended) vs typed columns (queryable)? 
 2. Add a lightweight `audit_log` table in Phase 1, or defer to the notifications/payments phase? (Recommended: minimal login audit now.)
-3. Cron purge cadence — daily sufficient? (Recommended: yes.)
+3. Cron purge cadence — daily sufficient? (Recommended: yes; scope confirmed at review to cover both `sessions` and `audit_log`.)
+
+## Review status
+**REVIEWED — signed off 2026-08-02** (cross-team pass ahead of D-031 Phase 1). One gap found and closed above (audit_log purge cadence had no mechanism defined against the 90d promise in Folio's legal checklist); one stale comment fixed (`apple` removed from `auth_accounts.provider`, matching the already-correct migration and the feasibility spike's decision to defer Apple). No other inconsistencies found against auth-security-spec.md, auth-feasibility-spike.md, or migrations/0001_user_schema.sql.

@@ -45,6 +45,9 @@
 - Pin and audit the auth library; **verify better-auth session-refresh bug #4203** during the Axiom spike before adopting. Have `workers-oauth-provider` / `jose`+KV as fallbacks.
 
 ## Open questions for the team
-1. Passkeys-only at launch, or passkeys + one OAuth provider + magic-link?
-2. Email storage: plaintext (needed for login/contact) with DB-level protection — acceptable? (Recommended: yes, minimized.)
-3. CSP nonce migration: block launch on it, or fast-follow? (Recommended: before any *paid* tier; document risk if deferred.)
+1. Passkeys-only at launch, or passkeys + one OAuth provider + magic-link? — **Resolved:** passkeys + Google OAuth + email magic-link (auth-feasibility-spike.md).
+2. Email storage: plaintext (needed for login/contact) with DB-level protection — acceptable? (Recommended: yes, minimized.) — **Resolved: yes.**
+3. CSP nonce migration: block launch on it, or fast-follow? (Recommended: before any *paid* tier; document risk if deferred.) — **Resolved: fast-follow, hard requirement before any paid tier.**
+
+## Review status
+**REVIEWED — signed off 2026-08-02** (cross-team pass ahead of D-031 Phase 1). All three open questions above resolved and consistent with auth-feasibility-spike.md's own resolution of the same three. No conflicts found against auth-data-schema.md's session table (opaque id + hashed token, matches) or the migration.
