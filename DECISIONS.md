@@ -1291,7 +1291,7 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 ---
 
 ## D-056 — SEO growth audit: sitemap unreachable to Google for 8 days, plus three real growth gaps
-**Status:** audit complete, one fix applied (sitemap resubmitted); remaining findings not yet actioned, pending priority
+**Status:** shipped — sitemap resubmitted, gen-sitemap.cjs extended (game-page rolling window, run + confirmed by owner), /api/ncaafstats pre-season 502 fixed and live-verified (both consumers: Leaders page + team Leaders card), adjacent season-label mislabel fixed. Remaining findings (og:image, NFL/NCAAF leaders+game templates ahead of season) not yet actioned, pending priority.
 **Contributors:** Axiom (diagnosis + fix), Relay (discovery gaps), Folio (meta/share findings, doc-sync)
 **Date:** 2026-08-02
 

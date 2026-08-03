@@ -593,7 +593,7 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
             ...groups.map(g => ({ label: g.label, value: g.players.length })),
             ...(conf ? [{ label: 'Conference', value: conf }] : []),
         ],
-        assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String(_ncaaf.season),
+        assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String((stats && stats.season) || _ncaaf.season),
         groups, rosterEmpty: 'Roster data unavailable for this team right now.',
         scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
     };
