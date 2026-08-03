@@ -925,7 +925,7 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 ---
 
 ## D-043 — Home hub follow-on: tabbed scoreboard, seasonal promo, cross-sport search
-**Status:** proposed — owner ratification pending
+**Status:** COMPLETE 2026-08-02. Ratified (owner, via D-058) with sequencing **3c (cross-sport search) → 3b (seasonal promo) → 3a (tabbed scoreboard)**; all three built, verified, and live-verified on production in that order the same day. Full build/verification detail for each sub-item is in ISSUES.md under "D-043 3c/3b/3a — ... gates + implementation".
 **Contributors:** Vera (JTBD/UX), Kael (visual), Axiom (feasibility), Relay (data contract)
 **Date opened:** 2026-07-06 | **Date resolved:** —
 

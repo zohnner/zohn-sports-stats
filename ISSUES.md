@@ -1776,5 +1776,16 @@ Gates for 3a, transcribed from the D-043 spec (drafted 2026-07-06):
 
 **Committed:** `sw.js` `CACHE_NAME` bumped v133→v134 in the same commit.
 
+**Update 2026-08-02 — live-verified on production, D-043 3a fully closed (and with it, D-043 in full).** Polled `/sw.js` until the edge served v134 (~18s), then needed a genuine hard reload before a "fresh" tab actually ran the new code (the same browser-disk-cache class of issue as D-057/3c/3b — not a deploy problem; edge and SW were both already correct). Confirmed, with zero console errors at every step:
+- **All tab:** tab bar renders (`All | MLB | NFL | NCAAF`), MLB cards unchanged from pre-3a behavior, status filter pills intact.
+- **NFL tab:** lazy-fetched one real preseason game (Panthers @ Cardinals), broadcast caption "NBC" rendered under the team rows, kickoff-time pill "8:00 PM ET" (not the old static "Scheduled"), muted 🏈 glyph in the footer, MLB-only status filter pills correctly absent.
+- **NCAAF tab:** lazy-fetched a full 15-game slate with real, varied network captions (ESPN, CBSSN, FOX, BTN, ESPN+, ACC Network, CW, SEC Network) and correct kickoff times across all of them — a strong cross-check that the broadcast field parsing isn't a one-game fluke.
+- **All tab, revisited:** after opening NFL and NCAAF once, returning to All correctly unioned both blocks in after the MLB block — MLB-first order confirmed exactly as designed, not chronologically interleaved.
+- **MLB tab:** shows only MLB cards, no football blocks — correctly scoped.
+- **Session memory:** switching tabs and doing a fresh navigation back to `/` correctly restored the last-selected tab from `sessionStorage` (tested with `mlb`) — Vera's "remember within the session" gate confirmed, not just coded.
+- **Click routing, all three sports:** MLB card → `openMLBGame` panel opens (unchanged pre-3a behavior). NFL card → sport switched to NFL, navigated to `#nfl-game-401873271`, real game page rendered (Panthers @ Cardinals, venue, team stats shell). NCAAF card → sport switched to NCAAF, navigated to `#ncaaf-scores` (no per-game view exists, matching the ticker's own established NCAAF behavior) — real College Scores page rendered.
+
+D-043 3a is fully shipped and verified. With 3c, 3b, and 3a all closed, **D-043 is complete** — all three ratified sub-items (cross-sport search, seasonal promo, tabbed home scoreboard) are live on production.
+
 ---
 
