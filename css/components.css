@@ -4363,26 +4363,36 @@
     background: var(--accent-subtle);
 }
 
-/* ── Draft HQ strip (D-035) ──────────────────────────────────
-   Spans full width inside .players-grid contexts; horizontal
-   scroll on narrow screens. Active tab baked at render time. */
+/* ── Draft HQ strip (D-035, regrouped D-055) ─────────────────
+   Spans full width inside .players-grid contexts. Wraps to multiple
+   lines on narrow screens instead of relying on horizontal scroll — a
+   hidden scrollbar gave mobile users no signal that Injury Report /
+   Waiver Wire existed off-screen to the right (D-055). Active tab baked
+   at render time. Grouped by _hqStrip() into labeled clusters (.hq-group-
+   label) rather than one flat undifferentiated row. */
 .hq-strip {
     grid-column: 1 / -1;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.4rem;
     margin: 0 0 1rem;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
 }
-.hq-strip::-webkit-scrollbar { display: none; }
 .hq-title {
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.14em;
     color: var(--text-subtle);
     margin-right: 0.35rem;
+    white-space: nowrap;
+}
+.hq-group-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    margin: 0 0.35rem 0 0.5rem;
     white-space: nowrap;
 }
 .hq-tab {

@@ -231,24 +231,35 @@ async function loadMockDraft() {
     _renderMockSetup(grid);
 }
 
-// ── Draft HQ strip (D-035) — one home for the fantasy research views ──
-// Rendered by each member view at the top of its own output, so routes,
-// deep links, and .nav-tab[data-view] active-state all keep working.
-const _HQ_TABS = [
-    { v: 'nfl-draftkit', l: 'Value Board' },
-    { v: 'nfl-rankings', l: 'Rankings' },
-    { v: 'nfl-sos',      l: 'Schedule' },
-    { v: 'nfl-trending', l: 'Trending' },
-    { v: 'nfl-injuries', l: 'Injury Report' },
-    { v: 'nfl-waivers',  l: 'Waiver Wire' },
-    { v: 'nfl-compare',  l: 'Compare' },
-    { v: 'nfl-mock',     l: 'Mock Draft' },
+// ── Draft HQ strip (D-035, regrouped D-055) — one home for the fantasy
+// research views. Rendered by each member view at the top of its own
+// output, so routes, deep links, and .nav-tab[data-view] active-state all
+// keep working. Grouped into Draft Prep (pre-draft research + the
+// simulator) and In-Season (roster-management tools that only make sense
+// once a season is live) — previously one flat row of 8 identical pills
+// with no hierarchy; see ISSUES.md D-055 for the full rationale.
+const _HQ_GROUPS = [
+    { label: 'Draft Prep', tabs: [
+        { v: 'nfl-draftkit', l: 'Value Board' },
+        { v: 'nfl-rankings', l: 'ADP Rankings' },
+        { v: 'nfl-sos',      l: 'Schedule' },
+        { v: 'nfl-compare',  l: 'Compare' },
+        { v: 'nfl-mock',     l: 'Mock Draft' },
+    ] },
+    { label: 'In-Season', tabs: [
+        { v: 'nfl-trending', l: 'Trending' },
+        { v: 'nfl-injuries', l: 'Injury Report' },
+        { v: 'nfl-waivers',  l: 'Waiver Wire' },
+    ] },
 ];
 function _hqStrip(active) {
-    const tabs = _HQ_TABS.map(t =>
-        `<button type="button" class="hq-tab${t.v === active ? ' hq-tab--on' : ''}"${t.v === active ? ' aria-current="page"' : ''} onclick="navigateTo('${t.v}')">${t.l}</button>`
-    ).join('');
-    return `<nav class="hq-strip" aria-label="Draft HQ sections"><span class="hq-title">DRAFT HQ</span>${tabs}</nav>`;
+    const groups = _HQ_GROUPS.map(g => {
+        const tabs = g.tabs.map(t =>
+            `<button type="button" class="hq-tab${t.v === active ? ' hq-tab--on' : ''}"${t.v === active ? ' aria-current="page"' : ''} onclick="navigateTo('${t.v}')">${t.l}</button>`
+        ).join('');
+        return `<span class="hq-group-label">${g.label}</span>${tabs}`;
+    }).join('');
+    return `<nav class="hq-strip" aria-label="Draft HQ sections"><span class="hq-title">DRAFT HQ</span>${groups}</nav>`;
 }
 
 function _renderMockSetup(grid) {

@@ -1577,3 +1577,31 @@ Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 st
 
 ---
 
+## D-055 — Draft HQ information architecture: grouped strip, complete menus, ADP disambiguation
+**Contributors:** Vera (IA spec), Kael (visual sign-off), Axiom (feasibility + implementation) | **Date:** 2026-08-02
+
+**Context:** owner asked for a brainstorm on why Draft HQ feels disorganized, after the Compare-tab fix above revealed the underlying cause — a feature getting silently re-added to a third location because nobody owned the IA. Read the actual code (`_HQ_TABS`, `SUB_NAV_TABS.nfl`, `MENU_TABS.nfl`, `.hq-strip` CSS) rather than guessing before proposing anything.
+
+**Vera's diagnosis (three real, evidence-grounded findings):**
+1. **The strip had no hierarchy.** `_HQ_TABS` was one flat array of 8 destinations rendered as identical pills in a single row — Value Board, Rankings, Schedule, Trending, Injury Report, Waiver Wire, Compare, Mock Draft all carried equal visual weight, with nothing distinguishing pre-draft research tools from in-season roster-management tools.
+2. **Six of eight destinations were invisible outside the strip.** `SUB_NAV_TABS.nfl`'s Fantasy dropdown listed only 2 direct entries (Draft HQ, Mock Draft); the other 6 lived in an `also` array that only fed `_syncSubNavParents`' active-state check, not the rendered menu. `MENU_TABS.nfl`'s mobile Fantasy group had the identical gap — 2 tiles, 6 hidden. Injury Report and Waiver Wire, shipped this same session, were functionally undiscoverable except by already being on some other Draft HQ page and scrolling the strip.
+3. **Value Board and Rankings sound identical but aren't.** Read both implementations directly: Value Board (`_dkBuild`) is model-driven — VBD/VORP against the trained regression, with sleeper/trap gap signal. Rankings (`displayNFLRankings`) is a plain ADP-ordered consensus list, no model involved. Nothing in the labels communicated that distinction.
+
+**Vera's spec:** split `_HQ_TABS` into two labeled clusters — **Draft Prep** (Value Board, ADP Rankings, Schedule, Compare, Mock Draft) and **In-Season** (Trending, Injury Report, Waiver Wire) — ordered so research tools precede the two decision aids (Compare, then Mock Draft as the "do it" step). Rename "Rankings" → "ADP Rankings" to disambiguate from Value Board without touching Value Board's own label (it already reads as distinct). Resolved the Compare-placement question from the earlier brainstorm: keep it in **both** contexts rather than picking one — desktop Analytics dropdown / mobile Tools group (general stats access, consistent with MLB's own Compare placement) **and** the Draft HQ strip (contextual, since comparing two players is a legitimate part of draft-decision research). This isn't redundant the way the original three-homes-by-accident was — it's two deliberate entry points for two different user contexts, both correctly synced by the existing `.nav-tab[data-view]` active-state mechanism.
+
+**Kael (visual, light sign-off):** the group treatment reuses `.hq-title`'s existing token vocabulary (`--text-subtle`, same letter-spacing family) at a slightly smaller size — no new visual language, just a second tier of the same label pattern. Mobile fix: `.hq-strip` switches from `overflow-x: auto` + hidden scrollbar to `flex-wrap: wrap` — removes the reliance on a scroll affordance the CSS was actively hiding (`::-webkit-scrollbar { display: none }`), which was the real mechanism behind finding #2 above on narrow viewports. Pure CSS, no new component.
+
+**Axiom (feasibility + implementation):** all changes are data-shape edits to arrays already rendered by existing, unmodified functions — `_hqStrip()` now iterates `_HQ_GROUPS` instead of `_HQ_TABS` (only internal consumer, confirmed via grep before restructuring), `SUB_NAV_TABS.nfl`'s Fantasy `children` now lists all 8 destinations directly (dropped the now-redundant `also` array — `_syncSubNavParents` builds its active-check set from the union of all `.v` values, which now already covers everything `also` used to cover separately), `MENU_TABS.nfl` splits the single "Fantasy" mobile group into "Draft Prep"/"In-Season" reusing the existing `{group:'X'}` pattern already used for MLB's Stats/Tools groups. No AppState touch, no new fetches, no new CSP surface.
+
+**Gate status:** Vera ✅ · Kael ✅ · Axiom ✅ · shipped same session (no separate Finn handoff needed — mechanical enough for Axiom to implement directly, consistent with the Compare-tab fix above).
+
+**Shipped:**
+- `js/fantasy.js`: `_HQ_TABS` → `_HQ_GROUPS` (2 labeled clusters), `_hqStrip()` renders group micro-labels between clusters.
+- `css/components.css`: `.hq-strip` → `flex-wrap: wrap` (was horizontal-scroll + hidden scrollbar); added `.hq-group-label`.
+- `js/navigation.js`: `_BC_META['nfl-rankings']` → "Draft HQ · ADP Rankings"; `SUB_NAV_TABS.nfl` Fantasy dropdown lists all 8 destinations (was 2 + a silent `also` array); `MENU_TABS.nfl` splits mobile Fantasy group into Draft Prep (4 tiles) / In-Season (3 tiles), Compare stays in the existing Tools group.
+- `sw.js` `CACHE_NAME` v128→v129 (this commit changes `fantasy.js`/`navigation.js`/`components.css` content).
+
+**Verified:** `node --check` clean on `fantasy.js`/`navigation.js`; `check-manifest.cjs` green; `check-themes.cjs --strict` — 2 pre-existing warnings (`light`/`nl-monarchs` `--accent` on `--accent-subtle` contrast, 2.98/2.88 vs 3.0 minimum) unrelated to this change, no new failures, 0 errors; full unit suite 33/33.
+
+---
+
