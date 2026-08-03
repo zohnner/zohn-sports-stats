@@ -9,10 +9,11 @@
  *   node tools/gen-sitemap.cjs --dry      # prints the url count, writes nothing
  *
  * Only lists paths that have a real edge-render template today:
- *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings · /glossary
+ *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings · /mlb/leaders
+ *   /nfl/leaders · /ncaaf/standings · /ncaaf/rankings · /glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
- *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug}
+ *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug} · /nfl/game/{id} (rolling window)
  *
  * D-056: /mlb/game/{pk} pages (D-050) previously had zero lasting discovery path —
  * the home page only links each day's games while they're on it (~1 day), so a
@@ -20,6 +21,10 @@
  * covers the last GAME_WINDOW_DAYS as a rolling discovery net; it's still supplementary
  * to the home snapshot, not a replacement — same "don't churn on live state" posture,
  * since this only runs when the owner regenerates, not continuously.
+ *
+ * D-056 (timing follow-up): /nfl/leaders, /nfl/game/{id}, /ncaaf/standings and
+ * /ncaaf/rankings ship the same pattern for NFL/NCAAF ahead of the NFL season
+ * and CFB's Aug-Jan window, rather than after — see ISSUES.md D-056.
  */
 const fs = require('fs');
 const path = require('path');
@@ -57,6 +62,9 @@ async function main() {
     for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
     add(urlTag('/mlb/leaders', 'daily', '0.7'));
+    add(urlTag('/nfl/leaders', 'daily', '0.7'));
+    add(urlTag('/ncaaf/standings', 'daily', '0.7'));
+    add(urlTag('/ncaaf/rankings', 'weekly', '0.7'));
     add(urlTag('/glossary', 'monthly', '0.6'));
 
     // 2) MLB teams
@@ -136,6 +144,22 @@ async function main() {
             if (t && t.abbreviation) add(urlTag(`/nfl/team/${t.abbreviation.toLowerCase()}/${slug(t.displayName || t.name)}`, 'daily', '0.6'));
         }
     } catch (e) { console.error('NFL teams:', e.message); }
+
+    // 6b) NFL games — rolling discovery window, same rationale as 3b's MLB
+    // games section: functions/nfl/game/[id].js has no other lasting discovery
+    // path once a game rolls off any weekly scores view. ESPN's NFL scoreboard
+    // accepts a date-range `dates=YYYYMMDD-YYYYMMDD` query the same way MLB's
+    // schedule endpoint does; this section fails open (try/catch, logged) like
+    // every other section if that assumption is ever wrong.
+    try {
+        const end = now;
+        const start = new Date(now.getTime() - GAME_WINDOW_DAYS * 86400000);
+        const range = `${isoDate(start).replace(/-/g, '')}-${isoDate(end).replace(/-/g, '')}`;
+        const sb = await jget(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${range}`);
+        for (const ev of (sb.events || [])) {
+            if (ev.id) add(urlTag(`/nfl/game/${ev.id}`, 'never', '0.4'));
+        }
+    } catch (e) { console.error('NFL games:', e.message); }
 
     // 7) NFL players (top fantasy-relevant by Sleeper search_rank)
     try {

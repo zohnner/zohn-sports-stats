@@ -1652,3 +1652,35 @@ Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 st
 
 ---
 
+## D-057 — NFL leaders/game + NCAAF standings/rankings path URLs, ahead of season
+**Contributors:** Axiom (implementation) | **Date:** 2026-08-02
+
+**Context:** D-056's timing note (Relay) flagged that NFL leaders/game path URLs and NCAAF standings/rankings path URLs are explicitly deferred as "offseason" in D-045/D-050/D-051, but NFL season starts in ~5 weeks and fantasy-draft search interest ramps through August — the same audience Draft HQ already serves — so shipping now is a real timing case, not a routine backlog item. Owner picked this as the priority after D-056 closed.
+
+**Shipped — four new Pages Function templates**, each cloning the proven D-050/D-051 MLB pattern exactly (real SPA shell via `env.ASSETS.fetch`, per-page `<title>`/description/canonical/OG rewrite, JSON-LD, a crawlable content snapshot injected into `#playersGrid`, `window.__SS_ROUTE` to hydrate the SPA, and a fail-safe fallback to the untouched shell on any error — same HTML for humans and bots, no UA sniffing):
+
+- **`functions/nfl/leaders.js` → `/nfl/leaders`.** Self-fetches `/api/nflstats` (same-origin, no season override — inherits the client's own default-season logic) rather than reimplementing ESPN's two-stage leaders→athlete-id resolution at the edge; one definition of "NFL leaders," not two. Renders all categories `/api/nflstats` already curates (passing/rushing/receiving yards+TDs, receptions, sacks, interceptions), top 5 each. ItemList JSON-LD keyed off passing yards as the headline category.
+- **`functions/nfl/game/[id].js` → `/nfl/game/{id}`.** Fetches ESPN's summary endpoint directly (`site.api.espn.com/.../nfl/summary?event={id}` — already CSP-allowlisted, same host `functions/api/nfl.js` already proxies). Sets `__SS_ROUTE=nfl-game-{id}`, matching the existing hash pattern `_loadFromHash` already resolves to `showNFLGame(id)` in `nflLiveGame.js`. SportsEvent JSON-LD.
+- **`functions/ncaaf/rankings.js` → `/ncaaf/rankings`.** Self-fetches `/api/ncaaf?path=/rankings` (the existing same-origin ESPN proxy) and replicates the FBS-poll filter that today only exists client-side in `js/ncaaf.js`'s `fetchNCAAFRankings` (`_fbsPoll` — drops FCS/Div II/III polls) — that filter isn't reusable server-side as written, so it's re-expressed here rather than left unfiltered. Surfaces the AP Top 25 (or whichever FBS poll ESPN lists first) with records and an ItemList of the 25 teams.
+- **`functions/ncaaf/standings.js` → `/ncaaf/standings`.** Self-fetches `/api/ncaafstandings` — deliberately self-fetches rather than re-deriving the season/upstream URL, so any future fix to that endpoint's own season-fallback logic (see D-056 above) is inherited automatically, not duplicated. Flattens the conference/division tree (a trimmed reimplementation of `js/ncaaf.js`'s `_ncaafCollectConfs`, since that function isn't reusable server-side either) into a 6-conference, 8-team-per-conference snapshot.
+
+**Real bug found and fixed during implementation — a genuine prerequisite, not scope creep:** while wiring `__SS_ROUTE=nfl-game-{id}`, traced `js/navigation.js`'s `window.__SS_ROUTE` dispatcher (the block that lets an edge-rendered path URL boot the SPA straight into the right entity) and found it has a dedicated branch for MLB's equivalent game route (`mlb-live-(\d+)`) but **no branch at all for `nfl-game-{id}`**. The dispatcher's generic sport-view fallback (`/^(mlb|nfl|nhl|ncaaf)-[a-z]+$/`) only matches a pure-lowercase-letters suffix — `nfl-game-401547439` has digits and an extra hyphen and does not match. Without a fix, every visit to `/nfl/game/{id}` would have set `window.__SS_ROUTE` correctly, then fallen through the entire dispatcher unmatched, down to reading `window.location.hash` (empty, since a real path URL carries no hash) — and booted to **home**, not the game panel. Fixed by adding a dedicated branch mirroring `mlb-live` exactly:
+```js
+} else if (/^nfl-game-([A-Za-z0-9]+)$/.test(_r)) {
+    AppState.currentSport = 'nfl';
+    if (typeof _applySportUI === 'function') _applySportUI('nfl');
+    navigateTo(_r); return;
+}
+```
+Checked the other three new routes against the same dispatcher by hand: `nfl-leaders`, `ncaaf-standings`, and `ncaaf-rankings` are all `sport-lowercaseword` shape and already match the existing generic fallback — no further changes needed there.
+
+**`_routes.json`:** checked, no change needed. `/nfl/*` and `/ncaaf/*` are already in the wildcard `include` list from D-045, and those wildcards cover any new subpath under them — confirmed by reading the file rather than assuming.
+
+**`tools/gen-sitemap.cjs`:** added `/nfl/leaders`, `/ncaaf/standings`, `/ncaaf/rankings` as static entries alongside `/mlb/leaders`, and a new `6b) NFL games` section mirroring `3b`'s MLB rolling-window design exactly (`GAME_WINDOW_DAYS`, same fail-open try/catch posture) — queries ESPN's NFL scoreboard by `dates=YYYYMMDD-YYYYMMDD` range, same param shape MLB's schedule endpoint accepts. Updated the file's header comment to list the new coverage.
+
+**Verified:** `node --check` clean on all 6 changed/new files (`functions/nfl/leaders.js`, `functions/nfl/game/[id].js`, `functions/ncaaf/rankings.js`, `functions/ncaaf/standings.js`, `tools/gen-sitemap.cjs`, `js/navigation.js`). `tools/check-manifest.cjs`: 0 failures, 0 warnings (Pages Functions aren't in the JS/CSS static-asset chain, confirmed no false failure). `tools/check-themes.cjs`: 0 errors, 2 pre-existing warnings unrelated to this change (light/nl-monarchs `--accent`-on-`--accent-subtle` contrast, present before this session). `node tools/gen-sitemap.cjs --dry`: runs end-to-end without throwing, all new live-data sections (NFL leaders is static so unaffected; the new 6b NFL-games section) fail open and log per-section exactly like every existing section, under this sandbox's disclosed no-outbound-network constraint — falls back to 14 static URLs (up from 11: the 3 new static path entries), confirming the new code executes cleanly rather than crashing the generator. NUL-byte check clean on every changed file (mount-corruption guard, per the standing commit workaround).
+
+**Not yet live-verified:** needs push + deploy, then a real hit on all four new path URLs — confirm prerendered `<head>`/snapshot content and, most importantly, that the SPA actually hydrates into the right view rather than home (especially `/nfl/game/{id}`, given the dispatcher bug just caught and fixed here — that's exactly the class of mistake a live check is for, not something to assume fixed from a code trace alone).
+
+---
+

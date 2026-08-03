@@ -821,6 +821,10 @@ function _loadFromHash() {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');
             navigateTo(_r); return;
+        } else if (/^nfl-game-([A-Za-z0-9]+)$/.test(_r)) {
+            AppState.currentSport = 'nfl';
+            if (typeof _applySportUI === 'function') _applySportUI('nfl');
+            navigateTo(_r); return;
         } else if (/^nfl-player-([A-Za-z0-9]+)$/.test(_r)) {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');

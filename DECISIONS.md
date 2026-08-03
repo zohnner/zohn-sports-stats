@@ -1306,3 +1306,28 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 **Full findings, evidence, and fetch results:** ISSUES.md D-056. GOALS.md's stale "Search Console verify/submit remains open" line corrected in the same pass.
 
 **Next:** owner picks priority among: sitemap regeneration (owner-run), rolling game-page discovery window, dynamic per-page og:image, NFL/NCAAF leaders+game templates ahead of season. None implemented yet beyond the sitemap resubmit.
+
+---
+
+## D-057 — NFL leaders/game + NCAAF standings/rankings path URLs, ahead of season (D-056 timing follow-up)
+**Status:** implemented, pending push + live verification
+**Contributors:** Axiom (implementation)
+**Date:** 2026-08-02
+
+**Trigger (owner):** picked the D-056 timing-opportunity option — ship the proven D-050/D-051 edge-render pattern for NFL and NCAAF now, ahead of the NFL season (~5 weeks out) and CFB's Aug-Jan discovery window, rather than after.
+
+**Shipped:** four new Pages Function templates, cloning the D-051 MLB-leaders / D-050 MLB-game-page pattern exactly (real SPA shell via `env.ASSETS`, per-page `<head>`, JSON-LD, crawlable snapshot, `window.__SS_ROUTE`, fail-safe to the untouched app on any error):
+- `functions/nfl/leaders.js` → `/nfl/leaders` — self-fetches `/api/nflstats` (same-origin, same default-season logic the client already uses) rather than reimplementing ESPN's two-stage leaders→athlete resolution at the edge.
+- `functions/nfl/game/[id].js` → `/nfl/game/{id}` — fetches ESPN's summary endpoint directly (already CSP-allowlisted host), sets `__SS_ROUTE=nfl-game-{id}`.
+- `functions/ncaaf/rankings.js` → `/ncaaf/rankings` — self-fetches `/api/ncaaf?path=/rankings`, replicates the client's FBS-poll filter (that filter lives in `js/ncaaf.js`'s `fetchNCAAFRankings`, not reusable server-side) to surface the AP Top 25.
+- `functions/ncaaf/standings.js` → `/ncaaf/standings` — self-fetches `/api/ncaafstandings` (inherits any future season-fallback fix there automatically), flattens the conference tree into a 6-conference snapshot.
+
+**Real bug found and fixed during implementation, not scope creep — a prerequisite:** `js/navigation.js`'s `window.__SS_ROUTE` dispatcher had a dedicated branch for MLB's `mlb-live-{pk}` game route but none for `nfl-game-{id}`, and the generic sport-view fallback (`/^(mlb|nfl|nhl|ncaaf)-[a-z]+$/`) only matches pure-letter suffixes — `nfl-game-401547439` has digits and an extra hyphen, so it wouldn't have matched anything. Without this fix, `/nfl/game/{id}` would have booted to home instead of the game panel on every load. Added a branch mirroring `mlb-live` exactly. `nfl-leaders`, `ncaaf-standings`, and `ncaaf-rankings` all already matched the existing generic fallback — no changes needed there.
+
+**`_routes.json`:** no change needed — `/nfl/*` and `/ncaaf/*` wildcards already cover the new subpaths.
+
+**`tools/gen-sitemap.cjs`:** added `/nfl/leaders`, `/ncaaf/standings`, `/ncaaf/rankings` as static entries, and a `6b) NFL games` rolling-window section (same `GAME_WINDOW_DAYS` pattern as 3b's MLB games section) querying ESPN's scoreboard by date range.
+
+**Verified:** `node --check` clean on all 6 changed/new files; `tools/check-manifest.cjs` and `tools/check-themes.cjs` both green (the 2 theme warnings pre-exist, unrelated to this change); `node tools/gen-sitemap.cjs --dry` runs end-to-end without throwing, all new live-data calls fail open and log per-section as expected (sandbox has no outbound network — same disclosed constraint as every prior sitemap-generator change); NUL-byte check clean on all changed files (mount-corruption guard). **Not yet live-verified** — needs push + a real hit on each of the four new path URLs, checking prerendered `<head>`/snapshot and confirming the SPA hydrates into the right view (especially `/nfl/game/{id}`, given the dispatcher bug this session caught and fixed).
+
+**Full detail:** ISSUES.md D-057.
