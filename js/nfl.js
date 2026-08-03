@@ -1558,7 +1558,8 @@ async function loadNFLCompare() {
     grid.className = '';
     grid.style.cssText = '';
     if (window.setBreadcrumb) setBreadcrumb('nfl-compare', null);
-    grid.innerHTML = `<div class="skeleton-card" style="min-height:300px"></div>`;
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-compare') : '') +
+        `<div class="skeleton-card" style="min-height:300px"></div>`;
     try {
         await fetchNFLSleeperPool();
         _renderNFLCompareView();
@@ -1574,7 +1575,7 @@ function _renderNFLCompareView() {
     const top = (_nflPool || []).slice(0, 300);
     const opts = '<option value="">— Select player —</option>' +
         top.map(p => `<option value="${p.player_id}">${_escHtml(p.full_name)} · ${_escHtml(p.team || 'FA')} ${_escHtml(p.position || '')}</option>`).join('');
-    grid.innerHTML = `
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-compare') : '') + `
         <div class="cmp-page-wrap">
             <div class="cmp-page-hdr"><h1 class="cmp-page-title">Player Compare</h1></div>
             <div class="cmp-selects-row">

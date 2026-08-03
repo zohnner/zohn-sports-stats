@@ -1560,3 +1560,20 @@ Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 st
 
 ---
 
+## Draft HQ — Compare tab was orphaned from the hub
+**Contributor:** Axiom | **Date:** 2026-08-02
+
+**Context:** owner asked to continue building out Draft HQ; before speccing anything new, checked what already exists rather than assuming a gap. `showNFLPlayerDetail`/`_renderNFLPlayerDetail` (full bio, season stats, gamelog, career, advanced NGS, fantasy outlook) and `loadNFLCompare`/`_renderNFLCompareView`/`_updateNFLCompare` (two-player side-by-side, hash-shareable at `#nfl-compare-{idA}-{idB}`) both already exist in `nfl.js`, fully routed in `navigation.js` (sub-nav, mobile menu, hash-routing array, breadcrumb label). No feature gap there — the original plan to build a "player detail/comparison view" would have been redundant work.
+
+**The one real gap:** `_HQ_TABS` in `fantasy.js` (the strip every Draft HQ member view renders — Value Board/Rankings/Schedule/Trending/Injury Report/Waiver Wire/Mock Draft) didn't include Compare. The page was reachable via sub-nav/menu but invisible from inside the hub itself — a user on Value Board or Rankings had no path to Compare without leaving the strip.
+
+**Fix (Axiom, mechanical — no new spec needed, reuses the existing hub pattern verbatim):**
+- Added `{ v: 'nfl-compare', l: 'Compare' }` to `_HQ_TABS`, positioned after Waiver Wire and before Mock Draft.
+- `_renderNFLCompareView` and `loadNFLCompare`'s skeleton state now both render `_hqStrip('nfl-compare')`, matching every other member view — previously Compare rendered with no strip at all, even after landing there.
+
+**Verified:** `node --check` clean on `nfl.js`/`fantasy.js`; `check-manifest.cjs` green; full unit suite 33/33.
+
+**Also this pass:** `sw.js` `CACHE_NAME` bumped v126→v127→v128. v126 was never bumped across the entire N-5 P4/N-16/N-17/N-18 push despite `nfl.js`/`fantasy.js`/`navigation.js`/`components.css` all changing content — confirmed live on production that a browser with v126 cached kept serving stale JS (missing all three shipped features) across two full reloads, because the SW's stale-while-revalidate strategy only swaps the active cache on an `activate` event, which requires a version change to fire. v127 covered that gap; v128 covers this session's Compare-strip fix, so it doesn't reintroduce the same bug on its own commit.
+
+---
+

@@ -241,6 +241,7 @@ const _HQ_TABS = [
     { v: 'nfl-trending', l: 'Trending' },
     { v: 'nfl-injuries', l: 'Injury Report' },
     { v: 'nfl-waivers',  l: 'Waiver Wire' },
+    { v: 'nfl-compare',  l: 'Compare' },
     { v: 'nfl-mock',     l: 'Mock Draft' },
 ];
 function _hqStrip(active) {
