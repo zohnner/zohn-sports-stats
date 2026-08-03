@@ -1710,31 +1710,41 @@ function _homeMomentFor(d = new Date()) {
 // season the way Vera's spec calls for. Windows below are disjoint by design
 // (draft ends Aug, nfl-live starts Sep), so ordering doesn't actually matter
 // today — kept priority-based anyway so a future overlapping entry is safe.
-const PROMO_MOMENTS = [
-    {
-        key: 'nfl-live',
-        active: () => typeof _nflIsOffseason === 'function' && !_nflIsOffseason(), // Sep–Feb
-        kicker: () => `${typeof NFL_FANTASY_SEASON !== 'undefined' ? NFL_FANTASY_SEASON : ''} Football Season`,
-        text:   () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
-            ? 'NFL and NCAAF — scores, standings and fantasy tools, all live, no login required.'
-            : 'Scores, standings and fantasy tools — all live, no login required.',
-        primary: { label: 'NFL Scores →', view: 'nfl-games' },
-        secondary: () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
-            ? { label: 'NCAAF Scores →', view: 'ncaaf-scores' }
-            : { label: 'Standings →', view: 'nfl-standings' },
-    },
-    {
-        key: 'draft',
-        active: () => { const m = new Date().getMonth() + 1; return m === 7 || m === 8; }, // Jul–Aug
-        kicker: () => 'NFL Draft Season',
-        text:   () => 'Mock draft in 60 seconds — no login. Build your board before your league does.',
-        primary: { label: 'Mock Draft →', view: 'nfl-mock' },
-        secondary: () => ({ label: 'Draft Kit →', view: 'nfl-draftkit' }),
-    },
-];
+//
+// A function, not a top-level `const` array — `loadHome()` runs synchronously
+// during script bootstrap (setupNavigation → _loadFromHash → navigateTo, all
+// called near the top of this file) which is *before* the JS engine reaches a
+// `const` declared further down the file; referencing it from that path threw
+// "Cannot access 'PROMO_MOMENTS' before initialization" (a real TDZ bug caught
+// live on first production check, 2026-08-02). Function declarations are
+// fully hoisted, so this reads identically but has no ordering hazard.
+function _promoMoments() {
+    return [
+        {
+            key: 'nfl-live',
+            active: () => typeof _nflIsOffseason === 'function' && !_nflIsOffseason(), // Sep–Feb
+            kicker: () => `${typeof NFL_FANTASY_SEASON !== 'undefined' ? NFL_FANTASY_SEASON : ''} Football Season`,
+            text:   () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
+                ? 'NFL and NCAAF — scores, standings and fantasy tools, all live, no login required.'
+                : 'Scores, standings and fantasy tools — all live, no login required.',
+            primary: { label: 'NFL Scores →', view: 'nfl-games' },
+            secondary: () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
+                ? { label: 'NCAAF Scores →', view: 'ncaaf-scores' }
+                : { label: 'Standings →', view: 'nfl-standings' },
+        },
+        {
+            key: 'draft',
+            active: () => { const m = new Date().getMonth() + 1; return m === 7 || m === 8; }, // Jul–Aug
+            kicker: () => 'NFL Draft Season',
+            text:   () => 'Mock draft in 60 seconds — no login. Build your board before your league does.',
+            primary: { label: 'Mock Draft →', view: 'nfl-mock' },
+            secondary: () => ({ label: 'Draft Kit →', view: 'nfl-draftkit' }),
+        },
+    ];
+}
 
 function _activePromoMoment() {
-    return PROMO_MOMENTS.find(p => { try { return p.active(); } catch (_) { return false; } }) || null;
+    return _promoMoments().find(p => { try { return p.active(); } catch (_) { return false; } }) || null;
 }
 
 // Cross-sport navigation needs the sport UI switched first — a bare
