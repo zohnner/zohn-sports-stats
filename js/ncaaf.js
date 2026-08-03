@@ -66,6 +66,8 @@ async function fetchNCAAFScoreboard() {
             homeTeam: mk(home), awayTeam: mk(away),
             isFinal, isLive,
             statusText: status?.type?.shortDetail || status?.type?.description || '',
+            // D-043 3a: same shape as NFL's, verified live 2026-08-02.
+            broadcast: comp.broadcasts?.[0]?.names?.[0] || '',
         };
     }).filter(Boolean);
 }

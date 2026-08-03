@@ -222,18 +222,8 @@ Logger.info('App bootstrap complete', undefined, 'APP');
 
 // ── Home / Landing page ───────────────────────────────────────
 
-function loadHome() {
-    if (typeof _applySportUI === 'function') _applySportUI('home');
-    const grid = document.getElementById('playersGrid');
-    if (!grid) return;
-    grid.className = 'home-container';
-
-    const dateStr = new Date().toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric'
-    });
-
-    // Structured skeleton cards that match the real game card layout
-    const skelCards = Array.from({length: 6}, () => `
+function _homeSkeletonCards(n = 6) {
+    return Array.from({length: n}, () => `
         <div class="home-game-card home-game-card--skeleton" aria-hidden="true">
             <div class="hgc-row">
                 <span class="skeleton-line" style="width:28px;height:28px;border-radius:50%;flex-shrink:0"></span>
@@ -250,6 +240,30 @@ function loadHome() {
             </div>
         </div>
     `).join('');
+}
+
+function loadHome() {
+    if (typeof _applySportUI === 'function') _applySportUI('home');
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'home-container';
+
+    // D-043 3a: sport-tab choice persists within the session (Vera). Initialize
+    // once per page-session, before the first _loadHomeTodayGames() render needs it.
+    if (AppState._homeSportTab === undefined) {
+        let saved = null;
+        try { saved = sessionStorage.getItem('zs_home_sport_tab'); } catch (_) {}
+        AppState._homeSportTab = (saved && ['all', 'mlb', 'nfl', 'ncaaf'].includes(saved)) ? saved : 'all';
+    }
+
+    const dateStr = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+    });
+
+    // Structured skeleton cards that match the real game card layout — also
+    // reused on a football tab's first lazy fetch (D-043 3a), so it's a
+    // top-level helper rather than a one-off local const.
+    const skelCards = _homeSkeletonCards(6);
 
     const isFirstVisit = !localStorage.getItem('zs_seen_welcome');
     if (isFirstVisit) localStorage.setItem('zs_seen_welcome', '1');
@@ -283,6 +297,13 @@ function loadHome() {
                 <span class="home-section-date">${dateStr}</span>
                 <span class="home-updated" id="homeUpdatedAt"></span>
                 <button class="home-section-link" onclick="navigateTo('mlb-games')">All scores →</button>
+            </div>
+            <!-- D-043 3a: sport tabs, .standings-tabs vocabulary (Kael) -->
+            <div class="standings-tabs" id="homeSportTabs" role="tablist" aria-label="Filter today's games by sport">
+                <button class="standings-tab" data-sporttab="all" role="tab" aria-selected="false">All</button>
+                <button class="standings-tab" data-sporttab="mlb" role="tab" aria-selected="false">MLB</button>
+                <button class="standings-tab" data-sporttab="nfl" role="tab" aria-selected="false">NFL</button>
+                <button class="standings-tab" data-sporttab="ncaaf" role="tab" aria-selected="false">NCAAF</button>
             </div>
             <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
         </div>
@@ -413,7 +434,9 @@ function loadHome() {
     _renderHomeStarred();
     _renderHotStrip();
     _loadOnThisDay();
+    _syncHomeSportTabUI();
     _loadHomeTodayGames();
+    _wireHomeSportTabs();
     _wireRailTabs();
     _renderHomeHeadlines();
     _renderHomeInsights();
@@ -760,17 +783,116 @@ function _gameHasFav(g) {
     return _isFavTeam(g.teams?.home?.team?.abbreviation) || _isFavTeam(g.teams?.away?.team?.abbreviation);
 }
 
+// D-043 3a: sport-tab bar. A static element (part of loadHome()'s one-shot
+// template), so its click listener is bound once, guarded like _wireRailTabs.
+function _syncHomeSportTabUI() {
+    const bar = document.getElementById('homeSportTabs');
+    if (!bar) return;
+    const active = AppState._homeSportTab || 'all';
+    bar.querySelectorAll('.standings-tab').forEach(t => {
+        const on = t.dataset.sporttab === active;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+}
+
+function _wireHomeSportTabs() {
+    const bar = document.getElementById('homeSportTabs');
+    if (!bar || bar._wired) return;
+    bar._wired = true;
+    bar.addEventListener('click', e => {
+        const tab = e.target.closest('.standings-tab');
+        if (!tab) return;
+        const sport = tab.dataset.sporttab;
+        if (!sport || sport === AppState._homeSportTab) return;
+        AppState._homeSportTab = sport;
+        try { sessionStorage.setItem('zs_home_sport_tab', sport); } catch (_) {}
+        _syncHomeSportTabUI();
+        _loadHomeTodayGames();
+    });
+}
+
+// Generalized click routing for home-grid cards, sport-aware via the
+// `data-game-key` prefix Scorebug's normalizers already write (mlb-/nfl-/
+// ncaaf-). Mirrors setupTickerClicks' per-sport routing above — NCAAF has no
+// per-game detail view, so it routes to the scores list, same as the ticker.
+function _wireHomeGameCardClicks(gridEl) {
+    gridEl.querySelectorAll('.home-game-card').forEach(card => {
+        const open = () => {
+            const key = card.dataset.gameKey || '';
+            if (key.startsWith('mlb-')) {
+                const id = parseInt(key.slice(4), 10);
+                if (!id) return;
+                if (AppState.currentSport !== 'mlb') switchSport('mlb');
+                if (typeof openMLBGame === 'function') openMLBGame(id, card.classList.contains('home-game-card--live'));
+                else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(id);
+            } else if (key.startsWith('nfl-')) {
+                const id = key.slice(4);
+                if (AppState.currentSport !== 'nfl') switchSport('nfl');
+                if (id) navigateTo('nfl-game-' + id); else navigateTo('nfl-games');
+            } else if (key.startsWith('ncaaf-')) {
+                if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
+                navigateTo('ncaaf-scores');
+            }
+        };
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
+    });
+}
+
+// D-043 3a: single-sport football tab (NFL/NCAAF) — lazy-fetched independent
+// of the MLB path below, cached in AppState for the rest of the session so
+// switching back doesn't re-fetch, and so the "All" tab can union it in once
+// it exists. Does not touch the MLB-only hero/tonight's-SP/freshness wiring
+// (Axiom's explicit scoping call, D-043 3a gates in ISSUES.md).
+async function _renderHomeFootballTab(sport, gridEl) {
+    document.querySelectorAll('#homeTodayGames .home-live-badge').forEach(el => el.remove());
+    gridEl.parentNode.querySelectorAll('.home-filter-bar').forEach(el => el.remove());
+
+    const cacheKey  = sport === 'nfl' ? '_homeNFLGames' : '_homeNCAAFGames';
+    const fetchFn   = sport === 'nfl'
+        ? (typeof fetchNFLScoreboard === 'function' ? fetchNFLScoreboard : null)
+        : (typeof fetchNCAAFScoreboard === 'function' ? fetchNCAAFScoreboard : null);
+    const normalize = sport === 'nfl' ? Scorebug.normalizeNFLGame : Scorebug.normalizeNCAAFGame;
+    const isOffseason = sport === 'nfl'
+        ? (typeof _nflIsOffseason === 'function' && _nflIsOffseason())
+        : (typeof _ncaafIsOffseason === 'function' && _ncaafIsOffseason());
+    const label = sport === 'nfl' ? 'NFL' : 'NCAAF';
+
+    if (!AppState[cacheKey]) gridEl.innerHTML = _homeSkeletonCards(4);
+
+    try {
+        const games = fetchFn ? await fetchFn() : [];
+        AppState[cacheKey] = games;
+        // Tab may have changed again while the fetch was in flight.
+        if (!gridEl.isConnected || AppState._homeSportTab !== sport) return;
+
+        if (!games.length) {
+            gridEl.innerHTML = isOffseason
+                ? (sport === 'nfl' ? _nflOffseasonState('scores') : _ncaafOffseasonState())
+                : `<p class="home-no-games">No ${label} games today.</p>`;
+            return;
+        }
+
+        const sorted = [...games].sort((a, b) => (b.isLive === true) - (a.isLive === true)).slice(0, 15);
+        gridEl.innerHTML = sorted.map(g => Scorebug.renderScoreCard(normalize(g))).join('');
+        _wireHomeGameCardClicks(gridEl);
+    } catch (_) {
+        if (gridEl.isConnected && AppState._homeSportTab === sport) {
+            gridEl.innerHTML = `<p class="home-no-games">${label} scores unavailable.</p>`;
+        }
+    }
+}
+
 async function _loadHomeTodayGames() {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
+    const tab = AppState._homeSportTab || 'all';
 
-    const _teamFullName = (abbr) => {
-        const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(abbr) : null;
-        return colors?.name || abbr;
-    };
+    // Single-sport football tabs get their own dedicated, smaller render path.
+    if (tab === 'nfl' || tab === 'ncaaf') return _renderHomeFootballTab(tab, gridEl);
 
     const _esc     = (s) => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
-    const _lastName = n => n ? n.split(' ').slice(-1)[0] : 'TBD';
 
     // D-047 S2: home grid cards are built by the shared Scorebug component
     // (js/scorebug.js) — one scorebug anatomy across sports. The favorites star
@@ -808,12 +930,33 @@ async function _loadHomeTodayGames() {
 
         if (!gridEl.isConnected) return;
 
-        if (cards.length === 0) {
+        // D-043 3a "All" tab: union in whatever football data is already
+        // cached this session (lazy — nothing fetched here). MLB-first block
+        // order, not chronologically interleaved — honors the barbell framing
+        // in the D-043 spec itself (MLB leads; football is additive, not equal
+        // weight) rather than flattening every sport to the same visual rank.
+        const extraCards = [];
+        if (tab === 'all') {
+            if (AppState._homeNFLGames && AppState._homeNFLGames.length) {
+                [...AppState._homeNFLGames]
+                    .sort((a, b) => (b.isLive === true) - (a.isLive === true))
+                    .slice(0, 6)
+                    .forEach(g => extraCards.push(Scorebug.renderScoreCard(Scorebug.normalizeNFLGame(g))));
+            }
+            if (AppState._homeNCAAFGames && AppState._homeNCAAFGames.length) {
+                [...AppState._homeNCAAFGames]
+                    .sort((a, b) => (b.isLive === true) - (a.isLive === true))
+                    .slice(0, 6)
+                    .forEach(g => extraCards.push(Scorebug.renderScoreCard(Scorebug.normalizeNCAAFGame(g))));
+            }
+        }
+
+        if (cards.length === 0 && extraCards.length === 0) {
             gridEl.innerHTML = `<p class="home-no-games">No games scheduled today.</p>`;
             return;
         }
 
-        gridEl.innerHTML = cards.join('');
+        gridEl.innerHTML = cards.join('') + extraCards.join('');
 
         // Update section header with live count badge + filter pills (idempotent)
         const liveCount = mlbResult ? mlbResult.filter(g => g.status?.abstractGameState === 'Live'
@@ -863,17 +1006,7 @@ async function _loadHomeTodayGames() {
             });
         });
 
-        gridEl.querySelectorAll('.home-game-card').forEach(card => {
-            const open = () => {
-                const id = parseInt((card.dataset.gameKey || '').replace('mlb-', ''), 10);
-                if (!id) return;
-                if (AppState.currentSport !== 'mlb') switchSport('mlb');
-                if (typeof openMLBGame === 'function') openMLBGame(id, card.classList.contains('home-game-card--live'));
-                else if (typeof showMLBGameDetail === 'function') showMLBGameDetail(id);
-            };
-            card.addEventListener('click', open);
-            card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') open(); });
-        });
+        _wireHomeGameCardClicks(gridEl);
 
         _renderTonightSPSection();
         _renderHomeHero(mlbResult);

@@ -90,32 +90,55 @@
         };
     }
 
+    // Kickoff time in ET, same format MLB's normalizer already uses (D-043 3a) —
+    // reused rather than reinvented so a mixed "All" tab reads consistently.
+    function _kickoffLabel(dateStr) {
+        if (!dateStr) return 'Scheduled';
+        const d = new Date(dateStr), etH = (d.getUTCHours() - 4 + 24) % 24;
+        return `${etH % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
+    }
+
     // ── Normalizer: football (NFL / NCAAF share the same scoreboard shape) → model ──
-    // g: { id, isFinal, isLive, clock?, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
+    // g: { id, date, isFinal, isLive, clock?, broadcast?, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
     function _normalizeFootball(g, sport) {
         const mk = t => ({
             abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
             score: t ? t.score : 0, logo: (t && t.logo) || '', color: '', winner: !!(t && t.winner),
         });
         const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal;
+        // D-043 3a (Kael): broadcast network is a football-specific need next to
+        // kickoff time — MLB's card doesn't carry the equivalent. Muted caption,
+        // same slot MLB uses for probable-pitcher text (matchHtml), not a new one.
+        const matchHtml = g.broadcast ? `<div class="hgc-pitchers">${esc(g.broadcast)}</div>` : '';
         return {
             sport, key: `${sport}-${g.id}`, id: g.id,
             status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
             pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
-            pillLabel: isLive ? (g.clock || 'LIVE') : isFinal ? 'Final' : 'Scheduled',
+            pillLabel: isLive ? (g.clock || 'LIVE') : isFinal ? 'Final' : _kickoffLabel(g.date),
             hasScore: true,
             home: mk(g.homeTeam), away: mk(g.awayTeam),
-            liveHtml: '', matchHtml: '', ariaExtra: '',
+            liveHtml: '', matchHtml, ariaExtra: '',
         };
     }
     function normalizeNFLGame(g) { return _normalizeFootball(g, 'nfl'); }
     function normalizeNCAAFGame(g) { return _normalizeFootball(g, 'ncaaf'); }
+
+    // League glyph (D-043 3a, Vera) — a muted inline mark, not a colored badge
+    // (border=identity/badge=state discipline stays); lets a mixed "All" tab
+    // scan by sport at a glance. Shown on every card, not just the mixed tab —
+    // one rendering path, no tab-aware branching in the builder itself.
+    function _leagueGlyph(sport) {
+        if (sport === 'mlb') return '⚾';
+        if (sport === 'nfl' || sport === 'ncaaf') return '🏈';
+        return '';
+    }
 
     // ── Builder: grid/landing score card (reproduces the .home-game-card anatomy) ──
     function renderScoreCard(m, opts) {
         opts = opts || {};
         const star = typeof opts.favStar === 'function' ? opts.favStar : () => '';
         const fmt = n => m.hasScore ? (n ?? 0) : '–';
+        const glyph = _leagueGlyph(m.sport);
         const row = (s) => `
                 <div class="hgc-row">
                     ${s.logo ? `<img class="hgc-team-logo${s.darkSafe ? ' hgc-team-logo--chip' : ''}" src="${s.logo}" alt="${esc(s.abbr)}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
@@ -132,6 +155,7 @@
                 ${m.liveHtml}
                 ${m.matchHtml}
                 <div class="hgc-card-footer">
+                    ${glyph ? `<span class="hgc-glyph" aria-hidden="true">${glyph}</span>` : ''}
                     <span class="hgc-pill hgc-pill--${m.pillCls}">${esc(m.pillLabel)}</span>
                 </div>
             </div>`;

@@ -141,6 +141,10 @@ async function fetchNFLScoreboard() {
             statusText: status?.type?.shortDetail || status?.type?.description || '',
             period: status?.period || 0,
             clock:  status?.displayClock || '',
+            // D-043 3a: national network, when ESPN has one (verified live 2026-08-02 —
+            // competitions[].broadcasts[] = [{market, names:[...]}]). Home-grid card only;
+            // absent broadcasts degrade to no caption, never a placeholder.
+            broadcast: comp.broadcasts?.[0]?.names?.[0] || '',
         };
     }).filter(Boolean);
 }
