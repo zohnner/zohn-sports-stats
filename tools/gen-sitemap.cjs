@@ -10,9 +10,16 @@
  *
  * Only lists paths that have a real edge-render template today:
  *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings · /glossary
- *   /mlb/team/{abbr} · /mlb/player/{id}/{slug}
+ *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug}
+ *
+ * D-056: /mlb/game/{pk} pages (D-050) previously had zero lasting discovery path —
+ * the home page only links each day's games while they're on it (~1 day), so a
+ * finished game became an orphan with no owned link back to it. This generator now
+ * covers the last GAME_WINDOW_DAYS as a rolling discovery net; it's still supplementary
+ * to the home snapshot, not a replacement — same "don't churn on live state" posture,
+ * since this only runs when the owner regenerates, not continuously.
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +29,9 @@ const now = new Date();
 const MLB_SEASON  = (now.getUTCMonth() + 1 >= 3 && now.getUTCMonth() + 1 <= 11) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 const CFB_SEASON  = (now.getUTCMonth() + 1 >= 8) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 const DRY = process.argv.includes('--dry');
+const GAME_WINDOW_DAYS = 14;
+
+function isoDate(d) { return d.toISOString().slice(0, 10); }
 
 function slug(s) {
     return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -68,6 +78,23 @@ async function main() {
             }
         } catch (e) { console.error(`MLB ${group}:`, e.message); }
     }
+
+    // 3b) MLB games — rolling discovery window (D-056). D-050's edge-render template
+    // (functions/mlb/game/[pk].js) has existed since 2026-07-26 with no sitemap entry
+    // by design (discovery was home-snapshot-only); this closes that gap for anything
+    // older than ~1 day without turning the sitemap into a live/churning feed — it's a
+    // point-in-time snapshot of the last GAME_WINDOW_DAYS, same as every other section
+    // here, only as fresh as the last time this script was run.
+    try {
+        const end = now;
+        const start = new Date(now.getTime() - GAME_WINDOW_DAYS * 86400000);
+        const sc = await jget(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=${isoDate(start)}&endDate=${isoDate(end)}`);
+        for (const d of (sc.dates || [])) {
+            for (const g of (d.games || [])) {
+                if (g.gamePk) add(urlTag(`/mlb/game/${g.gamePk}`, 'never', '0.4'));
+            }
+        }
+    } catch (e) { console.error('MLB games:', e.message); }
 
     // 4) NCAAF teams (all FBS)
     try {
