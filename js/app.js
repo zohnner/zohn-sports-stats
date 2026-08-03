@@ -1694,19 +1694,56 @@ if (typeof window !== 'undefined') {
 
 // ── Seasonal home moment (D-040 1a) — the front door knows the calendar ──
 // Add a season window here and a renderer branch below; nothing else changes.
+// Draft/football promo moved out to PROMO_MOMENTS below (D-043 3b) — this now
+// only tracks 'pennant', a separate always-shipped widget in the same host.
 function _homeMomentFor(d = new Date()) {
     const m = d.getMonth(); // 0-based
     const moments = [];
     if (m >= 6 && m <= 9) moments.push('pennant');   // Jul–Oct: the race is the story
-    if (m >= 5 && m <= 8) moments.push('draft');     // Jun–Sep: NFL draft-prep ramp
     return moments;
+}
+
+// ── Seasonal promo band (D-043 3b) — exactly one promo CTA, chosen by the
+// calendar. Priority order matters: first active entry wins. Replaces the old
+// single hardcoded "NFL Draft Season" row, which just went empty once its
+// Jun–Sep window closed instead of following the calendar into football
+// season the way Vera's spec calls for. Windows below are disjoint by design
+// (draft ends Aug, nfl-live starts Sep), so ordering doesn't actually matter
+// today — kept priority-based anyway so a future overlapping entry is safe.
+const PROMO_MOMENTS = [
+    {
+        key: 'nfl-live',
+        active: () => typeof _nflIsOffseason === 'function' && !_nflIsOffseason(), // Sep–Feb
+        kicker: () => `${typeof NFL_FANTASY_SEASON !== 'undefined' ? NFL_FANTASY_SEASON : ''} Football Season`,
+        text:   () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
+            ? 'NFL and NCAAF — scores, standings and fantasy tools, all live, no login required.'
+            : 'Scores, standings and fantasy tools — all live, no login required.',
+        primary: { label: 'NFL Scores →', view: 'nfl-games' },
+        secondary: () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
+            ? { label: 'NCAAF Scores →', view: 'ncaaf-scores' }
+            : { label: 'Standings →', view: 'nfl-standings' },
+    },
+    {
+        key: 'draft',
+        active: () => { const m = new Date().getMonth() + 1; return m === 7 || m === 8; }, // Jul–Aug
+        kicker: () => 'NFL Draft Season',
+        text:   () => 'Mock draft in 60 seconds — no login. Build your board before your league does.',
+        primary: { label: 'Mock Draft →', view: 'nfl-mock' },
+        secondary: () => ({ label: 'Draft Kit →', view: 'nfl-draftkit' }),
+    },
+];
+
+function _activePromoMoment() {
+    return PROMO_MOMENTS.find(p => { try { return p.active(); } catch (_) { return false; } }) || null;
 }
 
 // Cross-sport navigation needs the sport UI switched first — a bare
 // navigateTo from MLB home to an nfl-* view recreates the D-038 V2 chimera.
+// 'ncaaf' was missing here (D-043 3b fix) — a promo CTA routing to any
+// ncaaf-* view would silently fail to switch AppState.currentSport.
 function _hmGo(view) {
     const sport = view.split('-')[0];
-    if (['mlb', 'nfl', 'nhl'].includes(sport) && AppState.currentSport !== sport) {
+    if (['mlb', 'nfl', 'nhl', 'ncaaf'].includes(sport) && AppState.currentSport !== sport) {
         AppState.currentSport = sport;
         if (typeof _applySportUI === 'function') _applySportUI(sport);
     }
@@ -1717,19 +1754,20 @@ async function _renderHomeMoment() {
     const host = document.getElementById('homeMoment');
     if (!host) return;
     const moments = _homeMomentFor();
-    if (!moments.length) return;
+    const promo = _activePromoMoment();
+    if (!moments.length && !promo) { host.hidden = true; return; }
 
-    const draftRow = moments.includes('draft') ? `
+    const promoRow = promo ? `
         <div class="hm-row">
-            <span class="hm-kicker">NFL Draft Season</span>
-            <span class="hm-text">Mock draft in 60 seconds — no login. Build your board before your league does.</span>
-            <button class="hm-chip hm-chip--primary" onclick="_hmGo('nfl-mock')">Mock Draft →</button>
-            <button class="hm-chip" onclick="_hmGo('nfl-draftkit')">Draft Kit →</button>
+            <span class="hm-kicker">${_escHtml(promo.kicker())}</span>
+            <span class="hm-text">${_escHtml(promo.text())}</span>
+            <button class="hm-chip hm-chip--primary" onclick="_hmGo('${promo.primary.view}')">${_escHtml(promo.primary.label)}</button>
+            <button class="hm-chip" onclick="_hmGo('${promo.secondary().view}')">${_escHtml(promo.secondary().label)}</button>
         </div>` : '';
 
     host.hidden = false;
     host.innerHTML = `<div id="hmPennant">${moments.includes('pennant') ? `
-        <div class="hm-row"><span class="hm-kicker">Pennant Races</span><span class="skeleton-line" style="height:14px;flex:1;max-width:380px"></span></div>` : ''}</div>${draftRow}`;
+        <div class="hm-row"><span class="hm-kicker">Pennant Races</span><span class="skeleton-line" style="height:14px;flex:1;max-width:380px"></span></div>` : ''}</div>${promoRow}`;
 
     if (!moments.includes('pennant')) return;
     try {
@@ -1768,7 +1806,7 @@ async function _renderHomeMoment() {
     } catch (_) {
         const p = document.getElementById('hmPennant');
         if (p) p.innerHTML = '';
-        if (!draftRow) host.hidden = true;   // absent beats broken on the front door
+        if (!promoRow) host.hidden = true;   // absent beats broken on the front door
     }
 }
 

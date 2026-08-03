@@ -1719,3 +1719,28 @@ D-043 was ratified 2026-08-02 (D-058) with sequencing 3c → 3b → 3a. Gates fo
 
 ---
 
+## D-043 3b — Seasonal promo slot: gates + implementation
+**Contributors:** Vera (JTBD/states), Kael (visual), Axiom (feasibility + implementation) | **Date:** 2026-08-02
+
+Gates for 3b, transcribed from the D-043 spec (drafted 2026-07-06, unchanged since):
+
+**Vera (JTBD/states):** one promo module whose content follows the calendar — same instinct as the D-040 1a seasonal hero. Summer → NFL Draft Kit/Mock Draft CTA; football season → NFL/NCAAF surface; baseball postseason → October Odds. States: exactly one promo, always a real destination, never a "coming soon."
+
+**Kael (visual):** promote from the buried mid-right text box to a single full-width band beneath the sport-picker band; brand-accent, one CTA, no carousel.
+
+**Axiom (feasibility — re-confirmed against current code, not just the July spec):** re-reading `js/app.js` found the layout gate already satisfied — `#homeMoment` already sits directly beneath `#homeSportPicker` (D-042), and the existing `.hm-row`/`.hm-kicker`/`.hm-chip` vocabulary is already the correct brand-accent-border single-band pattern (no new CSS needed). The real gap: `_homeMomentFor`'s draft row was **hardcoded to one static window** (Jun–Sep) with no calendar-driven swap — once that window closed, the promo slot just went empty for the entire football season (Sep–Feb) and beyond, instead of following the calendar the way Vera's spec calls for. Also found a real bug while grounding this: `_hmGo()`'s sport-switch allowlist (`['mlb','nfl','nhl']`) is missing `'ncaaf'` — routing a promo CTA to any `ncaaf-*` view without fixing this would silently fail to switch `AppState.currentSport`, recreating the exact D-038 V2 chimera bug the function's own comment warns against.
+
+**Shipped:**
+- `js/app.js`: added a `PROMO_MOMENTS` config (priority-ordered, first active entry wins) with two entries — `nfl-live` (active whenever `!_nflIsOffseason()`, i.e. Sep–Feb; CTA text and secondary button mention NCAAF too when `!_ncaafIsOffseason()`, since both are live Sep–Jan) and `draft` (narrowed from the old Jun–Sep window to Jul–Aug per Vera's stated summer window, since football-live now covers Sep onward — the two windows are disjoint by design, not just by luck of ordering). `_activePromoMoment()` resolves the single active entry.
+- `_homeMomentFor()` no longer computes the draft moment — it now only tracks `'pennant'`, a separate always-shipped widget that isn't part of this promo slot's "exactly one" rule.
+- `_renderHomeMoment()` renders the resolved promo (if any) into the same `.hm-row` markup the old hardcoded draft row used — no visual change to the shipped pattern, just calendar-driven content.
+- `_hmGo()`: added `'ncaaf'` to the sport-switch allowlist — fixes the routing bug found above, required for the new NCAAF-aware promo CTA to actually work.
+
+**Honest scope (Axiom, per the spec's own note):** no "October Odds" promo entry was added — the existing Pennant Races widget (a separate, already-shipped feature in the same host) already covers that job during MLB's postseason race window (Jul–Oct) with a real, working destination (`mlb-standings`); adding a second, redundant CTA for the same destination would violate Vera's "exactly one promo" rule, not honor it.
+
+**Verified:** `node --check` clean on `js/app.js`. `tools/check-manifest.cjs` clean. `tools/check-themes.cjs` clean except two pre-existing warnings unrelated to this change (Kael already flagged these in D-058). Hand-traced the `PROMO_MOMENTS` date logic for all 12 months: `nfl-live` covers Sep–Feb, `draft` covers Jul–Aug, no overlap, no gap in the Jul–Feb range; Mar–Jun has no active promo (host stays hidden), which is honest — there's no real seasonal destination to point to in that window. Today (2026-08-02, month 8) resolves to `draft`, matching what was already live in production before this change (no visible regression for the current date).
+
+**Committed:** `sw.js` `CACHE_NAME` bumped v131→v132 in the same commit as `js/app.js`.
+
+---
+
