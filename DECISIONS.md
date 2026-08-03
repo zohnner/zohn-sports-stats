@@ -1310,7 +1310,7 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 ---
 
 ## D-057 — NFL leaders/game + NCAAF standings/rankings path URLs, ahead of season (D-056 timing follow-up)
-**Status:** implemented and live-verified for 3 of 4 routes; `/nfl/game/{id}` was silently shadowed by a stale Service Worker cache (forgot to bump `sw.js` CACHE_NAME in the same commit — the exact D-055-era mistake, caught again) — fixed (`v129`→`v130`), pending push + re-verify
+**Status:** shipped and fully live-verified. All four routes (`/nfl/leaders`, `/nfl/game/{id}`, `/ncaaf/standings`, `/ncaaf/rankings`) confirmed working end to end. Along the way: fixed a real `js/navigation.js` dispatcher gap for `nfl-game-{id}`, and bumped `sw.js` (`v129`→`v130`) since that fix touched a precached file — both real, necessary fixes for real visitors. A separate, session-local browser-disk-cache artifact (not a product defect) briefly made verification look like it was still failing after the SW bump; resolved with a hard reload. Full detail in ISSUES.md D-057.
 **Contributors:** Axiom (implementation)
 **Date:** 2026-08-02
 
