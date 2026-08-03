@@ -1287,3 +1287,22 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 **Decision:** group the strip into Draft Prep (Value Board, ADP Rankings, Schedule, Compare, Mock Draft) and In-Season (Trending, Injury Report, Waiver Wire) clusters with micro-labels; make the desktop/mobile Fantasy menus list all 8 destinations directly instead of hiding 6; rename Rankings → ADP Rankings; keep Compare in both its general-stats homes (Analytics/Tools) and the Draft HQ strip — two deliberate entry points for two real use cases, not the accidental three-homes problem this decision was triggered by. Full writeup and diffs in ISSUES.md D-055.
 
 **Follow-up:** none currently queued. If the desktop Fantasy dropdown's flat 8-item list feels crowded once real usage data exists, revisit with actual grouping support in `_renderSubNav` rather than guessing now.
+
+---
+
+## D-056 — SEO growth audit: sitemap unreachable to Google for 8 days, plus three real growth gaps
+**Status:** audit complete, one fix applied (sitemap resubmitted); remaining findings not yet actioned, pending priority
+**Contributors:** Axiom (diagnosis + fix), Relay (discovery gaps), Folio (meta/share findings, doc-sync)
+**Date:** 2026-08-02
+
+**Trigger (owner):** "focus on SEO and site growth." Rather than propose new SEO work on top of D-041/D-045/D-046/D-050/D-051's already-mature edge-render foundation, audited whether that machinery is actually functioning.
+
+**Finding:** Google Search Console showed the submitted sitemap (Jul 25) with status "Couldn't fetch," 0 discovered pages, no successful read ever recorded — 8 days unreachable. The file itself is healthy (200, valid XML, 1360 URLs, robots.txt correctly points to it). This is the most likely explanation for the site's near-zero organic numbers despite weeks of SEO infrastructure work — a crawler that can't read the sitemap has no path to the indexable pages. Resubmitted via Search Console UI this session (an operational fix, not a code change).
+
+**Also found, not yet fixed:** the live sitemap is already stale (missing `/mlb/leaders`, generator already supports it — owner needs to re-run `tools/gen-sitemap.cjs`); `/mlb/game/{pk}` pages have no discovery path once they age off the home page's daily snapshot; every edge-rendered page (leaders/team/game/player, all sports) shares one static `og:image`, undercutting the share-link-CTR metric D-041 named as a success measure.
+
+**Timing opportunity (Relay):** NFL leaders/game path URLs and NCAAF standings/rankings path URLs are explicitly deferred as "offseason" in D-050/D-051/D-045 — but NFL kicks off in ~5 weeks and fantasy-draft search interest ramps through August, the exact audience Draft HQ already serves. Shipping those now, ahead of the traffic spike, has a real timing case that a routine backlog item wouldn't.
+
+**Full findings, evidence, and fetch results:** ISSUES.md D-056. GOALS.md's stale "Search Console verify/submit remains open" line corrected in the same pass.
+
+**Next:** owner picks priority among: sitemap regeneration (owner-run), rolling game-page discovery window, dynamic per-page og:image, NFL/NCAAF leaders+game templates ahead of season. None implemented yet beyond the sitemap resubmit.
