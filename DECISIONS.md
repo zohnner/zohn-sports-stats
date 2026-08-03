@@ -1331,3 +1331,28 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 **Verified:** `node --check` clean on all 6 changed/new files; `tools/check-manifest.cjs` and `tools/check-themes.cjs` both green (the 2 theme warnings pre-exist, unrelated to this change); `node tools/gen-sitemap.cjs --dry` runs end-to-end without throwing, all new live-data calls fail open and log per-section as expected (sandbox has no outbound network — same disclosed constraint as every prior sitemap-generator change); NUL-byte check clean on all changed files (mount-corruption guard). **Not yet live-verified** — needs push + a real hit on each of the four new path URLs, checking prerendered `<head>`/snapshot and confirming the SPA hydrates into the right view (especially `/nfl/game/{id}`, given the dispatcher bug this session caught and fixed).
 
 **Full detail:** ISSUES.md D-057.
+
+---
+
+## D-058 — Team status check: what needs attention next (2026-08-02)
+**Status:** recommendation delivered, awaiting owner ratification
+**Contributors:** Finn (status scan + health scan), Vera, Kael, Axiom, Cipher, Relay, Folio
+**Date:** 2026-08-02
+
+**Trigger (owner):** "spin up a team-based workflow to evaluate the project state and decide what area needs attention."
+
+**Finn's scan:** codebase is healthy — `check-manifest.cjs` and `check-themes.cjs` both green (2 pre-existing light-mode contrast warnings, unrelated to recent work), 33/33 unit tests passing, no TODO/FIXME debt markers, git history clean and consistent with documented work. Five decisions sit **proposed, owner-ratification-pending** with no execution started: D-025 (NFL percentile card), D-031 (accounts/monetization foundation), D-043 (home hub tabbed scoreboard/promo/search), D-052 (next sport expansion), D-053 pt. 2 (Player Card mode).
+
+**Recommendation — ratify and ship D-043 next.** Of the five pending decisions, D-043 is the only one where every relevant senior (Vera/Kael/Axiom/Relay) has already drafted their section — it's fully speced, not just proposed. That makes it the highest-value, lowest-friction next feature: no more design work needed, only a ratification and a Finn implementation pass. D-031 (accounts) is bigger and more consequential but explicitly "slow-walk it to be safe" per its own trigger quote — not a start-now item, and Cipher should get a fresh threat-model pass before any code once it is ratified. D-025/D-052/D-053-pt.2 all still need an owner framing decision before a senior can even start spec work — they're earlier in the pipeline than D-043.
+
+**Axiom — process finding, not a tooling gap:** the Service Worker cache-staleness bug hit twice this session (v126→v127, then v129→v130) despite `/deploy-check` check #8 already containing a working auto-bump mechanism (`git diff --name-only origin/HEAD -- index.html css/*.css js/*.js`, bump `CACHE_NAME` if changed and not already bumped). The tool exists and works — it was never invoked. Both incidents trace to running individual checks (`node --check`, `check-manifest.cjs`, `check-themes.cjs`) by hand instead of the actual `/deploy-check` slash command before pushing. **Fix is procedural, not code:** run `/deploy-check` — not a hand-picked subset of its checks — before every push that touches `index.html`/`css/*`/`js/*`.
+
+**Kael:** the 2 pre-existing light-mode contrast warnings (`--accent` on `--accent-subtle`, 2.98 and 2.88 vs. the 3.0 AA minimum) are cheap, mechanical, and have been sitting unaddressed — worth a same-day fix regardless of what else gets prioritized.
+
+**Relay:** two scoped-but-unscheduled items from D-056/D-057 remain real: dynamic per-page `og:image` (Finding 4 — every edge-rendered page still shares one static image, undercutting the share-link-CTR metric D-041 named as a tracked success measure) and an audit of other NCAAF/NFL endpoints for the same Aug/Sep season-flip 502 pattern `functions/api/ncaafstats.js` had this session (e.g. `functions/api/ncaafathlete.js` — not yet checked, not assumed broken without evidence).
+
+**Cipher:** nothing urgent from this session's changes — all new edge Functions follow existing escaping/no-secrets conventions, no new external hosts. Flagging D-031 for a fresh threat-model pass whenever it's ratified, not before.
+
+**Folio:** GOALS.md's "Current State" section had drifted stale on D-056 *within the same day* it was written (said fixes were "not implemented yet" after D-057 had already shipped and been live-verified) — resynced in this pass. Recommend treating GOALS.md updates as part of the live-verification step going forward, not a separate later pass, since same-day drift is how it keeps happening.
+
+**Not decided here — owner call:** whether to ratify D-043 now, and whether to action the og:image / endpoint-audit items in the same pass or separately.
