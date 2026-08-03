@@ -67,9 +67,19 @@ export async function onRequest(context) {
     // games have been played (Week 0/1, typically late Aug) — a real gap of a few
     // weeks every year where the "current" season 404s. Without this, the Leaders
     // page and every team's Leaders card show a bare error state for that whole
-    // window even though a perfectly good prior season exists to show instead. Only
-    // falls back when the season wasn't explicitly requested via ?season= — an
-    // explicit request for a real past/future season still fails honestly.
+    // window even though a perfectly good prior season exists to show instead.
+    //
+    // Falls back only when the requested season equals the server's own computed
+    // default — NOT simply "no ?season= param was given." The one real caller
+    // (js/ncaaf.js) always sends an explicit ?season=${NCAAF_SEASON}, computed
+    // client-side by the identical Aug+ rule, so "no param" never actually happens
+    // in practice — gating on presence-of-param alone would make the fallback dead
+    // code for all real traffic (caught by live-checking this after first deploy: the
+    // direct-fetch test with no query string worked, but the real page still showed
+    // the error card, because its request carried the season explicitly). Comparing
+    // against defaultSeason() correctly tells "this looks like today's routine
+    // default" apart from "someone deliberately asked for a specific other year" —
+    // ?season=2024 or any real past/future year still fails honestly, un-substituted.
     let leadersJson, season = requestedSeason;
     const fetchLeaders = async (s) => {
         const r = await fetch(`${CORE}/seasons/${s}/types/2/leaders?lang=en&region=us`, {
@@ -82,7 +92,7 @@ export async function onRequest(context) {
     try {
         leadersJson = await fetchLeaders(season);
     } catch (e1) {
-        if (qs) return json({ error: 'leaders fetch failed', detail: e1.message }, 502);
+        if (qs && Number(qs) !== defaultSeason()) return json({ error: 'leaders fetch failed', detail: e1.message }, 502);
         const fallback = String(Number(season) - 1);
         try {
             leadersJson = await fetchLeaders(fallback);

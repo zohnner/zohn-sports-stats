@@ -1638,5 +1638,11 @@ Asset inventory unchanged since the last review: BDL_API_KEY (proxied, P1-006 st
 
 **Scoped, not audited further:** other NCAAF endpoints with the same `Aug+ = current season` pattern (e.g. `functions/api/ncaafathlete.js`) weren't checked for the identical failure mode in this pass — flagging as a real follow-up rather than assuming they share the bug without evidence.
 
+**Update 2026-08-02 — live-verify caught the fix's own bug, corrected same session:** after push, a direct `fetch('/api/ncaafstats')` (no query string) correctly returned `season: 2025` with real leader data (confirmed: Drew Mestemaker, QB, passing yards). But loading the actual live page (`#ncaaf-leaders`) still showed the "Couldn't load college leaders" error card — the fix didn't reach real traffic. Root cause: `js/ncaaf.js`'s `displayNCAAFLeaders()` always calls `fetch('/api/ncaafstats?season=${_ncaaf.season}')` — an *explicit* `?season=` param, computed client-side by the identical Aug+ rule — so "no `?season=` param" (the condition the original fix gated on) never actually happens for real traffic. The fallback was dead code the moment it shipped; only the synthetic no-param test I ran directly exercised it.
+
+**Corrected fix:** the gate is now `qs && Number(qs) !== defaultSeason()` — falls back whenever the requested season equals the server's own computed default, whether that arrived as an explicit param or not, and only refuses to substitute when someone asks for a season that's genuinely *not* today's default (an intentional historical/other-year request, e.g. `?season=2024` when 2024 already has real data, or a hypothetical future year that isn't today's default either). This is the actual fix; the first version was correct in isolation but never exercised by the one real caller in the codebase.
+
+**Not yet live-verified:** `node --check` clean; the corrected gate was traced by hand against the exact call the client makes (`?season=2026` while `defaultSeason()` also computes 2026) and against a genuine other-year request, both behaving as intended — but this needs the same live re-check the first version got (`fetch('/api/ncaafstats?season=2026')` should return `season: 2025` with populated categories, and `#ncaaf-leaders` should render real rows, not the error card) once it's pushed and deployed.
+
 ---
 
