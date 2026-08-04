@@ -7,6 +7,13 @@
 # it can't accidentally change how the dashboard build behaves.
 name                = "zohn-sports-stats"
 compatibility_date  = "2024-11-01"
+# Required at runtime: better-auth's own internals import node:crypto and
+# node:async_hooks (confirmed 2026-08-04 via a real `wrangler pages dev` run —
+# this was a disclosed unknown in the original implementation, now resolved).
+# This flag covers LOCAL dev only — the live Pages deploy (dashboard-built, not
+# from this file) needs the same flag set separately: Pages → Settings →
+# Functions → Compatibility Flags, both Production and Preview.
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding       = "USER_DB"
