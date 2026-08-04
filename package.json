@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@balldontlie/sdk": "^1.2.2"
+    "@balldontlie/sdk": "^1.2.2",
+    "better-auth": "^1.6.25",
+    "@better-auth/passkey": "^1.6.25",
+    "kysely": "^0.29.4",
+    "kysely-d1": "^0.4.0"
   }
 }

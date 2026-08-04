@@ -1,6 +1,7 @@
 # Secrets — never commit
 .env
 .env.*
+.dev.vars
 *.pem
 *.key
 

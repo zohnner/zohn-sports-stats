@@ -1,0 +1,22 @@
+name               = "sportsstrata-auth-purge"
+main               = "auth-purge.js"
+compatibility_date = "2024-09-23"
+
+# ── D1 binding — same USER_DB used by the Pages Functions ─────
+#   Copy the database_id from the Pages dashboard binding (Settings → Functions →
+#   D1 database bindings) or from `wrangler d1 list`.
+[[d1_databases]]
+binding       = "USER_DB"
+database_name = "sportstrata-users"
+database_id   = "PASTE_DATABASE_ID_HERE"
+
+# ── Daily at 09:00 UTC — purges expired sessions + audit_log rows older than 90d ──
+[triggers]
+crons = ["0 9 * * *"]
+
+[observability]
+enabled = true
+
+# Deploy: wrangler deploy --config worker/wrangler-auth-purge.toml
+# Manual test (no need to wait for the cron): after deploy, GET the Worker's own
+# *.workers.dev URL + "/__run" — returns { ranAt, sessionsDeleted, auditLogRowsDeleted }.

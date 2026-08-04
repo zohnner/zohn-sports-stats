@@ -1,0 +1,190 @@
+/* D-031 Phase 1 — accounts, sign-in sheet, follow stars, account page.
+   Kael's spec: tokens only, no new color primitives, classes namespaced .auth-*. */
+
+/* Header account control */
+.auth-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+.auth-control--signed-out {
+    background: var(--accent);
+    color: #0d1014;
+}
+.auth-control--signed-out:hover { background: var(--accent-light); }
+.auth-control--signed-in {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--bg-raised);
+    border: 1.5px solid var(--accent-border);
+}
+.auth-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.auth-menu {
+    position: absolute;
+    top: calc(var(--header-height) - 6px);
+    right: 16px;
+    z-index: 90;
+    min-width: 160px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+}
+.auth-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.auth-menu-item:hover { background: var(--bg-card-hover); }
+
+/* Sign-in sheet */
+.auth-sheet { position: fixed; inset: 0; z-index: 10000; }
+.auth-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+.auth-sheet-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(380px, calc(100vw - 32px));
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 20px;
+}
+@media (max-width: 640px) {
+    .auth-sheet-panel {
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        transform: none;
+        width: 100%;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
+.auth-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.auth-sheet-title { font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.05rem; }
+.auth-sheet-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+}
+.auth-sheet-body { display: flex; flex-direction: column; gap: 10px; }
+
+.auth-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color .15s ease;
+}
+.auth-method-btn:hover { border-color: var(--accent-border); }
+.auth-method-icon { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
+.auth-method-btn--secondary { background: var(--accent); color: #0d1014; border-color: transparent; justify-content: center; }
+.auth-method-btn--secondary:hover { background: var(--accent-light); }
+.auth-method-btn--danger { border-color: var(--color-error, #e5484d); color: var(--color-error, #e5484d); justify-content: center; }
+
+.auth-magic-link-row { display: flex; flex-direction: column; gap: 8px; }
+.auth-email-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.88rem;
+}
+.auth-email-input:focus { outline: none; border-color: var(--accent-border); }
+
+.auth-sheet-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+.auth-sheet-note--info { padding: 12px; background: var(--bg-raised); border-radius: var(--radius-md); }
+#authSheetError { color: var(--color-error, #e5484d); }
+.auth-sheet-loading { padding: 24px 0; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
+
+/* Follow star — used on team/player cards + detail headers */
+.auth-follow-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: color .15s ease;
+}
+.auth-follow-star:hover { color: var(--accent); }
+.auth-follow-star--active { color: var(--accent); }
+
+/* Account page */
+.auth-account-page { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }
+.auth-account-title { font-family: var(--font-display, inherit); font-size: 1.4rem; margin-bottom: 20px; }
+.auth-account-section {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-default);
+}
+.auth-account-section:last-child { border-bottom: none; }
+.auth-account-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
+.auth-account-methods { list-style: none; padding: 0; margin: 0 0 10px; font-size: 0.9rem; }
+.auth-account-section--danger .auth-email-input { margin: 10px 0; }
+.auth-account-loading, .auth-account-error, .auth-account-signedout { padding: 40px 16px; text-align: center; color: var(--text-secondary); }
+
+body.auth-sheet-open { overflow: hidden; }

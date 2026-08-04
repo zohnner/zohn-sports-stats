@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportStrata — Serious Stats for Serious Fans</title>
     <!-- OG / SEO — updated dynamically by navigation.js on each route change -->
     <meta property="og:type" content="website">
@@ -63,6 +63,9 @@
       #bootSplash .bw b{color:#ff7a00}
       @media (prefers-reduced-motion:reduce){#bootSplash .bm i{animation:none;transform:none;opacity:.9}}
     </style>
+    <!-- Turnstile (D-031) — loaded async; auth.js renders the widget on-demand when the
+         sign-in sheet opens, so load order relative to auth.js doesn't matter. -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -79,7 +82,8 @@
     <link rel="stylesheet" href="css/shareCard.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/nflStandings.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/nflLiveGame.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="css/arcade.css"><link rel="stylesheet" href="css/scorecard.css"><link rel="stylesheet" href="css/liveGame.css"><link rel="stylesheet" href="css/shareCard.css"><link rel="stylesheet" href="css/nflStandings.css"><link rel="stylesheet" href="css/nflLiveGame.css"></noscript>
+    <link rel="stylesheet" href="css/auth.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="css/arcade.css"><link rel="stylesheet" href="css/scorecard.css"><link rel="stylesheet" href="css/liveGame.css"><link rel="stylesheet" href="css/shareCard.css"><link rel="stylesheet" href="css/nflStandings.css"><link rel="stylesheet" href="css/nflLiveGame.css"><link rel="stylesheet" href="css/auth.css"></noscript>
     <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://sportstrata.cc/#org","name":"SportStrata","url":"https://sportstrata.cc/","logo":"https://sportstrata.cc/assets/icon-512.png","description":"Free MLB and NFL analytics — serious stats for serious fans.","email":"sportstrata@proton.me","contactPoint":{"@type":"ContactPoint","email":"sportstrata@proton.me","contactType":"business"}},{"@type":"WebSite","@id":"https://sportstrata.cc/#website","url":"https://sportstrata.cc/","name":"SportStrata","publisher":{"@id":"https://sportstrata.cc/#org"},"description":"Real-time MLB analytics, standings, player stats, splits, and live scores, plus no-login NFL draft tools."}]}
     </script>
@@ -116,6 +120,14 @@
                     <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
             </button>
+
+            <!-- Account control (D-031) — signed-out pill / signed-in avatar. Populated by js/auth.js;
+                 hidden until auth state resolves so signed-out users never see a layout flash. -->
+            <button class="auth-control" id="authControl" hidden aria-haspopup="true" aria-expanded="false" aria-controls="authMenu"></button>
+            <div class="auth-menu" id="authMenu" hidden role="menu" aria-label="Account menu">
+                <button class="auth-menu-item" id="authMenuAccount" role="menuitem" data-view="account">Account</button>
+                <button class="auth-menu-item" id="authMenuSignOut" role="menuitem">Sign out</button>
+            </div>
 
             <!-- Settings -->
             <button class="settings-btn" id="settingsBtn" onclick="openSettingsPanel()" title="Settings" aria-label="Settings">
@@ -230,6 +242,25 @@
                         </button>
                     </div>
                 </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign-in sheet (D-031) — modal on desktop, bottom-sheet on mobile via CSS only,
+         same DOM either way. Opened by js/auth.js; closed by Esc, backdrop click, or the
+         close button — focus returns to whatever triggered it (Vera's accessibility spec). -->
+    <div class="auth-sheet" id="authSheet" hidden role="dialog" aria-modal="true" aria-labelledby="authSheetTitle">
+        <div class="auth-sheet-backdrop" id="authSheetBackdrop"></div>
+        <div class="auth-sheet-panel">
+            <div class="auth-sheet-header">
+                <span class="auth-sheet-title" id="authSheetTitle">Sign in</span>
+                <button class="auth-sheet-close" id="authSheetClose" aria-label="Close sign-in">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="auth-sheet-body" id="authSheetBody">
+                <!-- Populated by js/auth.js: passkey / Google / magic-link, and the
+                     signing-in / error / magic-link-sent / email-unverified states. -->
             </div>
         </div>
     </div>
@@ -352,6 +383,7 @@
     <script defer src="js/query.js"></script>
     <script defer src="js/search.js"></script>
     <script defer src="js/navigation.js"></script>
+    <script defer src="js/auth.js"></script>
     <script defer src="js/news.js"></script>
     <script defer src="js/scorebug.js"></script>
     <script defer src="js/app.js"></script>

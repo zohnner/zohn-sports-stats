@@ -372,6 +372,9 @@ function renderCurrentView(view) {
     const _homeMatch = view.match(/^(mlb|nfl|ncaaf)-home$/);
     if (_homeMatch && typeof _renderSportLanding === 'function') { _renderSportLanding(_homeMatch[1]); return; }
 
+    // Account management (D-031) — sport-agnostic, same pattern as the home dispatch above
+    if (view === 'account') { if (typeof renderAccountView === 'function') renderAccountView(); return; }
+
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
     if (view.startsWith('nfl-')) { _renderNFLView(view); return; }

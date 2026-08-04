@@ -1327,6 +1327,42 @@ Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata h
 
 **All six gates signed off — nothing blocking on the spec side.** The only remaining blocker before Finn writes any code is entirely owner-run: **docs/auth-setup-runbook.md** (create the `USER_DB` D1 database, bind it to the Pages project, register the Google OAuth client, verify the Resend sending domain, add Turnstile, and push all five secrets via `wrangler pages secret put`). Per the standing hard boundary, the assistant does not and cannot perform these steps — they require real Cloudflare/Google/Resend credentials the owner holds. Once dev secrets + DB exist, Finn implements Phase 1 against the six reviewed specs, runs the spike acceptance checklist (auth-feasibility-spike.md) on `wrangler pages dev`, then a full `/security-review` before launch.
 
+**Owner completed setup 2026-08-04** — D1 bound, migration applied, all five secrets pushed. Finn implemented Phase 1 the same day; see the dated entry below.
+
+### Phase 1 implementation (2026-08-04) — SHIPPED, pending push + owner live-verification
+
+**Before writing any code:** installed better-auth 1.6.25 + @better-auth/passkey locally and read the actual source (not just docs), because the six specs above were only ever checked against each other, never against the real library. That surfaced three real conflicts, resolved with the owner directly rather than picked silently:
+
+1. **Session tokens are not hashed at rest by default** (traced `internal-adapter.mjs`: `token: generateId(32)` written straight to the DB, looked up by exact match). Conflicts with Cipher's spec ("stored hashed at rest"). **Owner decision: accept better-auth's default** (opaque token + HttpOnly/Secure/SameSite cookie + TLS) over an unverified custom hashing adapter. Documented as an accepted amendment in docs/auth-security-spec.md.
+2. **better-auth requires its own `user`/`session`/`account`/`verification` tables, plus a separate `passkey` table from the passkey plugin** — none of which match 0001's schema (missing `verification` entirely; `account` missing OAuth-token columns; `user.name` required but never collected). Hand-mapping five tables' worth of fields onto 0001's naming via override config was assessed as the same class of unverified risk as #1, just bigger surface — **adopted better-auth's canonical schema instead**, migrations/0002_better_auth_canonical_schema.sql. `follows`/`preferences`/`audit_log` (Relay's own application tables, not better-auth's concern) are unchanged in shape, only their FK target moved to the new `user(id)`.
+3. **better-auth's client SDK expects a bundler** (ESM `createAuthClient`). This site has zero build step. Resolved without needing a decision — call the REST endpoints directly via `fetch()`, same as every other API call in this codebase. Endpoint paths (`/sign-in/social`, `/sign-in/magic-link`, `/passkey/generate-*-options`, `/passkey/verify-*`, `/get-session`, `/sign-out`) verified against grepped `createAuthEndpoint(...)` calls in the installed source, not guessed from docs.
+
+**Shipped:**
+- `migrations/0002_better_auth_canonical_schema.sql` — canonical better-auth schema + Relay's app tables retargeted.
+- `functions/api/auth/_instance.js` — per-request better-auth instance (D1 via `kysely-d1`'s `D1Dialect`), Google OAuth + passkey + magic-link plugins wired, database-backed rate limiting, a `databaseHooks.user.create.before` hook defaulting `name` from the email since Vera's spec never collects one, and a `hooks.before` Turnstile gate on `sign-in/social`, `sign-in/magic-link`, and both passkey option-generation endpoints (Cipher's spec).
+- `functions/api/auth/[[route]].js` — catch-all mount.
+- `functions/api/auth/_email.js` — Resend magic-link send, single `sendEmail()` choke point per D-031's 2026-06-22 update.
+- `functions/api/auth/_turnstile.js` — siteverify relay.
+- `functions/api/me.js` (GET user + linked methods, DELETE hard-delete gated on typed-email confirmation) + `functions/api/me/export.js` (GET JSON data bundle, tokens never included) — Relay's data-rights spec.
+- `functions/api/follows.js`, `functions/api/prefs.js` — session-scoped only, server never trusts a client-supplied user id (Cipher's spec).
+- `worker/auth-purge.js` + `worker/wrangler-auth-purge.toml` — daily cron (sessions + audit_log >90d), same sibling-Worker pattern as `worker/bdl-proxy.js`/`worker/broadcast-blurb.js` since Pages Functions have no native `scheduled()` handler. **Needs its own `wrangler deploy --config worker/wrangler-auth-purge.toml` — a third owner deployment step beyond the runbook**, with its own `database_id` to paste in.
+- `js/auth.js` (new) — account control, sign-in sheet (passkey/Google/magic-link + all of Vera's listed states), focus trap + Esc + ARIA, `renderFollowStar()`/`toggleFollow()` reusable follow-star component, account management view (email, linked methods, add-passkey, export, delete with typed-email + confirm-dialog double confirmation), preference sync (server-wins-on-load, client-wins-going-forward per Vera's spec). Self-initializes independent of app.js's own boot sequence.
+- `css/auth.css` (new) — Kael's spec: existing tokens only, `.auth-*` namespace, no new color primitives.
+- `index.html` / `sw.js` (v134→v135) — account control + sign-in sheet + account-view markup, CSP/`_headers` gained `challenges.cloudflare.com` (script-src, connect-src, new frame-src) for Turnstile, both files kept in sync per the standing rule.
+- `js/navigation.js` — one new dispatch line for the `account` view, same pattern as the existing sport-landing check.
+- `.gitignore` — `.dev.vars` added proactively (wasn't there before; runbook told the owner to add it "first," so it needed to already exist).
+- `package.json` — gained `better-auth`, `@better-auth/passkey`, `kysely`, `kysely-d1`, ratifying the Functions-build-step shift from the feasibility spike.
+
+**Disclosed, not yet live-verified** (none of this is testable from a sandbox with no real D1 binding, no real browser WebAuthn, no real OAuth consent screen):
+- Date-field type coercion (TEXT/ISO8601 chosen in the migration) against the actual `kysely-d1` dialect — this repo couldn't install better-auth's own CLI schema generator to confirm byte-exact (native module build blocked in this environment). If wrong, it's a column-type fix, not an application-logic one.
+- The full WebAuthn ceremony (`navigator.credentials.create`/`.get`, base64url conversion, the exact credential JSON shape better-auth's passkey plugin expects) — implemented against the standard SimpleWebAuthn-style convention most passkey libraries share, but this class of code has never been exercisable outside a real browser + real authenticator + real user gesture, regardless of sandbox.
+- **`AUTH_TURNSTILE_SITE_KEY` in `js/auth.js` is an empty placeholder.** Sign-in cannot succeed against the Turnstile-gated endpoints until the owner fills in the real site key (public value, safe to commit) from docs/auth-setup-runbook.md step 6. This is a hard blocker for `wrangler pages dev` testing, not a nice-to-have.
+- `session.updateAge`/rolling-refresh behavior (better-auth issue #4203) — spike-acceptance item 6, unchanged from the original spec's own disclosure.
+
+**Intentionally deferred, not silently dropped:** `renderFollowStar()` + `toggleFollow()` are built and working, but not yet wired into the existing card renderers across `mlb.js`/`nfl.js`/`ncaaf.js`/`teams.js`/`playerDetail.js` — that's a mechanical pass across five files, scoped out of this implementation turn given its size. Fast-follow.
+
+**Next, in order:** (1) owner fills in `AUTH_TURNSTILE_SITE_KEY`; (2) owner deploys `worker/auth-purge.js`; (3) `wrangler pages dev` locally against the runbook's dev secrets, running the spike acceptance checklist for real — this is what actually proves the schema/date-coercion/WebAuthn disclosures above one way or the other; (4) wire follow stars onto the existing card templates; (5) full `/security-review` before this goes anywhere near production traffic.
+
 ---
 
 ### Wave 1 accuracy + hardening (2026-07-01) — SHIPPED (pending push)
