@@ -17,14 +17,39 @@ export default {
 
 	// Manual trigger for local testing (`wrangler dev` then hit this Worker's URL) —
 	// scheduled() can't be invoked directly from a browser during development.
+	//
+	// Gated behind a shared secret (security review 2026-08-04): this Worker's URL is
+	// public, and an unauthenticated DELETE-triggering endpoint on USER_DB — even one
+	// that only does idempotent retention cleanup — isn't something to leave open once
+	// noticed. Compares with a constant-time check (own implementation, not node:crypto's
+	// timingSafeEqual, since this Worker has no nodejs_compat flag and doesn't need one
+	// just for this).
 	async fetch(request, env) {
 		if (new URL(request.url).pathname !== '/__run') {
 			return new Response('not found', { status: 404 });
+		}
+		if (!env.PURGE_RUN_SECRET) {
+			return new Response('PURGE_RUN_SECRET not configured', { status: 503 });
+		}
+		const provided = request.headers.get('X-Purge-Secret') || '';
+		if (!_timingSafeEqual(provided, env.PURGE_RUN_SECRET)) {
+			return new Response('unauthorized', { status: 401 });
 		}
 		const result = await purge(env);
 		return Response.json(result);
 	},
 };
+
+function _timingSafeEqual(a, b) {
+	const bufA = new TextEncoder().encode(a);
+	const bufB = new TextEncoder().encode(b);
+	const len = Math.max(bufA.length, bufB.length, 1);
+	let diff = bufA.length ^ bufB.length;
+	for (let i = 0; i < len; i++) {
+		diff |= (bufA[i] || 0) ^ (bufB[i] || 0);
+	}
+	return diff === 0;
+}
 
 async function purge(env) {
 	const nowIso = new Date().toISOString();
