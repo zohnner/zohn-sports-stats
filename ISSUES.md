@@ -1363,6 +1363,12 @@ Savant exposes OAA via `/leaderboard/outs-above-average?csv=true`. SportStrata h
 
 **Next, in order:** (1) owner fills in `AUTH_TURNSTILE_SITE_KEY`; (2) owner deploys `worker/auth-purge.js`; (3) `wrangler pages dev` locally against the runbook's dev secrets, running the spike acceptance checklist for real — this is what actually proves the schema/date-coercion/WebAuthn disclosures above one way or the other; (4) wire follow stars onto the existing card templates; (5) full `/security-review` before this goes anywhere near production traffic.
 
+**Update 2026-08-04 — deploy/migration gap found and closed:** rolling out (2) surfaced two real process gaps, both mine, not the owner's:
+- `worker/auth-purge.js`'s first deploy failed (`error 10021`, missing `database_id`) — the toml still had the `PASTE_DATABASE_ID_HERE` placeholder; owner supplied the real id (`52b61353-d8a2-4685-8825-8b627c6f6eac`, via `wrangler d1 list`), filled in directly.
+- Deploy then succeeded but `/__run` threw (Cloudflare error 1101) — **migration `0002` had never actually been applied.** The Phase-1 implementation entry above mentions 0002 exists, but nothing in the handoff explicitly told the owner to re-run `wrangler d1 migrations apply` for it — a real instruction gap, not an owner error. Root-caused further: `wrangler d1 migrations apply` itself was failing with "No configuration file found," because this project deploys via the Pages dashboard and had never needed a root `wrangler.toml` — the original runbook's step 1 called for one but it was never created. Added a minimal `wrangler.toml` (name + compatibility_date + the `USER_DB` binding only, no `pages_build_output_dir` — deliberately inert with respect to the dashboard build). Both migrations then applied clean, local and remote (12 + 22 commands). `worker/auth-purge.js`'s `/__run` now returns `{"ranAt":...,"sessionsDeleted":0,"auditLogRowsDeleted":0}` — confirmed live, zeros expected since nothing has signed in yet.
+
+**Remaining:** `AUTH_TURNSTILE_SITE_KEY` placeholder in `js/auth.js`, then the real `wrangler pages dev` spike-acceptance pass.
+
 ---
 
 ### Wave 1 accuracy + hardening (2026-07-01) — SHIPPED (pending push)
