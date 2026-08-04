@@ -1,0 +1,14 @@
+# D-031 — local/migration-only config. The site itself deploys via the Cloudflare Pages
+# dashboard (git-integrated build), NOT via this file — the USER_DB runtime binding for
+# the live site was already added through Pages → Settings → Functions → D1 database
+# bindings (docs/auth-setup-runbook.md step 2). This file exists solely so `wrangler d1
+# migrations apply` and local `wrangler pages dev` testing have something to resolve the
+# database against. Kept deliberately minimal (no pages_build_output_dir, no routes) so
+# it can't accidentally change how the dashboard build behaves.
+name                = "zohn-sports-stats"
+compatibility_date  = "2024-11-01"
+
+[[d1_databases]]
+binding       = "USER_DB"
+database_name = "sportstrata-users"
+database_id   = "52b61353-d8a2-4685-8825-8b627c6f6eac"
