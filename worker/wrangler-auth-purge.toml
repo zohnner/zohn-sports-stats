@@ -8,7 +8,7 @@ compatibility_date = "2024-09-23"
 [[d1_databases]]
 binding       = "USER_DB"
 database_name = "sportstrata-users"
-database_id   = "PASTE_DATABASE_ID_HERE"
+database_id   = "52b61353-d8a2-4685-8825-8b627c6f6eac"
 
 # ── Daily at 09:00 UTC — purges expired sessions + audit_log rows older than 90d ──
 [triggers]
