@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-08-05** — point-in-time review, preserved for history. Its roadmap (hero module, live game states, headlines/insights rail, density/freshness pass, favorites, SEO/footer) was actioned via D-046 P1–P6 and D-041/D-045. Reflects the project on its original date; do not treat as current.
+
+---
+
 # SportStrata Landing Page — Gap Analysis vs. Industry Standard (ESPN)
 
 **Purpose:** Documentation for Claude Code. This compares sportstrata.cc's home landing page against ESPN.com's homepage patterns and defines a prioritized roadmap to close the gap toward an industry-standard sports landing page — while preserving SportStrata's analytics-first identity.

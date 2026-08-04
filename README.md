@@ -15,12 +15,17 @@ fully indexable by search and AI crawlers.
 
 Two products under one roof (the "barbell"): **MLB** — the deepest surface, live
 all season — and **NFL** — a public beta centered on year-round fantasy draft
-tools. No accounts, no paywall, no ads. Every computed number shows its
-provenance — "the receipt" — so broadcast professionals can trust and cite it.
+tools. **NCAA Football** is a third live surface (scores, rankings, standings,
+teams). No paywall, no ads, and every core feature works fully signed-out — an
+optional free account (D-031) just adds cross-device sync for followed teams
+and players. Every computed number shows its provenance — "the receipt" — so
+broadcast professionals can trust and cite it.
 
 - **MLB** — primary product, full depth.
 - **NFL** — public beta: live scores/standings/teams in season, historical stat
   leaders back to 2000, Next Gen Stats, and a no-login Mock Draft simulator + Draft HQ.
+- **NCAA Football** — live: scores (offseason-aware), AP/Coaches/CFP rankings,
+  conference-grouped standings and teams. Player leaders/detail deferred (data too sparse).
 - **NBA / NHL** — preview only (accessible, no active feature work).
 
 ---
@@ -80,6 +85,27 @@ provenance — "the receipt" — so broadcast professionals can trust and cite i
   Monte Carlo pick-survival, roster grade, Superflex (Sleeper ADP data).
 
 The NFL season model auto-rolls every year — no hardcoded season in client copy.
+
+---
+
+## NCAA Football (live)
+
+- **Scores** — offseason-aware, live from ESPN college-football.
+- **Rankings** — AP, Coaches, and CFP polls.
+- **Standings & Teams** — conference-grouped, live from ESPN.
+- Player leaders/detail deferred — CFB player data is too sparse to be reliable yet.
+
+---
+
+## Accounts & follows (optional, D-031)
+
+A free account is entirely additive — every page works fully signed-out exactly
+as before. Signing in (passkey, Google, or magic link) adds one thing: your
+followed teams and players sync across devices instead of staying in
+`localStorage` on one browser. The follow star (`renderFollowStar()`) is the
+one favorite/follow control across every sport — MLB, NFL, NCAAF, and NBA
+cards and detail pages all use it. No paywall sits behind an account; it's
+sync, not a gate.
 
 ---
 
@@ -168,22 +194,29 @@ npx wrangler pages dev .
 ├── sitemap.xml / robots.txt   # SEO
 ├── mock-draft.html · draft-kit.html · playoff-odds.html · ask.html   # static SEO landing pages
 ├── css/                       # variables (tokens) · main · components · ticker · animations
-│                              #   scorecard · liveGame · shareCard · nflStandings · nflLiveGame · arcade
+│                              #   scorecard · liveGame · shareCard · nflStandings · nflLiveGame · arcade · auth
 ├── js/
-│   ├── config · errorHandler · cache · schema · api · glossary   # core + AppState + utilities
+│   ├── config · detailFrame · errorHandler · cache · schema · api · glossary   # core + AppState + utilities
+│   │                          #   detailFrame = shared cross-sport player/team detail chrome (D-044)
 │   ├── mlb · odds · scorecard · liveGame · shareCard · statBuilder · query   # MLB surface + October Odds + Ask bar
 │   ├── nfl · nflStandings · nflLiveGame · fantasy · sos          # NFL surface + Mock Draft + Draft HQ
+│   ├── ncaaf                                                     # NCAA Football — scores, rankings, standings, teams
 │   ├── players · leaderboards · teams · games · playerDetail     # NBA preview
-│   ├── nhl · arcade · news · charts · standings · db             # NHL preview, arcade, shared
+│   ├── nhl · arcade · news · scorebug · charts · standings · db  # NHL preview, arcade, shared scorebug (D-047)
+│   ├── auth                                                      # accounts (D-031) — optional, additive; owns
+│   │                          #   the unified follow star used across every sport
 │   ├── search · navigation · app                                 # ⌘K, routing/sport switch, bootstrap
 │   └── math.min.js                                               # vendored (lazy-loaded by Stat Builder)
 ├── functions/
-│   ├── api/                   # Pages Functions: mlb, nfl, sleeper, nflstats, nfladv, nflplayer,
-│   │                          #   nflgamelog, nflcareer, nflstandings, nflsos, nflsearch, news …
+│   ├── api/                   # Pages Functions: mlb, nfl, ncaaf, ncaafstandings, sleeper, nflstats, nfladv,
+│   │                          #   nflplayer, nflgamelog, nflcareer, nflstandings, nflsos, nflsearch, news,
+│   │                          #   auth/[[route]] (better-auth), follows, prefs, me …
 │   │                          #   (_middleware.js rate-limits /api/*)
-│   └── mlb/                   # edge-prerender routes: team/[abbr], player/[id]/[[slug]], standings
-├── worker/                    # Cloudflare Workers (bdl-proxy; broadcast-blurb is deferred)
-├── migrations/                # D1 schema (accounts groundwork — not yet launched)
+│   ├── mlb/                   # edge-prerender routes: team/[abbr], player/[id]/[[slug]], standings, game/[pk], leaders
+│   ├── nfl/, ncaaf/           # edge-prerender sport landings + team/player content templates
+│   └── index.js               # edge-prerendered home page
+├── worker/                    # Cloudflare Workers (bdl-proxy; wrangler-auth-purge.toml = D-031 daily session/audit_log purge)
+├── migrations/                # D1 schema — accounts/follows/prefs, live (D-031, shipped 2026-08)
 ├── tools/                     # check-manifest · check-themes · join-health (the /deploy-check suite)
 ├── tests/                     # node --test: stats · odds · query · vbd
 └── assets/                    # icons, OG cards, theme images
@@ -213,7 +246,9 @@ Hosted on **Cloudflare Pages** (static assets + Pages Functions).
 1. Push to GitHub; Cloudflare Pages builds automatically.
 2. Build command: *(none)*; output directory: `/`.
 3. `_headers` applies CSP and security headers; `functions/` deploy as Pages Functions;
-   the MLB edge cache uses a D1 binding (`DB`).
+   the MLB edge cache uses a D1 binding (`DB`); accounts/follows/prefs (D-031) use a
+   separate D1 binding (`USER_DB`), added via the Pages dashboard — see the comment
+   at the top of `wrangler.toml`.
 
 ---
 

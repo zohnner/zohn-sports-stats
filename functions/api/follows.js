@@ -3,7 +3,13 @@
 // user_id always comes from the session, never the client (Cipher's spec).
 import { buildAuth } from './auth/_instance.js';
 
-const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf']);
+// 'nba' added 2026-08-05 -- the client-side follow star was extended to NBA team/player
+// cards (js/teams.js, js/players.js, js/playerDetail.js) but this allowlist was never
+// updated to match, so every NBA follow from a signed-in user was silently rejected
+// (400 invalid_follow, swallowed by toggleFollow's "kept local" catch -- no visible
+// error, just permanent non-sync). Caught in a documentation/security sweep, not a bug
+// report -- worth a live check that NBA follows actually persist across sign-out/in now.
+const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf', 'nba']);
 const VALID_ENTITY_TYPES = new Set(['team', 'player']);
 
 async function requireSession(context) {

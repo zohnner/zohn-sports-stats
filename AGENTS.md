@@ -1,4 +1,4 @@
-# SportStrata — Claude Code Instructions
+# SportStrata — Codex Instructions
 
 ## Identity
 **Brand:** SportStrata | **Tagline:** "Serious stats for serious fans"
