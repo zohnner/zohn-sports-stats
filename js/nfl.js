@@ -563,6 +563,7 @@ function _createNFLPlayerCard(p) {
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
+            ${typeof renderFollowStar === 'function' ? renderFollowStar('nfl', 'player', p.player_id, { cardCorner: true }) : ''}
             <div class="player-avatar nfl-pos-grad" style="--pc:${posColor}">
                 ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="avatar-text">${initials}</span>
@@ -1024,6 +1025,7 @@ function _renderNFLPlayerDetail(p) {
         chips: [
             { html: `<span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>` },
             ...(adpBadge ? [{ html: adpBadge }] : []),
+            ...(typeof renderFollowStar === 'function' ? [{ html: renderFollowStar('nfl', 'player', p.player_id) }] : []),
         ],
         teamRow: `${teamLogo ? `<img src="${teamLogo}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}${teamBtn}`,
         meta: [`${NFL_FANTASY_SEASON} NFL Season \u00b7 Fantasy profile`],
@@ -1353,6 +1355,7 @@ function _renderTeamPage(m) {
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${esc(m.name)}</h1>
                         ${m.abbr ? `<span class="player-hero-pos">${esc(m.abbr)}</span>` : ''}
+                        ${(m.sport && m.abbr && typeof renderFollowStar === 'function') ? renderFollowStar(m.sport, 'team', m.abbr) : ''}
                     </div>
                     ${m.division ? `<p class="player-detail-meta" style="color:var(--color-text-secondary)">${esc(m.division)}</p>` : ''}
                     ${m.seasonLabel ? `<p class="player-detail-meta" style="color:var(--color-text-muted)">${esc(m.seasonLabel)}</p>` : ''}

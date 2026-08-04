@@ -486,7 +486,10 @@ function _refreshFollowStarStates() {
 // stays available rather than baking in a single source of truth).
 function renderFollowStar(sport, entityType, entityId, opts) {
     const filled = opts && 'active' in opts ? !!opts.active : _isFollowed(sport, entityType, entityId);
-    const cls = filled ? 'auth-follow-star auth-follow-star--active' : 'auth-follow-star';
+    const cardCorner = !!(opts && opts.cardCorner);
+    let cls = 'auth-follow-star';
+    if (cardCorner) cls += ' auth-follow-star--card-corner';
+    if (filled) cls += ' auth-follow-star--active';
     const label = filled ? 'Unfollow' : 'Follow';
     return `<button class="${cls}" data-follow-sport="${_escHtml(sport)}" data-follow-type="${_escHtml(entityType)}" data-follow-id="${_escHtml(String(entityId))}" aria-label="${label}" aria-pressed="${!!filled}" title="${label}">
         <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l2.02 4.09 4.51.66-3.27 3.19.77 4.49L8 11.77l-4.03 2.16.77-4.49L1.47 6.25l4.51-.66L8 1.5z" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>

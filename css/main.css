@@ -705,6 +705,11 @@ main {
     z-index: 1;
 }
 
+/* .team-card has no other rule in this codebase (confirmed via grep) -- it's laid out
+   entirely by its own inline styles in js/mlb.js. This is the anchor .auth-follow-star--
+   card-corner needs to position against; not a general restyle. */
+.team-card { position: relative; }
+
 .player-name {
     font-size: var(--text-base);
     font-weight: 700;

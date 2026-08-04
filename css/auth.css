@@ -178,6 +178,19 @@
 .auth-follow-star:hover { color: var(--accent); }
 .auth-follow-star--active { color: var(--accent); }
 
+/* Card-corner placement — requires the card wrapper to be position:relative.
+   Sits above card content (z-index 2, same layer discipline as .card-cta's z-index:1)
+   and gets its own translucent backdrop so it stays legible over photo/gradient headers. */
+.auth-follow-star--card-corner {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    background: color-mix(in srgb, var(--bg-base) 55%, transparent);
+    border-radius: var(--radius-full);
+    backdrop-filter: var(--blur-md);
+}
+
 /* Account page */
 .auth-account-page { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }
 .auth-account-title { font-family: var(--font-display, inherit); font-size: 1.4rem; margin-bottom: 20px; }

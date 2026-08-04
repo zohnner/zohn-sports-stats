@@ -324,6 +324,7 @@ function _playerHero(player, teamName, stats) {
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${_escHtml(player.first_name)} ${_escHtml(player.last_name)}</h1>
                         <span class="player-hero-pos">${_escHtml(player.position || 'N/A')}</span>
+                        ${typeof renderFollowStar === 'function' ? renderFollowStar('nba', 'player', player.id) : ''}
                     </div>
                     <p class="player-detail-meta" style="color:var(--color-text-secondary)">
                         ${player.team?.id

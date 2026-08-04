@@ -3639,6 +3639,7 @@ function displayMLBTeams(teams, standings = {}) {
         card.addEventListener('click', () => showMLBTeamDetail(team.id));
         card.innerHTML = `
             <div class="team-card-header" style="background:linear-gradient(135deg,${colors.primary}dd,${colors.primary}33)">
+                ${typeof renderFollowStar === 'function' ? renderFollowStar('mlb', 'team', team.abbreviation, { cardCorner: true }) : ''}
                 <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.5rem">
                     ${logo
                         ? `<img src="${logo}" style="width:100%;height:100%;object-fit:contain" loading="lazy" data-logo-fallback="${_escHtml(abbr)}">`
@@ -4038,6 +4039,7 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${name}</h1>
                         <span class="player-hero-pos">${abbr}</span>
+                        ${typeof renderFollowStar === 'function' ? renderFollowStar('mlb', 'team', team?.abbreviation || abbr) : ''}
                     </div>
                     <p class="player-detail-meta" style="color:var(--color-text-secondary)">${lgName}${divName ? ' · ' + divName : ''}</p>
                     ${team?.venue?.name ? `<p class="player-detail-meta" style="color:var(--color-text-muted)">${team.venue.name}${team.firstYearOfPlay ? ' · Est. ' + team.firstYearOfPlay : ''}</p>` : ''}

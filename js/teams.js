@@ -70,6 +70,7 @@ function _createTeamCard(team) {
 
     card.innerHTML = `
         <div class="player-card-top">
+            ${typeof renderFollowStar === 'function' ? renderFollowStar('nba', 'team', team.abbreviation, { cardCorner: true }) : ''}
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);color:#fff;font-weight:800;font-size:1.4rem;letter-spacing:0.02em">
                 ${logoUrl ? `<img class="player-headshot" src="${logoUrl}" alt="" loading="lazy" style="object-fit:contain;object-position:center;padding:4px" data-hide-on-error onload="var s=this.parentElement.querySelector('.avatar-text');if(s)s.style.display='none'">` : ''}
                 <span class="avatar-text">${initials}</span>
@@ -222,6 +223,7 @@ function _teamHeader(team, colors) {
                     <div class="player-hero-top">
                         <h1 class="player-detail-name">${team.full_name}</h1>
                         <span class="player-hero-pos">${team.abbreviation}</span>
+                        ${typeof renderFollowStar === 'function' ? renderFollowStar('nba', 'team', team.abbreviation) : ''}
                     </div>
                     <p class="player-detail-meta" style="color:var(--color-text-secondary)">${team.city}</p>
                     <p class="player-detail-meta">${confLabel}</p>

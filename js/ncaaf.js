@@ -477,7 +477,10 @@ function displayNCAAFPlayerDetail(data) {
         actions: [{ label: 'Share', onclick: "window._shareCurrentPage && window._shareCurrentPage()", title: 'Copy link' }],
         avatar: { headshotHtml: headshotImg, initials, accent, className: 'nfl-hero-avatar' },
         name: bio.name,
-        chips: bio.pos ? [{ text: bio.pos }] : [],
+        chips: [
+            ...(bio.pos ? [{ text: bio.pos }] : []),
+            ...((data.id && typeof renderFollowStar === 'function') ? [{ html: renderFollowStar('ncaaf', 'player', data.id) }] : []),
+        ],
         teamRow,
         meta: [`${data.season} College Football${data.gp ? ` · ${_escHtml(String(data.gp))} GP` : ''}`],
     });
