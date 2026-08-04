@@ -2,6 +2,10 @@
    Kael's spec: tokens only, no new color primitives, classes namespaced .auth-*. */
 
 /* Header account control */
+/* [hidden] must win over the base display rule below — an author-stylesheet rule
+   otherwise beats the UA stylesheet's default [hidden]{display:none}, which left the
+   button visibly rendered (blank, unstyled) before JS ever populated or revealed it. */
+.auth-control[hidden] { display: none; }
 .auth-control {
     display: inline-flex;
     align-items: center;

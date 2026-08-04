@@ -7,18 +7,14 @@
 // scope through classic <script> tags with no build step. Endpoint paths below are
 // verified against the installed better-auth 1.6.25 + @better-auth/passkey source
 // (grepped for createAuthEndpoint(...) calls), not guessed from docs.
+// Public site key (not a secret — safe to commit, pairs with the TURNSTILE_SECRET_KEY
+// server secret). Filled in 2026-08-04 per docs/auth-setup-runbook.md step 6.
+const AUTH_TURNSTILE_SITE_KEY = '0x4AAAAAAEFqnc_4a6Cujlsq';
 
 const AuthState = {
     status: 'loading', // 'loading' | 'signed-out' | 'signed-in'
     user: null,
 };
-
-// Public site key (not a secret — safe to commit, pairs with the TURNSTILE_SECRET_KEY
-// server secret). OWNER: fill this in after creating the Turnstile site per
-// docs/auth-setup-runbook.md step 6 — sign-in cannot succeed against the gated
-// endpoints until this is set, since functions/api/auth/_instance.js's Turnstile hook
-// rejects any request with no token.
-const AUTH_TURNSTILE_SITE_KEY = '';
 
 let _authTurnstileToken = '';
 let _authTurnstileWidgetId = null;
