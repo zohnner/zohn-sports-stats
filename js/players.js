@@ -14,7 +14,7 @@ function toggleFavFilter() {
 function _applyPlayerFilters() {
     const searchVal = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
     let base = _showFavOnly
-        ? AppState.allPlayers.filter(p => AppState.favorites.has(p.id))
+        ? AppState.allPlayers.filter(p => typeof _isFollowed === 'function' && _isFollowed('nba', 'player', p.id))
         : AppState.allPlayers;
     if (searchVal.length >= 2) {
         base = base.filter(p =>
@@ -192,14 +192,12 @@ function createPlayerCard(player, stats, ppgRank) {
     const pts    = stats?.pts;
     const ptsClr = pts >= 25 ? '#fbbf24' : pts >= 20 ? '#a78bfa' : pts >= 15 ? 'var(--color-pts)' : 'var(--color-text-primary)';
 
-    const isFav = isFavorite(player.id);
+    const favBtn = typeof renderFollowStar === 'function'
+        ? renderFollowStar('nba', 'player', player.id, { cardCorner: true }) : '';
     card.innerHTML = `
         <div class="player-card-top">
             ${rankBadge}
-            <button class="fav-btn${isFav ? ' fav-btn--active' : ''}"
-                onclick="event.stopPropagation();toggleFavorite(${player.id},this)"
-                aria-label="${isFav ? 'Remove from favorites' : 'Add to favorites'}"
-                title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">♥</button>
+            ${favBtn}
             <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
                 ${headshotImg}<span class="avatar-text">${initials}</span>
             </div>

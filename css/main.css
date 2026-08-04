@@ -554,26 +554,10 @@ main {
     color: var(--color-fav);
 }
 
-/* Heart button on player cards */
-.fav-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: none;
-    border: none;
-    color: var(--text-subtle);
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 0.3rem;
-    border-radius: var(--radius-sm);
-    line-height: 1;
-    transition: color var(--transition-fast), transform var(--transition-fast);
-    z-index: 2;
-}
-.fav-btn:hover { color: var(--color-fav); transform: scale(1.2); }
-.fav-btn--active { color: var(--color-fav); }
-
-/* Ensure player-card-top is relative so fav-btn can position absolutely */
+/* .fav-btn (NBA player-card heart) removed 2026-08-05 -- merged into the unified
+   .auth-follow-star--card-corner system (css/auth.css). Kept here: player-card-top
+   still needs position:relative as the anchor for its absolutely-positioned children
+   (.player-rank-badge, .auth-follow-star--card-corner). */
 .player-card-top { position: relative; }
 
 /* View toggle */
@@ -1783,24 +1767,8 @@ main {
 }
 
 /* Favorite-team star (D-046 P5) — subtle, reveals on card hover, persists when on */
-.hgc-star {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    padding: 0 0 0 0.3rem;
-    margin: 0;
-    font-size: 0.95rem;
-    line-height: 1;
-    cursor: pointer;
-    color: var(--text-muted);
-    opacity: 0;
-    transition: opacity 0.12s ease, color 0.12s ease;
-}
-.home-game-card:hover .hgc-star { opacity: 0.5; }
-.hgc-star:hover { color: var(--accent); opacity: 1; }
-.hgc-star:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
-.hgc-star--on { color: var(--accent); opacity: 1; }
-@media (hover: none) { .hgc-star { opacity: 0.45; } }
+/* .hgc-star (home-game-card favorite star) removed 2026-08-05 -- merged into the
+   unified .auth-follow-star--hgc variant (css/auth.css), same hover-reveal behavior. */
 
 .home-no-games {
     color: var(--text-muted);

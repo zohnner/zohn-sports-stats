@@ -492,10 +492,15 @@ function _renderHomeRecents() {
 function _renderHomeStarred() {
     const el = document.getElementById('homeStarred');
     if (!el) return;
-    const favIds = AppState.mlbFavorites;
-    if (!favIds || favIds.size === 0) { el.innerHTML = ''; return; }
+    // AuthState.follows keys are "sport:entityType:entityId" (see js/auth.js); pull out
+    // the numeric id for every followed MLB player. Was AppState.mlbFavorites before the
+    // 2026-08-05 merge into the unified follow-star system.
+    const favIds = AuthState.follows
+        ? [...AuthState.follows].filter(k => k.startsWith('mlb:player:')).map(k => Number(k.split(':')[2]))
+        : [];
+    if (!favIds.length) { el.innerHTML = ''; return; }
 
-    const chips = [...favIds].map(id => {
+    const chips = favIds.map(id => {
         const player = [...(AppState.mlbPlayers?.hitting || []), ...(AppState.mlbPlayers?.pitching || [])]
             .find(p => p.id === id);
         if (!player) return null;
@@ -763,25 +768,33 @@ function _renderTonightSPSection() {
     });
 }
 
-// ── Team favorites (D-046 P5) — localStorage only, no PII ──
-const _FAV_TEAMS_KEY = 'zs_fav_teams';
-function _getFavTeams() {
-    if (!AppState._favTeams) {
-        try { AppState._favTeams = new Set(JSON.parse(localStorage.getItem(_FAV_TEAMS_KEY) || '[]')); }
-        catch (_) { AppState._favTeams = new Set(); }
-    }
-    return AppState._favTeams;
-}
-function _isFavTeam(abbr) { return !!abbr && _getFavTeams().has(abbr); }
-function _toggleFavTeam(abbr) {
-    if (!abbr) return;
-    const s = _getFavTeams();
-    if (s.has(abbr)) s.delete(abbr); else s.add(abbr);
-    try { localStorage.setItem(_FAV_TEAMS_KEY, JSON.stringify([...s])); } catch (_) {}
-}
+// ── Team favorites (D-046 P5) ── merged 2026-08-05 into the unified follow-star
+// system (js/auth.js) per explicit direction: one star going forward instead of
+// three separate favorite mechanisms. `_gameHasFav` now reads AuthState.follows
+// (mlb:team:{abbr}) via `_isFollowed` instead of its own localStorage set.
 function _gameHasFav(g) {
-    return _isFavTeam(g.teams?.home?.team?.abbreviation) || _isFavTeam(g.teams?.away?.team?.abbreviation);
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('mlb', 'team', g.teams?.home?.team?.abbreviation)
+        || _isFollowed('mlb', 'team', g.teams?.away?.team?.abbreviation);
 }
+
+// Re-renders the pieces whose SORT ORDER (not just star visual state) depends on
+// which teams are followed -- today's-games grid and the ticker both pin favorite
+// teams to the front, so a toggle has to re-run their sort, not just repaint a star.
+// auth.js's toggleFollow() dispatches this event after every follow/unfollow;
+// the generic per-star repaint already happened by the time this fires.
+window.addEventListener('ss:follow-changed', (e) => {
+    if (!e.detail || e.detail.sport !== 'mlb') return;
+    if (e.detail.entityType === 'team') {
+        if (typeof _loadHomeTodayGames === 'function' && document.getElementById('homeTodayGrid')) {
+            _loadHomeTodayGames();
+        }
+        if (typeof updateMLBTicker === 'function' && AppState.mlbGames) updateMLBTicker(AppState.mlbGames);
+    }
+    // Home "Starred Players" chips (mlb:player follows) and the team-follow surfaces
+    // above both live on the same home render -- refresh on either kind of change.
+    if (typeof _renderHomeStarred === 'function') _renderHomeStarred();
+});
 
 // D-043 3a: sport-tab bar. A static element (part of loadHome()'s one-shot
 // template), so its click listener is bound once, guarded like _wireRailTabs.
@@ -897,10 +910,8 @@ async function _loadHomeTodayGames() {
     // D-047 S2: home grid cards are built by the shared Scorebug component
     // (js/scorebug.js) — one scorebug anatomy across sports. The favorites star
     // is passed as a hook so the builder stays sport-agnostic.
-    const _favStar = (abbr) => {
-        const on = _isFavTeam(abbr);
-        return `<button class="hgc-star${on ? ' hgc-star--on' : ''}" data-fav-team="${_esc(abbr)}" aria-label="${on ? 'Remove' : 'Add'} ${_esc(abbr)} favorite" title="${on ? 'Remove favorite' : 'Favorite team'}">${on ? '★' : '☆'}</button>`;
-    };
+    const _favStar = (abbr) => (typeof renderFollowStar === 'function')
+        ? renderFollowStar('mlb', 'team', abbr, { extraClass: 'auth-follow-star--hgc' }) : '';
     const _gameCard = (g) => (typeof Scorebug !== 'undefined')
         ? Scorebug.renderScoreCard(Scorebug.normalizeMLBGame(g), { favStar: _favStar })
         : '';
@@ -997,14 +1008,9 @@ async function _loadHomeTodayGames() {
             });
         }
 
-        gridEl.querySelectorAll('.hgc-star').forEach(star => {
-            star.addEventListener('click', e => {
-                e.stopPropagation();
-                _toggleFavTeam(star.dataset.favTeam);
-                _loadHomeTodayGames();
-                if (typeof updateMLBTicker === 'function' && AppState.mlbGames) updateMLBTicker(AppState.mlbGames);
-            });
-        });
+        // Star clicks are handled globally by auth.js's document-level capture listener
+        // (it stopPropagation()s the card's own click-to-navigate handler already); the
+        // 'ss:follow-changed' listener above re-sorts this grid + the ticker afterward.
 
         _wireHomeGameCardClicks(gridEl);
 

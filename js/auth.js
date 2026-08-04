@@ -14,7 +14,10 @@ const AUTH_TURNSTILE_SITE_KEY = '0x4AAAAAAEFqnc_4a6Cujlsq';
 const AuthState = {
     status: 'loading', // 'loading' | 'signed-out' | 'signed-in'
     user: null,
-    follows: null, // Set of "sport:entityType:entityId" keys, populated on sign-in; null = not yet known
+    // Set of "sport:entityType:entityId" keys. Local-first (see "Follows" section below) --
+    // reassigned from localStorage synchronously right after this object is defined, so it's
+    // never actually null by the time any card renders. Declared here just for shape/documentation.
+    follows: null,
 };
 
 let _authTurnstileToken = '';
@@ -435,28 +438,92 @@ function _credentialToJSON(credential) {
 }
 
 // ---------------------------------------------------------------------------
-// Follows — star control, reusable across card templates
+// Follows — star control, reusable across card templates.
+//
+// Local-first: following works fully signed-out (localStorage), matching the
+// "free, no-login" brand promise -- an account only adds cross-device sync.
+// This is also the single unified mechanism replacing three older, separate
+// favorite stores (MLB team `zs_fav_teams`, MLB player `zs_mlb_favs`, NBA
+// player `zs_favs`), merged 2026-08-05 per explicit direction: one star
+// going forward, not three different hearts/stars meaning almost the same
+// thing. `_migrateLegacyFavorites()` folds each of those in once.
 // ---------------------------------------------------------------------------
+
+const _FOLLOWS_KEY = 'zs_follows';
+const _FOLLOWS_MIGRATED_KEY = 'zs_follows_migrated_v1';
 
 function _followKey(sport, entityType, entityId) {
     return `${sport}:${entityType}:${entityId}`;
 }
 
-// null (not yet known — pre-sync or signed-out) is treated as "not followed" for render
-// purposes; _refreshFollowStarStates() corrects any star on screen once the real list
-// arrives, so a star never lies for longer than one network round trip.
-function _isFollowed(sport, entityType, entityId) {
-    return !!(AuthState.follows && AuthState.follows.has(_followKey(sport, entityType, entityId)));
+function _loadLocalFollows() {
+    try { return new Set(JSON.parse(localStorage.getItem(_FOLLOWS_KEY) || '[]')); }
+    catch (_) { return new Set(); }
 }
 
+function _persistLocalFollows() {
+    try { localStorage.setItem(_FOLLOWS_KEY, JSON.stringify([...AuthState.follows])); } catch (_) {}
+}
+
+// Guarded by its own flag so it only ever runs once per browser -- otherwise a
+// follow removed after migration would silently reappear on the next page load.
+// Doesn't delete the old keys; they're just dead weight once nothing reads them.
+function _migrateLegacyFavorites() {
+    if (localStorage.getItem(_FOLLOWS_MIGRATED_KEY)) return;
+    try {
+        (JSON.parse(localStorage.getItem('zs_fav_teams') || '[]'))
+            .forEach(abbr => AuthState.follows.add(_followKey('mlb', 'team', abbr)));
+        (JSON.parse(localStorage.getItem('zs_mlb_favs') || '[]'))
+            .forEach(id => AuthState.follows.add(_followKey('mlb', 'player', id)));
+        (JSON.parse(localStorage.getItem('zs_favs') || '[]'))
+            .forEach(id => AuthState.follows.add(_followKey('nba', 'player', id)));
+        _persistLocalFollows();
+    } catch (e) {
+        Logger.warn('Legacy favorites migration failed', e, 'AUTH');
+    } finally {
+        try { localStorage.setItem(_FOLLOWS_MIGRATED_KEY, '1'); } catch (_) {}
+    }
+}
+
+// Populated synchronously here (script load), not inside initAuth's async session
+// check -- anonymous users get a working, correct star before any network round
+// trip, because following has never required an account and still doesn't.
+AuthState.follows = _loadLocalFollows();
+_migrateLegacyFavorites();
+
+function _isFollowed(sport, entityType, entityId) {
+    return AuthState.follows.has(_followKey(sport, entityType, entityId));
+}
+
+// On sign-in: pull the server's list, then push up anything local-only (starred
+// before signing in, or on a browser that's never synced) so nothing typed while
+// anonymous gets silently dropped. AuthState.follows becomes the union and stays
+// mirrored to localStorage from here on, so signing out later doesn't blank stars.
 async function _syncFollowsOnSignIn() {
     try {
         const res = await fetch('/api/follows', { credentials: 'same-origin' });
         if (!res.ok) return;
         const { follows } = await res.json();
-        AuthState.follows = new Set(
+        const serverSet = new Set(
             (follows || []).map((f) => _followKey(f.sport, f.entity_type, f.entity_id))
         );
+
+        const localOnly = [...AuthState.follows].filter((k) => !serverSet.has(k));
+        await Promise.all(localOnly.map((key) => {
+            // Keys are "sport:entityType:entityId" and no current entityId (MLB/NBA
+            // abbrs, numeric player ids, ESPN athlete ids) contains a colon, so a
+            // plain 3-way split is safe -- see _followKey.
+            const [sport, entityType, entityId] = key.split(':');
+            return fetch('/api/follows', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ sport, entity_type: entityType, entity_id: entityId }),
+            }).catch((e) => Logger.warn('Follow merge-up failed for ' + key, e, 'AUTH'));
+        }));
+
+        AuthState.follows = new Set([...serverSet, ...localOnly]);
+        _persistLocalFollows();
         _refreshFollowStarStates();
     } catch (e) {
         Logger.warn('Follows sync failed', e, 'AUTH');
@@ -489,6 +556,7 @@ function renderFollowStar(sport, entityType, entityId, opts) {
     const cardCorner = !!(opts && opts.cardCorner);
     let cls = 'auth-follow-star';
     if (cardCorner) cls += ' auth-follow-star--card-corner';
+    if (opts && opts.extraClass) cls += ' ' + opts.extraClass;
     if (filled) cls += ' auth-follow-star--active';
     const label = filled ? 'Unfollow' : 'Follow';
     return `<button class="${cls}" data-follow-sport="${_escHtml(sport)}" data-follow-type="${_escHtml(entityType)}" data-follow-id="${_escHtml(String(entityId))}" aria-label="${label}" aria-pressed="${!!filled}" title="${label}">
@@ -500,46 +568,52 @@ async function _handleFollowStarClick(starEl) {
     const sport = starEl.dataset.followSport;
     const entityType = starEl.dataset.followType;
     const entityId = starEl.dataset.followId;
-
-    if (AuthState.status !== 'signed-in') {
-        openAuthSheet({ type: 'follow', sport, entityType, entityId });
-        return;
-    }
     const wasActive = starEl.classList.contains('auth-follow-star--active');
     await toggleFollow(sport, entityType, entityId, !wasActive);
 }
 
+// Local state is the durable source of truth -- works with no account, no network
+// round trip required to follow something, same as every other no-login capability
+// on the site. Signed in: also best-effort synced to the account so it's there on
+// other devices; a sync failure does NOT revert the local star -- the click already
+// did what the user asked, and silently undoing it would be worse than a missed sync.
 async function toggleFollow(sport, entityType, entityId, forceOn) {
     const selector = `.auth-follow-star[data-follow-sport="${sport}"][data-follow-type="${entityType}"][data-follow-id="${entityId}"]`;
     const stars = document.querySelectorAll(selector);
     const turningOn = forceOn;
+    const key = _followKey(sport, entityType, entityId);
 
-    try {
-        const res = await fetch('/api/follows', {
-            method: turningOn ? 'POST' : 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ sport, entity_type: entityType, entity_id: entityId }),
-        });
-        if (!res.ok) throw new Error('follow_request_failed');
+    if (turningOn) AuthState.follows.add(key); else AuthState.follows.delete(key);
+    _persistLocalFollows();
+    stars.forEach((s) => {
+        s.classList.toggle('auth-follow-star--active', turningOn);
+        s.setAttribute('aria-pressed', String(turningOn));
+        s.setAttribute('aria-label', turningOn ? 'Unfollow' : 'Follow');
+        s.setAttribute('title', turningOn ? 'Unfollow' : 'Follow');
+        const svgPath = s.querySelector('path');
+        if (svgPath) svgPath.setAttribute('fill', turningOn ? 'currentColor' : 'none');
+    });
 
-        // Keep AuthState.follows authoritative — otherwise a star for the same entity
-        // rendered fresh on a later navigation (e.g. list view -> detail view) would
-        // read the pre-toggle state until the next full _syncFollowsOnSignIn() round trip.
-        if (!AuthState.follows) AuthState.follows = new Set();
-        const key = _followKey(sport, entityType, entityId);
-        if (turningOn) AuthState.follows.add(key); else AuthState.follows.delete(key);
+    // Lets any surface whose layout depends on follow state (not just the star's own
+    // visual) react without auth.js needing to know those surfaces exist -- e.g. the
+    // home page pins followed teams' games to the front of the grid/ticker, which is
+    // a re-sort, not a repaint, so a DOM class toggle alone isn't enough there.
+    window.dispatchEvent(new CustomEvent('ss:follow-changed', {
+        detail: { sport, entityType, entityId, following: turningOn },
+    }));
 
-        stars.forEach((s) => {
-            s.classList.toggle('auth-follow-star--active', turningOn);
-            s.setAttribute('aria-pressed', String(turningOn));
-            s.setAttribute('aria-label', turningOn ? 'Unfollow' : 'Follow');
-            s.setAttribute('title', turningOn ? 'Unfollow' : 'Follow');
-            const svgPath = s.querySelector('path');
-            if (svgPath) svgPath.setAttribute('fill', turningOn ? 'currentColor' : 'none');
-        });
-    } catch (e) {
-        Logger.warn('Follow toggle failed', e, 'AUTH');
+    if (AuthState.status === 'signed-in') {
+        try {
+            const res = await fetch('/api/follows', {
+                method: turningOn ? 'POST' : 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ sport, entity_type: entityType, entity_id: entityId }),
+            });
+            if (!res.ok) throw new Error('follow_request_failed');
+        } catch (e) {
+            Logger.warn('Follow server sync failed (kept local)', e, 'AUTH');
+        }
     }
 }
 

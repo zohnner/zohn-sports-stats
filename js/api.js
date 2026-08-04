@@ -63,32 +63,12 @@ const AppState = {
     nhlTeams:     [],
     nhlGames:     [],
     nhlStandings: null,
-    // Favorites — persisted to localStorage
-    favorites: new Set((() => { try { return JSON.parse(localStorage.getItem('zs_favs') || '[]'); } catch (_) { return []; } })()),
 };
 
-// ── Favorites helpers ─────────────────────────────────────────
-
-function isFavorite(id) {
-    return AppState.favorites.has(id);
-}
-
-function toggleFavorite(id, btnEl) {
-    if (AppState.favorites.has(id)) AppState.favorites.delete(id);
-    else AppState.favorites.add(id);
-    try { localStorage.setItem('zs_favs', JSON.stringify([...AppState.favorites])); } catch (_) {}
-    if (btnEl) {
-        const active = AppState.favorites.has(id);
-        btnEl.classList.toggle('fav-btn--active', active);
-        btnEl.setAttribute('aria-label', active ? 'Remove from favorites' : 'Add to favorites');
-        btnEl.title = active ? 'Remove from favorites' : 'Add to favorites';
-    }
-}
-
-if (typeof window !== 'undefined') {
-    window.isFavorite     = isFavorite;
-    window.toggleFavorite = toggleFavorite;
-}
+// ── Favorites ── merged 2026-08-05 into the unified follow-star system
+// (js/auth.js: AuthState.follows / _isFollowed / toggleFollow / renderFollowStar).
+// NBA player favorites used to live here as AppState.favorites (localStorage key
+// 'zs_favs'); js/auth.js's _migrateLegacyFavorites() folds that key in once.
 
 // ============================================================
 // Core fetch helper — with caching and exponential-backoff retry

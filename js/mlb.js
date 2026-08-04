@@ -52,32 +52,12 @@ function _parkFactorBadge(teamAbbr, style = 'inline') {
     return `<span class="park-badge ${cls}" title="${tf.label}">${tf.tier === 3 ? '⛰️ ' : ''}${tf.label}</span>`;
 }
 
-// ── MLB Favorites (starred players) ──────────────────────────
-const _MLB_FAVS_KEY = 'zs_mlb_favs';
-// Initialise from localStorage into AppState (AppState is defined later in navigation.js,
-// so we defer the Set population to _initMLBFavs() called at the end of this file).
-function _initMLBFavs() {
-    try {
-        const ids = JSON.parse(localStorage.getItem(_MLB_FAVS_KEY) || '[]');
-        AppState.mlbFavorites = new Set(ids.map(Number));
-    } catch (_) { AppState.mlbFavorites = new Set(); }
-}
-function _toggleMLBFav(playerId) {
-    if (!AppState.mlbFavorites) AppState.mlbFavorites = new Set();
-    if (AppState.mlbFavorites.has(playerId)) {
-        AppState.mlbFavorites.delete(playerId);
-    } else {
-        AppState.mlbFavorites.add(playerId);
-    }
-    try { localStorage.setItem(_MLB_FAVS_KEY, JSON.stringify([...AppState.mlbFavorites])); } catch (_) {}
-    // Re-render star button(s) in the DOM without re-building the whole card
-    document.querySelectorAll(`.mlb-fav-btn[data-player-id="${playerId}"]`).forEach(btn => {
-        const isNow = AppState.mlbFavorites.has(playerId);
-        btn.classList.toggle('mlb-fav-btn--active', isNow);
-        btn.title = isNow ? 'Remove from starred' : 'Star player';
-        btn.setAttribute('aria-label', isNow ? 'Remove from starred' : 'Star player');
-    });
-}
+// ── MLB Favorites (starred players) ── merged 2026-08-05 into the unified
+// follow-star system (js/auth.js). Note for the record: _initMLBFavs() below was
+// never actually called anywhere in the codebase (grepped to confirm), so this
+// heart button never restored a player's starred state across a reload -- only
+// same-session toggles worked. The replacement (AuthState.follows, populated
+// synchronously from localStorage at auth.js load) doesn't have that gap.
 
 // ── Team colours ─────────────────────────────────────────────
 // Keys use the abbreviation returned by the MLB Stats API.
@@ -1482,12 +1462,8 @@ function _createMLBPlayerCard(player, stats, group, rank) {
     const rankBadge  = rank != null
         ? `<span class="player-rank-badge ${rank <= 10 ? 'player-rank-badge--top' : ''}">#${rank} ${rankLabel}</span>`
         : '';
-    const isFav  = AppState.mlbFavorites?.has(player.id) ?? false;
-    const favBtn = `<button class="mlb-fav-btn ${isFav ? 'mlb-fav-btn--active' : ''}"
-        data-player-id="${player.id}"
-        title="${isFav ? 'Remove from starred' : 'Star player'}"
-        aria-label="${isFav ? 'Remove from starred' : 'Star player'}"
-        onclick="event.stopPropagation();_toggleMLBFav(${player.id})">♥</button>`;
+    const favBtn = typeof renderFollowStar === 'function'
+        ? renderFollowStar('mlb', 'player', player.id, { cardCorner: true }) : '';
 
     card.innerHTML = `
         <div class="player-card-top">
@@ -5374,9 +5350,10 @@ function updateMLBTicker(games) {
         g.teams?.away?.score != null
     );
 
-    // Favorite-team games pin to the front of the ticker (D-046 P5).
-    if (typeof _isFavTeam === 'function') {
-        const favRank = g => (_isFavTeam(_mlbTeamAbbr(g.teams?.home?.team)) || _isFavTeam(_mlbTeamAbbr(g.teams?.away?.team))) ? 0 : 1;
+    // Followed-team games pin to the front of the ticker (D-046 P5, merged into the
+    // unified follow-star system 2026-08-05).
+    if (typeof _isFollowed === 'function') {
+        const favRank = g => (_isFollowed('mlb', 'team', _mlbTeamAbbr(g.teams?.home?.team)) || _isFollowed('mlb', 'team', _mlbTeamAbbr(g.teams?.away?.team))) ? 0 : 1;
         scored.sort((a, b) => favRank(a) - favRank(b));
     }
 
@@ -7365,7 +7342,6 @@ if (typeof window !== 'undefined') {
     window.displayGamePrep         = displayGamePrep;
     window._openGamePrepSheet      = _openGamePrepSheet;
     window._downloadMLBCard        = _downloadMLBCard;
-    window._toggleMLBFav           = _toggleMLBFav;
 
     window._loadMLBH2H = async function(currentId, group) {
         const sel    = document.getElementById('mlb-h2h-select');

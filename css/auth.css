@@ -179,17 +179,32 @@
 .auth-follow-star--active { color: var(--accent); }
 
 /* Card-corner placement — requires the card wrapper to be position:relative.
+   Left corner, not right: .player-rank-badge (ADP/AVG/ERA rank chip) already owns
+   top-right at top:0.6rem;right:0.6rem on player cards -- this is also exactly where
+   the old .mlb-fav-btn heart sat (left:0.6rem) before this button replaced it, so this
+   matches established layout, not a new convention.
    Sits above card content (z-index 2, same layer discipline as .card-cta's z-index:1)
    and gets its own translucent backdrop so it stays legible over photo/gradient headers. */
 .auth-follow-star--card-corner {
     position: absolute;
     top: 8px;
-    right: 8px;
+    left: 8px;
     z-index: 2;
     background: color-mix(in srgb, var(--bg-base) 55%, transparent);
     border-radius: var(--radius-full);
     backdrop-filter: var(--blur-md);
 }
+
+/* Dense home-game-card row (.hgc-row) placement — matches the old .hgc-star's
+   unobtrusive-until-hovered behavior (that row is packed: logo, abbr, score, star,
+   all at a compact 26px rhythm) rather than the always-visible default. Size is
+   left alone -- .hgc-team-logo in the same row is already 26x26, so the star's
+   default footprint matches without an override. */
+.auth-follow-star--hgc { opacity: 0; }
+.home-game-card:hover .auth-follow-star--hgc,
+.auth-follow-star--hgc.auth-follow-star--active,
+.auth-follow-star--hgc:focus-visible { opacity: 1; }
+@media (hover: none) { .auth-follow-star--hgc { opacity: 0.45; } }
 
 /* Account page */
 .auth-account-page { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }

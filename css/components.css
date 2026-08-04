@@ -1475,22 +1475,8 @@
     color: var(--color-pts);
 }
 
-.mlb-fav-btn {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.6rem;
-    background: none;
-    border: none;
-    padding: 0.2rem 0.3rem;
-    font-size: 0.85rem;
-    color: var(--text-subtle);
-    cursor: pointer;
-    line-height: 1;
-    transition: color 0.15s, transform 0.12s;
-    z-index: 1;
-}
-.mlb-fav-btn:hover { color: var(--color-fav); transform: scale(1.15); }
-.mlb-fav-btn--active { color: var(--color-fav); }
+/* .mlb-fav-btn (MLB player-card heart) removed 2026-08-05 -- merged into the
+   unified .auth-follow-star--card-corner system (css/auth.css). */
 
 /* ── Recent Game Stats ────────────────────────────────────── */
 .recent-game-stats {
