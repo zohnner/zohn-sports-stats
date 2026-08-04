@@ -14,6 +14,7 @@ const AUTH_TURNSTILE_SITE_KEY = '0x4AAAAAAEFqnc_4a6Cujlsq';
 const AuthState = {
     status: 'loading', // 'loading' | 'signed-out' | 'signed-in'
     user: null,
+    follows: null, // Set of "sport:entityType:entityId" keys, populated on sign-in; null = not yet known
 };
 
 let _authTurnstileToken = '';
@@ -43,7 +44,10 @@ async function initAuth() {
     }
     _renderAuthControl();
     _wireAuthControlEvents();
-    if (AuthState.status === 'signed-in') _syncPreferencesOnSignIn();
+    if (AuthState.status === 'signed-in') {
+        _syncPreferencesOnSignIn();
+        _syncFollowsOnSignIn();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,10 +102,19 @@ function _wireAuthControlEvents() {
     // Signed-out follow-star taps open the sheet then auto-apply the follow on return
     // (Vera's spec: "never lose the user's intent"). Delegated once here rather than
     // per-card, since follow stars render across many card templates.
+    //
+    // Capture phase, not bubble — stars render INSIDE whole-card click-to-navigate
+    // elements (team/player cards bind their own click listener directly on the card
+    // for "click anywhere to open detail"). A bubble-phase document listener would fire
+    // after the card's own listener already ran, so stopPropagation() here would be too
+    // late. Capture fires top-down before the card ever sees the event.
     document.addEventListener('click', (e) => {
         const star = e.target.closest?.('.auth-follow-star');
-        if (star) _handleFollowStarClick(star);
-    });
+        if (!star) return;
+        e.stopPropagation();
+        e.preventDefault();
+        _handleFollowStarClick(star);
+    }, true);
 }
 
 function _toggleAuthMenu() {
@@ -425,9 +438,54 @@ function _credentialToJSON(credential) {
 // Follows — star control, reusable across card templates
 // ---------------------------------------------------------------------------
 
+function _followKey(sport, entityType, entityId) {
+    return `${sport}:${entityType}:${entityId}`;
+}
+
+// null (not yet known — pre-sync or signed-out) is treated as "not followed" for render
+// purposes; _refreshFollowStarStates() corrects any star on screen once the real list
+// arrives, so a star never lies for longer than one network round trip.
+function _isFollowed(sport, entityType, entityId) {
+    return !!(AuthState.follows && AuthState.follows.has(_followKey(sport, entityType, entityId)));
+}
+
+async function _syncFollowsOnSignIn() {
+    try {
+        const res = await fetch('/api/follows', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const { follows } = await res.json();
+        AuthState.follows = new Set(
+            (follows || []).map((f) => _followKey(f.sport, f.entity_type, f.entity_id))
+        );
+        _refreshFollowStarStates();
+    } catch (e) {
+        Logger.warn('Follows sync failed', e, 'AUTH');
+    }
+}
+
+// Re-derives every follow star already on the page from AuthState.follows — needed
+// because cards can render (and their stars along with them) before the follows list
+// finishes loading, especially on first paint while initAuth's fetches are still in
+// flight. Cheap: just a DOM class/attribute toggle, no re-render.
+function _refreshFollowStarStates() {
+    document.querySelectorAll('.auth-follow-star').forEach((s) => {
+        const active = _isFollowed(s.dataset.followSport, s.dataset.followType, s.dataset.followId);
+        s.classList.toggle('auth-follow-star--active', active);
+        s.setAttribute('aria-pressed', String(active));
+        s.setAttribute('aria-label', active ? 'Unfollow' : 'Follow');
+        s.setAttribute('title', active ? 'Unfollow' : 'Follow');
+        const svgPath = s.querySelector('path');
+        if (svgPath) svgPath.setAttribute('fill', active ? 'currentColor' : 'none');
+    });
+}
+
 // Call from any card/detail renderer: renderFollowStar('mlb', 'team', 'NYY')
+// `opts.active` is optional — omit it and the star derives its own state from
+// AuthState.follows (the common case); pass it explicitly only if a caller already
+// knows the answer more cheaply than a Set lookup (none do today, but the override
+// stays available rather than baking in a single source of truth).
 function renderFollowStar(sport, entityType, entityId, opts) {
-    const filled = opts && opts.active;
+    const filled = opts && 'active' in opts ? !!opts.active : _isFollowed(sport, entityType, entityId);
     const cls = filled ? 'auth-follow-star auth-follow-star--active' : 'auth-follow-star';
     const label = filled ? 'Unfollow' : 'Follow';
     return `<button class="${cls}" data-follow-sport="${_escHtml(sport)}" data-follow-type="${_escHtml(entityType)}" data-follow-id="${_escHtml(String(entityId))}" aria-label="${label}" aria-pressed="${!!filled}" title="${label}">
@@ -461,9 +519,19 @@ async function toggleFollow(sport, entityType, entityId, forceOn) {
             body: JSON.stringify({ sport, entity_type: entityType, entity_id: entityId }),
         });
         if (!res.ok) throw new Error('follow_request_failed');
+
+        // Keep AuthState.follows authoritative — otherwise a star for the same entity
+        // rendered fresh on a later navigation (e.g. list view -> detail view) would
+        // read the pre-toggle state until the next full _syncFollowsOnSignIn() round trip.
+        if (!AuthState.follows) AuthState.follows = new Set();
+        const key = _followKey(sport, entityType, entityId);
+        if (turningOn) AuthState.follows.add(key); else AuthState.follows.delete(key);
+
         stars.forEach((s) => {
             s.classList.toggle('auth-follow-star--active', turningOn);
             s.setAttribute('aria-pressed', String(turningOn));
+            s.setAttribute('aria-label', turningOn ? 'Unfollow' : 'Follow');
+            s.setAttribute('title', turningOn ? 'Unfollow' : 'Follow');
             const svgPath = s.querySelector('path');
             if (svgPath) svgPath.setAttribute('fill', turningOn ? 'currentColor' : 'none');
         });
