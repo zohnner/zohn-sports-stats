@@ -2029,3 +2029,54 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 ---
 
+## Personalized Fantasy Grade — Paid Tier Candidate #2 — Three Gates
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-08-09
+
+**Job to be done (Vera):** "I linked my real league (D-065). Tell me how good my actual team is — not vs. some abstract mock draft, my real roster, right now." The existing Mock Draft grade (`_mdRenderComplete`) grades a *practice* draft against ADP; it has no way to grade a *real, currently-owned* roster, because a live roster has no "draft pick position" to compare against. This is a different, complementary metric: real production data (the same trained VBD engine from D-039 2a / Draft Kit) applied to a real roster, ranked against the actual other real teams in the same real league.
+
+**Behavioral spec (Vera):** Lands on the existing My League view (`nfl-myleague`), directly below the roster list already shipped in D-065 — one destination, not a second page to navigate to. Free tier: the letter grade alone (A+ through C), always visible, no teaser blur (Kael's anti-FOMO precedent from AI Insights applies here too). Paid tier: the full breakdown — league rank ("3rd of 12"), positional strengths/weaknesses, and which of your own starters is over/under-performing their expected value. States: loading (reuses the existing roster skeleton), computed, a plain "upgrade for the full breakdown" line under the free grade (one line, not a wall), and a graceful degrade if league scoring settings can't be read (falls back to standard PPR assumption rather than failing the whole view — a wrong assumption about scoring format is a cosmetic inaccuracy, not a broken page).
+
+**Visual spec (Kael):** Reuses `.md-grade-card`/`.md-grade` verbatim from Mock Draft's own complete screen — this is the same concept (a letter grade in a card) applied to a different data source, and it should look like the same feature, not a competing visual language. League-rank line uses the same "Nth of N" phrasing Mock Draft already uses for projected finish, for the same reason.
+
+**Feasibility (Axiom):** No new data source. Reuses: the trained VBD engine (`_vbdProj`/`_vbdReplacement`/`_vbdImplied`, D-039 2a) already live in Draft Kit, `_mdPool`'s id-indexed player data (Sleeper `player_id` is the same id space as roster `.starters`/`.players` — no name-matching needed, direct lookup), and the roster/league fetches D-065 already makes plus one more bare `/v1/league/{id}` fetch (already allow-listed in `sleeper.js`) for real scoring settings and team count. Grade computed from every team's starter VORP sum, ranked within the league — a relative, real-data comparison, not an arbitrary absolute cutoff. Free/paid split checked via the same stubbed `isEntitled()` helper as AI League Insights (defaults everyone free until Stripe is wired). **Disclosed scope limit:** team defenses (DEF) aren't in the VORP pool (`_MD_POS` excludes DEF) and are skipped, not penalized, in the grade calculation — same disclosed-not-silently-wrong posture as everything else in this codebase.
+
+**All three gates present. Implementing this pass.**
+
+---
+
+## Weekly Fantasy Digest (Email) — Paid Tier Candidate #3 — Three Gates
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-08-09
+
+**Scope correction up front (Axiom):** this was originally framed as "real-time alerts" in D-067's brainstorm. Built as a **weekly email digest** instead, deliberately, not a downgrade hidden as an upgrade: true push notifications (F5) need Web Push/VAPID, a new browser permission flow, and a real-time trigger mechanism (something watching for game starts/milestones continuously) — a materially bigger, riskier lift than anything else shipped this pass. A once-a-week email reuses infrastructure already proven live (Resend, D-031) and ships correctly this session instead of half-finishing push. True real-time push stays a named, tracked, later initiative — not silently dropped.
+
+**Job to be done (Vera):** "I don't check the site every day. Once a week, tell me what happened with my team and what I should be paying attention to." A low-frequency, low-effort re-engagement hook — the opposite of a nagging notification, which fits a product whose whole posture (GOALS.md, DESIGN.md) is restraint over urgency.
+
+**Behavioral spec (Vera):** Opt-in only, off by default — a checkbox on the account page (`js/auth.js` `renderAccountView`), not a pre-checked box or a dark-pattern default. Requires a linked Sleeper league (D-065) to have anything real to report; the toggle is visible regardless but the copy says so plainly if nothing's linked yet. Content: your linked team's real record, the league-wide top-3 trending waiver adds (already-fetched data, N-18's own source), and one link back to My League. The toggle itself doubles as the unsubscribe — no separate unsubscribe flow needed, and the email's own footer says so explicitly (a real, functional opt-out, not just a compliance afterthought).
+
+**Visual spec (Kael):** Plain-text-first, minimal-HTML email matching the existing magic-link email's exact restraint ("brand-minimal, no marketing copy" — Kael's own standing rule, extended here rather than re-litigated). No stat-color palette in email — most email clients strip custom CSS unreliably anyway, and a broadcast-grade product's email should read like a memo, not a promo. Account-page toggle uses the same `.auth-account-section` card language as every other account-page row — no new component.
+
+**Feasibility (Axiom):** Sent **from a separate address** (`digest@sportstrata.cc` or similar, not `login@sportstrata.cc`) through the same Resend account — mixing a promotional/engagement stream with the transactional magic-link stream on one sending identity is exactly the domain-reputation risk flagged and rejected for the mass-email sponsorship idea earlier this session; a second From-address keeps that risk fully isolated from sign-in delivery regardless of digest complaint/unsubscribe rates. Needs a new standalone cron Worker (`worker/weekly-digest.js`, mirrors `worker/auth-purge.js`'s existing pattern exactly — Pages Functions have no native scheduled trigger) bound to the same `USER_DB` D1 and a `RESEND_API_KEY` secret. New D1 table `alert_prefs` (`user_id` PK, `digest_enabled`). Calls Sleeper's public API directly rather than round-tripping through the site's own `/api/sleeper` proxy — the Worker has no CSP/browser constraints and Sleeper's API needs no auth, so a direct call is simpler and has one fewer dependency (the site itself doesn't need to be reachable for the digest to send).
+
+**All three gates present. Implementing this pass.**
+
+---
+
+## My Dashboard — Sign-In Reason #4 — Three Gates
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-08-09
+
+**Scope decision (owner):** "smart default" over a widget picker or full drag-and-drop builder — the dashboard automatically reflects what a user already follows (D-031's cross-sport follow system), no manual layout configuration. Chosen explicitly over the two heavier options to ship one thing well rather than a half-built customization layer.
+
+**Job to be done (Vera):** "I follow specific teams across sports I care about. When I sign in, show me those, not the generic front door everyone else sees." Distinct from the existing sport-agnostic home page (which is deliberately identity-neutral for anonymous visitors, per D-042) — this is a new, explicitly personal destination.
+
+**Behavioral spec (Vera):** New `dashboard` view, reached via the account menu (next to Account/Sign out) once signed in. Signed-out state: a plain sign-in prompt explaining the value ("sign in to see your followed teams and players in one place") — same non-blocking-modal precedent as every other signed-out state in this codebase. Signed-in, zero follows: an empty state pointing at each sport's Teams page to go follow something, not a dead end. Signed-in with follows: one section per sport the user follows anything in, each showing followed teams as clickable chips (linking to that sport's Teams view) plus a followed-player count with a link to that sport's Players/Leaders view, and a "Set as my default sport" action per section. Section order: the user's `defaultSport` preference first if they've set one, otherwise the sport with the most follows — genuinely adaptive with zero required setup, which is the whole point of "smart default." Quick-access row for My Drafts / My League underneath, tying this session's other sign-in-incentive features into one home base rather than three separate destinations a user has to remember.
+
+**Visual spec (Kael):** Reuses existing card/chip language — no new component system for a feature whose entire pitch is "quiet personalization," not a flashy new surface. Team chips reuse each sport's existing logo helpers where one exists (MLB, NFL); sports without a plain abbreviation-keyed logo helper show text only rather than risking a broken-image state — disclosed scope limit, not a bug.
+
+**Feasibility (Axiom):** No new data source — `AuthState.follows` already exists and is already populated correctly across MLB/NFL/NCAAF/NBA (D-031, merged 2026-08-05). The `defaultSport` preference key was anticipated in `pushPreference`'s own code comment back in D-031 ("defaultSport / scoring format are read by their own modules where relevant") but has had zero real consumers until now — this dashboard is the first feature to actually read and write it, using the exact key name already reserved rather than inventing a new one. **Disclosed scope limit:** followed teams show as a link to the sport's Teams page, not a live "your team plays today" enrichment — that needs a per-sport live-schedule fetch this pass deliberately skips to avoid scope creep; a real, named fast-follow, not a silently dropped idea.
+
+**All three gates present. Implementing this pass.**
+
+**Implemented, 2026-08-09:** `renderDashboardView()` + helpers landed in `js/app.js` (`_dashGroupFollows`, `_dashTeamLogo`, `_dashSectionHtml`, `_dashSetDefaultSport`); `dashboard` route wired in `js/navigation.js`'s `renderCurrentView()`; `#authMenuDashboard` menu item added to `index.html` and wired in `js/auth.js`. All follow/section logic reuses `AuthState.follows`, `getMLBTeamLogoByAbbr`/`getNFLTeamLogoUrl`, and `window.__SS_SERVER_PREFS`/`pushPreference` exactly as they already exist — no new globals, no new CSS classes (every class used — `.md-note`, `.md-pos-btn`, `.md-pos-filters`, `.md-head-actions`, `.md-btn`/`.md-btn--ghost`, `.auth-account-*`, `.auth-method-btn`, `.auth-sheet-note` — confirmed present in existing CSS before use). `sw.js` bumped v140→v141.
+
+---
+

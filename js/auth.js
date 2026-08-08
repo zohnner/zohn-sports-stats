@@ -87,6 +87,10 @@ function _wireAuthControlEvents() {
         }
     });
 
+    document.getElementById('authMenuDashboard')?.addEventListener('click', () => {
+        _closeAuthMenu();
+        navigateTo('dashboard');
+    });
     document.getElementById('authMenuAccount')?.addEventListener('click', () => {
         _closeAuthMenu();
         navigateTo('account');

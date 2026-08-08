@@ -1643,11 +1643,131 @@ async function _loadFootballLandingData(sport) {
         <div class="sl-leaders">${tiles}</div></section>`;
 }
 
+// ── My Dashboard (D-069 cont'd) — cross-sport personalized view ────────────
+// "Smart default" scope (owner decision): auto-reflects AuthState.follows,
+// no manual widget picker, no drag-and-drop. First real consumer of the
+// defaultSport preference key D-031 reserved but never wired up.
+const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', nba: 'NBA', nhl: 'NHL' };
+const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', nba: 'teams' };
+const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', nba: 'players' };
+
+function _dashGroupFollows() {
+    const bySport = {};
+    (AuthState.follows || new Set()).forEach(key => {
+        const parts = key.split(':');
+        const sport = parts[0], entityType = parts[1], entityId = parts[2];
+        if (!sport || !entityType) return;
+        bySport[sport] = bySport[sport] || { teams: [], players: [] };
+        if (entityType === 'team') bySport[sport].teams.push(entityId);
+        else if (entityType === 'player') bySport[sport].players.push(entityId);
+    });
+    return bySport;
+}
+
+function _dashTeamLogo(sport, abbr) {
+    // Only sports with a plain abbreviation-keyed logo helper get an image —
+    // disclosed scope limit (ISSUES.md "My Dashboard"), not a broken-image risk.
+    try {
+        if (sport === 'mlb' && typeof getMLBTeamLogoByAbbr === 'function') return getMLBTeamLogoByAbbr(abbr);
+        if (sport === 'nfl' && typeof getNFLTeamLogoUrl === 'function') return getNFLTeamLogoUrl(abbr);
+    } catch (_) {}
+    return null;
+}
+
+function _dashSectionHtml(sport, data, isDefault) {
+    const label = _SPORT_LABEL[sport] || sport.toUpperCase();
+    const teamsView = _SPORT_TEAMS_VIEW[sport];
+    const playersView = _SPORT_PLAYERS_VIEW[sport];
+    const teamChips = data.teams.map(function(abbr) {
+        const logo = _dashTeamLogo(sport, abbr);
+        const img = logo ? ('<img src="' + _escHtml(logo) + '" alt="" data-hide-on-error style="width:20px;height:20px;object-fit:contain">') : '';
+        const onclick = teamsView ? ("navigateTo('" + teamsView + "')") : '';
+        return '<button class="md-pos-btn" onclick="' + onclick + '">' + img + _escHtml(abbr) + '</button>';
+    }).join('');
+    const playerLine = data.players.length
+        ? ('<p class="md-note">' + data.players.length + ' followed player' + (data.players.length === 1 ? '' : 's') + (playersView ? (' — <a href="#' + playersView + '">browse ' + _escHtml(label) + ' players</a>') : '') + '</p>')
+        : '';
+    const defaultBtn = !isDefault ? ('<button class="auth-method-btn" onclick="_dashSetDefaultSport(\'' + sport + '\')">Set as my default sport</button>') : '';
+    return '' +
+      '<section class="auth-account-section">' +
+        '<p class="auth-account-label">' + _escHtml(label) + (isDefault ? ' <span class="md-note">(default)</span>' : '') + '</p>' +
+        (teamChips ? ('<div class="md-pos-filters">' + teamChips + '</div>') : '<p class="md-note">No followed teams.</p>') +
+        playerLine +
+        defaultBtn +
+      '</section>';
+}
+
+async function renderDashboardView() {
+    const main = document.getElementById('main');
+    if (!main) return;
+
+    if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') {
+        main.innerHTML = '<div class="auth-account-page"><h1 class="auth-account-title">Your Dashboard</h1><div class="auth-account-signedout"><p>Sign in to see your followed teams and players in one place, across every sport.</p></div></div>';
+        if (typeof openAuthSheet === 'function') openAuthSheet();
+        return;
+    }
+
+    const bySport = _dashGroupFollows();
+    const sports = Object.keys(bySport);
+    const defaultSport = (window.__SS_SERVER_PREFS && window.__SS_SERVER_PREFS.defaultSport) || null;
+
+    if (!sports.length) {
+        main.innerHTML = '' +
+          '<div class="auth-account-page">' +
+            '<h1 class="auth-account-title">Your Dashboard</h1>' +
+            '<div class="auth-account-section">' +
+              '<p class="auth-sheet-note">You\'re not following any teams or players yet. Follow a few and they\'ll show up here automatically.</p>' +
+              '<div class="md-head-actions">' +
+                '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'mlb-teams\')">Browse MLB Teams</button>' +
+                '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'nfl-teams\')">Browse NFL Teams</button>' +
+                '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'ncaaf-teams\')">Browse NCAAF Teams</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        return;
+    }
+
+    // Smart ordering: explicit defaultSport pref wins if set, otherwise the
+    // sport with the most total follows leads — genuine personalization with
+    // zero required setup (the whole point of "smart default").
+    sports.sort(function(a, b) {
+        if (a === defaultSport) return -1;
+        if (b === defaultSport) return 1;
+        const countOf = function(s) { return bySport[s].teams.length + bySport[s].players.length; };
+        return countOf(b) - countOf(a);
+    });
+
+    const sectionsHtml = sports.map(function(s) { return _dashSectionHtml(s, bySport[s], s === defaultSport); }).join('');
+    const hasNFLFollow = sports.indexOf('nfl') !== -1;
+
+    main.innerHTML = '' +
+      '<div class="auth-account-page">' +
+        '<h1 class="auth-account-title">Your Dashboard</h1>' +
+        sectionsHtml +
+        (hasNFLFollow ? (
+          '<section class="auth-account-section">' +
+            '<p class="auth-account-label">Fantasy</p>' +
+            '<div class="md-head-actions">' +
+              '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'nfl-mydrafts\')">My Drafts</button>' +
+              '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'nfl-myleague\')">My League</button>' +
+            '</div>' +
+          '</section>'
+        ) : '') +
+      '</div>';
+}
+
+async function _dashSetDefaultSport(sport) {
+    if (typeof pushPreference === 'function') await pushPreference('defaultSport', sport);
+    renderDashboardView();
+}
+
 if (typeof window !== 'undefined') {
     window._renderSportLanding = _renderSportLanding;
     window._renderSportPicker = _renderSportPicker;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
+    window.renderDashboardView = renderDashboardView;
+    window._dashSetDefaultSport = _dashSetDefaultSport;
 }
 
 // ── Theme & Settings Panel ────────────────────────────────────

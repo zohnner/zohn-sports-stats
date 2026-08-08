@@ -377,6 +377,9 @@ function renderCurrentView(view) {
     // Account management (D-031) — sport-agnostic, same pattern as the home dispatch above
     if (view === 'account') { if (typeof renderAccountView === 'function') renderAccountView(); return; }
 
+    // My Dashboard (D-069 cont'd) — sport-agnostic personalized view, same pattern
+    if (view === 'dashboard') { if (typeof renderDashboardView === 'function') renderDashboardView(); return; }
+
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
     if (view.startsWith('nfl-')) { _renderNFLView(view); return; }
