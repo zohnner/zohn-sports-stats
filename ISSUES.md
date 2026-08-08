@@ -30,7 +30,7 @@ GOALS.md marked this gate ✅ on 2026-06-01 (key rotated, Worker deployed, `BDL_
 
 3. **Deploy Worker proxy — Axiom executes after Step 1.** `cd worker && wrangler secret put BDL_API_KEY && wrangler deploy`. Paste the deployed Worker URL into `BDL_PROXY_URL` in `api.js`. Commit and push. Cipher reviews before push.
 
-**Post-deployment hardening — COMPLETE (2026-06-04):** Both Workers (`worker/bdl-proxy.js` and `worker/broadcast-blurb.js`) updated from `ALLOWED_ORIGIN = '*'` to an origin allowlist (`sportsstrata.com` + localhost dev ports). Requires `wrangler deploy` on the BDL proxy to take effect in production; broadcast-blurb deployment still pending project owner authorization (D-006). See Engineering Issues — Worker CORS Hardening below.
+**Post-deployment hardening — COMPLETE (2026-06-04):** Both Workers (`worker/bdl-proxy.js` and `worker/broadcast-blurb.js`) updated from `ALLOWED_ORIGIN = '*'` to an origin allowlist (`sportsstrata.com` + localhost dev ports). Requires `wrangler deploy` on the BDL proxy to take effect in production; broadcast-blurb deployment still pending project owner authorization (D-006), and as of 2026-08-08 the worker itself was rewritten (Gemini instead of Anthropic, KV-cached — see P2-005 below and DECISIONS.md). See Engineering Issues — Worker CORS Hardening below.
 
 **NBA features are currently non-functional** (all BDL calls throw — by design given key removal). This resolves when `BDL_PROXY_URL` is wired up in Step 3.
 
@@ -40,7 +40,7 @@ GOALS.md marked this gate ✅ on 2026-06-01 (key rotated, Worker deployed, `BDL_
 
 | ID | File | Description |
 |---|---|---|
-| P2-005 | [`worker/wrangler-blurb.toml`](worker/wrangler-blurb.toml) | Broadcast Blurb worker not deployed — `sportsstrata-blurb.zohnwheeler.workers.dev` returns errors. Fix: `cd worker && wrangler secret put ANTHROPIC_API_KEY --config wrangler-blurb.toml && wrangler deploy --config wrangler-blurb.toml`. |
+| P2-005 | [`worker/wrangler-blurb.toml`](worker/wrangler-blurb.toml) | Broadcast Blurb worker not deployed — `sportsstrata-blurb.zohnwheeler.workers.dev` returns errors. Rewritten to Gemini + KV cache 2026-08-08 (Anthropic dropped, owner decision). Fix: `cd worker && wrangler kv namespace create BLURB_CACHE --config wrangler-blurb.toml` (paste id into the toml) `&& wrangler secret put GEMINI_API_KEY --config wrangler-blurb.toml && wrangler deploy --config wrangler-blurb.toml`. |
 
 ---
 
@@ -609,7 +609,7 @@ No action needed now. File if the budget exceeds 20 calls on a cold load.
 
 **Remaining actions:**
 - `wrangler deploy` on the BDL proxy to push the source change to production — **confirmed 2026-08-02: source fix is verified correct in `worker/bdl-proxy.js` (`ALLOWED_ORIGINS` allowlist includes `https://sportstrata.cc`/`https://www.sportstrata.cc`/`https://zohn-sports-stats.pages.dev` + local dev ports — the "sportsstrata.com" typo above is stale prose only, not a code bug), but `wrangler whoami` shows this session has no Cloudflare auth, so the deploy itself has NOT run. Owner runs `cd worker && wrangler deploy` to push it live — this can't be executed from an unauthenticated sandbox.**
-- Broadcast-blurb deployment requires project owner authorization per D-006 — source fix is staged, deploy blocked.
+- Broadcast-blurb deployment requires project owner authorization per D-006 — source fix is staged (now Gemini + KV cache, 2026-08-08), deploy blocked pending the two `wrangler` setup commands (KV namespace create + secret put — see P2-005).
 
 **Cipher verification:** Allowlist uses exact string matching (`Array.includes`), no prefix bypass possible. Empty-origin requests fall back to production domain correctly. Control holds.
 
@@ -667,6 +667,12 @@ Fix: added `_activeGameHours()` helper in [`js/mlb.js:6`](js/mlb.js#L6). When th
 `worker/wrangler-blurb.toml` is committed and the worker code exists. The endpoint is referenced in the UI. It isn't deployed. The documented fix is two commands: set the `ANTHROPIC_API_KEY` secret via `wrangler secret put`, then `wrangler deploy`. There's no technical blocker recorded — this appears to be an execution gap, not an engineering problem.
 
 This matters because F1 (AI Stat Narratives) is listed as the single feature that makes SportStrata irreplaceable for announcers. Leaving the worker undeployed means that feature is inert in production indefinitely. If there's a reason it hasn't shipped — cost concern, API key not available, rate limit question — that reason should be documented here so it doesn't look like an oversight.
+
+**Update 2026-08-08 (Axiom) — the reason surfaced, and the worker was rewritten, not just re-deployed.** Team brainstorm (D-067) proposed reusing the Gemini integration already proven in the sportstrata-video repo for this feature. Re-reading `worker/broadcast-blurb.js` while scoping that swap surfaced a real problem beyond "which vendor": the worker called its LLM live, uncached, on every single click — directly violating D-039's ratified rule ("nothing meters per user action, ever — one viral day must not decide the bill"), which was ratified after F1 was originally spec'd and never reconciled against it. Owner then ruled Anthropic out for the site entirely.
+
+**Shipped (source only, not yet deployed):** `worker/broadcast-blurb.js` now calls Gemini's Interactions API (`generativelanguage.googleapis.com/v1beta/interactions`) — the same request/response contract already proven working in `sportstrata-video/src/script.js`, not a new integration written from scratch. Every blurb is cached in a new required Workers KV binding (`BLURB_CACHE`) keyed by `sport:playerId:group:season` with a 4h TTL, so a given player's blurb regenerates on a fixed schedule rather than per click — this is what actually closes the D-039 gap, independent of which LLM vendor is behind it. The KV binding is checked and fails loudly (500, clear error) if unbound, specifically so a future deploy can't silently regress back to unbounded live calls. `js/mlb.js`'s `_fetchBroadcastBlurb` payload now includes `playerId` (previously only name/team strings) so the cache key doesn't depend on name-string matching. GOALS.md's F1 section and CLAUDE.md updated to match (Gemini, not Anthropic; caching behavior documented). Full reasoning in DECISIONS.md.
+
+**Still open:** the two owner-run `wrangler` commands (KV namespace create + `GEMINI_API_KEY` secret put) and `wrangler deploy --config worker/wrangler-blurb.toml` — same execution-gap shape as before, just against a corrected implementation this time.
 
 ---
 
@@ -1994,7 +2000,7 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 **Verified:** `node --check` clean on `functions/api/sleeperLink.js` post-fix.
 
-**Committed:** `pending`.
+**Committed:** `9a05944`. Live-verification pending push (no migration needed — this is a pure Function-code change, verifiable with a single oversized-POST check once deployed).
 
 ---
 

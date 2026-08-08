@@ -101,11 +101,11 @@ The former revenue goals (Pro tier, $499 Enterprise seats, paid API, DFS affilia
 ## Game-Changing Feature Goals
 
 ### F1 — AI Stat Narratives (Broadcast-Ready Context)
-Use Claude API to generate a **2-sentence broadcast blurb** for any player on demand:
+Use Gemini to generate a **2-sentence broadcast blurb** for any player on demand:
 > *"Aaron Judge is batting .382 over his last 14 games with 6 HR, placing him 1st in MLB in OPS (.1.187) over that span. He's historically been a .310 hitter in April, but 2025 has been his best April since 2022."*
 
-Trigger: "Broadcast Blurb" button on player detail page → streams response inline.  
-Infrastructure: Cloudflare Worker calling Anthropic API with stat context injected as system prompt.  
+Trigger: "Broadcast Blurb" button on player detail page → fetches and renders inline (a single request/response, not streamed).  
+Infrastructure: Cloudflare Worker (`worker/broadcast-blurb.js`) calling Gemini's Interactions API, TTL-cached in Workers KV (`BLURB_CACHE`) so a given player's blurb regenerates on a fixed schedule rather than on every click — required by D-039's "nothing meters per user action, ever" rule. Anthropic is not used anywhere on this site (owner decision, 2026-08-08) — Gemini is the one LLM vendor for the whole project, the same one already proven in the sportstrata-video repo.  
 This is the single feature that makes SportStrata irreplaceable for announcers.
 
 ### F2 — Real-Time Statcast Layer

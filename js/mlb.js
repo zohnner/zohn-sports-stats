@@ -6320,7 +6320,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
 
     const computed = group === 'hitting' ? _computeBattingRates(stats) : _computePitchingRates(stats);
     const payload  = {
-        name: player.fullName, team: player.teamName || player.teamAbbr,
+        name: player.fullName, playerId: player.id, team: player.teamName || player.teamAbbr,
         position: player.position, group, season: MLB_SEASON,
         stats: group === 'hitting' ? {
             avg: stats.avg, obp: stats.obp, slg: stats.slg, ops: stats.ops,

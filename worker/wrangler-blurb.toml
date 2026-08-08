@@ -3,7 +3,21 @@ main               = "broadcast-blurb.js"
 compatibility_date = "2024-09-23"
 
 # ── Secrets (set via CLI, never commit values) ────────────────
-#   wrangler secret put ANTHROPIC_API_KEY --config worker/wrangler-blurb.toml
+#   wrangler secret put GEMINI_API_KEY --config worker/wrangler-blurb.toml
+#   Get a key at https://aistudio.google.com/apikey. This can be the SAME
+#   key already used by the sportstrata-video repo's src/script.js, or a
+#   second key from the same account scoped just to this Worker if you'd
+#   rather keep the two usage patterns (occasional local video-script runs
+#   vs. a public site button) on separate quotas. Either is fine — just a
+#   quota-sharing decision, not a security one.
+
+# ── KV namespace for blurb caching (REQUIRED — see broadcast-blurb.js's
+#    file-header comment for why this isn't optional) ─────────
+#   wrangler kv namespace create BLURB_CACHE --config worker/wrangler-blurb.toml
+#   Then paste the returned id below:
+[[kv_namespaces]]
+binding = "BLURB_CACHE"
+id      = "REPLACE_WITH_ID_FROM_KV_NAMESPACE_CREATE"
 
 # ── After deploy, set BROADCAST_BLURB_URL in api.js ──────────
 #   const BROADCAST_BLURB_URL = 'https://sportsstrata-blurb.<subdomain>.workers.dev';
