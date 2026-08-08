@@ -15,6 +15,9 @@
  */
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note. Only
+// the SITE teams-map fetch below needs this; CORE was never blocked.
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 // Curated marquee categories (subset of what ESPN returns for CFB).
 const CATS = [
@@ -116,7 +119,7 @@ export async function onRequest(context) {
     const teamMap = {};
     try {
         const r = await fetch(`${SITE}/teams?limit=400`, {
-            headers: { 'Accept': 'application/json' },
+            headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA },
             cf: { cacheTtl: 86400, cacheEverything: true },
         });
         if (r.ok) {

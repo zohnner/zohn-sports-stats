@@ -11,6 +11,11 @@
 const ESPN_NCAAF = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const ALLOWED_PATHS = /^\/(teams(\/\d+(\/(roster|schedule))?)?|scoreboard|standings|rankings|news|summary)\/?$/;
 
+// site.api.espn.com WAF fix -- see the matching comment + date in functions/api/nfl.js
+// (this file clones that one; same host, same 403, same fix, same disclosed
+// not-live-verified-from-this-sandbox caveat).
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
 function ttlFor(path) {
     if (path.startsWith('/scoreboard')) return 60;    // live scores
     if (path.startsWith('/summary'))    return 20;    // live game detail
@@ -44,7 +49,7 @@ export async function onRequest(context) {
     let upstream;
     try {
         upstream = await fetch(target.toString(), {
-            headers: { 'Accept': 'application/json' },
+            headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA },
             cf: { cacheTtl: ttl, cacheEverything: true },
         });
     } catch {

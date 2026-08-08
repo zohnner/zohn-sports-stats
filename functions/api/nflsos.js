@@ -29,6 +29,8 @@
  */
 const NV = 'https://github.com/nflverse/nflverse-data/releases/download';
 const ESPN_NFL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note.
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 const POS = ['QB', 'RB', 'WR', 'TE'];
 const PLAYOFF_WEEKS = [15, 16, 17];
 const REG_WEEKS = 18;
@@ -152,7 +154,7 @@ async function buildSchedule(season) {
     const fetchWeek = async (w) => {
         const url = `${ESPN_NFL}/scoreboard?seasontype=2&week=${w}&dates=${season}`;
         try {
-            const r = await fetch(url, { headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+            const r = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } });
             if (!r.ok) return;
             const j = await r.json();
             for (const ev of (j.events || [])) {

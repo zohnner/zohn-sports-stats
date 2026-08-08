@@ -1876,7 +1876,28 @@ D-043 3a is fully shipped and verified. With 3c, 3b, and 3a all closed, **D-043 
 
 **Verified:** `node --check` clean on `js/auth.js`.
 
-**Committed:** pending — `sw.js` `CACHE_NAME` bump in the same commit, per this repo's standing convention for any JS/CSS change.
+**Committed:** `sw.js` `CACHE_NAME` v135→v136, commit `e58d4a9`.
+
+---
+
+## D-062 — site.api.espn.com WAF block: root-cause + fix (bug, not a spec'd feature — no three-gate needed)
+**Contributor:** Axiom (architectural bug — Cloudflare Functions / upstream integration is Axiom's domain per the RACI table) | **Date:** 2026-08-07
+
+**Trigger:** owner report — "nfl scores are not loading properly, we need to debug to be ready for preseason."
+
+**Investigate (sportstrata-parity-loop step 1):** loaded `/#nfl-games` live. It rendered, but showed the offseason banner instead of Thu Aug 6's real CAR@ARI preseason game, with no score and a missing CAR logo on the one card shown. Console: `NFL API 403` at `js/nfl.js:73` (`espnNFLFetch`).
+
+**Root-cause (step 2):** `functions/api/nfl.js` fetches `site.api.espn.com` with only an `Accept: application/json` header, no `User-Agent`. That upstream is now returning an Akamai "Access Denied" WAF page (`Reference #18.d9b2d717.1786`) — confirmed by fetching `/api/nfl?path=/teams`, `/standings`, `/scoreboard`, `/news` directly and getting 403 on all four, while `sports.core.api.espn.com` (`nflstats.js`) and `site.web.api.espn.com` (`ncaafstandings.js`) both returned clean 200s in the same session — host-specific, not a general ESPN outage. Grepped every `functions/api/*.js` for the same host string and found five more call sites hitting it: `ncaaf.js` (a direct clone of `nfl.js`, same host, confirmed 403 live), `news.js` (NFL **and MLB** news — confirmed `/api/news?sport=mlb` also 403s), `nflsos.js` (weekly scoreboard fetch for Strength of Schedule), `nflplayer.js` (roster lookup — fails silently to `{found:false}`), `ncaafstats.js` (team-abbr/logo map — fails silently to blank team/logo on leaders).
+
+**Fix (step 3, reusing precedent already in the codebase):** added a browser-realistic `User-Agent` header to every `site.api.espn.com` fetch in all six files. `functions/api/mlb.js` already carries `User-Agent: SportStrata/1.0` for a comparable upstream-block issue against MLB Stats API — this is the same class of fix, same lever. Left `sports.core.api.espn.com`/`site.web.api.espn.com` calls untouched (never blocked, no reason to touch working code).
+
+**Static-verify (step 4):** `node --check` clean on all 6 files. NUL-byte scan clean. `tools/check-manifest.cjs` clean (these are server-side Functions, not client assets — not part of the manifest, no `sw.js` bump applicable).
+
+**Honest limitation:** could not live-verify the fix pre-deploy — this sandbox's egress to `espn.com` is blocked (confirmed: direct curl times out), same restriction that requires checking `sportstrata.cc` itself via the browser tool rather than the shell. The header addition is standard for this WAF-block class and precedented in-repo, but is unproven until the first real deploy. **If it doesn't clear the block:** the next lever is migrating these six endpoints to `site.web.api.espn.com` (proven reachable) — not attempted here since that host's response shape for scoreboard/teams/news relative to `site.api.espn.com` is unverified, and a blind host swap risks a second silent-failure mode instead of fixing the first.
+
+**Shipped:** `functions/api/nfl.js`, `functions/api/ncaaf.js`, `functions/api/news.js`, `functions/api/nflsos.js`, `functions/api/nflplayer.js`, `functions/api/ncaafstats.js` — `User-Agent` header added to every `site.api.espn.com` fetch, each with an inline comment pointing back to `nfl.js`'s full explanation.
+
+**Committed:** pending push + live-verification.
 
 ---
 

@@ -11,6 +11,10 @@
  */
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
+// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note. Only
+// SITE needs this; CORE is a different host and wasn't blocked (confirmed live
+// via nflstats.js, which reads CORE and kept returning 200s throughout).
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 // Sleeper team abbr -> ESPN team id.
 const TEAM_ID = {
@@ -94,7 +98,7 @@ export async function onRequest(context) {
     let athleteId = null, espnName = name;
     try {
         const r = await fetch(`${SITE}/teams/${teamId}/roster`, {
-            headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 86400, cacheEverything: true },
+            headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true },
         });
         if (r.ok) {
             const roster = flattenRoster(await r.json());

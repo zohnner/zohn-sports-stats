@@ -10,6 +10,20 @@
 const ESPN_NFL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news|summary)\/?$/;
 
+// 2026-08-07: site.api.espn.com started returning an Akamai "Access Denied" 403
+// to every path (teams/scoreboard/standings/news) with no other change on our
+// side -- caught live the day before preseason kicked off, when the scores page
+// showed the offseason banner instead of Thu Aug 6 CAR@ARI. A same-family host,
+// sports.core.api.espn.com (nflstats.js), kept returning 200s throughout, so this
+// is host-specific WAF behavior, not a general ESPN outage. The one lever a
+// Cloudflare Function has against that is request headers -- a browser-realistic
+// User-Agent is the standard fix for this exact class of Akamai bot-block and
+// mirrors the precedent already in this repo (functions/api/mlb.js's
+// 'SportStrata/1.0' UA, added for a similar upstream block). NOT live-verified
+// from this sandbox -- egress to espn.com is blocked here, so this is verified
+// against the documented failure mode and shipped for a real deploy to confirm.
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
 function ttlFor(path) {
     if (path.startsWith('/scoreboard')) return 60;    // live scores
     if (path.startsWith('/summary'))    return 20;    // live game detail
@@ -42,7 +56,7 @@ export async function onRequest(context) {
     let upstream;
     try {
         upstream = await fetch(target.toString(), {
-            headers: { 'Accept': 'application/json' },
+            headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA },
             cf: { cacheTtl: ttl, cacheEverything: true },
         });
     } catch {
