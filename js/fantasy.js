@@ -976,22 +976,78 @@ async function _mlRenderRoster(link) {
     if (grid) grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div><div class="skeleton-line" style="height:200px"></div></div></div>`;
     try {
         await fetchNFLSleeperPool();
-        const [rostersRes, usersRes] = await Promise.all([
+        const [rostersRes, usersRes, leagueRes] = await Promise.all([
             fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/rosters')}`, { credentials: 'same-origin' }),
             fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/users')}`, { credentials: 'same-origin' }),
+            fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id)}`, { credentials: 'same-origin' }),
         ]);
         if (!rostersRes.ok || !usersRes.ok) throw new Error('roster_fetch_failed');
         const rosters = await rostersRes.json();
         const users = await usersRes.json();
+        const league = leagueRes.ok ? await leagueRes.json().catch(() => null) : null;
         const myRoster = (rosters || []).find(r => String(r.owner_id) === String(link.sleeper_user_id));
         if (!myRoster) throw new Error('roster_not_found');
         const me = (users || []).find(u => String(u.user_id) === String(link.sleeper_user_id));
-        _mlRenderRosterView(link, myRoster, me);
+
+        // Grade is best-effort: a failed/odd league object degrades to no grade
+        // card rather than breaking the roster view underneath it (Vera's spec:
+        // "a wrong assumption about scoring format is a cosmetic inaccuracy, not
+        // a broken page").
+        let gradeInfo = null;
+        try {
+            await _mdFetchPool();
+            gradeInfo = _mlComputeLeagueGrades(league || {}, rosters, myRoster.roster_id);
+        } catch (ge) {
+            if (typeof Logger !== 'undefined') Logger.warn('League grade computation failed', ge, 'NFL');
+        }
+
+        _mlRenderRosterView(link, myRoster, me, gradeInfo);
+        _mlLoadInsights(link);
     } catch (e) {
         if (typeof Logger !== 'undefined') Logger.warn('Roster fetch failed', e, 'NFL');
         const g = document.getElementById('playersGrid');
         if (g) g.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your roster from Sleeper. Try again.</p><button class="md-btn" onclick="_mlRenderRoster(_mlLink)">Retry</button></div></div>`;
     }
+}
+
+// ── Personalized Fantasy Grade (D-069, paid tier candidate #2) ──────────────
+// Grades every real roster in the league by real projected production (the
+// same trained VBD engine Draft Kit already uses), ranked against each other
+// — a relative, real-data comparison, not an arbitrary absolute cutoff. Sleeper
+// player_id is the same id space _mdPool uses (both come from Sleeper), so this
+// is a direct id lookup, never a name-match.
+function _mlGradeFromRank(rank, total) {
+    if (!total) return '—';
+    const pct = rank / total;
+    if (pct <= 0.15) return 'A+';
+    if (pct <= 0.35) return 'A';
+    if (pct <= 0.60) return 'B+';
+    if (pct <= 0.80) return 'B';
+    return 'C';
+}
+function _mlComputeLeagueGrades(league, rosters, myRosterId) {
+    if (!_vbd || !_vbd.ok || !Array.isArray(rosters) || !rosters.length) return null;
+    const poolById = new Map((_mdPool || []).map(p => [String(p.id), p]));
+    const scoringSettings = league.scoring_settings || {};
+    const scoring = scoringSettings.rec >= 1 ? 'PPR' : scoringSettings.rec === 0.5 ? 'Half-PPR' : 'Standard';
+    const superflex = Array.isArray(league.roster_positions) && league.roster_positions.includes('SUPER_FLEX');
+    const teams = league.total_rosters || rosters.length;
+    const rep = _vbdReplacement(scoring, teams, superflex);
+    // DEF isn't in _mdPool (_MD_POS excludes it) -- skipped, not penalized, same
+    // disclosed-scope-limit posture as everywhere else in this codebase.
+    const vorpOf = (id) => {
+        const p = poolById.get(String(id));
+        if (!p) return 0;
+        const proj = p._fp ? _vbdProj(p._fp, scoring) : _vbdImplied(p, scoring);
+        return proj == null ? 0 : proj - (rep[p.pos] || 0);
+    };
+    const teamVals = rosters.map(r => ({
+        roster_id: r.roster_id,
+        vorp: (r.starters || []).filter(id => id && id !== '0').reduce((a, id) => a + vorpOf(id), 0),
+    })).sort((a, b) => b.vorp - a.vorp);
+    const rank = teamVals.findIndex(t => t.roster_id === myRosterId) + 1;
+    if (!rank) return null;
+    return { grade: _mlGradeFromRank(rank, teamVals.length), rank, total: teamVals.length, scoring, superflex };
 }
 
 function _mlPlayerLabel(id) {
@@ -1003,7 +1059,7 @@ function _mlPlayerLabel(id) {
     return { name: `${id} D/ST`, pos: 'DEF', team: id };
 }
 
-function _mlRenderRosterView(link, roster, me) {
+function _mlRenderRosterView(link, roster, me, gradeInfo) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     const starters = (roster.starters || []).filter(id => id && id !== '0');
@@ -1018,10 +1074,28 @@ function _mlRenderRosterView(link, roster, me) {
         return `<div class="md-fr-row">${_escFan(name)} <span class="md-rl-team">${_escFan(team)}</span> <span class="md-row-adp">${_escFan(pos)}</span></div>`;
     }).join('');
 
+    // Free tier: letter grade only, no blur/teaser (Kael's anti-FOMO precedent).
+    // Paid tier check happens server-side elsewhere for AI Insights; the grade
+    // itself has no per-request cost, so the rank/breakdown line is simply shown
+    // to everyone signed-in-and-linked rather than gated -- there's no cost
+    // reason to hide it, only a product-tier reason, and the spec calls for
+    // showing the full "Nth of N" line to everyone with the grade itself free,
+    // reserving positional breakdown for later iteration rather than a paywall
+    // with nothing real behind it yet.
+    const gradeHtml = gradeInfo ? `
+        <div class="md-grade-card" style="margin-top:1.5rem">
+          <div class="md-grade">${_escFan(gradeInfo.grade)}</div>
+          <div class="md-grade-meta">
+            <strong>League rank: ${gradeInfo.rank} of ${gradeInfo.total}</strong>
+            <span class="md-note">Real production vs. replacement (${_escFan(gradeInfo.scoring)}${gradeInfo.superflex ? ' · SF' : ''}) — starters only</span>
+          </div>
+        </div>` : '';
+
     grid.innerHTML = _hqStrip('nfl-myleague') + `
       <div class="md-wrap md-complete">
         <h1 class="md-title">${_escFan(teamName)}</h1>
         <p class="md-note">${_escFan(link.league_name)} · Record ${record}</p>
+        ${gradeHtml}
         <div class="md-final-roster" style="margin-top:1.5rem">
           <div class="md-fr-group">
             <div class="md-fr-pos">Starters</div>
@@ -1032,11 +1106,60 @@ function _mlRenderRosterView(link, roster, me) {
             <div class="md-fr-bench">${rowsHtml(bench)}</div>
           </div>
         </div>
+        <div id="mlInsightsHost" style="margin-top:1.5rem"></div>
         <div class="md-head-actions" style="justify-content:center;margin-top:1.5rem">
           <button class="md-btn md-btn--ghost" onclick="loadNFLMyLeague()">Refresh</button>
           <button class="md-btn md-btn--ghost" onclick="_mlUnlink()">Change league</button>
         </div>
       </div>`;
+}
+
+// ── AI League Insights (D-069, paid tier candidate #1) ──────────────────────
+// Server computes everything from the user's own linked league — nothing here
+// is client-supplied stat data. Free tier: one per rolling 7 days (server-
+// enforced); paid: unlimited. No blur/teaser on the locked state (Kael's
+// anti-FOMO rule) — a plain one-line note and a real "come back on {date}" fact.
+async function _mlLoadInsights(link) {
+    const host = document.getElementById('mlInsightsHost');
+    if (!host) return;
+    host.innerHTML = `<h2 class="detail-section-title">AI League Insights</h2><div class="skeleton-line" style="height:18px;width:100%"></div><div class="skeleton-line" style="height:18px;width:80%;margin-top:6px"></div>`;
+    try {
+        const res = await fetch('/api/nflInsights', { credentials: 'same-origin' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'insights_failed');
+        _mlRenderInsights(host, data, link);
+    } catch (e) {
+        host.innerHTML = `<h2 class="detail-section-title">AI League Insights</h2><p class="md-note">Couldn't load insights right now.</p>`;
+    }
+}
+function _mlRenderInsights(host, data, link) {
+    const hasContent = data.hasRecent || data.content;
+    const genBtn = data.entitled
+        ? `<button class="md-btn md-btn--ghost" onclick="_mlGenerateInsight('${link.league_id}')">Generate new insight</button>`
+        : (data.nextAvailable
+            ? `<p class="md-note">Next free insight available ${_mlFmtDate(data.nextAvailable)}. <a href="#account">Upgrade for unlimited</a>.</p>`
+            : `<button class="md-btn md-btn--ghost" onclick="_mlGenerateInsight('${link.league_id}')">Generate this week's insight</button>`);
+    host.innerHTML = `
+        <h2 class="detail-section-title">AI League Insights</h2>
+        ${hasContent ? `<div class="blurb-text"><p>${_escFan(data.content)}</p></div>` : '<p class="md-note">No insight generated yet.</p>'}
+        <div style="margin-top:0.75rem">${genBtn}</div>`;
+}
+async function _mlGenerateInsight(leagueId) {
+    const host = document.getElementById('mlInsightsHost');
+    if (!host) return;
+    host.innerHTML = `<h2 class="detail-section-title">AI League Insights</h2><div class="skeleton-line" style="height:18px;width:100%"></div><div class="skeleton-line" style="height:18px;width:80%;margin-top:6px"></div>`;
+    try {
+        const res = await fetch('/api/nflInsights', { method: 'POST', credentials: 'same-origin' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'insights_failed');
+        _mlRenderInsights(host, data, _mlLink);
+    } catch (e) {
+        host.innerHTML = `<h2 class="detail-section-title">AI League Insights</h2><p class="md-note">Couldn't generate an insight right now. Try again later.</p>`;
+    }
+}
+function _mlFmtDate(ts) {
+    try { return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+    catch { return 'soon'; }
 }
 
 // ============================================================
@@ -1158,6 +1281,7 @@ if (typeof window !== 'undefined') {
     window._mlPickLeague = _mlPickLeague;
     window._mlUnlink = _mlUnlink;
     window._mlRenderRoster = _mlRenderRoster;
+    window._mlGenerateInsight = _mlGenerateInsight;
 }
 
 // ── Shareable mock-draft result card (viral loop, draft season) ──

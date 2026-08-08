@@ -1,0 +1,33 @@
+name               = "sportsstrata-digest"
+main               = "weekly-digest.js"
+compatibility_date = "2024-09-23"
+
+# ── D1 binding — same USER_DB used by the Pages Functions and auth-purge ──
+[[d1_databases]]
+binding       = "USER_DB"
+database_name = "sportstrata-users"
+database_id   = "52b61353-d8a2-4685-8825-8b627c6f6eac"
+
+# ── Secrets (set via CLI, never commit values) ────────────────
+#   wrangler secret put RESEND_API_KEY --config worker/wrangler-digest.toml
+#   (same Resend account already used for magic-link email — just a different
+#   From address below, so a digest complaint can never affect sign-in delivery)
+#   wrangler secret put DIGEST_RUN_SECRET --config worker/wrangler-digest.toml
+#   (any random string — gates the manual /__run test endpoint, same pattern as
+#   auth-purge.js's PURGE_RUN_SECRET)
+
+[vars]
+DIGEST_EMAIL_FROM = "SportStrata Digest <digest@sportstrata.cc>"
+
+# ── Weekly, Sunday 13:00 UTC (~ Sunday morning US time) — sends the opted-in digest ──
+[triggers]
+crons = ["0 13 * * 0"]
+
+[observability]
+enabled = true
+
+# Deploy: wrangler deploy --config worker/wrangler-digest.toml
+# Manual test: after deploy, GET the Worker's own *.workers.dev URL + "/__run" with
+# header "X-Digest-Secret: <your DIGEST_RUN_SECRET>" — returns { ranAt, sent, skipped, failed, errors }.
+# Note: digest@sportstrata.cc should be verified in Resend the same way login@sportstrata.cc is,
+# or Resend will reject sends from it — check the Resend dashboard's domain/sender settings.

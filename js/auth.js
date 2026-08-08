@@ -711,6 +711,15 @@ async function renderAccountView() {
         .map((m) => `<li>${_escHtml(methodLabels[m.providerId] || m.providerId)}</li>`)
         .join('');
 
+    // D-069: digest opt-in is off by default (no dark pattern) -- fetched
+    // alongside /api/me rather than blocking the page render on a second
+    // sequential request.
+    let digestEnabled = false;
+    try {
+        const dRes = await fetch('/api/alertPrefs', { credentials: 'same-origin' });
+        if (dRes.ok) digestEnabled = !!(await dRes.json()).digestEnabled;
+    } catch (_) { /* toggle defaults off if this fails -- non-fatal to the account page */ }
+
     main.innerHTML = `
         <div class="auth-account-page">
             <h1 class="auth-account-title">Account</h1>
@@ -722,6 +731,11 @@ async function renderAccountView() {
                 <p class="auth-account-label">Sign-in methods</p>
                 <ul class="auth-account-methods">${methods || '<li>None</li>'}</ul>
                 <button class="auth-method-btn" id="authAddPasskeyBtn">Add a passkey</button>
+            </section>
+            <section class="auth-account-section">
+                <p class="auth-account-label">Weekly fantasy digest</p>
+                <p class="auth-sheet-note">A once-a-week email with your linked league's record and the league's top waiver-wire adds. This toggle is the unsubscribe — turn it off any time.</p>
+                <label class="md-check"><input type="checkbox" id="authDigestToggle" ${digestEnabled ? 'checked' : ''}> Send me the weekly digest</label>
             </section>
             <section class="auth-account-section">
                 <p class="auth-account-label">Your data</p>
@@ -738,6 +752,21 @@ async function renderAccountView() {
 
     document.getElementById('authAddPasskeyBtn')?.addEventListener('click', registerPasskey);
     document.getElementById('authDeleteBtn')?.addEventListener('click', () => _confirmAndDeleteAccount(data.user.email));
+    document.getElementById('authDigestToggle')?.addEventListener('change', async (e) => {
+        const enabled = e.target.checked;
+        try {
+            await fetch('/api/alertPrefs', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ digestEnabled: enabled }),
+            });
+            if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast(enabled ? 'Weekly digest on' : 'Weekly digest off', 'success');
+        } catch (_) {
+            e.target.checked = !enabled; // revert the visible state if the save failed
+            if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast('Could not save — try again', 'error');
+        }
+    });
 }
 
 // Passkey REGISTRATION — requires an existing session (WebAuthn credentials bind to an
