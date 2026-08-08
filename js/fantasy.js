@@ -245,6 +245,7 @@ const _HQ_GROUPS = [
         { v: 'nfl-sos',      l: 'Schedule' },
         { v: 'nfl-compare',  l: 'Compare' },
         { v: 'nfl-mock',     l: 'Mock Draft' },
+        { v: 'nfl-mydrafts', l: 'My Drafts' },
     ] },
     { label: 'In-Season', tabs: [
         { v: 'nfl-trending', l: 'Trending' },
@@ -562,6 +563,10 @@ function _mdTeamValue(roster) {
     // crude projected value: sum of (poolSize - adjRank) so better players score higher
     return roster.reduce((a, p) => a + Math.max(0, 300 - _mdAdjRank(p)), 0);
 }
+// D-064: file-scope so both the live complete screen and the saved-draft replay
+// screen (_mdRenderReplay) can share it — was a local closure inside _mdRenderComplete.
+function _mdOrd(n) { return (n%10===1&&n%100!==11)?'st':(n%10===2&&n%100!==12)?'nd':(n%10===3&&n%100!==13)?'rd':'th'; }
+
 function _mdRenderComplete() {
     const grid = document.getElementById('playersGrid');
     const roster = _md.rosters[_md.userTeam];
@@ -573,7 +578,7 @@ function _mdRenderComplete() {
     // projected finish: rank all teams by total roster value
     const teamVals = _md.rosters.map((r, i) => ({ i, v: _mdTeamValue(r) })).sort((a, b) => b.v - a.v);
     const finish = teamVals.findIndex(t => t.i === _md.userTeam) + 1;
-    const ord = n => (n%10===1&&n%100!==11)?'st':(n%10===2&&n%100!==12)?'nd':(n%10===3&&n%100!==13)?'rd':'th';
+    const ord = _mdOrd;
 
     // positional rank vs league
     const posRank = {};
@@ -623,6 +628,11 @@ function _mdRenderComplete() {
           <button class="md-btn md-btn--ghost" id="mdViewBoard">View full board</button>
           <button class="md-btn md-btn--ghost" onclick="loadMockDraft()">New draft</button>
         </div>
+        <p class="md-note" id="mdSaveStatus" style="margin-top:0.6rem;text-align:center">${
+            (typeof AuthState !== 'undefined' && AuthState.status === 'signed-in')
+                ? '<span class="md-an-tag md-an-tag--good">Saving…</span>'
+                : 'Sign in to save this draft and come back to it later — <button class="md-btn md-btn--ghost" style="padding:0.1rem 0.5rem;font-size:0.75rem" onclick="openAuthSheet({type:\'save_draft\'})">sign in</button>'
+        }</p>
         <div id="mdCompleteBoard"></div>
       </div>`;
     const vb = grid.querySelector('#mdViewBoard');
@@ -630,9 +640,174 @@ function _mdRenderComplete() {
         const host = grid.querySelector('#mdCompleteBoard');
         host.innerHTML = host.innerHTML ? '' : _mdBoardHtml();
     });
+
+    // D-064: silent auto-save when already signed in. The signed-out case instead
+    // shows the inline "sign in" prompt above, which replays this same save via
+    // auth.js's {type:'save_draft'} sign-in intent once sign-in completes -- _md is
+    // still in memory at that point (the sign-in sheet is a modal overlay, not a
+    // navigation), so nothing about the just-finished draft is lost.
+    if (typeof AuthState !== 'undefined' && AuthState.status === 'signed-in' && typeof _mdSaveDraft === 'function') {
+        _mdSaveDraft();
+    }
 }
 
 function _escFan(s) { return typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s); }
+
+// ============================================================
+// Draft History (D-064) — save a finished Mock Draft for signed-in users, list +
+// replay it later. Trimmed storage shape only: the user's own picks + config + the
+// summary _mdRenderComplete() already computes, never the full multi-team board or
+// player-pool/VBD debug data (see ISSUES.md D-064, Axiom's feasibility note).
+// ============================================================
+let _mdSavedDrafts = [];
+
+function _mdTrimPick(pk) {
+    if (!pk) return null;
+    return { overall: pk.overall, name: pk.player.name, pos: pk.player.pos, team: pk.player.team, adp: pk.player.adp };
+}
+
+function _mdSaveableResult() {
+    const roster = _md.rosters[_md.userTeam];
+    const s = _md.summary;
+    return {
+        config: { teams: _md.teams, rounds: _md.rounds, scoring: _md.scoring, superflex: _md.superflex, slot: _md.slot },
+        grade: s.grade,
+        finish: s.finish,
+        avg: +s.avg.toFixed(2),
+        posRank: s.posRank,
+        bestVal: _mdTrimPick(s.bestVal),
+        reach: s.reach !== s.bestVal ? _mdTrimPick(s.reach) : null,
+        unfilled: s.unfilled,
+        roster: roster.map(p => ({ name: p.name, pos: p.pos, team: p.team, adp: p.adp })),
+    };
+}
+
+async function _mdSaveDraft() {
+    if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in' || !_md || !_md.summary) return;
+    const statusEl = document.getElementById('mdSaveStatus');
+    try {
+        const res = await fetch('/api/draftHistory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(_mdSaveableResult()),
+        });
+        if (!res.ok) throw new Error('save_failed');
+        if (statusEl) statusEl.innerHTML = '<span class="md-an-tag md-an-tag--good">Saved to My Drafts</span>';
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Draft save failed', e, 'NFL');
+        if (statusEl) statusEl.innerHTML = '<span class="md-an-tag md-an-tag--bad">Couldn\'t save</span> — your share card above still works';
+    }
+}
+
+function _mdFmtDate(ts) {
+    return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function loadNFLMyDrafts() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('nfl-mydrafts', null);
+
+    if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') {
+        grid.innerHTML = _hqStrip('nfl-mydrafts') + `
+          <div class="md-wrap">
+            <div class="md-empty">
+              <h2 class="md-title" style="font-size:1.4rem">My Drafts</h2>
+              <p class="md-sub">Sign in to save every Mock Draft you run and come back to it later — nothing else on this page ever requires an account.</p>
+              <button class="md-btn md-btn--primary" onclick="openAuthSheet({type:'reload_view', view:'nfl-mydrafts'})">Sign in</button>
+            </div>
+          </div>`;
+        return;
+    }
+
+    grid.innerHTML = _hqStrip('nfl-mydrafts') + `<div class="md-wrap"><div class="md-loading">
+        <div class="skeleton-line" style="height:32px;width:40%;margin:0 auto 1.5rem"></div>
+        <div class="skeleton-line" style="height:64px;margin:0.6rem 0"></div>
+        <div class="skeleton-line" style="height:64px;margin:0.6rem 0"></div>
+        <div class="skeleton-line" style="height:64px;margin:0.6rem 0"></div>
+    </div></div>`;
+
+    try {
+        const res = await fetch('/api/draftHistory', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('fetch_failed');
+        const { drafts } = await res.json();
+        _renderMyDraftsList(grid, drafts || []);
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Draft history fetch failed', e, 'NFL');
+        grid.innerHTML = _hqStrip('nfl-mydrafts') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your saved drafts. Try again.</p><button class="md-btn" onclick="loadNFLMyDrafts()">Retry</button></div></div>`;
+    }
+}
+
+function _renderMyDraftsList(grid, drafts) {
+    _mdSavedDrafts = drafts;
+    grid.innerHTML = _hqStrip('nfl-mydrafts') + `
+      <div class="md-wrap">
+        <h1 class="md-title" style="font-size:1.5rem;text-align:center;margin-bottom:0.25rem">My Drafts</h1>
+        <p class="md-sub" style="text-align:center;margin-bottom:1.5rem">Saved automatically each time you finish a Mock Draft.</p>
+        ${!drafts.length
+            ? `<div class="md-empty"><p>No saved drafts yet.</p><button class="md-btn md-btn--primary" onclick="navigateTo('nfl-mock')">Start a Mock Draft</button></div>`
+            : `<div style="display:flex;flex-direction:column;gap:0.6rem;max-width:640px;margin:0 auto">
+                ${drafts.map((d, i) => `
+                  <div class="md-an-card" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;cursor:pointer" onclick="_mdOpenSavedDraft(${i})">
+                    <div>
+                      <strong>${d.config.teams}-team ${_escFan(d.config.scoring)}${d.config.superflex ? ' · Superflex' : ''}</strong>
+                      <div class="md-note">${_mdFmtDate(d.created_at)} · Finished ${d.finish}${_mdOrd(d.finish)} of ${d.config.teams}</div>
+                    </div>
+                    <div class="md-grade md-grade--sm">${_escFan(d.grade)}</div>
+                  </div>`).join('')}
+              </div>`}
+      </div>`;
+}
+
+function _mdOpenSavedDraft(i) {
+    const d = _mdSavedDrafts[i];
+    if (!d) return;
+    _mdRenderReplay(d);
+}
+
+// Read-only replay of a saved draft's complete screen. Deliberately reuses
+// _mdRenderComplete()'s own markup pieces (Kael's spec, ISSUES.md D-064) so a past
+// draft looks like the same screen, not a lesser one. No "View full board" or share
+// button here -- neither the full multi-team board nor the live _md share flow is
+// part of what got saved (explicit v1 scope cut, ISSUES.md D-064).
+function _mdRenderReplay(d) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.innerHTML = _hqStrip('nfl-mydrafts') + `
+      <div class="md-wrap md-complete">
+        <div style="text-align:left;margin-bottom:1rem"><button class="md-btn md-btn--ghost" onclick="loadNFLMyDrafts()">← Back to My Drafts</button></div>
+        <h1 class="md-title">${d.config.teams}-team ${_escFan(d.config.scoring)}${d.config.superflex ? ' · Superflex' : ''}</h1>
+        <p class="md-note">${_mdFmtDate(d.created_at)}</p>
+        <div class="md-grade-card">
+          <div class="md-grade">${_escFan(d.grade)}</div>
+          <div class="md-grade-meta">
+            <strong>Projected finish: ${d.finish}${_mdOrd(d.finish)} of ${d.config.teams}</strong>
+            <span class="md-note">Avg value vs ADP: ${d.avg>=0?'+':''}${d.avg} picks ${d.avg>=0?'(value)':'(reaches)'}</span>
+          </div>
+        </div>
+
+        <div class="md-analysis">
+          <div class="md-an-card">
+            <h3>Positional strength <span class="md-note">(rank in league)</span></h3>
+            <div class="md-an-pos">${_MD_POS.map(pos=>`<div class="md-an-prow"><span style="color:${_MD_POS_COLOR[pos]}">${pos}</span><span class="md-an-rank">${d.posRank[pos]}${_mdOrd(d.posRank[pos])}</span></div>`).join('')}</div>
+          </div>
+          <div class="md-an-card">
+            <h3>Draft highlights</h3>
+            ${d.bestVal?`<p class="md-an-line"><span class="md-an-tag md-an-tag--good">Best value</span> ${_escFan(d.bestVal.name)} — pick ${d.bestVal.overall} vs ADP ${d.bestVal.adp}</p>`:''}
+            ${d.reach?`<p class="md-an-line"><span class="md-an-tag md-an-tag--bad">Biggest reach</span> ${_escFan(d.reach.name)} — pick ${d.reach.overall} vs ADP ${d.reach.adp}</p>`:''}
+            <p class="md-an-line">${d.unfilled.length?`<span class="md-an-tag md-an-tag--bad">Lineup gap</span> Missing starter${d.unfilled.length>1?'s':''}: ${d.unfilled.join(', ')}`:`<span class="md-an-tag md-an-tag--good">Lineup</span> All starters filled`}</p>
+          </div>
+        </div>
+
+        <div class="md-final-roster">
+          ${_MD_POS.map(pos => { const ps = d.roster.filter(p=>p.pos===pos); return ps.length?`<div class="md-fr-group"><div class="md-fr-pos" style="color:${_MD_POS_COLOR[pos]}">${pos}</div>${ps.map(p=>`<div class="md-fr-row">${_escFan(p.name)} <span class="md-rl-team">${p.team}</span> <span class="md-row-adp">ADP ${p.adp}</span></div>`).join('')}</div>`:''; }).join('')}
+        </div>
+      </div>`;
+}
 
 // ============================================================
 // Draft Kit — value rankings, tiers, sleepers/traps, cheat sheet (D-028)
@@ -746,6 +921,9 @@ function _dkRender() {
 if (typeof window !== 'undefined') {
     window.loadMockDraft = loadMockDraft;
     window.loadDraftKit = loadDraftKit;
+    window.loadNFLMyDrafts = loadNFLMyDrafts;
+    window._mdOpenSavedDraft = _mdOpenSavedDraft;
+    window._mdSaveDraft = _mdSaveDraft;
 }
 
 // ── Shareable mock-draft result card (viral loop, draft season) ──

@@ -390,6 +390,14 @@ async function _onSignedIn() {
         const intent = _authSheetPendingIntent;
         _authSheetPendingIntent = null;
         if (intent.type === 'follow') await toggleFollow(intent.sport, intent.entityType, intent.entityId, /* forceOn */ true);
+        // D-064: replays a just-completed Mock Draft's save once sign-in finishes.
+        // _md (fantasy.js) is untouched by opening/closing the sheet -- it's a modal
+        // overlay, not a navigation -- so the draft that triggered this is still there.
+        else if (intent.type === 'save_draft' && typeof _mdSaveDraft === 'function') await _mdSaveDraft();
+        // Generic: re-render a view that showed a signed-out gate (e.g. My Drafts),
+        // now that sign-in has completed. Deliberately re-renders rather than just
+        // toggling a class, since the gated view's populated state needs a fetch.
+        else if (intent.type === 'reload_view' && typeof renderCurrentView === 'function') renderCurrentView(intent.view || AppState.currentView);
     }
 }
 

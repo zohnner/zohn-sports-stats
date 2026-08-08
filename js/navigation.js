@@ -306,6 +306,7 @@ const _NAV_META = {
     'nfl-rankings':  { label: 'Draft HQ · ADP Rankings', icon: '📊' },
     'nfl-draftkit':  { label: 'Draft HQ · Value Board', icon: '📋' },
     'nfl-mock':      { label: 'Mock Draft',    icon: '🏈' },
+    'nfl-mydrafts':  { label: 'Draft HQ · My Drafts', icon: '💾' },
     'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
     'nfl-trending':  { label: 'Draft HQ · Trending', icon: '🔥' },
@@ -603,6 +604,10 @@ function _renderNFLView(view) {
         case 'nfl-mock':
             if (viewCount) viewCount.textContent = 'Mock Draft';
             if (typeof loadMockDraft === 'function') loadMockDraft();
+            break;
+        case 'nfl-mydrafts':
+            if (viewCount) viewCount.textContent = 'Draft HQ · My Drafts';
+            if (typeof loadNFLMyDrafts === 'function') loadNFLMyDrafts();
             break;
         case 'nfl-draftkit':
             if (viewCount) viewCount.textContent = 'Draft HQ · Value Board';
@@ -926,7 +931,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
-        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-compare'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
@@ -978,6 +983,7 @@ const SUB_NAV_TABS = {
             { v: 'nfl-sos',      l: 'Schedule' },
             { v: 'nfl-compare',  l: 'Compare' },
             { v: 'nfl-mock',     l: 'Mock Draft' },
+            { v: 'nfl-mydrafts', l: 'My Drafts' },
             { v: 'nfl-trending', l: 'Trending' },
             { v: 'nfl-injuries', l: 'Injury Report' },
             { v: 'nfl-waivers',  l: 'Waiver Wire' },
@@ -1074,6 +1080,7 @@ const MENU_TABS = {
         { group:'Draft Prep' },
         { v:'nfl-draftkit', l:'Value Board', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
         { v:'nfl-sos', l:'Schedule', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
+        { v:'nfl-mydrafts', l:'My Drafts', i:'extra' },
         { group:'In-Season' },
         { v:'nfl-trending', l:'Trending', i:'extra' }, { v:'nfl-injuries', l:'Injury Report', i:'extra' },
         { v:'nfl-waivers', l:'Waiver Wire', i:'extra' },
