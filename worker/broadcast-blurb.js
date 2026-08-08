@@ -124,12 +124,19 @@ export default {
                     input,
                     // max_output_tokens well above the ~60-word target — on this
                     // model, thinking tokens draw from the SAME budget as output
-                    // tokens (confirmed the hard way in the video pipeline's
-                    // script.js: a real request hit status "incomplete" because
-                    // thinking ate the whole budget before any visible text was
-                    // written). thinking_level 'low' because a 2-sentence stat
-                    // blurb isn't a reasoning task.
-                    generation_config: { temperature: 0.7, max_output_tokens: 400, thinking_level: 'low' },
+                    // tokens. This was originally set to 400 on the theory that a
+                    // 2-sentence blurb needs little headroom, citing the video
+                    // pipeline's script.js precedent as a risk to watch for —
+                    // confirmed live 2026-08-09 that 400 was NOT enough: a real
+                    // deployed request came back status "incomplete", thinking
+                    // having burned the whole budget before any visible text was
+                    // written, the exact failure script.js hit and fixed by
+                    // raising to 8192. Matching that proven value here rather than
+                    // guessing a smaller number a second time — a higher cap costs
+                    // nothing extra unless actually used. thinking_level stays
+                    // 'low' since a 2-sentence stat blurb isn't a reasoning task;
+                    // that alone just wasn't sufficient to keep it under 400.
+                    generation_config: { temperature: 0.7, max_output_tokens: 8192, thinking_level: 'low' },
                 }),
             });
 
