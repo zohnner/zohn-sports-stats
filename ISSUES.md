@@ -1978,6 +1978,29 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 ---
 
+## Team bug/security sweep (2026-08-08) — post-D-064/D-065
+
+**Contributor:** Axiom (bug check) + Cipher (security review) | **Date:** 2026-08-08
+
+**Trigger:** owner — "loop in the team to do a bug check, security review and brainstorm next steps," immediately after D-065 shipped.
+
+**Axiom (bug check):** reviewed the new module-level state (`_mlLookupState`, `_mdSavedDrafts`), the `reload_view`/`save_draft` sign-in-intent additions, and every render path for null/undefined guards. No bugs found. Two things specifically verified rather than assumed: `renderCurrentView(view)` (called by the new `reload_view` intent) takes a plain view-id string and dispatches correctly — confirmed by reading its definition, not inferred from naming; and `_mlPlayerLabel`'s DEF/DST fallback branch, while correct, turned out to be unreachable in practice — Sleeper's player map already carries team defenses by abbreviation (see D-065's live-verification note above). Confirmed both My Drafts and My League stay visible signed-out (only their content gates), satisfying GOALS.md's constitutional no-login-regression rule.
+
+**Cipher (security review):** audited every new template-literal interpolation across the D-064/D-065 render code for escaping discipline — found the pattern consistently correct (final-string escaping via `_escFan`/`_escHtml` at the point of DOM insertion, matching the file's existing convention; numeric/enum-only fields like `total_rosters`/`wins`/`losses` left unescaped, safely, since they can't carry markup). `encodeURIComponent` correctly wraps every client-supplied value threaded into a `/api/sleeper?path=` query. Rate limiting confirmed automatic via `functions/api/_middleware.js` (directory-scoped, covers any new `/api/*` file with no config change).
+
+**One real finding — fixed, not just noted:** `functions/api/sleeperLink.js`'s POST handler had no body-size cap, unlike every other user-writable endpoint in the codebase (`prefs.js` 4KB, `draftHistory.js` 16KB). Low severity — each row is `user_id`-scoped and never read back for anyone but its owner, so this was self-inflicted-storage-bloat risk, not a cross-user attack surface — but "unbounded by omission" is the wrong default regardless of severity, and it broke an otherwise-consistent pattern. Fixed: added `MAX_BODY_BYTES = 2048` (generous — real Sleeper strings run a few hundred bytes) with a `413` response over the cap, mirroring the other two endpoints' shape exactly.
+
+**Also confirmed, not changed:** `sleeperLink.js` never verifies server-side that a POSTed `league_id`/`sleeper_user_id` correspond to a real Sleeper account — it stores whatever the client claims. Not a fix-worthy gap: Sleeper's entire API is public/read-only with no privacy boundary (confirmed via docs.sleeper.com — "we do not perform authentication as our API is read-only"), so there's no confidentiality boundary to cross even if someone linked a `league_id` that wasn't genuinely theirs; worst case is a user's own account shows the wrong (but still just publicly-readable) roster, self-correctable via the existing "Change league" control.
+
+**Verified:** `node --check` clean on `functions/api/sleeperLink.js` post-fix.
+
+**Committed:** `pending`.
+
+---
+
+
+---
+
 
 ---
 

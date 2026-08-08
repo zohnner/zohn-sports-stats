@@ -7,6 +7,12 @@
 // deleted from directly -- a stale/wrong link is actively harmful, not just clutter.
 import { buildAuth } from './auth/_instance.js';
 
+// Cipher, 2026-08-08 security pass: every other user-writable endpoint caps its POST
+// body (prefs.js 4KB, draftHistory.js 16KB) -- this one didn't. Low severity (each
+// row is user_id-scoped, never read back for anyone else), but unbounded is still
+// the wrong default, and real Sleeper strings are a few hundred bytes at most.
+const MAX_BODY_BYTES = 2048;
+
 async function requireSession(context) {
 	const auth = buildAuth(context.env);
 	return auth.api.getSession({ headers: context.request.headers });
@@ -31,6 +37,9 @@ export async function onRequestPost(context) {
 	const body = await context.request.json().catch(() => null);
 	if (!body || !body.sleeper_user_id || !body.sleeper_username || !body.league_id || !body.league_name) {
 		return Response.json({ error: 'invalid_body' }, { status: 400 });
+	}
+	if (JSON.stringify(body).length > MAX_BODY_BYTES) {
+		return Response.json({ error: 'link_too_large' }, { status: 413 });
 	}
 
 	const now = Date.now();
