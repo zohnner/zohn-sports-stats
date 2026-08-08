@@ -14,13 +14,47 @@ const NFL_FANTASY_SEASON     = (_nflNow.getMonth() + 1 >= 3) ? _nflNow.getFullYe
 const NFL_LEADERS_MIN_SEASON = 2000;  // ESPN core-API leaders depth
 const NFL_NGS_MIN_SEASON     = 2016;  // Next Gen Stats depth
 
-// ── Offseason state (P3-029) ──────────────────────────────────
-// Mar–Aug is unambiguously offseason; Sep–Feb covers regular season + playoffs.
-// A schedule (Scores) and the fantasy surfaces stay populated year-round, so the
-// offseason component is a fallback for genuinely-empty surfaces, not a gate.
-function _nflIsOffseason() {
-    const m = new Date().getMonth() + 1;
-    return m >= 3 && m <= 8;
+// ── Season phase model (P3-029, refined D-063) ──────────────────
+// Four real phases, not one binary offseason flag. The old rule lumped the
+// four weeks of real August preseason games in with the genuine no-games
+// offseason — which is exactly why the site told visitors "NFL is between
+// seasons" on the same day a real, final preseason score (CAR 33–30 ARI,
+// Aug 6 2026) was sitting right there, correctly fetched, with nowhere
+// accurate to say so. See D-063.
+//
+//   offseason  -> mid-Feb through July: no games of any kind.
+//   preseason  -> August through the first week of September: real games
+//                 air, but they never count toward the official record.
+//   regular    -> rest of September through December.
+//   postseason -> January through the Super Bowl (~mid-Feb).
+//
+// Boundaries are calendar-day heuristics, not a per-year lookup, chosen
+// against NFL scheduling rules that don't move year to year: the season
+// opener is always the Thursday after Labor Day (never before Sep 4), and
+// the Super Bowl has been held in February every year since the league
+// last moved off a January date — day<=14 clears every actual Super Bowl
+// Sunday in the modern era without needing a lookup table.
+function _nflSeasonPhase() {
+    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    if (m === 1) return 'postseason';
+    if (m === 2 && day <= 14) return 'postseason';
+    if ((m === 2 && day > 14) || (m >= 3 && m <= 7)) return 'offseason';
+    if (m === 8 || (m === 9 && day <= 8)) return 'preseason';
+    return 'regular';
+}
+// Narrow yes/no signal for call sites that only need "is there genuinely
+// nothing to show" (fallback components, empty-state gates). Narrower than
+// before: August no longer counts as offseason, since real preseason games
+// are on the board.
+function _nflIsOffseason() { return _nflSeasonPhase() === 'offseason'; }
+// Deliberately separate from _nflIsOffseason() — official W-L records and
+// real standings are genuinely still 0-0/empty through BOTH the offseason
+// AND preseason (preseason results never count toward them), so any call
+// site explaining an empty record/standings needs this broader check, not
+// the narrower one above.
+function _nflHasNoOfficialRecord() {
+    const p = _nflSeasonPhase();
+    return p === 'offseason' || p === 'preseason';
 }
 
 const _NFL_OFFSEASON_GLYPH = '<svg class="nfl-offseason-glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5.6" transform="rotate(-45 12 12)"/><path d="M8.5 8.5l7 7M10.6 7.4l1.4 1.4M7.4 10.6l1.4 1.4"/></svg>';
@@ -218,7 +252,7 @@ function displayNFLTeams(teams) {
             </div>
         </section>`;
 
-    const offNote = (_nflIsOffseason() && teams.every(t => !t.record))
+    const offNote = (_nflHasNoOfficialRecord() && teams.every(t => !t.record))
         ? `<div class="nfl-teams-note">Records show 0–0 until the ${NFL_FANTASY_SEASON} season starts.</div>` : '';
 
     let html = `<div class="teams-page">${offNote}${confHtml('AFC')}${confHtml('NFC')}`;
@@ -250,27 +284,35 @@ async function loadNFLHome() {
     grid.className = 'home-container';
     if (window.setBreadcrumb) setBreadcrumb('nfl-home', null);
 
-    const offseason = _nflIsOffseason();
+    const phase = _nflSeasonPhase();
+    const offseason = phase === 'offseason';
+    const preseason = phase === 'preseason';
     const firstVisit = !localStorage.getItem('zs_seen_nfl_home');
     if (firstVisit) localStorage.setItem('zs_seen_nfl_home', '1');
 
     const days = _nflDaysToKickoff();
-    const kicker = offseason ? 'NFL Draft Season' : `${NFL_FANTASY_SEASON} Season`;
+    const kicker = offseason ? 'NFL Draft Season' : preseason ? 'NFL Preseason' : `${NFL_FANTASY_SEASON} Season`;
     const heroText = offseason
         ? (days > 0 ? `${days} day${days === 1 ? '' : 's'} to kickoff — build your board before your league does.`
                     : 'Kickoff week — lock in your draft.')
-        : 'Live scores, standings, and stat leaders — the season is on.';
+        : preseason
+            ? `Preseason is live${days > 0 ? ` — ${days} day${days === 1 ? '' : 's'} to the real kickoff` : ''}. Real scores now, official standings once the ${NFL_FANTASY_SEASON} season starts.`
+            : 'Live scores, standings, and stat leaders — the season is on.';
     const heroChips = offseason
         ? `<button class="hm-chip" onclick="navigateTo('nfl-mock')">Mock Draft →</button>
            <button class="hm-chip" onclick="navigateTo('nfl-rankings')">Draft HQ →</button>
            <button class="hm-chip" onclick="navigateTo('nfl-leaders')">${NFL_STATS_SEASON} Leaders →</button>`
-        : `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
+        : preseason
+            ? `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
+               <button class="hm-chip" onclick="navigateTo('nfl-mock')">Mock Draft →</button>
+               <button class="hm-chip" onclick="navigateTo('nfl-rankings')">Draft HQ →</button>`
+            : `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
            <button class="hm-chip" onclick="navigateTo('nfl-standings')">Standings →</button>
            <button class="hm-chip" onclick="navigateTo('nfl-leaders')">Leaders →</button>`;
 
     const tiles = [
-        ['nfl-games', 'Scores', offseason ? 'Upcoming schedule' : 'Live & recent'],
-        ['nfl-standings', 'Standings', offseason ? 'Opens at kickoff' : 'Division races'],
+        ['nfl-games', 'Scores', offseason ? 'Upcoming schedule' : preseason ? 'Preseason live' : 'Live & recent'],
+        ['nfl-standings', 'Standings', (offseason || preseason) ? 'Opens at kickoff' : 'Division races'],
         ['nfl-rankings', 'Draft HQ', 'Rankings · value board'],
         ['nfl-mock', 'Mock Draft', 'Practice vs ADP-based AI'],
         ['nfl-players', 'Players', 'Profiles & season stats'],
@@ -300,7 +342,7 @@ async function loadNFLHome() {
         </div>
         <div class="home-today" id="nflHomeGames">
             <div class="home-section-hdr">
-                <span class="home-section-title">${offseason ? 'Upcoming Games' : 'This Week'}</span>
+                <span class="home-section-title">${offseason ? 'Upcoming Games' : preseason ? 'Preseason Games' : 'This Week'}</span>
                 <button class="home-section-link" onclick="navigateTo('nfl-games')">All scores →</button>
             </div>
             <div class="games-grid" id="nflHomeGamesGrid">

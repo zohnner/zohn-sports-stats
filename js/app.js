@@ -1861,7 +1861,15 @@ function _promoMoments() {
     return [
         {
             key: 'nfl-live',
-            active: () => typeof _nflIsOffseason === 'function' && !_nflIsOffseason(), // Sep–Feb
+            // Deliberately NOT derived from _nflIsOffseason() (D-063 narrowed that to
+            // exclude August preseason) -- this promo is specifically "the real season
+            // is live," which August preseason isn't. Sep-Feb, same window this always
+            // used, just no longer coupled to a season-phase helper whose meaning changed
+            // out from under it. Sep 1-8 (preseason's tail) and Mar-Jun have no active
+            // NFL promo here by design -- 'draft' below owns Jul-Aug, and there's
+            // deliberately no promo for the handful of days between preseason ending and
+            // "draft season" already being over; the Pennant Races widget fills that gap.
+            active: () => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 2; },
             kicker: () => `${typeof NFL_FANTASY_SEASON !== 'undefined' ? NFL_FANTASY_SEASON : ''} Football Season`,
             text:   () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
                 ? 'NFL and NCAAF — scores, standings and fantasy tools, all live, no login required.'

@@ -1899,7 +1899,24 @@ D-043 3a is fully shipped and verified. With 3c, 3b, and 3a all closed, **D-043 
 
 **Update 2026-08-07 — live-verified round 1, it didn't work; root-caused further, shipped round 2.** Owner pushed, then live-checked `/api/nfl?path=/scoreboard` with a cache-busting param — still 403, fresh Akamai reference number (not a stale cache). Decisive test: navigated a real Chrome tab directly to `site.api.espn.com/.../scoreboard` — clean 200. That's a different network path than the Cloudflare Function's own egress and proves the block is IP-range-based against Cloudflare specifically, not a User-Agent/bot-signature check the round-1 fix could ever have cleared. Since `sports.core.api.espn.com` was never blocked, tested whether `site.web.api.espn.com` (already used by `nflstandings.js`/`ncaafstandings.js` for a different path family) also mirrors the `/apis/site/v2/...` paths these six files need — direct-navigated to six real endpoints on that host (NFL scoreboard/teams/news/roster, NCAAF scoreboard, MLB news) and got clean 200s with response shapes byte-identical to what `site.api.espn.com` used to serve. **Round 2 fix:** swapped the hostname in all six files from `site.api.espn.com` to `site.web.api.espn.com` — every path string is unchanged, since it's the same API surface on a second edge. Kept the round-1 User-Agent header as harmless defense-in-depth. `node --check` clean on all 6. NUL scan clean. `check-manifest.cjs` clean.
 
-**Committed:** pending push + live-verification of round 2.
+**Committed:** `98c280a`. **Live-verified 2026-08-07** (after ~40s deploy propagation lag): all six endpoints 200, `/#nfl-games` renders the real Aug 6 CAR 33–30 ARI result with logos and zero console errors. D-062 closed.
+
+---
+
+## D-063 — NFL season-phase model: fix the offseason banner showing during real preseason
+**Contributor:** Axiom (bug — season-model architecture is engineering, not a new feature needing three gates) | **Date:** 2026-08-07
+
+**Trigger:** owner, immediately after D-062 — "lets clean up the 'nfl is between seasons' we need to build better logic so that it handles any time of year cleanly."
+
+**Root cause:** `_nflIsOffseason()` was one binary flag (Mar–Aug = offseason), with no representation for "real games are happening but don't count toward the record yet" — exactly the state NFL preseason is in throughout August. NCAAF's equivalent already correctly excludes August (Feb–Jul only); NFL was the outlier.
+
+**Fix:** `_nflSeasonPhase()` returns one of `offseason | preseason | regular | postseason` from stable calendar-day rules (season opener never before Sep 4; Super Bowl always by mid-Feb). Verified exhaustively — every day of a full year maps to exactly one phase, all four reachable, no gaps. Two derived helpers replace the one old boolean because call sites actually needed two different answers: `_nflIsOffseason()` (narrow — "nothing on the board," now correctly excludes August) and `_nflHasNoOfficialRecord()` (broad — "records are still 0-0," correctly still true through preseason, since preseason results never count).
+
+**Shipped:** `js/nfl.js` (phase model; Teams page 0-0 note now uses the broader helper so it doesn't go silent in August; home hero gets a real preseason branch — kicker, hero text, chip order, tile subtitles, section title, all distinct from both offseason and full-season framing). `js/navigation.js` (the literal reported banner string replaced with accurate copy; now only shows during true offseason, since the gate itself narrowed). `js/app.js` (`_promoMoments()`'s nfl-live entry was implicitly riding the old `_nflIsOffseason()` semantics and would have started firing in August, silently overriding the deliberate D-043 "Draft Season" promo — decoupled it to an explicit literal month check preserving exact prior behavior). `CLAUDE.md` updated per doc-sync rule, with an explicit warning against reintroducing a single Mar–Aug boolean.
+
+**Verified:** `node --check` clean on all 3 touched JS files. NUL scan clean. `check-manifest.cjs`/`check-themes.cjs` clean (2 pre-existing unrelated warnings). Phase function exhaustively simulated before any UI code was touched.
+
+**Committed:** pending push + live-verification.
 
 ---
 

@@ -1450,4 +1450,28 @@ There's also a provenance wrinkle worth being straight about: the most current, 
 
 **Real fix:** swapped the upstream hostname from `site.api.espn.com` to `site.web.api.espn.com` in all six files (`nfl.js`, `ncaaf.js`, `news.js`, `nflsos.js`, `nflplayer.js`, `ncaafstats.js`) — every path string these files already build is unchanged, since the two hosts serve the identical API surface. The User-Agent header stays (harmless, still correct defense-in-depth against a genuine bot-signature block elsewhere) but is no longer the thing doing the work. `node --check` clean on all 6. NUL scan clean. `check-manifest.cjs` clean (server-side Functions aren't client assets).
 
-**Committed:** pending push + live-verification of the real fix.
+**Committed:** `98c280a`. **Live-verified 2026-08-07:** after the owner pushed, production still 403'd for ~40s (build/deploy propagation lag, not a code problem — confirmed by the error page itself still naming `site.api.espn.com`, the old host, meaning the new code hadn't gone live yet), then flipped to 200 on all six affected endpoints (NFL scoreboard/teams, NCAAF scoreboard, MLB news, NFL news, NFL player stats). `/#nfl-games` renders the real Thu Aug 6 result (CAR 33, ARI 30, Final) with both team logos loading and zero console errors on a fresh reload. D-062 fully closed.
+
+---
+
+## D-063 — NFL season-phase model: fix the "between seasons" banner showing during real preseason — SHIPPED 2026-08-07
+
+**Trigger (owner):** "lets clean up the 'nfl is between seasons' we need to build better logic so that it handles any time of year cleanly," immediately after D-062 fixed the underlying data outage and made it obvious the copy problem was separate and still live.
+
+**Root cause:** `_nflIsOffseason()` in `js/nfl.js` was a single binary flag — `getMonth()+1 >= 3 && <= 8` — treating all of March through August as "offseason." That was wrong for four real weeks every year: NFL preseason games air throughout August (the game D-062 fixed, CAR@ARI, played Aug 6), and that binary had no way to represent "games are happening, they just don't count toward the record yet." Every offseason-gated surface — the cross-page dismissible strip, the Scores/Teams/home-hero copy — inherited the same blind spot. Confirmed via a direct comparison that NCAAF's equivalent (`_ncaafIsOffseason()`, Feb–Jul only) already drew this line correctly; NFL was the outlier, not the pattern.
+
+**Fix — a real 4-state model, not a wider binary:** `_nflSeasonPhase()` now returns `'offseason' | 'preseason' | 'regular' | 'postseason'` from calendar-day heuristics chosen against NFL scheduling rules that don't move year to year (season opener is always the Thursday after Labor Day, never before Sep 4; the Super Bowl has been in February every year since the league's last date move, so day≤14 safely clears every actual Super Bowl Sunday without a lookup table). Verified exhaustively: a day-by-day simulation across all 366 days of a sample year confirms every day maps to exactly one phase, all four phases are reachable, and no day is unclassified.
+
+Two derived helpers replace the single old boolean, because the call sites actually needed two different questions answered, not one:
+- `_nflIsOffseason()` = `phase === 'offseason'` — narrow: "is there genuinely nothing on the board." Now correctly excludes August.
+- `_nflHasNoOfficialRecord()` = `offseason || preseason` — broader: "are records/standings still 0-0." Preseason results never count toward the official record, so team pages still correctly show the 0-0 explainer through August even though real games (and real final scores) exist.
+
+**Shipped:**
+- `js/nfl.js`: the phase model itself; `_nflHasNoOfficialRecord()` now gates the Teams page 0-0 note (was `_nflIsOffseason()`, which would have gone silent in August under the new narrower definition and left an unexplained 0-0 on every team). `loadNFLHome()` gets a real third branch: preseason shows its own kicker ("NFL Preseason"), hero text, chip order (Scores first, not buried behind Mock Draft), tile subtitles ("Preseason live" / "Opens at kickoff"), and section title ("Preseason Games") — distinct from both the offseason draft-countdown framing and the in-season "This Week" framing.
+- `js/navigation.js`: the literal reported string — "NFL is between seasons — live scores return in September" — replaced with "NFL is in the offseason — preseason returns in August, the regular season in September." This strip is gated by the now-narrower `_nflIsOffseason()`, so as of this fix it simply stops appearing once real preseason games are on the board — no visitor sees a stale banner sitting next to a real score anymore.
+- `js/app.js`: `_promoMoments()`'s `'nfl-live'` home-promo entry was implicitly riding on the old `_nflIsOffseason()` semantics (`!_nflIsOffseason()`) — under the new narrower definition that would have started firing in August too, silently overriding the existing, deliberate "Draft Season" promo that's supposed to own July–August (a real design decision from D-043, not accidental). Decoupled it: the promo's active-window check is now an explicit, literal `m >= 9 || m <= 2`, preserving its exact prior effective behavior instead of inheriting a meaning that had just changed out from under it.
+- `CLAUDE.md`: documented `_nflSeasonPhase()`/`_nflIsOffseason()`/`_nflHasNoOfficialRecord()` in the NFL Data Foundation section, with an explicit "don't reintroduce a single Mar–Aug boolean" warning naming this exact bug, per the doc-sync rule.
+
+**Verified:** `node --check` clean on `js/nfl.js`, `js/navigation.js`, `js/app.js`. NUL scan clean. `tools/check-manifest.cjs` clean. `tools/check-themes.cjs` clean (same 2 pre-existing unrelated warnings tracked since D-058). Phase function exhaustively simulated day-by-day for full coverage (see above) before touching any UI code.
+
+**Committed:** pending — verification + commit to follow in the same push as this entry.

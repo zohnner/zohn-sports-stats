@@ -491,6 +491,7 @@ NFL is multi-season and reads live from upstream with Cloudflare edge-caching (n
 - `NFL_STATS_SEASON` — latest season with completed/accumulating stats (Sep–Feb = current year, else prior). Flips to the live season in September.
 - `NFL_FANTASY_SEASON` — the season ADP / drafts / player profiles refer to (Mar onward = current year). Drives the "{season} NFL Season" / "enters {season}" / offseason copy.
 - `NFL_LEADERS_MIN_SEASON` = 2000, `NFL_NGS_MIN_SEASON` = 2016.
+- `_nflSeasonPhase()` (D-063) — the actual calendar model behind every NFL offseason/preseason UI decision. Returns `'offseason' | 'preseason' | 'regular' | 'postseason'`, not a binary flag. `_nflIsOffseason()` (`phase === 'offseason'`) is the narrow "genuinely nothing to show" signal; `_nflHasNoOfficialRecord()` (`offseason || preseason`) is the broader "records/standings are still 0-0" signal — preseason results never count toward the official record, so these two are not interchangeable. **Do not reintroduce a single Mar–Aug offseason boolean** — that was the exact bug D-063 fixed (August preseason games were being reported as "between seasons").
 
 **Never hardcode a season year in NFL client copy — use the model.**
 

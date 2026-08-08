@@ -554,7 +554,7 @@ function _syncNFLOffseasonStrip(view) {
     strip.className = 'nfl-offseason-strip';
     strip.setAttribute('role', 'status');
     strip.setAttribute('aria-live', 'polite');
-    strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is between seasons — live scores return in September. Standings &amp; tools are open year-round:
+    strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is in the offseason — preseason returns in August, the regular season in September. Standings &amp; tools are open year-round:
             <button class="nfl-offseason-strip__link" data-view="nfl-players">Players</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
