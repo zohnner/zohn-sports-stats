@@ -1507,3 +1507,33 @@ Two derived helpers replace the single old boolean, because the call sites actua
 *Governance note, not a detail to skip:* either path needs a **separate repo**, matching the exact precedent already set by `videocreation` — this project's committed "no framework, no bundler, no build step" rule for `zohn-sports-stats` itself is non-negotiable, and a TWA/Capacitor project inherently needs Node/Gradle/Xcode tooling that must never leak into the main site's repo or deploy pipeline.
 
 **Status:** brainstorm logged, nothing built. Sequencing decision above is a recommendation pending owner sign-off before any of items 1–3 or the Android TWA work starts.
+
+---
+
+## D-067 — Full-team brainstorm: platform improvements and new features — 2026-08-08
+
+**Trigger (owner):** "lets do a team brainstorm for platform improvements, new feautres, etc" — a broader, open-ended round following D-066's narrower next-steps list. Grounded against the current `GOALS.md` state snapshot and `ISSUES.md`'s open/deferred items rather than invented from scratch — several of these are old threads getting a fresh push, not new ideas.
+
+**Vera (UX/JTBD):**
+1. **Push notifications (F5).** The PWA has been installable for a while but F5's second half — game-start alerts for followed teams, milestone alerts (HR #50, no-hitter in progress) — was never built. D-031's follows system already knows what a signed-in user cares about; this is the first feature that would actually use that data proactively instead of waiting for the user to come back and look.
+2. **A single "for you" surface that unifies D-064 + D-065.** Right now My Drafts and My League are two separate destinations buried in the Draft HQ menu. The actual job to be done — "give me a reason to open the app today" — is better served by one signed-in home module showing followed teams' next games, the latest saved draft's grade, and league roster status together, not three things a user has to know to go look for separately.
+3. **Retired/all-time NFL player lookup (D-020).** An old open thread from before the multi-season player-detail work existed. Worth reviving now that `detailFrame.js` and season-aware player stats already handle the hard part — this is mostly a data-availability question now, not an architecture one.
+
+**Kael (visual/brand):**
+1. **Dynamic per-page `og:image` (D-056 Finding 4, still open, unscheduled).** Every edge-rendered page shares one static share image, which directly undercuts GOALS.md's own stated growth channel ("share cards remain the organic-growth channel... every exported artifact is branded and links back to the live view"). Concrete path: reuse the `shareCard.js` canvas-render pattern already built and proven for scorecards, keyed to each page's real data (player headshot + season line, or a matchup card for a game page), rendered server-side at request time the way the edge-render Functions already work.
+2. **D-038 contrast WARN — still open.** Flagged again because it's now crossed three feature cycles without a decision. Small fix, real credibility cost the longer a broadcast-grade-posture product runs with a live accessibility fail.
+3. **Player Card mode (D-053 pt. 2)** — the original-IP alternative proposed after Madden mode was rejected. Still owner-gated; worth a final yes/no rather than leaving it drifting.
+
+**Axiom (engineering/architecture):**
+1. **Deploy the Broadcast Blurb Worker (P2-005 / F1).** This is the single highest-leverage item on the whole list: GOALS.md calls it outright "the single feature that makes SportStrata irreplaceable for announcers," the code is already built, and it's blocked purely on an authorization/deploy step — not on any remaining engineering. Nothing else in this brainstorm has that ratio of differentiation to remaining effort.
+2. **Audit remaining NCAAF/NFL endpoints for the season-flip 502 pattern** that hit `functions/api/ncaafstats.js` — `ncaafathlete.js` specifically was named and never checked. CFB's Aug–Jan live window is starting now, so this is a reliability check worth doing ahead of traffic, not behind it.
+3. **AppState fetch-coordination audit** — Axiom's own standing direction note (GOALS.md Engineering Direction Notes) about accretion risk as more views share heavyweight async fields (`mlbLeaderSplits`, `mlbHotStats`, `mlbSavantLeaderboard` already do). No incident yet; the risk grows with every feature added without auditing it.
+
+**Specialist quick hits:**
+- **Relay:** D-052 (men's college basketball as the next sport-expansion candidate, already the team's own recommendation over reviving NBA/NHL) is still sitting owner-gated. NCAAF proved the registry-driven "new sport is a data entry, not a rewrite" pattern works cheaply — the next expansion candidate should get a final ratification call rather than staying open indefinitely.
+- **Cipher:** no new finding — a note for whichever of the above ships first: if push notifications (Vera #1) move forward, the subscription-endpoint needs the exact same session-scoped, never-trust-client-user-id pattern already enforced on `follows.js`/`prefs.js`/`draftHistory.js`/`sleeperLink.js`, not a new pattern.
+- **Folio:** Stat Builder's "full formula examples pre-loaded" line has been open in the Success Metrics table since near the start of the project. Small, cheap, worth finally closing.
+
+**Recommendation (not left open):** ship the Broadcast Blurb Worker deployment first. Every other item here needs either a design decision, new engineering, or both; this one needs neither — it's finished work sitting behind an authorization gate, and GOALS.md already names it the single most differentiating feature on the roadmap. Everything else above is queued, not sequenced — no ranking implied beyond item 1.
+
+**Status:** brainstorm logged, nothing built or spec'd yet. Any item the owner picks to pursue gets its own three-gate ISSUES.md entry before implementation, per the standing workflow.
