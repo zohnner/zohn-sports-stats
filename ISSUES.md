@@ -1916,7 +1916,7 @@ D-043 3a is fully shipped and verified. With 3c, 3b, and 3a all closed, **D-043 
 
 **Verified:** `node --check` clean on all 3 touched JS files. NUL scan clean. `check-manifest.cjs`/`check-themes.cjs` clean (2 pre-existing unrelated warnings). Phase function exhaustively simulated before any UI code was touched.
 
-**Committed:** pending push + live-verification.
+**Committed:** `674cc10`. **Live-verified 2026-08-07:** `/#nfl-games` (fresh navigation, not a same-URL reload — this Chrome instance intermittently restored a stale prior render on same-URL reloads regardless of SW cache state, unrelated to the fix) shows no offseason banner and renders the real preseason result (CAR 33–30 ARI, Final). SW cache directly inspected and confirmed correct in all 3 files before the render was re-checked. Note: `/#nfl-home` currently routes through D-045's `_renderSportLanding`, not `loadNFLHome()` — the preseason hero copy this fix added there is correct but unreachable via that route today (pre-existing since D-045, out of this fix's scope).
 
 ---
 
