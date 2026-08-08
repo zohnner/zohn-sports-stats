@@ -3877,6 +3877,7 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 .md-fr-group { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0.6rem; }
 .md-fr-pos { font-weight: 800; font-size: 0.75rem; margin-bottom: 0.3rem; }
 .md-fr-row { font-size: 0.78rem; color: var(--text-secondary); padding: 1px 0; }
+.md-fr-bench .md-fr-row { color: var(--text-muted); } /* D-065: My League -- starters vs bench is the one real visual distinction this feature needs (Kael's spec) */
 @media (max-width: 760px) {
     .md-draft-grid { grid-template-columns: 1fr; }
     .md-roster { order: -1; }

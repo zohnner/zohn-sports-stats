@@ -248,6 +248,7 @@ const _HQ_GROUPS = [
         { v: 'nfl-mydrafts', l: 'My Drafts' },
     ] },
     { label: 'In-Season', tabs: [
+        { v: 'nfl-myleague', l: 'My League' },
         { v: 'nfl-trending', l: 'Trending' },
         { v: 'nfl-injuries', l: 'Injury Report' },
         { v: 'nfl-waivers',  l: 'Waiver Wire' },
@@ -810,6 +811,235 @@ function _mdRenderReplay(d) {
 }
 
 // ============================================================
+// My League (D-065) — link a real Sleeper league for signed-in users, see your real
+// roster inside SportStrata. Second sign-in incentive after Draft History (D-064).
+// Unlike Draft History, this is a linkable/unlinkable "current state" fact (see
+// ISSUES.md D-065, Axiom's data-model note) -- a wrong link is actively harmful, so
+// unlink is a real, always-available action here, not a deliberate no-delete stance.
+// ============================================================
+let _mlLink = null;      // current link, or null
+let _mlLookupState = {}; // transient in-flight state for the league picker
+
+async function loadNFLMyLeague() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('nfl-myleague', null);
+
+    if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') {
+        grid.innerHTML = _hqStrip('nfl-myleague') + `
+          <div class="md-wrap">
+            <div class="md-empty">
+              <h2 class="md-title" style="font-size:1.4rem">My League</h2>
+              <p class="md-sub">Sign in to link your real Sleeper league and see your actual roster here — nothing else on this page ever requires an account.</p>
+              <button class="md-btn md-btn--primary" onclick="openAuthSheet({type:'reload_view', view:'nfl-myleague'})">Sign in</button>
+            </div>
+          </div>`;
+        return;
+    }
+
+    grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div></div></div>`;
+    try {
+        const res = await fetch('/api/sleeperLink', { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('fetch_failed');
+        const { link } = await res.json();
+        _mlLink = link;
+        if (link) _mlRenderRoster(link);
+        else _mlRenderLinkForm();
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Sleeper link fetch failed', e, 'NFL');
+        const g = document.getElementById('playersGrid');
+        if (g) g.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your league link. Try again.</p><button class="md-btn" onclick="loadNFLMyLeague()">Retry</button></div></div>`;
+    }
+}
+
+function _mlRenderLinkForm(errorMsg) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.innerHTML = _hqStrip('nfl-myleague') + `
+      <div class="md-wrap">
+        <div class="md-setup">
+          <h1 class="md-title">My League</h1>
+          <p class="md-sub">Link your Sleeper username to see your real roster, record, and lineup right here.</p>
+          <div class="md-setup-row">
+            <label>Sleeper username<input type="text" id="mlUsername" placeholder="e.g. zohnner" autocomplete="off" style="font-size:0.9rem;padding:0.4rem 0.6rem;border-radius:var(--radius-md);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-primary)"></label>
+          </div>
+          <button class="md-btn md-btn--primary" id="mlLookupBtn">Find my leagues</button>
+          ${errorMsg ? `<p class="md-note" style="color:var(--color-loss)">${_escFan(errorMsg)}</p>` : ''}
+        </div>
+      </div>`;
+    const btn = grid.querySelector('#mlLookupBtn');
+    const input = grid.querySelector('#mlUsername');
+    const submit = () => { const v = input.value.trim(); if (v) _mlLookupAndLink(v); };
+    btn.addEventListener('click', submit);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    input.focus();
+}
+
+async function _mlLookupAndLink(username) {
+    const grid = document.getElementById('playersGrid');
+    grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Looking up ${_escFan(username)}…</p></div></div>`;
+    try {
+        const userRes = await fetch(`/api/sleeper?path=${encodeURIComponent('/v1/user/' + username)}`, { credentials: 'same-origin' });
+        const sleeperUser = userRes.ok ? await userRes.json() : null;
+        if (!sleeperUser || !sleeperUser.user_id) {
+            _mlRenderLinkForm(`No Sleeper user found for "${username}". Check the spelling and try again.`);
+            return;
+        }
+        const leaguesRes = await fetch(`/api/sleeper?path=${encodeURIComponent('/v1/user/' + sleeperUser.user_id + '/leagues/nfl/' + NFL_FANTASY_SEASON)}`, { credentials: 'same-origin' });
+        const leagues = leaguesRes.ok ? await leaguesRes.json() : [];
+        if (!Array.isArray(leagues) || !leagues.length) {
+            _mlRenderLinkForm(`No ${NFL_FANTASY_SEASON} Sleeper leagues found for "${username}". Try a different username.`);
+            return;
+        }
+        if (leagues.length === 1) {
+            _mlSelectLeague(sleeperUser, leagues[0]);
+        } else {
+            _mlRenderLeaguePicker(sleeperUser, leagues);
+        }
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Sleeper lookup failed', e, 'NFL');
+        _mlRenderLinkForm('Something went wrong looking that up. Try again.');
+    }
+}
+
+function _mlRenderLeaguePicker(sleeperUser, leagues) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.innerHTML = _hqStrip('nfl-myleague') + `
+      <div class="md-wrap">
+        <h1 class="md-title" style="font-size:1.5rem;text-align:center;margin-bottom:0.25rem">Pick your league</h1>
+        <p class="md-sub" style="text-align:center;margin-bottom:1.5rem">${leagues.length} ${NFL_FANTASY_SEASON} leagues found for ${_escFan(sleeperUser.display_name || sleeperUser.username)}.</p>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;max-width:640px;margin:0 auto">
+          ${leagues.map((lg, i) => `
+            <div class="md-an-card" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;cursor:pointer" onclick="_mlPickLeague(${i})">
+              <div>
+                <strong>${_escFan(lg.name)}</strong>
+                <div class="md-note">${lg.total_rosters}-team · ${_escFan((lg.status || '').replace('_', ' '))}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    _mlLookupState = { sleeperUser, leagues };
+}
+
+function _mlPickLeague(i) {
+    const { sleeperUser, leagues } = _mlLookupState;
+    const lg = leagues && leagues[i];
+    if (!sleeperUser || !lg) return;
+    _mlSelectLeague(sleeperUser, lg);
+}
+
+async function _mlSelectLeague(sleeperUser, league) {
+    const grid = document.getElementById('playersGrid');
+    if (grid) grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Linking ${_escFan(league.name)}…</p></div></div>`;
+    try {
+        const res = await fetch('/api/sleeperLink', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                sleeper_user_id: sleeperUser.user_id,
+                sleeper_username: sleeperUser.username,
+                league_id: league.league_id,
+                league_name: league.name,
+                league_avatar: league.avatar || null,
+            }),
+        });
+        if (!res.ok) throw new Error('link_failed');
+        _mlLink = {
+            sleeper_user_id: sleeperUser.user_id, sleeper_username: sleeperUser.username,
+            league_id: league.league_id, league_name: league.name, league_avatar: league.avatar || null,
+            linked_at: Date.now(),
+        };
+        _mlRenderRoster(_mlLink);
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Sleeper link save failed', e, 'NFL');
+        _mlRenderLinkForm("Couldn't save that link. Try again.");
+    }
+}
+
+async function _mlUnlink() {
+    try {
+        await fetch('/api/sleeperLink', { method: 'DELETE', credentials: 'same-origin' });
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Sleeper unlink failed', e, 'NFL');
+    }
+    _mlLink = null;
+    _mlRenderLinkForm();
+}
+
+async function _mlRenderRoster(link) {
+    const grid = document.getElementById('playersGrid');
+    if (grid) grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div><div class="skeleton-line" style="height:200px"></div></div></div>`;
+    try {
+        await fetchNFLSleeperPool();
+        const [rostersRes, usersRes] = await Promise.all([
+            fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/rosters')}`, { credentials: 'same-origin' }),
+            fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/users')}`, { credentials: 'same-origin' }),
+        ]);
+        if (!rostersRes.ok || !usersRes.ok) throw new Error('roster_fetch_failed');
+        const rosters = await rostersRes.json();
+        const users = await usersRes.json();
+        const myRoster = (rosters || []).find(r => String(r.owner_id) === String(link.sleeper_user_id));
+        if (!myRoster) throw new Error('roster_not_found');
+        const me = (users || []).find(u => String(u.user_id) === String(link.sleeper_user_id));
+        _mlRenderRosterView(link, myRoster, me);
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Roster fetch failed', e, 'NFL');
+        const g = document.getElementById('playersGrid');
+        if (g) g.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your roster from Sleeper. Try again.</p><button class="md-btn" onclick="_mlRenderRoster(_mlLink)">Retry</button></div></div>`;
+    }
+}
+
+function _mlPlayerLabel(id) {
+    const p = _nflPoolMap && _nflPoolMap[id];
+    if (p) return { name: `${p.first_name || ''} ${p.last_name || ''}`.trim(), pos: p.position || '—', team: p.team || 'FA' };
+    // Not in the player map -- Sleeper represents DEF/DST roster slots as the team
+    // abbreviation itself (e.g. "DET"), not a normal player_id (confirmed via
+    // docs.sleeper.com's own roster example). Render it as a defense, not "undefined".
+    return { name: `${id} D/ST`, pos: 'DEF', team: id };
+}
+
+function _mlRenderRosterView(link, roster, me) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const starters = (roster.starters || []).filter(id => id && id !== '0');
+    const starterSet = new Set(starters);
+    const bench = (roster.players || []).filter(id => id && !starterSet.has(id));
+    const s = roster.settings || {};
+    const record = `${s.wins || 0}-${s.losses || 0}${s.ties ? `-${s.ties}` : ''}`;
+    const teamName = (me && me.metadata && me.metadata.team_name) || (me && me.display_name) || link.sleeper_username;
+
+    const rowsHtml = (ids) => ids.map(id => {
+        const { name, pos, team } = _mlPlayerLabel(id);
+        return `<div class="md-fr-row">${_escFan(name)} <span class="md-rl-team">${_escFan(team)}</span> <span class="md-row-adp">${_escFan(pos)}</span></div>`;
+    }).join('');
+
+    grid.innerHTML = _hqStrip('nfl-myleague') + `
+      <div class="md-wrap md-complete">
+        <h1 class="md-title">${_escFan(teamName)}</h1>
+        <p class="md-note">${_escFan(link.league_name)} · Record ${record}</p>
+        <div class="md-final-roster" style="margin-top:1.5rem">
+          <div class="md-fr-group">
+            <div class="md-fr-pos">Starters</div>
+            ${rowsHtml(starters)}
+          </div>
+          <div class="md-fr-group">
+            <div class="md-fr-pos" style="color:var(--text-muted)">Bench</div>
+            <div class="md-fr-bench">${rowsHtml(bench)}</div>
+          </div>
+        </div>
+        <div class="md-head-actions" style="justify-content:center;margin-top:1.5rem">
+          <button class="md-btn md-btn--ghost" onclick="loadNFLMyLeague()">Refresh</button>
+          <button class="md-btn md-btn--ghost" onclick="_mlUnlink()">Change league</button>
+        </div>
+      </div>`;
+}
+
+// ============================================================
 // Draft Kit — value rankings, tiers, sleepers/traps, cheat sheet (D-028)
 // Reuses the value engine + the Sleeper ADP pool. Standalone view (nfl-draftkit).
 // ============================================================
@@ -924,6 +1154,10 @@ if (typeof window !== 'undefined') {
     window.loadNFLMyDrafts = loadNFLMyDrafts;
     window._mdOpenSavedDraft = _mdOpenSavedDraft;
     window._mdSaveDraft = _mdSaveDraft;
+    window.loadNFLMyLeague = loadNFLMyLeague;
+    window._mlPickLeague = _mlPickLeague;
+    window._mlUnlink = _mlUnlink;
+    window._mlRenderRoster = _mlRenderRoster;
 }
 
 // ── Shareable mock-draft result card (viral loop, draft season) ──
