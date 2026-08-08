@@ -2,7 +2,7 @@
 
 ## Identity
 **Brand:** SportStrata | **Tagline:** "Serious stats for serious fans"
-**Product:** Free, no-login MLB analytics dashboard for broadcast professionals, fantasy players, and data fans.
+**Product:** Free MLB analytics dashboard for broadcast professionals, fantasy players, and data fans. Every core feature works fully signed-out, forever (D-034); an optional free account (D-031, additive-only) adds cross-device sync for follows/prefs — it is never required to use the site.
 All user-facing text uses "SportStrata". Never revert to "ZohnStats".
 
 ---

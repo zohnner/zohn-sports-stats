@@ -2,10 +2,12 @@
 
 **Serious stats for serious fans.**
 
-A free, no-login sports analytics platform — deep MLB analytics plus a full NFL
+A free sports analytics platform — deep MLB analytics plus a full NFL
 draft-and-stats suite — built as a vanilla JavaScript SPA with **no framework and
-no build step**. Content pages are edge-prerendered on Cloudflare so the site is
-fully indexable by search and AI crawlers.
+no build step**. Every core feature works fully signed-out; an optional free
+account adds cross-device sync, never a login wall. Content pages are
+edge-prerendered on Cloudflare so the site is fully indexable by search and AI
+crawlers.
 
 **Live:** [https://sportstrata.cc](https://sportstrata.cc)
 

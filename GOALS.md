@@ -338,12 +338,14 @@ The goal before the feature push: document which AppState fields each view depen
 
 Goal: make the NFL surface a destination for fantasy players, not a stats mirror. Owner direction; extends D-012 (NFL in beta) and D-013 (data via proxy). Full roadmap + decisions in DECISIONS.md D-014.
 
-The proposed features split into two tiers by whether they need **user accounts** — and SportStrata is currently **no-login / no-accounts / free**. That identity is the central decision:
+> **Historical — resolved by D-031/D-034 (2026-08-04), kept for the reasoning trail, not current state.** At the time this section was written, SportStrata was no-login/no-accounts/free and "add accounts?" was an open, un-ratified question. It's since been answered: D-031 shipped an optional, additive-only account tier (sign-in, follows/prefs cross-device sync), and D-034 ratified the constitutional rule that the no-login experience must never regress as a result. The two-tier split below is what motivated that decision, not a description of what's true today — see D-031/D-034 in DECISIONS.md and the "Current State" section further down this file for the shipped reality.
+
+The proposed features split into two tiers by whether they need **user accounts** — and SportStrata was, at the time, **no-login / no-accounts / free**. That identity was the central decision:
 
 - **No-account tier (fits today's static Pages + Functions):** a mock-draft simulator (practice vs. ADP/tier-based AI opponents, Monte Carlo value ranges), an immersive draft-board UI, and projections/ADP/rankings/tiers browsing. This is the cutting-edge hook and needs no login.
 - **Account tier (a product-identity change):** personalized fantasy grades, league import, AI trade/waiver insights (LLM), multiplayer draft rooms, and freemium monetization. These require accounts, persistent storage, a compute/real-time backend, and (for monetization) payments.
 
-Principle: **lead no-login.** Ship the mock-draft simulator first (Sleeper data, ToS-clean); gate the account tier on an explicit "add accounts?" decision.
+Principle at the time: **lead no-login.** Ship the mock-draft simulator first (Sleeper data, ToS-clean); gate the account tier on an explicit "add accounts?" decision. That gate was cleared by D-031 — accounts shipped as additive-only, never replacing the no-login path.
 
 ---
 

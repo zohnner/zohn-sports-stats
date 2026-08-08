@@ -1855,3 +1855,28 @@ D-043 3a is fully shipped and verified. With 3c, 3b, and 3a all closed, **D-043 
 
 ---
 
+## D-061 — Reconcile "no-login" messaging post-D-031: gates + implementation
+**Contributors:** Vera (JTBD/states), Kael (visual), Axiom (feasibility), Folio (doc audit) | **Date:** 2026-08-07
+
+**Trigger:** owner request to verify the site is free of stale "no login ever" claims now that D-031 (accounts) has shipped and been security-reviewed, and to make signing in's actual benefit legible without weakening the free/no-login-required product.
+
+**Vera (JTBD/states):** the job here isn't "advertise accounts" — it's "answer, in one honest sentence, the question a visitor has the instant they see a sign-in prompt: what do I get?" That sentence belongs in exactly one place — the sign-in sheet's initial choices state — and nowhere else; no banner, no toast, no interruption of the signed-out experience the rest of the product correctly protects. Two states: a visitor with existing local follows sees a concrete number ("sync your 3 follows across devices"); a visitor with none sees the same honest claim in the abstract ("an account only adds cross-device sync"). Never claims anything is gated or missing signed-out, because nothing is.
+
+**Kael (visual):** reuse `.auth-sheet-note` (`css/auth.css`, plain `0.8rem` secondary-color text, no background/border) — the same class already used for the sheet's error message, so this doesn't invent a second "info" visual language next to the existing `--info` modifier class. No new CSS. The header's `Sign in` pill stays exactly as low-key as it already is — this is not an opportunity to upsell the entry point, only to explain the sheet once it's already open.
+
+**Axiom (feasibility):** zero new data plumbing needed. `AuthState.follows` (`js/auth.js`) is a `Set` populated synchronously at script load via `_loadLocalFollows()`, before any UI renders — reading `.size` inside `_renderAuthSheetChoices()` is a same-tick, zero-cost read, not a new fetch or a race. No schema change, no new endpoint.
+
+**Folio (doc audit):** grepped every root-level doc for "no login" / "no-login" / "no accounts" language against current shipped state. Two false positives that assert the *whole product* is no-login (now wrong, since D-031 shipped an optional account layer): `CLAUDE.md` line 5, `README.md` line 5. One historical-but-unmarked section that now contradicts the rest of its own file: `GOALS.md`'s pre-D-031 "no-account tier" planning block (~lines 341-347), written when "add accounts?" was still an open question — D-031/D-034 answered it. Everything else checked (`GOALS.md`'s Identity/G4/Current-State sections, `index.html` meta tags, `js/auth.js`'s own code comments, the Mock Draft's specific "no-login" claims) is accurate as-is and was left untouched — "no-login Mock Draft simulator" is still true and scoped correctly; it was never a whole-product claim.
+
+**Shipped:**
+- `CLAUDE.md` Identity/Product line — corrected to state the no-login experience is permanent (D-034) and accounts are optional/additive (D-031), not the old absolute "no-login" claim.
+- `README.md` opening line — corrected the same way; the accurate D-031 description three lines down was already fine and untouched.
+- `GOALS.md` — pre-D-031 "no-account tier" section marked explicitly historical with a pointer to D-031/D-034 and the file's own Current State section, kept rather than deleted (it's the real reasoning trail, not just stale noise).
+- `js/auth.js` — new `_authBenefitCopy()` helper, inserted as a `.auth-sheet-note` line at the top of `_renderAuthSheetChoices()`'s template, per Vera's two-state spec above and Kael's no-new-CSS constraint.
+
+**Verified:** `node --check` clean on `js/auth.js`.
+
+**Committed:** pending — `sw.js` `CACHE_NAME` bump in the same commit, per this repo's standing convention for any JS/CSS change.
+
+---
+

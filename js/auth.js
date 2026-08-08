@@ -196,6 +196,20 @@ function _trapFocus(e, container) {
     }
 }
 
+// D-061: one honest line of context in the sheet's initial choices state --
+// not a nag banner, not shown in any other sheet state (signing-in/sent/error).
+// Reuses .auth-sheet-note (css/auth.css) as-is, no new class. Dynamic when the
+// visitor already has local follows (concrete, not hypothetical); generic
+// honest fallback otherwise. AuthState.follows is populated synchronously at
+// script load (_loadLocalFollows()), so this is safe to read here with no fetch.
+function _authBenefitCopy() {
+    const n = (AuthState.follows && AuthState.follows.size) || 0;
+    if (n > 0) {
+        return `Sign in to sync your ${n} follow${n === 1 ? '' : 's'} across devices — everything already works signed out.`;
+    }
+    return `An account only adds cross-device sync for your follows — everything here works fully signed out.`;
+}
+
 function _renderAuthSheetChoices() {
     const body = document.getElementById('authSheetBody');
     const title = document.getElementById('authSheetTitle');
@@ -203,6 +217,7 @@ function _renderAuthSheetChoices() {
     if (title) title.textContent = 'Sign in';
 
     body.innerHTML = `
+        <p class="auth-sheet-note">${_escHtml(_authBenefitCopy())}</p>
         <button class="auth-method-btn" id="authBtnPasskey">
             <span class="auth-method-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
