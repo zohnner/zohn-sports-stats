@@ -662,6 +662,17 @@ async function _syncPreferencesOnSignIn() {
             // stored here so this stays the single sync point rather than scattering
             // server-preference reads across files.
             window.__SS_SERVER_PREFS = preferences;
+
+            // Settings-panel enrichment (2026-08-09): defaultSport is local-first for
+            // signed-out visitors (localStorage zs_default_sport, set from Settings or the
+            // Dashboard). On sign-in, server wins if it already has a value; otherwise fold
+            // the local choice up once rather than silently dropping it -- same one-time-
+            // migration shape as _migrateLegacyFavorites() uses for follows.
+            if (!preferences.defaultSport) {
+                let localSport = null;
+                try { localSport = localStorage.getItem(_DEFAULT_SPORT_KEY); } catch (_) {}
+                if (localSport) pushPreference('defaultSport', localSport);
+            }
         }
     } catch (e) {
         Logger.warn('Preference sync failed', e, 'AUTH');
@@ -683,6 +694,26 @@ async function pushPreference(key, value) {
     } catch (e) {
         Logger.warn('Preference push failed', e, 'AUTH');
     }
+}
+
+// ---------------------------------------------------------------------------
+// Default sport (2026-08-09) — local-first, works fully signed-out (D-034: an
+// account only ever adds cross-device sync, never gates a capability). First
+// consumer was the Dashboard's per-section "set as default" button; the
+// Settings panel is the second, so the read/write logic is centralized here
+// rather than duplicated in both call sites.
+// ---------------------------------------------------------------------------
+
+const _DEFAULT_SPORT_KEY = 'zs_default_sport';
+
+function _getDefaultSport() {
+    if (window.__SS_SERVER_PREFS && window.__SS_SERVER_PREFS.defaultSport) return window.__SS_SERVER_PREFS.defaultSport;
+    try { return localStorage.getItem(_DEFAULT_SPORT_KEY) || null; } catch (_) { return null; }
+}
+
+function _setDefaultSport(sport) {
+    try { localStorage.setItem(_DEFAULT_SPORT_KEY, sport); } catch (_) {}
+    if (AuthState.status === 'signed-in') pushPreference('defaultSport', sport);
 }
 
 // ---------------------------------------------------------------------------

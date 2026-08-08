@@ -4,5 +4,6 @@ Allow: /
 Disallow: /worker/
 Disallow: /bot/
 Disallow: /functions/
+Disallow: /api/
 
 Sitemap: https://sportstrata.cc/sitemap.xml

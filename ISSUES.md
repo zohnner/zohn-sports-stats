@@ -2080,3 +2080,35 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 ---
 
+## SEO audit: robots.txt gap opened up by D-031's new `/api/` surface — SHIPPED 2026-08-09
+**Contributors:** Axiom (diagnosis + fix)
+
+**Trigger (owner):** "touch base about seo with the new login."
+
+**Finding:** `robots.txt` disallowed `/functions/` and `/worker/` — neither is a real served URL path (Cloudflare Pages Functions are invoked at their route paths, e.g. `/api/*`, `/mlb/*`, never literally at `/functions/*`; `/worker/` is source, served from a different `*.workers.dev` origin entirely). Meanwhile `_routes.json` explicitly includes `/api/*` as a live, invokable route — and D-031 added a real batch of endpoints under it this month: `/api/auth/*` (session, OAuth callback, magic-link, passkey ceremonies), `/api/me`, `/api/follows`, `/api/prefs`, `/api/alertPrefs`, `/api/nflInsights`. None of these were disallowed. Not a data-leak risk (session-scoped endpoints 401 for an unauthenticated crawler), but a real crawl-budget and index-hygiene gap: nothing stopped Googlebot from spending crawl budget on JSON auth/session endpoints, and any endpoint that happens to 200 for a logged-out GET is technically indexable with no meaningful content to show for it.
+
+**Fix:** added `Disallow: /api/` to `robots.txt` (the real, live prefix) alongside the existing (harmless but ineffective) entries.
+
+**Not otherwise a login-vs-SEO conflict:** the Dashboard/Account views are hash-routed (`#dashboard`, `#account`), never real path URLs, never in `sitemap.xml` or `tools/gen-sitemap.cjs` — confirmed by grep. Google does not treat a `#fragment` as a distinct crawlable URL, so there's no risk of a signed-out "please sign in" state getting indexed as if it were real page content, and no canonical/duplicate-content conflict with the neutral home page. This part of the login rollout needed no fix — checked, not assumed.
+
+---
+
+## Settings panel enrichment: Default Sport + Account glue + a real theme-sync bug — SHIPPED 2026-08-09
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-08-09
+
+**Trigger (owner):** "we also have the setup on screen for login, and settings, we need to add more setting for the best user experience."
+
+**Ground truth confirmed before building anything:** `#settingsPanel` (the gear-icon drawer) currently has exactly one section — Appearance (theme swatches) — and has zero awareness that an account system exists at all; a signed-in user opening Settings sees no indication they're signed in, no path to Account from there. Separately, a real bug: `_applyTheme()` writes the chosen theme to `localStorage` only — it is never pushed to `/api/prefs` — so D-031's own "cross-device sync for prefs" promise is only half-true for theme today (`_syncPreferencesOnSignIn` reads a saved theme down from the server, but nothing ever writes a new one back up). `pushPreference()` had exactly one real caller before this pass (the Dashboard's "set as default sport" button) — confirmed via grep.
+
+**Job to be done (Vera):** "I want Settings to be the one place I control how the site behaves for me — including which sport it's built around and whether it knows who I am — not a page with one toggle on it." Default Sport also has real standalone value beyond the Dashboard: nothing today remembers a visitor's sport at all (no localStorage key, confirmed via grep) — every visit starts at the neutral D-042 home picker regardless of history.
+
+**Behavioral spec (Vera):** Two new sections in the Settings drawer, below Appearance. **Default Sport** — a select of the three live surfaces (MLB/NFL/NCAAF only, per this file's own "do not propose NBA/NHL work unprompted" rule) that's local-first and works for every visitor, signed in or not (localStorage `zs_default_sport`), with a best-effort push to `/api/prefs` layered on top when signed in — same "local-first-optimistic, sync when signed in" shape as the follow system, not a new pattern. **Account** — one line of real state ("Signed in as x@y.com" + a link into the Account page, or "Sign in" opening the existing sheet when signed out) so Settings and the account system read as one product instead of two disconnected panels.
+
+**Visual spec (Kael):** New sections reuse `.settings-section`/`.settings-section-label` verbatim — same visual rhythm as Appearance, no new drawer chrome. Default Sport is a plain `<select>`, not a swatch grid — three options doesn't earn a bespoke picker component when Appearance's swatch grid exists for a different reason (visual preview matters for themes; it doesn't for a text label like "NFL").
+
+**Feasibility (Axiom):** No new endpoints, no new schema — reuses `/api/prefs` exactly as `pushPreference()`/`_syncPreferencesOnSignIn()` already call it. Reconciliation on sign-in: if a signed-out visitor set a local default sport and then signs in to an account with no server-side `defaultSport` yet, the local value is pushed up once (mirrors `_migrateLegacyFavorites()`'s one-time-fold precedent for follows) rather than silently discarded; if the server already has a value, server wins on load, matching the existing documented contract. Theme's missing sync-back is fixed in the same pass since it's the same one-line shape (`pushPreference('theme', theme)`) and touches the same code path — not scope creep, the same bug class caught while building the thing that exposed it.
+
+**All three gates present. Implemented this pass.**
+
+---
+

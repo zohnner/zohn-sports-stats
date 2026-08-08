@@ -1709,7 +1709,7 @@ async function renderDashboardView() {
 
     const bySport = _dashGroupFollows();
     const sports = Object.keys(bySport);
-    const defaultSport = (window.__SS_SERVER_PREFS && window.__SS_SERVER_PREFS.defaultSport) || null;
+    const defaultSport = typeof _getDefaultSport === 'function' ? _getDefaultSport() : null;
 
     if (!sports.length) {
         main.innerHTML = '' +
@@ -1756,8 +1756,10 @@ async function renderDashboardView() {
       '</div>';
 }
 
-async function _dashSetDefaultSport(sport) {
-    if (typeof pushPreference === 'function') await pushPreference('defaultSport', sport);
+function _dashSetDefaultSport(sport) {
+    // Shared with the Settings panel's Default Sport select (js/auth.js's _setDefaultSport) --
+    // one write path for localStorage + server push, not two copies of the same logic.
+    if (typeof _setDefaultSport === 'function') _setDefaultSport(sport);
     renderDashboardView();
 }
 
@@ -1783,11 +1785,17 @@ const _CC_THEME_ALTS = {
     'nl-monarchs':     'Kansas City Monarchs — Negro Leagues',
 };
 
-function _applyTheme(theme) {
+function _applyTheme(theme, opts) {
     // A retired theme in a returning user's localStorage falls back to dark, silently.
     if (!_KEPT_THEMES[theme]) theme = 'dark';
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('zs_theme', theme); } catch (_) {}
+    // 2026-08-09 fix: this write-back was missing entirely -- theme synced DOWN from the
+    // server on sign-in (_syncPreferencesOnSignIn) but a change made here never went back
+    // UP, so D-031's "cross-device sync for prefs" was only half-true for theme. `silent`
+    // skips the push on the initial boot-time call (nothing changed, nothing to sync) and
+    // avoids re-pushing on every _initSettingsPanel resync.
+    if (!(opts && opts.silent) && typeof pushPreference === 'function') pushPreference('theme', theme);
     document.querySelectorAll('.theme-swatch').forEach(btn => {
         btn.setAttribute('aria-pressed', String(btn.dataset.themeSet === theme));
     });
@@ -1814,7 +1822,8 @@ function openSettingsPanel() {
     const panel = document.getElementById('settingsPanel');
     if (!panel) return;
     panel.hidden = false;
-    _applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+    _applyTheme(document.documentElement.getAttribute('data-theme') || 'dark', { silent: true });
+    _refreshSettingsPanelState();
     requestAnimationFrame(() => panel.classList.add('settings-panel--open'));
     document.addEventListener('keydown', _settingsPanelKeyHandler);
 }
@@ -1831,16 +1840,46 @@ function _settingsPanelKeyHandler(e) {
     if (e.key === 'Escape') _closeSettingsPanel();
 }
 
+// Settings panel — Default Sport + Account sections (2026-08-09). Local-first default
+// sport works fully signed-out (D-034); Account line is read-only glue into the existing
+// auth system, not a second copy of it -- no sign-out/account logic duplicated here.
+// Option list itself lives as static <option> markup in index.html (three fixed values,
+// not worth generating from JS).
+function _refreshSettingsPanelState() {
+    const sel = document.getElementById('settingsDefaultSport');
+    if (sel && typeof _getDefaultSport === 'function') {
+        sel.value = _getDefaultSport() || '';
+    }
+
+    const accountLine = document.getElementById('settingsAccountLine');
+    const accountBtn = document.getElementById('settingsAccountBtn');
+    if (!accountLine || !accountBtn) return;
+
+    if (typeof AuthState !== 'undefined' && AuthState.status === 'signed-in') {
+        accountLine.textContent = `Signed in as ${AuthState.user.email}`;
+        accountBtn.textContent = 'Manage account';
+        accountBtn.onclick = () => { _closeSettingsPanel(); navigateTo('account'); };
+    } else {
+        accountLine.textContent = 'Not signed in';
+        accountBtn.textContent = 'Sign in';
+        accountBtn.onclick = () => { _closeSettingsPanel(); if (typeof openAuthSheet === 'function') openAuthSheet(); };
+    }
+}
+
 (function _initSettingsPanel() {
     document.getElementById('settingsPanelClose')?.addEventListener('click', _closeSettingsPanel);
     document.getElementById('settingsPanelBackdrop')?.addEventListener('click', _closeSettingsPanel);
     document.querySelectorAll('.theme-swatch').forEach(btn => {
         btn.addEventListener('click', () => _applyTheme(btn.dataset.themeSet));
     });
+    document.getElementById('settingsDefaultSport')?.addEventListener('change', (e) => {
+        if (typeof _setDefaultSport === 'function') _setDefaultSport(e.target.value);
+    });
 })();
 
-// Sync swatch active state on load (theme was set by the inline <head> script)
-_applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+// Sync swatch active state on load (theme was set by the inline <head> script) -- not a
+// user action, so this must never push a "change" back to the server.
+_applyTheme(document.documentElement.getAttribute('data-theme') || 'dark', { silent: true });
 
 if (typeof window !== 'undefined') {
     window.openSettingsPanel = openSettingsPanel;
