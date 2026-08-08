@@ -7,10 +7,10 @@
  * Usage: /api/news?sport=nfl|mlb
  */
 const LEAGUES = { nfl: 'football/nfl', mlb: 'baseball/mlb' };
-// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note. This
-// host serves both leagues' news here, so the same block was silently killing
-// the MLB home headlines rail too, not just NFL -- caught by scoping the fix
-// site-wide instead of stopping at the one page that was reported broken.
+// site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js
+// for the full note. This host serves both leagues' news here, so the original
+// block was silently killing the MLB home headlines rail too, not just NFL --
+// caught by scoping the fix site-wide instead of stopping at the reported page.
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 export async function onRequest(context) {
@@ -30,7 +30,7 @@ export async function onRequest(context) {
         });
     }
 
-    const target = `https://site.api.espn.com/apis/site/v2/sports/${lg}/news`;
+    const target = `https://site.web.api.espn.com/apis/site/v2/sports/${lg}/news`;
     const ttl = 600; // 10 min — news refreshes often but not per-request
     let upstream;
     try {

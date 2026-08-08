@@ -7,21 +7,25 @@
  * Usage: /api/nfl?path=/scoreboard  (extra query params are forwarded)
  * Only an allowlisted set of ESPN NFL paths is permitted (no open proxy).
  */
-const ESPN_NFL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+// 2026-08-07/08: site.api.espn.com started returning an Akamai "Access Denied"
+// 403 to every path (teams/scoreboard/standings/news) with no other change on
+// our side -- caught live the day before preseason kicked off, when the scores
+// page showed the offseason banner instead of Thu Aug 6 CAR@ARI.
+//
+// First fix attempt was a browser-realistic User-Agent header (kept below,
+// harmless) -- didn't clear it. Live-verified via Chrome (real browser network
+// path, not this Function's egress) that site.api.espn.com itself works fine
+// for a normal client; the block is specific to Cloudflare's egress IP range
+// hitting THAT host, not a UA/bot-signature check. sports.core.api.espn.com
+// (nflstats.js) was never blocked, which pointed at a host-specific WAF rule
+// rather than a blanket Cloudflare ban -- and live-checking (again via Chrome,
+// direct navigation, no CORS) confirmed site.web.api.espn.com serves the exact
+// same /apis/site/v2/sports/... path family with byte-identical response shape
+// (scoreboard, teams, news, roster all checked) -- it's a second edge for the
+// same API, not a different one. Switched the upstream host here; every path
+// this file already builds against ESPN_NFL is unchanged.
+const ESPN_NFL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl';
 const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news|summary)\/?$/;
-
-// 2026-08-07: site.api.espn.com started returning an Akamai "Access Denied" 403
-// to every path (teams/scoreboard/standings/news) with no other change on our
-// side -- caught live the day before preseason kicked off, when the scores page
-// showed the offseason banner instead of Thu Aug 6 CAR@ARI. A same-family host,
-// sports.core.api.espn.com (nflstats.js), kept returning 200s throughout, so this
-// is host-specific WAF behavior, not a general ESPN outage. The one lever a
-// Cloudflare Function has against that is request headers -- a browser-realistic
-// User-Agent is the standard fix for this exact class of Akamai bot-block and
-// mirrors the precedent already in this repo (functions/api/mlb.js's
-// 'SportStrata/1.0' UA, added for a similar upstream block). NOT live-verified
-// from this sandbox -- egress to espn.com is blocked here, so this is verified
-// against the documented failure mode and shipped for a real deploy to confirm.
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function ttlFor(path) {

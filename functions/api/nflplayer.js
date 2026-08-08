@@ -9,11 +9,11 @@
  * Usage: /api/nflplayer?name=Jaxon%20Smith-Njigba&team=SEA&season=2025
  * Same-origin; no keys, no D1. Returns { found, season, name, gp, groups:[...] }.
  */
-const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+// site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js
+// for the full note. CORE is a different host and was never blocked (confirmed
+// live via nflstats.js, which reads CORE and kept returning 200s throughout).
+const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
-// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note. Only
-// SITE needs this; CORE is a different host and wasn't blocked (confirmed live
-// via nflstats.js, which reads CORE and kept returning 200s throughout).
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 // Sleeper team abbr -> ESPN team id.

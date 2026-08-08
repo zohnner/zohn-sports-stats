@@ -13,10 +13,10 @@
  *        /api/ncaafstats?season=2025
  * Same-origin; headshots are a.espncdn.com (already in CSP). No keys, no D1.
  */
+// site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js
+// for the full note. CORE is a different host and was never blocked.
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
-const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
-// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note. Only
-// the SITE teams-map fetch below needs this; CORE was never blocked.
+const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 // Curated marquee categories (subset of what ESPN returns for CFB).

@@ -28,8 +28,8 @@
  *     source, _meta? }
  */
 const NV = 'https://github.com/nflverse/nflverse-data/releases/download';
-const ESPN_NFL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
-// site.api.espn.com WAF fix -- see functions/api/nfl.js for the full note.
+// site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js for the full note.
+const ESPN_NFL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 const POS = ['QB', 'RB', 'WR', 'TE'];
 const PLAYOFF_WEEKS = [15, 16, 17];

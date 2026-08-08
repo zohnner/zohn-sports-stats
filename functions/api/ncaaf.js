@@ -8,12 +8,12 @@
  * Usage: /api/ncaaf?path=/scoreboard  (extra query params are forwarded)
  * Only an allowlisted set of ESPN CFB paths is permitted (no open proxy).
  */
-const ESPN_NCAAF = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+// site.api.espn.com -> site.web.api.espn.com host swap -- see the full note +
+// date in functions/api/nfl.js (this file clones that one; same host, same
+// 403, same fix, live-confirmed via direct browser navigation that this host
+// serves identical /apis/site/v2/... shapes for college-football too).
+const ESPN_NCAAF = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
 const ALLOWED_PATHS = /^\/(teams(\/\d+(\/(roster|schedule))?)?|scoreboard|standings|rankings|news|summary)\/?$/;
-
-// site.api.espn.com WAF fix -- see the matching comment + date in functions/api/nfl.js
-// (this file clones that one; same host, same 403, same fix, same disclosed
-// not-live-verified-from-this-sandbox caveat).
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function ttlFor(path) {
