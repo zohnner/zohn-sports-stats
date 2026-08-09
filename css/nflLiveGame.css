@@ -41,11 +41,16 @@
 .nlg-ts-l { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
 .nlg-bx { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; padding: 0.4rem 0.8rem 0.8rem; }
 .nlg-bx-team-title { font-weight: 800; font-size: 0.78rem; color: var(--accent); margin-bottom: 0.3rem; }
-.nlg-bx-head { display: flex; gap: 0.3rem; font-size: 0.58rem; text-transform: uppercase; color: var(--text-subtle); padding: 0.3rem 0 0.15rem; border-bottom: 1px solid var(--border-subtle); margin-top: 0.4rem; }
-.nlg-bx-row { display: flex; gap: 0.3rem; font-size: 0.74rem; padding: 0.2rem 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.nlg-bx-head span:first-child, .nlg-bx-name { flex: 1.5; min-width: 0; }
-.nlg-bx-head span:not(:first-child), .nlg-bx-row span:not(.nlg-bx-name) { flex: 1; text-align: right; }
+.nlg-bx-head { display: flex; gap: 0.25rem; font-size: 0.58rem; text-transform: uppercase; color: var(--text-subtle); padding: 0.3rem 0 0.15rem; border-bottom: 1px solid var(--border-subtle); margin-top: 0.4rem; }
+.nlg-bx-row { display: flex; gap: 0.25rem; font-size: 0.72rem; padding: 0.2rem 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* Name gets a fixed floor instead of a flex ratio — at 7-8 stat columns (full
+   box score, D-080 Phase 1) a proportional 1.5-of-N share truncated every
+   name to 5-6 characters. Stat columns share what's left and may shrink
+   evenly on narrow widths rather than starving the name column. */
+.nlg-bx-head span:first-child, .nlg-bx-name { flex: 0 0 88px; min-width: 60px; }
+.nlg-bx-head span:not(:first-child), .nlg-bx-row span:not(.nlg-bx-name) { flex: 1 1 0; min-width: 0; text-align: right; }
 .nlg-bx-name { color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+@media (min-width: 640px) { .nlg-bx-head span:first-child, .nlg-bx-name { flex-basis: 112px; } }
 .nlg-loading, .nlg-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
