@@ -1815,3 +1815,20 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **One real open risk inside Phase 1 itself, not deferred to a later phase:** whether ESPN's `/summary` response actually contains a full play-by-play/drives array is unverified — `nflLiveGame.js`'s existing code only ever reads `header`, `boxscore`, and `scoringPlays`, never `plays` or `drives`. This sandbox has no outbound route to ESPN to check directly (same limitation that shaped the D-079 field-shape caveat, which then caught two real bugs on first live use). A live check via Chrome against a real event ID is required before Finn builds the Play-by-Play tab or drive visualization specifically — it does not block starting Phase 1's other four tabs, which have no such open question.
 
 **Precedent this follows:** Highlight Card Studio's PNG-now/GIF-later split, Push Notifications' game-start-now/milestone-later split — this project's established discipline is to name a scope cut in writing rather than silently under-deliver against a broad brief or silently over-scope into a multi-week build presented as one task.
+
+## D-081 — Phase 3 analytics split in two: Success Rate/Drive Efficiency are live-ready now, EPA/CPOE need nflverse data that doesn't exist for 2026 yet
+
+**Status:** scoped, not yet implemented
+**Contributors:** Axiom (feasibility, live-checked nflverse availability), Vera (live-vs-recap framing), Kael (brief receipts note)
+**Date opened:** 2026-08-09 | **Date resolved:** open (Phase 3a ready for implementation; Phase 3b blocked on external data)
+
+**Trigger:** with Phase 2 (win probability) blocked until more preseason games are played (next wave Aug 13), owner chose to scope Phase 3 (D-080's deferred analytics phase: EPA, success rate, CPOE, player impact, drive efficiency, FPOE) instead of waiting idle.
+
+**Decision: Phase 3 is not one initiative — it splits into 3a (ship-ready) and 3b (blocked on data that doesn't exist yet for this season), and treating it as one undifferentiated "analytics" bucket would have hidden that from whoever implements it next.**
+
+- **Phase 3a — Success Rate + Drive Efficiency.** Both are computable now, live, from data `js/nflLiveGame.js` already fetches (down/distance/yards-gained for success rate's rule-based formula; `drives[]` fields for drive efficiency). No new data source, no new architecture. This is the genuine "live analytics" win the original brief asked for and is effectively pre-approved for implementation.
+- **Phase 3b — EPA, CPOE, Win Probability Added, Player Impact.** These need nflfastR-computed play-by-play data (industry-standard methodology, not something to rebuild from scratch — that's a multi-week modeling project in its own right). Checked live, not assumed: nflverse's `play_by_play_2026.csv.gz` returns 404 today — the 2026 season's file does not exist yet, and the most recent one (`play_by_play_2025.csv.gz`) was last touched 2026-02-12, a post-season archival timestamp with no evidence of in-season update cadence to check against right now. **This data is also not live by nature even once available** — it's computed from finalized plays, making Phase 3b a post-game recap feature, not an in-game one. Real scope correction from the original brief's "live analytics" framing, but only for this piece — Phase 3a stays genuinely live.
+- Architecture for 3b, when it's time: not a per-request fetch of an 18MB gzip file (the existing `functions/api/nfladv.js` pattern only proves this works for small per-season NGS files) — needs a scheduled Worker (same cron pattern as `worker/push-game-alerts.js`) that ingests once and stores a distilled summary in D1.
+- **Phase 3c (FPOE)** needs its own expected-fantasy-points baseline model, smaller than 3b but still real modeling work — deferred further, no spec yet.
+
+**Next concrete action:** implement Phase 3a now. Recheck nflverse's 2026 pbp file availability and update cadence in September once the regular season starts, before scoping 3b's implementation further.
