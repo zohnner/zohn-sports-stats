@@ -1624,32 +1624,67 @@ function _mlbLandingLeaders() {
     }).join('');
 }
 
-// NFL / NCAAF landing enrichment — a Stat Leaders teaser from the sport's stats
-// API (last-completed season in offseason). The Today's-Games strip populates
-// in-season via the shared Scorebug football normalizers (added when they open).
+// NFL / NCAAF landing enrichment — a This Week's Games strip (the "added when
+// they open" follow-up this comment used to name, wired up now that a real
+// game exists: 2026 preseason kicked off, and Week 1 is 2026-09-09) plus the
+// existing Stat Leaders teaser. Games render via the same Scorebug cards the
+// home page and My Dashboard already use — no bespoke card here. .sl-games
+// grid styling was already sitting in css/main.css, unused, for this exact
+// section.
 async function _loadFootballLandingData(sport) {
     const host = document.getElementById('slData');
     if (!host) return;
     const statsPath = sport === 'ncaaf' ? '/api/ncaafstats' : '/api/nflstats';
-    let data = null;
-    try { const r = await fetch(statsPath); if (r.ok) data = await r.json(); } catch (err) { Logger.warn(`Football landing stats fetch failed (${sport})`, err, 'APP'); }
-    const cats = (data && data.categories) || [];
-    if (!cats.length || !host.isConnected) return;
-    const tiles = cats.slice(0, 4).map(cat => {
-        const l = (cat.leaders || [])[0];
-        if (!l || l.value == null) return '';
-        const clk = (sport === 'ncaaf' && l.id)
-            ? ` onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')"`
-            : ` onclick="navigateTo('${sport}-leaders')"`;
-        return `<button class="sl-leader"${clk}>
-            <span class="sl-leader-val">${_escHtml(String(l.value))}<span class="sl-leader-unit">${_escHtml(cat.unit || '')}</span></span>
-            <span class="sl-leader-name">${_escHtml(l.name || '')}</span>
-            <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
-    }).filter(Boolean).join('');
-    if (!tiles || !host.isConnected) return;
-    host.innerHTML = `<section class="sl-section">
-        <div class="sl-section-hdr"><span class="eyebrow">Stat Leaders</span><button class="sl-section-link" onclick="navigateTo('${sport}-leaders')">Full leaderboards →</button></div>
-        <div class="sl-leaders">${tiles}</div></section>`;
+    const scoreFn = sport === 'ncaaf'
+        ? (typeof fetchNCAAFScoreboard === 'function' ? fetchNCAAFScoreboard : null)
+        : (typeof fetchNFLScoreboard === 'function' ? fetchNFLScoreboard : null);
+    const normalize = (typeof Scorebug !== 'undefined')
+        ? (sport === 'ncaaf' ? Scorebug.normalizeNCAAFGame : Scorebug.normalizeNFLGame)
+        : null;
+    const scoresView = sport === 'ncaaf' ? 'ncaaf-scores' : 'nfl-games';
+
+    const [statsData, games] = await Promise.all([
+        fetch(statsPath).then(r => r.ok ? r.json() : null).catch(err => { Logger.warn(`Football landing stats fetch failed (${sport})`, err, 'APP'); return null; }),
+        scoreFn ? scoreFn().catch(err => { Logger.warn(`Football landing scoreboard fetch failed (${sport})`, err, 'APP'); return []; }) : Promise.resolve([]),
+    ]);
+    if (!host.isConnected) return;
+
+    let gamesHtml = '';
+    if (normalize && games && games.length) {
+        const liveFirst = g => g.isLive ? 0 : 1;
+        const picked = games.slice().sort((a, b) => liveFirst(a) - liveFirst(b)).slice(0, 6);
+        const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g))).filter(Boolean).join('');
+        if (cards) {
+            gamesHtml = `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">This Week's Games</span><button class="sl-section-link" onclick="navigateTo('${scoresView}')">All scores →</button></div>
+                <div class="sl-games">${cards}</div></section>`;
+        }
+    }
+
+    const cats = (statsData && statsData.categories) || [];
+    let leadersHtml = '';
+    if (cats.length) {
+        const tiles = cats.slice(0, 4).map(cat => {
+            const l = (cat.leaders || [])[0];
+            if (!l || l.value == null) return '';
+            const clk = (sport === 'ncaaf' && l.id)
+                ? ` onclick="navigateTo('ncaaf-player-${_escHtml(String(l.id))}')"`
+                : ` onclick="navigateTo('${sport}-leaders')"`;
+            return `<button class="sl-leader"${clk}>
+                <span class="sl-leader-val">${_escHtml(String(l.value))}<span class="sl-leader-unit">${_escHtml(cat.unit || '')}</span></span>
+                <span class="sl-leader-name">${_escHtml(l.name || '')}</span>
+                <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
+        }).filter(Boolean).join('');
+        if (tiles) {
+            leadersHtml = `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">Stat Leaders</span><button class="sl-section-link" onclick="navigateTo('${sport}-leaders')">Full leaderboards →</button></div>
+                <div class="sl-leaders">${tiles}</div></section>`;
+        }
+    }
+
+    if (!gamesHtml && !leadersHtml) return;
+    if (!host.isConnected) return;
+    host.innerHTML = gamesHtml + leadersHtml;
 }
 
 // ── My Dashboard (D-069 cont'd) — cross-sport personalized view ────────────

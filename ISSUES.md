@@ -2224,3 +2224,13 @@ Followed up the D-058 brainstorm item flagging `ncaafathlete.js` as unaudited fo
 Verified: `node --check` both files, full suite (48/48), manifest sync, NUL scan, and a live DOM injection of the real rendered card against production KC data before committing (screenshot matched MLB's card styling exactly). `sw.js` bumped alongside.
 
 ---
+
+## NFL/NCAAF landing pages — "This Week's Games" wired up — SHIPPED 2026-08-09
+
+**Context:** Owner asked to brainstorm NFL season readiness (Week 1 is 2026-09-09 — Seahawks host Patriots, confirmed via search since this is a real present-day fact, not assumed). `js/app.js`'s `_loadFootballLandingData(sport)` had a comment dating back to its original build that literally named this as deferred work: "The Today's-Games strip populates in-season via the shared Scorebug football normalizers (added when they open)." It was never wired up — the `/nfl` and `/ncaaf` landing pages showed a Stat Leaders strip and nothing else, no games at all, even though `.sl-games` grid CSS already existed unused in `css/main.css` for exactly this.
+
+**What shipped:** both landing pages now show a "This Week's Games" section above Stat Leaders, built from the same zero-arg `fetchNFLScoreboard()`/`fetchNCAAFScoreboard()` calls the Scores view's own current-week default already relies on (D-071), rendered through the same `Scorebug.renderScoreCard` cards the home page and My Dashboard use — no new fetch pattern, no bespoke card. Live-first sort, capped at 6. Gracefully omits the section entirely (falls back to Stat Leaders only, today's prior behavior) when there are no games — verified this actually matters: NFL landing now shows the real completed CAR 33 @ ARI 30 preseason final; NCAAF's actual Week 1 slate (kicks off before the NFL) already populates with real matchups and kickoff times.
+
+**Not done (flagged, not started):** the rest of the season-readiness brainstorm — a sport-aware home hero (NFL vs MLB), an `/api/nfl` load check ahead of Sunday's ~13-concurrent-game cluster, porting Highlight Card Studio to NFL, and the still-unbuilt Stripe subscription tier. Sequencing and the home-hero product call are the owner's to make next.
+
+---
