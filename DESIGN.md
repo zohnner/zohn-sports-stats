@@ -36,7 +36,7 @@ All color through `css/variables.css` tokens — a hex literal in a style attrib
 
 - **Accent** (`--accent`) means *SportStrata is speaking*: primary actions, active nav, the brand. Scarcity is what makes it audible.
 - **Stat-category colors** mark *category, never importance* (2026-05-17 rule). A number is never colored to shout.
-- **Semantic trio:** `--color-win` green, `--color-loss` red, `--color-live` amber — states, nowhere else. Thresholded values (odds ≥75%, streaks) may borrow win/loss; decoration may not.
+- **Semantic trio:** `--color-win` green, `--color-loss` red, `--color-live` hot pink/magenta (`#ff006e`) — states, nowhere else. (Corrected 2026-08-08 — this line said "amber" for weeks after the token itself was fixed 2026-08-02 during N-17's injury-badge work; CLAUDE.md had the right value, this page didn't. Per this page's own enforcement rule, the correction belongs here in the same pass it's noticed, not deferred.) Thresholded values (odds ≥75%, streaks) may borrow win/loss; decoration may not.
 - **Border = identity, badge = state** (D-038 K2). Card borders belong to teams; liveness/status lives in badges and glows. Never encode state in the border channel.
 - **Team colors are data**, injected inline at render — the one sanctioned inline-style use.
 

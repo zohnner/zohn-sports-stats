@@ -1,0 +1,87 @@
+name: SportStrata CI
+
+# Wraps the existing .claude/commands/deploy-check.md checklist in a required,
+# non-skippable gate. The checks themselves are unchanged (same commands, same
+# pass/fail logic) — this workflow only makes them run automatically instead of
+# depending on someone remembering to type /deploy-check before pushing.
+# Added 2026-08-08 (full-team audit finding — docs/full-audit-2026-08-08.md A1):
+# no CI previously ran on push/PR at all, on a repo that now holds Stripe
+# entitlement scaffolding and session auth.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: BDL API key not hardcoded (deploy-check #1)
+        run: |
+          if grep -qE "BDL_API_KEY\s*=\s*'[^']+'" js/api.js && ! grep -q "BDL_API_KEY  = '';" js/api.js; then
+            echo "::error::js/api.js:11 has a non-empty BDL_API_KEY value"
+            grep -n "BDL_API_KEY\s*=" js/api.js
+            exit 1
+          fi
+          echo "OK: BDL_API_KEY is empty in source"
+
+      - name: _headers file present (deploy-check #2)
+        run: test -f _headers || (echo "::error::_headers missing" && exit 1)
+
+      - name: CSP consistent between _headers and index.html (deploy-check #3)
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const headers = fs.readFileSync('_headers', 'utf8');
+          const htmlCsp = (html.match(/Content-Security-Policy" content="([^"]+)"/) || [])[1];
+          const headersCsp = (headers.match(/Content-Security-Policy:\s*(.+)/) || [])[1];
+          if (!htmlCsp || !headersCsp) {
+            console.error('Could not locate CSP in one or both files');
+            process.exit(1);
+          }
+          const norm = s => s.trim().replace(/;\s*$/, '').split(';').map(d => d.trim()).sort().join(';');
+          if (norm(htmlCsp) !== norm(headersCsp)) {
+            console.error('CSP mismatch between index.html and _headers');
+            process.exit(1);
+          }
+          console.log('OK: CSP directives match between index.html and _headers');
+          EOF
+
+      - name: .env not tracked (deploy-check #6)
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked in git"
+            exit 1
+          fi
+          echo "OK: .env is not tracked"
+
+      - name: Unit tests (deploy-check #9)
+        run: node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/scorebug.test.js tests/entitlement.test.js
+
+      - name: Delivery manifest in sync (deploy-check #10)
+        run: node tools/check-manifest.cjs
+
+      - name: Theme contrast contract (deploy-check #11)
+        run: node tools/check-themes.cjs --strict
+
+      - name: NUL-byte corruption scan (deploy-check #12)
+        run: |
+          found=0
+          while IFS= read -r -d '' f; do
+            n=$(tr -cd '\000' < "$f" | wc -c)
+            if [ "$n" -gt 0 ]; then
+              echo "::error::CORRUPT: $f ($n NUL bytes)"
+              found=1
+            fi
+          done < <(git ls-files -z -- '*.js' '*.css' '*.html' '*.md')
+          exit $found

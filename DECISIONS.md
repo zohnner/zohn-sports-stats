@@ -1640,3 +1640,36 @@ Two derived helpers replace the single old boolean, because the call sites actua
 **Scope note:** this is a defensive fix for a failure window that repeats every year at the same two calendar boundaries (Aug 1 for CFB, Sep 1 for NFL) as long as `defaultSeason()` stays a hard date-based flip with no data-availability check of its own. The retry-once-on-default pattern is now proven in four files (`ncaafstats.js`, `ncaafathlete.js`, `nflplayer.js`, `nflstats.js`) and is the standing answer if a fifth surfaces later — worth reaching for directly rather than re-deriving from scratch.
 
 **Verified:** `node --check` clean on all 4 touched files (3 Functions + `js/nfl.js`). NUL-byte scan clean. `node --test` 33/33. `tools/check-manifest.cjs` clean. **Not live-verified** — same disclosed class of gap as every other ESPN/ESPN-adjacent Functions change this project has shipped from this sandbox (no outbound network here); the `ncaafathlete.js` fix is inside the exact live vulnerability window right now, so the first real check after deploy (`fetch('/api/ncaafathlete?id=<a real returning starter>&season=2026')` should report `season: 2025` with populated `groups`) is the actual proof. The `nflplayer.js`/`nflstats.js` fixes can't be exercised for real until closer to Sep 1 — flagged for a follow-up live check around that date rather than assumed correct in the meantime.
+
+---
+
+## D-073 — Full-team audit: persona-file drift, CI gate, and the Stripe gap — findings actioned same session
+
+**Status:** accepted (findings); open (Stripe build itself — see ISSUES.md entry)
+**Contributors:** Kael, Axiom, Vera, Cipher, Relay, Folio, Finn (full-team audit) — actioned by Axiom this session
+**Date opened:** 2026-08-08 | **Date resolved:** 2026-08-08 (documentation/process items); Stripe build remains open
+
+**Decision needed:**
+Full-team audit (`docs/full-audit-2026-08-08.md`) found the seven `.claude/members/*.md` persona files had drifted stale since onboarding — `security.md` and `dev.md` worst, both describing a pre-auth, pre-NCAAF, P1-006-open world months after all three changed. Root cause, confirmed by checking `.gitignore`: `.claude/` is intentionally excluded from version control ("Meta / prompting files — not project code"), so these files never benefit from the doc-sync discipline that keeps `CLAUDE.md`/`ISSUES.md`/`DECISIONS.md` current — nothing ever forced them to be revisited. Separately, the same audit found no CI gate enforces `/deploy-check`'s 13 checks, and that the three already-spec'd paid-tier features (AI League Insights, Personalized Fantasy Grade, Weekly Digest) all terminate at a correctly-stubbed but entirely unbuilt Stripe integration.
+
+**Options considered:**
+1. Log the findings only, leave remediation for a future session.
+2. Fix what's mechanical and low-risk now (doc corrections, a new CI workflow, a new test file, a proper three-gate spec for the missing Stripe piece), leave what requires owner input (pricing, a real Stripe account) explicitly open.
+
+**Decision:**
+Option 2. Actioned this session, same day as the audit:
+- `DESIGN.md`'s `--color-live` entry corrected (was "amber," is `#ff006e"` since 2026-08-02 — DESIGN.md itself hadn't been updated).
+- `.claude/members/design.md`, `dev.md`, `security.md` Project Context Blocks refreshed against current `CLAUDE.md`/`ISSUES.md` state (`security.md`'s "Auth mechanism: None" line was the single highest-severity correction — D-031 shipped auth, sessions, and now Stripe entitlement scaffolding months before this file was touched).
+- `.claude/members/junior.md` and `ux.md` had stale/closed blockers and a shipped-but-still-listed-as-open pain point (team leaderboard filter) removed.
+- `ISSUES.md`'s P2 summary table had its stale P2-005 row deleted per the file's own house rule ("when fixed, delete the row" — the detailed entry and D-068 already confirmed it closed).
+- `.github/workflows/ci.yml` added, wrapping deploy-check's BDL-key/`_headers`/CSP-sync/`.env`/unit-test/manifest/theme-contrast/NUL-byte checks into a required gate on push and PR. Verified: every check's underlying command was run directly against the current repo state and passes (manifest 0 failures, themes 0 errors/2 pre-existing WARNs, CSP in sync, BDL key empty, `.env` untracked).
+- `tests/entitlement.test.js` added — 7 tests covering `functions/api/_entitlement.js`'s `isEntitled()`, the first Pages Function in the repo with test coverage. Full suite verified at 48/48 passing with this file included.
+- A proper three-gate ISSUES.md entry ("Stripe billing integration") scoped the one concrete piece standing between the three already-spec'd paid features and real revenue, rather than leaving it as an implicit, unscoped prerequisite.
+
+**Rationale:**
+`TEAM.md`'s session-start protocol already keeps `DECISIONS.md`/`ISSUES.md`/`GOALS.md` accurate by requiring every persona to read them first. Persona files were never brought under an equivalent forcing function, and being gitignored means they're structurally invisible to every other discipline (PR review, commit-message history, doc-sync) that would otherwise have caught the drift. The mechanical fixes here (documentation, CI, one test file, one spec) don't require owner judgment and were cheap enough to do the same session they were found, rather than filed and revisited later at compounding cost.
+
+**Implications:**
+- **Not fixed by this pass, and explicitly still owner-gated:** the actual subscription price, and Stripe account/product setup — both named directly in the new ISSUES.md entry and `docs/roadmap-2026-08-08.md`.
+- **Process gap still open:** `TEAM.md` itself doesn't yet require refreshing a persona's Project Context Block when a session surfaces contradicting information (the audit's original recommendation for a standing fix, not just a one-time cleanup). Worth a deliberate decision on whether to add that line to `TEAM.md`'s session-end protocol — not actioned here since it's a process change to a document all three core seniors jointly own, not a unilateral documentation correction.
+- **`.claude/` remaining gitignored is a reasonable call to leave as-is** (these genuinely aren't project code) — but it means persona-file freshness has to be an explicit, periodic check from here forward, not something that falls out of normal commit discipline for free.
