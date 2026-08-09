@@ -376,103 +376,15 @@ function _nflDaysToKickoff() {
     return Math.max(0, Math.ceil((_nflKickoffDate() - new Date()) / 86400000));
 }
 
-// ── NFL home — season-aware landing (the sport's front door) ──
-async function loadNFLHome() {
-    if (typeof _applySportUI === 'function') _applySportUI('nfl');
-    const grid = document.getElementById('playersGrid');
-    if (!grid) return;
-    grid.className = 'home-container';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-home', null);
-
-    const phase = _nflSeasonPhase();
-    const offseason = phase === 'offseason';
-    const preseason = phase === 'preseason';
-    const firstVisit = !localStorage.getItem('zs_seen_nfl_home');
-    if (firstVisit) localStorage.setItem('zs_seen_nfl_home', '1');
-
-    const days = _nflDaysToKickoff();
-    const kicker = offseason ? 'NFL Draft Season' : preseason ? 'NFL Preseason' : `${NFL_FANTASY_SEASON} Season`;
-    const heroText = offseason
-        ? (days > 0 ? `${days} day${days === 1 ? '' : 's'} to kickoff — build your board before your league does.`
-                    : 'Kickoff week — lock in your draft.')
-        : preseason
-            ? `Preseason is live${days > 0 ? ` — ${days} day${days === 1 ? '' : 's'} to the real kickoff` : ''}. Real scores now, official standings once the ${NFL_FANTASY_SEASON} season starts.`
-            : 'Live scores, standings, and stat leaders — the season is on.';
-    const heroChips = offseason
-        ? `<button class="hm-chip" onclick="navigateTo('nfl-mock')">Mock Draft →</button>
-           <button class="hm-chip" onclick="navigateTo('nfl-rankings')">Draft HQ →</button>
-           <button class="hm-chip" onclick="navigateTo('nfl-leaders')">${NFL_STATS_SEASON} Leaders →</button>`
-        : preseason
-            ? `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
-               <button class="hm-chip" onclick="navigateTo('nfl-mock')">Mock Draft →</button>
-               <button class="hm-chip" onclick="navigateTo('nfl-rankings')">Draft HQ →</button>`
-            : `<button class="hm-chip" onclick="navigateTo('nfl-games')">Scores →</button>
-           <button class="hm-chip" onclick="navigateTo('nfl-standings')">Standings →</button>
-           <button class="hm-chip" onclick="navigateTo('nfl-leaders')">Leaders →</button>`;
-
-    const tiles = [
-        ['nfl-games', 'Scores', offseason ? 'Upcoming schedule' : preseason ? 'Preseason live' : 'Live & recent'],
-        ['nfl-standings', 'Standings', (offseason || preseason) ? 'Opens at kickoff' : 'Division races'],
-        ['nfl-rankings', 'Draft HQ', 'Rankings · value board'],
-        ['nfl-mock', 'Mock Draft', 'Practice vs ADP-based AI'],
-        ['nfl-players', 'Players', 'Profiles & season stats'],
-        ['nfl-leaders', 'Leaders', `${NFL_STATS_SEASON} stat leaders`],
-        ['nfl-teams', 'Teams', 'All 32'],
-        ['nfl-compare', 'Compare', 'Player vs player'],
-    ];
-    const tileHtml = tiles.map(([v, t, d]) => `
-        <button class="home-feature-item" onclick="navigateTo('${v}')">
-            <div class="home-feature-text">
-                <div class="home-feature-title">${t}</div>
-                <div class="home-feature-desc">${_escHtml(d)}</div>
-            </div>
-        </button>`).join('');
-
-    grid.innerHTML = `
-        ${firstVisit ? `<div class="home-welcome">
-            <strong class="home-welcome-headline">NFL on SportStrata — no login, ever.</strong>
-            <span class="home-welcome-sub">Draft tools with an edge, stat leaders back to 2000, and live scores in season. Free, no account, no ads.</span>
-        </div>` : ''}
-        <div class="home-moment">
-            <div class="hm-row">
-                <span class="hm-kicker">${kicker}</span>
-                <span class="hm-text">${heroText}</span>
-                ${heroChips}
-            </div>
-        </div>
-        <div class="home-today" id="nflHomeGames">
-            <div class="home-section-hdr">
-                <span class="home-section-title">${offseason ? 'Upcoming Games' : preseason ? 'Preseason Games' : 'This Week'}</span>
-                <button class="home-section-link" onclick="navigateTo('nfl-games')">All scores →</button>
-            </div>
-            <div class="games-grid" id="nflHomeGamesGrid">
-                ${Array.from({ length: 4 }, () => `<div class="skeleton-card" style="min-height:120px"></div>`).join('')}
-            </div>
-        </div>
-        <div class="home-features">${tileHtml}</div>
-    `;
-
-    if (typeof fetchNFLScoreboard === 'function') {
-        try {
-            const games = (AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard();
-            AppState.nflGames = games;
-            if (AppState.currentView !== 'nfl-home') return;
-            const host = document.getElementById('nflHomeGamesGrid');
-            const wrap = document.getElementById('nflHomeGames');
-            if (games && games.length && host) {
-                const rank = g => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
-                const top = games.slice().sort((a, b) => rank(a) - rank(b)).slice(0, 6);
-                host.innerHTML = '';
-                top.forEach(g => host.appendChild(_createNFLGameCard(g)));
-            } else if (wrap) {
-                wrap.remove();
-            }
-        } catch (_) {
-            document.getElementById('nflHomeGames')?.remove();
-        }
-    }
-}
-
+// loadNFLHome() (season-aware NFL home) lived here — removed 2026-08-09 (D-076).
+// Confirmed unreachable: renderCurrentView() intercepts every `{sport}-home` view via
+// the D-045 _renderSportLanding route before _renderNFLView's switch is ever reached,
+// so the `case 'nfl-home':` branch that called this function could never run either
+// (also removed, js/navigation.js). D-063 added real phase-aware copy to this function
+// without noticing the route change had already orphaned it — see D-063's own
+// live-verification note and D-076. The one genuinely load-bearing piece (the
+// phase-aware seasonal line) now lives in js/app.js as _nflLandingTag(), feeding the
+// route that actually renders.
 async function loadNFLGames() {
     const grid = document.getElementById('playersGrid');
     grid.className = 'games-grid';
@@ -1953,6 +1865,5 @@ if (typeof window !== 'undefined') {
     window.displayNFLStatLeaders = displayNFLStatLeaders;
     window.loadNFLPlayers      = loadNFLPlayers;
     window.displayNFLPlayers   = displayNFLPlayers;
-    window.loadNFLHome         = loadNFLHome;
     window.updateNFLTicker     = updateNFLTicker;
 }

@@ -679,10 +679,9 @@ function _renderNFLView(view) {
             if (AppState.nflStandings?.length) displayNFLStandings(AppState.nflStandings);
             else loadNFLStandings();
             break;
-        case 'nfl-home':
-            if (viewCount) viewCount.textContent = 'NFL Home';
-            if (typeof loadNFLHome === 'function') loadNFLHome();
-            break;
+        // 'nfl-home' has no case here — renderCurrentView() intercepts every `{sport}-home`
+        // view via the D-045 _renderSportLanding route above, so this switch never sees it.
+        // A case here (calling the now-removed loadNFLHome()) was confirmed-dead code — see D-076.
         default:
             Logger.error(`Unknown NFL view: ${view}`, undefined, 'NAV');
     }

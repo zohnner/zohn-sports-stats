@@ -59,7 +59,7 @@ const _SPORT_LANDING = {
         ['mlb-standings', 'table', 'Standings & Odds', 'Divisions + Monte Carlo playoff odds'],
         ['mlb-players', 'player', 'Players', 'Statcast profiles, splits, compare'],
         ['mlb-prep', 'clipboard', 'Game Prep', 'Matchups · lineups · print-ready'] ] },
-    nfl:   { tag: 'No-login fantasy tools that give you the edge.', cards: [
+    nfl:   { tag: _nflLandingTag, cards: [
         ['nfl-mock', 'board', 'Mock Draft', 'Live Monte Carlo + value board'],
         ['nfl-draftkit', 'clipboard', 'Draft HQ', 'VORP rankings, tiers, sleepers'],
         ['nfl-standings', 'table', 'Standings', 'Divisions, seeds, playoff picture'],
@@ -70,6 +70,23 @@ const _SPORT_LANDING = {
         ['ncaaf-leaders', 'bars', 'Leaders', 'Passing · rushing · receiving · defense'],
         ['ncaaf-scores', 'scores', 'Scores', 'Top 25 scoreboard'] ] },
 };
+
+// NFL landing seasonal line (D-045 said "one hero + seasonal line" but the line was a
+// static string, not actually seasonal — this is the fix flagged and left open by D-063's
+// own verification note: loadNFLHome() had real phase-aware copy but is unreachable, since
+// renderCurrentView() routes every `{sport}-home` through _renderSportLanding before that
+// function's dispatch is ever reached. Porting the whole richer loadNFLHome() layout here
+// would break D-045's "clean, generic across sports" scope; the seasonal line alone is the
+// piece _renderSportLanding was always meant to carry.
+function _nflLandingTag() {
+    const phase = (typeof _nflSeasonPhase === 'function') ? _nflSeasonPhase() : 'offseason';
+    if (phase === 'preseason') return 'Preseason is live — no-login fantasy tools that give you the edge for kickoff.';
+    if (phase === 'regular' || phase === 'postseason') return 'Live scores, standings, and stat leaders — the season is on.';
+    const days = (typeof _nflDaysToKickoff === 'function') ? _nflDaysToKickoff() : null;
+    return (days > 0)
+        ? `${days} day${days === 1 ? '' : 's'} to kickoff — build your board before your league does.`
+        : 'No-login fantasy tools that give you the edge.';
+}
 
 // Broadcast-grade inline card icons (16x16 stroke, match the home feature cards).
 // Replaces emoji that mojibake'd to "U0001F3C6" from invalid \U escapes.
@@ -1540,6 +1557,7 @@ function _renderSportLanding(sport) {
     if (typeof _applySportUI === 'function') _applySportUI(sport);
     const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: '🏟️', label: sport.toUpperCase(), accent: 'var(--accent)' };
     const cfg = _SPORT_LANDING[sport] || { tag: '', cards: [] };
+    const tag = (typeof cfg.tag === 'function') ? cfg.tag() : cfg.tag;
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
     grid.className = 'sport-landing';
     grid.style.cssText = '';
@@ -1547,7 +1565,7 @@ function _renderSportLanding(sport) {
         <div class="sl-hero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
             <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
-            <p class="sl-hero-tag">${_escHtml(cfg.tag)}</p>
+            <p class="sl-hero-tag">${_escHtml(tag)}</p>
             <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
         </div>
         <div class="sl-cards">
