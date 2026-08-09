@@ -433,7 +433,7 @@ async function _hcExportPNG(btn) {
 // works. ESPN's /summary boxscore (data.boxscore.players[].statistics[])
 // has no such keys — each stat group carries a `labels` array and each
 // athlete a parallel positional `stats` array (already proven by
-// js/nflLiveGame.js's _nlgBoxScore, which reads the same shape). The
+// js/nflLiveGame.js's _nlgRenderBoxFull, which reads the same shape). The
 // NFL catalog below is built from those labels by index, not a semantic
 // key. Forcing both into one function would mean the "adapter" is just
 // these functions again with extra indirection. Reuses everything that

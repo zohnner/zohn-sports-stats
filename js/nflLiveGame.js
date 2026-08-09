@@ -1,13 +1,39 @@
 // ============================================================
-// NFL Live Game viewer (D-030) — expanded game panel with live polling.
-// Mirrors the MLB liveGame experience for NFL: linescore by quarter, live
-// possession / down & distance, scoring-play feed, team-stat comparison, and a
-// passing/rushing/receiving box score. Data: ESPN summary via /api/nfl?path=/summary.
-// Polls every 20s while a game is in progress; self-stops when the user leaves
-// the view or the game goes final.
+// NFL Live Game viewer (D-030, rebuilt D-080 Phase 1) — production-density game
+// dashboard: always-visible score/situation header, a 6-tab body (Summary,
+// Play-by-Play, Box Score, Team Stats, Analytics, Fantasy), and a sidebar
+// (game leaders, fantasy leaders, game flow). Data: ESPN summary via
+// /api/nfl?path=/summary. Polls every 20s while a game is in progress
+// (matches functions/api/nfl.js's ttlFor('/summary') edge-cache TTL exactly —
+// polling faster would just re-serve the same cached response).
+//
+// Update architecture ports MLB's js/liveGame.js pattern (P3-025) rather than
+// this file's old one: the previous version fully replaced the page's
+// innerHTML on every poll tick, which is incompatible with tabs — it would
+// reset the user's active tab and scroll position every 20 seconds. Now only
+// the header, sidebar, and the ACTIVE tab's body are touched per poll; the
+// wrapper, tab strip, and inactive tab bodies are never re-rendered. Tab
+// selection lives in _nlg.activeTab and survives every poll.
+//
+// Field-shape note (D-080): drives.previous[].plays[], winprobability[], and
+// leaders[] were live-verified against a real completed ESPN NFL summary
+// response before this file was written (2026-08-09, event 401873271) — not
+// assumed. winprobability was present and populated (188 entries, 170
+// distinct values) for that one game; per D-080 it still ships as Phase 2
+// (not in this file) until confirmed reliable across multiple games,
+// including a genuinely live one, not just a single final preseason game.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR' };
+
+const _NLG_TABS = [
+    { id: 'summary', label: 'Summary' },
+    { id: 'pbp', label: 'Play-by-Play' },
+    { id: 'box', label: 'Box Score' },
+    { id: 'team', label: 'Team Stats' },
+    { id: 'analytics', label: 'Analytics' },
+    { id: 'fantasy', label: 'Fantasy' },
+];
 
 async function fetchNFLSummary(eventId) {
     const r = await fetch(`/api/nfl?path=/summary&event=${encodeURIComponent(eventId)}`);
@@ -21,7 +47,9 @@ function _nlgStop() {
 
 async function showNFLGame(eventId) {
     _nlgStop();
+    const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -31,11 +59,13 @@ async function showNFLGame(eventId) {
     // this stale, and _nlgMaybePoll's own currentView guard immediately self-stops
     // the live poll it just started, thinking the user already navigated away.
     AppState.currentView = 'nfl-game-' + eventId;
-    grid.className = 'player-detail-container'; grid.style.cssText = '';
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
     if (window.setBreadcrumb) setBreadcrumb('nfl-games', 'Game');
-    grid.innerHTML = `<div class="nlg-loading"><div class="skeleton-line" style="height:48px;width:60%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Loading game…</p></div>`;
+    if (isNewGame) {
+        grid.className = 'player-detail-container'; grid.style.cssText = '';
+        grid.innerHTML = `<div class="nlg-loading"><div class="skeleton-line" style="height:48px;width:60%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Loading game…</p></div>`;
+    }
     try {
         const data = await fetchNFLSummary(eventId);
         _nlgRender(data);
@@ -69,24 +99,57 @@ function _nlgState(data) {
 function _nlgComp(data) { return data.header.competitions[0]; }
 function _nlgSide(comp, ha) { return (comp.competitors || []).find(c => c.homeAway === ha) || {}; }
 
+// -- Shell + header (always re-rendered; never loses tab/scroll state) ------
+
 function _nlgRender(data) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
-    grid.className = ''; grid.style.cssText = '';
+    _nlg.lastData = data;
     const comp = _nlgComp(data);
     const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
-    // Matches MLB's showMLBGameDetail breadcrumb convention ("AWAY @ HOME") —
-    // showNFLGame() sets a generic 'Game' placeholder before this data loads
-    // (team abbreviations aren't known yet), this replaces it with the real
-    // matchup once they are, on every render including the live-poll refresh.
     const homeAbbr = (home.team && home.team.abbreviation) || '';
     const awayAbbr = (away.team && away.team.abbreviation) || '';
     if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb('nfl-games', `${awayAbbr} @ ${homeAbbr}`);
+
+    const isFirstRender = grid.className !== 'nlg-shell-mounted';
+    if (isFirstRender) {
+        grid.className = 'nlg-shell-mounted'; grid.style.cssText = '';
+        grid.innerHTML = `
+          <div class="nlg-wrap">
+            <div class="nlg-topbar">
+              <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
+              <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">🎬 Create Highlight Card</button>
+            </div>
+            <div class="nlg-header"></div>
+            <div class="nlg-layout">
+              <div class="nlg-main">
+                ${_nlgTabsHtml()}
+                <div class="gv-tabpanel"></div>
+              </div>
+              ${_nlgSidebarHtml(data, comp, home, away)}
+            </div>
+            <p class="pct-caption nlg-venue-caption"></p>
+          </div>`;
+    } else {
+        const sideEl = grid.querySelector('.nlg-side');
+        if (sideEl) sideEl.outerHTML = _nlgSidebarHtml(data, comp, home, away);
+    }
+
+    _nlgRenderHeader(comp, home, away);
+    _nlgRenderActiveTabBody();
+
+    const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
+    const capEl = grid.querySelector('.nlg-venue-caption');
+    if (capEl) capEl.textContent = venue ? `${venue} · data via ESPN` : 'Data via ESPN';
+}
+
+function _nlgRenderHeader(comp, home, away) {
+    const headerEl = document.querySelector('.nlg-header');
+    if (!headerEl) return;
     const st = (comp.status && comp.status.type) || {};
     const state = st.state || 'post';
     const live = state === 'in';
     const statusText = st.shortDetail || st.detail || (state === 'pre' ? 'Scheduled' : 'Final');
-    const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
     const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
 
     const teamBlock = (c, align) => {
@@ -103,7 +166,6 @@ function _nlgRender(data) {
         </button>`;
     };
 
-    const possId = live && comp.situation ? comp.situation.possession : null;
     const sitLine = live && comp.situation
         ? `<div class="nlg-situation">
              ${comp.situation.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(comp.situation.possessionText)}</span>` : ''}
@@ -112,30 +174,57 @@ function _nlgRender(data) {
            </div>`
         : '';
 
-    grid.innerHTML = `
-      <div class="nlg-wrap">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap">
-          <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
-          <div style="display:flex;align-items:center;gap:0.75rem">
-            <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">🎬 Create Highlight Card</button>
-            ${live ? `<span class="nlg-livebadge">● LIVE</span>` : ''}
-          </div>
-        </div>
+    headerEl.innerHTML = `
         <div class="nlg-score ${live ? 'nlg-score--live' : ''}">
           ${teamBlock(away, 'away')}
           <div class="nlg-center">
-            <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}</div>
+            <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
             <div class="nlg-vs">@</div>
           </div>
           ${teamBlock(home, 'home')}
         </div>
-        ${sitLine}
-        ${_nlgLinescore(comp, home, away)}
-        ${_nlgScoringFeed(data)}
-        ${_nlgTeamStats(data, home, away)}
-        ${_nlgBoxScore(data, home, away)}
-        ${venue ? `<p class="pct-caption">${_escHtml(venue)} · data via ESPN</p>` : `<p class="pct-caption">Data via ESPN</p>`}
-      </div>`;
+        ${sitLine}`;
+}
+
+// -- Tabs ---------------------------------------------------------------
+
+function _nlgTabsHtml() {
+    return `<div class="gv-tabs" role="tablist">${_NLG_TABS.map(t => `<button type="button" class="gv-tab ${_nlg.activeTab === t.id ? 'gv-tab--active' : ''}" role="tab" aria-selected="${_nlg.activeTab === t.id}" onclick="_nlgSwitchTab('${t.id}')">${_escHtml(t.label)}</button>`).join('')}</div>`;
+}
+
+function _nlgSwitchTab(tab) {
+    if (_nlg.activeTab === tab) return;
+    _nlg.activeTab = tab;
+    const tabsEl = document.querySelector('.gv-tabs');
+    if (tabsEl) tabsEl.outerHTML = _nlgTabsHtml();
+    _nlgRenderActiveTabBody();
+}
+
+function _nlgRenderActiveTabBody() {
+    const data = _nlg.lastData;
+    const panel = document.querySelector('.gv-tabpanel');
+    if (!data || !panel) return;
+    const comp = _nlgComp(data);
+    const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
+    const scrollTop = panel.scrollTop; // preserve reading position across poll-driven re-renders
+    let html = '';
+    switch (_nlg.activeTab) {
+        case 'summary': html = _nlgRenderSummaryTab(data, comp, home, away); break;
+        case 'pbp': html = _nlgRenderPbp(data); break;
+        case 'box': html = _nlgRenderBoxFull(data, home, away); break;
+        case 'team': html = _nlgTeamStats(data, home, away); break;
+        case 'analytics': html = _nlgRenderAnalyticsTab(); break;
+        case 'fantasy': html = _nlgRenderFantasyTab(data); break;
+        default: html = _nlgRenderSummaryTab(data, comp, home, away);
+    }
+    panel.innerHTML = html;
+    panel.scrollTop = scrollTop;
+}
+
+// -- Summary tab (linescore + scoring feed) ------------------------------
+
+function _nlgRenderSummaryTab(data, comp, home, away) {
+    return `${_nlgLinescore(comp, home, away)}${_nlgScoringFeed(data)}`;
 }
 
 function _nlgLinescore(comp, home, away) {
@@ -170,9 +259,58 @@ function _nlgScoringFeed(data) {
     return `<details class="nlg-card" open><summary class="nlg-sum">Scoring plays</summary><div class="nlg-plays">${rows}</div></details>`;
 }
 
+// -- Play-by-Play tab (drives.current + drives.previous, live-verified shape) --
+
+function _nlgRenderPbp(data) {
+    const drivesObj = data.drives || {};
+    const all = [...(drivesObj.current ? [drivesObj.current] : []), ...((drivesObj.previous || []).slice().reverse())];
+    if (!all.length) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No play-by-play yet</p><p class="pct-caption">Drive detail appears once the game is underway.</p></div>`;
+    const driveHtml = (d, i) => {
+        const teamAbbr = (d.team || {}).abbreviation || '';
+        const plays = (d.plays || []).slice().reverse();
+        const playsHtml = plays.map(p => `<div class="nlg-pbp-play ${p.scoringPlay ? 'nlg-pbp-play--score' : ''}">
+                <span class="nlg-pbp-dd">${_escHtml((p.start && p.start.downDistanceText) || '')}</span>
+                <span class="nlg-pbp-text">${_escHtml(p.text || '')}</span>
+                <span class="nlg-pbp-score">${p.awayScore != null ? p.awayScore : ''}–${p.homeScore != null ? p.homeScore : ''}</span>
+            </div>`).join('');
+        return `<details class="nlg-card" ${i < 2 ? 'open' : ''}>
+            <summary class="nlg-sum">${_escHtml(teamAbbr)} · ${_escHtml(d.description || d.displayResult || 'Drive')}
+                <span class="nlg-sum-teams">${_escHtml(d.shortDisplayResult || '')}</span></summary>
+            <div class="nlg-pbp-plays">${playsHtml}</div>
+        </details>`;
+    };
+    return all.map(driveHtml).join('');
+}
+
+// -- Box Score tab (all groups present, not just passing/rushing/receiving) --
+
+function _nlgRenderBoxFull(data, home, away) {
+    const players = (data.boxscore && data.boxscore.players) || [];
+    if (!players.length) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No box score yet</p><p class="pct-caption">Player stats post once the game starts.</p></div>`;
+    const groupHtml = (group) => {
+        const labels = group.labels || [];
+        if (!group.athletes || !group.athletes.length) return '';
+        const head = `<div class="nlg-bx-head"><span>${_escHtml((group.name || '').toUpperCase())}</span>${labels.map(l => `<span>${_escHtml(l)}</span>`).join('')}</div>`;
+        const rows = group.athletes.map(a => `<div class="nlg-bx-row">
+            <span class="nlg-bx-name">${_escHtml((a.athlete && (a.athlete.shortName || a.athlete.displayName)) || '')}</span>
+            ${(a.stats || []).map(v => `<span>${_escHtml(v)}</span>`).join('')}
+        </div>`).join('');
+        return head + rows;
+    };
+    const teamCol = (side) => {
+        const tb = players.find(p => (p.team || {}).id === (side.team || {}).id);
+        if (!tb) return '';
+        const groups = (tb.statistics || []).filter(g => g.athletes && g.athletes.length);
+        return `<div class="nlg-bx-team"><div class="nlg-bx-team-title">${_escHtml((side.team || {}).abbreviation || '')}</div>${groups.map(groupHtml).join('')}</div>`;
+    };
+    return `<div class="nlg-bx nlg-bx--full">${teamCol(away)}${teamCol(home)}</div>`;
+}
+
+// -- Team Stats tab -------------------------------------------------------
+
 function _nlgTeamStats(data, home, away) {
     const teams = (data.boxscore && data.boxscore.teams) || [];
-    if (teams.length < 2) return '';
+    if (teams.length < 2) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No team stats yet</p></div>`;
     const byHA = {};
     teams.forEach(t => { byHA[t.homeAway || (t.team && t.team.id === (home.team || {}).id ? 'home' : 'away')] = t; });
     const ht = byHA.home || teams.find(t => (t.team || {}).id === (home.team || {}).id) || teams[1];
@@ -187,37 +325,159 @@ function _nlgTeamStats(data, home, away) {
         <span class="nlg-ts-a">${_escHtml(get(at, k))}</span>
         <span class="nlg-ts-l">${l}</span>
         <span class="nlg-ts-h">${_escHtml(get(ht, k))}</span></div>`).join('');
-    return `<details class="nlg-card" open><summary class="nlg-sum">Team stats
-        <span class="nlg-sum-teams">${_escHtml((at.team || {}).abbreviation || '')} · ${_escHtml((ht.team || {}).abbreviation || '')}</span></summary>
-        <div class="nlg-ts">${rows}</div></details>`;
+    return `<div class="nlg-card"><div class="nlg-sum">Team stats <span class="nlg-sum-teams">${_escHtml((at.team || {}).abbreviation || '')} · ${_escHtml((ht.team || {}).abbreviation || '')}</span></div>
+        <div class="nlg-ts">${rows}</div></div>`;
 }
 
-function _nlgBoxScore(data, home, away) {
-    const players = (data.boxscore && data.boxscore.players) || [];
-    if (!players.length) return '';
-    const groupHtml = (teamBlock, groupName, limit) => {
-        const g = (teamBlock.statistics || []).find(s => s.name === groupName);
-        if (!g || !g.athletes || !g.athletes.length) return '';
-        const labels = g.labels || [];
-        const keep = groupName === 'passing' ? 4 : 3;
-        const idx = labels.slice(0, keep);
-        const head = `<div class="nlg-bx-head"><span>${groupName.toUpperCase()}</span>${idx.map(l => `<span>${_escHtml(l)}</span>`).join('')}</div>`;
-        const rows = g.athletes.slice(0, limit).map(a => `<div class="nlg-bx-row">
-            <span class="nlg-bx-name">${_escHtml((a.athlete && (a.athlete.shortName || a.athlete.displayName)) || '')}</span>
-            ${(a.stats || []).slice(0, keep).map(v => `<span>${_escHtml(v)}</span>`).join('')}
+// -- Analytics tab (Phase 3 placeholder, D-080 — honest empty state, not fake data) --
+
+function _nlgRenderAnalyticsTab() {
+    return `<div class="nlg-empty-tab">
+        <p class="nlg-empty-tab-title">Advanced analytics — coming soon</p>
+        <p class="pct-caption">EPA, success rate, CPOE, and drive efficiency need play-level modeling beyond what's available today. Full box score and team stats are in their own tabs now.</p>
+    </div>`;
+}
+
+// -- Fantasy (tab + sidebar leaders) — computed live from box score stats, --
+// -- not a new data source. Label-name lookup against each group's own    --
+// -- labels[] (not hardcoded positions) — same discipline as the NFL      --
+// -- Highlight Card Studio's stat catalog (js/highlightCard.js).          --
+
+function _nlgLabelIdx(labels, name) {
+    return (labels || []).findIndex((l) => l && l.toUpperCase() === name);
+}
+
+function _nlgPlayerFantasyPoints(group, labels, stats, scoring) {
+    const num = (i) => { if (i < 0 || i >= stats.length) return 0; const v = parseFloat(String(stats[i]).replace(/,/g, '')); return isNaN(v) ? 0 : v; };
+    const idx = (name) => _nlgLabelIdx(labels, name);
+    let pts = 0;
+    if (group === 'passing') {
+        pts += num(idx('YDS')) / 25;
+        pts += num(idx('TD')) * 4;
+        pts -= num(idx('INT')) * 2;
+    } else if (group === 'rushing') {
+        pts += num(idx('YDS')) / 10;
+        pts += num(idx('TD')) * 6;
+    } else if (group === 'receiving') {
+        pts += num(idx('YDS')) / 10;
+        pts += num(idx('TD')) * 6;
+        const recPts = scoring === 'PPR' ? 1 : scoring === 'Half-PPR' ? 0.5 : 0;
+        pts += num(idx('REC')) * recPts;
+    }
+    return pts;
+}
+
+function _nlgComputeFantasy(data, scoring) {
+    const teamBlocks = (data.boxscore && data.boxscore.players) || [];
+    const totals = {};
+    teamBlocks.forEach((tb) => {
+        const teamAbbr = (tb.team || {}).abbreviation || '';
+        (tb.statistics || []).forEach((group) => {
+            if (!['passing', 'rushing', 'receiving'].includes(group.name)) return;
+            const labels = group.labels || [];
+            (group.athletes || []).forEach((a) => {
+                const athlete = a.athlete || {};
+                const id = athlete.id || athlete.displayName;
+                if (!id) return;
+                const pts = _nlgPlayerFantasyPoints(group.name, labels, a.stats || [], scoring);
+                if (!totals[id]) totals[id] = { name: athlete.shortName || athlete.displayName || '', team: teamAbbr, pts: 0 };
+                totals[id].pts += pts;
+            });
+        });
+    });
+    return Object.values(totals).sort((a, b) => b.pts - a.pts);
+}
+
+function _nlgSetFantasyScoring(scoring) {
+    _nlg.fantasyScoring = scoring;
+    _nlgRenderActiveTabBody();
+    const sideEl = document.querySelector('.nlg-side');
+    if (sideEl && _nlg.lastData) {
+        const comp = _nlgComp(_nlg.lastData);
+        sideEl.outerHTML = _nlgSidebarHtml(_nlg.lastData, comp, _nlgSide(comp, 'home'), _nlgSide(comp, 'away'));
+    }
+}
+
+function _nlgRenderFantasyTab(data) {
+    const scoring = _nlg.fantasyScoring;
+    const list = _nlgComputeFantasy(data, scoring);
+    if (!list.length) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No fantasy stats yet</p><p class="pct-caption">Points post live as box score stats accrue.</p></div>`;
+    const rows = list.slice(0, 20).map((p, i) => `<div class="nlg-fantasy-row">
+            <span class="nlg-fantasy-rank">${i + 1}</span>
+            <span class="nlg-fantasy-name">${_escHtml(p.name)}</span>
+            <span class="nlg-fantasy-team">${_escHtml(p.team)}</span>
+            <span class="nlg-fantasy-pts">${p.pts.toFixed(1)}</span>
         </div>`).join('');
-        return head + rows;
+    const chip = (s) => `<button type="button" class="nlg-fantasy-chip ${scoring === s ? 'nlg-fantasy-chip--active' : ''}" onclick="_nlgSetFantasyScoring('${s}')">${s}</button>`;
+    return `<div class="nlg-fantasy-header">
+            <span class="pct-caption">Fantasy points, computed live from box score stats</span>
+            <div class="nlg-fantasy-chips">${chip('Standard')}${chip('Half-PPR')}${chip('PPR')}</div>
+        </div>
+        <div class="nlg-fantasy-list">${rows}</div>`;
+}
+
+// -- Sidebar: game leaders (ESPN leaders[], live-verified) + fantasy leaders + game flow --
+
+function _nlgSidebarHtml(data, comp, home, away) {
+    return `<aside class="nlg-side">
+        ${_nlgSidebarLeaders(data)}
+        ${_nlgFantasyLeadersCard(data)}
+        ${_nlgGameFlow(comp, home, away)}
+    </aside>`;
+}
+
+function _nlgSidebarLeaders(data) {
+    const leaders = data.leaders || [];
+    if (!leaders.length) return '';
+    const block = (tb) => {
+        const abbr = (tb.team || {}).abbreviation || '';
+        const cats = (tb.leaders || []).slice(0, 3);
+        const rows = cats.map((c) => {
+            const top = c.leaders && c.leaders[0];
+            if (!top) return '';
+            const name = (top.athlete && (top.athlete.shortName || top.athlete.displayName)) || '';
+            return `<div class="nlg-leader-row"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-name">${_escHtml(name)}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>`;
+        }).join('');
+        return `<div class="nlg-leader-team"><div class="nlg-leader-team-title">${_escHtml(abbr)}</div>${rows}</div>`;
     };
-    const teamCol = (side, label) => {
-        const tb = players.find(p => (p.team || {}).id === (side.team || {}).id) || null;
-        if (!tb) return '';
-        return `<div class="nlg-bx-team">
-            <div class="nlg-bx-team-title">${_escHtml((side.team || {}).abbreviation || label)}</div>
-            ${groupHtml(tb, 'passing', 2)}${groupHtml(tb, 'rushing', 3)}${groupHtml(tb, 'receiving', 3)}
-        </div>`;
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Leaders</h3>${leaders.map(block).join('')}</div>`;
+}
+
+function _nlgFantasyLeadersCard(data) {
+    const scoring = _nlg.fantasyScoring;
+    const list = _nlgComputeFantasy(data, scoring);
+    if (!list.length) return '';
+    const rows = list.slice(0, 5).map((p, i) => `<div class="nlg-leader-row"><span class="nlg-leader-cat">${i + 1}</span><span class="nlg-leader-name">${_escHtml(p.name)} <span class="pct-caption">${_escHtml(p.team)}</span></span><span class="nlg-leader-val">${p.pts.toFixed(1)}</span></div>`).join('');
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Fantasy Leaders <span class="pct-caption">(${_escHtml(scoring)})</span></h3>${rows}</div>`;
+}
+
+function _nlgGameFlow(comp, home, away) {
+    const ls = (c) => (c.linescores || []).map((l) => (l.value != null ? l.value : (l.displayValue || 0)));
+    const h = ls(home), a = ls(away);
+    const n = Math.max(h.length, a.length);
+    if (n < 2) return '';
+    const cum = (arr) => { let s = 0; return arr.map((v) => (s += (v || 0))); };
+    const hc = cum(h), ac = cum(a);
+    const maxV = Math.max(...hc, ...ac, 1);
+    const w = 220, hgt = 56, pad = 4;
+    const pt = (arr, i) => {
+        const x = pad + (i / (n - 1)) * (w - pad * 2);
+        const y = hgt - pad - (arr[i] / maxV) * (hgt - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
     };
-    return `<details class="nlg-card"><summary class="nlg-sum">Box score <span class="nlg-sum-teams">passing · rushing · receiving leaders</span></summary>
-        <div class="nlg-bx">${teamCol(away, 'AWAY')}${teamCol(home, 'HOME')}</div></details>`;
+    const hPts = hc.map((_, i) => pt(hc, i)).join(' ');
+    const aPts = ac.map((_, i) => pt(ac, i)).join(' ');
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const hColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(homeAbbr)) || 'var(--accent)';
+    const aColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(awayAbbr)) || 'var(--text-muted)';
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Flow</h3>
+        <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
+            <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2"/>
+            <polyline points="${_escHtml(hPts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2"/>
+        </svg>
+        <div class="nlg-flow-legend"><span style="color:${_escHtml(aColor)}">${_escHtml(awayAbbr)}</span><span style="color:${_escHtml(hColor)}">${_escHtml(homeAbbr)}</span></div>
+    </div>`;
 }
 
 function _nlgNav(abbr) {
@@ -228,4 +488,6 @@ if (typeof window !== 'undefined') {
     window.showNFLGame = showNFLGame;
     window.fetchNFLSummary = fetchNFLSummary;
     window.stopNFLLiveGame = _nlgStop;
+    window._nlgSwitchTab = _nlgSwitchTab;
+    window._nlgSetFantasyScoring = _nlgSetFantasyScoring;
 }

@@ -1,5 +1,5 @@
 /* NFL Live Game viewer (D-030) */
-.nlg-wrap { max-width: 760px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+.nlg-wrap { max-width: 1180px; margin: 0 auto; padding: 1rem 1rem 3rem; }
 .nlg-livebadge { color: var(--color-live); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; animation: nlgpulse 1.4s ease-in-out infinite; }
 @keyframes nlgpulse { 50% { opacity: 0.35; } }
 .nlg-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1.1rem 1rem; margin: 0.6rem 0 1rem; }
@@ -52,3 +52,69 @@
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }
 .nfl-gameday-head--sub { color: var(--text-subtle); }
 @media (max-width: 640px) { .nlg-bx { grid-template-columns: 1fr; } .nlg-team img { width: 42px; height: 42px; } .nlg-team-score { font-size: 1.6rem; } }
+
+
+/* -- D-080 Phase 1: topbar, always-visible header, tabs, sidebar, game flow -- */
+.nlg-topbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.nlg-header { margin: 0.6rem 0 1rem; }
+.nlg-livebadge { margin-left: 0.5rem; }
+
+.nlg-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; align-items: start; }
+.nlg-main { min-width: 0; }
+.nlg-side { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: calc(var(--header-height) + var(--ticker-height) + var(--header-sub-h) + 1rem); }
+
+/* Tabs — first tablist component in this codebase (checked: only .nav-tab
+   exists elsewhere, an unrelated top-nav component). Brand orange reserved
+   for the active tab only, per the "accent = brand only" invariant. */
+.gv-tabs { display: flex; gap: 0.2rem; border-bottom: 1px solid var(--border-default); margin-bottom: 0.8rem; overflow-x: auto; }
+.gv-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.78rem; padding: 0.55rem 0.7rem; cursor: pointer; white-space: nowrap; }
+.gv-tab:hover { color: var(--text-secondary); }
+.gv-tab--active { color: var(--accent); border-bottom-color: var(--accent); }
+.gv-tabpanel { min-height: 120px; }
+
+.nlg-side-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 0.8rem 0.9rem; }
+.nlg-side-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin: 0 0 0.5rem; }
+.nlg-leader-team { margin-bottom: 0.5rem; }
+.nlg-leader-team:last-child { margin-bottom: 0; }
+.nlg-leader-team-title { font-size: 0.7rem; font-weight: 800; color: var(--accent); margin-bottom: 0.15rem; }
+.nlg-leader-row { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.76rem; }
+.nlg-leader-cat { color: var(--text-subtle); font-size: 0.66rem; text-transform: uppercase; }
+.nlg-leader-name { color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nlg-leader-val { font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.nlg-flow-svg { width: 100%; height: 56px; display: block; }
+.nlg-flow-legend { display: flex; justify-content: space-between; font-size: 0.66rem; font-weight: 700; margin-top: 0.2rem; }
+
+.nlg-empty-tab { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+.nlg-empty-tab-title { font-weight: 700; color: var(--text-secondary); margin-bottom: 0.3rem; }
+
+/* Play-by-Play */
+.nlg-pbp-plays { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.nlg-pbp-play { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.78rem; }
+.nlg-pbp-play--score { background: color-mix(in srgb, var(--color-live) 8%, transparent); }
+.nlg-pbp-dd { font-size: 0.64rem; font-weight: 700; color: var(--text-subtle); min-width: 84px; }
+.nlg-pbp-text { color: var(--text-secondary); }
+.nlg-pbp-score { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+
+/* Box Score tab — full groups, denser than the old 2-column preview */
+.nlg-bx--full { grid-template-columns: 1fr 1fr; }
+
+/* Fantasy */
+.nlg-fantasy-header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.nlg-fantasy-chips { display: flex; gap: 0.3rem; }
+.nlg-fantasy-chip { background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-full); color: var(--text-muted); font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.6rem; cursor: pointer; }
+.nlg-fantasy-chip--active { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent); }
+.nlg-fantasy-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.nlg-fantasy-row { display: grid; grid-template-columns: 1.5rem 1fr auto auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; }
+.nlg-fantasy-row:nth-child(odd) { background: var(--bg-raised); }
+.nlg-fantasy-rank { color: var(--text-subtle); font-weight: 700; }
+.nlg-fantasy-name { color: var(--text-primary); font-weight: 600; }
+.nlg-fantasy-team { color: var(--text-muted); font-size: 0.68rem; }
+.nlg-fantasy-pts { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.nlg-venue-caption { margin-top: 0.5rem; }
+
+@media (max-width: 900px) {
+  .nlg-layout { grid-template-columns: 1fr; }
+  .nlg-side { position: static; }
+}
