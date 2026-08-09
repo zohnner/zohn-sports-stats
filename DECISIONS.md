@@ -1673,3 +1673,30 @@ Option 2. Actioned this session, same day as the audit:
 - **Not fixed by this pass, and explicitly still owner-gated:** the actual subscription price, and Stripe account/product setup — both named directly in the new ISSUES.md entry and `docs/roadmap-2026-08-08.md`.
 - **Process gap still open:** `TEAM.md` itself doesn't yet require refreshing a persona's Project Context Block when a session surfaces contradicting information (the audit's original recommendation for a standing fix, not just a one-time cleanup). Worth a deliberate decision on whether to add that line to `TEAM.md`'s session-end protocol — not actioned here since it's a process change to a document all three core seniors jointly own, not a unilateral documentation correction.
 - **`.claude/` remaining gitignored is a reasonable call to leave as-is** (these genuinely aren't project code) — but it means persona-file freshness has to be an explicit, periodic check from here forward, not something that falls out of normal commit discipline for free.
+
+---
+
+## D-074 — Highlight Card Studio: videocreation engine is offline/batch, not live-interactive — scoped to a client-side v1
+
+**Status:** accepted
+**Contributors:** Axiom (feasibility), Vera, Kael, owner (scope ruling)
+**Date opened:** 2026-08-09 | **Date resolved:** 2026-08-09
+
+**Decision needed:**
+Owner proposed a feature where a user selects a game and a player, then builds an animated, customized highlight card (stat picker, animation style, color), asking specifically how the `videocreation` (sportstrata-video) engine could power it. Before speccing anything, needed to establish what that engine actually is versus what a live, on-demand, user-facing feature needs — those turned out to be materially different things, not a simple wire-up.
+
+**Options considered:**
+1. **Live in-browser card studio, static PNG (+ later GIF/WebM) export.** No new infrastructure — runs entirely inside the existing Cloudflare Pages site, reusing `shareCardElement()` (D-049) for export and the visual grammar already proven in `videocreation`'s scene templates (reimplemented natively, not imported).
+2. **True MP4 export via the real videocreation pipeline.** The literal ask — but the engine's actual mechanism (`src/render.js`/`src/compose.js`: Playwright headless Chromium capturing PNG frames deterministically, then ffmpeg compositing to 1080p/30fps H.264) is a CLI-invoked offline batch process built for pre-producing YouTube episodes. It requires a persistent filesystem and native binary execution — neither exists in Cloudflare Workers/Pages Functions. This option needs new backend infrastructure (a render server or container, a job queue, an async "your video is ready" UX) that doesn't exist today, not a config change.
+
+**Decision:**
+Ship Option 1 first (Highlight Card Studio, three-gate spec in ISSUES.md, MLB-first). Option 2 (true MP4 export) is named as a real, deliberate Phase B — not dropped, not silently downgraded — gated on Option 1 shipping and proving demand, and on a real infrastructure/cost decision the owner hasn't made yet.
+
+**Rationale:**
+The owner asked to "consider" the videocreation engine specifically, and the honest answer is that its core rendering mechanism can't run where the main site runs — presenting that fork directly (rather than quietly building a smaller thing while implying the full ask) let the owner make an informed scope call instead of discovering the infrastructure gap mid-build. Option 1 still delivers the actual product the JTBD describes (pick a game, pick a player, customize stats/animation/color, get something to share) using patterns already proven on this site (`shareCardElement`, the DESIGN.md-disciplined token system) — it's a real v1, not a placeholder.
+
+**Implications:**
+- `videocreation`'s own tooling (Playwright, ffmpeg, its Node CLI scripts) is never imported into `zohn-sports-stats` — same governance boundary D-066 already established for the app-store work. The main site borrows visual *patterns* from the video repo's scene templates, reimplemented natively; it does not depend on the video repo at runtime.
+- GIF/WebM animated export is real, named, and explicitly NOT in v1 — repeated `html2canvas` frame capture is the naive approach and carries real perf/fidelity risk (same class of risk the original scorecard PNG export was spiked for before committing); `canvas.captureStream()` + `MediaRecorder` is the more promising direction and needs its own scoped spike, mirroring the scorecard's Phase 4 precedent, before a commitment.
+- NFL/NCAAF are confirmed data-ready for this feature (`functions/api/nflgamelog.js`/`ncaafgamelog.js` already return true per-game stat rows, verified before scoping — not assumed) but are sequenced after MLB v1 ships, consistent with MLB's standing role as the reference sport for new cross-sport patterns.
+- Phase B (true MP4 export) needs its own future decision on hosting/cost for the render infrastructure before any spec work starts on it — not implied or promised by this decision.
