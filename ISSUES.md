@@ -2156,3 +2156,19 @@ All 5 pre-existing zero-arg call sites of `fetchNFLScoreboard()` are unaffected 
 No three-gate spec — this is a bounded UI/data-plumbing fix to an existing view, not a new feature surface.
 
 ---
+
+## Season-flip 502 audit: ncaafathlete.js (live) + nflplayer.js/nflstats.js (Sep 1) — 2026-08-09
+**Contributor:** Axiom | Full writeup: DECISIONS.md D-072
+
+Followed up the D-058 brainstorm item flagging `ncaafathlete.js` as unaudited for the same bug `ncaafstats.js` had (D-056): `defaultSeason()` flips to the new season before the upstream has any real data for it. Read all 9 `functions/api/*.js` files with their own season-computation logic.
+
+**Two real bugs fixed**, both using the same season-1 retry-on-default pattern already proven in `ncaafstats.js`:
+
+1. `ncaafathlete.js` — **live right now**. Every NCAAF player-detail page for the 2026 season shows "no stats yet — common for reserves" for every player, including returning starters with a full 2025 season on record, because the per-athlete statistics fetch has no fallback. Fixed; bio/team data (already correctly populated for 2026) is left untouched, only the stats/gamelog fall back.
+2. `nflplayer.js` + `nflstats.js` — **dormant, fires Sep 1**. Same shape, same fix, shipped ~4 weeks ahead of the flip. Also caught and fixed a propagation bug in `js/nfl.js`: the game-log fetch was using the client's originally-requested season instead of reading back the server's corrected one, which would have shown a "2025 Season Stats" header next to an empty 2026 game log.
+
+**Confirmed clean, left untouched:** `nfladv.js` and `nflfp.js` already have real fallback loops; `nflsos.js`'s March-flip default is intentional (schedules publish months ahead of kickoff); `ncaafgamelog.js`/`nflgamelog.js` already degrade gracefully and just needed their callers to pass the corrected season (done above).
+
+**Not live-verified** — no outbound network from this sandbox. The `ncaafathlete.js` fix sits inside the live vulnerability window, so the first real post-deploy check matters; `nflplayer.js`/`nflstats.js` can't be exercised for real until closer to Sep 1.
+
+---

@@ -102,13 +102,46 @@ export async function onRequest(context) {
     }
 
     // 3) season statistics
-    let splits;
-    try {
-        const r = await fetch(`${CORE}/seasons/${season}/types/2/athletes/${id}/statistics?lang=en&region=us`, {
+    // Same self-healing fallback as /api/ncaafstats (D-056): defaultSeason() flips
+    // to the new CFB season on Aug 1, but ESPN's per-athlete statistics resource for
+    // that season has nothing in it until real games are played. Left unhandled,
+    // every returning player's detail page shows "No 2026 season stats yet — common
+    // for reserves and early-career players" during the whole pre-season window,
+    // even for a player who threw for 4,000 yards last season — a misleading label
+    // (this athlete isn't a reserve, the season just hasn't started) AND a missed
+    // chance to show real, good data. Only falls back when `season` is the routine
+    // computed default (not an explicit request for a specific other year, e.g.
+    // ?season=2024) — same gate as ncaafstats.js, corrected there after the first
+    // version (gating on "no ?season= param") turned out to be dead code against
+    // the one real caller, which always sends an explicit param.
+    //
+    // Deliberately does NOT touch bio/team above: those come from the roster-level
+    // athlete resource, which ESPN populates as soon as rosters are set (well before
+    // games), so the *current* season's bio is the right one to show even when we
+    // fall back to last season's stats — a transferred player's current team should
+    // never be overwritten by where they played a year ago. `statsSeason` (reported
+    // back as `season` in the response) reflects whichever season's stats are
+    // actually being shown; `js/ncaaf.js`'s renderer already reads `data.season` for
+    // every year label it prints ("${data.season} College Football" etc.), not the
+    // client's own requested season, so a fallback here can never mislabel itself as
+    // current-year data.
+    let statsSeason = season;
+    const fetchStats = async (s) => {
+        const r = await fetch(`${CORE}/seasons/${s}/types/2/athletes/${id}/statistics?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 43200, cacheEverything: true },
         });
-        if (r.ok) splits = (await r.json()).splits;
-    } catch {}
+        if (!r.ok) return null;
+        return (await r.json()).splits;
+    };
+    let splits = null;
+    try { splits = await fetchStats(season); } catch {}
+    if ((!splits || !(splits.categories || []).length) && Number(season) === defaultSeason()) {
+        const fallback = String(Number(season) - 1);
+        try {
+            const fbSplits = await fetchStats(fallback);
+            if (fbSplits && (fbSplits.categories || []).length) { splits = fbSplits; statsSeason = fallback; }
+        } catch {}
+    }
 
     const cats = {};
     (splits && splits.categories || []).forEach(c => { cats[c.name] = catMap(c.stats); });
@@ -137,5 +170,5 @@ export async function onRequest(context) {
         groups.push({ key: g.key, label: g.label, stats: line, raw });
     }
 
-    return json({ found: groups.length > 0, season: Number(season), id, bio, gp, groups }, 200, 21600);
+    return json({ found: groups.length > 0, season: Number(statsSeason), id, bio, gp, groups }, 200, 21600);
 }

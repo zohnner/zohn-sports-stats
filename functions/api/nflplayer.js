@@ -111,15 +111,33 @@ export async function onRequest(context) {
     if (!athleteId) return json({ found: false, reason: 'not on roster', season: Number(season) }, 200);
 
     // 2) athlete season statistics
-    let splits;
-    try {
-        const r = await fetch(`${CORE}/seasons/${season}/types/2/athletes/${athleteId}/statistics?lang=en&region=us`, {
+    // Self-healing season fallback (same pattern as /api/ncaafstats + /api/ncaafathlete,
+    // D-056): the instant the calendar hits Sep 1, defaultSeason() flips to the new NFL
+    // season, but this athlete-statistics resource has nothing in it until real Week 1
+    // games are played (~10 days later). Left unhandled, every NFL player detail page
+    // would silently show "found: false" for that whole window -- not even the honest
+    // "no stats" framing ncaafathlete.js used to have, since this endpoint has no client-
+    // side "no stats yet, common for reserves" fallback copy at all (confirmed by reading
+    // js/nfl.js's consumer). Roster lookup above is unaffected: it fetches the *current*
+    // team roster with no season param, so athleteId/espnName are already season-
+    // independent and don't need a fallback of their own.
+    const fetchStats = async (s) => {
+        const r = await fetch(`${CORE}/seasons/${s}/types/2/athletes/${athleteId}/statistics?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 43200, cacheEverything: true },
         });
-        if (!r.ok) return json({ found: false, reason: 'no stats', season: Number(season) }, 200);
-        const sj = await r.json();
-        splits = sj.splits;
-    } catch { return json({ found: false, reason: 'stats fetch failed', season: Number(season) }, 200); }
+        if (!r.ok) return null;
+        return (await r.json()).splits;
+    };
+    let splits = null, statsSeason = season;
+    try { splits = await fetchStats(season); } catch {}
+    if ((!splits || !(splits.categories || []).length) && Number(season) === defaultSeason()) {
+        const fallback = String(Number(season) - 1);
+        try {
+            const fb = await fetchStats(fallback);
+            if (fb && (fb.categories || []).length) { splits = fb; statsSeason = fallback; }
+        } catch {}
+    }
+    if (!splits || !(splits.categories || []).length) return json({ found: false, reason: 'no stats', season: Number(statsSeason) }, 200);
 
     const cats = {};
     (splits && splits.categories || []).forEach(c => { cats[c.name] = catMap(c.stats); });
@@ -148,5 +166,5 @@ export async function onRequest(context) {
         groups.push({ key: g.key, label: g.label, stats: line });
     }
 
-    return json({ found: groups.length > 0, season: Number(season), name: espnName, espnId: athleteId, gp, groups }, 200, 21600);
+    return json({ found: groups.length > 0, season: Number(statsSeason), name: espnName, espnId: athleteId, gp, groups }, 200, 21600);
 }

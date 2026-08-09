@@ -1302,7 +1302,12 @@ async function _loadNFLPlayerStats(p, season) {
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
-        if (data.espnId) _loadNFLGameLog(data.espnId, season);
+        // Read back data.season, not the requested `season` param: /api/nflplayer can now
+        // silently fall back to last season's real stats when the current season's aren't
+        // populated yet (season-flip gap, see that Function's own comment) -- without this,
+        // the stat line above would correctly show last season's numbers while the game log
+        // right below it kept requesting the current, still-empty season.
+        if (data.espnId) _loadNFLGameLog(data.espnId, data.season);
         if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId, p.position); }
         if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name); return; }
         if (!document.body.contains(host)) return;  // user navigated away

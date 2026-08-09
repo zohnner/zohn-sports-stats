@@ -61,17 +61,44 @@ export async function onRequest(context) {
 
     const inUrl = new URL(request.url);
     const qs = inUrl.searchParams.get('season');
-    const season = /^\d{4}$/.test(qs || '') ? qs : String(defaultSeason());
+    const requestedSeason = /^\d{4}$/.test(qs || '') ? qs : String(defaultSeason());
 
-    let leadersJson;
-    try {
-        const r = await fetch(`${CORE}/seasons/${season}/types/2/leaders?lang=en&region=us`, {
+    // Self-healing season fallback (same pattern as /api/ncaafstats, D-056): the
+    // instant the calendar hits Sep 1, defaultSeason() flips to the new NFL season
+    // -- but ESPN's leaders resource for that season has nothing in it until real
+    // Week 1 games are played (~10 days later, per _nflKickoffDate()'s Thursday-
+    // after-Labor-Day rule). Without this, every NFL Leaders page view and every
+    // team's Leaders card would 502 hard for those ~10 days each year, even though
+    // a perfectly good just-completed season exists to show instead. Ported ahead
+    // of the actual Sep 1 flip rather than after -- same "fix it before the traffic
+    // spike, not after" timing already applied to D-057's NFL/NCAAF path URLs.
+    // Only falls back when the requested season is the routine computed default
+    // (an explicit ask for a real other year, e.g. ?season=2024, still fails
+    // honestly) -- js/nfl.js's leaders view always sends an explicit
+    // ?season=${NFL_STATS_SEASON}, so gating on "no ?season= param" would be dead
+    // code against the one real caller, the exact mistake ncaafstats.js's first fix
+    // made and had to correct.
+    let leadersJson, season = requestedSeason;
+    const fetchLeaders = async (s) => {
+        const r = await fetch(`${CORE}/seasons/${s}/types/2/leaders?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' },
             cf: { cacheTtl: 21600, cacheEverything: true },
         });
-        if (!r.ok) return json({ error: 'leaders fetch failed', status: r.status }, 502);
-        leadersJson = await r.json();
-    } catch { return json({ error: 'leaders fetch failed' }, 502); }
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+    };
+    try {
+        leadersJson = await fetchLeaders(season);
+    } catch (e1) {
+        if (qs && Number(qs) !== defaultSeason()) return json({ error: 'leaders fetch failed', detail: e1.message }, 502);
+        const fallback = String(Number(season) - 1);
+        try {
+            leadersJson = await fetchLeaders(fallback);
+            season = fallback;
+        } catch (e2) {
+            return json({ error: 'leaders fetch failed', detail: `${season}: ${e1.message}; ${fallback}: ${e2.message}` }, 502);
+        }
+    }
 
     const cats = leadersJson.categories || [];
     const wanted = CATS.map(c => ({ ...c, raw: cats.find(x => x.name === c.key) })).filter(c => c.raw);
