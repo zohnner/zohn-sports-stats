@@ -796,6 +796,15 @@ window.addEventListener('ss:follow-changed', (e) => {
     if (typeof _renderHomeStarred === 'function') _renderHomeStarred();
 });
 
+// Settings' Manage Follows list can also be the trigger (its own unfollow button), or a
+// follow star elsewhere while the drawer happens to be open -- keep it in sync either way.
+window.addEventListener('ss:follow-changed', () => {
+    const panel = document.getElementById('settingsPanel');
+    if (panel && !panel.hidden && typeof _renderSettingsFollowsList === 'function') {
+        _renderSettingsFollowsList();
+    }
+});
+
 // D-043 3a: sport-tab bar. A static element (part of loadHome()'s one-shot
 // template), so its click listener is bound once, guarded like _wireRailTabs.
 function _syncHomeSportTabUI() {
@@ -1674,7 +1683,7 @@ function _dashTeamLogo(sport, abbr) {
     return null;
 }
 
-function _dashSectionHtml(sport, data, isDefault) {
+function _dashSectionHtml(sport, data, isDefault, todayGames) {
     const label = _SPORT_LABEL[sport] || sport.toUpperCase();
     const teamsView = _SPORT_TEAMS_VIEW[sport];
     const playersView = _SPORT_PLAYERS_VIEW[sport];
@@ -1688,13 +1697,68 @@ function _dashSectionHtml(sport, data, isDefault) {
         ? ('<p class="md-note">' + data.players.length + ' followed player' + (data.players.length === 1 ? '' : 's') + (playersView ? (' — <a href="#' + playersView + '">browse ' + _escHtml(label) + ' players</a>') : '') + '</p>')
         : '';
     const defaultBtn = !isDefault ? ('<button class="auth-method-btn" onclick="_dashSetDefaultSport(\'' + sport + '\')">Set as my default sport</button>') : '';
+    // "Plays today" fast-follow (ISSUES.md "Dashboard live enrichment"): reuses the exact
+    // same Scorebug card the home page renders, so a followed team's live game looks
+    // identical everywhere on the site rather than getting a bespoke Dashboard treatment.
+    const todayHtml = (todayGames && todayGames.length && typeof Scorebug !== 'undefined')
+        ? ('<div class="md-dash-today">' + todayGames.map(function(m) { return Scorebug.renderScoreCard(m); }).join('') + '</div>')
+        : '';
     return '' +
       '<section class="auth-account-section">' +
         '<p class="auth-account-label">' + _escHtml(label) + (isDefault ? ' <span class="md-note">(default)</span>' : '') + '</p>' +
+        todayHtml +
         (teamChips ? ('<div class="md-pos-filters">' + teamChips + '</div>') : '<p class="md-note">No followed teams.</p>') +
         playerLine +
         defaultBtn +
       '</section>';
+}
+
+// ── "Plays today" data fetch — MLB/NFL/NCAAF only (NBA/NHL preview-only, no live
+// enrichment per this project's standing don't-build-NBA/NHL-unprompted rule). ──
+function _mlbCanonAbbr(abbr) {
+    return (typeof _MLB_ABBR_ALIASES !== 'undefined' && _MLB_ABBR_ALIASES[abbr]) || abbr;
+}
+
+async function _dashTodayGamesMLB(teamAbbrs) {
+    if (!teamAbbrs.length || typeof fetchMLBSchedule !== 'function' || typeof Scorebug === 'undefined') return [];
+    try {
+        const games = await fetchMLBSchedule(1);
+        // Same ET-day approximation the home page already uses (_loadHomeTodayGames).
+        const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+        const wanted = new Set(teamAbbrs.map(_mlbCanonAbbr));
+        return (games || [])
+            .filter(function(g) { return (g.officialDate || (g.gameDate || '').slice(0, 10)) === todayET; })
+            .filter(function(g) {
+                const home = _mlbCanonAbbr(g.teams?.home?.team?.abbreviation);
+                const away = _mlbCanonAbbr(g.teams?.away?.team?.abbreviation);
+                return wanted.has(home) || wanted.has(away);
+            })
+            .map(function(g) { return Scorebug.normalizeMLBGame(g); });
+    } catch (_) { return []; }
+}
+
+async function _dashTodayGamesFootball(sport, teamAbbrs) {
+    if (!teamAbbrs.length || typeof Scorebug === 'undefined') return [];
+    const fetchFn = sport === 'nfl'
+        ? (typeof fetchNFLScoreboard === 'function' ? fetchNFLScoreboard : null)
+        : (typeof fetchNCAAFScoreboard === 'function' ? fetchNCAAFScoreboard : null);
+    if (!fetchFn) return [];
+    try {
+        const games = await fetchFn();
+        const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+        const wanted = new Set(teamAbbrs);
+        const normalize = sport === 'nfl' ? Scorebug.normalizeNFLGame : Scorebug.normalizeNCAAFGame;
+        return (games || [])
+            .filter(function(g) { return g.isLive || (g.date || '').slice(0, 10) === todayET; })
+            .filter(function(g) { return wanted.has(g.homeTeam?.abbr) || wanted.has(g.awayTeam?.abbr); })
+            .map(function(g) { return normalize(g); });
+    } catch (_) { return []; }
+}
+
+async function _dashTodayGamesFor(sport, teamAbbrs) {
+    if (sport === 'mlb') return _dashTodayGamesMLB(teamAbbrs);
+    if (sport === 'nfl' || sport === 'ncaaf') return _dashTodayGamesFootball(sport, teamAbbrs);
+    return [];
 }
 
 async function renderDashboardView() {
@@ -1737,7 +1801,14 @@ async function renderDashboardView() {
         return countOf(b) - countOf(a);
     });
 
-    const sectionsHtml = sports.map(function(s) { return _dashSectionHtml(s, bySport[s], s === defaultSport); }).join('');
+    // Fetch each sport's "plays today" games in parallel -- independent fetches,
+    // no reason to serialize them.
+    const todayGamesBySport = {};
+    await Promise.all(sports.map(async function(s) {
+        todayGamesBySport[s] = await _dashTodayGamesFor(s, bySport[s].teams);
+    }));
+
+    const sectionsHtml = sports.map(function(s) { return _dashSectionHtml(s, bySport[s], s === defaultSport, todayGamesBySport[s]); }).join('');
     const hasNFLFollow = sports.indexOf('nfl') !== -1;
 
     main.innerHTML = '' +
@@ -1754,6 +1825,10 @@ async function renderDashboardView() {
           '</section>'
         ) : '') +
       '</div>';
+
+    // The "plays today" cards render with the same cursor:pointer/role=button affordance
+    // as the home page's own game cards -- wire them the same way, or they'd be dead clicks.
+    if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(main);
 }
 
 function _dashSetDefaultSport(sport) {
@@ -1851,6 +1926,8 @@ function _refreshSettingsPanelState() {
         sel.value = _getDefaultSport() || '';
     }
 
+    _renderSettingsFollowsList();
+
     const accountLine = document.getElementById('settingsAccountLine');
     const accountBtn = document.getElementById('settingsAccountBtn');
     if (!accountLine || !accountBtn) return;
@@ -1864,6 +1941,74 @@ function _refreshSettingsPanelState() {
         accountBtn.textContent = 'Sign in';
         accountBtn.onclick = () => { _closeSettingsPanel(); if (typeof openAuthSheet === 'function') openAuthSheet(); };
     }
+}
+
+// Manage Follows (ISSUES.md "Dashboard live enrichment + Manage Follows") -- the only
+// central place on the site to see everything you follow and remove it; every other
+// surface only ever adds a follow via a single star on a single card.
+function _dashResolvePlayerName(sport, id) {
+    try {
+        if (sport === 'mlb' && typeof AppState !== 'undefined' && AppState.mlbPlayers) {
+            const pools = [AppState.mlbPlayers.hitting, AppState.mlbPlayers.pitching];
+            for (const pool of pools) {
+                const hit = (pool || []).find(p => String(p.id) === String(id));
+                if (hit) return hit.fullName;
+            }
+        }
+        if (sport === 'nfl' && typeof _mdPool !== 'undefined' && _mdPool) {
+            const hit = _mdPool.find(p => String(p.id) === String(id));
+            if (hit) return hit.name;
+        }
+    } catch (_) { /* opportunistic only -- fall through to the ID label below */ }
+    return null;
+}
+
+function _renderSettingsFollowsList() {
+    const host = document.getElementById('settingsFollowsList');
+    if (!host) return;
+
+    if (typeof AuthState === 'undefined' || !AuthState.follows || !AuthState.follows.size) {
+        host.innerHTML = '<p class="md-note">Not following anything yet.</p>';
+        return;
+    }
+
+    const bySport = {};
+    AuthState.follows.forEach(key => {
+        const parts = key.split(':');
+        const sport = parts[0], entityType = parts[1], entityId = parts[2];
+        if (!sport || !entityType || !entityId) return;
+        (bySport[sport] = bySport[sport] || []).push({ entityType, entityId });
+    });
+
+    host.innerHTML = Object.keys(bySport).sort().map(sport => {
+        const label = (typeof _SPORT_LABEL !== 'undefined' && _SPORT_LABEL[sport]) || sport.toUpperCase();
+        const rows = bySport[sport].map(({ entityType, entityId }) => {
+            let displayHtml;
+            if (entityType === 'team') {
+                const logo = typeof _dashTeamLogo === 'function' ? _dashTeamLogo(sport, entityId) : null;
+                const img = logo ? `<img src="${_escHtml(logo)}" alt="" data-hide-on-error style="width:16px;height:16px;object-fit:contain;margin-right:6px;vertical-align:-3px">` : '';
+                displayHtml = img + _escHtml(entityId);
+            } else {
+                const name = _dashResolvePlayerName(sport, entityId);
+                displayHtml = name ? _escHtml(name) : `Player #${_escHtml(entityId)}`;
+            }
+            return `<div class="settings-follow-row">
+                <span>${displayHtml}</span>
+                <button class="settings-unfollow-btn" data-unfollow-sport="${_escHtml(sport)}" data-unfollow-type="${_escHtml(entityType)}" data-unfollow-id="${_escHtml(entityId)}" aria-label="Unfollow" title="Unfollow">&times;</button>
+            </div>`;
+        }).join('');
+        return `<p class="settings-subsection-label">${_escHtml(label)}</p>${rows}`;
+    }).join('');
+
+    host.querySelectorAll('.settings-unfollow-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // toggleFollow dispatches ss:follow-changed synchronously after updating
+            // AuthState.follows -- the listener below (which checks the panel is open)
+            // re-renders this list, so no direct re-render call is needed here too.
+            const { unfollowSport, unfollowType, unfollowId } = btn.dataset;
+            if (typeof toggleFollow === 'function') await toggleFollow(unfollowSport, unfollowType, unfollowId, false);
+        });
+    });
 }
 
 (function _initSettingsPanel() {

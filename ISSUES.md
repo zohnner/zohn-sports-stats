@@ -2112,3 +2112,20 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 ---
 
+## Dashboard live "plays today" enrichment + Manage Follows — Three Gates
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility) | **Date:** 2026-08-09
+
+**Trigger (owner):** "continue to build out the user experience within settings and dashboard customization." Flagged before starting: the Dashboard's spec explicitly chose smart-default personalization over a manual widget-picker/drag-and-drop builder, so "customization" could mean either direction — owner confirmed staying on the smart-default path (implement the disclosed live-enrichment fast-follow) rather than reversing that call, and picked Manage Follows as the next Settings addition.
+
+**Job to be done (Vera):** Dashboard — "I follow the Yankees; if they're playing right now, that's the single most useful thing the Dashboard could tell me, not a link to a Teams page." Settings — "I've followed things from a dozen different cards over time; give me one place to see all of it and clean it up," since no such view exists anywhere on the site today (confirmed by grep — unfollowing means finding the original card again).
+
+**Behavioral spec (Vera):** Dashboard — each sport section checks its followed teams against today's real schedule; any match renders as a full live/upcoming/final scorebug card (identical to the home page's own game cards) above the team chip row, so the state is unmistakable rather than a small badge. No game today for any followed team in that sport → unchanged, just the chip row, exactly as before. Settings — a new "Following" section listing every follow grouped by sport, each row showing a real label (team abbr+logo, or best-effort player name — see Feasibility) and an unfollow (×) control; the list re-renders immediately on unfollow, no page reload.
+
+**Visual spec (Kael):** Dashboard game cards reuse `js/scorebug.js`'s `renderScoreCard` verbatim — the exact same `.home-game-card` anatomy the home page uses, so a live Yankees game looks identical whether you're looking at Today's Games or your Dashboard. No new card design. Settings follow rows reuse the `.settings-account-row` space-between shape already established this session, plus a small `.settings-unfollow-btn` sized to match `.settings-panel-close` (30px icon button) with an error-color hover — the one new visual primitive this pass needs, since nothing existing is a plain small "×" control.
+
+**Feasibility (Axiom):** No new data sources for games — reuses `fetchMLBSchedule`/`fetchNFLScoreboard`/`fetchNCAAFScoreboard` (all already cached, all already used by the home page) plus `Scorebug.normalize*Game`. MLB abbreviation matching goes through `_MLB_ABBR_ALIASES` both directions (schedule responses use the Stats API's non-standard forms per this file's own alias table) rather than assuming the followed abbr and the schedule abbr are always already the same string. NBA/NHL excluded from live enrichment (preview-only, per this file's standing "don't build NBA/NHL work unprompted" rule) — those sections keep the plain chip-only treatment. Player-name resolution in Manage Follows is opportunistic and disclosed, not a new fetch: MLB checks `AppState.mlbPlayers.hitting/pitching` (already in memory if the Players view was ever visited this session), NFL checks fantasy's `_mdPool` (already in memory if Draft Kit/Mock Draft was visited); NCAAF/NBA and any cold-cache MLB/NFL id fall back to a plain `Player #<id>` label rather than firing a new per-player API call — a real, disclosed scope limit, not a silent gap.
+
+**All three gates present. Implementing this pass.**
+
+---
+
