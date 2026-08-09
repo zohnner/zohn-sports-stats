@@ -72,14 +72,28 @@ function _timingSafeEqual(a, b) {
 
 // -- Upcoming-game discovery ------------------------------------------------
 
+// Labeled fetch that reads the body as text first -- an HTTP error page (Akamai
+// "Access Denied", a Cloudflare challenge, etc.) still has a 200 or non-200
+// status with an HTML body; parsing straight to .json() on that just throws a
+// generic "Unexpected token '<'" with no indication of WHICH upstream call or
+// WHY. This is what let the NFL host-block bug (D-079 fix, 2026-08-09) hide
+// behind a single opaque combined error on the first live /__run.
+async function _fetchJson(label, url, opts) {
+	const res = await fetch(url, opts);
+	const text = await res.text();
+	try {
+		return JSON.parse(text);
+	} catch (_) {
+		throw new Error(`${label} returned non-JSON (HTTP ${res.status}): ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
+	}
+}
+
 async function _mlbUpcoming(now) {
 	const dateStr = new Date(now).toISOString().slice(0, 10);
-	const [scheduleRes, teamsRes] = await Promise.all([
-		fetch(`${MLB_SCHEDULE_URL}&date=${dateStr}`, { headers: { 'User-Agent': MLB_UA } }),
-		fetch(MLB_TEAMS_URL, { headers: { 'User-Agent': MLB_UA } }),
+	const [schedule, teamsData] = await Promise.all([
+		_fetchJson('mlb-schedule', `${MLB_SCHEDULE_URL}&date=${dateStr}`, { headers: { 'User-Agent': MLB_UA } }),
+		_fetchJson('mlb-teams', MLB_TEAMS_URL, { headers: { 'User-Agent': MLB_UA } }),
 	]);
-	const schedule = await scheduleRes.json();
-	const teamsData = await teamsRes.json();
 
 	const idToAbbr = {};
 	for (const t of (teamsData.teams || [])) idToAbbr[t.id] = t.abbreviation;
@@ -111,8 +125,7 @@ async function _mlbUpcoming(now) {
 }
 
 async function _nflUpcoming(now) {
-	const res = await fetch(NFL_SCOREBOARD_URL, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
-	const data = await res.json();
+	const data = await _fetchJson('nfl-scoreboard', NFL_SCOREBOARD_URL, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
 	const games = [];
 	for (const ev of (data.events || [])) {
 		const statusName = ev.status && ev.status.type && ev.status.type.name;
@@ -158,13 +171,14 @@ async function runAlerts(env) {
 	const result = { ranAt: new Date().toISOString(), matched: 0, sent: 0, skipped: 0, failed: 0, pruned: 0, errors: [] };
 	const now = Date.now();
 
-	let mlbGames = [], nflGames = [];
-	try {
-		[mlbGames, nflGames] = await Promise.all([_mlbUpcoming(now), _nflUpcoming(now)]);
-	} catch (e) {
-		result.errors.push(`upstream fetch failed: ${e}`);
-		return result;
-	}
+	// Isolated per-sport: one upstream being down (or blocked) shouldn't also
+	// silence the other, and the error needs to say which one broke.
+	const [mlbResult, nflResult] = await Promise.allSettled([_mlbUpcoming(now), _nflUpcoming(now)]);
+	const mlbGames = mlbResult.status === 'fulfilled' ? mlbResult.value : [];
+	const nflGames = nflResult.status === 'fulfilled' ? nflResult.value : [];
+	if (mlbResult.status === 'rejected') result.errors.push(String(mlbResult.reason).slice(0, 250));
+	if (nflResult.status === 'rejected') result.errors.push(String(nflResult.reason).slice(0, 250));
+
 	const games = [...mlbGames, ...nflGames];
 	if (!games.length) return result;
 
