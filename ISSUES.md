@@ -2097,6 +2097,8 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 **Not actioned, still open (D-056 Finding 4):** every edge-rendered page still shares one static `og:image` — a real, previously-identified gap in social-share presentation that indirectly affects SEO (fewer/weaker shares → fewer natural backlinks) but wasn't part of this pass's scope. Flagging again since it's the next-most-concrete lever if there's appetite to keep going.
 
+**Update 2026-08-09 — root cause of the "never indexed" symptom found: Cloudflare Bot Fight Mode. Full detail in DECISIONS.md D-078.** The sitemap file, robots.txt, and `_headers` were all confirmed healthy (again); what a plain fetch could never show was that Bot Fight Mode was challenging inbound traffic Cloudflare wasn't confident was a real browser — which, on the free tier, has a real history of catching legitimate crawlers too. Search Console's URL Inspection tool confirmed the severity: Google hadn't just failed to fetch the sitemap, it had never registered a crawl attempt at all (`Last crawl: N/A`). Owner turned Bot Fight Mode off and requested indexing. This likely explains more than just the sitemap symptom — if it's been blocking Googlebot's sitemap fetch, it's a reasonable bet it's been interfering with regular page crawls too, which would account for the near-zero organic numbers going back to D-056. **Not yet resolved** — Google's re-crawl and re-index aren't instant; needs a Sitemaps-report and URL-Inspection re-check in a day or two.
+
 ---
 
 ## Settings panel enrichment: Default Sport + Account glue + a real theme-sync bug — SHIPPED 2026-08-09
