@@ -3536,6 +3536,15 @@ a:focus:not(:focus-visible),
     margin: 0;
     color: var(--text-secondary);
     font-size: var(--text-sm);
+    /* Mobile audit fix (2026-08-09): flex items refuse to shrink below their content's
+       intrinsic width by default. An unbroken email string next to the button pushed the
+       button past the drawer's ~300px content width and off past .settings-panel-drawer's
+       own overflow:hidden -- invisible, not just squished. min-width:0 lets this item
+       actually shrink; the ellipsis keeps a long address readable instead of wrapping. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .settings-account-row .auth-method-btn {
     /* .auth-method-btn is width:100% in its native single-column account-page context;
@@ -3556,6 +3565,15 @@ a:focus:not(:focus-visible),
     color: var(--text-secondary);
 }
 .settings-follow-row:last-child { border-bottom: none; }
+.settings-follow-row span {
+    /* Same min-width:0 + ellipsis fix as .settings-account-row -- a long player name
+       or the "Player #<id>" fallback next to the unfollow button has the identical
+       overflow risk in this drawer's narrow content width. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .settings-unfollow-btn {
     display: flex;
     align-items: center;
@@ -3788,6 +3806,29 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 @media (max-width: 480px) {
     .sport-switch { margin-left: var(--space-2); }
     .sport-switch-btn { padding: 3px 9px; }
+}
+
+/* Mobile audit fix (2026-08-09): .header-inner has no flex-wrap and .brand/.settings-btn/
+   .menu-btn are all flex-shrink:0 by design (they're the essential, always-reachable
+   controls). .sport-switch was ALSO flex-shrink:0 -- measured live on production at
+   desktop width, brand+sport-switch+auth+settings alone already total ~500px, with the
+   mobile-only .menu-btn (40px, hidden ≥769px) adding yet more right at the breakpoint
+   where it appears. With nothing to give, that overflow would push .menu-btn -- the only
+   way to reach the nav menu on mobile -- off the visible header entirely. Letting
+   .sport-switch shrink and scroll internally (same overflow-x pattern already used by
+   .dk-board/.sos-tablewrap) keeps every other header control fully visible and reachable;
+   the tradeoff is a small swipe on the sport pills themselves on the narrowest phones. */
+@media (max-width: 768px) {
+    .sport-switch {
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 140px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .sport-switch::-webkit-scrollbar { display: none; }
+    .sport-switch-btn { flex-shrink: 0; }
 }
 
 /* ── NFL offseason state ───────────────────────────────────── */

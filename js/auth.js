@@ -103,7 +103,15 @@ function _wireAuthControlEvents() {
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('authMenu');
         if (!menu || menu.hidden) return;
-        if (!menu.contains(e.target) && e.target !== btn) _closeAuthMenu();
+        // Mobile/UX audit fix (2026-08-09), confirmed live: .auth-avatar fills 100% of
+        // #authControl with zero padding gap, so every click on the avatar has e.target ===
+        // the inner span, never the button itself. `e.target !== btn` was therefore true on
+        // literally every real click on the avatar, so this "outside click" closer fired in
+        // the SAME click that _toggleAuthMenu() had just opened the menu in -- the menu
+        // opened and immediately closed within one click, on every device, for every
+        // signed-in user. `!btn.contains(e.target)` correctly treats any click inside the
+        // button (including its child span) as "on the button," not outside it.
+        if (!menu.contains(e.target) && !btn.contains(e.target)) _closeAuthMenu();
     });
 
     // Signed-out follow-star taps open the sheet then auto-apply the follow on return

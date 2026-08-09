@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://a.espncdn.com https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportStrata — Serious Stats for Serious Fans</title>
     <!-- OG / SEO — updated dynamically by navigation.js on each route change -->
     <meta property="og:type" content="website">
@@ -415,5 +415,21 @@
             });
         }
     </script>
+
+    <!-- Cloudflare Web Analytics (2026-08-09) -- cookieless, no consent banner required
+         (no client-side storage, no cross-site tracking, no fingerprinting). This is the
+         prerequisite for any real data-driven retention work: as of this commit nothing on
+         the site measures user behavior at all.
+         SETUP (owner action required -- this token is site-specific and not something this
+         session can obtain on its own):
+           1. Cloudflare dashboard -> Analytics & Logs -> Web Analytics -> Add a site
+           2. Choose "I'll insert it myself" (manual setup, not automatic injection -- keeps
+              this HTML the single source of truth for what loads, same posture as every
+              other script tag in this file)
+           3. Copy the token from the snippet Cloudflare shows you
+           4. Replace REPLACE_WITH_CF_BEACON_TOKEN below with that token
+         This tag is inert (loads, does nothing) until a real token replaces the placeholder --
+         safe to ship now, not a broken reference. -->
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "REPLACE_WITH_CF_BEACON_TOKEN"}'></script>
 </body>
 </html>

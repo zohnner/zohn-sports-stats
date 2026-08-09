@@ -2129,3 +2129,17 @@ Flow: (1) new **My League** entry in the Draft HQ strip, visible to everyone (sa
 
 ---
 
+
+## Team pass: mobile audit, account-menu bug, analytics gap — 2026-08-09
+**Contributor:** Axiom | Full writeup: DECISIONS.md D-070
+
+Four real bugs found and fixed this pass:
+
+1. **Account menu couldn't be opened, at all, by anyone** (`js/auth.js`) — the outside-click closer's `e.target !== btn` check failed against every real click on the avatar (the click target is always the inner `.auth-avatar` span, which fills the button with zero padding). Confirmed live on production. Fixed with `!btn.contains(e.target)`. Pre-dates this session — has been broken since D-031 shipped.
+2. **Header overflows on phone-width viewports** (`css/main.css`) — brand + 3-button sport switcher + settings icon alone measure ~465px live on production, before the mobile-only hamburger even enters the layout, with no `flex-wrap` and no shrink budget. Fixed by letting `.sport-switch` shrink + scroll internally below 768px (reusing the `.dk-board`/`.sos-tablewrap` overflow-x pattern).
+3. **`#dashboard`/`#account` don't survive a refresh** (`js/navigation.js`) — `_loadFromHash`'s fallback only recognized a hardcoded `nbaViews` list; added an explicit pass-through for both.
+4. **Settings drawer rows could overflow** (`css/main.css`) — the Account row and Manage Follows rows had no `min-width:0` on their text children, so a long email/name could push the button off past the drawer's own `overflow:hidden`. Fixed with `min-width:0` + ellipsis truncation.
+
+Also wired up **Cloudflare Web Analytics** (`index.html`, `_headers`) — cookieless, no consent banner needed — as the prerequisite for any real data-driven retention work; confirmed via full-codebase grep that no analytics of any kind existed before this. Code-complete and CSP-allowlisted; blocked on the owner pasting in a real beacon token from the Cloudflare dashboard (placeholder ships inert, not broken).
+
+---

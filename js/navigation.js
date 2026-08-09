@@ -959,6 +959,14 @@ function _loadFromHash() {
             AppState.currentSport = 'ncaaf';
             _applySportUI('ncaaf');
             navigateTo(hash, false);
+        } else if (hash === 'account' || hash === 'dashboard') {
+            // Mobile audit fix (2026-08-09): these sport-agnostic account-system views
+            // aren't part of any per-sport view array above, so they fell through to the
+            // nbaViews-only check below and silently bounced to home on a refresh or a
+            // shared/bookmarked #account or #dashboard link -- confirmed live (found while
+            // auditing the newly-added #dashboard route). Neither belongs in nbaViews
+            // (they're not NBA views), so they get their own explicit pass-through instead.
+            navigateTo(hash, false);
         } else {
             navigateTo(nbaViews.includes(hash) ? hash : 'home', false);
         }
