@@ -267,6 +267,11 @@ function _ncaafStandingRow(e) {
     const num  = (names) => { const x = stat(names); return x ? (x.value != null ? x.value : parseFloat(x.displayValue)) : null; };
     const disp = (names) => { const x = stat(names); return x ? (x.displayValue || '') : ''; };
     const w = num(['wins']), l = num(['losses']);
+    // pf/pa/diff/streak: same raw stat names ESPN returns for NFL standings
+    // (js/nflStandings.js's _nstdStat) — confirmed present in the NCAAF payload
+    // too, just not parsed out before this. Feeds the team-detail "Team Record"
+    // card (_renderTeamPage) without any new data source.
+    const pf = num(['pointsFor']), pa = num(['pointsAgainst']), diff = num(['pointDifferential']);
     return {
         id: t.id || '',
         name: t.displayName || t.name || t.location || '?',
@@ -275,6 +280,11 @@ function _ncaafStandingRow(e) {
         overall: (w != null && l != null) ? `${w}-${l}` : (disp(['overall', 'total']) || '—'),
         conf: disp(['vsConf', 'conferenceRecord', 'vsConference']) || '',
         winPct: num(['winPercent']),
+        wins: w, losses: l,
+        pf: pf != null ? Math.round(pf) : null,
+        pa: pa != null ? Math.round(pa) : null,
+        diff: diff != null ? Math.round(diff) : null,
+        streak: disp(['streak']) || '',
     };
 }
 
@@ -525,14 +535,25 @@ async function showNCAAFTeam(id) {
         return;
     }
     if (!team) { grid.innerHTML = _ncaafErr('Team not found.', 'displayNCAAFTeams'); return; }
-    let roster = [], sched = [], stats = null;
+    let roster = [], sched = [], stats = null, stdRow = null;
     try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
     try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (err) { Logger.warn('NCAAF schedule fetch failed', err, 'NCAAF'); }
     try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
-    displayNCAAFTeamDetail(team, roster, sched, stats);
+    // Team Record card (mirrors MLB's _mlbTeamStatsCard) — reuses the same
+    // fetchNCAAFStandings() the Standings view already calls, ApiCache-backed,
+    // no new data source. A miss here (team not found, or preseason with no
+    // real standings yet) just omits the card — never an error on the page.
+    try {
+        const confs = await fetchNCAAFStandings(_ncaaf.season);
+        for (const c of confs) {
+            const found = c.teams.find(t => t.id === team.id || t.abbr === team.abbreviation);
+            if (found) { stdRow = found; break; }
+        }
+    } catch (err) { Logger.warn('NCAAF standings fetch failed (team detail)', err, 'NCAAF'); }
+    displayNCAAFTeamDetail(team, roster, sched, stats, stdRow);
 }
 
-function displayNCAAFTeamDetail(team, roster, sched, stats) {
+function displayNCAAFTeamDetail(team, roster, sched, stats, stdRow) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = '';
@@ -588,6 +609,23 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
         scheduleHtml = `<section class="stats-card" style="grid-column:1/-1"><h3 class="detail-section-title">Schedule</h3><div class="team-empty">The ${_ncaaf.season} schedule appears here once released.</div></section>`;
     }
 
+    // Team Record card (mirrors MLB's Team Batting/Pitching card) — only built
+    // when the standings lookup found this team AND at least one game's worth
+    // of real data exists. Before kickoff ESPN still returns a standings row
+    // for every team, just all zeros (0-0, PF 0, PA 0) — confirmed live against
+    // /api/ncaafstandings?season=2026 while building this. Rendering that would
+    // look like a broken/empty card, not "no data yet", so it's suppressed the
+    // same way a null stdRow already is.
+    const stdHasPlayed = stdRow && ((stdRow.wins || 0) > 0 || (stdRow.losses || 0) > 0 || (stdRow.pf || 0) > 0 || (stdRow.pa || 0) > 0);
+    const recordChips = stdHasPlayed ? [
+        ['Record', stdRow.overall || '—'],
+        ...(stdRow.conf ? [['Conf', stdRow.conf]] : []),
+        ...(stdRow.pf != null ? [['PF', stdRow.pf]] : []),
+        ...(stdRow.pa != null ? [['PA', stdRow.pa]] : []),
+        ...(stdRow.diff != null ? [['Diff', stdRow.diff > 0 ? `+${stdRow.diff}` : String(stdRow.diff)]] : []),
+        ...(stdRow.streak ? [['Streak', stdRow.streak]] : []),
+    ] : [];
+
     const model = {
         sport: 'ncaaf', abbr, name: team.displayName || team.name || 'Team',
         logo: (team.logos && team.logos[0] && team.logos[0].href) || '', teamColor: color,
@@ -598,6 +636,7 @@ function displayNCAAFTeamDetail(team, roster, sched, stats) {
             ...groups.map(g => ({ label: g.label, value: g.players.length })),
             ...(conf ? [{ label: 'Conference', value: conf }] : []),
         ],
+        recordChips, recordSeasonLabel: recordChips.length ? `${_ncaaf.season} Season` : '',
         assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String((stats && stats.season) || _ncaaf.season),
         groups, rosterEmpty: 'Roster data unavailable for this team right now.',
         scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',

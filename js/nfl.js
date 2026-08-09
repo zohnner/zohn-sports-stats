@@ -1457,15 +1457,28 @@ async function showNFLTeamDetail(abbr) {
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
     if (window.setBreadcrumb) setBreadcrumb('nfl-teams', null);
+    let stdRow = null;
     try {
         if (!AppState.nflTeams.length) AppState.nflTeams = await fetchNFLTeams();
         await fetchNFLSleeperPool();
         if (!AppState.nflGames || !AppState.nflGames.length) { try { AppState.nflGames = await fetchNFLScoreboard(); } catch (err) { Logger.warn('Scoreboard fetch failed in team detail', err, 'NFL'); } }
+        // Team Record card (mirrors MLB's Team Batting/Pitching card) — reuses
+        // the same memoized fetch + fetchNFLStandings() the Standings view
+        // already calls (js/nflStandings.js), no new data source. NFL_STATS_SEASON
+        // and _nstd/fetchNFLStandings load after this file in the script chain but
+        // are resolved at call time here, not at parse time, so that's safe.
+        if (typeof fetchNFLStandings === 'function') {
+            try {
+                const season = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : new Date().getFullYear();
+                if (!_nstd.bySeason[season]) _nstd.bySeason[season] = await fetchNFLStandings(season);
+                stdRow = (_nstd.bySeason[season] || []).find(r => r.abbr === abbr) || null;
+            } catch (err) { Logger.warn('NFL standings fetch failed (team detail)', err, 'NFL'); }
+        }
     } catch (err) {
         ErrorHandler.handle(grid, err, () => showNFLTeamDetail(abbr), { tag: 'NFL', title: 'Failed to Load Team' });
         return;
     }
-    _renderNFLTeamDetail(abbr);
+    _renderNFLTeamDetail(abbr, stdRow);
 }
 
 // Conference/division is stable NFL data, not in the ESPN team payload and empty
@@ -1516,6 +1529,20 @@ function _renderTeamPage(m) {
             </div>
         </div>`;
 
+    // Team Record card — mirrors MLB's Team Batting/Team Pitching card
+    // (_mlbTeamStatsCard): a .stats-card of .player-bio-item chips positioned
+    // right after the header, before roster/assets. Omitted entirely when the
+    // caller has no recordChips (standings lookup missed, or nothing real to
+    // show yet) — same graceful-omit convention as MLB's.
+    const recordCard = (m.recordChips && m.recordChips.length)
+        ? `<div class="stats-card" style="grid-column:1/-1">
+            <h3 class="detail-section-title">Team Record${m.recordSeasonLabel ? ` <span class="team-section__count">${esc(m.recordSeasonLabel)}</span>` : ''}</h3>
+            <div class="player-bio-grid" style="margin-top:0.5rem">${m.recordChips.map(([lbl, val]) =>
+                `<div class="player-bio-item"><span class="bio-label">${esc(lbl)}</span><span class="bio-value">${esc(String(val))}</span></div>`
+            ).join('')}</div>
+        </div>`
+        : '';
+
     const assets = (m.assets || []).map(a =>
         `<button class="team-asset" style="--pc:${a.posColor}" onclick="navigateTo('${m.playerPrefix}${a.id}')">
             <div class="team-asset__av">${a.headshot ? `<img src="${esc(a.headshot)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
@@ -1547,10 +1574,10 @@ function _renderTeamPage(m) {
         ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2>${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
-    return `${header}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
+    return `${header}${recordCard}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
 }
 
-function _renderNFLTeamDetail(abbr) {
+function _renderNFLTeamDetail(abbr, stdRow) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
@@ -1614,6 +1641,27 @@ function _renderNFLTeamDetail(abbr) {
             : `<div class="team-empty">Full schedule & results post once the ${NFL_FANTASY_SEASON} season nears.</div>`}
     </section>`;
 
+    // Team Record card (mirrors MLB's Team Batting/Pitching card). stdRow is
+    // whatever season fetchNFLStandings() resolved to (NFL_STATS_SEASON — the
+    // most recently COMPLETED season Sep-Feb, else prior year), so in the
+    // offseason this is honestly last season's real record, not a fake current
+    // one — recordSeasonLabel makes that explicit rather than implying it's live.
+    // stdHasPlayed guards the same all-zero-preseason-row case confirmed live
+    // on the NCAAF standings feed (see ncaaf.js) — belt-and-suspenders here
+    // since NFL_STATS_SEASON should already point at a completed season.
+    const stdHasPlayed = stdRow && ((stdRow.wins || 0) > 0 || (stdRow.losses || 0) > 0 || (stdRow.pf || 0) > 0 || (stdRow.pa || 0) > 0);
+    const recordChips = stdHasPlayed ? [
+        ['Record', `${stdRow.wins}-${stdRow.losses}${stdRow.ties ? '-' + stdRow.ties : ''}`],
+        ['PCT',    stdRow.pct != null ? stdRow.pct.toFixed(3).replace(/^0\./, '.') : '—'],
+        ['PF',     stdRow.pf ?? '—'],
+        ['PA',     stdRow.pa ?? '—'],
+        ['Diff',   stdRow.diff != null ? (stdRow.diff > 0 ? `+${stdRow.diff}` : String(stdRow.diff)) : '—'],
+        ...(stdRow.streak ? [['Streak', stdRow.streak]] : []),
+        ...(stdRow.homeRec ? [['Home', stdRow.homeRec]] : []),
+        ...(stdRow.awayRec ? [['Away', stdRow.awayRec]] : []),
+    ] : [];
+    const recordSeason = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : '';
+
     grid.innerHTML = _renderTeamPage({
         sport: 'nfl', abbr, name: team.name, logo: team.logo, teamColor: team.color,
         division, record: team.record || '',
@@ -1625,6 +1673,7 @@ function _renderNFLTeamDetail(abbr) {
             { label: 'Special Teams', value: _sideCount('st') },
             ...(division ? [{ label: 'Division', value: division }] : []),
         ],
+        recordChips, recordSeasonLabel: recordChips.length ? `${recordSeason} Season` : '',
         assets, groups,
         rosterEmpty: 'Roster data unavailable for this team right now.',
         scheduleHtml,
