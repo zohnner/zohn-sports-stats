@@ -27,7 +27,16 @@ import { buildPushPayload } from '@block65/webcrypto-web-push';
 const LOOKAHEAD_MIN = 12; // alert fires when a game's start time is <= this many minutes away
 const MLB_SCHEDULE_URL = 'https://statsapi.mlb.com/api/v1/schedule?sportId=1';
 const MLB_TEAMS_URL = 'https://statsapi.mlb.com/api/v1/teams?sportId=1';
-const NFL_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+// site.api.espn.com is Akamai-blocked for Cloudflare egress IPs specifically --
+// documented live in functions/api/nfl.js's own 2026-08-07/08 header comment
+// (returned "Access Denied" HTML to every path with no client-side change).
+// site.web.api.espn.com serves the identical /apis/site/v2/sports/... path
+// family with byte-identical shape and is NOT blocked -- same fix applied here
+// after this worker's first live /__run hit reproduced the exact same failure
+// (an HTML body instead of JSON) on 2026-08-09.
+const NFL_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+const MLB_UA = 'SportStrata/1.0'; // matches functions/api/mlb.js's already-proven statsapi UA
 
 export default {
 	async scheduled(event, env, ctx) {
@@ -66,8 +75,8 @@ function _timingSafeEqual(a, b) {
 async function _mlbUpcoming(now) {
 	const dateStr = new Date(now).toISOString().slice(0, 10);
 	const [scheduleRes, teamsRes] = await Promise.all([
-		fetch(`${MLB_SCHEDULE_URL}&date=${dateStr}`),
-		fetch(MLB_TEAMS_URL),
+		fetch(`${MLB_SCHEDULE_URL}&date=${dateStr}`, { headers: { 'User-Agent': MLB_UA } }),
+		fetch(MLB_TEAMS_URL, { headers: { 'User-Agent': MLB_UA } }),
 	]);
 	const schedule = await scheduleRes.json();
 	const teamsData = await teamsRes.json();
@@ -102,7 +111,7 @@ async function _mlbUpcoming(now) {
 }
 
 async function _nflUpcoming(now) {
-	const res = await fetch(NFL_SCOREBOARD_URL);
+	const res = await fetch(NFL_SCOREBOARD_URL, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
 	const data = await res.json();
 	const games = [];
 	for (const ev of (data.events || [])) {
