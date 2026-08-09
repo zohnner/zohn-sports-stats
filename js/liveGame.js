@@ -338,6 +338,10 @@ function _renderPanel(panel, feed, gamePk) {
     const scorecardLink = isFinal
         ? `<a class="lg-scorecard-link" href="#mlb-scorecard-${gamePk}">Full scorecard →</a>`
         : '';
+    // Works for live and final games alike — the boxscore endpoint returns
+    // stats-so-far for a live game, so this is deliberately not isFinal-gated
+    // the way scorecardLink is.
+    const highlightLink = `<a class="lg-scorecard-link" href="javascript:void(0)" onclick="openHighlightCardForGame(${gamePk})">Highlight card →</a>`;
 
     panel.querySelector('.lg-header').innerHTML = `
         <button class="lg-close-btn" aria-label="Collapse game view">×</button>
@@ -352,6 +356,7 @@ function _renderPanel(panel, feed, gamePk) {
             ${!isFinal ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${isBetweenInn ? '—' : `${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}`}</span>` : ''}
             ${badgeHtml}
             ${scorecardLink}
+            ${highlightLink}
         </div>`;
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);

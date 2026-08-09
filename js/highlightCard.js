@@ -67,6 +67,19 @@ const _HC_ANIM_STYLES = [
 
 let _hcState = null;
 
+// Set by openHighlightCardForGame() just before navigateTo('mlb-highlight-card')
+// so a caller viewing a specific game (final boxscore or the live game panel)
+// can jump straight into the studio with that game pre-selected, skipping the
+// picker. navigateTo/_renderMLBView only pass the view string, not arguments,
+// so this module-level handoff is the lowest-risk way to thread a gamePk
+// through the hash router without changing its signature.
+let _hcPendingGamePk = null;
+
+function openHighlightCardForGame(gamePk) {
+    _hcPendingGamePk = gamePk;
+    navigateTo('mlb-highlight-card');
+}
+
 function _hcResetState() {
     _hcState = {
         games: [], gamePk: null, game: null, boxscore: null,
@@ -79,14 +92,28 @@ async function displayMLBHighlightCard() {
     const container = document.getElementById('playersGrid');
     if (!container) return;
     _hcResetState();
+    const presetGamePk = _hcPendingGamePk;
+    _hcPendingGamePk = null;
     container.innerHTML = _hcSkeletonHtml();
     try {
-        const games = await fetchMLBSchedule(6);
-        _hcState.games = (games || [])
-            .filter(g => g.status?.abstractGameState === 'Final')
-            .slice(0, 12);
+        if (presetGamePk) {
+            // Single-game schedule lookup — same stub shape fetchMLBSchedule()
+            // returns (teams.{away,home}.team/score, gameDate), just scoped to
+            // the one game the user was already looking at, via mlbFetch (never
+            // fetch(statsapi.mlb.com/...) directly).
+            const data = await mlbFetch('/schedule', { gamePk: presetGamePk }, ApiCache.TTL.SHORT);
+            const game = data?.dates?.[0]?.games?.[0] || null;
+            _hcState.games = game ? [game] : [];
+            Logger.info('Highlight Card Studio opened from game view', { gamePk: presetGamePk }, 'MLB');
+            if (game) { await _hcPickGame(presetGamePk); return; }
+        } else {
+            const games = await fetchMLBSchedule(6);
+            _hcState.games = (games || [])
+                .filter(g => g.status?.abstractGameState === 'Final')
+                .slice(0, 12);
+            Logger.info('Highlight Card Studio opened', { gameCount: _hcState.games.length }, 'MLB');
+        }
         _hcRenderStudio(container);
-        Logger.info('Highlight Card Studio opened', { gameCount: _hcState.games.length }, 'MLB');
     } catch (err) {
         ErrorHandler.handle(container, err, () => displayMLBHighlightCard(), { tag: 'MLB', title: 'Failed to load recent games' });
     }
@@ -324,8 +351,17 @@ function _hcCardHtml() {
         const raw = stat[key];
         const displayVal = raw === undefined || raw === null || raw === '' ? '0' : String(raw);
         const isNumeric = !meta?.raw && /^-?\d+(\.\d+)?$/.test(displayVal);
+        // Only the "Count Up" animation style animates from 0 -> real value (via
+        // _hcAnimateCounts, called from _hcRenderPreview when anim === 'countup').
+        // For "Slide In"/"Fade" the real value must render immediately — a real
+        // bug shipped here once already: initializing every numeric stat's text
+        // to "0" unconditionally meant slide/fade cards showed permanent zeros,
+        // since nothing else ever set the real value in those two modes. Caught
+        // live on production (Chrome, real boxscore data) before this fix.
+        const animatesUp = isNumeric && _hcState.anim === 'countup';
+        const initialText = animatesUp ? '0' : _escHtml(displayVal);
         return `<div class="hcs-stat" style="animation-delay:${i * 110}ms">
-            <div class="hcs-stat-value"${isNumeric ? ` data-hc-count="${displayVal}"` : ''}>${isNumeric ? '0' : _escHtml(displayVal)}</div>
+            <div class="hcs-stat-value"${animatesUp ? ` data-hc-count="${displayVal}"` : ''}>${initialText}</div>
             <div class="hcs-stat-label">${_escHtml(meta?.label || key)}</div>
         </div>`;
     }).join('');

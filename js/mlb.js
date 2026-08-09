@@ -3291,7 +3291,7 @@ async function showMLBGameDetail(gamePk, gameStub = null) {
             mlbFetch(`/game/${gamePk}/linescore`, {}, ApiCache.TTL.SHORT),
             mlbFetch(`/game/${gamePk}/boxscore`,  {}, ApiCache.TTL.SHORT),
         ]);
-        _renderMLBGameDetail(grid, gameStub, linescore, boxscore);
+        _renderMLBGameDetail(grid, gameStub, linescore, boxscore, gamePk);
     } catch (err) {
         Logger.error('MLB game detail failed', err, 'MLB');
         grid.innerHTML = `
@@ -3305,7 +3305,7 @@ async function showMLBGameDetail(gamePk, gameStub = null) {
     }
 }
 
-function _renderMLBGameDetail(grid, stub, ls, bs) {
+function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
     const homeTeam  = stub?.teams?.home?.team || bs?.teams?.home?.team || {};
     const awayTeam  = stub?.teams?.away?.team || bs?.teams?.away?.team || {};
     const homeAbbr  = _mlbTeamAbbr(homeTeam);
@@ -3507,6 +3507,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs) {
         <div class="mlb-game-detail-wrap">
             <div class="arcade-back-row" style="margin-bottom:1.5rem">
                 <button class="arcade-back-btn" onclick="loadMLBGames()">← Back to Scores</button>
+                ${gamePk ? `<button type="button" class="hcs-pill" onclick="openHighlightCardForGame(${gamePk})">🎬 Create Highlight Card</button>` : ''}
             </div>
             ${linescoreHtml}
             <div class="mlb-box-grid">
