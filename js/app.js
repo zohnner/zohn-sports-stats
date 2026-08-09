@@ -1177,9 +1177,117 @@ function _heroFromGame(g, kind) {
         <div class="hero-visual">${board}</div>`;
     return { kind, html, onClick: () => _openMLBGameFromHero(g.gamePk, kind === 'live') };
 }
+// Sport-aware hero (owner-scoped 2026-08-09, following up D-046 P2): the
+// kicker/headline/game-of-the-day content becomes calendar-aware. Everything
+// else about home stays exactly as D-042 established it -- the neutral brand
+// (_applySportUI('home')), the sport-picker band, and every other home
+// section (Today's Games, Tonight's Starters, Hot Right Now) all stay MLB.
+// Owner explicitly chose calendar-phase over personalization or live
+// cross-sport leverage scoring, and chose "hero copy only" over letting the
+// hero adopt a sport's full visual identity -- both were real options,
+// presented and decided, not defaulted to.
+//
+// MLB leads Mar-Oct -- the same boundary MLB_SEASON already uses for
+// current-vs-previous-season detection, so this doesn't invent a new
+// calendar rule. NFL leads Nov-Feb: MLB's offseason is NFL's regular
+// season/playoffs/Super Bowl, its most exciting stretch, and the two
+// windows don't need a tie-break because they don't overlap under this
+// rule. The one edge this doesn't smooth over: mid/late Feb sits in NFL's
+// own _nflSeasonPhase() 'offseason' (post-Super Bowl, pre-draft-buzz) --
+// _renderHomeHeroNFL() finds no live/upcoming game and just hides the hero,
+// same honest empty-state MLB's own branch already uses below. Not a
+// regression from anything that exists today.
+function _homeHeroSport() {
+    const m = new Date().getMonth() + 1; // 1-12
+    return (m === 11 || m === 12 || m === 1 || m === 2) ? 'nfl' : 'mlb';
+}
+
+function _heroNFLBoard(g, showScore) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const tc = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
+    const row = (t, winner) => `
+        <div class="hero-row${winner ? ' hero-row--win' : ''}" style="--tc:${tc(t.abbr)}">
+            ${t.logo ? `<img class="hero-row-logo" src="${_esc(t.logo)}" alt="${_esc(t.abbr)}" data-hide-on-error>` : `<span class="hero-row-logo"></span>`}
+            <span class="hero-row-abbr">${_esc(t.abbr)}</span>
+            <span class="hero-row-score">${showScore ? (t.score ?? 0) : ''}</span>
+        </div>`;
+    const aw = showScore && (g.awayTeam.score ?? 0) > (g.homeTeam.score ?? 0);
+    const hw = showScore && (g.homeTeam.score ?? 0) > (g.awayTeam.score ?? 0);
+    return `<div class="hero-board">${row(g.awayTeam, aw)}${row(g.homeTeam, hw)}</div>`;
+}
+
+function _openNFLGameFromHero(eventId) {
+    if (!eventId) return;
+    if (AppState.currentSport !== 'nfl' && typeof switchSport === 'function') switchSport('nfl');
+    if (typeof showNFLGame === 'function') showNFLGame(eventId);
+}
+
+function _heroFromNFLGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
+    let kicker, hook, board, cta;
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
+        const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
+            : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
+        hook = leadTeam
+            ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
+            : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
+        board = _heroNFLBoard(g, true);
+        cta = 'Watch live →';
+    } else {
+        const d = g.date ? new Date(g.date) : null;
+        const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+        kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
+        hook = 'Kickoff soon';
+        board = _heroNFLBoard(g, false);
+        cta = 'Game preview →';
+    }
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}</div>`;
+    return { kind, html, onClick: () => _openNFLGameFromHero(g.id) };
+}
+
+async function _renderHomeHeroNFL(host) {
+    let hero = null;
+    try {
+        const games = (typeof fetchNFLScoreboard === 'function')
+            ? ((AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard())
+            : [];
+        AppState.nflGames = games;
+        const live = (games || []).filter(g => g.isLive);
+        const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+        if (live.length) {
+            hero = _heroFromNFLGame(live[0], 'live');
+        } else if (upcoming.length) {
+            const soonest = upcoming.slice().sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+            hero = _heroFromNFLGame(soonest, 'upcoming');
+        }
+    } catch (err) {
+        Logger.warn('NFL home hero failed', err && err.message, 'APP');
+        hero = null;
+    }
+    if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
+    host.className = `home-hero home-hero--${hero.kind}`;
+    host.innerHTML = hero.html;
+    host.hidden = false;
+    host.setAttribute('role', 'button');
+    host.tabIndex = 0;
+    host.onclick = hero.onClick;
+    host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+}
+
 async function _renderHomeHero(games) {
     const host = document.getElementById('homeHero');
     if (!host) return;
+    if (_homeHeroSport() === 'nfl') { await _renderHomeHeroNFL(host); return; }
     const list = Array.isArray(games) ? games : (AppState._homeGames || []);
 
     const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');

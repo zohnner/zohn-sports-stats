@@ -24,6 +24,13 @@ async function showNFLGame(eventId) {
     _nlg.eventId = eventId;
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
+    // Self-set currentView rather than relying on navigateTo() having done it —
+    // same D-075 lesson (js/mlb.js's showMLBGameDetail): any view-render function
+    // callable outside the router's dispatch must own this, or a caller that
+    // bypasses navigateTo() (e.g. the home hero's game-of-the-day click) leaves
+    // this stale, and _nlgMaybePoll's own currentView guard immediately self-stops
+    // the live poll it just started, thinking the user already navigated away.
+    AppState.currentView = 'nfl-game-' + eventId;
     grid.className = 'player-detail-container'; grid.style.cssText = '';
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
