@@ -317,6 +317,7 @@ const _NAV_META = {
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
+    'nfl-highlight-card': { label: 'Highlight Card', icon: '🎬' },
     'nfl-sos':       { label: 'Draft HQ · Schedule', icon: '🗓️' },
     'nhl-players':   { label: 'NHL Leaders',   icon: '🏒' },
     'nhl-leaders':   { label: 'NHL Leaders',   icon: '🏒' },
@@ -679,6 +680,10 @@ function _renderNFLView(view) {
             if (AppState.nflStandings?.length) displayNFLStandings(AppState.nflStandings);
             else loadNFLStandings();
             break;
+        case 'nfl-highlight-card':
+            if (viewCount) viewCount.textContent = 'Highlight Card';
+            displayNFLHighlightCard();
+            break;
         // 'nfl-home' has no case here — renderCurrentView() intercepts every `{sport}-home`
         // view via the D-045 _renderSportLanding route above, so this switch never sees it.
         // A case here (calling the now-removed loadNFLHome()) was confirmed-dead code — see D-076.
@@ -950,7 +955,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare', 'mlb-highlight-card'];
-        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
@@ -1002,7 +1007,7 @@ const SUB_NAV_TABS = {
         { v: 'nfl-teams', l: 'Teams' },
         { v: 'nfl-standings', l: 'Standings' },
         { l: 'Analytics', children: [
-            { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' },
+            { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' },
         ] },
         { l: 'Fantasy', children: [
             { v: 'nfl-draftkit', l: 'Value Board' },
@@ -1114,7 +1119,7 @@ const MENU_TABS = {
         { v:'nfl-trending', l:'Trending', i:'extra' }, { v:'nfl-injuries', l:'Injury Report', i:'extra' },
         { v:'nfl-waivers', l:'Waiver Wire', i:'extra' },
         { group:'Tools' },
-        { v:'nfl-compare', l:'Compare', i:'compare' },
+        { v:'nfl-compare', l:'Compare', i:'compare' }, { v:'nfl-highlight-card', l:'Highlight', i:'extra' },
     ],
     ncaaf: [
         { group:'College Football' },
@@ -1246,6 +1251,7 @@ const _PAGE_META = {
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
     'news':          { title: 'SportStrata — News',           desc: 'Latest NFL and MLB headlines, injuries, and storylines.' },
     'nfl-sos':       { title: 'SportStrata — NFL Strength of Schedule', desc: 'Fantasy strength of schedule by position, weighted for the fantasy playoffs.' },
+    'nfl-highlight-card': { title: 'SportStrata — NFL Highlight Card Studio', desc: 'Build an animated, shareable highlight card for any player from a recent NFL game.' },
 };
 
 function _updatePageMeta(view) {

@@ -419,3 +419,367 @@ async function _hcExportPNG(btn) {
         btn,
     });
 }
+
+// ============================================================
+// NFL port (D-074 named NFL as a confirmed-data-ready, sequenced-after-MLB
+// follow-through — this is that follow-through, 2026-08-09).
+//
+// Deliberately NOT unified with the MLB functions above into one generic
+// sport-adapter, even though that's this codebase's usual pattern for
+// shared chrome (detailFrame.js). Reason: the two data shapes aren't a
+// thin config difference, they're structurally different. MLB's boxscore
+// (statsapi.mlb.com) keys every stat by a stable name on a per-player
+// object (stat.hits, stat.homeRuns...), so a fixed {key,label} catalog
+// works. ESPN's /summary boxscore (data.boxscore.players[].statistics[])
+// has no such keys — each stat group carries a `labels` array and each
+// athlete a parallel positional `stats` array (already proven by
+// js/nflLiveGame.js's _nlgBoxScore, which reads the same shape). The
+// NFL catalog below is built from those labels by index, not a semantic
+// key. Forcing both into one function would mean the "adapter" is just
+// these functions again with extra indirection. Reuses everything that
+// IS actually generic: every .hcs-* CSS class, _HC_COLOR_CHOICES,
+// _HC_ANIM_STYLES, _hcAnimateCounts, shareCardElement.
+//
+// Data: fetchNFLSummary() (js/nflLiveGame.js) — same call the live game
+// panel already makes, same /api/nfl?path=/summary edge-cached endpoint.
+// No new data source, no new proxy path.
+// ============================================================
+
+const _HC_NFL_GROUP_ORDER = ['passing', 'rushing', 'receiving', 'defensive', 'kicking'];
+const _HC_NFL_GROUP_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving: 'Receiving', defensive: 'Defense', kicking: 'Kicking' };
+
+let _hcNflState = null;
+let _hcNflPendingEventId = null;
+
+function openNFLHighlightCardForGame(eventId) {
+    _hcNflPendingEventId = eventId;
+    navigateTo('nfl-highlight-card');
+}
+
+function _hcNflResetState() {
+    _hcNflState = {
+        games: [], eventId: null, game: null, summary: null,
+        side: null, group: null, athleteIdx: null, player: null,
+        selectedStats: [], anim: 'countup', color: 'team',
+    };
+}
+
+async function displayNFLHighlightCard() {
+    const container = document.getElementById('playersGrid');
+    if (!container) return;
+    _hcNflResetState();
+    const presetEventId = _hcNflPendingEventId;
+    _hcNflPendingEventId = null;
+    container.innerHTML = _hcSkeletonHtml();
+    try {
+        if (presetEventId) {
+            Logger.info('Highlight Card Studio opened from NFL game view', { eventId: presetEventId }, 'NFL');
+            await _hcNflPickGame(presetEventId, true);
+            return;
+        }
+        // "Recent completed games" for NFL means this week's finals — there's no
+        // MLB-style N-days-back lookback endpoint, and weekly cadence makes "this
+        // week" the natural analog (same default the Scores/landing "This Week's
+        // Games" surfaces already use, D-071/D-076).
+        const games = (typeof fetchNFLScoreboard === 'function') ? await fetchNFLScoreboard() : [];
+        _hcNflState.games = (games || []).filter(g => g.isFinal).slice(0, 12);
+        Logger.info('NFL Highlight Card Studio opened', { gameCount: _hcNflState.games.length }, 'NFL');
+        _hcNflRenderStudio(container);
+    } catch (err) {
+        ErrorHandler.handle(container, err, () => displayNFLHighlightCard(), { tag: 'NFL', title: 'Failed to load recent games' });
+    }
+}
+
+function _hcNflRenderStudio(container) {
+    const hasGame = !!_hcNflState.game;
+    const hasPlayer = !!_hcNflState.player;
+    container.innerHTML = `
+        <div class="hcs-shell">
+            <div class="hcs-head">
+                <h2 class="ss-headline">Highlight Card Studio — NFL</h2>
+                <p class="hcs-sub">Pick a recent game, pick a player, build a card worth sharing.</p>
+            </div>
+            <div class="hcs-layout">
+                <div class="hcs-controls">
+                    <div class="hcs-step">
+                        <div class="hcs-step-label">1. Game</div>
+                        ${_hcNflGamePickerHtml()}
+                    </div>
+                    ${hasGame ? `<div class="hcs-step">
+                        <div class="hcs-step-label">2. Player</div>
+                        ${_hcNflPlayerPickerHtml()}
+                    </div>` : ''}
+                    ${hasPlayer ? `<div class="hcs-step">
+                        <div class="hcs-step-label">3. Stats <span class="hcs-step-hint">(up to 4)</span></div>
+                        ${_hcNflStatPickerHtml()}
+                    </div>
+                    <div class="hcs-step">
+                        <div class="hcs-step-label">4. Animation</div>
+                        ${_hcNflAnimPickerHtml()}
+                    </div>
+                    <div class="hcs-step">
+                        <div class="hcs-step-label">5. Color</div>
+                        ${_hcNflColorPickerHtml()}
+                    </div>` : ''}
+                </div>
+                <div class="hcs-preview-pane">
+                    ${hasPlayer
+                        ? `<div class="hcs-preview-mount" id="hcsPreviewMount"></div>
+                           <button class="hcs-export-btn" id="hcsExportBtn" type="button">Download PNG</button>`
+                        : `<div class="hcs-preview-empty">Pick a game and a player to start building your card.</div>`}
+                </div>
+            </div>
+        </div>`;
+    _hcNflWireControls(container);
+    if (hasPlayer) _hcNflRenderPreview();
+}
+
+function _hcNflGamePickerHtml() {
+    if (!_hcNflState.games.length) {
+        return `<div class="hcs-empty-note">No completed games this week yet — check back after this week's games finish.</div>`;
+    }
+    return `<div class="hcs-game-list">
+        ${_hcNflState.games.map(g => {
+            const date = g.date ? new Date(g.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+            const active = String(g.id) === String(_hcNflState.eventId) ? ' hcs-game-card--active' : '';
+            return `<button type="button" class="hcs-game-card${active}" data-hc-nfl-game="${_escHtml(String(g.id))}">
+                <span class="hcs-game-date">${_escHtml(date)}</span>
+                <span class="hcs-game-matchup">${_escHtml(g.awayTeam?.abbr || '')} ${g.awayTeam?.score ?? ''} @ ${_escHtml(g.homeTeam?.abbr || '')} ${g.homeTeam?.score ?? ''}</span>
+            </button>`;
+        }).join('')}
+    </div>`;
+}
+
+// Matches team blocks by abbreviation, not id — fetchNFLScoreboard()'s normalized
+// shape doesn't carry a team id (js/nfl.js), and within one /summary response the
+// header competitors and boxscore.players entries describe the same event, so
+// abbreviation is a safe, simpler join key here (unlike joining across sources).
+function _hcNflGroupsForSide(side) {
+    const abbr = _hcNflTeamAbbr(side);
+    if (!abbr) return [];
+    const teamBlock = (_hcNflState.summary?.boxscore?.players || []).find(p => (p.team || {}).abbreviation === abbr);
+    if (!teamBlock) return [];
+    return _HC_NFL_GROUP_ORDER
+        .map(key => ({ key, label: _HC_NFL_GROUP_LABELS[key], group: (teamBlock.statistics || []).find(s => s.name === key) }))
+        .filter(g => g.group && g.group.athletes && g.group.athletes.length);
+}
+
+function _hcNflPlayerPickerHtml() {
+    const sideOptions = side => {
+        const groups = _hcNflGroupsForSide(side);
+        if (!groups.length) return '';
+        const teamLabel = _hcNflTeamAbbr(side);
+        return groups.map(g => {
+            const opts = g.group.athletes.map((a, i) => {
+                const name = a.athlete?.displayName || a.athlete?.shortName || 'Player';
+                const selected = (_hcNflState.side === side && _hcNflState.group === g.key && _hcNflState.athleteIdx === i) ? ' selected' : '';
+                return `<option value="${side}:${g.key}:${i}"${selected}>${_escHtml(name)}</option>`;
+            }).join('');
+            return `<optgroup label="${_escHtml(teamLabel)} — ${_escHtml(g.label)}">${opts}</optgroup>`;
+        }).join('');
+    };
+    return `<select class="hcs-select" id="hcsPlayerSelect" aria-label="Pick a player">
+        <option value="">Choose a player…</option>
+        ${sideOptions('away')}
+        ${sideOptions('home')}
+    </select>`;
+}
+
+function _hcNflCurrentGroupData() {
+    const groups = _hcNflGroupsForSide(_hcNflState.side);
+    const found = groups.find(g => g.key === _hcNflState.group);
+    return found ? found.group : null;
+}
+
+function _hcNflStatCatalog() {
+    const g = _hcNflCurrentGroupData();
+    if (!g || !g.labels) return [];
+    return g.labels.map((label, i) => ({ key: i, label }));
+}
+
+function _hcNflStatPickerHtml() {
+    const catalog = _hcNflStatCatalog();
+    return `<div class="hcs-stat-checks">
+        ${catalog.map(s => {
+            const checked = _hcNflState.selectedStats.includes(s.key);
+            const atCap = _hcNflState.selectedStats.length >= 4 && !checked;
+            return `<label class="hcs-stat-check${atCap ? ' hcs-stat-check--disabled' : ''}">
+                <input type="checkbox" data-hc-nfl-stat="${s.key}" ${checked ? 'checked' : ''} ${atCap ? 'disabled' : ''}>
+                ${_escHtml(s.label)}
+            </label>`;
+        }).join('')}
+    </div>`;
+}
+
+function _hcNflAnimPickerHtml() {
+    return `<div class="hcs-pill-row">
+        ${_HC_ANIM_STYLES.map(a => `<button type="button" class="hcs-pill${_hcNflState.anim === a.key ? ' hcs-pill--active' : ''}" data-hc-nfl-anim="${a.key}">${_escHtml(a.label)}</button>`).join('')}
+    </div>`;
+}
+
+function _hcNflColorPickerHtml() {
+    return `<div class="hcs-pill-row">
+        ${_HC_COLOR_CHOICES.map(c => `<button type="button" class="hcs-pill${_hcNflState.color === c.key ? ' hcs-pill--active' : ''}" data-hc-nfl-color="${c.key}">${_escHtml(c.label)}</button>`).join('')}
+    </div>`;
+}
+
+function _hcNflWireControls(container) {
+    container.querySelectorAll('[data-hc-nfl-game]').forEach(btn => {
+        btn.addEventListener('click', () => _hcNflPickGame(btn.dataset.hcNflGame, false));
+    });
+    const playerSelect = container.querySelector('#hcsPlayerSelect');
+    if (playerSelect) {
+        playerSelect.addEventListener('change', () => {
+            const v = playerSelect.value;
+            if (!v) return;
+            const [side, group, idx] = v.split(':');
+            _hcNflPickPlayer(side, group, Number(idx));
+        });
+    }
+    container.querySelectorAll('[data-hc-nfl-stat]').forEach(cb => {
+        cb.addEventListener('change', () => _hcNflToggleStat(cb.dataset.hcNflStat, cb.checked));
+    });
+    container.querySelectorAll('[data-hc-nfl-anim]').forEach(btn => {
+        btn.addEventListener('click', () => { _hcNflState.anim = btn.dataset.hcNflAnim; _hcNflRenderStudio(container); });
+    });
+    container.querySelectorAll('[data-hc-nfl-color]').forEach(btn => {
+        btn.addEventListener('click', () => { _hcNflState.color = btn.dataset.hcNflColor; _hcNflRenderStudio(container); });
+    });
+    const exportBtn = container.querySelector('#hcsExportBtn');
+    if (exportBtn) exportBtn.addEventListener('click', () => _hcNflExportPNG(exportBtn));
+}
+
+async function _hcNflPickGame(eventId, fromPreset) {
+    const container = document.getElementById('playersGrid');
+    if (!container) return;
+    container.innerHTML = _hcSkeletonHtml();
+    try {
+        const data = await fetchNFLSummary(eventId);
+        const comp = (data.header && data.header.competitions && data.header.competitions[0]) || {};
+        const home = (comp.competitors || []).find(c => c.homeAway === 'home') || {};
+        const away = (comp.competitors || []).find(c => c.homeAway === 'away') || {};
+        const pseudoGame = {
+            id: eventId,
+            date: comp.date || null,
+            homeTeam: { abbr: (home.team && home.team.abbreviation) || '', score: home.score },
+            awayTeam: { abbr: (away.team && away.team.abbreviation) || '', score: away.score },
+        };
+        // Preset entry (from the live/final game view) skips the scoreboard-week
+        // fetch entirely, so the picker has no list yet — seed it with just this
+        // one game so step 1 shows it selected rather than a misleading empty note.
+        if (fromPreset) _hcNflState.games = [pseudoGame];
+        _hcNflState.eventId = eventId;
+        _hcNflState.summary = data;
+        _hcNflState.game = pseudoGame;
+        _hcNflState.side = null; _hcNflState.group = null; _hcNflState.athleteIdx = null; _hcNflState.player = null;
+        _hcNflState.selectedStats = [];
+        _hcNflRenderStudio(container);
+    } catch (err) {
+        ErrorHandler.handle(container, err, () => _hcNflPickGame(eventId, fromPreset), { tag: 'NFL', title: 'Failed to load boxscore' });
+    }
+}
+
+function _hcNflPickPlayer(side, groupKey, athleteIdx) {
+    const groups = _hcNflGroupsForSide(side);
+    const g = groups.find(x => x.key === groupKey);
+    const athlete = g && g.group.athletes[athleteIdx];
+    if (!athlete) return;
+    _hcNflState.side = side;
+    _hcNflState.group = groupKey;
+    _hcNflState.athleteIdx = athleteIdx;
+    _hcNflState.player = athlete;
+    const catalog = _hcNflStatCatalog();
+    _hcNflState.selectedStats = catalog.slice(0, 4).map(c => c.key);
+    _hcNflRenderStudio(document.getElementById('playersGrid'));
+}
+
+function _hcNflToggleStat(key, checked) {
+    key = Number(key);
+    if (checked) {
+        if (_hcNflState.selectedStats.length >= 4) return;
+        _hcNflState.selectedStats.push(key);
+    } else {
+        _hcNflState.selectedStats = _hcNflState.selectedStats.filter(k => k !== key);
+    }
+    _hcNflRenderStudio(document.getElementById('playersGrid'));
+}
+
+function _hcNflTeamAbbr(side) {
+    if (!_hcNflState.game) return '';
+    return side === 'home' ? (_hcNflState.game.homeTeam?.abbr || '') : (_hcNflState.game.awayTeam?.abbr || '');
+}
+
+function _hcNflOpponentAbbr(side) {
+    return _hcNflTeamAbbr(side === 'home' ? 'away' : 'home');
+}
+
+function _hcNflColorValue() {
+    const choice = _HC_COLOR_CHOICES.find(c => c.key === _hcNflState.color) || _HC_COLOR_CHOICES[0];
+    if (choice.key === 'team') {
+        const abbr = _hcNflTeamAbbr(_hcNflState.side);
+        const c = (typeof getNFLTeamColor === 'function') ? getNFLTeamColor(abbr) : null;
+        return c || 'var(--accent)';
+    }
+    return `var(${choice.varName})`;
+}
+
+function _hcNflDateLabel() {
+    const iso = _hcNflState.game && _hcNflState.game.date;
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function _hcNflCardHtml() {
+    const catalog = _hcNflStatCatalog();
+    const abbr = _hcNflTeamAbbr(_hcNflState.side);
+    const oppAbbr = _hcNflOpponentAbbr(_hcNflState.side);
+    const dateLabel = _hcNflDateLabel();
+    const name = (_hcNflState.player.athlete && (_hcNflState.player.athlete.displayName || _hcNflState.player.athlete.shortName)) || 'Player';
+    const rawStats = _hcNflState.player.stats || [];
+    const statHtml = _hcNflState.selectedStats.map((key, i) => {
+        const meta = catalog.find(c => c.key === key);
+        const raw = rawStats[key];
+        const displayVal = (raw === undefined || raw === null || raw === '') ? '0' : String(raw);
+        const isNumeric = /^-?\d+(\.\d+)?$/.test(displayVal);
+        const animatesUp = isNumeric && _hcNflState.anim === 'countup';
+        const initialText = animatesUp ? '0' : _escHtml(displayVal);
+        return `<div class="hcs-stat" style="animation-delay:${i * 110}ms">
+            <div class="hcs-stat-value"${animatesUp ? ` data-hc-count="${displayVal}"` : ''}>${initialText}</div>
+            <div class="hcs-stat-label">${_escHtml(meta ? meta.label : '')}</div>
+        </div>`;
+    }).join('');
+    return `
+        <div class="hcs-id-row">
+            <div class="hcs-player">${_escHtml(name)}</div>
+            <div class="hcs-meta">${_escHtml(abbr)} vs ${_escHtml(oppAbbr)} · ${_escHtml(dateLabel)}</div>
+        </div>
+        <div class="hcs-stat-row">${statHtml}</div>
+        <div class="hcs-brand">Sport<span class="accent">Strata</span></div>`;
+}
+
+function _hcNflRenderPreview() {
+    const mount = document.getElementById('hcsPreviewMount');
+    if (!mount) return;
+    mount.className = `hcs-preview-mount hcs-card hcs-card--${_hcNflState.anim}`;
+    mount.style.setProperty('--team-color', _hcNflColorValue());
+    mount.innerHTML = _hcNflCardHtml();
+    if (_hcNflState.anim === 'countup') _hcAnimateCounts(mount);
+}
+
+async function _hcNflExportPNG(btn) {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'hcs-card hcs-export-card';
+    cardEl.style.setProperty('--team-color', _hcNflColorValue());
+    cardEl.innerHTML = _hcNflCardHtml();
+    cardEl.querySelectorAll('[data-hc-count]').forEach(el => { el.textContent = el.dataset.hcCount; });
+    const name = (_hcNflState.player.athlete && (_hcNflState.player.athlete.displayName || _hcNflState.player.athlete.shortName)) || 'highlight';
+    const fileName = `sportstrata-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    await shareCardElement({
+        cardEl,
+        fileName,
+        title: `${name} — SportStrata Highlight Card`,
+        text: 'Built with SportStrata Highlight Card Studio',
+        btn,
+    });
+}

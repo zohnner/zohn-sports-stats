@@ -107,9 +107,12 @@ function _nlgRender(data) {
 
     grid.innerHTML = `
       <div class="nlg-wrap">
-        <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap">
           <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
-          ${live ? `<span class="nlg-livebadge">● LIVE</span>` : ''}
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">🎬 Create Highlight Card</button>
+            ${live ? `<span class="nlg-livebadge">● LIVE</span>` : ''}
+          </div>
         </div>
         <div class="nlg-score ${live ? 'nlg-score--live' : ''}">
           ${teamBlock(away, 'away')}
