@@ -1,0 +1,40 @@
+name               = "sportsstrata-push-alerts"
+main               = "push-game-alerts.js"
+compatibility_date = "2024-09-23"
+
+# ── D1 binding — same USER_DB used by the Pages Functions and the other workers ──
+[[d1_databases]]
+binding       = "USER_DB"
+database_name = "sportstrata-users"
+database_id   = "52b61353-d8a2-4685-8825-8b627c6f6eac"
+
+# ── Secrets (set via CLI, never commit values) ────────────────
+#   wrangler secret put VAPID_PUBLIC_KEY --config worker/wrangler-push.toml
+#   wrangler secret put VAPID_PRIVATE_KEY --config worker/wrangler-push.toml
+#   (this exact key pair must ALSO be exposed to the client as a public constant --
+#   see VAPID_PUBLIC_KEY in js/config.js. The private half only ever lives here.)
+#   wrangler secret put PUSH_RUN_SECRET --config worker/wrangler-push.toml
+#   (any random string — gates the manual /__run test endpoint, same pattern as
+#   auth-purge.js's PURGE_RUN_SECRET and weekly-digest.js's DIGEST_RUN_SECRET)
+#
+# Requires `@block65/webcrypto-web-push` in the root package.json (already added,
+# D-079) -- wrangler resolves node_modules by walking up from this file's
+# directory, so `npm install` at repo root before `wrangler deploy` is required,
+# same as it would be for any other npm dependency in a Worker here.
+
+# ── Every 10 minutes -- LOOKAHEAD_MIN in push-game-alerts.js is 12, wider than
+# this cadence on purpose so one skipped/delayed run still catches every game;
+# push_sent_log (migrations/0007) is what prevents a double-send from that overlap.
+[triggers]
+crons = ["*/10 * * * *"]
+
+[observability]
+enabled = true
+
+# Deploy: wrangler deploy --config worker/wrangler-push.toml
+# Manual test: after deploy, GET the Worker's own *.workers.dev URL + "/__run" with
+# header "X-Push-Secret: <your PUSH_RUN_SECRET>" — returns
+# { ranAt, matched, sent, skipped, failed, pruned, errors }.
+# Best tested during a real pre-game window (see the field-shape caveat comment
+# at the top of push-game-alerts.js) rather than blind — matched:0 on an off day
+# is expected and not a failure signal by itself.

@@ -2278,4 +2278,21 @@ Verified: `node --check` both files, full suite (48/48), manifest sync, NUL scan
 
 **Gate status:** Behavioral and Feasibility gates are present for v1 (game-start alerts, signed-in-only, free). Visual gate is a genuine pass-through, confirmed above rather than skipped — no new design system component is needed. Milestone alerts are named and deferred, not gated yet, matching this file's own three-gate discipline. **This entry is scoping only.** Implementation touches new infrastructure — a D1 migration, a new cron Worker, new secrets, new `sw.js` event handlers — the same class of change that needed explicit owner authorization before deployment for Broadcast Blurb (P2-005); recommend the same here before Finn starts, and note the Worker deployment + VAPID secret setup are owner actions, same constraint as every other Worker in this repo.
 
+**Implementation — 2026-08-09 (D-079):** All app-side code shipped in this commit, matching the Feasibility section above exactly:
+- `migrations/0007_push_subscriptions.sql` — `push_subscriptions` (multi-row-per-user, `UNIQUE(endpoint)`) + `push_sent_log` (dedup guard, keyed `(user_id, game_key)`).
+- `functions/api/pushSubscribe.js` — GET/POST/DELETE, session-scoped, modeled on `follows.js`.
+- `worker/push-game-alerts.js` + `worker/wrangler-push.toml` — cron Worker (every 10 min, 12-min lookahead window so one skipped run still catches every game), MLB (statsapi) + NFL (ESPN) upcoming-game discovery, `@block65/webcrypto-web-push`'s `buildPushPayload()` for the actual send, 404/410 auto-prune of dead subscriptions. Field-shape caveat flagged directly in the file's own header comment: the MLB team-id→abbreviation map and ESPN status-code strings were written from documented shape, not a live response (sandbox has no outbound route to either API) — **the recommended pre-enable spike from the Feasibility section still needs to happen**, ideally during a real pre-game window, before turning the cron trigger on for real.
+- `sw.js` — `push` and `notificationclick` listeners added (v156). Additive only, doesn't touch `install`/`activate`/`fetch`.
+- `js/auth.js` — `enablePushAlerts()`/`disablePushAlerts()`/`_pushSupported()`, wired into the account page as a "Game-start alerts" toggle right after the digest section, matching that section's structure exactly (off by default, reverts on failure, toasts on success).
+- `js/config.js` — `VAPID_PUBLIC_KEY` constant (safe to ship client-side by design).
+- Root `package.json` — added `@block65/webcrypto-web-push`.
+
+**Owner actions required before this is live (cannot be done from here — no wrangler/Cloudflare auth in this environment):**
+1. `npm install` at repo root (pulls in the new dependency before any `wrangler deploy`).
+2. `wrangler d1 migrations apply USER_DB` (applies 0007).
+3. `wrangler secret put VAPID_PUBLIC_KEY --config worker/wrangler-push.toml` and `VAPID_PRIVATE_KEY` the same way — **the exact key pair is in this session's chat output, not committed anywhere** (VAPID private keys don't belong in source control any more than any other secret here).
+4. `wrangler secret put PUSH_RUN_SECRET --config worker/wrangler-push.toml` (any random string, gates `/__run`).
+5. `wrangler deploy --config worker/wrangler-push.toml`.
+6. Run the pre-enable spike via `/__run` during a real pre-game window before trusting the cron send path in production.
+
 ---

@@ -725,6 +725,71 @@ function _setDefaultSport(sport) {
 }
 
 // ---------------------------------------------------------------------------
+// Push notifications (D-079, F5) — game-start alerts for followed teams.
+// Signed-in required (not local-first like follows) since a subscription row
+// is meaningless without a server to send to -- same reasoning as the weekly
+// digest opt-in above, not a violation of D-034/D-031's additive-only rule
+// (this is a brand-new capability, nothing free today is being gated).
+// Feature-detected: PushManager isn't available on every browser (notably iOS
+// Safari outside an installed PWA), so the toggle simply doesn't render rather
+// than showing a control that would silently fail.
+// ---------------------------------------------------------------------------
+
+function _pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+}
+
+async function _currentPushSubscription() {
+    if (!_pushSupported()) return null;
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        return await reg.pushManager.getSubscription();
+    } catch (_) {
+        return null;
+    }
+}
+
+async function enablePushAlerts() {
+    if (!_pushSupported()) throw new Error('push_unsupported');
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') throw new Error('permission_denied');
+
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+        sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: _b64urlToBuffer(VAPID_PUBLIC_KEY),
+        });
+    }
+
+    const json = sub.toJSON();
+    await fetch('/api/pushSubscribe', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+    });
+    return sub;
+}
+
+async function disablePushAlerts() {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    const endpoint = sub.endpoint;
+    await sub.unsubscribe();
+    try {
+        await fetch('/api/pushSubscribe', {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint }),
+        });
+    } catch (_) { /* browser-side unsubscribe already succeeded; server-row cleanup is best-effort */ }
+}
+
+// ---------------------------------------------------------------------------
 // Account management view
 // ---------------------------------------------------------------------------
 
@@ -763,6 +828,15 @@ async function renderAccountView() {
         if (dRes.ok) digestEnabled = !!(await dRes.json()).digestEnabled;
     } catch (_) { /* toggle defaults off if this fails -- non-fatal to the account page */ }
 
+    // D-079: subscription state is a client-side (PushManager) question first --
+    // a server row can exist for a browser that later revoked permission, so the
+    // toggle reflects THIS browser's live subscription, not just the DB.
+    let pushSubscribed = false;
+    const pushSupported = _pushSupported();
+    if (pushSupported) {
+        try { pushSubscribed = !!(await _currentPushSubscription()); } catch (_) {}
+    }
+
     main.innerHTML = `
         <div class="auth-account-page">
             <h1 class="auth-account-title">Account</h1>
@@ -780,6 +854,13 @@ async function renderAccountView() {
                 <p class="auth-sheet-note">A once-a-week email with your linked league's record and the league's top waiver-wire adds. This toggle is the unsubscribe — turn it off any time.</p>
                 <label class="md-check"><input type="checkbox" id="authDigestToggle" ${digestEnabled ? 'checked' : ''}> Send me the weekly digest</label>
             </section>
+            ${pushSupported ? `
+            <section class="auth-account-section">
+                <p class="auth-account-label">Game-start alerts</p>
+                <p class="auth-sheet-note">A browser notification a few minutes before a game starts for any team you follow. Off by default — this is the opt-in.</p>
+                <label class="md-check"><input type="checkbox" id="authPushToggle" ${pushSubscribed ? 'checked' : ''}> Notify me before games start</label>
+            </section>
+            ` : ''}
             <section class="auth-account-section">
                 <p class="auth-account-label">Your data</p>
                 <a class="auth-method-btn" href="/api/me/export" download>Export my data</a>
@@ -808,6 +889,27 @@ async function renderAccountView() {
         } catch (_) {
             e.target.checked = !enabled; // revert the visible state if the save failed
             if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast('Could not save — try again', 'error');
+        }
+    });
+
+    document.getElementById('authPushToggle')?.addEventListener('change', async (e) => {
+        const enabled = e.target.checked;
+        try {
+            if (enabled) {
+                await enablePushAlerts();
+                if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast('Game alerts on', 'success');
+            } else {
+                await disablePushAlerts();
+                if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast('Game alerts off', 'success');
+            }
+        } catch (err) {
+            e.target.checked = !enabled;
+            const msg = (err && err.message === 'permission_denied')
+                ? 'Notifications are blocked — enable them for this site in your browser settings'
+                : (err && err.message === 'push_unsupported')
+                    ? 'Push notifications aren\'t supported in this browser'
+                    : 'Could not save — try again';
+            if (typeof ErrorHandler !== 'undefined') ErrorHandler.toast(msg, 'error');
         }
     });
 }

@@ -137,3 +137,12 @@ if (typeof window !== 'undefined') {
 // og:url / canonical are set from location.href at runtime, so they follow
 // whatever origin serves the page; this constant is the human-facing label.
 const SITE_DOMAIN = 'sportstrata.cc';
+
+// D-079 — VAPID public key for Web Push subscriptions (js/auth.js). Safe to ship
+// client-side by design — VAPID public keys identify the sender, they don't
+// authorize anything on their own; the private half never leaves
+// worker/push-game-alerts.js's Cloudflare secret store. Must exactly match the
+// key pair set via `wrangler secret put VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY`
+// (see worker/wrangler-push.toml) — a mismatch fails PushManager.subscribe()
+// silently on the client with no useful error.
+const VAPID_PUBLIC_KEY = 'BNUV8cn_g-ssNXVYxfiCQTGYA5WXRu9vvcOyukWKrQCjutno7ovvMZqR6jVSJ7n1KxBPqC3SBnJ49mMt2VeTXbA';

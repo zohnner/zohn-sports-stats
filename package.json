@@ -4,6 +4,7 @@
     "better-auth": "^1.6.25",
     "@better-auth/passkey": "^1.6.25",
     "kysely": "^0.29.4",
-    "kysely-d1": "^0.4.0"
+    "kysely-d1": "^0.4.0",
+    "@block65/webcrypto-web-push": "^1.0.2"
   }
 }

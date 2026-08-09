@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v155';
+const CACHE_NAME    = 'sportstrata-v156';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -137,6 +137,43 @@ self.addEventListener('fetch', e => {
                 return resp;
             }).catch(() => cached);
             return cached || network;
+        })
+    );
+});
+
+// Push — D-079: show a notification for a game-start alert. Payload is JSON
+// ({title, body, url}) set by worker/push-game-alerts.js via buildPushPayload's
+// `data` field. Falls back to a generic notification if parsing fails so a
+// malformed payload never silently drops the push.
+self.addEventListener('push', e => {
+    let payload = { title: 'SportStrata', body: 'A game is starting soon.', url: '/' };
+    try {
+        if (e.data) payload = { ...payload, ...e.data.json() };
+    } catch (_) {}
+    e.waitUntil(
+        self.registration.showNotification(payload.title, {
+            body: payload.body,
+            icon: '/assets/icon-192.png',
+            badge: '/assets/icon-64.png',
+            data: { url: payload.url || '/' },
+        })
+    );
+});
+
+// Notification click — focus an existing SportStrata tab if one is open,
+// otherwise open a new one at the alert's target URL.
+self.addEventListener('notificationclick', e => {
+    e.notification.close();
+    const url = (e.notification.data && e.notification.data.url) || '/';
+    e.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+            for (const client of clients) {
+                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+                    client.navigate(url);
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow(url);
         })
     );
 });
