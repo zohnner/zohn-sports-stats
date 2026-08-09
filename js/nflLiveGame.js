@@ -213,7 +213,7 @@ function _nlgRenderActiveTabBody() {
         case 'pbp': html = _nlgRenderPbp(data); break;
         case 'box': html = _nlgRenderBoxFull(data, home, away); break;
         case 'team': html = _nlgTeamStats(data, home, away); break;
-        case 'analytics': html = _nlgRenderAnalyticsTab(); break;
+        case 'analytics': html = _nlgRenderAnalyticsTab(data, comp, home, away); break;
         case 'fantasy': html = _nlgRenderFantasyTab(data); break;
         default: html = _nlgRenderSummaryTab(data, comp, home, away);
     }
@@ -329,13 +329,117 @@ function _nlgTeamStats(data, home, away) {
         <div class="nlg-ts">${rows}</div></div>`;
 }
 
-// -- Analytics tab (Phase 3 placeholder, D-080 — honest empty state, not fake data) --
+// -- Analytics tab (D-081 Phase 3a: Success Rate + Drive Efficiency — live,
+// -- computed from data already fetched, no new source. EPA/CPOE/win-prob-
+// -- added (Phase 3b) need nflverse play-by-play, which doesn't exist for
+// -- the 2026 season yet (checked live 2026-08-09: play_by_play_2026.csv.gz
+// -- 404s) and isn't live by nature even once it does — those stay a
+// -- "coming soon" note here, not faked or borrowed from a different season. --
 
-function _nlgRenderAnalyticsTab() {
-    return `<div class="nlg-empty-tab">
-        <p class="nlg-empty-tab-title">Advanced analytics — coming soon</p>
-        <p class="pct-caption">EPA, success rate, CPOE, and drive efficiency need play-level modeling beyond what's available today. Full box score and team stats are in their own tabs now.</p>
-    </div>`;
+function _nlgAllDrives(data) {
+    const drivesObj = data.drives || {};
+    return [...(drivesObj.current ? [drivesObj.current] : []), ...(drivesObj.previous || [])];
+}
+
+// Standard down-based success-rate thresholds (Football Outsiders / nflfastR
+// convention): gained >=40% of yards-to-go on 1st, >=60% on 2nd, a full
+// conversion (100%) on 3rd/4th. Penalty plays are excluded — penalty yardage
+// isn't a real offensive down/distance conversion signal.
+function _nlgIsSuccess(down, distance, yardsGained) {
+    if (!distance || distance <= 0 || yardsGained == null) return null;
+    const pct = yardsGained / distance;
+    if (down === 1) return pct >= 0.4;
+    if (down === 2) return pct >= 0.6;
+    return pct >= 1.0;
+}
+
+function _nlgComputeSuccessRate(data) {
+    const byTeam = {};
+    _nlgAllDrives(data).forEach((d) => {
+        const abbr = (d.team || {}).abbreviation;
+        if (!abbr) return;
+        if (!byTeam[abbr]) byTeam[abbr] = { total: 0, success: 0, byDown: { 1: { t: 0, s: 0 }, 2: { t: 0, s: 0 }, 3: { t: 0, s: 0 } } };
+        (d.plays || []).forEach((p) => {
+            if (p.isPenalty) return;
+            const down = p.start && p.start.down;
+            const distance = p.start && p.start.distance;
+            if (!down || down < 1 || down > 4 || distance == null) return;
+            const success = _nlgIsSuccess(down, distance, p.statYardage);
+            if (success == null) return;
+            const t = byTeam[abbr];
+            t.total++;
+            if (success) t.success++;
+            const bucket = down >= 3 ? 3 : down;
+            t.byDown[bucket].t++;
+            if (success) t.byDown[bucket].s++;
+        });
+    });
+    return byTeam;
+}
+
+function _nlgComputeDriveEfficiency(data) {
+    const byTeam = {};
+    _nlgAllDrives(data).forEach((d) => {
+        const abbr = (d.team || {}).abbreviation;
+        if (!abbr) return;
+        if (!byTeam[abbr]) byTeam[abbr] = { drives: 0, scoringDrives: 0, totalYards: 0, totalPlays: 0 };
+        const t = byTeam[abbr];
+        t.drives++;
+        if (d.isScore) t.scoringDrives++;
+        t.totalYards += (typeof d.yards === 'number' ? d.yards : 0);
+        t.totalPlays += (typeof d.offensivePlays === 'number' ? d.offensivePlays : 0);
+    });
+    return byTeam;
+}
+
+function _nlgRenderAnalyticsTab(data, comp, home, away) {
+    const sr = _nlgComputeSuccessRate(data);
+    const de = _nlgComputeDriveEfficiency(data);
+    const teamAbbrs = [away, home].map((s) => (s.team || {}).abbreviation).filter(Boolean);
+    const hasData = teamAbbrs.some((abbr) => sr[abbr] && sr[abbr].total);
+    if (!hasData) {
+        return `<div class="nlg-empty-tab">
+            <p class="nlg-empty-tab-title">No plays yet</p>
+            <p class="pct-caption">Success rate and drive efficiency compute live from this game's plays once it's underway.</p>
+        </div>`;
+    }
+
+    const downRow = (byDown, label, bucket) => {
+        const b = byDown[bucket];
+        if (!b || !b.t) return '';
+        const pct = Math.round(100 * b.s / b.t);
+        return `<div class="nlg-ts-row"><span class="nlg-ts-l">${label}</span><span class="nlg-an-val">${pct}% <span class="pct-caption">(${b.s}/${b.t})</span></span></div>`;
+    };
+    const srCard = teamAbbrs.map((abbr) => {
+        const s = sr[abbr];
+        if (!s || !s.total) return '';
+        const pct = Math.round(100 * s.success / s.total);
+        return `<div class="nlg-an-team">
+            <div class="nlg-bx-team-title">${_escHtml(abbr)}</div>
+            <div class="nlg-an-headline">${pct}% <span class="pct-caption">(${s.success}/${s.total} plays)</span></div>
+            ${downRow(s.byDown, '1st down', 1)}${downRow(s.byDown, '2nd down', 2)}${downRow(s.byDown, '3rd/4th down', 3)}
+        </div>`;
+    }).join('');
+
+    const deCard = teamAbbrs.map((abbr) => {
+        const d = de[abbr];
+        if (!d || !d.drives) return '';
+        const ypp = d.totalPlays ? (d.totalYards / d.totalPlays).toFixed(1) : '—';
+        const ypd = (d.totalYards / d.drives).toFixed(1);
+        const scoringPct = Math.round(100 * d.scoringDrives / d.drives);
+        return `<div class="nlg-an-team">
+            <div class="nlg-bx-team-title">${_escHtml(abbr)}</div>
+            <div class="nlg-ts-row"><span class="nlg-ts-l">Yards / Play</span><span class="nlg-an-val">${ypp}</span></div>
+            <div class="nlg-ts-row"><span class="nlg-ts-l">Yards / Drive</span><span class="nlg-an-val">${ypd}</span></div>
+            <div class="nlg-ts-row"><span class="nlg-ts-l">Scoring Drives</span><span class="nlg-an-val">${scoringPct}% <span class="pct-caption">(${d.scoringDrives}/${d.drives})</span></span></div>
+        </div>`;
+    }).join('');
+
+    return `<div class="nlg-card"><div class="nlg-sum">Success Rate <span class="nlg-sum-teams">≥40% on 1st · ≥60% on 2nd · 100% on 3rd/4th</span></div>
+            <div class="nlg-an-grid">${srCard}</div></div>
+        <div class="nlg-card"><div class="nlg-sum">Drive Efficiency</div>
+            <div class="nlg-an-grid">${deCard}</div></div>
+        <p class="pct-caption">Computed live from this game's plays and drives. EPA, CPOE, and win probability added need play-level modeling this doesn't have yet — coming later (D-081).</p>`;
 }
 
 // -- Fantasy (tab + sidebar leaders) — computed live from box score stats, --

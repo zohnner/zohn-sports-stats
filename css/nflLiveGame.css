@@ -123,3 +123,9 @@
   .nlg-layout { grid-template-columns: 1fr; }
   .nlg-side { position: static; }
 }
+
+/* -- D-081 Phase 3a: Success Rate + Drive Efficiency (Analytics tab) -- */
+.nlg-an-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; padding: 0.4rem 0.8rem 0.8rem; }
+.nlg-an-headline { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0.15rem 0 0.4rem; font-variant-numeric: tabular-nums; }
+.nlg-an-val { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .nlg-an-grid { grid-template-columns: 1fr; } }
