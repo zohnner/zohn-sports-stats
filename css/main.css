@@ -3831,6 +3831,15 @@ body.a2hs-open { padding-bottom: 4.5rem; }
     .sport-switch-btn { flex-shrink: 0; }
 }
 
+/* NFL Scores week navigator (2026-08-09) — same scrollbar-hiding trick as
+   .sport-switch above; a regular-season week row is 18 pills wide and needs
+   this at every viewport size, not just mobile, so it's outside the media
+   query. Colors/spacing are inline in js/nfl.js per that file's own
+   convention (see _NFL_POS_FILTERS) — this rule exists only for the one
+   thing inline styles can't express. */
+.nfl-week-scroll { scrollbar-width: none; }
+.nfl-week-scroll::-webkit-scrollbar { display: none; }
+
 /* ── NFL offseason state ───────────────────────────────────── */
 .nfl-offseason {
     max-width: 460px;

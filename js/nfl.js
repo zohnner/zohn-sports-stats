@@ -141,8 +141,17 @@ async function fetchNFLTeams() {
     });
 }
 
-async function fetchNFLScoreboard() {
-    const data = await espnNFLFetch('/scoreboard', {}, ApiCache.TTL.SHORT);
+// opts: { seasontype, week, season } — all optional. Empty/omitted opts preserve the
+// original zero-param call (ESPN's own "today/current week" default), which every
+// pre-existing call site still relies on. seasontype: 1=preseason, 2=regular,
+// 3=postseason; season is the year, sent as ESPN's own `dates` param — same three
+// names already proven live in nflStandings.js's fetchNFLPostseason().
+async function fetchNFLScoreboard(opts = {}) {
+    const params = {};
+    if (opts.seasontype) params.seasontype = opts.seasontype;
+    if (opts.week)       params.week = opts.week;
+    if (opts.season)     params.dates = opts.season;
+    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT);
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -265,6 +274,97 @@ function displayNFLTeams(teams) {
 
 // ── Display: Scores ───────────────────────────────────────────
 
+// ── Scores week/season navigator (2026-08-09) ───────────────────
+// ESPN's zero-param /scoreboard only ever returns whatever narrow "today"
+// window the upstream feels like -- as of this build that's a single
+// preseason game, with no way for a visitor to see anything else. The fix
+// isn't a smarter default, it's letting people browse: season-type tabs +
+// a scrollable week-pill row, reusing the exact seasontype/week/dates params
+// nflStandings.js's fetchNFLPostseason() already proves work in production.
+const _NFL_SEASONTYPES = [
+    { type: 1, label: 'Preseason', weeks: 3 },
+    { type: 2, label: 'Regular Season', weeks: 18 },
+    { type: 3, label: 'Postseason', weeks: 5 },
+];
+// Reuses the round mapping already established in nflStandings.js's own header
+// comment (week 4 is the Pro Bowl, not a real round -- kept only so the pill
+// row has no numbering gap).
+const _NFL_POSTSEASON_WEEK_LABELS = { 1: 'Wild Card', 2: 'Divisional', 3: 'Conf. Champ', 4: 'Pro Bowl', 5: 'Super Bowl' };
+
+// null = "Today" (the original zero-param/current-week ESPN default). Set to
+// { seasontype, week, season } once the user explicitly picks a tab/week.
+let _nflScoresFilter = null;
+
+function _nflScoresNavDefaults() {
+    const phase = _nflSeasonPhase();
+    if (phase === 'postseason') return { type: 3, season: NFL_STATS_SEASON };
+    if (phase === 'preseason')  return { type: 1, season: NFL_FANTASY_SEASON };
+    return { type: 2, season: NFL_FANTASY_SEASON };
+}
+
+function _renderNFLScoresNav() {
+    const grid = document.getElementById('playersGrid');
+    const main = document.querySelector('main');
+    if (!grid || !main) return;
+    document.getElementById('nflScoresNav')?.remove();
+
+    const f = _nflScoresFilter;
+    const defaults = _nflScoresNavDefaults();
+    const activeType = f ? f.seasontype : defaults.type;
+    const season = f ? f.season : defaults.season;
+    const typeMeta = _NFL_SEASONTYPES.find(t => t.type === activeType) || _NFL_SEASONTYPES[1];
+
+    const pillStyle = (active) => `padding:0.32rem 0.78rem;border-radius:var(--radius-full);
+        border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+        background:${active ? 'var(--accent)' : 'transparent'};
+        color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+        font-weight:700;font-size:0.74rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+
+    const todayBtn = `<button data-nfl-stoday="1" style="${pillStyle(!f)}">Today</button>`;
+    const typeBtns = _NFL_SEASONTYPES.map(t =>
+        `<button data-nfl-stype="${t.type}" style="${pillStyle(!!f && t.type === activeType)}">${t.label}</button>`
+    ).join('');
+
+    const weekLabel = (w) => activeType === 3 ? (_NFL_POSTSEASON_WEEK_LABELS[w] || `Wk ${w}`) : `Wk ${w}`;
+    const weeks = Array.from({ length: typeMeta.weeks }, (_, i) => i + 1);
+    const weekBtns = weeks.map(w => {
+        const active = !!f && f.week === w;
+        return `<button data-nfl-sweek="${w}" style="padding:0.3rem 0.66rem;border-radius:var(--radius-full);
+            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+            background:${active ? 'var(--accent)' : 'transparent'};
+            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+            font-weight:600;font-size:0.7rem;cursor:pointer;white-space:nowrap;flex-shrink:0">${weekLabel(w)}</button>`;
+    }).join('');
+
+    const nav = document.createElement('div');
+    nav.id = 'nflScoresNav';
+    nav.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;padding:0 0.25rem 0.9rem';
+    nav.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem">
+            ${todayBtn}${typeBtns}
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">${season}</span>
+        </div>
+        <div class="nfl-week-scroll" style="display:flex;align-items:center;gap:0.35rem;overflow-x:auto;padding-bottom:2px">${weekBtns}</div>
+    `;
+    main.insertBefore(nav, grid);
+
+    nav.querySelector('[data-nfl-stoday]').onclick = () => { _nflScoresFilter = null; loadNFLGames(); };
+    nav.querySelectorAll('[data-nfl-stype]').forEach(btn => {
+        btn.onclick = () => {
+            const type = parseInt(btn.dataset.nflStype, 10);
+            const s = type === 3 ? NFL_STATS_SEASON : NFL_FANTASY_SEASON;
+            _nflScoresFilter = { seasontype: type, week: 1, season: s };
+            loadNFLGames();
+        };
+    });
+    nav.querySelectorAll('[data-nfl-sweek]').forEach(btn => {
+        btn.onclick = () => {
+            _nflScoresFilter = { seasontype: activeType, week: parseInt(btn.dataset.nflSweek, 10), season };
+            loadNFLGames();
+        };
+    });
+}
+
 // ── NFL season opener (≈ Thursday after Labor Day) + countdown ──
 function _nflKickoffDate() {
     const y = NFL_FANTASY_SEASON;
@@ -378,15 +478,20 @@ async function loadNFLGames() {
     grid.className = 'games-grid';
     if (window.setBreadcrumb) setBreadcrumb('nfl-games', null);
 
+    _renderNFLScoresNav();
+
     grid.innerHTML = Array.from({ length: 6 }, () =>
         `<div class="skeleton-card" style="min-height:160px"></div>`
     ).join('');
 
     try {
-        const games = await fetchNFLScoreboard();
+        const games = await fetchNFLScoreboard(_nflScoresFilter || {});
         AppState.nflGames = games;
         displayNFLGames(games);
-        updateNFLTicker(games);
+        // Only the real "Today" default feeds the header ticker -- a user
+        // browsing Week 3 of a past preseason shouldn't push those scores
+        // into the site-wide live ticker.
+        if (!_nflScoresFilter) updateNFLTicker(games);
     } catch (err) {
         ErrorHandler.handle(grid, err, loadNFLGames, { tag: 'NFL', title: 'Failed to Load NFL Scores' });
     }

@@ -582,6 +582,12 @@ function _renderNFLView(view) {
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
     _syncNFLOffseasonStrip(view);
+    // Scores week/season navigator (2026-08-09) is nfl-games-only; its own
+    // render function (_renderNFLScoresNav in nfl.js) re-creates/removes
+    // itself on every loadNFLGames() call, but nothing else in that loop
+    // catches "user navigated away to a different NFL view" -- without this
+    // it would linger above whatever view loads next (e.g. Teams).
+    if (view !== 'nfl-games') document.getElementById('nflScoresNav')?.remove();
 
     if (view.startsWith('nfl-player-espn-')) {
         if (viewCount) viewCount.textContent = 'NFL Player';

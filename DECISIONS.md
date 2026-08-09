@@ -1602,3 +1602,23 @@ Two derived helpers replace the single old boolean, because the call sites actua
 **Status:** four real bugs found and fixed (one severe, pre-dating this session; three smaller, one of them purely this session's own new code). Cloudflare Web Analytics code-complete, needs the owner's token to go live. Full detail: ISSUES.md "Team pass" entry.
 
 **Update 2026-08-09 — live token added, analytics is now collecting.** Owner supplied the real Cloudflare-generated snippet. Two differences from the placeholder this session shipped: the real snippet uses `type="module"` rather than `defer` (module scripts defer by default; this is Cloudflare's own current markup, kept as-is rather than normalized to match a guess made before the real snippet existed), and obviously the real token (`60aa9975c0da47048c59647b1d674718` — public, non-secret, safe in committed source) replaces the placeholder. No CSP change needed — `static.cloudflareinsights.com`/`cloudflareinsights.com` were already allowlisted for exactly this. `index.html`'s comment above the tag and the `CLAUDE.md` Deployment entry both updated from "not yet filled in" to live.
+
+---
+
+## D-071 — NFL Scores page: week/season navigator replaces the single-game default — SHIPPED 2026-08-09
+
+**Trigger (owner):** "we need to consider the nfl scores view, right now only the first pre season game, users should be enticed to surf around the scores page."
+
+**Root cause:** `fetchNFLScoreboard()` (`js/nfl.js`) called ESPN's `/scoreboard` with zero query params, every single time, at every one of its 6 call sites. ESPN's own zero-param default resolves to whatever it considers "today's window" — during this week of August that's exactly one Hall-of-Fame-adjacent preseason game. There was no bug in the data pull itself (the one game shown was real and correctly fetched); the actual problem was that the Scores page offered no way to see anything beyond that one narrow window — no path to yesterday, next week, the regular season, or last year's playoffs. "Users should be enticed to surf around" is a browsing-affordance gap, not a data gap.
+
+**Fix, not a new data source:** `fetchNFLScoreboard(opts)` now accepts optional `{seasontype, week, season}`, forwarded to ESPN as `seasontype`/`week`/`dates` — reusing, verbatim, the exact three param names `nflStandings.js`'s `fetchNFLPostseason()` already proves work in production (`seasontype=3&week=${wk}&dates=${season}`), rather than guessing a new contract against ESPN's undocumented API. `opts` defaults to `{}`, so all 5 pre-existing zero-arg callers (home hero, team detail, ticker refresh) are untouched.
+
+`loadNFLGames()` now renders a persistent navigator strip above the grid (`_renderNFLScoresNav()`): a "Today" pill (the original default), Preseason/Regular Season/Postseason tabs, and a horizontally-scrollable week-pill row underneath (3 preseason weeks — confirmed against the real 2026 schedule structure, Hall of Fame Game bucketed into week 1 plus 3 real preseason weeks, not a guessed 4; 18 regular-season weeks; 5 postseason slots using the Wild Card/Divisional/Conference/Pro Bowl/Super Bowl labels already established in `nflStandings.js`'s own header comment). Visual language matches this file's own existing convention exactly — the inline-style pill chips already used for `_NFL_POS_FILTERS` on the Players tab — no new component system, no CSS-class-based control introduced into a file that already has its own established pattern.
+
+**Two judgment calls worth naming:**
+1. The site-wide live ticker (`updateNFLTicker`) only ever updates from the real "Today" fetch (`if (!_nflScoresFilter) updateNFLTicker(games)`) — a visitor browsing to Preseason Week 1 of a past season should never push stale scores into the header ticker other pages also read from.
+2. The strip is nfl-games-only by design, but nothing in the existing per-view render loop removed it when navigating away — added an explicit `document.getElementById('nflScoresNav')?.remove()` in `_renderNFLView` for every other NFL view, mirroring the exact cleanup pattern `_syncNFLOffseasonStrip` already established for its own element.
+
+**Scope:** a bounded fix to an existing view — no three-gate spec, no new page, no schema/API change. `functions/api/nfl.js`'s existing param passthrough required zero server-side changes.
+
+**Status:** shipped. Verified: `node --test` (33/33 pass), manifest sync clean, no NUL corruption, true-diff scoped to exactly `js/nfl.js` / `js/navigation.js` / `css/main.css`.

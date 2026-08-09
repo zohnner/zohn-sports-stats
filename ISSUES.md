@@ -2143,3 +2143,16 @@ Four real bugs found and fixed this pass:
 Also wired up **Cloudflare Web Analytics** (`index.html`, `_headers`) — cookieless, no consent banner needed — as the prerequisite for any real data-driven retention work; confirmed via full-codebase grep that no analytics of any kind existed before this. Code-complete and CSP-allowlisted; blocked on the owner pasting in a real beacon token from the Cloudflare dashboard (placeholder ships inert, not broken).
 
 ---
+
+## NFL Scores: week/season navigator — 2026-08-09
+**Contributor:** Axiom
+
+Owner flagged that the Scores page ("nfl scores view") only ever showed one preseason game, with nothing enticing a visitor to look around. Root cause: `fetchNFLScoreboard()` called ESPN's `/scoreboard` with zero params, so it only ever got back whatever narrow "today" window the upstream felt like — there was no browsing path to anything else, real or not.
+
+**Fix:** `fetchNFLScoreboard()` (`js/nfl.js`) now takes optional `{seasontype, week, season}`, forwarded to ESPN as `seasontype`/`week`/`dates` — the exact param names already proven live in `nflStandings.js`'s `fetchNFLPostseason()`, not a new/guessed contract. `loadNFLGames()` renders a new `#nflScoresNav` strip above the grid: a "Today" pill (the original zero-param default) plus Preseason/Regular Season/Postseason tabs, each opening a horizontally-scrollable week-pill row (3/18/5 weeks; postseason pills use the Wild Card/Divisional/Conference/Pro Bowl/Super Bowl labels already established in `nflStandings.js`). Visual pattern matches the file's own existing `_NFL_POS_FILTERS` inline-style chips — no new component system introduced. The site-wide live ticker only updates from the real "Today" fetch, never from a browsed-to past/future week. `js/navigation.js`'s `_renderNFLView` removes the strip when leaving `nfl-games`, mirroring how `_syncNFLOffseasonStrip` already cleans up its own element on every NFL route change.
+
+All 5 pre-existing zero-arg call sites of `fetchNFLScoreboard()` are unaffected (`opts` defaults to `{}`).
+
+No three-gate spec — this is a bounded UI/data-plumbing fix to an existing view, not a new feature surface.
+
+---
