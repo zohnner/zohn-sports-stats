@@ -416,20 +416,15 @@
         }
     </script>
 
-    <!-- Cloudflare Web Analytics (2026-08-09) -- cookieless, no consent banner required
-         (no client-side storage, no cross-site tracking, no fingerprinting). This is the
-         prerequisite for any real data-driven retention work: as of this commit nothing on
-         the site measures user behavior at all.
-         SETUP (owner action required -- this token is site-specific and not something this
-         session can obtain on its own):
-           1. Cloudflare dashboard -> Analytics & Logs -> Web Analytics -> Add a site
-           2. Choose "I'll insert it myself" (manual setup, not automatic injection -- keeps
-              this HTML the single source of truth for what loads, same posture as every
-              other script tag in this file)
-           3. Copy the token from the snippet Cloudflare shows you
-           4. Replace REPLACE_WITH_CF_BEACON_TOKEN below with that token
-         This tag is inert (loads, does nothing) until a real token replaces the placeholder --
-         safe to ship now, not a broken reference. -->
-    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "REPLACE_WITH_CF_BEACON_TOKEN"}'></script>
+    <!-- Cloudflare Web Analytics (2026-08-09, live token added 2026-08-09) -- cookieless,
+         no consent banner required (no client-side storage, no cross-site tracking, no
+         fingerprinting). Manually embedded (not the dashboard's auto-injection toggle) so
+         this HTML stays the one source of truth for what loads, same posture as every other
+         script tag in this file. Real site token from the owner's Cloudflare dashboard
+         (Analytics & Logs -> Web Analytics), exact snippet Cloudflare generated -- kept as
+         type="module" rather than switched to defer, matching what Cloudflare actually
+         serves. Already allowlisted in CSP (script-src static.cloudflareinsights.com,
+         connect-src cloudflareinsights.com) in both this file and _headers. -->
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "60aa9975c0da47048c59647b1d674718"}'></script>
 </body>
 </html>
