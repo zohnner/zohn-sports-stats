@@ -1700,3 +1700,19 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 - GIF/WebM animated export is real, named, and explicitly NOT in v1 — repeated `html2canvas` frame capture is the naive approach and carries real perf/fidelity risk (same class of risk the original scorecard PNG export was spiked for before committing); `canvas.captureStream()` + `MediaRecorder` is the more promising direction and needs its own scoped spike, mirroring the scorecard's Phase 4 precedent, before a commitment.
 - NFL/NCAAF are confirmed data-ready for this feature (`functions/api/nflgamelog.js`/`ncaafgamelog.js` already return true per-game stat rows, verified before scoping — not assumed) but are sequenced after MLB v1 ships, consistent with MLB's standing role as the reference sport for new cross-sport patterns.
 - Phase B (true MP4 export) needs its own future decision on hosting/cost for the render infrastructure before any spec work starts on it — not implied or promised by this decision.
+
+---
+
+## D-075 — Live-verifying the Highlight Card entry point surfaced a real bug: game detail view getting stomped by the live-score poll — FIXED 2026-08-09
+
+**Status:** accepted
+**Contributors:** Axiom (root cause + fix)
+**Date opened:** 2026-08-09 | **Date resolved:** 2026-08-09
+
+**What happened:** While live-testing the new "Create Highlight Card" entry point from the MLB game detail view (added same day, see the Highlight Card Studio entry in ISSUES.md), the detail view itself was observed reverting back to the games list ~2-4 seconds after opening — hash stayed on `#mlb-game-{pk}`, but the rendered content snapped back to the score grid. Reproduced consistently while a game was live elsewhere in the day's slate (SEA @ TB).
+
+**Root cause:** `showMLBGameDetail()` (`js/mlb.js`) is invoked directly via `onclick`, bypassing `navigateTo()` — which is normally what sets `AppState.currentView`. It never set `AppState.currentView` itself, so the value stayed `'mlb-games'` from whatever view the user was on before clicking in. `setupMLBLivePolling()`'s 30s live-score refresh (`js/app.js`) guards its games-list re-render on exactly that field (`if (AppState.currentView === 'mlb-games') loadMLBGames()`) — with the stale value, the next poll tick re-rendered the games list straight over the open detail view, unconditionally, any time a game anywhere was live. This predates today's Highlight Card Studio work entirely; it just happened to be caught because that work is what put someone back on this page.
+
+**Fix:** `showMLBGameDetail()` now sets `AppState.currentView = \`mlb-game-${gamePk}\`` immediately after the `pushState` call, matching the pattern `showMLBPlayerDetail()` and `scorecard.js`'s `AppState.currentView = \`mlb-scorecard-${gameId}\`` already use for the same reason. `_loadMLBGamesForOffset()` (backing `loadMLBGames()`) now also sets `AppState.currentView = 'mlb-games'` at its own top, so the "← Back to Scores" button (and any other direct call) restores correct state too, not just the forward path into detail.
+
+**Implication:** any view-rendering function invoked outside `navigateTo()`'s dispatch must self-set `AppState.currentView`, or it silently inherits whichever view happened to be current before — and any code that gates on that field (the live poll here, but potentially future code) will act on stale state. Worth a grep pass if a similar poll/guard pattern is added elsewhere.

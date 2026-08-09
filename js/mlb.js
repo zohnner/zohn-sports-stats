@@ -3029,6 +3029,9 @@ async function loadMLBGames() {
 
 async function _loadMLBGamesForOffset(offset) {
     const grid = document.getElementById('playersGrid');
+    // Restores state when called directly (e.g. the game detail view's "Back to
+    // Scores" button) rather than through navigateTo(), which normally sets this.
+    AppState.currentView = 'mlb-games';
     if (window.setBreadcrumb) setBreadcrumb('mlb-games', null);
 
     grid.className = 'games-grid';
@@ -3274,6 +3277,14 @@ async function showMLBGameDetail(gamePk, gameStub = null) {
     if (window.history?.pushState) {
         history.pushState({ view: 'mlb-game', gamePk }, '', `#mlb-game-${gamePk}`);
     }
+    // Called directly via onclick, bypassing navigateTo() (which normally sets this) —
+    // without it AppState.currentView stays 'mlb-games', and setupMLBLivePolling's
+    // 30s guard (app.js, `if (AppState.currentView === 'mlb-games') loadMLBGames()`)
+    // stomps this detail view back to the games list the moment any game is live.
+    // Real bug caught live: this page reverted ~2-4s after opening while SEA@TB was
+    // live, even though the URL hash still pointed at the game. Same fix pattern as
+    // showMLBPlayerDetail (mlb.js) and scorecard.js already use.
+    AppState.currentView = `mlb-game-${gamePk}`;
 
     grid.innerHTML = `
         <div class="mlb-game-detail-wrap">
