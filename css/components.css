@@ -4541,6 +4541,98 @@
 .gl-res--l { color: var(--color-loss); }
 
 
+/* ── Highlight Card Studio (ISSUES.md three-gate spec / D-074) ──
+   Visual grammar borrowed from videocreation's scene templates
+   (stat-leader-thumbnail.html / adp-delta.html) and reimplemented
+   natively — tokens only, no import of the video repo's own tooling. */
+.hcs-shell { display: flex; flex-direction: column; gap: var(--space-6); }
+.hcs-head { margin-bottom: var(--space-2); }
+.hcs-sub { color: var(--text-secondary); margin-top: var(--space-1); }
+.hcs-skel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
+
+.hcs-layout { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: var(--space-8); align-items: start; }
+@media (max-width: 768px) { .hcs-layout { grid-template-columns: 1fr; } }
+
+.hcs-controls { display: flex; flex-direction: column; gap: var(--space-6); }
+.hcs-step-label { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-subtle); margin-bottom: var(--space-2); }
+.hcs-step-hint { text-transform: none; letter-spacing: normal; color: var(--text-muted); }
+
+.hcs-game-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 320px; overflow-y: auto; }
+.hcs-game-card {
+    display: flex; flex-direction: column; gap: 2px; text-align: left;
+    background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+    padding: var(--space-3); cursor: pointer; font: inherit; color: var(--text-primary);
+}
+.hcs-game-card:hover { background: var(--bg-card-hover); }
+.hcs-game-card--active { border-color: var(--accent); }
+.hcs-game-date { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-subtle); }
+.hcs-game-matchup { font-family: var(--font-display); font-size: 0.95rem; }
+.hcs-empty-note { color: var(--text-muted); font-size: 0.9rem; }
+
+.hcs-select {
+    width: 100%; background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-md); padding: var(--space-3); color: var(--text-primary); font: inherit;
+}
+
+.hcs-stat-checks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hcs-stat-check {
+    display: flex; align-items: center; gap: var(--space-2); background: var(--bg-card);
+    border: 1px solid var(--border-default); border-radius: var(--radius-full);
+    padding: var(--space-2) var(--space-4); font-size: 0.85rem; cursor: pointer;
+}
+.hcs-stat-check--disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hcs-pill-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hcs-pill {
+    background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-full);
+    padding: var(--space-2) var(--space-4); font: inherit; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;
+}
+.hcs-pill--active { border-color: var(--accent); color: var(--text-primary); background: var(--accent-subtle); }
+
+.hcs-preview-pane { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
+.hcs-preview-empty {
+    display: flex; align-items: center; justify-content: center; height: 260px; width: 100%;
+    background: var(--bg-card); border: 1px dashed var(--border-default); border-radius: var(--radius-lg);
+    color: var(--text-muted); text-align: center; padding: var(--space-6);
+}
+
+/* The card itself — border=identity (D-038 K2), numeric voice in --font-display
+   + tabular-nums (DESIGN.md), team/accent color injected as --team-color inline. */
+.hcs-card, .hcs-preview-mount.hcs-card {
+    width: 100%; max-width: 480px; background: var(--bg-raised);
+    border: 1px solid var(--border-default); border-left: 6px solid var(--team-color, var(--accent));
+    border-radius: var(--radius-lg); padding: var(--space-8) var(--space-6);
+    display: flex; flex-direction: column; gap: var(--space-6);
+}
+.hcs-id-row { display: flex; flex-direction: column; gap: 2px; }
+.hcs-player { font-family: var(--font-display); font-size: 1.6rem; line-height: 1.1; color: var(--text-primary); }
+.hcs-meta { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.02em; }
+.hcs-stat-row { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+.hcs-stat { display: flex; flex-direction: column; gap: 4px; }
+.hcs-stat-value { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.hcs-stat-label { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-subtle); }
+.hcs-brand { font-size: 0.8rem; color: var(--text-muted); margin-top: var(--space-2); }
+.hcs-brand .accent { color: var(--accent); }
+
+.hcs-export-btn {
+    background: var(--accent); color: var(--bg-base); border: none; border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-6); font: inherit; font-weight: 600; cursor: pointer;
+}
+.hcs-export-btn:hover { filter: brightness(1.08); }
+
+/* Animation styles — 120-150ms is the DESIGN.md micro-interaction standard;
+   the stat entrance (this feature's signature moment, not a state change)
+   is the one deliberate, named exception at a longer duration. */
+.hcs-card--fade .hcs-stat { animation: hcsFadeIn 420ms ease-out both; }
+.hcs-card--slide .hcs-stat { animation: hcsSlideIn 420ms ease-out both; }
+.hcs-card--countup .hcs-stat { animation: hcsFadeIn 300ms ease-out both; }
+@keyframes hcsFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hcsSlideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) {
+    .hcs-card--fade .hcs-stat, .hcs-card--slide .hcs-stat, .hcs-card--countup .hcs-stat { animation: none; }
+}
+
+
 /* D-048 P5: Space Grotesk on brand + display headers. Numerals stay Barlow via
    --font-display. Appended last so it wins over the per-selector title rules. */
 .brand-name,

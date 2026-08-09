@@ -300,6 +300,7 @@ const _NAV_META = {
     'mlb-standings': { label: 'MLB Standings', icon: '📊' },
     'mlb-builder':   { label: 'Stat Builder',  icon: '🧮' },
     'mlb-prep':      { label: 'Game Prep',     icon: '📋' },
+    'mlb-highlight-card': { label: 'Highlight Card', icon: '🎬' },
     'mlb-compare':   { label: 'Compare',       icon: '⚡' },
     'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
@@ -517,6 +518,11 @@ function _renderMLBView(view) {
         case 'mlb-prep':
             if (viewCount) viewCount.textContent = 'Game Prep';
             displayGamePrep();
+            break;
+
+        case 'mlb-highlight-card':
+            if (viewCount) viewCount.textContent = 'Highlight Card';
+            displayMLBHighlightCard();
             break;
 
         case 'mlb-compare':
@@ -944,7 +950,7 @@ function _loadFromHash() {
             return;
         }
 
-        const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare'];
+        const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare', 'mlb-highlight-card'];
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
@@ -988,7 +994,7 @@ const SUB_NAV_TABS = {
         { v: 'mlb-standings', l: 'Standings' },
         { l: 'Analytics', children: [
             { v: 'mlb-leaders', l: 'Leaders' }, { v: 'mlb-compare', l: 'Compare' },
-            { v: 'mlb-builder', l: 'Builder' }, { v: 'mlb-prep', l: 'Prep' }, { v: 'arcade', l: 'Arcade' },
+            { v: 'mlb-builder', l: 'Builder' }, { v: 'mlb-prep', l: 'Prep' }, { v: 'mlb-highlight-card', l: 'Highlight' }, { v: 'arcade', l: 'Arcade' },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -1093,7 +1099,7 @@ const MENU_TABS = {
         { v:'mlb-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
         { group:'Tools' },
         { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'mlb-builder', l:'Builder', i:'builder' },
-        { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
+        { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'mlb-highlight-card', l:'Highlight', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
     ],
     nfl: [
         { group:'Stats' },
@@ -1235,6 +1241,7 @@ const _PAGE_META = {
     'mlb-standings': { title: 'SportStrata — MLB Standings',  desc: 'Current MLB standings by division and league.' },
     'mlb-builder':   { title: 'SportStrata — Stat Builder',   desc: 'Build custom MLB stats with any formula. Save and compare.' },
     'mlb-prep':      { title: 'SportStrata — Game Prep',      desc: 'Broadcast-ready MLB game prep sheets with pitcher matchups and key stats.' },
+    'mlb-highlight-card': { title: 'SportStrata — Highlight Card Studio', desc: 'Build an animated, shareable highlight card for any player from a recent MLB game.' },
     'mlb-compare':   { title: 'SportStrata — Compare Players', desc: 'Side-by-side MLB player comparison with stat bars and percentile rings.' },
     'mlb-scorecard': { title: 'SportStrata — Game Scorecard',  desc: 'Play-by-play baseball scorecard for any MLB game.' },
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
