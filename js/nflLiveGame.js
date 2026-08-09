@@ -68,6 +68,13 @@ function _nlgRender(data) {
     grid.className = ''; grid.style.cssText = '';
     const comp = _nlgComp(data);
     const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
+    // Matches MLB's showMLBGameDetail breadcrumb convention ("AWAY @ HOME") —
+    // showNFLGame() sets a generic 'Game' placeholder before this data loads
+    // (team abbreviations aren't known yet), this replaces it with the real
+    // matchup once they are, on every render including the live-poll refresh.
+    const homeAbbr = (home.team && home.team.abbreviation) || '';
+    const awayAbbr = (away.team && away.team.abbreviation) || '';
+    if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb('nfl-games', `${awayAbbr} @ ${homeAbbr}`);
     const st = (comp.status && comp.status.type) || {};
     const state = st.state || 'post';
     const live = state === 'in';
