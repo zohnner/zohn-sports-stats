@@ -2278,21 +2278,24 @@ Verified: `node --check` both files, full suite (48/48), manifest sync, NUL scan
 
 **Gate status:** Behavioral and Feasibility gates are present for v1 (game-start alerts, signed-in-only, free). Visual gate is a genuine pass-through, confirmed above rather than skipped — no new design system component is needed. Milestone alerts are named and deferred, not gated yet, matching this file's own three-gate discipline. **This entry is scoping only.** Implementation touches new infrastructure — a D1 migration, a new cron Worker, new secrets, new `sw.js` event handlers — the same class of change that needed explicit owner authorization before deployment for Broadcast Blurb (P2-005); recommend the same here before Finn starts, and note the Worker deployment + VAPID secret setup are owner actions, same constraint as every other Worker in this repo.
 
-**Implementation — 2026-08-09 (D-079):** All app-side code shipped in this commit, matching the Feasibility section above exactly:
-- `migrations/0007_push_subscriptions.sql` — `push_subscriptions` (multi-row-per-user, `UNIQUE(endpoint)`) + `push_sent_log` (dedup guard, keyed `(user_id, game_key)`).
+**Shipped and live — 2026-08-09 (D-079).** All app-side code from the Feasibility section above, deployed and verified working in production:
+
+- `migrations/0007_push_subscriptions.sql` — `push_subscriptions` (multi-row-per-user, `UNIQUE(endpoint)`) + `push_sent_log` (dedup guard, keyed `(user_id, game_key)`). Applied via `wrangler d1 migrations apply USER_DB`.
 - `functions/api/pushSubscribe.js` — GET/POST/DELETE, session-scoped, modeled on `follows.js`.
-- `worker/push-game-alerts.js` + `worker/wrangler-push.toml` — cron Worker (every 10 min, 12-min lookahead window so one skipped run still catches every game), MLB (statsapi) + NFL (ESPN) upcoming-game discovery, `@block65/webcrypto-web-push`'s `buildPushPayload()` for the actual send, 404/410 auto-prune of dead subscriptions. **Update 2026-08-09, post-deploy:** the owner's first live `/__run` hit immediately surfaced a real bug the field-shape caveat above was flagged for — ESPN's `site.api.espn.com` returned HTML ("Access Denied") instead of JSON. Root cause: this is the exact Akamai block already documented in `functions/api/nfl.js`'s 2026-08-07/08 header comment (Cloudflare egress IPs specifically, not a UA check) — that file's fix (switch to `site.web.api.espn.com`, byte-identical response shape) just hadn't been applied to this new worker yet. Fixed: NFL now hits `site.web.api.espn.com` with the same browser-realistic UA as `nfl.js`; MLB fetches now send `User-Agent: SportStrata/1.0` matching `functions/api/mlb.js`'s already-proven header. Re-run `/__run` to confirm before trusting it further — `matched:0` is still expected/fine on a day with no game inside the 12-minute lookahead window.
-- `sw.js` — `push` and `notificationclick` listeners added (v156). Additive only, doesn't touch `install`/`activate`/`fetch`.
-- `js/auth.js` — `enablePushAlerts()`/`disablePushAlerts()`/`_pushSupported()`, wired into the account page as a "Game-start alerts" toggle right after the digest section, matching that section's structure exactly (off by default, reverts on failure, toasts on success).
-- `js/config.js` — `VAPID_PUBLIC_KEY` constant (safe to ship client-side by design).
+- `worker/push-game-alerts.js` + `worker/wrangler-push.toml` — cron Worker, every 10 minutes, 12-minute lookahead window (wider than the cadence on purpose, so one skipped run still catches every game). MLB (statsapi) + NFL (ESPN) upcoming-game discovery, `@block65/webcrypto-web-push`'s `buildPushPayload()` for the actual send, 404/410 auto-prune of dead subscriptions. Deployed with `compatibility_flags = ["nodejs_compat"]` (the package's `node:crypto` fallback path needs it).
+- `sw.js` (v156) — `push` and `notificationclick` listeners. Additive only, doesn't touch `install`/`activate`/`fetch`.
+- `js/auth.js` — `enablePushAlerts()`/`disablePushAlerts()`/`_pushSupported()`, wired into the account page as a "Game-start alerts" toggle right after the digest section, same structure (off by default, reverts on failed save, toasts on success).
+- `js/config.js` — `VAPID_PUBLIC_KEY` constant (safe to ship client-side by design; the private half only ever lives in the Worker's secrets).
 - Root `package.json` — added `@block65/webcrypto-web-push`.
 
-**Owner actions required before this is live (cannot be done from here — no wrangler/Cloudflare auth in this environment):**
-1. `npm install` at repo root (pulls in the new dependency before any `wrangler deploy`).
-2. `wrangler d1 migrations apply USER_DB` (applies 0007).
-3. `wrangler secret put VAPID_PUBLIC_KEY --config worker/wrangler-push.toml` and `VAPID_PRIVATE_KEY` the same way — **the exact key pair is in this session's chat output, not committed anywhere** (VAPID private keys don't belong in source control any more than any other secret here).
-4. `wrangler secret put PUSH_RUN_SECRET --config worker/wrangler-push.toml` (any random string, gates `/__run`).
-5. `wrangler deploy --config worker/wrangler-push.toml`.
-6. Run the pre-enable spike via `/__run` during a real pre-game window before trusting the cron send path in production.
+**Two real bugs found and fixed via the owner's own live `/__run` testing** (not caught in review — this is exactly what the "spike before trusting it" step in the Feasibility section was for):
+1. **NFL fetch failed with an Akamai "Access Denied" HTML body.** `site.api.espn.com` is Cloudflare-egress-blocked — the same incident already documented in `functions/api/nfl.js`'s 2026-08-07/08 header comment, whose fix (switch to `site.web.api.espn.com`, byte-identical response shape) just hadn't been carried over to this new Worker. Fixed, plus added the matching browser-realistic `User-Agent`.
+2. **MLB fetch had no `User-Agent` header at all**, unlike `functions/api/mlb.js`'s already-proven `SportStrata/1.0` UA to `statsapi.mlb.com` — same class of risk, fixed preemptively alongside the NFL bug.
+
+Diagnosing bug #1 was slow because the original error handling swallowed which of the two upstreams (MLB or NFL) had actually failed. Fixed structurally, not just patched: `worker/push-game-alerts.js` now uses a labeled `_fetchJson()` helper (reports HTTP status + a body snippet on parse failure) and `Promise.allSettled` instead of a combined `Promise.all`/`catch`, so a future upstream failure reports its source and status directly instead of a bare "Unexpected token '<'".
+
+Confirmed live: `/__run` (shared-secret-gated manual trigger) returns `{"matched":0,"sent":0,"skipped":0,"failed":0,"pruned":0,"errors":[]}` — clean, no errors. `matched:0` is expected/correct when no MLB or NFL game is inside the 12-minute lookahead window; it is not itself a failure signal.
+
+**Not yet done — the one remaining real-world check:** an actual end-to-end send (follow a team with a game starting soon, confirm the browser notification arrives and `notificationclick` opens the right game). Everything up to the send call is now verified; the send itself only fires when `matched > 0`, which hasn't happened yet on a live run.
 
 ---
