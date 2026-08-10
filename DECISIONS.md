@@ -1876,4 +1876,25 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 - `youtube-insights.html` — a single self-contained static page at the repo root. Deliberately **not** wired into `index.html`'s script chain, `sw.js`'s `STATIC_ASSETS`, `_routes.json`, or `sitemap.xml` — it needs none of them (Cloudflare Pages serves any static file directly; the SW's fetch handler is network-first for navigations, so an unregistered page still loads correctly). `noindex, nofollow` meta tag. Reads `?key=` from its own URL and forwards it as the header above; the owner's "hidden page" is a private bookmark with the key baked into the URL, same shape as how the push-Worker's shared-secret pattern is used from outside a browser.
 - No CLAUDE.md architecture disruption: no new global, no new script-chain entry, no new nav/view. Documented in the Key Files table and Deployment section per the doc-sync rule, since this is a new deployment artifact even though it's outside the SPA proper.
 
-**Owner setup still required before this works live (cannot be done from this session — Cloudflare account settings):** in the Pages dashboard, add `YOUTUBE_DASHBOARD_KEY` (a new random secret, distinct from the CLI's four) alongside the existing four YouTube secrets under Settings → Functions → Environment variables, and create + bind a `YT_CACHE` KV namespace the same way `USER_DB` (D1) was already bound. Until both exist, the Function fails closed (503), not open.
+**Owner setup completed 2026-08-10** — all five `YOUTUBE_*` secrets (`CLIENT_ID`/`CLIENT_SECRET`/`REFRESH_TOKEN`/`CHANNEL_ID`/`DASHBOARD_KEY`) added and `YT_CACHE` KV namespace created + bound, both via the Pages dashboard walkthrough. Live and verified working. One real snag hit and fixed along the way: Pages env var/secret edits only take effect on the *next deployment*, not instantly — the first "unauthorized" response after updating the dashboard key was the live Function still running the prior deployment's value. Fixed via a manual "Retry deployment" on the latest build. Worth remembering for any future secret rotation on this project: **always trigger a fresh deployment after editing a Pages secret**, don't assume the dashboard save alone is enough.
+
+---
+
+## D-084 — YouTube Insights: performance-pattern analysis added, deliberately not a brand-voice checker
+
+**Status:** shipped, small
+**Contributors:** Axiom
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** with D-083 live, owner asked to take the page "from a simple dashboard to something that can provide real data useful in content creation and brand identity."
+
+**Real fork surfaced and resolved before building:** the channel's actual titles ("YOU DUMBASS B*TCH!", ALL-CAPS reaction phrasing, 🚨 emoji spam) don't match the site's "serious stats for serious fans" brand voice. Rather than guess, asked directly whether that's an intentional separate YouTube voice or drift to correct. **Owner confirmed intentional — different voice for YouTube, on purpose.** This ruled out building any tone/style "should this match the brand" checker; scope is purely performance analysis — what patterns actually work, given the voice already in use.
+
+**What shipped, all computed client-side from the existing `/api/youtube` payload — no Function change, no new API calls, no new quota cost:**
+- **View velocity** (`windowedViews / min(daysSincePublished, queried days)`) replaces raw windowed views as the default sort. Raw counts unfairly favored older videos given the channel's posting cadence (186 total uploads as of this decision) — a video from day 1 of a 90-day window accumulates far more raw views than an equally-good video from day 85 regardless of quality.
+- **Subscribers gained per 1,000 windowed views** — the closest available proxy for "did this video actually grow the channel" vs. "did it just get looked at." This is the load-bearing metric for the "brand identity"/audience-building half of the ask, reframed as a measurable number rather than a subjective tone judgment.
+- **Lightweight regex title tagging** (🚨 emoji present, "BREAKING", caps-heavy, NFL team mentioned via a 32-team keyword list) rolled into a "What's working" panel — average velocity/retention/subs-per-1k per tag, 2+ videos minimum per group, sorted by velocity. Answers "what should I make more of" directly from title patterns already in use, without needing any ML/LLM classification.
+- **Reach-vs-retention scatter** (views/day log-scale vs. avg view %) — the "content creation" half of the ask made visual: bottom-right is hyped-but-not-retaining, top-left is under-promoted-but-engaging, top-right is the actual winners to replicate.
+- Table headers are now click-to-sort on every numeric column, since the earlier fixed 25-video default sort no longer fits a channel with a 186-video catalog and daily uploads.
+
+**Deliberately not built (matches this project's "keep it simple" pattern from D-082's original overbuild/correction):** comment sentiment analysis, thumbnail testing, traffic-source breakdown, any LLM-based classification. All would need additional API scopes or calls; none are needed to answer "what's working" from data already on hand. Can be added later if the tag/velocity/scatter view proves insufficient — no architecture here blocks it.
