@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>YouTube Insights — internal</title>
+<!--
+  Unlinked owner-only page — not in index.html, sw.js, sitemap.xml, or
+  _routes.json (needs none of them: it's a plain static asset Cloudflare
+  Pages serves directly, and it doesn't touch the SPA's AppState/script
+  chain at all). Reached only via a private bookmarked URL of the form
+  youtube-insights.html?key=YOUR_YOUTUBE_DASHBOARD_KEY — the key is read
+  from the URL and sent as a header to /api/youtube, never stored.
+  See functions/api/youtube.js and DECISIONS.md D-083.
+-->
+<link rel="stylesheet" href="/css/variables.css">
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        padding: 32px 20px 80px;
+    }
+    .yti-wrap { max-width: 1100px; margin: 0 auto; }
+    .yti-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 4px; }
+    h1 { font-size: 1.4rem; margin: 0; }
+    .yti-channel { color: var(--text-secondary); font-size: 0.9rem; }
+    .yti-meta { color: var(--text-muted); font-size: 0.8rem; margin: 4px 0 24px; }
+    .yti-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .yti-controls label { font-size: 0.8rem; color: var(--text-secondary); }
+    .yti-controls input {
+        background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary);
+        border-radius: var(--radius-md); padding: 6px 10px; width: 80px; font-family: var(--font-sans);
+    }
+    .yti-controls button {
+        background: var(--accent); color: #14181d; border: none; border-radius: var(--radius-md);
+        padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);
+    }
+    .yti-controls button:disabled { opacity: 0.5; cursor: default; }
+    table { width: 100%; border-collapse: collapse; background: var(--bg-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-card); }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-default); font-size: 0.85rem; }
+    th { color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    td.num { font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .yti-status { color: var(--text-muted); font-size: 0.9rem; padding: 40px 0; text-align: center; }
+    .yti-status.err { color: var(--color-loss, #ff5a5a); }
+</style>
+</head>
+<body>
+<div class="yti-wrap">
+    <div class="yti-head">
+        <h1>YouTube Insights</h1>
+        <span class="yti-channel" id="ytiChannel"></span>
+    </div>
+    <div class="yti-meta" id="ytiMeta"></div>
+    <div class="yti-controls">
+        <label for="ytiDays">Days</label>
+        <input type="number" id="ytiDays" value="90" min="1" max="365">
+        <label for="ytiLimit">Videos</label>
+        <input type="number" id="ytiLimit" value="25" min="1" max="200">
+        <button id="ytiReload">Reload</button>
+    </div>
+    <div id="ytiBody"><div class="yti-status">Loading…</div></div>
+</div>
+<script>
+(function () {
+    const params = new URLSearchParams(location.search);
+    const key = params.get('key') || '';
+    const daysInput = document.getElementById('ytiDays');
+    const limitInput = document.getElementById('ytiLimit');
+    const reloadBtn = document.getElementById('ytiReload');
+    const bodyEl = document.getElementById('ytiBody');
+    const channelEl = document.getElementById('ytiChannel');
+    const metaEl = document.getElementById('ytiMeta');
+
+    if (!key) {
+        bodyEl.innerHTML = '<div class="yti-status err">No key in URL. Open this page as youtube-insights.html?key=YOUR_YOUTUBE_DASHBOARD_KEY.</div>';
+        reloadBtn.disabled = true;
+        return;
+    }
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function fmtDuration(sec) {
+        if (sec == null) return '—';
+        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+        return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+    }
+
+    function fmtPct(p) { return p == null ? '—' : `${Math.round(p)}%`; }
+    function fmtNum(n) { return n == null ? '—' : Number(n).toLocaleString(); }
+    function fmtSigned(n) { return n == null ? '—' : (n > 0 ? `+${n}` : String(n)); }
+
+    async function load() {
+        reloadBtn.disabled = true;
+        bodyEl.innerHTML = '<div class="yti-status">Loading…</div>';
+        const days = daysInput.value || 90;
+        const limit = limitInput.value || 25;
+        try {
+            const res = await fetch(`/api/youtube?days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limit)}`, {
+                headers: { 'X-YouTube-Dashboard-Key': key },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            render(data);
+        } catch (err) {
+            bodyEl.innerHTML = `<div class="yti-status err">${esc(err.message || String(err))}</div>`;
+        } finally {
+            reloadBtn.disabled = false;
+        }
+    }
+
+    function render(data) {
+        const handle = data.channel.customUrl ? ` (${esc(data.channel.customUrl)})` : '';
+        channelEl.textContent = `${data.channel.title}${handle}`;
+        metaEl.textContent = `${data.range.start} to ${data.range.end} · generated ${new Date(data.generatedAt).toLocaleString()}`;
+
+        if (!data.videos.length) {
+            bodyEl.innerHTML = '<div class="yti-status">No videos found.</div>';
+            return;
+        }
+
+        const rows = data.videos.map(v => `
+            <tr>
+                <td><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></td>
+                <td class="num">${esc(v.publishedAt)}</td>
+                <td class="num">${fmtDuration(v.durationSeconds)}</td>
+                <td class="num">${fmtNum(v.windowedViews)}</td>
+                <td class="num">${fmtPct(v.avgViewPercentage)}</td>
+                <td class="num">${fmtSigned(v.subscribersNet)}</td>
+                <td class="num">${fmtNum(v.lifetimeViews)}</td>
+                <td class="num">${fmtNum(v.lifetimeLikes)}</td>
+            </tr>`).join('');
+
+        bodyEl.innerHTML = `
+            <table>
+                <thead><tr>
+                    <th>Video</th><th>Published</th><th>Duration</th><th>Views (window)</th>
+                    <th>Avg view %</th><th>Subs +/-</th><th>Lifetime views</th><th>Likes</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    reloadBtn.addEventListener('click', load);
+    load();
+})();
+</script>
+</body>
+</html>
