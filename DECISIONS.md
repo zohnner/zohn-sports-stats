@@ -1911,8 +1911,37 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 **What shipped:**
 - `functions/api/youtube.js` — `getRecentVideos()` now also extracts `thumbnailUrl` (`playlistItems.snippet.thumbnails.medium`, falling back to `default`) and the full `publishedAtIso` timestamp. Both fields were already present on the existing `playlistItems` response; this is a parsing change, not a new request.
-- `_headers` — added `https://i.ytimg.com` (YouTube's thumbnail CDN) to `img-src`. **`index.html`'s own CSP meta tag deliberately untouched** — that tag only governs `index.html`/the SPA, and `youtube-insights.html` is a separate static document with no CSP meta tag of its own, so it's governed purely by the global `_headers` rule. Don't "fix" this by also adding `i.ytimg.com` to `index.html`'s meta tag; the SPA never loads YouTube thumbnails and doesn't need it.
+- `_headers` — added `https://i.ytimg.com` (YouTube's thumbnail CDN) to `img-src`. **Correction, 2026-08-10:** this entry originally said to leave `index.html`'s CSP meta tag untouched, reasoning `youtube-insights.html` is a separate document that doesn't need it there. That was wrong — CLAUDE.md's CSP-sync rule and the CI check (`ci.yml` #3, `/deploy-check` #3) are both blunt, page-unaware string comparisons: any new domain added to either file must be added to both, full stop, regardless of which page actually uses it. The mismatch broke CI; fixed by adding `i.ytimg.com` to `index.html`'s `img-src` too. Do not re-introduce this exception.
 - **Top performers gallery** — top 8 videos by views/day rendered as ranked thumbnail cards. The stated reasoning: framing/subject/color patterns across winning videos read far faster from images side-by-side than from a table of titles — this is the most direct "what should the next thumbnail look like" signal available without new API scope.
 - Thumbnails also added inline in the main table (previously text-only).
 - **Posting-day pattern panel** — avg views/day and retention grouped by UTC day-of-week (from `publishedAtIso`, new use of an already-fetched field), kept in Sun→Sat calendar order rather than sorted by performance, since a calendar view is easier to scan than a ranked one for this kind of question.
 - **CSV export** — respects whatever sort is currently active in the table, escapes commas/quotes per RFC 4180, triggers a browser download via `Blob`/`URL.createObjectURL`. No library.
+
+---
+
+## D-086 — Draft Instincts (videocreation) build-out paused; effort redirected to the workflow that actually produced a result
+
+**Status:** open
+**Contributors:** Finn, Vera, Kael, Axiom, Relay, Folio
+**Date opened:** 2026-08-10 | **Date resolved:** —
+
+**Trigger:** owner reported 50,000 views in a single day on a video that used none of the `videocreation` ("Draft Instincts") pipeline — it was built manually, from copyright-free footage, with an SEO-optimized title and description. Owner asked for a team workflow to reconsider the `videocreation` subdirectory in light of that result.
+
+**Status check (Finn):** Draft Instincts is real, working infrastructure — data brief → Gemini script → Playwright render → ffmpeg compose → thumbnail/chapters/captions → YouTube upload, built out over roughly a week (2026-08-02 to 08-07). `videocreation/out/` holds exactly three named episodes. One (`what-to-look-for-at-training-camp-this-week`) has a full publish package (title/description/tags + thumbnail + video) but is a `-scratch-` render — placeholder silent audio, per the pipeline's own naming convention, never real narration. The other two have real video files but no confirmed publish step or performance data. **None of Draft Instincts' output is the video that got 50k views — the owner has confirmed that directly.** After a week of build effort, the pipeline has not yet produced a single video with confirmed audience traction; a same-day manual workflow with near-zero engineering behind it has.
+
+**Job-to-be-done (Vera):** the open question isn't "which format gets more views," it's what the channel is *for*. Draft Instincts produces data-driven narrated analysis that reinforces the "SportStrata analytics" identity and can link back to the site. Manually-curated clips with SEO metadata build raw audience and reach, but carry no inherent tie back to the product. These are different jobs and will keep looking like they're competing on the wrong axis until one is named as the channel's actual near-term goal. Given the size of the signal (50k views in a day, versus zero confirmed views on the built pipeline's output), reach is the more urgent job right now — the analytics-tie-in job can resume once there's an audience to tie in to.
+
+**Brand (Kael):** this doesn't reopen the brand-voice question — D-084 already confirmed the YouTube channel intentionally runs a looser, separate voice from the site's "serious stats" posture. What it does raise: the winning format is closer to general sports-clip content than anything Draft Instincts is built to produce, so leaning into it further is a continuation of an already-approved split, not a new brand risk.
+
+**Feasibility (Axiom):** Draft Instincts' unbuilt milestones (M2/M3 — forced-alignment refinement, additional content formats, live data pull enhancements) would be new engineering investment in a format with zero confirmed audience validation so far. The format that just produced a real result needs no new backend at all — its bottleneck is human time sourcing clips and writing titles, and the one piece of tooling that directly helps there already exists: `youtube-insights.html`'s title-pattern tagging and velocity scoring (D-084/D-085), built for exactly this kind of "what's working" question. Recommend no further Draft Instincts feature work until its own output has real performance data to justify it.
+
+**Data (Relay):** not a data-pipeline problem. Draft Instincts' `data-brief.js` (nflverse/Sleeper joins) is sound and already has its own health check (`tools/join-health.cjs`); nothing about the pipeline's data layer explains the gap. The manually-curated format has no API dependency at all — it's outside Relay's domain. This is a content-market-fit question, not an infrastructure one.
+
+**Decision:** pause new feature work on Draft Instincts (no M2/M3 build-out) rather than continuing to invest before its own output has audience data. Do not decommission the repo — it's sunk-cost-built, costs nothing sitting idle, and stays available for data-tied content later. Redirect near-term effort to the manual clip + SEO workflow that produced the real result, using `youtube-insights.html` as the feedback loop to find out what specifically drove the 50k-view day (title pattern, thumbnail, posting time) so it can be repeated rather than treated as a one-off.
+
+**Confidence note:** this is one viral day, not a proven repeatable strategy — treat the "lean into manual curation" call as provisional pending a few more data points via `youtube-insights.html`, not as a permanent verdict on Draft Instincts. The redirection costs nothing to reverse; the pipeline isn't going anywhere.
+
+**Implications:**
+- No further `videocreation` feature commits (M2/M3) until a Draft Instincts-produced video has real, confirmed performance data.
+- GOALS.md's video line updated to reflect paused, not active, status.
+- Any future request to "keep building out Draft Instincts" should be met with: has any of its output actually been published and measured yet? If not, that's the higher-priority missing step, not more pipeline features.
