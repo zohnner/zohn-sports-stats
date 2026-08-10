@@ -1898,3 +1898,21 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 - Table headers are now click-to-sort on every numeric column, since the earlier fixed 25-video default sort no longer fits a channel with a 186-video catalog and daily uploads.
 
 **Deliberately not built (matches this project's "keep it simple" pattern from D-082's original overbuild/correction):** comment sentiment analysis, thumbnail testing, traffic-source breakdown, any LLM-based classification. All would need additional API scopes or calls; none are needed to answer "what's working" from data already on hand. Can be added later if the tag/velocity/scatter view proves insufficient — no architecture here blocks it.
+
+---
+
+## D-085 — YouTube Insights: thumbnails, top-performer gallery, posting-day patterns, CSV export
+
+**Status:** shipped, small
+**Contributors:** Axiom
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner asked to keep building out D-084. Offered two directions that add ongoing API quota/latency cost — traffic-source breakdown (one more Analytics API call per batch) and top-comment pulls (one more Data API call per video shown) — owner chose to hold off on both for now. Everything in this entry is free: fields the Data API already returns on calls this Function was already making, just not surfaced yet.
+
+**What shipped:**
+- `functions/api/youtube.js` — `getRecentVideos()` now also extracts `thumbnailUrl` (`playlistItems.snippet.thumbnails.medium`, falling back to `default`) and the full `publishedAtIso` timestamp. Both fields were already present on the existing `playlistItems` response; this is a parsing change, not a new request.
+- `_headers` — added `https://i.ytimg.com` (YouTube's thumbnail CDN) to `img-src`. **`index.html`'s own CSP meta tag deliberately untouched** — that tag only governs `index.html`/the SPA, and `youtube-insights.html` is a separate static document with no CSP meta tag of its own, so it's governed purely by the global `_headers` rule. Don't "fix" this by also adding `i.ytimg.com` to `index.html`'s meta tag; the SPA never loads YouTube thumbnails and doesn't need it.
+- **Top performers gallery** — top 8 videos by views/day rendered as ranked thumbnail cards. The stated reasoning: framing/subject/color patterns across winning videos read far faster from images side-by-side than from a table of titles — this is the most direct "what should the next thumbnail look like" signal available without new API scope.
+- Thumbnails also added inline in the main table (previously text-only).
+- **Posting-day pattern panel** — avg views/day and retention grouped by UTC day-of-week (from `publishedAtIso`, new use of an already-fetched field), kept in Sun→Sat calendar order rather than sorted by performance, since a calendar view is easier to scan than a ranked one for this kind of question.
+- **CSV export** — respects whatever sort is currently active in the table, escapes commas/quotes per RFC 4180, triggers a browser download via `Blob`/`URL.createObjectURL`. No library.
