@@ -110,7 +110,9 @@ def _get_channel_info(token: str) -> dict:
 
 def _get_recent_videos(token: str, playlist_id: str, limit: int) -> list[dict]:
     videos, page_token = [], None
+    page_num = 0
     while len(videos) < limit:
+        page_num += 1
         params = {
             "part": "snippet", "playlistId": playlist_id,
             "maxResults": min(50, limit - len(videos)), "access_token": token,
@@ -120,6 +122,11 @@ def _get_recent_videos(token: str, playlist_id: str, limit: int) -> list[dict]:
         r = requests.get(f"{DATA_API}/playlistItems", params=params, timeout=15)
         r.raise_for_status()
         data = r.json()
+        total = data.get("pageInfo", {}).get("totalResults")
+        got = len(data.get("items", []))
+        next_tok = data.get("nextPageToken")
+        print(f"  (uploads playlist page {page_num}: {got} items, "
+              f"totalResults={total}, more pages={'yes' if next_tok else 'no'})")
         for item in data.get("items", []):
             sn = item["snippet"]
             videos.append({
@@ -127,7 +134,7 @@ def _get_recent_videos(token: str, playlist_id: str, limit: int) -> list[dict]:
                 "title": sn["title"],
                 "published_at": sn["publishedAt"][:10],
             })
-        page_token = data.get("nextPageToken")
+        page_token = next_tok
         if not page_token:
             break
     return videos[:limit]
