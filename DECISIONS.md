@@ -1832,3 +1832,23 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 - **Phase 3c (FPOE)** needs its own expected-fantasy-points baseline model, smaller than 3b but still real modeling work — deferred further, no spec yet.
 
 **Next concrete action:** implement Phase 3a now. Recheck nflverse's 2026 pbp file availability and update cadence in September once the regular season starts, before scoping 3b's implementation further.
+
+---
+
+## D-082 — YouTube Channel Analytics Dashboard — owner-gated internal route, scoped
+
+**Status:** scoped, not yet implemented
+**Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility)
+**Date opened:** 2026-08-09 | **Date resolved:** open
+
+**Trigger:** owner asked how to connect the SportStrata YouTube channel's data and floated "a simple analytics dashboard that just deploys on the dev side." Investigated first, not assumed: two content pipelines already feed the channel with zero performance readback today — this repo's `bot/content_engine.py` (NFL/NCAAF Shorts packages) and the separate `sportstrata-video` repo's long-form "Draft Instincts" pipeline (D-054, already past M1 with real episodes produced). Neither pipeline currently records which YouTube video ID resulted from which generated package.
+
+**Decision: build this as an owner-only gated route on sportstrata.cc — the owner's explicit choice, offered against a local-only script and a separate internal Pages deployment.** A local script would be simpler but only checkable from one machine; a separate deployment would duplicate infrastructure (D1, gating, CSS) this project's main deployment already has. Reusing the existing accounts system (D-031) to gate a single route is the smallest real addition, not a new architectural category.
+
+**Architecture mirrors the push-notification Worker exactly (D-079), same reasoning: a daily cron pull into D1, never a live per-request fetch to the upstream API.** `worker/youtube-analytics-sync.js` refreshes an access token from a stored OAuth refresh token, calls YouTube Data API v3 (`videos.list`) and YouTube Analytics API (`reports.query`), and upserts into a new `youtube_video_stats` table on the existing `USER_DB` D1 binding — no new database provisioned. A Pages Function serves it to the client, gated server-side to the owner's account specifically, not merely "any signed-in user" — a narrower check than any existing gated view in this codebase, since every other gated surface (My Dashboard, follows, prefs) is meant for any signed-in user, not one specific account.
+
+**Real, named blocker — owner action, not something this spec can do for them:** the YouTube Analytics API requires OAuth2 consent from the channel owner, not an API key like Gemini uses elsewhere in this project. The owner has already created the OAuth Client ID as of this decision; the Client Secret and a refresh token (minted via a one-time Google OAuth Playground authorization, confirmed as the correct current bootstrap path via live search 2026-08-09) still need to be generated and stored through `wrangler secret put` — never in chat, never in source, same discipline as every other credential in this project (BDL key, VAPID keys, Stripe secrets).
+
+**Quota checked live, not assumed (2026-08-09):** YouTube Data API v3's free tier is 10,000 units/day; the Analytics API carries its own separate quota pool. A once-daily pull for a single channel is nowhere near either ceiling — not a real constraint here.
+
+**Next concrete action:** implement the D1 schema, sync Worker, and gated Function/view now — none of that depends on the refresh token existing to be written. Final verification against real data waits on the owner completing the OAuth Playground bootstrap step.
