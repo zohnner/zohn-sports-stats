@@ -33,7 +33,7 @@ from datetime import date, timedelta
 
 import requests
 
-from config import YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN
+from config import YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CHANNEL_ID
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
 
@@ -84,13 +84,18 @@ def _fmt_duration(seconds: int) -> str:
 
 
 def _get_uploads_playlist_id(token: str) -> str:
+    # Explicit channel id, not mine=true — mine=true returns the authenticated
+    # Google Account's own default channel, which silently pulled the wrong
+    # channel's data the first time this ran (2026-08-09) since the account
+    # manages more than one channel. YOUTUBE_CHANNEL_ID (config.py) is the
+    # fix — always target SportStrata's channel explicitly.
     r = requests.get(f"{DATA_API}/channels", params={
-        "part": "contentDetails", "mine": "true", "access_token": token,
+        "part": "contentDetails", "id": YOUTUBE_CHANNEL_ID, "access_token": token,
     }, timeout=15)
     r.raise_for_status()
     items = r.json().get("items", [])
     if not items:
-        raise SystemExit("No channel found for this account — check the refresh token belongs to the right Google account.")
+        raise SystemExit(f"No channel found for id {YOUTUBE_CHANNEL_ID} — check YOUTUBE_CHANNEL_ID in config.py and that this account has access to it.")
     return items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
 
@@ -150,7 +155,7 @@ def _get_analytics(token: str, video_ids: list[str], start: date, end: date) -> 
         for i in range(0, len(video_ids), 50):
             batch = video_ids[i:i + 50]
             r = requests.get(ANALYTICS_API, params={
-                "ids": "channel==MINE",
+                "ids": f"channel=={YOUTUBE_CHANNEL_ID}",
                 "startDate": start.isoformat(),
                 "endDate": end.isoformat(),
                 "metrics": "views,averageViewDuration,averageViewPercentage,subscribersGained,subscribersLost",
@@ -166,7 +171,11 @@ def _get_analytics(token: str, video_ids: list[str], start: date, end: date) -> 
                 rec = dict(zip(headers, row))
                 out[rec["video"]] = rec
     except requests.RequestException as e:
-        print(f"  (Analytics API call failed — {e}; report will show lifetime stats only)")
+        detail = ""
+        resp = getattr(e, "response", None)
+        if resp is not None:
+            detail = f" | response: {resp.text[:300]}"
+        print(f"  (Analytics API call failed — {e}{detail}; report will show lifetime stats only)")
     return out
 
 

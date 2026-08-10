@@ -20,6 +20,12 @@ SPORTSTRATA_URL = os.getenv("SPORTSTRATA_URL", "https://sportstrata.cc")
 YOUTUBE_CLIENT_ID     = os.environ.get("YOUTUBE_CLIENT_ID")
 YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET")
 YOUTUBE_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN")
+# SportStrata's own channel ID (not secret — public identifier). Explicit on
+# purpose: `channels.list(mine=true)` returns whichever channel is the
+# authenticated Google Account's own default, which is NOT reliably the
+# right Brand Account channel if the account manages more than one — found
+# live 2026-08-09 when mine=true silently pulled an unrelated channel's data.
+YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID", "UCiGLyXxNPQEFT8Pu-bqAAcg")
 
 # ── Database ───────────────────────────────────────────────────
 DB_PATH = os.getenv("DB_PATH", "bot.db")
