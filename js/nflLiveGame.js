@@ -139,8 +139,34 @@ function _nlgRender(data) {
     _nlgRenderActiveTabBody();
 
     const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
+    const oddsLine = _nlgBroadcastOddsLine(data);
+    const capParts = [venue, oddsLine].filter(Boolean);
     const capEl = grid.querySelector('.nlg-venue-caption');
-    if (capEl) capEl.textContent = venue ? `${venue} · data via ESPN` : 'Data via ESPN';
+    if (capEl) capEl.textContent = capParts.length ? `${capParts.join(' · ')} · data via ESPN` : 'Data via ESPN';
+}
+
+// Broadcast network + betting line, folded into the existing venue caption
+// rather than a new component — pregame-relevant context a fan checks once,
+// not a live-updating surface. Field shapes live-verified 2026-08-09 against
+// event 401873271 EXCEPT `broadcasts`, which was an empty array for that game
+// (a completed preseason game) — the accessor chain below covers the shapes
+// ESPN uses elsewhere in this codebase's other endpoints, but is unverified
+// for a populated broadcasts[] and fails silently (omits, never throws) if
+// the real shape differs. pickcenter[0].details/overUnder ARE verified
+// (DraftKings, "CAR -1.5", 34.5).
+function _nlgBroadcastOddsLine(data) {
+    const parts = [];
+    const b = (data.broadcasts && data.broadcasts[0]) || null;
+    const bname = b && ((b.media && (b.media.shortName || b.media.callLetters)) || (b.names && b.names[0]) || (b.type && b.type.shortName) || b.name);
+    if (bname) parts.push(String(bname));
+    const pc = (data.pickcenter && data.pickcenter[0]) || null;
+    if (pc) {
+        const line = [];
+        if (pc.details) line.push(pc.details);
+        if (pc.overUnder != null) line.push(`O/U ${pc.overUnder}`);
+        if (line.length) parts.push(line.join(', '));
+    }
+    return parts.join(' · ');
 }
 
 function _nlgRenderHeader(comp, home, away) {
@@ -224,7 +250,7 @@ function _nlgRenderActiveTabBody() {
 // -- Summary tab (linescore + scoring feed) ------------------------------
 
 function _nlgRenderSummaryTab(data, comp, home, away) {
-    return `${_nlgLinescore(comp, home, away)}${_nlgScoringFeed(data)}`;
+    return `${_nlgLinescore(comp, home, away)}${_nlgScoringFeed(data)}${_nlgInjuriesCard(data)}${_nlgNewsCard(data)}`;
 }
 
 function _nlgLinescore(comp, home, away) {
@@ -257,6 +283,44 @@ function _nlgScoringFeed(data) {
         </div>`;
     }).join('');
     return `<details class="nlg-card" open><summary class="nlg-sum">Scoring plays</summary><div class="nlg-plays">${rows}</div></details>`;
+}
+
+// -- Injury report + NFL news (data.injuries[], data.news.articles[] — both
+// -- already present in fetchNFLSummary's response, live-verified 2026-08-09
+// -- against event 401873271: injuries[].injuries[] = {status, type:{abbreviation},
+// -- athlete:{shortName,position:{abbreviation}}, details:{detail}}; news is
+// -- general NFL news, not scoped to this specific game — labeled honestly. --
+
+function _nlgInjuriesCard(data) {
+    const teams = (data.injuries || []).filter(t => t.injuries && t.injuries.length);
+    if (!teams.length) return '';
+    const total = teams.reduce((n, t) => n + t.injuries.length, 0);
+    const rows = (t) => (t.injuries || []).map(i => {
+        const abbr = (i.type && i.type.abbreviation) || (i.status || '').slice(0, 1);
+        const name = (i.athlete && (i.athlete.shortName || i.athlete.displayName)) || '';
+        const pos = (i.athlete && i.athlete.position && i.athlete.position.abbreviation) || '';
+        const detail = (i.details && i.details.detail) || '';
+        return `<div class="nlg-inj-row">
+            <span class="nlg-inj-status">${_escHtml(abbr)}</span>
+            <span class="nlg-inj-name">${_escHtml(name)}</span>
+            <span class="nlg-inj-pos">${_escHtml(pos)}</span>
+            <span class="nlg-inj-detail">${_escHtml(detail)}</span>
+        </div>`;
+    }).join('');
+    const teamBlock = (t) => `<div class="nlg-inj-team"><div class="nlg-bx-team-title">${_escHtml((t.team || {}).abbreviation || '')}</div>${rows(t)}</div>`;
+    return `<details class="nlg-card" open><summary class="nlg-sum">Injury Report <span class="nlg-sum-teams">${total} listed</span></summary>
+        <div class="nlg-inj">${teams.map(teamBlock).join('')}</div></details>`;
+}
+
+function _nlgNewsCard(data) {
+    const ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
+    const articles = ((data.news && data.news.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href).slice(0, 5);
+    if (!articles.length) return '';
+    const rows = articles.map(a => `<a class="nlg-news-row" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
+        <span class="nlg-news-headline">${_escHtml(a.headline)}</span>
+        <span class="nlg-news-meta">${_escHtml(a.byline || '')}${a.byline ? ' · ' : ''}${_escHtml(ago(a.published || a.lastModified))}</span>
+    </a>`).join('');
+    return `<details class="nlg-card"><summary class="nlg-sum">NFL News</summary><div class="nlg-news">${rows}</div></details>`;
 }
 
 // -- Play-by-Play tab (drives.current + drives.previous, live-verified shape) --
@@ -527,7 +591,40 @@ function _nlgSidebarHtml(data, comp, home, away) {
         ${_nlgSidebarLeaders(data)}
         ${_nlgFantasyLeadersCard(data)}
         ${_nlgGameFlow(comp, home, away)}
+        ${_nlgStandingsCard(data, home, away)}
     </aside>`;
+}
+
+// Playoff-race context (data.standings.groups[], live-verified 2026-08-09):
+// each group is one division's table — entries[].stats[] includes a ready-made
+// 'overall' displayValue ("1-0") and 'winPercent'. Shows each team's own
+// division; if both teams share a division (a divisional game), shows it once.
+function _nlgStandingsCard(data, home, away) {
+    const groups = (data.standings && data.standings.groups) || [];
+    if (!groups.length) return '';
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const findGroupFor = (abbr) => groups.find(g => (((g.standings || {}).entries) || []).some(e => (e.team || {}).abbreviation === abbr));
+    const gHome = findGroupFor(homeAbbr), gAway = findGroupFor(awayAbbr);
+    const uniqueGroups = (gHome && gHome === gAway) ? [gHome] : [gHome, gAway].filter(Boolean);
+    if (!uniqueGroups.length) return '';
+    const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--border-strong)';
+    const table = (g) => {
+        const entries = ((g.standings || {}).entries) || [];
+        const rows = entries.map(e => {
+            const abbr = (e.team || {}).abbreviation || '';
+            const playing = abbr === homeAbbr || abbr === awayAbbr;
+            const overall = (e.stats || []).find(s => s.name === 'overall');
+            const pct = (e.stats || []).find(s => s.name === 'winPercent');
+            return `<div class="nlg-st-row ${playing ? 'nlg-st-row--playing' : ''}" ${playing ? `style="--tc:${tc(abbr)}"` : ''}>
+                <span class="nlg-st-team">${_escHtml(abbr)}</span>
+                <span class="nlg-st-rec">${_escHtml(overall ? overall.displayValue : '')}</span>
+                <span class="nlg-st-pct">${_escHtml(pct ? pct.displayValue : '')}</span>
+            </div>`;
+        }).join('');
+        return `<div class="nlg-st-group"><div class="nlg-leader-team-title">${_escHtml(g.divisionHeader || g.header || '')}</div>${rows}</div>`;
+    };
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Standings</h3>${uniqueGroups.map(table).join('')}</div>`;
 }
 
 function _nlgSidebarLeaders(data) {

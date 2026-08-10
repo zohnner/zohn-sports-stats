@@ -2377,3 +2377,23 @@ Rebuilt `js/nflLiveGame.js` in place: always-visible header, six tabs (Summary, 
 **Phase 3a shipped and live-verified — 2026-08-09.** Success Rate and Drive Efficiency now render in the Analytics tab, checked against the same real game used throughout this session (401873271, final CAR 33-30 ARI): CAR 49% success rate (37/76), ARI 55% (43/78), full 1st/2nd/3rd-4th down breakdown, yards/play and yards/drive both computed correctly, receipts-style threshold caption rendering exactly as specced ("≥40% on 1st · ≥60% on 2nd · 100% on 3rd/4th"), clean console. Phase 3b stays exactly as scoped above — not started, blocked on nflverse's 2026 data.
 
 ---
+
+### NFL Live Game Viewer — Surface unused `/summary` fields (injuries, news, odds/broadcast, standings) — shipped 2026-08-09
+
+**Context:** D-080's Phase 1 fetches ESPN's `/summary` payload for every live/final NFL game, but only ever read 5 of its ~17 top-level keys (`header`, `drives`, `leaders`, `scoringPlays`, `boxscore`/`gameInfo`). `injuries`, `broadcasts`, `pickcenter`/`odds`, `news`, and `standings` were all present in every response and completely unused anywhere on the site — the highest-value, lowest-cost item identified in a diehard-NFL-fan brainstorm: zero new fetches, zero new endpoints, purely rendering data already in memory on every 20s poll.
+
+**Field shapes — live-verified 2026-08-09 against event 401873271 (CAR 33, ARI 30, final):**
+- `injuries[]`: per-team `{team, injuries: [{status, type:{abbreviation}, athlete:{shortName, position:{abbreviation}}, details:{detail, returnDate}}]}` — confirmed populated (5 entries per team on this game).
+- `pickcenter[]`: `{provider:{name}, details ("CAR -1.5"), overUnder (34.5), moneyline, pointSpread, homeTeamOdds, awayTeamOdds}` — confirmed populated (DraftKings).
+- `news.articles[]`: `{headline, byline, published, links.web.href}` — confirmed populated, but the content is **general NFL news, not scoped to this specific game** (a sample headline was about the Bears while viewing a CAR/ARI game) — labeled "NFL News" rather than "Game News" to avoid overclaiming relevance.
+- `standings.groups[]`: `{divisionHeader, standings:{entries: [{team, stats: [{name, displayValue}]}]}}`, `stats` includes a ready-made `overall` ("1-0") and `winPercent` — confirmed populated for both teams' divisions.
+- `broadcasts[]` was an **empty array** for this specific (completed preseason) game — the render path is written defensively (multiple fallback field-name guesses, silently omits rather than throwing) but is **unverified against a populated broadcasts entry**. Flagging this explicitly rather than presenting it as confirmed.
+- `againstTheSpread[]` had `records: []` (empty) for this game — not surfaced; too sparse to build a reliable empty-state around from one data point.
+
+**What shipped:** Summary tab gained two collapsible cards below the scoring feed — Injury Report (open by default, per-team status/name/position/detail rows) and NFL News (collapsed by default, top 5 headlines linking out `target="_blank" rel="noopener"`). The venue caption line now folds in the broadcast network (if resolvable) and the spread/O-U line when `pickcenter` has data. The sidebar gained a Standings card showing each team's own division table (one table if it's a divisional game), with the two playing teams marked by a left border in their own team color — reusing the existing `.nlg-team`/`--tc` inline-color pattern (D-038 K2: border = identity, never state), not brand orange, per DESIGN.md invariant #3.
+
+**Kael note:** No new color vocabulary introduced. Injury status renders as a neutral muted pill (not severity-color-coded — the semantic win/loss/live trio doesn't extend to injury status, and inventing a new color mapping wasn't reviewed). All new cards reuse the existing `.nlg-card`/`.nlg-sum` collapsible pattern and `.nlg-side-card`/`.nlg-side-title` sidebar pattern verbatim — no new component shape.
+
+**Shipped and locally verified 2026-08-09:** `node --check`, 0 NUL bytes, manifest sync clean, theme check clean (only the 2 known pre-existing WARNs), full 40-test unit suite passing, sw.js bumped to v160. Pending: live verification on production once pushed.
+
+---

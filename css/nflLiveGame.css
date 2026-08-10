@@ -129,3 +129,30 @@
 .nlg-an-headline { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0.15rem 0 0.4rem; font-variant-numeric: tabular-nums; }
 .nlg-an-val { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .nlg-an-grid { grid-template-columns: 1fr; } }
+
+/* -- Unused-data surfacing: injuries, NFL news, broadcast/odds caption,
+   -- standings context. All read fields already present in fetchNFLSummary's
+   -- response — no new fetch, no new endpoint. -- */
+.nlg-inj { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.nlg-inj-row { display: grid; grid-template-columns: 1.7rem 1fr auto 1fr; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.78rem; }
+.nlg-inj-status { font-weight: 800; color: var(--text-secondary); background: var(--bg-raised); border-radius: var(--radius-sm); text-align: center; font-size: 0.66rem; padding: 0.1rem 0; }
+.nlg-inj-name { color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nlg-inj-pos { color: var(--text-subtle); font-size: 0.68rem; }
+.nlg-inj-detail { color: var(--text-muted); font-size: 0.72rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.nlg-news { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.nlg-news-row { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.5rem; border-radius: var(--radius-sm); background: var(--bg-raised); color: inherit; text-decoration: none; }
+.nlg-news-row:hover { background: var(--bg-card-hover); }
+.nlg-news-headline { color: var(--text-primary); font-weight: 600; font-size: 0.8rem; }
+.nlg-news-meta { color: var(--text-subtle); font-size: 0.66rem; }
+
+.nlg-st-group { margin-bottom: 0.6rem; }
+.nlg-st-group:last-child { margin-bottom: 0; }
+.nlg-st-row { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.15rem 0; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+/* Border = identity (D-038 K2) — the playing team's row is marked by its own
+   team color on the border, matching .nlg-team's --tc pattern, not accent. */
+.nlg-st-row--playing { border-left: 2px solid var(--tc); margin-left: -0.4rem; padding-left: 0.4rem; background: var(--bg-raised); border-radius: var(--radius-sm); }
+.nlg-st-row--playing .nlg-st-team { font-weight: 800; }
+.nlg-st-team { font-weight: 700; color: var(--text-primary); }
+.nlg-st-rec { color: var(--text-secondary); text-align: right; }
+.nlg-st-pct { color: var(--text-subtle); text-align: right; }
