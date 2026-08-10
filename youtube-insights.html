@@ -12,7 +12,15 @@
   chain at all). Reached only via a private bookmarked URL of the form
   youtube-insights.html?key=YOUR_YOUTUBE_DASHBOARD_KEY — the key is read
   from the URL and sent as a header to /api/youtube, never stored.
-  See functions/api/youtube.js and DECISIONS.md D-083.
+  See functions/api/youtube.js and DECISIONS.md D-083/D-084.
+
+  D-084: added performance-pattern analysis (view velocity, retention,
+  subscriber efficiency, title-pattern tagging) — all computed client-side
+  from the same payload the Function already returns, no backend change.
+  Explicitly NOT a brand-voice/tone checker — owner confirmed the
+  clickbait/reaction title style is intentional for this channel, separate
+  from the site's "serious stats" brand, so this measures what performs
+  rather than flagging what "should" change.
 -->
 <link rel="stylesheet" href="/css/variables.css">
 <style>
@@ -24,9 +32,10 @@
         font-family: var(--font-sans);
         padding: 32px 20px 80px;
     }
-    .yti-wrap { max-width: 1100px; margin: 0 auto; }
+    .yti-wrap { max-width: 1200px; margin: 0 auto; }
     .yti-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 4px; }
     h1 { font-size: 1.4rem; margin: 0; }
+    h2 { font-size: 1rem; margin: 0 0 4px; }
     .yti-channel { color: var(--text-secondary); font-size: 0.9rem; }
     .yti-meta { color: var(--text-muted); font-size: 0.8rem; margin: 4px 0 24px; }
     .yti-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
@@ -40,15 +49,26 @@
         padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);
     }
     .yti-controls button:disabled { opacity: 0.5; cursor: default; }
+    .yti-section { margin-bottom: 32px; }
+    .yti-hint { color: var(--text-muted); font-size: 0.78rem; margin: 0 0 10px; max-width: 68ch; }
     table { width: 100%; border-collapse: collapse; background: var(--bg-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-card); }
     th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-default); font-size: 0.85rem; }
     th { color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    th.sortable:hover { color: var(--text-primary); }
+    th.sorted { color: var(--accent); }
     td.num { font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
     tr:last-child td { border-bottom: none; }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .yti-status { color: var(--text-muted); font-size: 0.9rem; padding: 40px 0; text-align: center; }
     .yti-status.err { color: var(--color-loss, #ff5a5a); }
+    .yti-scatter-wrap { background: var(--bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 12px; }
+    .yti-scatter-wrap svg { display: block; width: 100%; height: auto; }
+    .yti-dot { fill: var(--accent); fill-opacity: 0.65; }
+    .yti-dot.siren { fill: var(--color-loss, #ff5a5a); }
+    .yti-axis-label { fill: var(--text-muted); font-size: 10px; font-family: var(--font-sans); }
+    .yti-grid { stroke: var(--border-default); stroke-width: 1; }
 </style>
 </head>
 <body>
@@ -62,7 +82,7 @@
         <label for="ytiDays">Days</label>
         <input type="number" id="ytiDays" value="90" min="1" max="365">
         <label for="ytiLimit">Videos</label>
-        <input type="number" id="ytiLimit" value="25" min="1" max="200">
+        <input type="number" id="ytiLimit" value="100" min="1" max="200">
         <button id="ytiReload">Reload</button>
     </div>
     <div id="ytiBody"><div class="yti-status">Loading…</div></div>
@@ -84,6 +104,21 @@
         return;
     }
 
+    // NFL team name -> abbreviation, for lightweight title tagging. Matched as
+    // whole words, case-insensitive, first match wins. Not exhaustive of every
+    // possible nickname — good enough for a "what are we covering" signal.
+    const NFL_TEAMS = [
+        ['Cardinals','ARI'],['Falcons','ATL'],['Ravens','BAL'],['Bills','BUF'],
+        ['Panthers','CAR'],['Bears','CHI'],['Bengals','CIN'],['Browns','CLE'],
+        ['Cowboys','DAL'],['Broncos','DEN'],['Lions','DET'],['Packers','GB'],
+        ['Texans','HOU'],['Colts','IND'],['Jaguars','JAX'],['Chiefs','KC'],
+        ['Raiders','LV'],['Chargers','LAC'],['Rams','LAR'],['Dolphins','MIA'],
+        ['Vikings','MIN'],['Patriots','NE'],['Saints','NO'],['Giants','NYG'],
+        ['Jets','NYJ'],['Eagles','PHI'],['Steelers','PIT'],['49ers','SF'],
+        ['Niners','SF'],['Seahawks','SEA'],['Buccaneers','TB'],['Bucs','TB'],
+        ['Titans','TEN'],['Commanders','WAS'],
+    ];
+
     function esc(s) {
         return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
@@ -97,19 +132,198 @@
     function fmtPct(p) { return p == null ? '—' : `${Math.round(p)}%`; }
     function fmtNum(n) { return n == null ? '—' : Number(n).toLocaleString(); }
     function fmtSigned(n) { return n == null ? '—' : (n > 0 ? `+${n}` : String(n)); }
+    function fmt1(n) { return n == null ? '—' : n.toFixed(1); }
+
+    function computeTags(title) {
+        const hasSiren = title.includes('🚨');
+        const isBreaking = /\bBREAKING\b/i.test(title);
+        let hasEmoji = false;
+        try { hasEmoji = /\p{Extended_Pictographic}/u.test(title); } catch (e) { hasEmoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(title); }
+        const words = title.match(/[A-Za-z']{3,}/g) || [];
+        const capsWords = words.filter(w => w === w.toUpperCase());
+        const allCapsHeavy = capsWords.length >= 3;
+        let team = null;
+        for (const [name, abbr] of NFL_TEAMS) {
+            if (new RegExp('\\b' + name + '\\b', 'i').test(title)) { team = abbr; break; }
+        }
+        return { hasSiren, isBreaking, hasEmoji, allCapsHeavy, team };
+    }
+
+    // Enrich each video with derived, decision-useful metrics — none of this
+    // requires another API call, it's all computed from the payload already
+    // returned by /api/youtube.
+    function enrich(v, days) {
+        const published = new Date(v.publishedAt + 'T00:00:00Z');
+        const daysSince = Math.max(1, Math.floor((Date.now() - published.getTime()) / 86400000));
+        // windowedViews only covers the queried date range, so a video older
+        // than that range shouldn't have its full lifetime age used as the
+        // divisor — cap at `days`. A video newer than the range uses its
+        // actual (shorter) age.
+        const effectiveDays = Math.min(daysSince, days);
+        const velocity = v.windowedViews != null ? v.windowedViews / effectiveDays : null;
+        const subsPer1k = (v.subscribersNet != null && v.windowedViews) ? (v.subscribersNet / v.windowedViews) * 1000 : null;
+        return Object.assign({}, v, { daysSince, effectiveDays, velocity, subsPer1k, tags: computeTags(v.title) });
+    }
+
+    function aggregateByTag(videos) {
+        const groups = {};
+        function add(key, v) {
+            if (!groups[key]) groups[key] = { key, count: 0, velocitySum: 0, velocityN: 0, retSum: 0, retN: 0, subsSum: 0, subsN: 0 };
+            const g = groups[key];
+            g.count++;
+            if (v.velocity != null) { g.velocitySum += v.velocity; g.velocityN++; }
+            if (v.avgViewPercentage != null) { g.retSum += v.avgViewPercentage; g.retN++; }
+            if (v.subsPer1k != null) { g.subsSum += v.subsPer1k; g.subsN++; }
+        }
+        videos.forEach(v => {
+            add(v.tags.hasSiren ? '🚨 has siren emoji' : 'no siren emoji', v);
+            add(v.tags.isBreaking ? '"BREAKING"' : 'not "BREAKING"', v);
+            add(v.tags.allCapsHeavy ? 'caps-heavy title' : 'normal-case title', v);
+            if (v.tags.team) add('Team: ' + v.tags.team, v);
+        });
+        return Object.values(groups)
+            .filter(g => g.count >= 2)
+            .map(g => ({
+                key: g.key, count: g.count,
+                avgVelocity: g.velocityN ? g.velocitySum / g.velocityN : null,
+                avgRetention: g.retN ? g.retSum / g.retN : null,
+                avgSubsPer1k: g.subsN ? g.subsSum / g.subsN : null,
+            }))
+            .sort((a, b) => (b.avgVelocity ?? -1) - (a.avgVelocity ?? -1));
+    }
+
+    const COLUMNS = [
+        { key: 'title', label: 'Video', sortable: false },
+        { key: 'publishedAt', label: 'Published', sortable: true },
+        { key: 'durationSeconds', label: 'Duration', sortable: true },
+        { key: 'velocity', label: 'Views/day', sortable: true },
+        { key: 'windowedViews', label: 'Views (window)', sortable: true },
+        { key: 'avgViewPercentage', label: 'Avg view %', sortable: true },
+        { key: 'subsPer1k', label: 'Subs/1k views', sortable: true },
+        { key: 'lifetimeViews', label: 'Lifetime views', sortable: true },
+        { key: 'lifetimeLikes', label: 'Likes', sortable: true },
+    ];
+
+    let sortState = { key: 'velocity', dir: 'desc' };
+    let currentVideos = [];
+
+    function sortVideos(videos) {
+        const { key, dir } = sortState;
+        const mul = dir === 'desc' ? -1 : 1;
+        return videos.slice().sort((a, b) => {
+            const av = a[key], bv = b[key];
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            if (av < bv) return -1 * mul;
+            if (av > bv) return 1 * mul;
+            return 0;
+        });
+    }
+
+    function renderScatter(videos) {
+        const pts = videos.filter(v => v.velocity != null && v.avgViewPercentage != null);
+        if (pts.length < 3) return '';
+        const W = 760, H = 300, padL = 44, padR = 16, padT = 12, padB = 30;
+        const maxV = Math.max(...pts.map(p => p.velocity));
+        const maxLogV = Math.log10(maxV + 1);
+        const maxRet = Math.min(200, Math.max(100, Math.ceil(Math.max(...pts.map(p => p.avgViewPercentage)) / 10) * 10));
+        const x = v => padL + (Math.log10(v + 1) / (maxLogV || 1)) * (W - padL - padR);
+        const y = r => H - padB - (Math.min(r, maxRet) / maxRet) * (H - padT - padB);
+
+        const gridLines = [0.25, 0.5, 0.75, 1].map(f => {
+            const yy = padT + f * (H - padT - padB);
+            const label = Math.round(maxRet * (1 - f));
+            return `<line class="yti-grid" x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}"/><text class="yti-axis-label" x="4" y="${yy + 3}">${label}%</text>`;
+        }).join('');
+
+        const dots = pts.map(p => {
+            const cls = p.tags.hasSiren ? 'yti-dot siren' : 'yti-dot';
+            const title = `${p.title} — ${Math.round(p.velocity)} views/day, ${Math.round(p.avgViewPercentage)}% retention`;
+            return `<circle class="${cls}" cx="${x(p.velocity).toFixed(1)}" cy="${y(p.avgViewPercentage).toFixed(1)}" r="4"><title>${esc(title)}</title></circle>`;
+        }).join('');
+
+        return `
+            <div class="yti-scatter-wrap">
+                <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+                    ${gridLines}
+                    <text class="yti-axis-label" x="${padL}" y="${H - 6}">low views/day</text>
+                    <text class="yti-axis-label" x="${W - padR - 90}" y="${H - 6}">high views/day (log scale)</text>
+                    ${dots}
+                </svg>
+            </div>`;
+    }
+
+    function renderPatterns(videos) {
+        const groups = aggregateByTag(videos);
+        if (!groups.length) return '';
+        const rows = groups.map(g => `
+            <tr>
+                <td>${esc(g.key)}</td>
+                <td class="num">${g.count}</td>
+                <td class="num">${g.avgVelocity != null ? fmt1(g.avgVelocity) : '—'}</td>
+                <td class="num">${g.avgRetention != null ? fmtPct(g.avgRetention) : '—'}</td>
+                <td class="num">${g.avgSubsPer1k != null ? fmt1(g.avgSubsPer1k) : '—'}</td>
+            </tr>`).join('');
+        return `
+            <table>
+                <thead><tr>
+                    <th>Title pattern</th><th>Videos</th><th>Avg views/day</th><th>Avg retention</th><th>Avg subs/1k views</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function renderTable(videos) {
+        const sorted = sortVideos(videos);
+        const headerCells = COLUMNS.map(c => {
+            if (!c.sortable) return `<th>${c.label}</th>`;
+            const isSorted = sortState.key === c.key;
+            const arrow = isSorted ? (sortState.dir === 'desc' ? ' ↓' : ' ↑') : '';
+            return `<th class="sortable${isSorted ? ' sorted' : ''}" data-key="${c.key}">${c.label}${arrow}</th>`;
+        }).join('');
+        const rows = sorted.map(v => `
+            <tr>
+                <td><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></td>
+                <td class="num">${esc(v.publishedAt)}</td>
+                <td class="num">${fmtDuration(v.durationSeconds)}</td>
+                <td class="num">${v.velocity != null ? fmt1(v.velocity) : '—'}</td>
+                <td class="num">${fmtNum(v.windowedViews)}</td>
+                <td class="num">${fmtPct(v.avgViewPercentage)}</td>
+                <td class="num">${v.subsPer1k != null ? fmt1(v.subsPer1k) : '—'}</td>
+                <td class="num">${fmtNum(v.lifetimeViews)}</td>
+                <td class="num">${fmtNum(v.lifetimeLikes)}</td>
+            </tr>`).join('');
+        return `
+            <table id="ytiTable">
+                <thead><tr>${headerCells}</tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function renderAll() {
+        bodyEl.querySelector('#ytiTableSection').innerHTML = renderTable(currentVideos);
+        bodyEl.querySelectorAll('#ytiTable th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const k = th.dataset.key;
+                if (sortState.key === k) sortState.dir = sortState.dir === 'desc' ? 'asc' : 'desc';
+                else sortState = { key: k, dir: 'desc' };
+                renderAll();
+            });
+        });
+    }
 
     async function load() {
         reloadBtn.disabled = true;
         bodyEl.innerHTML = '<div class="yti-status">Loading…</div>';
-        const days = daysInput.value || 90;
-        const limit = limitInput.value || 25;
+        const days = Number(daysInput.value) || 90;
         try {
-            const res = await fetch(`/api/youtube?days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limit)}`, {
+            const res = await fetch(`/api/youtube?days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limitInput.value || 100)}`, {
                 headers: { 'X-YouTube-Dashboard-Key': key },
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-            render(data);
+            render(data, days);
         } catch (err) {
             bodyEl.innerHTML = `<div class="yti-status err">${esc(err.message || String(err))}</div>`;
         } finally {
@@ -117,7 +331,7 @@
         }
     }
 
-    function render(data) {
+    function render(data, days) {
         const handle = data.channel.customUrl ? ` (${esc(data.channel.customUrl)})` : '';
         channelEl.textContent = `${data.channel.title}${handle}`;
         metaEl.textContent = `${data.range.start} to ${data.range.end} · generated ${new Date(data.generatedAt).toLocaleString()}`;
@@ -127,26 +341,29 @@
             return;
         }
 
-        const rows = data.videos.map(v => `
-            <tr>
-                <td><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></td>
-                <td class="num">${esc(v.publishedAt)}</td>
-                <td class="num">${fmtDuration(v.durationSeconds)}</td>
-                <td class="num">${fmtNum(v.windowedViews)}</td>
-                <td class="num">${fmtPct(v.avgViewPercentage)}</td>
-                <td class="num">${fmtSigned(v.subscribersNet)}</td>
-                <td class="num">${fmtNum(v.lifetimeViews)}</td>
-                <td class="num">${fmtNum(v.lifetimeLikes)}</td>
-            </tr>`).join('');
+        currentVideos = data.videos.map(v => enrich(v, days));
+        const scatterHtml = renderScatter(currentVideos);
+        const patternsHtml = renderPatterns(currentVideos);
 
         bodyEl.innerHTML = `
-            <table>
-                <thead><tr>
-                    <th>Video</th><th>Published</th><th>Duration</th><th>Views (window)</th>
-                    <th>Avg view %</th><th>Subs +/-</th><th>Lifetime views</th><th>Likes</th>
-                </tr></thead>
-                <tbody>${rows}</tbody>
-            </table>`;
+            ${scatterHtml ? `
+            <div class="yti-section">
+                <h2>Reach vs. retention</h2>
+                <p class="yti-hint">Each dot is a video. Right = getting seen (views/day since publish, log scale). Up = holding attention once clicked (average view %). Bottom-right = hyped but not retaining; top-left = genuinely engaging but under-promoted; top-right is what to make more of. Red dots use the 🚨 emoji.</p>
+                ${scatterHtml}
+            </div>` : ''}
+            ${patternsHtml ? `
+            <div class="yti-section">
+                <h2>What's working</h2>
+                <p class="yti-hint">Average performance grouped by title pattern and team covered — only groups with 2+ videos shown. This is what to make more (or less) of, not a style guide.</p>
+                ${patternsHtml}
+            </div>` : ''}
+            <div class="yti-section">
+                <h2>All videos</h2>
+                <p class="yti-hint">Click a column header to sort. "Views/day" and "Subs/1k views" are the two figures that best separate a video that grew the channel from one that just spiked.</p>
+                <div id="ytiTableSection"></div>
+            </div>`;
+        renderAll();
     }
 
     reloadBtn.addEventListener('click', load);
