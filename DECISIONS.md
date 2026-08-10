@@ -1195,7 +1195,7 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 ---
 
 ## D-052 — Next league expansion candidate: Men's College Basketball over NBA/NHL revival or net-new sports
-**Status:** ratified 2026-08-10 — scope + phasing drafted below, P1 in progress
+**Status:** ratified 2026-08-10 — P1 (registry) + P2/P3 (data layer, Scores/Standings/Teams/Rankings) shipped, live-verify pending. P4 (player leaders/detail) deferred.
 **Contributors:** Vera (JTBD), Kael (visual fit), Axiom (feasibility), Relay (data contract), Cipher (surface check)
 **Date opened:** 2026-07-31 | **Date resolved:** —
 
@@ -1242,6 +1242,12 @@ NBA/NHL revival and soccer remain real options but are more expensive than their
 **Sequencing:** (P1) `SPORTS` registry entry — trivial, single data object, in progress this session. (P2) NCAAB data layer — `functions/api/ncaab.js` proxy clone + `js/ncaab.js` season model + Scores view. (P3) Standings/Teams/Rankings views. (P4, deferred) player leaders/detail, pending a live data-depth check same as D-044 ran for NCAAF.
 
 **Gates:** Vera (JTBD/states — mirrors NCAAF's, offseason/preseason states per the real Nov–Apr window above), Kael (visual — confirmed no new visual language needed, direct reuse of NCAAF's conference-grouped grammar), Axiom (registry entry + proxy-clone architecture, phasing above), Relay (live endpoint check above — closed for scoreboard/rankings/standings existence; exact shape confirmation deferred to P2/P3 build time), Cipher (Resolution 4, closed).
+
+**D-052 update 2026-08-10 — P1/P2/P3 shipped:** `functions/api/ncaab.js` (proxy clone of `ncaaf.js`, host-swapped to `site.web.api.espn.com/.../basketball/mens-college-basketball`) and `functions/api/ncaabstandings.js` (clone of `ncaafstandings.js` — same `site.api` stub workaround NCAAF hit, same recursive conference/division collector, no special-casing needed since basketball's flatter conference tree just returns fewer nesting levels). `js/ncaab.js`: `NCAAB_SEASON` model (in-season Nov–Apr; discovered live that ESPN labels a CBB season by its **end** year — "2026-27" reports `season.year: 2027` — the opposite convention from NCAAF's start-year labeling, confirmed against the real scoreboard payload before writing the season-detect logic, not assumed), Scores (offseason-aware, 🏀 glyph), Standings (conference-grouped, season selector), Teams (conference chip grid, **display-only — no click-through**, since team detail is P4-deferred and a dead link would be worse than no link), Rankings (AP/Coaches, no FBS-style poll filtering needed since CBB's rankings endpoint doesn't carry the FCS/Div-II noise football's does). Leaders and player/team detail deliberately not built — matches the ratified P4 deferral.
+
+Wired into `js/navigation.js` (dispatch, `_loadFromHash` matchers, sub-nav/menu/bottom-nav tab arrays, `_PAGE_META` entries) and `js/app.js` (`_SPORT_LANDING.ncaab` — 4 cards, no leaders card since deferred; `_sportPickerStatus('ncaab')` — Nov–Apr active). `ncaab` added to the visible `SPORTS` list (was deliberately held back in P1) now that its Scores view actually exists. `index.html` + `sw.js` STATIC_ASSETS updated (SW v161→v162).
+
+**Verified:** `node --check` clean on all 5 touched/new JS files; NUL scan clean; `check-manifest.cjs` green (57 index.html assets + 51 SW assets, in sync); `check-themes.cjs --strict` shows only the 2 pre-existing unrelated warnings; full unit suite 48/48. Season-model boundary logic (Nov/Apr in-season, May-Oct offseason, end-year labeling) spot-checked against 6 dates including the real 2026-11-02 season-start and 2027-04-07 championship-week dates from the live payload — correct. **Not done — live-verify:** haven't loaded the deployed site to confirm the sport switcher shows NCAAB, the Scores page renders its offseason state correctly (today, 2026-08-10, is inside the May–Oct offseason window), and Standings/Teams/Rankings render real conference data once in-season data exists to check against.
 
 ---
 

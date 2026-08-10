@@ -69,6 +69,14 @@ const _SPORT_LANDING = {
         ['ncaaf-standings', 'table', 'Standings', 'Every conference, one page'],
         ['ncaaf-leaders', 'bars', 'Leaders', 'Passing · rushing · receiving · defense'],
         ['ncaaf-scores', 'scores', 'Scores', 'Top 25 scoreboard'] ] },
+    // D-052: player leaders/detail deferred, so only 3 real cards — a 4th slot
+    // pointing at Teams keeps the grid's usual 4-card rhythm without implying
+    // a player surface exists yet.
+    ncaab: { tag: 'College basketball, every conference — free, no login.', cards: [
+        ['ncaab-rankings', 'trophy', 'Rankings', 'AP · Coaches polls'],
+        ['ncaab-standings', 'table', 'Standings', 'Every conference, one page'],
+        ['ncaab-scores', 'scores', 'Scores', 'Live scoreboard'],
+        ['ncaab-teams', 'player', 'Teams', 'Browse by conference'] ] },
 };
 
 // NFL landing seasonal line (D-045 said "one hero + seasonal line" but the line was a
@@ -1626,6 +1634,8 @@ function _sportPickerStatus(id) {
     if (id === 'ncaaf') { if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
                           if (m === 8)           return { cls: 'active', label: 'Kicks off soon' };
                           return { cls: 'idle', label: 'Preview · starts Aug' }; }
+    if (id === 'ncaab') { if (m <= 4 || m >= 11)  return { cls: 'active', label: 'Season underway' };
+                          return { cls: 'idle', label: 'Preview · starts Nov' }; }
     return { cls: 'idle', label: 'Explore' };
 }
 

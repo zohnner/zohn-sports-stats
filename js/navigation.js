@@ -113,6 +113,7 @@ function setupNavigation() {
             const sportFromView = s.view.startsWith('mlb-') ? 'mlb'
                 : s.view.startsWith('nfl-') ? 'nfl'
                 : s.view.startsWith('ncaaf-') ? 'ncaaf'
+                : s.view.startsWith('ncaab-') ? 'ncaab'
                 : s.view.startsWith('nhl-') ? 'nhl'
                 : 'nba';
             if (AppState.currentSport !== sportFromView) {
@@ -277,6 +278,13 @@ function switchSport(sport) {
                 if (typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
             }).catch(() => {});
         }
+    } else if (sport === 'ncaab') {
+        if (typeof fetchNCAABScoreboard === 'function') {
+            fetchNCAABScoreboard().then(games => {
+                AppState.ncaabGames = games;
+                if (typeof updateNCAABTicker === 'function') updateNCAABTicker(games);
+            }).catch(() => {});
+        }
     }
 
     navigateTo(cfg.defaultView);
@@ -331,6 +339,11 @@ const _NAV_META = {
     'ncaaf-leaders':   { label: 'CFB Leaders',       icon: '🏈' },
     'mlb-home':        { label: 'MLB',               icon: '⚾' },
     'ncaaf-home':      { label: 'College Football',  icon: '🏈' },
+    'ncaab-scores':    { label: 'College Scores',    icon: '🏀' },
+    'ncaab-standings': { label: 'College Standings', icon: '📊' },
+    'ncaab-teams':     { label: 'College Teams',     icon: '🏀' },
+    'ncaab-rankings':  { label: 'CBB Rankings',      icon: '🏆' },
+    'ncaab-home':      { label: 'College Basketball', icon: '🏀' },
     'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
 
@@ -373,7 +386,7 @@ function renderCurrentView(view) {
     document.body.classList.toggle('view-home', view === 'home');
 
     // Sport landing pages (D-045) — clean per-sport home
-    const _homeMatch = view.match(/^(mlb|nfl|ncaaf)-home$/);
+    const _homeMatch = view.match(/^(mlb|nfl|ncaaf|ncaab)-home$/);
     if (_homeMatch && typeof _renderSportLanding === 'function') { _renderSportLanding(_homeMatch[1]); return; }
 
     // Account management (D-031) — sport-agnostic, same pattern as the home dispatch above
@@ -387,6 +400,7 @@ function renderCurrentView(view) {
     if (view.startsWith('nfl-')) { _renderNFLView(view); return; }
     if (view.startsWith('nhl-')) { _renderNHLView(view); return; }
     if (view.startsWith('ncaaf-')) { _renderNCAAFView(view); return; }
+    if (view.startsWith('ncaab-')) { _renderNCAABView(view); return; }
 
     // NBA views
     const viewCount = document.getElementById('viewResultCount');
@@ -865,7 +879,7 @@ function _loadFromHash() {
             AppState.currentSport = 'ncaaf';
             if (typeof _applySportUI === 'function') _applySportUI('ncaaf');
             navigateTo(_r); return;
-        } else if (/^(mlb|nfl|nhl|ncaaf)-[a-z]+$/.test(_r)) {
+        } else if (/^(mlb|nfl|nhl|ncaaf|ncaab)-[a-z]+$/.test(_r)) {
             const _sp = _r.split('-')[0];
             AppState.currentSport = _sp;
             if (typeof _applySportUI === 'function') _applySportUI(_sp);
@@ -958,6 +972,7 @@ function _loadFromHash() {
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
+        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -974,6 +989,10 @@ function _loadFromHash() {
         } else if (ncaafViews.includes(hash)) {
             AppState.currentSport = 'ncaaf';
             _applySportUI('ncaaf');
+            navigateTo(hash, false);
+        } else if (ncaabViews.includes(hash)) {
+            AppState.currentSport = 'ncaab';
+            _applySportUI('ncaab');
             navigateTo(hash, false);
         } else if (hash === 'account' || hash === 'dashboard') {
             // Mobile audit fix (2026-08-09): these sport-agnostic account-system views
@@ -1029,6 +1048,13 @@ const SUB_NAV_TABS = {
         { v: 'ncaaf-teams', l: 'Teams' },
         { v: 'ncaaf-rankings', l: 'Rankings' },
         { v: 'ncaaf-leaders', l: 'Leaders' },
+        { v: 'news', l: 'News' },
+    ],
+    ncaab: [
+        { v: 'ncaab-scores', l: 'Scores' },
+        { v: 'ncaab-standings', l: 'Standings' },
+        { v: 'ncaab-teams', l: 'Teams' },
+        { v: 'ncaab-rankings', l: 'Rankings' },
         { v: 'news', l: 'News' },
     ],
 };
@@ -1127,6 +1153,12 @@ const MENU_TABS = {
         { v:'ncaaf-teams', l:'Teams', i:'teams' }, { v:'ncaaf-rankings', l:'Rankings', i:'leaders' },
         { v:'ncaaf-leaders', l:'Leaders', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
+    ncaab: [
+        { group:'College Basketball' },
+        { v:'ncaab-scores', l:'Scores', i:'scores' }, { v:'ncaab-standings', l:'Standings', i:'standings' },
+        { v:'ncaab-teams', l:'Teams', i:'teams' }, { v:'ncaab-rankings', l:'Rankings', i:'leaders' },
+        { v:'news', l:'News', i:'extra' },
+    ],
 };
 
 function _renderMenuPanel(sport) {
@@ -1158,6 +1190,11 @@ const BOTTOM_NAV_TABS = {
         { v: 'ncaaf-leaders', l: 'Leaders', i: 'leaders' }, { v: 'ncaaf-teams', l: 'Teams', i: 'teams' },
         { more: true, l: 'More', i: 'extra' },
     ],
+    ncaab: [
+        { v: 'ncaab-scores', l: 'Scores', i: 'scores' }, { v: 'ncaab-standings', l: 'Standings', i: 'standings' },
+        { v: 'ncaab-rankings', l: 'Rankings', i: 'leaders' }, { v: 'ncaab-teams', l: 'Teams', i: 'teams' },
+        { more: true, l: 'More', i: 'extra' },
+    ],
 };
 
 function _renderBottomNav(sport) {
@@ -1187,8 +1224,9 @@ const SPORTS_META = {
     ncaab: { id: 'ncaab', label: 'NCAAB', icon: '🏀', sub: 'College Basketball', defaultView: 'ncaab-home', accent: '#d97706' },
 };
 // Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
-// ncaab joins this list in P2, once its data layer + Scores view actually exist.
-const SPORTS = ['mlb', 'nfl', 'ncaaf'].map(id => SPORTS_META[id]);
+// ncaab added here in P2 (D-052) — its data layer (functions/api/ncaab.js, js/ncaab.js) and
+// Scores/Standings/Teams/Rankings views now exist, so it's safe to surface.
+const SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab'].map(id => SPORTS_META[id]);
 
 function _renderSportSwitch(sport) {
     const wrap = document.getElementById('sportSwitch') || document.querySelector('.sport-switch');
@@ -1258,6 +1296,10 @@ const _PAGE_META = {
     'news':          { title: 'SportStrata — News',           desc: 'Latest NFL and MLB headlines, injuries, and storylines.' },
     'nfl-sos':       { title: 'SportStrata — NFL Strength of Schedule', desc: 'Fantasy strength of schedule by position, weighted for the fantasy playoffs.' },
     'nfl-highlight-card': { title: 'SportStrata — NFL Highlight Card Studio', desc: 'Build an animated, shareable highlight card for any player from a recent NFL game.' },
+    'ncaab-scores':    { title: 'SportStrata — College Basketball Scores',    desc: 'Live NCAA men\'s basketball scores and today\'s scoreboard.' },
+    'ncaab-standings': { title: 'SportStrata — College Basketball Standings', desc: 'NCAA men\'s basketball standings by conference.' },
+    'ncaab-teams':     { title: 'SportStrata — College Basketball Teams',     desc: 'Browse NCAA men\'s basketball teams by conference.' },
+    'ncaab-rankings':  { title: 'SportStrata — College Basketball Rankings',  desc: 'AP and Coaches Poll Top 25 for NCAA men\'s basketball.' },
 };
 
 function _updatePageMeta(view) {

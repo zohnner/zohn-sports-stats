@@ -1513,7 +1513,7 @@ To keep this backlog focused on **open** work, the following shipped/historical 
 - D-044 — Cross-sport frame parity (player + team detail + chrome) — GATED, phased (specs in DECISIONS.md D-044)
 - D-045 — Path-URL SEO foundation + per-sport landing pages — GATED, phased (specs in DECISIONS.md D-045)
 - D-046 — Homepage overhaul (analytics-first landing) — GATED, phased (specs in DECISIONS.md D-046 + docs/landing-page-gap-analysis.md)
-- D-052 — Men's College Basketball (NCAAB) as a 4th sport — ratified 2026-08-10, phased (specs in DECISIONS.md D-052); P1 (SPORTS registry entry) shipped, P2 (data layer + Scores view) not started
+- D-052 — Men's College Basketball (NCAAB) as a 4th sport — ratified 2026-08-10, phased (specs in DECISIONS.md D-052); P1/P2/P3 shipped (Scores/Standings/Teams/Rankings, live-verify pending), P4 (player leaders/detail) deferred
 
 ---
 
