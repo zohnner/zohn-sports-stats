@@ -14,6 +14,13 @@ X_ACCESS_TOKEN_SECRET = os.environ.get("X_ACCESS_TOKEN_SECRET")
 # Used to construct links in tweet templates
 SPORTSTRATA_URL = os.getenv("SPORTSTRATA_URL", "https://sportstrata.cc")
 
+# ── YouTube Analytics (youtube_stats.py) ────────────────────────
+# Set these in .env — never commit values. See youtube_stats.py's docstring
+# for the one-time OAuth setup needed to get a refresh token.
+YOUTUBE_CLIENT_ID     = os.environ.get("YOUTUBE_CLIENT_ID")
+YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET")
+YOUTUBE_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN")
+
 # ── Database ───────────────────────────────────────────────────
 DB_PATH = os.getenv("DB_PATH", "bot.db")
 

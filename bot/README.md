@@ -90,10 +90,32 @@ Downloaded play-by-play and tracking data are pickle-cached under `nfl_cache/`
 tracking data can't be fetched or a game/play isn't found, it falls back to a
 labeled synthetic play rather than failing silently.
 
+## YouTube video performance report
+
+`youtube_stats.py` pulls your recent uploads plus key performance metrics (windowed
+views, average view %, subscribers gained/lost, plus lifetime views/likes) into a
+plain markdown report — so you can see what's actually working before deciding what
+to post next. Local only: no server, no schedule, no live-site changes. It reads,
+never writes anything to YouTube.
+
+```bash
+cd bot
+python youtube_stats.py                  # last 90 days, top 25 videos
+python youtube_stats.py --days 30
+```
+
+Reports land in `reports/{date}.md` (gitignored). Requires a one-time OAuth setup —
+see the step-by-step instructions in the script's own docstring, and put the three
+resulting values (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`,
+`YOUTUBE_REFRESH_TOKEN`) in `bot/.env`, never committed. If the Analytics API call
+fails for any reason, the report still ships with lifetime view/like counts from the
+Data API rather than failing outright.
+
 ## Files
 | File | Purpose |
 |---|---|
 | `digest.py` | **The tool** — builds the daily draft-post digest |
+| `youtube_stats.py` | Video performance report — see above |
 | `fun_facts.py` | Evergreen fun-fact rotation |
 | `data_fetcher.py` | MLB Stats API: finals + boxscores (free, no auth) |
 | `stat_analyzer.py` | Rare-event / unprecedented detection |

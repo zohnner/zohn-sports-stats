@@ -1835,9 +1835,9 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 ---
 
-## D-082 — YouTube Channel Analytics Dashboard — owner-gated internal route, scoped
+## D-082 — YouTube Channel Analytics Dashboard — descoped to a local script
 
-**Status:** scoped, not yet implemented
+**Status:** shipped, small — see amendment below (original live-dashboard scope withdrawn, not built)
 **Contributors:** Vera (behavioral), Kael (visual), Axiom (feasibility)
 **Date opened:** 2026-08-09 | **Date resolved:** open
 
@@ -1852,3 +1852,5 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Quota checked live, not assumed (2026-08-09):** YouTube Data API v3's free tier is 10,000 units/day; the Analytics API carries its own separate quota pool. A once-daily pull for a single channel is nowhere near either ceiling — not a real constraint here.
 
 **Next concrete action:** implement the D1 schema, sync Worker, and gated Function/view now — none of that depends on the refresh token existing to be written. Final verification against real data waits on the owner completing the OAuth Playground bootstrap step.
+
+**Amended 2026-08-09 — owner pushback, scope corrected same day.** Owner's actual want was "get key metrics from our YouTube to gain insight into what to post" — a one-off reporting need, not a permanent product feature. The D1 table / cron Worker / gated route / three-gate spec above was sized for the wrong problem: that's the right amount of ceremony for a live site feature other personas need to coordinate around, not for an internal report only the owner will ever run. **Withdrawn:** the live-dashboard architecture in this entry — no D1 table, no cron Worker, no gated route, no new site-facing surface. **Shipped instead:** `bot/youtube_stats.py`, same shape as the existing `digest.py` — run locally, pulls recent videos + windowed performance (views, avg view %, subscribers gained/lost) via the YouTube Data + Analytics APIs, writes a markdown report to `bot/reports/{date}.md`. Zero live-site footprint. The OAuth2-consent requirement named above doesn't go away — that's a Google API requirement regardless of architecture — but the three credentials now live in `bot/.env` (gitignored) instead of Cloudflare secrets, since nothing is deployed. The ISSUES.md three-gate entry for this is removed as no longer accurate; this amendment is the record of why the direction changed.
