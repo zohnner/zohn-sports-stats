@@ -1174,14 +1174,20 @@ function _renderBottomNav(sport) {
 // Data-driven sport switcher (D-026) — add a sport by adding one entry here.
 // Only functional sports are listed: NBA waits on P1-006 (BDL key), NHL on
 // promotion from preview — surfacing a broken sport tab is worse than omitting it.
+// ncaab (D-052, ratified 2026-08-10): registry entry added as P1 — a pure enabler,
+// deliberately NOT yet in the ordered SPORTS list below, so it stays invisible in
+// the switcher/picker band until its data layer (functions/api/ncaab.js, js/ncaab.js,
+// Scores view) ships in P2. Same phasing discipline D-042 used for NCAAF.
 const SPORTS_META = {
     nba:   { id: 'nba',   label: 'NBA',   icon: '🏀', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
     mlb:   { id: 'mlb',   label: 'MLB',   icon: '⚾', sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
     nfl:   { id: 'nfl',   label: 'NFL',   icon: '🏈', sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
     nhl:   { id: 'nhl',   label: 'NHL',   icon: '🏒', sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
     ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: '🏈', sub: 'College Football', defaultView: 'ncaaf-home',   accent: '#c8452b' },
+    ncaab: { id: 'ncaab', label: 'NCAAB', icon: '🏀', sub: 'College Basketball', defaultView: 'ncaab-home', accent: '#d97706' },
 };
 // Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
+// ncaab joins this list in P2, once its data layer + Scores view actually exist.
 const SPORTS = ['mlb', 'nfl', 'ncaaf'].map(id => SPORTS_META[id]);
 
 function _renderSportSwitch(sport) {

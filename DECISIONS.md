@@ -1195,7 +1195,7 @@ The "sport-agnostic hub" is adopted **as a synthesis with the barbell, not a rep
 ---
 
 ## D-052 — Next league expansion candidate: Men's College Basketball over NBA/NHL revival or net-new sports
-**Status:** proposed — owner ratification pending
+**Status:** ratified 2026-08-10 — scope + phasing drafted below, P1 in progress
 **Contributors:** Vera (JTBD), Kael (visual fit), Axiom (feasibility), Relay (data contract), Cipher (surface check)
 **Date opened:** 2026-07-31 | **Date resolved:** —
 
@@ -1226,6 +1226,22 @@ NBA/NHL revival and soccer remain real options but are more expensive than their
 **Nothing implements from this entry.** Per G6 and standing team protocol, sport-scope expansion is an owner decision. If ratified, this becomes a D-042-style entry: Vera/Kael/Axiom/Relay gates drafted in ISSUES.md before Finn touches anything, phased the same way (registry-safe slice → data layer → views → front-door placement).
 
 **Next:** owner ratifies (or redirects) scope; if College Basketball is chosen, gates get drafted in ISSUES.md following the D-042 template before any implementation begins.
+
+**D-052 update 2026-08-10 — ratified after an NBA-specific detour.** Owner asked directly about reviving NBA first; before building anything, that ask was checked against this entry rather than treated as new ground. Confirmed still accurate: no `functions/api/nba.js` proxy exists, `nba` is not in the `SPORTS` registry (`js/navigation.js` — `mlb`/`nfl`/`ncaaf` only), and `js/api.js`'s BDL `/stats` endpoint (season averages, game logs) still 401s on the free tier. Nothing has changed since this entry was written. Owner reviewed the full candidate comparison above and confirmed: proceed with Men's College Basketball as scoped, per the team's original recommendation.
+
+**Resolution 1 — scope (Relay + Vera).** Mirrors D-042's NCAAF Phase 1 exactly: **Scores, Standings (conference-grouped), Teams, Rankings (AP Top 25 + Coaches Poll).** Player leaders/detail deferred pending the same data-quality check NCAAF ran under D-044 — worth being honest that NCAAF's own "too sparse" assumption turned out wrong once actually checked (ESPN's core API had full leader + roster data by ID), so NCAAB's deferral should get the same live check early rather than being assumed permanent. Season model: new `NCAAB_SEASON` in `js/ncaab.js`, auto-detecting Nov–Apr (confirmed against the live ESPN scoreboard payload: 2026-27 season window is 2026-07-13 through 2027-04-07, with the actual game calendar starting 2026-11-02 — governing-body preseason dates bracket the window but the real season is Nov→early-Apr, matching D-052's original calendar-gap argument almost exactly).
+
+**Resolution 2 — architecture (Axiom).** Genuinely cheaper than NCAAF was, because the `SPORTS` registry and the ESPN-proxy pattern already exist (D-042 built both) — NCAAB needs a registry *entry*, not a registry. Plan: add `ncaab` to `SPORTS_META`/`SPORTS` in `js/navigation.js`; clone `functions/api/ncaaf.js` → `functions/api/ncaab.js` (host swap to `site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball`); clone `js/ncaaf.js`'s pattern → `js/ncaab.js` (season model + Scores/Standings/Teams/Rankings renderers); reuse `.standings-*` conference-grouped components verbatim (NCAAB has ~32 conferences vs. NCAAF's ~11 — same recursive-conference-tree collector NCAAF's `ncaafstandings.js` already handles, not new logic); reuse `detailFrame.js` later if/when player detail is added.
+
+**Resolution 3 — front door (Kael + Vera).** NCAAB slots into the existing sport-picker band as a 4th registry-driven card — no new component. Open question, not resolved here: does NCAAB ever earn the seasonal *hero* slot (currently MLB/NFL only, D-077) during its Dec–March peak, especially March Madness — or does it stay picker-band-only indefinitely? Flagged for Kael/Vera to decide during front-door implementation, not assumed in this scope decision.
+
+**Resolution 4 — security (Cipher).** No new CSP surface — NCAAB rides the exact same already-allowlisted hosts as NFL/NCAAF (`site.api.espn.com`, `a.espncdn.com`). Inherits `_middleware.js` rate limiting by living under `/api/`.
+
+**Relay's live endpoint check (2026-08-10, before any code written):** confirmed all three data sources return real, populated data, not stubs — `.../basketball/mens-college-basketball/scoreboard` returns the identical shape to NFL/NCAAF scoreboards (events → competitions → competitors → team objects with logo/color/conferenceId); the rankings endpoint and the `site.web.api` standings endpoint (the non-stub path NCAAF's own standings had to switch to, per D-042's Relay note) both returned large, real payloads on the first request. Exact field-level shape (conference nesting depth, poll structure) not fully mapped yet — same "build defensively, confirm against the real deployed payload" approach that caught NCAAF's Sun Belt nested-division quirk after the fact, not before.
+
+**Sequencing:** (P1) `SPORTS` registry entry — trivial, single data object, in progress this session. (P2) NCAAB data layer — `functions/api/ncaab.js` proxy clone + `js/ncaab.js` season model + Scores view. (P3) Standings/Teams/Rankings views. (P4, deferred) player leaders/detail, pending a live data-depth check same as D-044 ran for NCAAF.
+
+**Gates:** Vera (JTBD/states — mirrors NCAAF's, offseason/preseason states per the real Nov–Apr window above), Kael (visual — confirmed no new visual language needed, direct reuse of NCAAF's conference-grouped grammar), Axiom (registry entry + proxy-clone architecture, phasing above), Relay (live endpoint check above — closed for scoreboard/rankings/standings existence; exact shape confirmation deferred to P2/P3 build time), Cipher (Resolution 4, closed).
 
 ---
 
