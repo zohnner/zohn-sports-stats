@@ -71,6 +71,17 @@
 }
 .ticker__item:hover { background: var(--bg-subtle); }
 
+/* League glyph — same recipe as .hgc-glyph in main.css (muted inline mark, not a
+   colored badge; border=identity/badge=state discipline stays). Home's cross-sport
+   ticker (ISSUES.md "Home — Cross-sport score ticker") is the reason this exists,
+   shown on every ticker item for one consistent rendering path. */
+.ticker-glyph {
+    font-size: 0.72rem;
+    line-height: 1;
+    opacity: 0.55;
+    filter: grayscale(1);
+}
+
 /* Team logos inside ticker */
 .ticker-logo {
     width: 18px;

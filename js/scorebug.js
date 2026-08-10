@@ -162,15 +162,22 @@
     }
 
     // ── Builder: ticker item (reproduces the .ticker__item anatomy) ──
+    // League glyph (Home cross-sport ticker, ISSUES.md "Home — Cross-sport score
+    // ticker"): renderScoreCard already had this via _leagueGlyph for the same
+    // scan-by-league reason; the ticker needs it at least as much since items
+    // carry less context. Shipped on every item, not just a mixed view — one
+    // rendering path, no view-aware branching in the builder itself.
     function renderTickerItem(m) {
         const itemCls = m.status === 'live' ? ' ticker__item--live' : m.status === 'final' ? ' ticker__item--final' : '';
         const pillLbl = m.status === 'final' ? 'F' : m.status === 'live' ? m.pillLabel : 'SCH';
         const scoreCls = w => w && m.status === 'final' ? ' ticker-score--win' : '';
+        const glyph = _leagueGlyph(m.sport);
         // MLB click wiring reads data-game-pk; the others read data-game-id (setupTickerClicks).
         const idName = m.sport === 'mlb' ? 'data-game-pk' : 'data-game-id';
         const idAttr = (m.id != null && m.id !== '') ? `${idName}="${esc(m.id)}" ` : '';
         return `
             <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
+                ${glyph ? `<span class="ticker-glyph" aria-hidden="true">${glyph}</span>` : ''}
                 ${m.home.logo ? `<img class="ticker-logo${m.home.darkSafe ? ' ticker-logo--chip' : ''}" src="${m.home.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="ticker-team">${esc(m.home.abbr)}</span>
                 <span class="ticker-score${scoreCls(m.home.winner)}">${m.home.score ?? 0}</span>

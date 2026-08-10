@@ -1971,3 +1971,23 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 - No further `videocreation` feature commits (M2/M3) until a Draft Instincts-produced video has real, confirmed performance data.
 - GOALS.md's video line updated to reflect paused, not active, status.
 - Any future request to "keep building out Draft Instincts" should be met with: has any of its output actually been published and measured yet? If not, that's the higher-priority missing step, not more pipeline features.
+
+---
+
+## D-087 — Home: cross-sport score ticker
+
+**Status:** shipped, small; pending push + live verification
+**Contributors:** Kael, Vera, Axiom, Finn
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner shared three competitor home pages (ESPN, The Athletic, Bleacher Report NFL) and asked the team to react — the vague-direction path in TEAM.md, not a pre-scoped feature ask.
+
+**Framing (Kael/Vera/Axiom):** the one pattern worth adopting from all three competitors is a persistent, cross-league score ticker — the editorial photo-hero/byline pattern all three lean on was explicitly rejected, since D-046 already ruled out licensed photos and an editorial voice for the home hero, and DESIGN.md's posture ("broadcast-grade authority... not a consumer sports app") argues directly against it. Owner confirmed the ticker direction.
+
+**What was actually wrong, found by checking the code rather than assuming:** `#scoreTicker` is a single global element in the sticky header, but was sport-*exclusive* — wholesale-replaced by whichever `update{Sport}Ticker()` last ran, and on Home specifically the boot sequence unconditionally seeded it with MLB only regardless of season or what's actually live. `js/scorebug.js` (D-047 S2) already had the exact infrastructure this needed — a shared normalized model for MLB/NFL/NCAAF games and one sport-agnostic `renderTickerItem` builder — built for a different reason (cross-sport visual cohesion) that happened to be a near-perfect fit. This made the fix a data-merge task, not a new-component build.
+
+**What shipped:** `_updateHomeTicker()` in `js/app.js` merges MLB/NFL/NCAAF into `#scoreTicker` via `Scorebug.normalize*Game`, active only when `AppState.currentView === 'home'` — inside a specific sport's section the ticker keeps its existing sport-exclusive behavior. Followed-team games pin first (generalized across all three sports, not just MLB), then live games, then chronological. A new 30s `setupHomeTickerPolling()` loop owns the merged render while on Home; the existing MLB/NFL live-poll loops were given a one-line guard each so they stop overwriting the merged view with a single-sport list while the user is on Home. `Scorebug.renderTickerItem()` gained the league glyph (⚾/🏈) that `renderScoreCard` already had, on every item — a real gap Kael found in the shared builder itself, not new scope invented for this ticket.
+
+**Deliberately out of scope:** NCAAB (no `Scorebug` normalizer yet — D-052 shipped its own standalone ticker function) and NHL (preview-only per CLAUDE.md's standing rule against unprompted NBA/NHL work). Full spec, states, and the shipped/verification note are in ISSUES.md under "Home — Cross-sport score ticker."
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing. `sw.js` bumped to v164. **Not yet live-verified** — needs push + a Chrome check once deployed (merged ticker on Home, sport-exclusive elsewhere, glyphs rendering, no flicker between the merged and per-sport poll loops during a live window).

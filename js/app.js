@@ -138,6 +138,21 @@ setupNavigation();
         ).join('');
     }
 
+    // Home is sport-agnostic (D-042) — seed the merged cross-sport ticker instead
+    // of the MLB-only default (ISSUES.md "Home — Cross-sport score ticker").
+    // _loadFromHash (called by setupNavigation() above) has already set
+    // AppState.currentView synchronously by this point.
+    if (AppState.currentView === 'home' && typeof _updateHomeTicker === 'function') {
+        try {
+            await _updateHomeTicker();
+            Logger.info('Home ticker initialised', undefined, 'APP');
+        } catch (error) {
+            Logger.warn('Home ticker init failed', error.message, 'APP');
+            if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
+        }
+        return;
+    }
+
     try {
         const games = await fetchMLBSchedule(7);
         if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
@@ -166,7 +181,9 @@ setupNavigation();
             ApiCache.invalidate('/schedule');
             const games = await fetchMLBSchedule(7);
             AppState.mlbGames = games;
-            updateMLBTicker(games);
+            // Home owns #scoreTicker via setupHomeTickerPolling's merged render while
+            // the user is there — this loop would otherwise stomp it with MLB-only.
+            if (AppState.currentView !== 'home') updateMLBTicker(games);
             // If user is on the games view, refresh via loadMLBGames so date nav stays intact
             if (AppState.currentView === 'mlb-games' && typeof loadMLBGames === 'function') {
                 loadMLBGames();
@@ -197,13 +214,33 @@ setupNavigation();
             if (cached.length > 0 && !hasLive) return;
             const games = await fetchNFLScoreboard();
             AppState.nflGames = games;
-            if (typeof updateNFLTicker === 'function') updateNFLTicker(games);
+            // Same home-ownership rule as the MLB loop above — merged ticker owns
+            // #scoreTicker while on Home.
+            if (AppState.currentView !== 'home' && typeof updateNFLTicker === 'function') updateNFLTicker(games);
             if (AppState.currentView === 'nfl-games' && typeof displayNFLGames === 'function') displayNFLGames(games);
             const liveCount = games.filter(g => g.isLive).length;
             if (liveCount > 0 && window.Logger) Logger.info(`NFL live poll: ${liveCount} live`, undefined, 'POLL');
         } catch (err) { if (window.Logger) Logger.warn('NFL live poll failed', err.message, 'POLL'); }
     }
     setInterval(_poll, 60000);
+})();
+
+// Live score polling — Home's merged cross-sport ticker (ISSUES.md "Home —
+// Cross-sport score ticker"). Runs only while AppState.currentView === 'home';
+// the MLB/NFL loops above skip their own ticker render in that state so the
+// two never fight over the shared #scoreTicker element.
+(function setupHomeTickerPolling() {
+    const INTERVAL = 30_000;
+    async function _poll() {
+        if (AppState.currentView !== 'home') return;
+        if (typeof _updateHomeTicker !== 'function') return;
+        try {
+            await _updateHomeTicker();
+        } catch (err) {
+            if (window.Logger) Logger.warn('Home ticker poll failed', err.message, 'POLL');
+        }
+    }
+    setInterval(_poll, INTERVAL);
 })();
 
 (function setupTickerClicks() {
@@ -267,8 +304,97 @@ function _homeSkeletonCards(n = 6) {
     `).join('');
 }
 
+// ── Home cross-sport ticker (ISSUES.md "Home — Cross-sport score ticker") ──
+// Home is the sport-agnostic front door (D-042); #scoreTicker should reflect
+// that instead of showing whatever AppState.currentSport happens to still be
+// set to. Merges MLB/NFL/NCAAF through Scorebug's already-normalized model
+// (D-047 S2) — a data-merge over fetches every sport already makes elsewhere,
+// not a new component. NCAAB has no Scorebug normalizer yet (D-052 shipped
+// its own standalone ticker fn) and NHL is preview-only — both out of scope.
+async function _updateHomeTicker() {
+    const ticker = document.getElementById('scoreTicker');
+    if (!ticker || typeof Scorebug === 'undefined') return;
+
+    const [mlbGames, nflGames, ncaafGames] = await Promise.all([
+        (async () => {
+            try {
+                const g = await fetchMLBSchedule(7);
+                if (AppState.mlbGames && AppState.mlbGames.length === 0) AppState.mlbGames = g;
+                return g;
+            } catch (_) { return AppState.mlbGames || []; }
+        })(),
+        (async () => {
+            if (typeof fetchNFLScoreboard !== 'function') return AppState.nflGames || [];
+            try {
+                const g = await fetchNFLScoreboard();
+                AppState.nflGames = g;
+                return g;
+            } catch (_) { return AppState.nflGames || []; }
+        })(),
+        (async () => {
+            if (typeof fetchNCAAFScoreboard !== 'function') return AppState.ncaafGames || [];
+            try {
+                const g = await fetchNCAAFScoreboard();
+                AppState.ncaafGames = g;
+                return g;
+            } catch (_) { return AppState.ncaafGames || []; }
+        })(),
+    ]);
+
+    // The view may have moved on while these fetches were in flight — don't
+    // stomp whatever's showing now (e.g. a sport-specific ticker after a
+    // fast navigation away from Home).
+    if (AppState.currentView !== 'home') return;
+
+    const entries = [];
+    (mlbGames || []).forEach(g => {
+        // Same Preview-exclusion updateMLBTicker already applies, so 0-0
+        // not-yet-started games don't flood the ticker.
+        if (g.status?.abstractGameState === 'Preview') return;
+        if (g.teams?.home?.score == null || g.teams?.away?.score == null) return;
+        entries.push({ model: Scorebug.normalizeMLBGame(g), ts: g.gameDate ? new Date(g.gameDate).getTime() : 0, sport: 'mlb' });
+    });
+    // Football scoreboard fetchers already scope to the relevant week/day, so
+    // no extra date filtering is needed — just normalize.
+    (nflGames || []).forEach(g => {
+        entries.push({ model: Scorebug.normalizeNFLGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'nfl' });
+    });
+    (ncaafGames || []).forEach(g => {
+        entries.push({ model: Scorebug.normalizeNCAAFGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'ncaaf' });
+    });
+
+    if (entries.length === 0) {
+        ticker.classList.add('ticker--idle');
+        ticker.innerHTML = `<div class="ticker__item">No scores right now — check back soon</div>`;
+        return;
+    }
+
+    // Followed teams pin first regardless of sport (generalizes the MLB-only
+    // pinning updateMLBTicker already does), then live games, then chronological.
+    const isFav = e => typeof _isFollowed === 'function' &&
+        (_isFollowed(e.sport, 'team', e.model.home.abbr) || _isFollowed(e.sport, 'team', e.model.away.abbr));
+    entries.sort((a, b) => {
+        const favA = isFav(a) ? 0 : 1, favB = isFav(b) ? 0 : 1;
+        if (favA !== favB) return favA - favB;
+        const liveA = a.model.status === 'live' ? 0 : 1, liveB = b.model.status === 'live' ? 0 : 1;
+        if (liveA !== liveB) return liveA - liveB;
+        return a.ts - b.ts;
+    });
+
+    const items = [...entries, ...entries].map(e => Scorebug.renderTickerItem(e.model)).join('');
+    ticker.classList.remove('ticker--idle');
+    ticker.innerHTML = items;
+
+    // Proportional scroll speed — same logic updateMLBTicker already uses.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const w = ticker.scrollWidth;
+        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
+    }));
+}
+
 function loadHome() {
     if (typeof _applySportUI === 'function') _applySportUI('home');
+    if (typeof _updateHomeTicker === 'function') _updateHomeTicker();
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -814,7 +940,11 @@ window.addEventListener('ss:follow-changed', (e) => {
         if (typeof _loadHomeTodayGames === 'function' && document.getElementById('homeTodayGrid')) {
             _loadHomeTodayGames();
         }
-        if (typeof updateMLBTicker === 'function' && AppState.mlbGames) updateMLBTicker(AppState.mlbGames);
+        if (AppState.currentView === 'home' && typeof _updateHomeTicker === 'function') {
+            _updateHomeTicker();
+        } else if (typeof updateMLBTicker === 'function' && AppState.mlbGames) {
+            updateMLBTicker(AppState.mlbGames);
+        }
     }
     // Home "Starred Players" chips (mlb:player follows) and the team-follow surfaces
     // above both live on the same home render -- refresh on either kind of change.
