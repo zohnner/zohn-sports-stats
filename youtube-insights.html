@@ -21,6 +21,13 @@
   clickbait/reaction title style is intentional for this channel, separate
   from the site's "serious stats" brand, so this measures what performs
   rather than flagging what "should" change.
+
+  D-085: added thumbnails (Top performers gallery + inline in the table)
+  and a posting-day pattern panel, both from fields already present on the
+  playlistItems response (thumbnailUrl, publishedAtIso) — no new API calls.
+  Plus a CSV export. Deliberately left out: traffic-source breakdown and
+  top-comment pulls, both of which need extra API calls per video — owner
+  chose to hold off on the added quota/latency cost for now.
 -->
 <link rel="stylesheet" href="/css/variables.css">
 <style>
@@ -49,6 +56,7 @@
         padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans);
     }
     .yti-controls button:disabled { opacity: 0.5; cursor: default; }
+    .yti-controls button.yti-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
     .yti-section { margin-bottom: 32px; }
     .yti-hint { color: var(--text-muted); font-size: 0.78rem; margin: 0 0 10px; max-width: 68ch; }
     table { width: 100%; border-collapse: collapse; background: var(--bg-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-card); }
@@ -69,6 +77,16 @@
     .yti-dot.siren { fill: var(--color-loss, #ff5a5a); }
     .yti-axis-label { fill: var(--text-muted); font-size: 10px; font-family: var(--font-sans); }
     .yti-grid { stroke: var(--border-default); stroke-width: 1; }
+    .yti-row-thumb { width: 64px; height: 36px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 8px; background: var(--bg-base); }
+    .yti-title-cell { display: flex; align-items: center; }
+    .yti-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .yti-card { background: var(--bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; display: flex; flex-direction: column; }
+    .yti-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: var(--bg-base); }
+    .yti-card-body { padding: 10px 12px; }
+    .yti-card-title { font-size: 0.82rem; font-weight: 600; margin: 0 0 6px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .yti-card-stats { display: flex; gap: 10px; font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono, monospace); }
+    .yti-card-rank { position: absolute; background: var(--accent); color: #14181d; font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 0 0 6px 0; }
+    .yti-card-thumbwrap { position: relative; }
 </style>
 </head>
 <body>
@@ -84,6 +102,7 @@
         <label for="ytiLimit">Videos</label>
         <input type="number" id="ytiLimit" value="100" min="1" max="200">
         <button id="ytiReload">Reload</button>
+        <button id="ytiExport" class="yti-secondary" type="button">Export CSV</button>
     </div>
     <div id="ytiBody"><div class="yti-status">Loading…</div></div>
 </div>
@@ -152,6 +171,8 @@
     // Enrich each video with derived, decision-useful metrics — none of this
     // requires another API call, it's all computed from the payload already
     // returned by /api/youtube.
+    const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
     function enrich(v, days) {
         const published = new Date(v.publishedAt + 'T00:00:00Z');
         const daysSince = Math.max(1, Math.floor((Date.now() - published.getTime()) / 86400000));
@@ -162,7 +183,15 @@
         const effectiveDays = Math.min(daysSince, days);
         const velocity = v.windowedViews != null ? v.windowedViews / effectiveDays : null;
         const subsPer1k = (v.subscribersNet != null && v.windowedViews) ? (v.subscribersNet / v.windowedViews) * 1000 : null;
-        return Object.assign({}, v, { daysSince, effectiveDays, velocity, subsPer1k, tags: computeTags(v.title) });
+        // publishedAtIso carries the real publish time (UTC) — used only for
+        // posting-time patterns, not the daysSince math above, which stays on
+        // the date-only value for stability.
+        let dayOfWeek = null, hourOfDay = null;
+        if (v.publishedAtIso) {
+            const dt = new Date(v.publishedAtIso);
+            if (!isNaN(dt.getTime())) { dayOfWeek = dt.getUTCDay(); hourOfDay = dt.getUTCHours(); }
+        }
+        return Object.assign({}, v, { daysSince, effectiveDays, velocity, subsPer1k, dayOfWeek, hourOfDay, tags: computeTags(v.title) });
     }
 
     function aggregateByTag(videos) {
@@ -190,6 +219,29 @@
                 avgSubsPer1k: g.subsN ? g.subsSum / g.subsN : null,
             }))
             .sort((a, b) => (b.avgVelocity ?? -1) - (a.avgVelocity ?? -1));
+    }
+
+    // Posting-day pattern — UTC day-of-week, since that's what publishedAtIso
+    // gives us without guessing the owner's local timezone. Fine for a
+    // "which day tends to work" signal; not meant to be minute-precise.
+    function aggregateByDay(videos) {
+        const groups = {};
+        videos.forEach(v => {
+            if (v.dayOfWeek == null) return;
+            const key = DAY_NAMES[v.dayOfWeek];
+            if (!groups[key]) groups[key] = { key, count: 0, velocitySum: 0, velocityN: 0, retSum: 0, retN: 0 };
+            const g = groups[key];
+            g.count++;
+            if (v.velocity != null) { g.velocitySum += v.velocity; g.velocityN++; }
+            if (v.avgViewPercentage != null) { g.retSum += v.avgViewPercentage; g.retN++; }
+        });
+        // Keep natural Sun-Sat order rather than sorting by performance —
+        // this is a calendar view, easier to scan in order.
+        return DAY_NAMES.map(d => groups[d]).filter(Boolean).map(g => ({
+            key: g.key, count: g.count,
+            avgVelocity: g.velocityN ? g.velocitySum / g.velocityN : null,
+            avgRetention: g.retN ? g.retSum / g.retN : null,
+        }));
     }
 
     const COLUMNS = [
@@ -274,6 +326,47 @@
             </table>`;
     }
 
+    function renderTimePatterns(videos) {
+        const days = aggregateByDay(videos);
+        if (days.length < 3) return '';
+        const rows = days.map(d => `
+            <tr>
+                <td>${esc(d.key)}</td>
+                <td class="num">${d.count}</td>
+                <td class="num">${d.avgVelocity != null ? fmt1(d.avgVelocity) : '—'}</td>
+                <td class="num">${d.avgRetention != null ? fmtPct(d.avgRetention) : '—'}</td>
+            </tr>`).join('');
+        return `
+            <table>
+                <thead><tr><th>Publish day (UTC)</th><th>Videos</th><th>Avg views/day</th><th>Avg retention</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    function renderGallery(videos, n) {
+        const top = videos
+            .filter(v => v.velocity != null && v.thumbnailUrl)
+            .slice()
+            .sort((a, b) => b.velocity - a.velocity)
+            .slice(0, n);
+        if (!top.length) return '';
+        const cards = top.map((v, i) => `
+            <div class="yti-card">
+                <div class="yti-card-thumbwrap">
+                    <span class="yti-card-rank">#${i + 1}</span>
+                    <a href="${esc(v.url)}" target="_blank" rel="noopener"><img src="${esc(v.thumbnailUrl)}" alt="" loading="lazy"></a>
+                </div>
+                <div class="yti-card-body">
+                    <p class="yti-card-title"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></p>
+                    <div class="yti-card-stats">
+                        <span>${fmt1(v.velocity)}/day</span>
+                        <span>${fmtPct(v.avgViewPercentage)} ret.</span>
+                    </div>
+                </div>
+            </div>`).join('');
+        return `<div class="yti-gallery">${cards}</div>`;
+    }
+
     function renderTable(videos) {
         const sorted = sortVideos(videos);
         const headerCells = COLUMNS.map(c => {
@@ -284,7 +377,7 @@
         }).join('');
         const rows = sorted.map(v => `
             <tr>
-                <td><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></td>
+                <td><div class="yti-title-cell">${v.thumbnailUrl ? `<img class="yti-row-thumb" src="${esc(v.thumbnailUrl)}" alt="" loading="lazy">` : ''}<a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a></div></td>
                 <td class="num">${esc(v.publishedAt)}</td>
                 <td class="num">${fmtDuration(v.durationSeconds)}</td>
                 <td class="num">${v.velocity != null ? fmt1(v.velocity) : '—'}</td>
@@ -342,10 +435,18 @@
         }
 
         currentVideos = data.videos.map(v => enrich(v, days));
+        const galleryHtml = renderGallery(currentVideos, 8);
         const scatterHtml = renderScatter(currentVideos);
         const patternsHtml = renderPatterns(currentVideos);
+        const timeHtml = renderTimePatterns(currentVideos);
 
         bodyEl.innerHTML = `
+            ${galleryHtml ? `
+            <div class="yti-section">
+                <h2>Top performers</h2>
+                <p class="yti-hint">Highest views/day among videos with a usable thumbnail. Look at these as a set — thumbnail style, framing, and subject are easier to spot as patterns visually than from a table of titles.</p>
+                ${galleryHtml}
+            </div>` : ''}
             ${scatterHtml ? `
             <div class="yti-section">
                 <h2>Reach vs. retention</h2>
@@ -358,6 +459,12 @@
                 <p class="yti-hint">Average performance grouped by title pattern and team covered — only groups with 2+ videos shown. This is what to make more (or less) of, not a style guide.</p>
                 ${patternsHtml}
             </div>` : ''}
+            ${timeHtml ? `
+            <div class="yti-section">
+                <h2>Posting day</h2>
+                <p class="yti-hint">Average performance by day of week (UTC) the video was published. Read as a rough signal, not a hard rule — sample sizes per day are small.</p>
+                ${timeHtml}
+            </div>` : ''}
             <div class="yti-section">
                 <h2>All videos</h2>
                 <p class="yti-hint">Click a column header to sort. "Views/day" and "Subs/1k views" are the two figures that best separate a video that grew the channel from one that just spiked.</p>
@@ -366,7 +473,34 @@
         renderAll();
     }
 
+    function exportCsv() {
+        if (!currentVideos.length) return;
+        const cols = [
+            ['title', v => v.title], ['url', v => v.url], ['publishedAt', v => v.publishedAt],
+            ['durationSeconds', v => v.durationSeconds], ['viewsPerDay', v => v.velocity != null ? v.velocity.toFixed(2) : ''],
+            ['windowedViews', v => v.windowedViews], ['avgViewPercentage', v => v.avgViewPercentage],
+            ['subsPer1kViews', v => v.subsPer1k != null ? v.subsPer1k.toFixed(3) : ''],
+            ['lifetimeViews', v => v.lifetimeViews], ['lifetimeLikes', v => v.lifetimeLikes],
+        ];
+        const csvEsc = s => {
+            const str = String(s ?? '');
+            return /[",\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+        };
+        const lines = [cols.map(c => c[0]).join(',')];
+        sortVideos(currentVideos).forEach(v => lines.push(cols.map(c => csvEsc(c[1](v))).join(',')));
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `youtube-insights-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+    }
+
+    const exportBtn = document.getElementById('ytiExport');
     reloadBtn.addEventListener('click', load);
+    exportBtn.addEventListener('click', exportCsv);
     load();
 })();
 </script>

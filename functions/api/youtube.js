@@ -31,6 +31,12 @@
  *
  * Rate-limited automatically by functions/api/_middleware.js like every
  * other /api/* route — no extra throttling needed here.
+ *
+ * thumbnailUrl and publishedAtIso (D-085) come from fields already present
+ * on the playlistItems.snippet response — no additional API call. Thumbnail
+ * host is i.ytimg.com; must stay allowlisted in _headers' img-src or the
+ * client silently fails to render them (CSP blocks, no console-visible error
+ * on some browsers).
  */
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -107,6 +113,8 @@ async function buildReport(env, days, limit) {
             title: v.title,
             url: `https://youtu.be/${v.videoId}`,
             publishedAt: v.publishedAt,
+            publishedAtIso: v.publishedAtIso,
+            thumbnailUrl: v.thumbnailUrl,
             durationSeconds: d.durationSeconds ?? null,
             windowedViews: a.views ?? null,
             avgViewPercentage: a.averageViewPercentage ?? null,
@@ -175,10 +183,13 @@ async function getRecentVideos(token, playlistId, limit) {
         const data = await res.json();
         for (const item of data.items || []) {
             const sn = item.snippet;
+            const thumbs = sn.thumbnails || {};
             videos.push({
                 videoId: sn.resourceId.videoId,
                 title: sn.title,
                 publishedAt: (sn.publishedAt || '').slice(0, 10),
+                publishedAtIso: sn.publishedAt || null,
+                thumbnailUrl: (thumbs.medium || thumbs.default || {}).url || null,
             });
         }
         pageToken = data.nextPageToken;
