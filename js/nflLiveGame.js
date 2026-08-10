@@ -599,25 +599,37 @@ function _nlgSidebarHtml(data, comp, home, away) {
 // each group is one division's table — entries[].stats[] includes a ready-made
 // 'overall' displayValue ("1-0") and 'winPercent'. Shows each team's own
 // division; if both teams share a division (a divisional game), shows it once.
+//
+// Bug found via live verification (2026-08-09), fixed same commit: entries[].team
+// is NOT an object with .abbreviation — it's a bare location string ("Carolina",
+// "Arizona"). The first version assumed the header-competitor team shape and
+// matched on .abbreviation, which is always undefined here — the card silently
+// rendered nothing (fails-safe caught it, but it was dead code). Now matches by
+// location string against home.team.location/away.team.location instead, and
+// renders that location string as the row label (no per-entry abbreviation
+// exists to show instead — this is a normal broadcast-standings convention).
 function _nlgStandingsCard(data, home, away) {
     const groups = (data.standings && data.standings.groups) || [];
     if (!groups.length) return '';
+    const homeLoc = (home.team && home.team.location) || '';
+    const awayLoc = (away.team && away.team.location) || '';
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const findGroupFor = (abbr) => groups.find(g => (((g.standings || {}).entries) || []).some(e => (e.team || {}).abbreviation === abbr));
-    const gHome = findGroupFor(homeAbbr), gAway = findGroupFor(awayAbbr);
+    const findGroupFor = (loc) => groups.find(g => (((g.standings || {}).entries) || []).some(e => e.team === loc));
+    const gHome = findGroupFor(homeLoc), gAway = findGroupFor(awayLoc);
     const uniqueGroups = (gHome && gHome === gAway) ? [gHome] : [gHome, gAway].filter(Boolean);
     if (!uniqueGroups.length) return '';
     const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--border-strong)';
     const table = (g) => {
         const entries = ((g.standings || {}).entries) || [];
         const rows = entries.map(e => {
-            const abbr = (e.team || {}).abbreviation || '';
-            const playing = abbr === homeAbbr || abbr === awayAbbr;
+            const loc = e.team || '';
+            const playing = loc === homeLoc || loc === awayLoc;
+            const abbr = loc === homeLoc ? homeAbbr : (loc === awayLoc ? awayAbbr : '');
             const overall = (e.stats || []).find(s => s.name === 'overall');
             const pct = (e.stats || []).find(s => s.name === 'winPercent');
             return `<div class="nlg-st-row ${playing ? 'nlg-st-row--playing' : ''}" ${playing ? `style="--tc:${tc(abbr)}"` : ''}>
-                <span class="nlg-st-team">${_escHtml(abbr)}</span>
+                <span class="nlg-st-team">${_escHtml(loc)}</span>
                 <span class="nlg-st-rec">${_escHtml(overall ? overall.displayValue : '')}</span>
                 <span class="nlg-st-pct">${_escHtml(pct ? pct.displayValue : '')}</span>
             </div>`;

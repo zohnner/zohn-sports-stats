@@ -148,11 +148,11 @@
 
 .nlg-st-group { margin-bottom: 0.6rem; }
 .nlg-st-group:last-child { margin-bottom: 0; }
-.nlg-st-row { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.15rem 0; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.nlg-st-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: baseline; padding: 0.15rem 0; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
 /* Border = identity (D-038 K2) — the playing team's row is marked by its own
    team color on the border, matching .nlg-team's --tc pattern, not accent. */
 .nlg-st-row--playing { border-left: 2px solid var(--tc); margin-left: -0.4rem; padding-left: 0.4rem; background: var(--bg-raised); border-radius: var(--radius-sm); }
 .nlg-st-row--playing .nlg-st-team { font-weight: 800; }
-.nlg-st-team { font-weight: 700; color: var(--text-primary); }
+.nlg-st-team { font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-st-rec { color: var(--text-secondary); text-align: right; }
 .nlg-st-pct { color: var(--text-subtle); text-align: right; }
