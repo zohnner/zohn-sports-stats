@@ -41,12 +41,18 @@ export async function onRequest(context) {
     const reqSeason = parseInt(u.searchParams.get('season') || '', 10);
     // NCAAB season is labeled by its END year (e.g. the 2026-27 season is "2027"
     // in ESPN's own season object, confirmed live 2026-08-10) — mirrors how
-    // NCAAF labels by the fall start year, just the opposite convention. The
-    // auto-detect below hands the caller a sane default; js/ncaab.js's own
-    // NCAAB_SEASON is the source of truth for what "current" means client-side.
+    // NCAAF labels by the fall start year, just the opposite convention. This
+    // endpoint is a standings feed, so its default should be "the season with
+    // real data to show" (js/ncaab.js's NCAAB_LAST_SEASON), NOT "the season
+    // about to start" (NCAAB_SEASON, used only for offseason copy text) — the
+    // client always sends an explicit season in practice, this is a defensive
+    // fallback for direct calls, so it should match what the client actually
+    // requests: Jan-Oct show the season already/just completed; Nov-Dec show
+    // the new season once it has real live data.
+    const _ncaabLastSeasonNow = (d) => (d.getUTCMonth() + 1 <= 10) ? d.getUTCFullYear() : d.getUTCFullYear() + 1;
     const season = (reqSeason >= MIN_SEASON && reqSeason <= nowYear + 1)
         ? reqSeason
-        : (new Date().getUTCMonth() + 1 >= 11 ? nowYear + 1 : nowYear);
+        : _ncaabLastSeasonNow(new Date());
     const debug = u.searchParams.get('debug') === '1';
 
     const target = new URL(BASE);
@@ -58,7 +64,7 @@ export async function onRequest(context) {
     target.searchParams.set('level', '3');          // group > conference > (division, if any)
     target.searchParams.set('sort', 'winpercent:desc,gamesbehind:asc');
 
-    const isPast = season < ((new Date().getUTCMonth() + 1 >= 11) ? nowYear + 1 : nowYear);
+    const isPast = season < _ncaabLastSeasonNow(new Date());
     const ttl = isPast ? 604800 : 1800;             // 7 days vs 30 min
 
     let upstream;

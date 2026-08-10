@@ -11,9 +11,13 @@
 const _ncaabNow = new Date();
 // NCAAB is labeled by its END year — confirmed live 2026-08-10 against the
 // real ESPN scoreboard payload: the 2026-27 season reports season.year=2027.
-// Nov/Dec belong to the season that just started (year+1); Jan-Oct belong to
-// the season already in progress or just finished (year).
-const NCAAB_SEASON = (_ncaabNow.getMonth() + 1 >= 11) ? _ncaabNow.getFullYear() + 1 : _ncaabNow.getFullYear();
+// Bug caught live-verifying this same day: an earlier version flipped the
+// label only at November, so August (offseason, anticipating the season that
+// tips off in November) showed the WRONG season — "the 2026 season tips off
+// in November" when ESPN itself calls that season 2027. The label must flip
+// right after the previous season ends (April), not at November — May-Dec
+// are all "anticipating/hosting next season," not just Nov/Dec.
+const NCAAB_SEASON = (_ncaabNow.getMonth() + 1 <= 4) ? _ncaabNow.getFullYear() : _ncaabNow.getFullYear() + 1;
 
 // In-season: Nov-Apr (regular season through the tournament/championship).
 // May-Oct = offseason.
@@ -174,8 +178,18 @@ function _renderNCAABView(view) {
     }
 }
 
-// ── Season model for standings/rankings ──────────────────────
-const _ncaab = { season: NCAAB_SEASON, poll: 0 };
+// ── Season model for standings/rankings (last season with real data) ──
+// Distinct from NCAAB_SEASON on purpose — same split NCAAF uses
+// (NCAAF_SEASON vs NCAAF_LAST_SEASON). NCAAB_SEASON answers "what season is
+// about to start" (for offseason copy); this answers "what season has real
+// data to show right now" (for the Standings/Teams/Rankings default). They
+// diverge for exactly the May-Oct offseason: NCAAB_SEASON says next season
+// (2027) is coming; NCAAB_LAST_SEASON correctly keeps showing the just-
+// finished 2026 season's real final standings instead of an empty upcoming
+// one. Nov-Dec: both agree (the new season has live real data). Jan-Apr:
+// both agree (the current season is real and in progress).
+const NCAAB_LAST_SEASON = (_ncaabNow.getMonth() + 1 <= 10) ? _ncaabNow.getFullYear() : _ncaabNow.getFullYear() + 1;
+const _ncaab = { season: NCAAB_LAST_SEASON, poll: 0 };
 
 function _ncaabErr(msg, retryFn) {
     return `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">${_escHtml(msg)}</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="${retryFn}()">Retry</button></div></div>`;
@@ -303,7 +317,7 @@ async function fetchNCAABStandings(season) {
 
 function _ncaabSeasonSelect() {
     const yrs = [];
-    for (let y = NCAAB_SEASON; y >= NCAAB_SEASON - 5; y--) yrs.push(y);
+    for (let y = NCAAB_LAST_SEASON; y >= NCAAB_LAST_SEASON - 5; y--) yrs.push(y);
     return `<select id="ncaabSeasonSel" class="standings-tab" style="cursor:pointer">${
         yrs.map(y => `<option value="${y}"${y === _ncaab.season ? ' selected' : ''}>${y - 1}-${String(y).slice(2)} season</option>`).join('')}</select>`;
 }
