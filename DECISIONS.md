@@ -2014,4 +2014,26 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 **Deliberately not done:** no live-diamond equivalent for NFL's hero (no Scorebug live-state fragment exists for football yet — named, not built). No changes to the ten other home modules' relative weight — that's a smaller named follow-on (Vera), not part of this pass.
 
-**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing, grep-confirmed clean of every dead class name site-wide. Full spec and exact before/after values in ISSUES.md under "Home — Scaled-up Data-Story hero." **Not yet live-verified** — pending push.
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing, grep-confirmed clean of every dead class name site-wide. Full spec and exact before/after values in ISSUES.md under "Home — Scaled-up Data-Story hero."
+
+**Live-verified 2026-08-10 after push:** hero confirmed dominant on production (padding 36px, headline ~37.6px, `text-align: left` fixed, 52px logos, live diamond rendering during a real live game), console clean, no errors.
+
+---
+
+## D-089 — Bug: `ApiCache.invalidate('')` was wiping unrelated app state, not just cache — including a user's followed teams
+
+**Status:** shipped, small
+**Contributors:** Axiom
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner reported the home welcome banner ("Serious stats for serious fans...") was both showing up on repeat visits (should be first-visit-only, localStorage-gated) and reading as stale copy (MLB/NFL-only language on a site that's shipped NCAAF and NCAAB since). Investigating the "shows every time" half surfaced a real bug, not a display quirk.
+
+**Root cause:** `ApiCache` (`js/cache.js`) namespaced its own localStorage keys under the bare prefix `"zs_"` — the same prefix nearly every *other* piece of persistent app state also uses: `zs_theme`, `zs_follows` (D-046's unified follow/favorite system), `zs_seen_welcome`, `zs_saved_stats` (custom stat-builder formulas), `zs_recents`, `zs_visits`, `zs_install_dismissed`, `zs_quest_streak`, and the legacy `zs_fav_teams`/`zs_mlb_favs`/`zs_favs` keys `_migrateLegacyFavorites()` still reads. `ApiCache.invalidate(prefix)` does a blanket scan — `Object.keys(localStorage).filter(k => k.startsWith('zs_' + prefix))` — and `invalidate('')` (used for a full cache wipe, called on season rollover **and, critically, automatically inside `ApiCache.set()`'s own quota-exceeded retry path**) matched and deleted *every* `zs_`-prefixed key, not just actual cache entries. Any time a user's browser hit localStorage quota during normal use (plausible on a site caching season stats/standings/leaderboards for 4 sports with TTLs up to 12h), the automatic eviction-and-retry silently wiped their theme choice, followed teams/players, saved stat formulas, and more — with no error, no toast, nothing to indicate data was lost beyond what the cache-quota warning already covers. The welcome-banner symptom the owner actually noticed was real but was the least consequential of the keys affected.
+
+**Fix:** `ApiCache`'s internal namespace changed from `'zs_'` to `'zs_cache_'` — its own exclusive sub-namespace no other localStorage key in the codebase uses (confirmed via grep across `js/`). `invalidate('')` now only matches actual cache entries. No migration needed: old `zs_`-prefixed cache entries simply stop being read (cache misses regenerate them on next fetch, same cost as any normal cache miss) — this is a performance cache, not data, so there's nothing to preserve. Comment added directly on the namespace declaration explaining why it must never be widened back to something another key could share, since this exact bug is what happens when it is.
+
+**Also fixed in the same pass:** the welcome banner subhead updated from MLB/NFL-only language to name all four live sports (MLB, NFL, NCAAF, NCAAB), matching the site's actual current scope per GOALS.md's Current State section. Headline tagline ("Serious stats for serious fans — no login, ever.") is the brand tagline per CLAUDE.md identity and was left unchanged.
+
+**Not done, flagged for a future pass if it recurs:** no user-facing recovery or warning when this kind of eviction happens (the existing "Caching off" toast only fires on a second consecutive write failure, not on data loss from eviction itself). Worth a Cipher/Vera look if this class of silent-data-loss bug shows up again elsewhere, but this specific instance is fully closed by the namespace fix.
+
+**Verified:** `node --check` clean on both changed files, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.

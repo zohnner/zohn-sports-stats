@@ -1,14 +1,26 @@
 // ============================================================
 // ApiCache — localStorage cache with per-entry TTL
 //
-// Keys are namespaced under "zs_" to avoid collisions.
+// Keys are namespaced under "zs_cache_" — deliberately its OWN sub-namespace,
+// not the bare "zs_" every other piece of app state also uses (zs_theme,
+// zs_follows, zs_seen_welcome, zs_saved_stats, zs_recents, and more — see
+// grep for the full list). invalidate('') does a prefix-scan wipe of
+// everything under this class's namespace; when that namespace was just
+// "zs_", invalidate('') silently deleted ALL of those too, including a
+// user's followed teams (zs_follows) and saved custom stat formulas
+// (zs_saved_stats) — found live 2026-08-10 when a repeat visitor kept
+// seeing the first-visit welcome banner reappear, which was actually a
+// symptom of quota-triggered eviction (ApiCache.set's own retry-on-quota
+// path calls invalidate('')) wiping zs_seen_welcome as collateral damage.
+// Never widen this namespace back to something another localStorage key
+// could share.
 // Stale entries are evicted lazily on read.
 // localStorage write failures (quota exceeded, private mode)
 // are caught and logged — the app continues without caching.
 // ============================================================
 
 class ApiCache {
-    static #NS  = 'zs_';
+    static #NS  = 'zs_cache_';
 
     // Default TTLs in milliseconds
     static TTL = {

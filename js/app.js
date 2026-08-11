@@ -423,7 +423,7 @@ function loadHome() {
         ${isFirstVisit ? `
         <div class="home-welcome">
             <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
-            <span class="home-welcome-sub">Broadcast-grade MLB analytics with the receipt on every number, and no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
+            <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NCAAF, and NCAAB — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
         </div>` : ''}
         <!-- Data-Story hero (D-046 P2) — the day's focal narrative; hidden until populated -->
         <div class="home-hero" id="homeHero" hidden></div>
