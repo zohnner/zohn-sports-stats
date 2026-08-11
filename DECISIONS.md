@@ -2037,3 +2037,5 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Not done, flagged for a future pass if it recurs:** no user-facing recovery or warning when this kind of eviction happens (the existing "Caching off" toast only fires on a second consecutive write failure, not on data loss from eviction itself). Worth a Cipher/Vera look if this class of silent-data-loss bug shows up again elsewhere, but this specific instance is fully closed by the namespace fix.
 
 **Verified:** `node --check` clean on both changed files, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.
+
+**Live-verified 2026-08-10 after push.** Directly exercised the actual bug on production, not just confirmed the file changed: seeded `zs_follows`/`zs_theme` plus a real `ApiCache.set()` entry, ran `ApiCache.invalidate('')`, confirmed the cache entry was gone but `zs_follows`/`zs_theme` survived intact (49 `zs_*` keys before → 27 after, all deletions were real cache entries). Welcome banner confirmed showing the updated MLB/NFL/NCAAF/NCAAB copy. Console clean.
