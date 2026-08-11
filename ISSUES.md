@@ -2598,3 +2598,30 @@ Owner asked the team to actually walk through all six items rather than leave th
 **Follow-up same day — player Leaders/detail undeferred and shipped.** Owner asked to keep building. Relay live-checked ESPN's core API (`sports.core.api.espn.com`) before any code: real per-game-average leaders (7 categories) and complete per-athlete bio + season stats confirmed (tested against Angel Reese — full bio, 471 pts/30 GP/11.8 RPG season line). Built `functions/api/wnbastats.js` + `functions/api/wnbaathlete.js` (clones of `nflstats.js`/`ncaafathlete.js`), `displayWNBALeaders()`/`showWNBAPlayer()`/`displayWNBAPlayerDetail()` in `js/wnba.js` (reuses `detailFrame.js`, `.nfl-lrow*`, `.ncf-stat*` — zero new CSS), wired `wnba-leaders` + `wnba-player-{id}` into nav (sub-nav/menu/bottom-nav/`_PAGE_META`/hash routing), `_SPORT_LANDING.wnba` upgraded to 4 cards. Full details in DECISIONS.md D-092 Resolution 5. Verified locally: `node --check` clean, 0 NUL bytes, manifest/theme checks clean, 33/33 tests. Not yet live-verified — pending push.
 
 ---
+
+## SESSION HANDOFF — 2026-08-10 (clean shutdown, D-092 WNBA build)
+
+**State: two commits pending push, NOT yet live.** Confirmed via a fresh (`cache:'reload'`) fetch of `sportstrata.cc/sw.js`: origin still reports `sportstrata-v171` — the WNBA-Leaders build and the SW version bump have not deployed. Do not assume Leaders/player-detail are live without re-checking `sw.js` for `v172` first.
+
+**Commits, oldest to newest, all local, none pushed by this session (no push access — owner pushes):**
+- `e62ffc5` — D-092 P1: WNBA as a 5th sport (Scores/Standings/Teams). **Live-verified** earlier this session after the owner pushed.
+- `2db8beb` — D-092 live-verify note (documents the browser-disk-cache false alarm from that verification pass).
+- `2365ffe` — D-092 Resolution 5: WNBA Leaders + player detail. Built same session after a live ESPN core-API data-depth check confirmed real per-game-average leaders (PPG/RPG/APG/SPG/BPG/FG%/FT%) and complete per-athlete bio/stats. **Not yet live-verified — blocked on push.**
+- `cf5f714` — `sw.js` CACHE_NAME bump to v172. Caught late: `2365ffe` changed `js/wnba.js` substantially but didn't need a STATIC_ASSETS path change (the file was already listed), so `check-manifest.cjs` passed without catching the missing version bump. Fixed same session, mirrors the standing "bump on every JS/CSS change" convention.
+
+**What's confirmed shipped and correct (verified locally, all three commits):** `node --check` clean on every touched/new JS file, 0 NUL bytes throughout, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only, unrelated to WNBA), full 33-test unit suite passing on every pass.
+
+**What's NOT verified:** Leaders view rendering real ranked players, player-detail pages rendering bio + stat groups via `detailHeader`/`detailSection`, the `wnba-leaders` sub-nav/menu/bottom-nav tabs actually appearing, and the `wnba-player-{id}` hash route resolving correctly. All of this is written to the same proven pattern NCAAF/NFL already use in production (not a new component), but "the pattern is proven elsewhere" is not the same as "verified for WNBA" — next session should not skip this step.
+
+### Next session should do, in order
+1. Confirm the owner has pushed `cf5f714` (or whatever is HEAD by then).
+2. Check `sportstrata.cc/sw.js` for `sportstrata-v172` (or later) before doing anything else — the browser-HTTP-disk-cache false alarm from `2db8beb` can recur; a `cache:'reload'` fetch plus SW unregister + Cache Storage clear is the fix if the deployed version doesn't match what a fresh page load shows.
+3. Live-verify: sport switcher/sub-nav show a "Leaders" tab under WNBA; `#wnba-leaders` renders 7 real stat-category cards with ranked players; clicking a player row navigates to `#wnba-player-{id}` and renders a real bio + season stat line via the shared detail frame; no console errors.
+4. If clean, close this handoff loop with a short live-verify note appended to DECISIONS.md D-092 Resolution 5, same pattern as every prior entry in this file.
+
+### Working conventions (unchanged, restated for a cold start)
+- **Git is broken on this mount** — use the plumbing workaround: temp `GIT_INDEX_FILE`, `git read-tree HEAD`, `git add` only the touched files, `git write-tree`, `git commit-tree` with a heredoc/file message, `printf '%s\n' "$NEW" > .git/refs/heads/main`. Verify via per-file `diff -q <(git show HEAD:"$f") "$f"`, never `git status`/`git diff HEAD` (both give false positives on this mount — confirmed again this session, e.g. `git diff HEAD --stat` claiming `js/ncaab.js` was entirely deleted when it plainly exists and is 405 lines).
+- Bump `sw.js`'s `CACHE_NAME` on every JS/CSS change, even when `check-manifest.cjs` passes clean — the manifest check only validates the STATIC_ASSETS *list*, not whether a listed file's *content* changed. (Root cause of the `cf5f714` follow-up fix this session.)
+- Cannot push from this session — the owner pushes, then Cloudflare Pages builds (~45-100s observed this session). Verify the real deployed `sw.js` version with a `cache:'reload'` fetch before trusting any other live check.
+- Three-gate + owner-override discipline held this session: WNBA itself was an explicit owner override of D-052's calendar-gap recommendation, logged as an override rather than a silent reversal; the Resolution 5 Leaders/detail expansion still ran the "probe live before promising scope" check rather than assuming the original deferral had gone stale.
+
