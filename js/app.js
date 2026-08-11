@@ -346,6 +346,11 @@ async function _updateHomeTicker() {
     // fast navigation away from Home).
     if (AppState.currentView !== 'home') return;
 
+    // This is the one place all three sports' fresh game data lands at once —
+    // piggyback the sport-picker's live/today counts on it rather than adding
+    // a second fetch cycle just for the picker cards.
+    if (typeof _renderSportPicker === 'function') _renderSportPicker();
+
     const entries = [];
     (mlbGames || []).forEach(g => {
         // Same Preview-exclusion updateMLBTicker already applies, so 0-0
@@ -430,7 +435,7 @@ function loadHome() {
 
         <!-- Search prompt bar (P2-004) -->
         <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
             <kbd class="home-search-kbd">⌘K</kbd>
         </button>
@@ -1776,16 +1781,55 @@ function _sportPickerStatus(id) {
     return { cls: 'idle', label: 'Explore' };
 }
 
+// Sport-picker live/today counts (ChatGPT-brief quick win 1) \u2014 reads whatever's
+// already in AppState from _updateHomeTicker's fetches, no new network calls.
+// NCAAB excluded on purpose: same reason it's absent from the merged ticker
+// (D-087) \u2014 no fresh per-day game data reliably in AppState for it yet.
+function _sportPickerCounts() {
+    const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+    const counts = {};
+
+    const mlbToday = (AppState.mlbGames || []).filter(g =>
+        (g.officialDate || (g.gameDate || '').slice(0, 10)) === todayET);
+    counts.mlb = {
+        today: mlbToday.length,
+        live: mlbToday.filter(g => g.status?.abstractGameState === 'Live'
+            && !/final/i.test(g.status?.detailedState || '')).length,
+    };
+
+    const _footballToday = games => (games || []).filter(g => {
+        if (!g.date) return false;
+        return new Date(new Date(g.date).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 10) === todayET;
+    });
+    const nflToday = _footballToday(AppState.nflGames);
+    counts.nfl = { today: nflToday.length, live: nflToday.filter(g => g.isLive).length };
+    const ncaafToday = _footballToday(AppState.ncaafGames);
+    counts.ncaaf = { today: ncaafToday.length, live: ncaafToday.filter(g => g.isLive).length };
+
+    return counts;
+}
+
 function _renderSportPicker() {
     const el = document.getElementById('homeSportPicker');
     if (!el || typeof SPORTS === 'undefined') return;
+    const counts = (typeof _sportPickerCounts === 'function') ? _sportPickerCounts() : {};
     el.innerHTML = SPORTS.map(s => {
         const st = _sportPickerStatus(s.id);
-        return `<button class="sport-card sport-card--${st.cls}" data-sport="${s.id}" style="--sport-accent:${s.accent}" aria-label="${_escHtml(s.label)} \u2014 ${_escHtml(st.label)}">
+        const c = counts[s.id];
+        const hasLive = c && c.live > 0;
+        // Live overrides the season-phase pill for the dot/status color \u2014 reuses
+        // the .sport-card--live pulse treatment that already existed in CSS but
+        // had no JS path ever setting it.
+        const cls = hasLive ? 'live' : st.cls;
+        const statsLine = (c && c.today > 0)
+            ? `<span class="sport-card-stats">${c.today} today${hasLive ? ` \u00b7 ${c.live} live` : ''}</span>` : '';
+        const extraAria = (c && c.today > 0) ? `, ${c.today} game${c.today === 1 ? '' : 's'} today` : '';
+        return `<button class="sport-card sport-card--${cls}" data-sport="${s.id}" style="--sport-accent:${s.accent}" aria-label="${_escHtml(s.label)} \u2014 ${_escHtml(st.label)}${extraAria}">
             <span class="sport-card-icon" aria-hidden="true">${s.icon}</span>
             <span class="sport-card-body">
                 <span class="sport-card-name">${_escHtml(s.label)}</span>
                 <span class="sport-card-status"><span class="sport-card-dot"></span>${_escHtml(st.label)}</span>
+                ${statsLine}
             </span>
             <span class="sport-card-go" aria-hidden="true">\u2192</span>
         </button>`;
@@ -2559,13 +2603,19 @@ async function _renderHomeMoment() {
             const odds    = r.divOdds;
             const pctW    = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
             const gapLbl  = r.gb === 0 ? 'tied atop' : `+${r.gb} on ${_escHtml(r.second.teamAbbr)}`;
-            const oddsLbl = (odds != null && typeof _oddsFmtPct === 'function') ? ` · ${_oddsFmtPct(odds)}% div` : '';
+            // ChatGPT-brief quick win 2: the division-odds % was previously trailing
+            // text tacked onto .pr-gap at the same tiny size as the games-back
+            // caption — this is exactly the "receipts" pattern (DESIGN.md) applied
+            // backwards: the computed number should be the visual star, the gap
+            // distance its supporting caption, not the other way around.
+            const oddsBlock = (odds != null && typeof _oddsFmtPct === 'function')
+                ? `<span class="pr-odds-pct">${_oddsFmtPct(odds)}%</span><span class="pr-odds-lbl">div odds</span>` : '';
             return `
                 <button class="pennant-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
                     <span class="pr-div">${_escHtml(r.div)}</span>
                     <span class="pr-lead">${logo ? `<img class="pr-logo" src="${logo}" alt="" data-hide-on-error>` : ''}<strong>${_escHtml(r.lead.teamAbbr)}</strong></span>
                     <span class="pr-bar" style="--tc:${color}"><span class="pr-bar-fill" style="width:${pctW}%"></span></span>
-                    <span class="pr-gap">${gapLbl}${oddsLbl}</span>
+                    <span class="pr-stat">${oddsBlock}<span class="pr-gap">${gapLbl}</span></span>
                 </button>`;
         }).join('');
         const p = document.getElementById('hmPennant');

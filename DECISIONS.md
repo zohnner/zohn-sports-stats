@@ -2039,3 +2039,23 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Verified:** `node --check` clean on both changed files, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.
 
 **Live-verified 2026-08-10 after push.** Directly exercised the actual bug on production, not just confirmed the file changed: seeded `zs_follows`/`zs_theme` plus a real `ApiCache.set()` entry, ran `ApiCache.invalidate('')`, confirmed the cache entry was gone but `zs_follows`/`zs_theme` survived intact (49 `zs_*` keys before → 27 after, all deletions were real cache entries). Welcome banner confirmed showing the updated MLB/NFL/NCAAF/NCAAB copy. Console clean.
+
+---
+
+## D-090 — Home: three quick wins from external (ChatGPT) redesign feedback
+
+**Status:** shipped, small; pending push + live verification
+**Contributors:** Kael, Vera, Axiom, Finn
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner shared a ChatGPT-written homepage critique/redesign brief. Team fact-checked it against the live site and DECISIONS.md history first (Finn) rather than acting on it directly — several of its claims didn't match reality (Mock Draft promo isn't "buried at the bottom," Trending content already exists as Hot Right Now/Insights, sport cards already carry live status). Its top recommendation (replace the hero with a dense multi-game strip) directly contradicts D-088, shipped minutes earlier on the owner's own steer — flagged to the owner rather than silently resolved either way, per this project's "flag conflicting instructions" standard. Its "pack in 30-40% more, reduce whitespace" direction was flagged as a real posture fork against DESIGN.md's density/space rules, not a small tweak. Owner chose to proceed with the three ideas that didn't conflict with anything already decided, and asked for the rest to be scoped rather than built.
+
+**1. Sport-picker cards show live/today counts.** New `_sportPickerCounts()` in `js/app.js` reads whatever `_updateHomeTicker` already fetched into `AppState.mlbGames`/`nflGames`/`ncaafGames` — no new fetch. Cards gain a second status line ("3 today · 1 live") only when there's a real count; when a sport has a live game right now, the card switches to the `.sport-card--live` pulse treatment that already existed in `css/main.css` but had no JS code path ever setting it. NCAAB excluded, same reason it's absent from D-087's merged ticker (no reliable per-day game data in `AppState` for it yet).
+
+**2. Pennant Races: division-odds % becomes the visual star.** Was trailing text at the same tiny size as the games-back caption (`+0.5 on TEX · 52% div`) — exactly DESIGN.md's own "receipts" pattern (computed number should be the visual star, provenance secondary) applied backwards. New `.pr-stat`/`.pr-odds-pct`/`.pr-odds-lbl` render the odds as a large bold mono number with the gap distance now the small supporting caption underneath, not beside it.
+
+**3. Search bar gets more visual weight.** Padding, font size, icon size, and text contrast all increased (`0.75rem/0.875rem` → `1.05rem/1rem`, icon 14px → 19px, muted → secondary/primary text color). Deliberately **no accent color added** — D-047 invariant #3 (brand orange is brand-only: logo, primary CTA, active nav) still applies; this is a size/contrast change, not new color vocabulary.
+
+**Deliberately not done — scoped for the team instead, not built:** the hero-size conflict, the density-philosophy question, nav rename (Scores/Tools vs. Players/News), "SportStrata Intelligence" branding, and further Trending/analytics-forward ideas are written up as a framed question in ISSUES.md ("Home — Remaining ChatGPT-brief ideas, scoped not built") for Vera/Kael/Axiom/Folio to pick up deliberately, not implemented here.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.

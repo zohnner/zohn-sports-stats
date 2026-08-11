@@ -2013,6 +2013,29 @@ main {
     background: var(--tc, var(--accent));
     border-radius: var(--radius-full);
 }
+/* Stat block (ChatGPT-brief quick win 2): odds % is the star (big, mono,
+   bold), the games-back gap is its supporting caption underneath — was
+   previously one line of equally-small trailing text. */
+.pr-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.05rem;
+}
+.pr-odds-pct {
+    font-family: var(--font-mono);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+}
+.pr-odds-lbl {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
 .pr-gap {
     font-size: 0.68rem;
     font-weight: 600;
@@ -2023,22 +2046,24 @@ main {
 @media (max-width: 560px) {
     .pennant-race { grid-template-columns: 1fr auto; row-gap: 0.3rem; }
     .pr-bar { grid-column: 1 / -1; order: 5; }
-    .pr-gap { grid-column: 1 / -1; text-align: left; order: 6; }
+    .pr-stat { grid-column: 1 / -1; align-items: flex-start; order: 6; }
 }
 
+/* ChatGPT-brief quick win 3: more visual weight (size/contrast), not a redesign
+   — no accent color added (D-047 invariant #3, brand orange stays brand-only). */
 .home-search-bar {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.75rem;
     width: 100%;
     background: var(--bg-card);
     border: 1px solid var(--border-mid);
     border-radius: var(--radius-lg);
-    padding: 0.75rem 1rem;
+    padding: 1.05rem 1.3rem;
     cursor: pointer;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-family: var(--font-sans);
-    font-size: 0.875rem;
+    font-size: 1rem;
     text-align: left;
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     box-shadow: var(--shadow-sm);
@@ -2046,15 +2071,15 @@ main {
 .home-search-bar:hover {
     border-color: var(--border-accent);
     box-shadow: var(--shadow-card-hov);
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 .home-search-bar-text { flex: 1; }
 .home-search-kbd {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xs);
-    padding: 0.15rem 0.4rem;
+    padding: 0.2rem 0.5rem;
     color: var(--text-subtle);
     font-family: var(--font-mono);
     font-weight: 600;
@@ -4102,6 +4127,14 @@ body.view-home .search-global-btn { display: none; }
     animation: pulseDot 1.6s ease-in-out infinite;
 }
 .sport-card--live .sport-card-status { color: var(--color-live); }
+/* Live/today counts (ChatGPT-brief quick win 1) — a second line under the
+   season-phase status, only rendered when there's a real count to show. */
+.sport-card-stats {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
 .sport-card-go { margin-left: auto; color: var(--text-subtle); font-size: 1.1rem; flex-shrink: 0; transition: transform 150ms ease-out, color 150ms ease-out; }
 .sport-card:hover .sport-card-go { transform: translateX(2px); color: var(--sport-accent, var(--accent)); }
 
