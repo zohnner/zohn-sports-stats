@@ -942,9 +942,27 @@ async function fetchMLBSchedule(daysBack = 7) {
         .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
 }
 
+// MLB Stats API rejects `stats=last7Days` (400) on the league-wide /stats
+// endpoint — that token is only valid as a `type` inside a single player's
+// hydrate (see _fetchMLBHittingSplits). The league-leaderboard equivalent is
+// `stats=byDateRange` with explicit startDate/endDate. This silently broke
+// both the Leaderboards "Hot" tab and the home Trending rail (D-091) — each
+// call was wrapped in a swallowed .catch(), so it failed with no console
+// error and no visible symptom beyond an empty section. Found live 2026-08-10.
+const _MLB_ROLLING_WINDOW_DAYS = { last7Days: 7, last14Days: 14, last30Days: 30 };
+
 async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit = 600, statsType = 'season') {
     const sortStat = group === 'hitting' ? 'battingAverage' : 'strikeOuts';
     const params = { stats: statsType, season, group, sportId: 1, limit, playerPool: 'All' };
+    const windowDays = _MLB_ROLLING_WINDOW_DAYS[statsType];
+    if (windowDays) {
+        const endET   = new Date(Date.now() - 5 * 60 * 60 * 1000);
+        const startET = new Date(endET.getTime() - windowDays * 24 * 60 * 60 * 1000);
+        const fmt = d => d.toISOString().slice(0, 10);
+        params.stats     = 'byDateRange';
+        params.startDate = fmt(startET);
+        params.endDate   = fmt(endET);
+    }
     if (statsType === 'season') params.sortStat = sortStat;
     const ttl  = statsType === 'season' && _activeGameHours() ? ApiCache.TTL.SHORT : ApiCache.TTL.MEDIUM;
     if (group === 'hitting' && statsType === 'season') await _ensureWrcConstants(season);

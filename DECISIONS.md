@@ -2066,7 +2066,7 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 ## D-091 — Home: team walkthrough of the six scoped ChatGPT-brief ideas; shipped "Trending, last 7 days"
 
-**Status:** shipped, small; pending push + live verification
+**Status:** shipped, small; live-verified with one real bug found and fixed during verification
 **Contributors:** Kael, Vera, Axiom, Relay, Folio, Finn
 **Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
 
@@ -2082,3 +2082,7 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Shipped: "Trending, last 7 days" in the home Insights rail.** Relay's finding made this a same-day build rather than a future spec: `AppState.mlbHotStats` (MLB Stats API `last7Days` split, via `fetchMLBLeagueStats`) already existed and was already being fetched for the Leaderboards page's Hot tab — this is a second consumer of existing data, not a new pipeline. `_renderHomeInsights()` now fires a new `_renderHomeTrending()` after its existing season-leader bullets, which ensures the hot-stats fetch, filters to a real sample (15+ AB / 5+ IP over 7 days — same fluke-noise discipline as the function's existing qualified-WHIP filter), and appends up to two bullets (best 7-day AVG, best 7-day ERA) in a visually separated block with its own "Trending, last 7 days" caption — DESIGN.md's receipts pattern applied to the timeframe claim, not just the number.
 
 **Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.
+
+**Live verification found a real, pre-existing bug (Axiom, fixed same session).** On production, `#railInsights` rendered the season-leader bullets but `.rail-trending` never appeared and `AppState.mlbHotStats` stayed unset. Manually invoking `_renderHomeTrending()` surfaced the cause: `fetchMLBLeagueStats(..., 'last7Days')` was throwing `MLB API 400` — the real MLB Stats API rejects `stats=last7Days` on the league-wide `/stats` endpoint (that token is only a valid per-player hydrate `type`, not a top-level `stats` value). Both this new call and the pre-existing Leaderboards Hot-tab call (`js/mlb.js` ~4276) wrap the fetch in a swallowed `.catch()`, so the Hot tab has been silently failing (empty state, no console error) since it shipped — this feature just made the silent failure visible for the first time.
+
+**Fix:** `fetchMLBLeagueStats()` now converts `last7Days`/`last14Days`/`last30Days` into `stats=byDateRange` with computed ET-adjusted `startDate`/`endDate`, leaving the `season`-type path untouched. Verified directly against the live API that `byDateRange` returns 200 with real splits where `last7Days` 400s. One fix in `fetchMLBLeagueStats` covers both call sites — no changes needed at either caller. Re-ran the full local verification suite (`node --check`, manifest, themes, 33 tests) clean; `sw.js` bumped to v169.
