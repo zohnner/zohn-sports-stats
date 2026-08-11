@@ -1976,7 +1976,7 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 ## D-087 — Home: cross-sport score ticker
 
-**Status:** shipped, small; pending push + live verification
+**Status:** shipped, small; live-verified
 **Contributors:** Kael, Vera, Axiom, Finn
 **Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
 
@@ -1990,4 +1990,6 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 
 **Deliberately out of scope:** NCAAB (no `Scorebug` normalizer yet — D-052 shipped its own standalone ticker function) and NHL (preview-only per CLAUDE.md's standing rule against unprompted NBA/NHL work). Full spec, states, and the shipped/verification note are in ISSUES.md under "Home — Cross-sport score ticker."
 
-**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing. `sw.js` bumped to v164. **Not yet live-verified** — needs push + a Chrome check once deployed (merged ticker on Home, sport-exclusive elsewhere, glyphs rendering, no flicker between the merged and per-sport poll loops during a live window).
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing. `sw.js` bumped to v164.
+
+**Live-verified 2026-08-10 after push:** merged ticker confirmed on Home, sport-exclusive elsewhere, league glyphs rendering, live MLB game state correct. One deploy-timing gotcha hit and resolved during verification (not a code defect): Cloudflare's *edge* cache kept serving pre-deploy `js/scorebug.js` for several minutes after push even through a full service-worker reinstall, since the SW's `{cache:'reload'}` precache fetch only bypasses the *browser's* HTTP cache, not Cloudflare's independent edge-cache TTL for that asset. Resolved on its own once the edge entry expired. Full diagnostic trail in ISSUES.md's "Home — Cross-sport score ticker" live-verify note, worth reading before assuming a future deploy didn't take.
