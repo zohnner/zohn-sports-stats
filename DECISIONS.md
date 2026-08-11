@@ -2059,3 +2059,5 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Deliberately not done — scoped for the team instead, not built:** the hero-size conflict, the density-philosophy question, nav rename (Scores/Tools vs. Players/News), "SportStrata Intelligence" branding, and further Trending/analytics-forward ideas are written up as a framed question in ISSUES.md ("Home — Remaining ChatGPT-brief ideas, scoped not built") for Vera/Kael/Axiom/Folio to pick up deliberately, not implemented here.
 
 **Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.
+
+**Live-verified 2026-08-10 after push.** MLB card correctly showed "10 today · 4 live" and switched to the `.sport-card--live` pulse class; NFL/NCAAF showed their season-phase status with no stats line (honestly empty — no games that day); NCAAB unaffected. Pennant Races showed "52%"/"60%" as large bold numbers with "+0.5 on TEX" as the small caption underneath. Search bar computed padding 16.8px/20.8px, font-size 16px — matches spec. Console clean.
