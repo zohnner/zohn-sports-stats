@@ -951,6 +951,22 @@ async function fetchMLBSchedule(daysBack = 7) {
 // error and no visible symptom beyond an empty section. Found live 2026-08-10.
 const _MLB_ROLLING_WINDOW_DAYS = { last7Days: 7, last14Days: 14, last30Days: 30 };
 
+// The MLB Stats API never puts `abbreviation` on a split's `team` object —
+// only `id`/`name`/`link`. `_fetchMLBLeaderSplits` already works around this
+// with an inline id→abbreviation enrich step; this is the same fix factored
+// out so any other consumer of raw fetchMLBLeagueStats splits (mlbHotStats'
+// two call sites) doesn't silently render blank team tags/colors the way the
+// Hot Right Now strip and home Trending rail both did once the byDateRange
+// fix (D-091 live-verify, 2026-08-10) finally let real data through.
+async function _enrichMLBTeamAbbr(splits, season = MLB_SEASON) {
+    if (!AppState.mlbTeams.length) {
+        try { AppState.mlbTeams = await fetchMLBTeams(season); } catch (_) { return splits; }
+    }
+    const abbrById = new Map(AppState.mlbTeams.map(t => [t.id, t.abbreviation]));
+    splits.forEach(s => { if (s.team?.id && !s.team.abbreviation) s.team.abbreviation = abbrById.get(s.team.id) || ''; });
+    return splits;
+}
+
 async function fetchMLBLeagueStats(group = 'hitting', season = MLB_SEASON, limit = 600, statsType = 'season') {
     const sortStat = group === 'hitting' ? 'battingAverage' : 'strikeOuts';
     const params = { stats: statsType, season, group, sportId: 1, limit, playerPool: 'All' };
@@ -4293,9 +4309,10 @@ async function loadMLBLeaderboards() {
             promises.push(Promise.all([
                 fetchMLBLeagueStats('hitting',  season, 600, 'last7Days'),
                 fetchMLBLeagueStats('pitching', season, 400, 'last7Days'),
-            ]).then(([hotHit, hotPit]) => {
+            ]).then(async ([hotHit, hotPit]) => {
                 hotHit.forEach(s => { if (s.stat) Object.assign(s.stat, _computeBattingRates(s.stat)); });
                 hotPit.forEach(s => { if (s.stat) Object.assign(s.stat, _computePitchingRates(s.stat)); });
+                await Promise.all([_enrichMLBTeamAbbr(hotHit, season), _enrichMLBTeamAbbr(hotPit, season)]);
                 AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
                 AppState._mlbHotStatsSeason = season;
             }).catch(() => {}));

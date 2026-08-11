@@ -1593,6 +1593,7 @@ async function _renderHomeTrending(host) {
             ]);
             hotHit.forEach(s => { if (s.stat && typeof _computeBattingRates === 'function') Object.assign(s.stat, _computeBattingRates(s.stat)); });
             hotPit.forEach(s => { if (s.stat && typeof _computePitchingRates === 'function') Object.assign(s.stat, _computePitchingRates(s.stat)); });
+            if (typeof _enrichMLBTeamAbbr === 'function') await Promise.all([_enrichMLBTeamAbbr(hotHit, season), _enrichMLBTeamAbbr(hotPit, season)]);
             AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
             AppState._mlbHotStatsSeason = season;
         } catch (_) { return; }
