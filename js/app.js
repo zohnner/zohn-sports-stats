@@ -77,10 +77,11 @@ const _SPORT_LANDING = {
         ['ncaab-standings', 'table', 'Standings', 'Every conference, one page'],
         ['ncaab-scores', 'scores', 'Scores', 'Live scoreboard'],
         ['ncaab-teams', 'player', 'Teams', 'Browse by conference'] ] },
-    // D-092: no poll/rankings surface exists for a pro league (unlike NCAAF/
-    // NCAAB) and player detail is deferred same as the college sports — 3 real
-    // cards, no padding to 4.
+    // D-092 follow-up: no poll/rankings surface exists for a pro league (unlike
+    // NCAAF/NCAAB), but player-level stat Leaders (distinct from a poll) turned
+    // out fully viable on a live data-depth check — 4 real cards.
     wnba: { tag: 'Every WNBA conference — free, no login.', cards: [
+        ['wnba-leaders', 'bars', 'Leaders', 'PPG · RPG · APG · SPG · BPG'],
         ['wnba-standings', 'table', 'Standings', 'Eastern & Western, one page'],
         ['wnba-scores', 'scores', 'Scores', 'Live scoreboard'],
         ['wnba-teams', 'player', 'Teams', 'Browse by conference'] ] },
