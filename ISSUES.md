@@ -2589,6 +2589,10 @@ Owner asked the team to actually walk through all six items rather than leave th
 
 **Cipher (security):** zero new CSP surface — `site.api.espn.com`/`a.espncdn.com` already allowlisted (verified live in `index.html` + `_headers`); the Pages Functions hit `site.web.api.espn.com` server-side only, same pattern as NFL/NCAAF/NCAAB. Inherits `/api/*` rate limiting. `_escHtml()` required on all ESPN-derived strings. Cleared.
 
-**All five gates cleared — cleared for Finn.** Build proceeds same session (owner present, proven low-risk clone pattern, same as D-052's own same-day P1–P3 execution).
+**All five gates cleared — cleared for Finn.** Build proceeds same session (owner present, proven low-risk clone pattern, same as D-052's own same-day P1-P3 execution).
+
+**Shipped — 2026-08-10 (commit `e62ffc5`).** Built exactly to the D-092 spec: `functions/api/wnba.js` + `functions/api/wnbastandings.js` (ESPN proxy clones), `js/wnba.js` (Scores/Standings/Teams, self-contained ticker), full nav wiring, zero new CSS, CLAUDE.md doc-sync (also caught up stale NCAAB references in the same paragraphs). Verified locally: `node --check` clean, 0 NUL bytes, `check-manifest.cjs` clean, `check-themes.cjs` clean (2 pre-existing unrelated warnings only), 33/33 unit tests. `sw.js` bumped to v171.
+
+**Live-verified after push — 2026-08-10.** Real third-caching-layer finding during verification (same class of bug D-091 documented, not a new one): SW confirmed v171 with `/js/wnba.js` precached almost immediately, but the browser tab kept running a pre-deploy `navigation.js` (`SPORTS.map(s=>s.id)` missing `'wnba'`) even after the origin and SW were both confirmed fresh — the browser's own HTTP disk cache was the stale layer. Fixed for verification purposes with `fetch(url,{cache:'reload'})` + SW unregister/Cache Storage clear + reload, not a site bug. After that: sport switcher and picker band both show WNBA, picker card correctly reads "● Season underway" for today (confirmed both visually and via a direct `_sportPickerStatus('wnba')` call). Scores rendered two real live/final games with logos and the merged ticker. Standings rendered full Eastern (7)/Western (8, confirmed 15 teams total including Portland Fire) conference tables with real records/GB/streaks. Teams rendered all 15 teams grouped by conference. Zero console errors. D-092 closed.
 
 ---
