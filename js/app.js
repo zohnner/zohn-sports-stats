@@ -1568,6 +1568,67 @@ function _renderHomeInsights() {
     host.innerHTML = insights.slice(0, 4).map(i =>
         `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`
     ).join('') + `<p class="pct-caption">Season leaders through today · computed from MLB Stats API</p>`;
+
+    // Trending, last 7 days (ISSUES.md item 6, "Home — Remaining ChatGPT-brief
+    // ideas"). Appended once ready rather than blocking the season bullets
+    // above on a second fetch — this function stays synchronous, the trend
+    // block below is its own async follow-on.
+    _renderHomeTrending(host);
+}
+
+// AppState.mlbHotStats is the exact last7Days split the Leaderboards page's
+// Hot tab already fetches (mlb.js) — this is a second consumer of data that
+// already exists, not a new pipeline. Qualification floors (15 AB / 5 IP)
+// mirror the same-spirit qPit filter above: a 7-day window is short enough
+// that an unfiltered top is mostly 1-for-1 or 1-inning noise, not a trend.
+async function _renderHomeTrending(host) {
+    if (!host || !host.isConnected) return;
+    const season = AppState.mlbLeaderSeason || MLB_SEASON;
+    if (!AppState.mlbHotStats || AppState._mlbHotStatsSeason !== season) {
+        if (typeof fetchMLBLeagueStats !== 'function') return;
+        try {
+            const [hotHit, hotPit] = await Promise.all([
+                fetchMLBLeagueStats('hitting',  season, 600, 'last7Days'),
+                fetchMLBLeagueStats('pitching', season, 400, 'last7Days'),
+            ]);
+            hotHit.forEach(s => { if (s.stat && typeof _computeBattingRates === 'function') Object.assign(s.stat, _computeBattingRates(s.stat)); });
+            hotPit.forEach(s => { if (s.stat && typeof _computePitchingRates === 'function') Object.assign(s.stat, _computePitchingRates(s.stat)); });
+            AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
+            AppState._mlbHotStatsSeason = season;
+        } catch (_) { return; }
+    }
+    // The view (or this exact rail render) may have moved on while the fetch
+    // was in flight — same discipline as _updateHomeTicker's own late-arrival guard.
+    if (AppState.currentView !== 'home' || !host.isConnected) return;
+
+    const _teamColor = ab => (typeof getMLBTeamColors === 'function' ? getMLBTeamColors(ab).primary : '#7c8df0');
+    const _top1 = (arr, key, desc = true) => {
+        const s = (arr || []).filter(x => x.stat?.[key] != null && !isNaN(parseFloat(x.stat[key])))
+            .sort((a, b) => { const av = parseFloat(a.stat[key]), bv = parseFloat(b.stat[key]); return desc ? bv - av : av - bv; });
+        return s[0];
+    };
+    const hot = AppState.mlbHotStats || {};
+    const hitPool = (hot.hitting  || []).filter(s => (parseInt(s.stat?.atBats, 10) || 0) >= 15);
+    const pitPool = (hot.pitching || []).filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= 5);
+
+    const bullets = [];
+    const avgTop = _top1(hitPool, 'avg');
+    if (avgTop) {
+        const avgStr = parseFloat(avgTop.stat.avg).toFixed(3).replace(/^0\./, '.');
+        bullets.push({ c: _teamColor(avgTop.team?.abbreviation || ''),
+            t: `${avgTop.player?.fullName || '—'} (${avgTop.team?.abbreviation || ''}) is hitting ${avgStr} over the last 7 days` });
+    }
+    const eraTop = _top1(pitPool, 'era', false);
+    if (eraTop) {
+        bullets.push({ c: _teamColor(eraTop.team?.abbreviation || ''),
+            t: `${eraTop.player?.fullName || '—'} (${eraTop.team?.abbreviation || ''}) has a ${parseFloat(eraTop.stat.era).toFixed(2)} ERA over the last 7 days` });
+    }
+    if (!bullets.length) return;
+
+    host.insertAdjacentHTML('beforeend', `<div class="rail-trending">
+        ${bullets.map(i => `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`).join('')}
+        <p class="pct-caption">Trending, last 7 days · computed from MLB Stats API</p>
+    </div>`);
 }
 
 // ── Freshness signals (D-046 P4) — "Updated Nm ago" from real fetch time ──

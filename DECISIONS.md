@@ -2061,3 +2061,24 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.
 
 **Live-verified 2026-08-10 after push.** MLB card correctly showed "10 today · 4 live" and switched to the `.sport-card--live` pulse class; NFL/NCAAF showed their season-phase status with no stats line (honestly empty — no games that day); NCAAB unaffected. Pennant Races showed "52%"/"60%" as large bold numbers with "+0.5 on TEX" as the small caption underneath. Search bar computed padding 16.8px/20.8px, font-size 16px — matches spec. Console clean.
+
+---
+
+## D-091 — Home: team walkthrough of the six scoped ChatGPT-brief ideas; shipped "Trending, last 7 days"
+
+**Status:** shipped, small; pending push + live verification
+**Contributors:** Kael, Vera, Axiom, Relay, Folio, Finn
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner asked the team to actually walk the six items D-090 had scoped-not-built, rather than leave them as framing. Full outcomes for all six are in ISSUES.md under "Home — Remaining ChatGPT-brief ideas, scoped not built" → "Team walkthrough outcomes." Summary:
+
+- **Hero size:** resolved, keep D-088 — Today's Games already provides the comprehensive view the brief wanted; the hero was never competing with it.
+- **Density philosophy:** deliberately deferred pending real Cloudflare Web Analytics data (live since 2026-08-09) rather than acting on an aesthetic read of two screenshots.
+- **Nav rename:** not resolved — but surfaced that CLAUDE.md's nav documentation has drifted from the real `SUB_NAV_TABS` config (flagged for Folio) and that "Scores" is already present where the header ticker's SCORES button doesn't cover a sport (NCAAF/NCAAB), absent where it does (MLB/NFL) — not an inconsistency, correctly built. Recommends splitting the Analytics dropdown, not a blind rename.
+- **"SportStrata Intelligence" branding:** confirmed buildable (raw material already exists, scattered across D-039/D-046/D-028/D-080) but scoped as a real feature, not built.
+- **Search-bar centerpiece:** confirmed as a real new feature (first non-⌘K search surface) needing its own Vera states spec — not started.
+- **Trending/rolling-window stats:** the one item worth shipping same-session — see below.
+
+**Shipped: "Trending, last 7 days" in the home Insights rail.** Relay's finding made this a same-day build rather than a future spec: `AppState.mlbHotStats` (MLB Stats API `last7Days` split, via `fetchMLBLeagueStats`) already existed and was already being fetched for the Leaderboards page's Hot tab — this is a second consumer of existing data, not a new pipeline. `_renderHomeInsights()` now fires a new `_renderHomeTrending()` after its existing season-leader bullets, which ensures the hot-stats fetch, filters to a real sample (15+ AB / 5+ IP over 7 days — same fluke-noise discipline as the function's existing qualified-WHIP filter), and appends up to two bullets (best 7-day AVG, best 7-day ERA) in a visually separated block with its own "Trending, last 7 days" caption — DESIGN.md's receipts pattern applied to the timeframe claim, not just the number.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 33-test unit suite passing.

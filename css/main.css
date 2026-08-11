@@ -1955,6 +1955,12 @@ main {
     line-height: 1.4;
 }
 .rail-panel .pct-caption { padding: 0.5rem 0.75rem 0.6rem; margin: 0; }
+/* Trending, last 7 days (ISSUES.md item 6, "Home — Remaining ChatGPT-brief
+   ideas") — appended after the season-leader bullets once AppState.mlbHotStats
+   is ready; the top border/margin is the only visual cue separating the two
+   timeframes, since both reuse the identical .rail-insight row anatomy on
+   purpose (one component, two data sources, not a new visual language). */
+.rail-trending { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-default); }
 
 /* Freshness signal (D-046 P4) */
 .home-updated {
