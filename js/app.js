@@ -77,6 +77,13 @@ const _SPORT_LANDING = {
         ['ncaab-standings', 'table', 'Standings', 'Every conference, one page'],
         ['ncaab-scores', 'scores', 'Scores', 'Live scoreboard'],
         ['ncaab-teams', 'player', 'Teams', 'Browse by conference'] ] },
+    // D-092: no poll/rankings surface exists for a pro league (unlike NCAAF/
+    // NCAAB) and player detail is deferred same as the college sports — 3 real
+    // cards, no padding to 4.
+    wnba: { tag: 'Every WNBA conference — free, no login.', cards: [
+        ['wnba-standings', 'table', 'Standings', 'Eastern & Western, one page'],
+        ['wnba-scores', 'scores', 'Scores', 'Live scoreboard'],
+        ['wnba-teams', 'player', 'Teams', 'Browse by conference'] ] },
 };
 
 // NFL landing seasonal line (D-045 said "one hero + seasonal line" but the line was a
@@ -1840,6 +1847,8 @@ function _sportPickerStatus(id) {
                           return { cls: 'idle', label: 'Preview · starts Aug' }; }
     if (id === 'ncaab') { if (m <= 4 || m >= 11)  return { cls: 'active', label: 'Season underway' };
                           return { cls: 'idle', label: 'Preview · starts Nov' }; }
+    if (id === 'wnba')  { if (m >= 4 && m <= 10)  return { cls: 'active', label: 'Season underway' };
+                          return { cls: 'idle', label: 'Preview · starts April' }; }
     return { cls: 'idle', label: 'Explore' };
 }
 

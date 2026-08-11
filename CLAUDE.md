@@ -12,6 +12,10 @@ All user-facing text uses "SportStrata". Never revert to "ZohnStats".
 
 **NBA and NHL remain preview-only** — do not propose NBA/NHL feature work unprompted. **NCAA Football is a live surface (D-042, 2026-07-06):** Scores (offseason-aware), Rankings (AP/Coaches/CFP), conference-grouped Standings + Teams, and the home sport-picker band all shipped. Player leaders/detail were deferred (CFB player data too sparse). NCAAF feature work is in scope.
 
+**Men's College Basketball (NCAAB) is a live 5th surface (D-052, ratified 2026-08-10):** Scores (offseason-aware), conference-grouped Standings + Teams, Rankings (AP/Coaches). Same ESPN-proxy-clone pattern as NCAAF. Player leaders/detail data-checked as viable but not built (owner decision pending). NCAAB feature work is in scope. **[Doc-sync catch-up 2026-08-10 — this file had not been updated when NCAAB shipped; corrected in the same pass as the WNBA addition below per the standing doc-sync rule.]**
+
+**WNBA is a live 6th surface (D-092, 2026-08-10, owner override of D-052's calendar-gap recommendation — see DECISIONS.md D-092 for the full trade-off record):** Scores (offseason-aware, Apr–Oct season), conference-grouped Standings (Eastern/Western, flat — no divisions), Teams. No Rankings (no poll exists for a pro league) and no player leaders/detail (deferred, same posture as NCAAF/NCAAB's original deferral). WNBA feature work is in scope.
+
 Both MLB depth and NFL beta build-out count as forward progress. NFL roadmap (leaderboards, player cards/detail reusing MLB component patterns; later fantasy grades + league import behind an accounts tier) lives in DECISIONS.md D-012/D-014.
 
 ---
@@ -46,7 +50,7 @@ These rules govern how you respond in all interactions, not just code tasks.
 
 Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts share global scope via classic `<script>` tags in `index.html` — there is no module system.
 
-**Script load order matters** (see `index.html`): `config.js` → `detailFrame.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `odds.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `ncaaf.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `auth.js` → `news.js` → `scorebug.js` → `app.js`. Each file can reference globals defined by files loaded before it.
+**Script load order matters** (see `index.html`): `config.js` → `detailFrame.js` → `errorHandler.js` → `cache.js` → `schema.js` → `api.js` → `glossary.js` → `players.js` → `leaderboards.js` → `teams.js` → `games.js` → `charts.js` → `playerDetail.js` → `statBuilder.js` → `mlb.js` → `odds.js` → `scorecard.js` → `liveGame.js` → `shareCard.js` → `highlightCard.js` → `nfl.js` → `nflLiveGame.js` → `nflStandings.js` → `fantasy.js` → `sos.js` → `nhl.js` → `ncaaf.js` → `ncaab.js` → `wnba.js` → `arcade.js` → `standings.js` → `db.js` → `query.js` → `search.js` → `navigation.js` → `auth.js` → `news.js` → `scorebug.js` → `app.js`. Each file can reference globals defined by files loaded before it. **(Corrected 2026-08-10, D-092 doc-sync pass — this line had drifted stale before NCAAB/WNBA were added; verify against `index.html` directly if it drifts again.)**
 
 ---
 
@@ -55,7 +59,7 @@ Vanilla JS/CSS/HTML, ES2022+, no bundler, no framework, no build step. Scripts s
 `AppState` in `api.js` holds all runtime state. Key fields:
 
 ```js
-AppState.currentSport   // 'nba' | 'mlb' | 'nfl' | 'nhl' | 'ncaaf'  (default: 'mlb')
+AppState.currentSport   // 'nba' | 'mlb' | 'nfl' | 'nhl' | 'ncaaf' | 'ncaab' | 'wnba'  (default: 'mlb')
 AppState.currentView    // current route string e.g. 'mlb-players'
 // MLB
 AppState.mlbTeams       // array of team objects
@@ -117,9 +121,15 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 | `js/ncaaf.js` | NCAA Football (D-042) — ESPN college-football via `/api/ncaaf` (+ `/api/ncaafstandings`); season model, Scores (offseason-aware), Rankings (AP/Coaches/CFP), conference-grouped Standings + Teams |
 | `functions/api/ncaaf.js` | Pages Function — same-origin ESPN college-football proxy (clone of `nfl.js`), allowlisted paths, no keys/D1 |
 | `functions/api/ncaafstandings.js` | Pages Function — CFB standings via `site.web.api` (the `site.api` standings feed is a stub, same as NFL/D-029); season-parameterized conference tree, no keys/D1 |
+| `js/ncaab.js` | Men's College Basketball (D-052) — ESPN via `/api/ncaab` (+ `/api/ncaabstandings`); season model (end-year labeled), Scores (offseason-aware), Rankings (AP/Coaches), conference-grouped Standings + Teams. Player leaders/detail deferred |
+| `functions/api/ncaab.js` | Pages Function — same-origin ESPN men's college basketball proxy (clone of `ncaaf.js`), allowlisted paths, no keys/D1 |
+| `functions/api/ncaabstandings.js` | Pages Function — CBB standings via `site.web.api`; season-parameterized conference tree (flatter than NCAAF's — same recursive collector, fewer nesting levels), no keys/D1 |
+| `js/wnba.js` | WNBA (D-092, owner override of D-052) — ESPN via `/api/wnba` (+ `/api/wnbastandings`); single-calendar-year season model (Apr-Oct), Scores (offseason-aware), Standings (Eastern/Western, flat — no divisions), Teams. No Rankings (no poll for a pro league); no player leaders/detail. Self-contained ticker — deliberately does not call `Scorebug.normalizeNCAAFGame` (see `js/scorebug.js` note below) |
+| `functions/api/wnba.js` | Pages Function — same-origin ESPN WNBA proxy (clone of `ncaab.js`), allowlisted paths, no keys/D1 |
+| `functions/api/wnbastandings.js` | Pages Function — WNBA standings via `site.web.api`; flat two-conference tree (Eastern/Western, no division nesting), no keys/D1 |
 | `functions/api/mlb.js` | Cloudflare Pages Function — D1 edge cache proxy for `statsapi.mlb.com` + Savant |
 | `js/detailFrame.js` | Shared cross-sport detail-page chrome (D-044 P1): `detailHeader()`, `detailSection()`. One source of truth for the player/team detail header so MLB/NFL/NCAAF stay in visual parity — sports differ only in the config object passed in, never a forked template. Loads right after `config.js` |
-| `js/scorebug.js` | Shared cross-sport scorebug builder (D-047 S2): normalizes each sport's game data once, then renders it through one identical anatomy (pill/state, mono scores, team-color edge, logo slot). Loads after `news.js`, before `app.js` |
+| `js/scorebug.js` | Shared cross-sport scorebug builder (D-047 S2): normalizes each sport's game data once, then renders it through one identical anatomy (pill/state, mono scores, team-color edge, logo slot). Loads after `news.js`, before `app.js`. **Known gap (found D-092):** NCAAB (`js/ncaab.js`) is not migrated to this model — its ticker calls `Scorebug.normalizeNCAAFGame`, which hardcodes `sport:'ncaaf'`, so NCAAB ticker items have carried the wrong league glyph and `data-sport` value since D-052 shipped. Not fixed yet (out of scope for D-092); WNBA (`js/wnba.js`) avoids the bug with its own self-contained, non-Scorebug ticker rather than reproducing the same mis-call |
 | `js/auth.js` | Accounts (D-031, optional/additive — every page still works fully signed-out). `AuthState` (session + `follows` Set), sign-in sheet, account control, Turnstile-gated magic-link/Google/passkey flows. Owns the unified follow system: `AuthState.follows` is a local-first (`localStorage` key `zs_follows`) Set of `"sport:entityType:entityId"` keys; `toggleFollow()` is local-first-optimistic with best-effort background sync when signed in and dispatches `ss:follow-changed`; `renderFollowStar(sport, entityType, entityId, opts)` is the one favorite/follow UI across MLB/NFL/NCAAF/NBA cards and detail headers — do not reintroduce a per-sport heart button. `_migrateLegacyFavorites()` one-time-folds the old `zs_fav_teams`/`zs_mlb_favs`/`zs_favs` keys in. Loads after `navigation.js`, before `news.js` |
 | `css/auth.css` | `.auth-*` namespaced styles: sign-in sheet, account control, account page, and the `.auth-follow-star` component (`--card-corner` and `--hgc` position variants) |
 | `functions/api/auth/[[route]].js` | better-auth catch-all — session, magic-link, Google OAuth, passkey |
@@ -159,10 +169,12 @@ MLB_SEASON              // defined in mlb.js — auto-detects: Mar–Oct=current
 - **NBA.com stats:** `https://stats.nba.com/stats/leagueLeaders` — requires `Referer: https://www.nba.com/` header.
 - **ESPN headshots:** `https://a.espncdn.com/i/headshots/nba/players/full/{espn_id}.png`
 
-### NFL / NHL / NCAAF (preview)
+### NFL / NHL / NCAAF / NCAAB / WNBA (NHL preview; NFL/NCAAF/NCAAB/WNBA live)
 - **NFL:** ESPN public API — `https://site.api.espn.com/apis/site/v2/sports/football/nfl/`
-- **NHL:** `https://api-web.nhle.com/`
+- **NHL:** `https://api-web.nhle.com/` (preview only — do not extend unprompted)
 - **NCAAF (D-042):** ESPN college-football — `https://site.api.espn.com/apis/site/v2/sports/football/college-football/` via `/api/ncaaf` (scoreboard, rankings). Same host as NFL → no CSP change. Standings + conference-grouped Teams read `site.web.api.espn.com/.../college-football/standings` via `/api/ncaafstandings` (season-parameterized; the `site.api` standings feed is a stub). Shipped: Scores, Rankings, Standings, Teams. Player leaders/detail deferred (CFB player data too sparse — D-042).
+- **NCAAB (D-052):** ESPN men's college basketball — `site.web.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball` via `/api/ncaab` (site.api's version is Cloudflare-egress-blocked, same WAF issue D-062 found for NFL). Standings + Teams read `/api/ncaabstandings` (recursive conference/division collector — ~32 conferences, mostly flat). Shipped: Scores, Rankings, Standings, Teams. Player leaders/detail data-checked as viable, not built (owner decision pending).
+- **WNBA (D-092):** ESPN WNBA — `site.web.api.espn.com/apis/site/v2/sports/basketball/wnba` via `/api/wnba`. Standings read `/api/wnbastandings` — a flat two-conference tree (Eastern/Western, no division nesting), the simplest of any sport's standings feed. Shipped: Scores, Standings, Teams. No Rankings (no poll for a pro league); no player leaders/detail (deferred).
 
 ---
 
