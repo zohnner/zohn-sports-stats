@@ -1993,3 +1993,25 @@ The owner asked to "consider" the videocreation engine specifically, and the hon
 **Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing. `sw.js` bumped to v164.
 
 **Live-verified 2026-08-10 after push:** merged ticker confirmed on Home, sport-exclusive elsewhere, league glyphs rendering, live MLB game state correct. One deploy-timing gotcha hit and resolved during verification (not a code defect): Cloudflare's *edge* cache kept serving pre-deploy `js/scorebug.js` for several minutes after push even through a full service-worker reinstall, since the SW's `{cache:'reload'}` precache fetch only bypasses the *browser's* HTTP cache, not Cloudflare's independent edge-cache TTL for that asset. Resolved on its own once the edge entry expired. Full diagnostic trail in ISSUES.md's "Home — Cross-sport score ticker" live-verify note, worth reading before assuming a future deploy didn't take.
+
+---
+
+## D-088 — Home: scaled-up Data-Story hero
+
+**Status:** shipped, small; pending push + live verification
+**Contributors:** Kael, Vera, Axiom, Finn
+**Date opened:** 2026-08-10 | **Date resolved:** 2026-08-10
+
+**Trigger:** owner asked for a more comprehensive review of the whole home dashboard, specifically raising whether a larger visual element (like the competitor sites) was needed — a direct follow-on to D-087's framing.
+
+**Finding:** a full top-to-bottom screenshot review of production found ten home modules stacked at roughly equal visual weight. D-046 had already named the fix for this when it built the hero ("hero > live games > pennant-races-as-viz > headlines rail > ticker") but the shipped hero was never actually sized to read as dominant — modest padding, a 1.15rem headline, 24px team logos.
+
+**Kael, on the literal "add a photo" reading:** rejected, for a sharper reason than "DESIGN.md says no" — ESPN/Athletic/Bleacher Report can run a daily photo because they have photo desks curating and captioning it; we don't, and an uncaptioned generic photo over live data reads as filler, undercutting "broadcast-grade" rather than reinforcing it. The instinct (something should visually dominate) is correct; the fix is scaling the *existing* generated hero, not adding an unsustainable module.
+
+**Real bug found and fixed in the same pass:** a dead pre-D-046 `.home-hero` CSS block (`.home-hero-title`, `.home-hero-badge`, `.home-stats-strip`, etc. — confirmed via grep to be referenced nowhere in `js/`/`index.html`) had been silently leaking `text-align: center` into the live hero, since the D-046 rule that replaced it never reset the property. Removed the dead block plus two orphaned responsive overrides that would have fought the new sizing on mobile, plus one further orphaned override found later in the file. `text-align: left` now set explicitly.
+
+**What shipped:** `.home-hero`/`.hero-*` rescaled (padding, headline, hook, board logos/scores roughly doubled in visual weight — full numbers in ISSUES.md), applies to all hero variants (MLB live/upcoming, standings fallback, NFL) since they share the same classes. Live MLB games gain a real new element — the base/outs/count diamond grid cards already show, reused via `Scorebug.normalizeMLBGame(g).liveHtml` rather than rebuilt — so the hero shows live-state detail beyond the score for the first time. No new fetch, no new data source, no behavioral change to hero selection logic.
+
+**Deliberately not done:** no live-diamond equivalent for NFL's hero (no Scorebug live-state fragment exists for football yet — named, not built). No changes to the ten other home modules' relative weight — that's a smaller named follow-on (Vera), not part of this pass.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full unit suite (33 tests) passing, grep-confirmed clean of every dead class name site-wide. Full spec and exact before/after values in ISSUES.md under "Home — Scaled-up Data-Story hero." **Not yet live-verified** — pending push.

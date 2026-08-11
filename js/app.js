@@ -1287,12 +1287,19 @@ function _heroFromGame(g, kind) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const a = _heroTeamInfo('away', g), h = _heroTeamInfo('home', g);
     const matchupTitle = `${_esc(a.name)} at ${_esc(h.name)}`;
-    let kicker, hook, board, cta;
+    let kicker, hook, board, cta, liveDetail = '';
     if (kind === 'live') {
         kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
         hook   = _heroLiveHook(g);
         board  = _heroBoard(g, true);
         cta    = 'Watch live →';
+        // D-047 S2 reuse: base/outs/count come from Scorebug's own normalized
+        // model (same fragment the grid cards already render via .hgc-live) —
+        // the hero previously showed zero live-state detail beyond the score.
+        if (typeof Scorebug !== 'undefined' && typeof Scorebug.normalizeMLBGame === 'function') {
+            const model = Scorebug.normalizeMLBGame(g);
+            if (model.liveHtml) liveDetail = `<div class="hero-live-detail">${model.liveHtml}</div>`;
+        }
     } else {
         const time = _heroClockET(g.gameDate);
         const awayPP = g.teams?.away?.probablePitcher?.fullName;
@@ -1312,7 +1319,7 @@ function _heroFromGame(g, kind) {
             <p class="hero-hook">${_esc(hook)}</p>
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
-        <div class="hero-visual">${board}</div>`;
+        <div class="hero-visual">${board}${liveDetail}</div>`;
     return { kind, html, onClick: () => _openMLBGameFromHero(g.gamePk, kind === 'live') };
 }
 // Sport-aware hero (owner-scoped 2026-08-09, following up D-046 P2): the

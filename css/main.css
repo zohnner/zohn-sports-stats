@@ -1031,89 +1031,6 @@ main {
     gap: 1.25rem;
 }
 
-.home-hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius-xl);
-    padding: 2.75rem 2.5rem 2.25rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-default);
-    text-align: center;
-    box-shadow: var(--shadow-card);
-}
-
-.home-hero-glow {
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(ellipse 90% 70% at 50% -10%, color-mix(in srgb, var(--accent-light) 10%, transparent) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 15% 110%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 40% at 85% 110%, color-mix(in srgb, var(--accent-light) 6%, transparent) 0%, transparent 55%);
-    pointer-events: none;
-}
-
-.home-hero-content { position: relative; z-index: 1; }
-
-.home-hero-badge {
-    display: inline-block;
-    background: var(--accent-subtle);
-    border: 1px solid var(--accent-border);
-    color: var(--accent-light);
-    font-size: var(--text-xs);
-    font-weight: 800;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    padding: 0.35rem 1rem;
-    border-radius: var(--radius-full);
-    margin-bottom: 1.5rem;
-    animation: fadeUp 0.4s var(--ease-out) both;
-}
-
-.home-hero-title {
-    font-size: clamp(3rem, 8vw, 5.5rem);
-    font-weight: 900;
-    letter-spacing: -3px;
-    line-height: 1;
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-    animation: fadeUp 0.45s 0.05s var(--ease-out) both;
-}
-
-.home-hero-sub {
-    color: var(--text-muted);
-    font-size: var(--text-md);
-    font-weight: 500;
-    max-width: 480px;
-    margin: 0 auto 1.5rem;
-    line-height: 1.5;
-    animation: fadeUp 0.5s 0.1s var(--ease-out) both;
-}
-
-/* Animated stats strip inside hero */
-.home-stats-strip {
-    display: flex;
-    justify-content: center;
-    gap: 2.5rem;
-    animation: fadeUp 0.55s 0.18s var(--ease-out) both;
-}
-.home-stat { text-align: center; }
-.home-stat-num {
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    font-weight: 900;
-    color: var(--accent-light);
-    letter-spacing: -1px;
-    line-height: 1;
-    margin-bottom: 0.3rem;
-    font-variant-numeric: tabular-nums;
-}
-.home-stat-lbl {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
 /* Sport entry cards */
 .home-sports-grid {
     display: grid;
@@ -1800,13 +1717,19 @@ main {
     line-height: 1.5;
 }
 
-/* Data-Story hero (D-046 P2) — the focal narrative; generated graphics only,
-   no photos. Theme-safe (tokens only). State kicker carries liveness, not the border. */
+/* Data-Story hero (D-046 P2; scaled up per ISSUES.md "Home — Scaled-up Data-Story
+   hero"). Still generated graphics only, no photos (DESIGN.md posture) — this is a
+   sizing/typography pass, not a new visual language. State kicker carries liveness,
+   not the border. text-align is set explicitly on .hero-main below: a dead
+   pre-D-046 .home-hero rule used to set text-align:center on this same class and
+   was silently inherited by .hero-headline/.hero-hook since neither reset it —
+   removed (main.css, "Sport entry cards" section boundary) rather than left as a
+   landmine for the next person who edits this block. */
 .home-hero {
     display: flex;
     align-items: stretch;
-    gap: 1.25rem;
-    padding: 1.1rem 1.25rem;
+    gap: 2rem;
+    padding: 2.25rem 2.25rem;
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
@@ -1825,9 +1748,14 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.4rem;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.65rem;
 }
-/* D-047 S4 — one eyebrow recipe (§11: replaces ~6 independent declarations) */
+/* D-047 S4 — one eyebrow recipe (§11: replaces ~6 independent declarations).
+   Left untouched at hero scale on purpose — real broadcast graphics keep the
+   eyebrow small and let the headline carry the size jump, and this rule is
+   shared with .hm-kicker/.settings-subsection-label so it can't move alone. */
 .eyebrow, .hm-kicker, .hero-kicker, .settings-subsection-label {
     font-size: var(--text-xs);
     font-weight: 800;
@@ -1839,7 +1767,7 @@ main {
     align-self: flex-start;
     color: var(--text-muted);
     background: var(--bg-interactive);
-    padding: 0.15rem 0.5rem;
+    padding: 0.2rem 0.6rem;
     border-radius: var(--radius-full);
 }
 .hero-kicker--live {
@@ -1859,56 +1787,64 @@ main {
 }
 .hero-kicker--race { color: var(--accent-light); background: var(--accent-subtle); }
 .hero-headline {
-    font-size: 1.15rem;
+    font-size: clamp(1.6rem, 1.1rem + 2vw, 2.35rem);
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.12;
+    letter-spacing: -0.5px;
     color: var(--text-primary);
     font-family: var(--font-display);
     margin: 0;
 }
 .hero-hook {
-    font-size: 0.85rem;
+    font-size: 1.05rem;
     color: var(--text-secondary);
     line-height: 1.4;
     margin: 0;
 }
-.hero-meta { margin-top: 0.15rem; }
+.hero-meta { margin-top: 0.35rem; }
 .hero-cta {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--accent);
 }
+/* D-047 S2 reuse: the live diamond/outs/count fragment is Scorebug's own
+   normalizeMLBGame().liveHtml (.hgc-live/.hgc-diamond/.hgc-outs, already styled
+   for the grid cards) — dropped in as-is rather than rebuilt, so the hero's live
+   state matches the exact same visual vocabulary the grid/live-game page use. */
+.hero-live-detail { margin-top: 0.25rem; }
 .hero-visual {
     flex: 0 0 auto;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 130px;
+    gap: 0.6rem;
+    min-width: 190px;
 }
 .hero-board {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.6rem;
     width: 100%;
 }
 .hero-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.6rem;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
     background: var(--bg-card);
     border-left: 3px solid var(--tc, var(--border-mid));
     border-radius: var(--radius-sm);
 }
 .hero-row-logo {
-    width: 24px;
-    height: 24px;
+    width: 52px;
+    height: 52px;
     object-fit: contain;
     flex-shrink: 0;
 }
 .hero-row-abbr {
     flex: 1;
-    font-size: 0.8rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-secondary);
     letter-spacing: 0.02em;
@@ -1916,7 +1852,7 @@ main {
 .hero-row--win .hero-row-abbr { color: var(--text-primary); }
 .hero-row-score {
     font-family: var(--font-mono);
-    font-size: 1.05rem;
+    font-size: 1.85rem;
     font-weight: 800;
     color: var(--text-muted);
     min-width: 1.4ch;
@@ -1926,21 +1862,24 @@ main {
 .hero-standings {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    padding: 0.5rem 0.85rem;
+    gap: 1rem;
+    padding: 0.85rem 1.15rem;
     background: var(--bg-card);
     border-left: 3px solid var(--tc, var(--accent));
     border-radius: var(--radius-md);
 }
-.hero-standings-logo { width: 46px; height: 46px; object-fit: contain; }
+.hero-standings-logo { width: 64px; height: 64px; object-fit: contain; }
 .hero-standings-rec { display: flex; flex-direction: column; }
-.hero-standings-rank { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
-.hero-standings-wl { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 800; color: var(--text-primary); }
+.hero-standings-rank { font-size: 0.75rem; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+.hero-standings-wl { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
 @media (max-width: 560px) {
-    .home-hero { flex-direction: column; gap: 0.9rem; }
+    .home-hero { flex-direction: column; gap: 1rem; padding: 1.5rem 1.25rem; }
+    .hero-headline { font-size: 1.4rem; }
     .hero-visual { min-width: 0; }
     .hero-board { flex-direction: row; }
     .hero-row { flex: 1; }
+    .hero-row-logo { width: 36px; height: 36px; }
+    .hero-row-score { font-size: 1.3rem; }
 }
 
 /* Headlines + Insights rail (D-046 P3) — news + templated data bullets */
@@ -2412,16 +2351,11 @@ main {
     .home-dev-grid    { grid-template-columns: repeat(2, 1fr); }
     .home-features    { grid-template-columns: repeat(2, 1fr); }
     .home-hot-grid    { grid-template-columns: repeat(2, 1fr); }
-    .home-hero { padding: 3rem 1.75rem 2.5rem; }
     .home-sport-card--featured { flex-direction: column; text-align: center; }
     .home-sport-card--featured .home-sport-desc { max-width: 100%; }
-    .home-stats-strip { gap: 1.5rem; }
 }
 
 @media (max-width: 600px) {
-    .home-hero { padding: 2.25rem 1.25rem 2rem; }
-    .home-hero-title { letter-spacing: -2px; }
-    .home-hero-sub { font-size: var(--text-base); }
     .home-sports-grid { gap: 0.75rem; }
     .home-sport-card { padding: 1.5rem 0.875rem 1.25rem; }
     .home-sport-icon { font-size: 2.25rem; }
@@ -3180,13 +3114,6 @@ a:focus:not(:focus-visible),
     margin-left: 0.4rem;
     letter-spacing: 0.2px;
     vertical-align: middle;
-}
-
-/* ── Home stat labels: sentence case (reduced all-caps) ─────── */
-.home-stat-lbl {
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: var(--text-sm);
 }
 
 /* ── Game filter pills ────────────────────────────────────────── */
