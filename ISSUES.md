@@ -2604,6 +2604,10 @@ Owner asked the team to actually walk through all six items rather than leave th
 
 Full writeup in DECISIONS.md D-092 Resolution 6. Verified locally: `node --check` clean on `js/wnba.js`/`js/navigation.js`/`js/app.js`, 0 NUL bytes, `check-manifest.cjs` clean, `check-themes.cjs` clean (2 pre-existing unrelated warnings), 33/33 unit tests. Not yet live-verified — pending push.
 
+**Live-verified after push (2026-08-12, commit `bb33df5`, `sportstrata-v173`).** Sub-nav "Playoff Picture" tab, hash routing, and the Playoff Picture view itself all confirmed correct against real data — zero console errors. Note for future sessions: the sub-nav tab didn't appear on first load even after a `cache:'reload'` fetch of `navigation.js` confirmed the origin was fresh — a plain `location.reload()` still pulled `js/wnba.js` from the browser's HTTP disk cache (each script caches independently; refreshing one doesn't refresh the others). Fix: `fetch(cache:'reload')` **every** `<script src="/js/...">` on the page, not just the one you suspect, before reloading.
+
+**Real bug found during this same live-verify pass — the Live Game panel.** Clicking into a real live game and a real final game on production and reading the raw `/summary` JSON directly proved the Resolution 6 data-depth check wrong: `boxscore.teams[].statistics` is genuine this-game box score data (real FG%/rebounds/assists/etc. matching the live score), not season averages — that assumption was never actually checked against real field names before shipping. `boxscore.leaders[]` is empty on every real event checked, so the "Season Leaders" section was dead code. Fixed same session: relabeled "Team Box Score," remapped to the real field names, deleted the leaders section. `sw.js` bumped v173 → v174. Full correction record in DECISIONS.md D-092 Resolution 6. Verified locally (`node --check`, 0 NUL bytes, manifest, 33/33 tests). Re-live-verification of the fix pending this push.
+
 ---
 
 ## SESSION HANDOFF — 2026-08-10 (clean shutdown, D-092 WNBA build)

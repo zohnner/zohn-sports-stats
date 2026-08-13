@@ -542,16 +542,28 @@ window.showWNBAPlayer         = showWNBAPlayer;
 window.displayWNBAPlayerDetail = displayWNBAPlayerDetail;
 
 // ── Live/Final Game panel (D-092 follow-up #2) ────────────────
-// Field-shape note (live-verified 2026-08-10, event 401857134): unlike NFL's
-// /summary, WNBA's summary response has NO top-level header/competitions
-// block with score/period/clock — it starts straight at boxscore. Score/live
-// state must come from the scoreboard event object instead (already fetched
-// by fetchWNBAScoreboard, cached in AppState.wnbaGames). boxscore.teams[].
-// statistics and boxscore.leaders[].leaders are SEASON averages (decimal
-// values like "24.2 PPG"), not this specific game's box score — ESPN reuses
-// the season-leaders shape inside the game summary. Labeled "Season" in the
-// UI rather than implied as this game's stat line, per Relay's "don't
-// confuse what the API says with what it actually returns" rule.
+// Field-shape note (live-verified 2026-08-10, event 401857134; RE-VERIFIED
+// and CORRECTED 2026-08-12 against real live/final events 401857138 and
+// 401857137 in production): unlike NFL's /summary, WNBA's summary response
+// has NO top-level header/competitions block with score/period/clock — it
+// starts straight at boxscore. Score/live state must come from the
+// scoreboard event object instead (already fetched by fetchWNBAScoreboard,
+// cached in AppState.wnbaGames).
+//
+// CORRECTION: the original build assumed boxscore.teams[].statistics and
+// boxscore.leaders[] were season averages reused inside the summary
+// endpoint. Live-verifying against real in-progress and final games proved
+// that wrong — boxscore.teams[].statistics is genuine THIS-GAME team box
+// score data (fieldGoalPct, threePointFieldGoalPct, totalRebounds, assists,
+// steals, blocks, turnovers, fouls — real per-game totals, e.g. a live
+// 26-57 FG / 46% line that matched the live score on screen). There is no
+// "avgPoints"/"avgRebounds"/etc field in this response at all — that was
+// an unverified assumption from the original data-depth check, never
+// confirmed against the real field names before the first build shipped.
+// boxscore.leaders[] IS empty on every real event checked (both a live and
+// a final game) — not season data, just genuinely absent — so the
+// Season/Team Leaders section was removed rather than kept as dead code
+// that can never render.
 const _wnbaGame = { id: null, timer: null };
 
 async function fetchWNBAGameSummary(eventId) {
@@ -637,41 +649,21 @@ function _wnbaRenderGamePanel(game, summary) {
         </div>
     </div>`;
 
-    // Season comparison — boxscore.teams[].statistics (labeled "Season", see note above)
+    // Team Box Score — boxscore.teams[].statistics is real this-game data
+    // (confirmed live 2026-08-12 against real events — see the correction
+    // note above). No "points" line: team scores are already in the header.
     let comparison = '';
     const bxTeams = (summary && summary.boxscore && summary.boxscore.teams) || [];
     if (bxTeams.length === 2) {
         const away = bxTeams.find(t => t.homeAway === 'away') || bxTeams[0];
         const home = bxTeams.find(t => t.homeAway === 'home') || bxTeams[1];
         const wantStats = [
-            ['avgPoints', 'PPG'], ['fieldGoalPct', 'FG%'], ['threePointFieldGoalPct', '3P%'],
-            ['avgRebounds', 'RPG'], ['avgAssists', 'APG'], ['avgSteals', 'SPG'], ['avgBlocks', 'BPG'],
+            ['fieldGoalPct', 'FG%'], ['threePointFieldGoalPct', '3P%'], ['freeThrowPct', 'FT%'],
+            ['totalRebounds', 'REB'], ['assists', 'AST'], ['steals', 'STL'], ['blocks', 'BLK'], ['turnovers', 'TO'],
         ];
         const statVal = (team, name) => { const s = (team.statistics || []).find(x => x.name === name); return s ? s.displayValue : '—'; };
         const rows = wantStats.map(([n, l]) => _wnbaSeasonStatRow(l, statVal(home, n), statVal(away, n))).join('');
-        comparison = detailSection({ title: 'Season Comparison', body: `<div class="player-details detail-bio-wide">${rows}</div>`, hdrExtra: `<span class="standings-gb" style="font-size:0.7rem">season averages, not this game's box score</span>` });
-    }
-
-    // Team season leaders (per boxscore.leaders — same "Season" caveat)
-    let leadersHtml = '';
-    const bxLeaders = (summary && summary.boxscore && summary.boxscore.leaders) || [];
-    if (bxLeaders.length) {
-        const cards = bxLeaders.map(tl => {
-            const teamName = (tl.team && (tl.team.abbreviation || tl.team.displayName)) || '';
-            const cats = (tl.leaders || []).slice(0, 3).map(c => {
-                const p = c.leaders && c.leaders[0];
-                if (!p || !p.athlete) return '';
-                return `<div class="nfl-lrow" style="cursor:pointer" onclick="navigateTo('wnba-player-${_escHtml(String(p.athlete.id))}')">
-                    <div class="nfl-lrow-av">${p.athlete.headshot && p.athlete.headshot.href ? `<img src="${_escHtml(p.athlete.headshot.href)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
-                    <div class="nfl-lrow-main"><div class="nfl-lrow-name">${_escHtml(p.athlete.shortName || p.athlete.fullName || '')}</div><div class="nfl-lrow-meta">${_escHtml(c.displayName || '')}</div></div>
-                    <span class="nfl-lrow-val">${_escHtml(p.displayValue)}</span>
-                </div>`;
-            }).join('');
-            return `<div class="card" style="padding:0;overflow:hidden">
-                <div class="nfl-card-head">${_escHtml(teamName)}</div>${cats}
-            </div>`;
-        }).join('');
-        leadersHtml = detailSection({ title: 'Season Leaders', body: `<div class="players-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${cards}</div>`, hdrExtra: `<span class="standings-gb" style="font-size:0.7rem">top scorer, rebounder, assister — season stats</span>` });
+        comparison = detailSection({ title: 'Team Box Score', body: `<div class="player-details detail-bio-wide">${rows}</div>` });
     }
 
     const venue = (summary && summary.gameInfo && summary.gameInfo.venue) || null;
@@ -681,7 +673,7 @@ function _wnbaRenderGamePanel(game, summary) {
     if (broadcasts.length) infoParts.push(broadcasts.map(b => b.media && b.media.shortName).filter(Boolean).map(_escHtml).join(', '));
     const infoNote = infoParts.length ? `<p class="detail-note" style="margin-top:0.75rem">${infoParts.join(' · ')}</p>` : '';
 
-    grid.innerHTML = header + comparison + leadersHtml + infoNote;
+    grid.innerHTML = header + comparison + infoNote;
 }
 
 window.fetchWNBAGameSummary = fetchWNBAGameSummary;
