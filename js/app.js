@@ -272,6 +272,11 @@ setupNavigation();
         } else if (sport === 'ncaaf') {
             if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
             navigateTo('ncaaf-scores');
+        } else if (sport === 'wnba') {
+            const gid = item.dataset.gameId;
+            if (AppState.currentSport !== 'wnba') switchSport('wnba');
+            if (gid) navigateTo('wnba-game-' + gid);
+            else navigateTo('wnba-scores');
         } else if (sport === 'nhl') {
             if (AppState.currentSport !== 'nhl') switchSport('nhl');
             else navigateTo('nhl-games');

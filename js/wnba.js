@@ -2,8 +2,9 @@
 // WNBA — 5th sport (D-092, owner override of D-052's calendar-gap
 // recommendation — see DECISIONS.md D-092 for the full trade-off record).
 // ESPN public API via same-origin /api/wnba Pages Function.
-// Scope: Scores, Standings (conference-grouped), Teams. No Rankings (no
-// poll exists for a pro league) — lighter scope than NCAAF/NCAAB.
+// Scope: Scores, Standings (conference-grouped), Teams, Leaders + player
+// detail (D-092 Resolution 5), Live/Final Game panel + Playoff Picture
+// (D-092 Resolution 6). No Rankings (no poll exists for a pro league).
 // Season model: single calendar year (Apr-Oct), unlike NCAAF/NCAAB's
 // fall-spanning label — confirmed live 2026-08-10 against the real ESPN
 // scoreboard payload (season.year:2026, window 2026-04-03..2026-10-20).
@@ -108,7 +109,7 @@ function _wnbaGameCard(g) {
     const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
         : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
         : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}">
+    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="showWNBAGame('${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')showWNBAGame('${_escHtml(String(g.id))}')">
         ${row(g.awayTeam)}
         ${row(g.homeTeam)}
         <div class="hgc-card-footer">${pill}</div>
@@ -188,11 +189,13 @@ function updateWNBATicker(games) {
 function _renderWNBAView(view) {
     if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
     if (view.startsWith('wnba-player-')) { showWNBAPlayer(view.slice('wnba-player-'.length)); return; }
+    if (view.startsWith('wnba-game-'))   { showWNBAGame(view.slice('wnba-game-'.length));     return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'wnba-standings': displayWNBAStandings(); break;
         case 'wnba-teams':     displayWNBATeams();     break;
         case 'wnba-leaders':   displayWNBALeaders();   break;
+        case 'wnba-playoffs':  displayWNBAPlayoffPicture(); break;
         case 'wnba-scores':
         case 'wnba-home':
         default:                displayWNBAScores();
@@ -210,6 +213,8 @@ function _wnbaStandingRow(e) {
     const num  = (names) => { const x = stat(names); return x ? (x.value != null ? x.value : parseFloat(x.displayValue)) : null; };
     const disp = (names) => { const x = stat(names); return x ? (x.displayValue || '') : ''; };
     const w = num(['wins']), l = num(['losses']);
+    let pct = num(['winPercent', 'winpercent']);
+    if (pct == null && w != null && l != null && (w + l) > 0) pct = w / (w + l);
     return {
         id: t.id || '',
         name: t.displayName || t.name || t.location || '?',
@@ -218,6 +223,7 @@ function _wnbaStandingRow(e) {
         overall: (w != null && l != null) ? `${w}-${l}` : (disp(['overall', 'total']) || '—'),
         gb: disp(['gamesBehind']) || '',
         streak: disp(['streak']) || '',
+        w, l, pct,
     };
 }
 
@@ -333,6 +339,83 @@ window.fetchWNBAScoreboard = fetchWNBAScoreboard;
 window.displayWNBAScores    = displayWNBAScores;
 window.displayWNBAStandings = displayWNBAStandings;
 window.displayWNBATeams     = displayWNBATeams;
+
+// ── Playoff Picture (standings-derived, not odds/bracket) ─────
+// Real format (live-verified via WebSearch, 2026-08-10): top 8 of 15 teams
+// make the postseason by OVERALL record, regardless of conference — no
+// per-conference bracket like NBA's. Seeded 1-8. Round 1 best-of-3,
+// Semis best-of-5, Finals best-of-7. 2026 playoffs start Sun Sept 27 — no
+// real bracket/seed data exists this early in the season, so this renders
+// a standings snapshot ("if the season ended today"), not a Monte Carlo
+// odds model (that's a materially larger build, see MLB's October Odds)
+// and not a fabricated bracket.
+function _wnbaPlayoffRow(t, rank, gbFrom8) {
+    const inField = rank <= 8;
+    return `<tr class="standings-row">
+        <td class="standings-rank-cell"><span class="standings-rank">${rank}</span></td>
+        <td class="standings-team-cell">
+            ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
+            <span class="standings-team-name">${_escHtml(t.name)}</span>
+        </td>
+        <td class="standings-num">${_escHtml(t.overall)}</td>
+        <td class="standings-num standings-split">${t.pct != null ? t.pct.toFixed(3).replace(/^0/, '') : '—'}</td>
+        <td class="standings-num standings-gb">${inField ? '—' : (gbFrom8 != null ? gbFrom8.toFixed(1) : '—')}</td>
+        <td class="standings-num">${inField ? '<span class="standings-streak--win">IN</span>' : '<span class="standings-gb">chasing</span>'}</td>
+    </tr>`;
+}
+
+async function displayWNBAPlayoffPicture() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'standings-container';
+
+    if (_wnbaIsOffseason()) {
+        grid.innerHTML = _wnbaOffseasonState();
+        return;
+    }
+
+    grid.innerHTML = `<div id="wnbaPlayoffBody"><div class="skeleton-line" style="height:420px;border-radius:var(--radius-md)"></div></div>`;
+    let confs;
+    try { confs = await fetchWNBAStandings(_wnba.season); }
+    catch (err) {
+        Logger.warn('WNBA playoff picture failed', err, 'WNBA');
+        document.getElementById('wnbaPlayoffBody').innerHTML = _wnbaErr('Playoff picture is unavailable right now.', 'displayWNBAPlayoffPicture');
+        return;
+    }
+    const all = confs.flatMap(c => c.teams.map(t => ({ ...t, conf: c.name })));
+    if (!all.length) {
+        document.getElementById('wnbaPlayoffBody').innerHTML = _wnbaErr('No standings returned for the ' + _wnba.season + ' season.', 'displayWNBAPlayoffPicture');
+        return;
+    }
+    all.sort((a, b) => {
+        if (a.pct != null && b.pct != null && a.pct !== b.pct) return b.pct - a.pct;
+        if (a.w != null && b.w != null && a.w !== b.w) return b.w - a.w;
+        return 0;
+    });
+    const eighth = all[7] || null;
+    const rows = all.map((t, i) => {
+        const rank = i + 1;
+        let gbFrom8 = null;
+        if (rank > 8 && eighth && t.w != null && t.l != null && eighth.w != null && eighth.l != null) {
+            gbFrom8 = ((eighth.w - eighth.l) - (t.w - t.l)) / 2;
+        }
+        return _wnbaPlayoffRow(t, rank, gbFrom8);
+    }).join('');
+
+    document.getElementById('wnbaPlayoffBody').innerHTML = `
+        <div class="standings-table-wrap">
+            <table class="standings-table">
+                <thead><tr>
+                    <th class="standings-th-rank">#</th><th class="standings-th-team">Team</th>
+                    <th>Overall</th><th>PCT</th><th>GB of 8</th><th>Status</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <p class="standings-legend">Top 8 of 15 teams make the postseason by overall record — no conference bracket. Seeds 1-8, best-of-3/5/7 rounds. Snapshot as if the ${_escHtml(String(_wnba.season))} season ended today; the ${_escHtml(String(_wnba.season))} playoffs begin Sept 27. Source: ESPN standings, not an odds model.</p>`;
+}
+
+window.displayWNBAPlayoffPicture = displayWNBAPlayoffPicture;
 window._renderWNBAView      = _renderWNBAView;
 window.updateWNBATicker     = updateWNBATicker;
 
@@ -457,3 +540,149 @@ function displayWNBAPlayerDetail(data) {
 window.displayWNBALeaders     = displayWNBALeaders;
 window.showWNBAPlayer         = showWNBAPlayer;
 window.displayWNBAPlayerDetail = displayWNBAPlayerDetail;
+
+// ── Live/Final Game panel (D-092 follow-up #2) ────────────────
+// Field-shape note (live-verified 2026-08-10, event 401857134): unlike NFL's
+// /summary, WNBA's summary response has NO top-level header/competitions
+// block with score/period/clock — it starts straight at boxscore. Score/live
+// state must come from the scoreboard event object instead (already fetched
+// by fetchWNBAScoreboard, cached in AppState.wnbaGames). boxscore.teams[].
+// statistics and boxscore.leaders[].leaders are SEASON averages (decimal
+// values like "24.2 PPG"), not this specific game's box score — ESPN reuses
+// the season-leaders shape inside the game summary. Labeled "Season" in the
+// UI rather than implied as this game's stat line, per Relay's "don't
+// confuse what the API says with what it actually returns" rule.
+const _wnbaGame = { id: null, timer: null };
+
+async function fetchWNBAGameSummary(eventId) {
+    const res = await fetch(`/api/wnba?path=/summary&event=${encodeURIComponent(eventId)}`);
+    if (!res.ok) throw new Error('summary ' + res.status);
+    return res.json();
+}
+
+function _wnbaGameStop() { if (_wnbaGame.timer) { clearInterval(_wnbaGame.timer); _wnbaGame.timer = null; } }
+
+async function _wnbaFindGame(id) {
+    const cached = (AppState.wnbaGames || []).find(g => String(g.id) === String(id));
+    if (cached) return cached;
+    const games = await fetchWNBAScoreboard();
+    AppState.wnbaGames = games;
+    return games.find(g => String(g.id) === String(id)) || null;
+}
+
+async function showWNBAGame(id) {
+    _wnbaGameStop();
+    _wnbaGame.id = id;
+    AppState.currentView = 'wnba-game-' + id;
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'player-detail-container';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
+    if (window.setBreadcrumb) setBreadcrumb('wnba-scores', 'Game');
+    let game, summary;
+    try {
+        [game, summary] = await Promise.all([_wnbaFindGame(id), fetchWNBAGameSummary(id)]);
+    } catch (err) {
+        Logger.warn('WNBA game load failed', err, 'WNBA');
+        grid.innerHTML = `<div class="nfl-offseason"><p class="nfl-offseason-text">Couldn't load this game.</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="showWNBAGame('${_escHtml(id)}')">Retry</button></div></div>`;
+        return;
+    }
+    if (!game) {
+        grid.innerHTML = `<div class="nfl-offseason"><p class="nfl-offseason-text">Game not found.</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('wnba-scores')">Back to scores</button></div></div>`;
+        return;
+    }
+    _wnbaRenderGamePanel(game, summary);
+    if (game.isLive) {
+        _wnbaGame.timer = setInterval(async () => {
+            if (AppState.currentView !== 'wnba-game-' + id) { _wnbaGameStop(); return; }
+            try {
+                const freshGame = await _wnbaFindGame(id);
+                const freshSummary = await fetchWNBAGameSummary(id);
+                if (freshGame) _wnbaRenderGamePanel(freshGame, freshSummary);
+                if (freshGame && !freshGame.isLive) _wnbaGameStop();
+            } catch { /* keep last good render on a transient poll failure */ }
+        }, 30_000);
+    }
+}
+
+function _wnbaSeasonStatRow(label, homeStat, awayStat) {
+    return `<div class="detail-row"><span class="detail-value">${_escHtml(awayStat)}</span><span class="detail-label">${_escHtml(label)}</span><span class="detail-value">${_escHtml(homeStat)}</span></div>`;
+}
+
+function _wnbaRenderGamePanel(game, summary) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const pillLbl = game.isLive ? 'LIVE' : game.isFinal ? 'FINAL' : (game.statusText || 'Scheduled');
+    const pillCls = game.isLive ? 'live' : game.isFinal ? 'final' : 'sched';
+
+    const teamCol = (t, side) => `
+        <div class="hgc-row" style="justify-content:${side === 'away' ? 'flex-start' : 'flex-end'};gap:0.6rem">
+            ${side === 'home' ? `<span class="hgc-score${game.isFinal && t.winner ? ' hgc-score--win' : ''}" style="font-size:2rem">${(game.isFinal || game.isLive) ? t.score : ''}</span>` : ''}
+            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:44px;height:44px">` : ''}
+            <span class="hgc-team" style="font-size:1.05rem">${_escHtml(t.name || t.abbr)}</span>
+            ${side === 'away' ? `<span class="hgc-score${game.isFinal && t.winner ? ' hgc-score--win' : ''}" style="font-size:2rem">${(game.isFinal || game.isLive) ? t.score : ''}</span>` : ''}
+        </div>`;
+
+    const header = `<div class="player-detail-header">
+        <div class="detail-header-bar">
+            <button onclick="navigateTo('wnba-scores')" class="back-button">← Scores</button>
+            <span></span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.5rem 0">
+            ${teamCol(game.awayTeam, 'away')}
+            <div style="text-align:center">
+                <span class="ticker-status-pill ticker-status-pill--${pillCls}">${_escHtml(pillLbl)}</span>
+            </div>
+            ${teamCol(game.homeTeam, 'home')}
+        </div>
+    </div>`;
+
+    // Season comparison — boxscore.teams[].statistics (labeled "Season", see note above)
+    let comparison = '';
+    const bxTeams = (summary && summary.boxscore && summary.boxscore.teams) || [];
+    if (bxTeams.length === 2) {
+        const away = bxTeams.find(t => t.homeAway === 'away') || bxTeams[0];
+        const home = bxTeams.find(t => t.homeAway === 'home') || bxTeams[1];
+        const wantStats = [
+            ['avgPoints', 'PPG'], ['fieldGoalPct', 'FG%'], ['threePointFieldGoalPct', '3P%'],
+            ['avgRebounds', 'RPG'], ['avgAssists', 'APG'], ['avgSteals', 'SPG'], ['avgBlocks', 'BPG'],
+        ];
+        const statVal = (team, name) => { const s = (team.statistics || []).find(x => x.name === name); return s ? s.displayValue : '—'; };
+        const rows = wantStats.map(([n, l]) => _wnbaSeasonStatRow(l, statVal(home, n), statVal(away, n))).join('');
+        comparison = detailSection({ title: 'Season Comparison', body: `<div class="player-details detail-bio-wide">${rows}</div>`, hdrExtra: `<span class="standings-gb" style="font-size:0.7rem">season averages, not this game's box score</span>` });
+    }
+
+    // Team season leaders (per boxscore.leaders — same "Season" caveat)
+    let leadersHtml = '';
+    const bxLeaders = (summary && summary.boxscore && summary.boxscore.leaders) || [];
+    if (bxLeaders.length) {
+        const cards = bxLeaders.map(tl => {
+            const teamName = (tl.team && (tl.team.abbreviation || tl.team.displayName)) || '';
+            const cats = (tl.leaders || []).slice(0, 3).map(c => {
+                const p = c.leaders && c.leaders[0];
+                if (!p || !p.athlete) return '';
+                return `<div class="nfl-lrow" style="cursor:pointer" onclick="navigateTo('wnba-player-${_escHtml(String(p.athlete.id))}')">
+                    <div class="nfl-lrow-av">${p.athlete.headshot && p.athlete.headshot.href ? `<img src="${_escHtml(p.athlete.headshot.href)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+                    <div class="nfl-lrow-main"><div class="nfl-lrow-name">${_escHtml(p.athlete.shortName || p.athlete.fullName || '')}</div><div class="nfl-lrow-meta">${_escHtml(c.displayName || '')}</div></div>
+                    <span class="nfl-lrow-val">${_escHtml(p.displayValue)}</span>
+                </div>`;
+            }).join('');
+            return `<div class="card" style="padding:0;overflow:hidden">
+                <div class="nfl-card-head">${_escHtml(teamName)}</div>${cats}
+            </div>`;
+        }).join('');
+        leadersHtml = detailSection({ title: 'Season Leaders', body: `<div class="players-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${cards}</div>`, hdrExtra: `<span class="standings-gb" style="font-size:0.7rem">top scorer, rebounder, assister — season stats</span>` });
+    }
+
+    const venue = (summary && summary.gameInfo && summary.gameInfo.venue) || null;
+    const broadcasts = (summary && summary.gameInfo && summary.gameInfo.broadcasts) || [];
+    const infoParts = [];
+    if (venue) infoParts.push(`${_escHtml(venue.fullName || '')}${venue.address ? ` · ${_escHtml(venue.address.city || '')}, ${_escHtml(venue.address.state || '')}` : ''}`);
+    if (broadcasts.length) infoParts.push(broadcasts.map(b => b.media && b.media.shortName).filter(Boolean).map(_escHtml).join(', '));
+    const infoNote = infoParts.length ? `<p class="detail-note" style="margin-top:0.75rem">${infoParts.join(' · ')}</p>` : '';
+
+    grid.innerHTML = header + comparison + leadersHtml + infoNote;
+}
+
+window.fetchWNBAGameSummary = fetchWNBAGameSummary;
+window.showWNBAGame         = showWNBAGame;

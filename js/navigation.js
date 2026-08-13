@@ -356,6 +356,7 @@ const _NAV_META = {
     'wnba-standings':  { label: 'WNBA Standings',    icon: '📊' },
     'wnba-teams':      { label: 'WNBA Teams',        icon: '🏀' },
     'wnba-leaders':    { label: 'WNBA Leaders',      icon: '🏆' },
+    'wnba-playoffs':   { label: 'WNBA Playoff Picture', icon: '🏆' },
     'wnba-home':       { label: 'WNBA',              icon: '🏀' },
     'arcade':        { label: 'Arcade',        icon: '🎮' },
 };
@@ -919,6 +920,7 @@ function _loadFromHash() {
     const ncaafPlayerMatch   = hash.match(/^ncaaf-player-(\d+)$/);
     const ncaafTeamMatch     = hash.match(/^ncaaf-team-(\d+)$/);
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
+    const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -960,6 +962,10 @@ function _loadFromHash() {
         AppState.currentSport = 'wnba';
         _applySportUI('wnba');
         navigateTo('wnba-player-' + wnbaPlayerMatch[1], false);
+    } else if (wnbaGameMatch) {
+        AppState.currentSport = 'wnba';
+        _applySportUI('wnba');
+        navigateTo('wnba-game-' + wnbaGameMatch[1], false);
     } else if (ncaafTeamMatch) {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');
@@ -992,7 +998,7 @@ function _loadFromHash() {
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
-        const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders'];
+        const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs'];
         const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -1086,6 +1092,7 @@ const SUB_NAV_TABS = {
         { v: 'wnba-standings', l: 'Standings' },
         { v: 'wnba-teams', l: 'Teams' },
         { v: 'wnba-leaders', l: 'Leaders' },
+        { v: 'wnba-playoffs', l: 'Playoff Picture' },
         { v: 'news', l: 'News' },
     ],
 };
@@ -1194,7 +1201,7 @@ const MENU_TABS = {
         { group:'WNBA' },
         { v:'wnba-scores', l:'Scores', i:'scores' }, { v:'wnba-standings', l:'Standings', i:'standings' },
         { v:'wnba-teams', l:'Teams', i:'teams' }, { v:'wnba-leaders', l:'Leaders', i:'leaders' },
-        { v:'news', l:'News', i:'extra' },
+        { v:'wnba-playoffs', l:'Playoff Picture', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
 };
 
@@ -1350,6 +1357,7 @@ const _PAGE_META = {
     'wnba-standings':  { title: 'SportStrata — WNBA Standings', desc: 'WNBA standings by conference.' },
     'wnba-teams':      { title: 'SportStrata — WNBA Teams',     desc: 'Browse WNBA teams by conference.' },
     'wnba-leaders':    { title: 'SportStrata — WNBA Leaders',    desc: 'WNBA statistical leaders: points, rebounds, assists, steals, blocks.' },
+    'wnba-playoffs':   { title: 'SportStrata — WNBA Playoff Picture', desc: 'Top-8-overall WNBA playoff picture, updated from live conference standings.' },
 };
 
 function _updatePageMeta(view) {
