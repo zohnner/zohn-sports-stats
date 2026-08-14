@@ -57,6 +57,18 @@ export async function onRequest(context) {
     inUrl.searchParams.forEach((v, k) => { if (k !== 'path') target.searchParams.set(k, v); });
 
     const ttl = ttlFor(path);
+    // Cloudflare's cf.cacheTtl eviction is best-effort, not a hard guarantee.
+    // Live-debugging 2026-08-14 (DECISIONS.md D-095) caught a real
+    // /scoreboard response served well past its nominal 60s TTL during three
+    // live preseason games -- the site showed a frozen score/clock while
+    // ESPN's own scoreboard had moved on by several minutes of game time.
+    // Salting the upstream cache key with a TTL-aligned time bucket forces
+    // Cloudflare to treat each TTL window as a genuinely distinct cached
+    // resource, instead of trusting best-effort eviction of a stale one.
+    // ESPN ignores unrecognized query params (confirmed live), so this is
+    // safe to append unconditionally.
+    target.searchParams.set('_cb', String(Math.floor(Date.now() / 1000 / ttl)));
+
     let upstream;
     try {
         upstream = await fetch(target.toString(), {

@@ -2697,3 +2697,33 @@ Loading `sportstrata.cc/#nfl-games` or `sportstrata.cc/#nfl-home` directly (not 
 Escalation needed: no — small, scoped, low-risk fix (reuse existing per-sport logic, no new architecture), same bar as every D-093 fix.
 
 **Fix status:** committed locally, `sw.js` bumped v175→v176, pending owner push. Not yet live-verified on production (no push access from this session) — next session (or the owner directly) should confirm on `sportstrata.cc` that: (1) a fresh load of `/#nfl-games` and `/#nfl-home` shows the NFL-exclusive ticker immediately, not MLB; (2) the zero-state ticker copy reads "No NFL games today — check back soon" during any current preseason gap between games, not "season runs Sep–Feb"; (3) `sw.js` reports `sportstrata-v176` after deploy.
+
+---
+
+## NFL Live Game Viewer audit + real /scoreboard staleness bug — 2026-08-14
+
+Task / Finding: Full tab-by-tab audit of the live game panel against real live games; found a real edge-cache staleness bug on /api/nfl?path=/scoreboard
+Contributor: Finn | Date: 2026-08-14
+
+**Context:** Owner asked to keep pushing on NFL UX using tonight's live preseason window, this time diving specifically into the Live Game Viewer (`js/nflLiveGame.js`, D-080). Opened a real live game (DEN@ATL, event `401873278`, 3 real games live simultaneously: DEN@ATL, TB@NYJ, MIA@WSH) and went through every tab.
+
+**Live Game Viewer audit — all healthy, no new bugs found in the viewer itself:**
+- **Summary:** linescore, scoring plays, Injury Report (9 listed, correct team grouping), NFL News (collapsed by default, expands to 5 real headlines, confirmed by clicking), Standings card (both teams' own divisions, correct highlight), venue/odds caption — all rendering real data correctly.
+- **Play-by-Play:** drives rendering correctly, **re-checked the D-093 drive-dedup fix against a fresh live game and it holds** — scanned rendered drive headers programmatically, zero duplicates across 5 drives.
+- **Box Score:** real per-player passing/rushing/receiving/defensive lines for both teams, updating live.
+- **Team Stats:** real total yards/passing/rushing/first downs/3rd down/penalties/turnovers, both teams.
+- **Analytics:** Success Rate and Drive Efficiency are real, computed live from this game's own drives (confirmed values changing between checks: 56%→59% DEN success rate as the game progressed) — honestly caveated ("EPA, CPOE, and Win Probability... coming later (D-081)"), not overclaiming what it doesn't have.
+- **Fantasy:** Standard/Half-PPR/PPR toggle, live-computed points from box score stats, correct.
+- Console clean throughout (no errors observed across all six tabs).
+
+**Real bug found — NOT in the viewer, in the shared scoreboard proxy it (and the Scores view, and the ticker) all depend on:** `/api/nfl?path=/scoreboard` served a genuinely frozen response for well over its documented 60-second TTL. Direct evidence: querying the endpoint at the start of this investigation returned `"11:39 - 1st"` for DEN@ATL — the exact same value the site had shown at the very start of tonight's session, well over 20 minutes of real elapsed time earlier, during which ESPN's own live scoreboard (cross-checked directly on espn.com) had moved on to `"4:14 - 1st"`, a 7+ minute swing that cannot happen in real time. A follow-up request moments later jumped straight to `"4:28 - 1st"`, and subsequent requests then tracked normally (`3:31`→`3:20`→`3:20`→...). This points to an intermittent, not constant, staleness failure — the cached edge copy can persist far longer than its nominal TTL under low-traffic conditions, then self-correct once a request happens to miss.
+
+**Root cause:** `functions/api/nfl.js`'s upstream fetch to ESPN uses Cloudflare's `cf: { cacheTtl, cacheEverything: true }`, which is a *best-effort* eviction hint, not a guarantee — Cloudflare's own docs describe cache-TTL enforcement as advisory. With a single, unvarying cache key per path (no per-request differentiation), a lightly-trafficked PoP can keep serving the same cached object well past its intended lifetime if nothing happens to force a fresh fetch.
+
+**Real-world exposure:** this is the data source behind the Scores view, the shared ticker, and (with a shorter, 20s TTL) the Live Game Viewer's `/summary` calls — i.e., every "live" surface on the NFL side of the site. A visitor could see a frozen score/clock for an unpredictable, potentially long stretch during exactly the moments (live games) freshness matters most. Spot-checked `/summary` (20s TTL) over a 40-second window during this session and did not reproduce the same severity there, but it shares the identical caching mechanism — flagging as the same root cause, not confirmed at the same severity, since low-traffic conditions are what triggers it and `/summary` gets hit more often per active viewer.
+
+**Result:** routed to Relay (API/caching architecture, per TEAM.md: "API contract issue... caching → Relay, Axiom for implementation"). Fix scoped and shipped same session — see DECISIONS.md D-095.
+
+Escalation needed: no — the fix is additive (one query param) and doesn't change response shape, status codes, or the allowlist; verified ESPN tolerates the extra param before shipping.
+
+**Fix status:** committed locally, pending owner push. Cannot be live-verified from this session the way the client-JS fixes were (this is a server-side Pages Function; the fix only takes effect once deployed) — next session or the owner should watch a live NFL window after deploy and confirm `/api/nfl?path=/scoreboard` never repeats a stale clock value across a real multi-minute span the way it did here.
