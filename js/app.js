@@ -213,14 +213,34 @@ setupNavigation();
 // ── Ticker click → game detail ────────────────────────────────
 // Live score polling — NFL (60s; mirrors MLB)
 (function setupNFLLivePolling() {
+    // Bug found live 2026-08-13 during a real preseason kickoff window (see
+    // ISSUES.md "Live NFL preseason debugging session"): the "skip when
+    // nothing's live" guard below trusted AppState.nflGames's OWN current
+    // (possibly stale) belief to decide whether to bother fetching. Once the
+    // client happened to load before any of today's games had kicked off
+    // (trivially common -- or simply any gap between games), hasLive was
+    // false, the guard returned early every tick, and NOTHING ever refetched
+    // to discover the games had since gone live -- a permanent stall, not a
+    // slow refresh. Reproduced directly: injected an all-non-live snapshot,
+    // waited 100s (past the 60s tick twice), it never self-healed.
+    // Fix: bound the skip to FORCE_REFRESH_MS so the loop can never wedge
+    // itself shut for longer than one cache cycle (matches
+    // fetchNFLScoreboard's own ApiCache.TTL.SHORT), while still skipping
+    // most idle ticks during a genuinely dead offseason -- preserving the
+    // original intent of the guard, just no longer trusting stale data to
+    // stay accurate forever.
+    const FORCE_REFRESH_MS = 5 * 60 * 1000;
+    let _lastFetchAt = 0;
     async function _poll() {
         try {
             if (AppState.currentSport !== 'nfl') return;
             if (typeof fetchNFLScoreboard !== 'function') return;
             const cached = AppState.nflGames || [];
             const hasLive = cached.some(g => g.isLive);
-            if (cached.length > 0 && !hasLive) return;
+            const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
+            if (cached.length > 0 && !hasLive && !dueForRecheck) return;
             const games = await fetchNFLScoreboard();
+            _lastFetchAt = Date.now();
             AppState.nflGames = games;
             // Same home-ownership rule as the MLB loop above — merged ticker owns
             // #scoreTicker while on Home.

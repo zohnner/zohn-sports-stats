@@ -2612,6 +2612,31 @@ Full writeup in DECISIONS.md D-092 Resolution 6. Verified locally: `node --check
 
 ---
 
+## Live NFL preseason debugging session — 2026-08-13/14
+
+Task / Finding: NFL Scores list + ticker go stale during live games; Play-by-Play tab duplicates the current drive
+Contributor: Finn | Date: 2026-08-13
+
+**Context:** owner asked to use a real live NFL preseason window (Week 2, three-plus games kicking off 7:00–9:00 PM EDT on 2026-08-13) as a live-debugging opportunity rather than working from synthetic data. Investigated the NFL Scores view, the shared ticker, and the live game detail panel against real, currently-playing games.
+
+**What I found:**
+
+1. **Scores list + ticker go stale for up to 5 minutes with no self-correction (real, reproduced).** Loaded `#nfl-games` ("Today" tab) while three real preseason games kicked off. `AppState.nflGames` stayed at all-`isLive:false`/`isFinal:false`/0-0 long after the real games had gone final or live — confirmed against a direct, uncached fetch of `/api/nfl?path=/scoreboard` (`cache:'no-store'`) showing the true state (Detroit @ Cincinnati and Green Bay @ Pittsburgh both `STATUS_FINAL`, Tennessee @ San Francisco `STATUS_IN_PROGRESS`, 16–10). The site-wide ticker's zero-state fallback fired and displayed **"No NFL scores — season runs Sep–Feb"** (`js/nfl.js:916`) while real games were actively live/final — flatly wrong copy for a live preseason night.
+   - Root cause, confirmed by clearing the client cache and forcing a fresh `loadNFLGames()` call: `fetchNFLScoreboard()`'s parsing of `isLive`/`isFinal` is correct — the fresh call immediately rendered TEN@SF live 16–10 and every other game final with real scores.
+   - **Correction to my own first-pass diagnosis:** I initially wrote this up as "zero live-polling in `js/nfl.js`" because a grep of that one file found no `setInterval`. That was an incomplete grep, not a real absence — `setupNFLLivePolling()` (60s interval) exists in `app.js` and does run. The real bug is subtler and worse: its early-return guard — `const hasLive = cached.some(g => g.isLive); if (cached.length > 0 && !hasLive) return;` — trusts `AppState.nflGames`'s *own current (possibly stale) belief* about whether anything is live to decide whether to bother fetching. Proved this directly: injected an all-`isLive:false` snapshot into `AppState.nflGames` while on `#nfl-games` with `currentSport:'nfl'`, waited 100 seconds (past the 60s tick twice over), and it never self-healed — the poller kept re-checking the same frozen belief and bailing every time. Once the client happens to observe "nothing is live" (trivially true before any of today's games has kicked off, or during any gap between games), the poller is **permanently stalled** until something else overwrites `AppState.nflGames` (a manual reload, or navigating away and back through a code path that unconditionally refetches). MLB's `setupMLBLivePolling` in the same file has the identical guard shape (`if (cached.length > 0 && !hasLive) return;`) — flagging as a likely-shared latent bug, not confirmed/reproduced for MLB in this session, so not in scope for the fix below.
+   - File/line: `js/nfl.js` (`loadNFLGames`/`fetchNFLScoreboard`/`updateNFLTicker`, ~L149–411, L906–924); no polling setup anywhere in the file, contrast `app.js`'s `setupMLBLivePolling`.
+
+2. **Play-by-Play tab renders the current drive twice (real, reproduced).** Opened the real live TEN@SF panel (`showNFLGame('401874392')`) and switched to Play-by-Play. Regex-scanned the rendered DOM text for drive-header lines (`TEAM · N PLAYS, N YARDS, M:SS`) — the most recent drive ("TEN · 6 PLAYS, 26 YARDS, 2:35") appeared twice, back to back, identical; every other drive appeared exactly once.
+   - Root cause: `js/nflLiveGame.js` L329–330 builds the play-by-play list as `[...(drivesObj.current ? [drivesObj.current] : []), ...(drivesObj.previous.reverse())]` with no dedupe. At certain live moments (between drives, right after a score) ESPN's `drives.current` reference is the same drive already present as `drives.previous`'s most recent entry — ESPN's own API quirk, not something reproducible without a real live game at exactly the right moment.
+
+**Secondary finding, not fixed (flagging per my scope discipline — routing to Kael/copy, not touching it):** even outside this specific bug, `updateNFLTicker`'s zero-state copy ("No NFL scores — season runs Sep–Feb") is imprecise during preseason weeks generically — it's accurate framing for the true Mar–Aug offseason but reads as wrong the moment a preseason week is underway and today just happens to have no live/final game yet. Worth a copy pass distinguishing "no games today" from "season hasn't started," but that's a Kael copy-voice call per `DESIGN.md`, not mine to make.
+
+**Result:** both root-caused findings (1) and (2) are architectural/data-flow — routed to Axiom per the TEAM.md matrix ("Axiom diagnoses if it's obviously a data flow or AppState issue"). Both are small, well-scoped, low-risk fixes (fix the poller's self-referential stale guard; dedupe drives by id) — see DECISIONS.md D-093 for Axiom's fix record.
+
+Escalation needed: no — both fixes proceeded same session per the established pattern (root-cause → fix → static-verify → live-verify → ship) from every prior finding this session.
+
+---
+
 ## SESSION HANDOFF — 2026-08-10 (clean shutdown, D-092 WNBA build)
 
 **State: two commits pending push, NOT yet live.** Confirmed via a fresh (`cache:'reload'`) fetch of `sportstrata.cc/sw.js`: origin still reports `sportstrata-v171` — the WNBA-Leaders build and the SW version bump have not deployed. Do not assume Leaders/player-detail are live without re-checking `sw.js` for `v172` first.

@@ -327,7 +327,16 @@ function _nlgNewsCard(data) {
 
 function _nlgRenderPbp(data) {
     const drivesObj = data.drives || {};
-    const all = [...(drivesObj.current ? [drivesObj.current] : []), ...((drivesObj.previous || []).slice().reverse())];
+    // Bug found live 2026-08-13 against a real in-progress game (event
+    // 401874392, TEN@SF -- see ISSUES.md "Live NFL preseason debugging
+    // session"): at certain live moments (confirmed: right after a drive
+    // ends, before the next one's first play is recorded) ESPN's
+    // drives.current is the SAME drive object as drives.previous's most
+    // recent entry -- verified by matching `id` (e.g. both "40187439217")
+    // -- not a distinct in-progress drive. Rendering both unconditionally
+    // duplicated the most recent drive card. Dedupe by id before concat.
+    const prev = (drivesObj.previous || []).filter(d => !drivesObj.current || d.id !== drivesObj.current.id);
+    const all = [...(drivesObj.current ? [drivesObj.current] : []), ...prev.slice().reverse()];
     if (!all.length) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No play-by-play yet</p><p class="pct-caption">Drive detail appears once the game is underway.</p></div>`;
     const driveHtml = (d, i) => {
         const teamAbbr = (d.team || {}).abbreviation || '';
@@ -402,7 +411,13 @@ function _nlgTeamStats(data, home, away) {
 
 function _nlgAllDrives(data) {
     const drivesObj = data.drives || {};
-    return [...(drivesObj.current ? [drivesObj.current] : []), ...(drivesObj.previous || [])];
+    // Same dedup as _nlgRenderPbp above -- drives.current can be the same
+    // drive object as drives.previous's last entry at certain live moments
+    // (id match, live-verified 2026-08-13). Left un-deduped here, this fed
+    // Success Rate and Drive Efficiency (Analytics tab) with a real
+    // double-count of that drive's plays/yards, not just a visual dupe.
+    const prev = (drivesObj.previous || []).filter(d => !drivesObj.current || d.id !== drivesObj.current.id);
+    return [...(drivesObj.current ? [drivesObj.current] : []), ...prev];
 }
 
 // Standard down-based success-rate thresholds (Football Outsiders / nflfastR
