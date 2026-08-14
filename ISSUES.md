@@ -2635,6 +2635,8 @@ Contributor: Finn | Date: 2026-08-13
 
 Escalation needed: no — both fixes proceeded same session per the established pattern (root-cause → fix → static-verify → live-verify → ship) from every prior finding this session.
 
+**Live-verified after push (2026-08-14, `sportstrata-v175`, commit `7d35f69`).** Deployed code confirmed to contain both fixes. TEN@SF had gone final (19–13) by verification time with nothing else live yet (next kickoffs 7:00 PM EDT), so the drive-dedup fix relied on its pre-ship live comparison rather than a second live re-check — still a real live-data test, just not repeated post-deploy. The poller fix got a full live-timing proof this pass: injected a stale all-non-live snapshot into the deployed page's live `AppState.nflGames`, waited 357.8 real seconds, watched it self-heal with zero manual reload. **D-093 closed.** Full record in DECISIONS.md D-093.
+
 ---
 
 ## SESSION HANDOFF — 2026-08-10 (clean shutdown, D-092 WNBA build)
