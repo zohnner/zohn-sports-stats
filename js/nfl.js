@@ -913,7 +913,18 @@ function updateNFLTicker(games) {
 
     if (!scored.length) {
         ticker.classList.add('ticker--idle');
-        ticker.innerHTML = `<div class="ticker__item">No NFL scores — season runs Sep–Feb</div>`;
+        // Distinguish "no games today" (a real in-season/preseason gap
+        // between games) from "season hasn't started" (true Mar-Aug
+        // offseason) -- flagged live 2026-08-13/14 during the preseason
+        // debugging session (ISSUES.md "Live NFL preseason debugging
+        // session"): the old copy was flatly wrong the moment a preseason
+        // week is underway and today just happens to have no live/final
+        // game yet. See DECISIONS.md D-094.
+        const phase = (typeof _nflSeasonPhase === 'function') ? _nflSeasonPhase() : null;
+        const idleMsg = (phase === 'preseason' || phase === 'regular' || phase === 'postseason')
+            ? 'No NFL games today — check back soon'
+            : 'No NFL scores — season runs Sep–Feb';
+        ticker.innerHTML = `<div class="ticker__item">${idleMsg}</div>`;
         return;
     }
 

@@ -2665,3 +2665,35 @@ Escalation needed: no — both fixes proceeded same session per the established 
 - Cannot push from this session — the owner pushes, then Cloudflare Pages builds (~45-100s observed this session). Verify the real deployed `sw.js` version with a `cache:'reload'` fetch before trusting any other live check.
 - Three-gate + owner-override discipline held this session: WNBA itself was an explicit owner override of D-052's calendar-gap recommendation, logged as an override rather than a silent reversal; the Resolution 5 Leaders/detail expansion still ran the "probe live before promising scope" check rather than assuming the original deferral had gone stale.
 
+
+---
+
+## NFL ticker sport-mismatch on cold/deep-link load — found + fixed 2026-08-14
+
+Task / Finding: Deep-linked/cold loads into NFL views show the wrong sport's ticker for up to 60s
+Contributor: Finn | Date: 2026-08-14
+
+**Context:** Owner asked to continue the live-debugging pattern from the 2026-08-13/14 session (D-093) using tonight's real preseason kickoffs (DEN@ATL, TB@NYJ, MIA@WSH all live at investigation time) as another live-debugging window, and to close out that session's one open thread. Investigated the shared header ticker specifically on cold/deep-linked loads into NFL views, since D-093 didn't cover that path.
+
+**What I found (real, reproduced on production, three times independently — fresh tabs, no prior navigation):**
+
+Loading `sportstrata.cc/#nfl-games` or `sportstrata.cc/#nfl-home` directly (not via in-app sport-switch) renders the correct NFL page and correctly populates `AppState.currentView`/`AppState.currentSport`/`AppState.nflGames` (confirmed via console: `nfl-games`/`nfl`/16 games, 3 real live) — but the shared `#scoreTicker` at the top of the page showed 200+ MLB games and zero NFL games, despite three real NFL games being live at that exact moment. Confirmed this is not a data problem (the NFL data was correct and available), it's a render race:
+
+- `js/app.js`'s boot IIFE (the one that seeds the ticker "independently... so it works on first load") branches only on `AppState.currentView === 'home'` for the merged ticker (D-087). Every other view — including every non-home `nfl-*`/`ncaaf-*`/`ncaab-*`/`wnba-*` view — falls to an `else` branch that unconditionally fetches the MLB schedule and calls `updateMLBTicker(games)`, regardless of what sport the landing view actually is.
+- On a cold load into `#nfl-games`, this races against `loadNFLGames()`'s own `updateNFLTicker(games)` call (`js/nfl.js:406`). Whichever async fetch resolves last wins — reproduced with MLB winning three separate times.
+- On a cold load into `#nfl-home` specifically, there's no competing per-view ticker call at all (unlike `nfl-games`), so the ticker just stays wrong until `setupNFLLivePolling()`'s first tick, up to 60 real seconds later (timed it: self-healed at the next tick, confirmed via console before/after).
+- Clicking into NFL via the in-app nav (`switchSport('nfl')` in `js/navigation.js`) does NOT have this bug — it has its own correct per-sport ticker-seed logic. The bug is specific to the cold-boot path, which never calls that logic.
+
+**Real-world exposure:** this hits every visitor who lands directly on an NFL page rather than navigating in-app — bookmarks, shared links, and specifically the SEO landing/content path-URLs GOALS.md documents as already shipped (`/nfl/leaders`, `/nfl/game/{id}`, D-057) and the SEO stubs from D-040 Program 1. During a live preseason night, that's the worst possible first impression: a shared link to a live NFL game shows a header full of finished MLB scores.
+
+**File/line:** `js/app.js` L149-172 (boot IIFE, the `else` branch); races `js/nfl.js:406` (`loadNFLGames`); `js/navigation.js:245-299` (`switchSport`) has the correct per-sport logic this should have reused from the start.
+
+**Likely shared, not confirmed:** the same boot-IIFE `else` branch would produce the identical wrong-ticker bug for a cold load into any non-home `ncaaf-*`/`ncaab-*`/`wnba-*` view too (same code path, same MLB hardcode) — not reproduced for those sports this session (NFL was the one live and in-scope), flagging per Finn's scope discipline same as D-093's MLB-poller note.
+
+**Secondary finding closed same session, not a new investigation — Kael's copy pass from D-093:** the ticker's zero-state copy ("No NFL scores — season runs Sep–Feb") was flagged in D-093 as wrong during a live preseason week with no game currently on the board, and never fixed. Fixed in this pass (see below) — routing per TEAM.md, no separate write-up needed since D-093 already fully documented the finding.
+
+**Result:** the ticker-race finding is architectural/data-flow — routed to Axiom per TEAM.md's matrix ("AppState issue... route to Axiom"). Both this fix and the D-093 copy-pass carryover shipped same session. Full fix record in DECISIONS.md D-094.
+
+Escalation needed: no — small, scoped, low-risk fix (reuse existing per-sport logic, no new architecture), same bar as every D-093 fix.
+
+**Fix status:** committed locally, `sw.js` bumped v175→v176, pending owner push. Not yet live-verified on production (no push access from this session) — next session (or the owner directly) should confirm on `sportstrata.cc` that: (1) a fresh load of `/#nfl-games` and `/#nfl-home` shows the NFL-exclusive ticker immediately, not MLB; (2) the zero-state ticker copy reads "No NFL games today — check back soon" during any current preseason gap between games, not "season runs Sep–Feb"; (3) `sw.js` reports `sportstrata-v176` after deploy.

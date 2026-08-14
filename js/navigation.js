@@ -242,17 +242,14 @@ function navigateTo(view, push = true) {
 
 // ── Sport switching ───────────────────────────────────────────
 
-function switchSport(sport) {
-    if (sport === AppState.currentSport) return;
-    AppState.currentSport = sport;
-
-    document.getElementById('positionFilters')?.remove();
-    document.getElementById('mlbGroupToggle')?.remove();
-
-    const cfg = SPORTS_META[sport] || SPORTS_META.mlb;
-
-    _applySportUI(sport);
-
+// Fetches the given sport's current scoreboard and seeds the shared
+// #scoreTicker with it. Extracted from switchSport() (2026-08-14, D-094) so
+// the same per-sport logic can also run on a cold/deep-linked page load --
+// previously only switchSport()'s in-app path had this, and js/app.js's boot
+// sequence unconditionally seeded MLB regardless of the actual landing
+// sport, racing (and often losing to) the view's own ticker seed. See
+// DECISIONS.md D-094.
+function _seedSportTicker(sport) {
     if (sport === 'mlb') {
         fetchMLBSchedule(7).then(games => {
             AppState.mlbGames = AppState.mlbGames.length ? AppState.mlbGames : games;
@@ -294,6 +291,20 @@ function switchSport(sport) {
             }).catch(() => {});
         }
     }
+}
+
+function switchSport(sport) {
+    if (sport === AppState.currentSport) return;
+    AppState.currentSport = sport;
+
+    document.getElementById('positionFilters')?.remove();
+    document.getElementById('mlbGroupToggle')?.remove();
+
+    const cfg = SPORTS_META[sport] || SPORTS_META.mlb;
+
+    _applySportUI(sport);
+
+    _seedSportTicker(sport);
 
     navigateTo(cfg.defaultView);
 }

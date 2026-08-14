@@ -161,14 +161,34 @@ setupNavigation();
         return;
     }
 
-    try {
-        const games = await fetchMLBSchedule(7);
-        if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
-        updateMLBTicker(games);
-        Logger.info('MLB ticker initialised', { count: games.length }, 'APP');
-    } catch (error) {
-        Logger.warn('Ticker init failed', error.message, 'APP');
-        if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
+    // Cold/deep-linked load into a non-home view (bookmark, shared link, SEO
+    // landing page) -- seed the ticker for whatever sport that view actually
+    // belongs to, not always MLB. Found live 2026-08-14 during a real NFL
+    // preseason debugging pass (DECISIONS.md D-094): this branch used to be
+    // unconditionally MLB regardless of AppState.currentSport, racing the
+    // view's own per-sport ticker seed (e.g. loadNFLGames -> updateNFLTicker)
+    // and leaving the WRONG sport's scores in the ticker for up to 60s, until
+    // the live-poll loop happened to correct it -- reproduced on a fresh
+    // #nfl-games / #nfl-home load with 3 real NFL games live while the
+    // ticker still showed 200+ MLB games. AppState.currentSport is already
+    // set synchronously by _loadFromHash before this IIFE runs (see comment
+    // above), same guarantee the home branch relies on. _seedSportTicker
+    // (js/navigation.js) is the same function switchSport() uses for its
+    // in-app path -- reused here rather than reimplemented.
+    const _coldSport = AppState.currentSport || 'mlb';
+    if (typeof _seedSportTicker === 'function') {
+        _seedSportTicker(_coldSport);
+        Logger.info(`${_coldSport.toUpperCase()} ticker seed dispatched (cold load)`, undefined, 'APP');
+    } else {
+        try {
+            const games = await fetchMLBSchedule(7);
+            if (AppState.mlbGames.length === 0) AppState.mlbGames = games;
+            updateMLBTicker(games);
+            Logger.info('MLB ticker initialised', { count: games.length }, 'APP');
+        } catch (error) {
+            Logger.warn('Ticker init failed', error.message, 'APP');
+            if (tickerEl) tickerEl.innerHTML = `<div class="ticker__item">No scores available</div>`;
+        }
     }
 })();
 
