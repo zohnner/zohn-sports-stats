@@ -161,6 +161,23 @@ async function fetchNFLScoreboard(opts = {}) {
         const stName = status?.type?.name || 'STATUS_SCHEDULED';
         const isFinal = stName.startsWith('STATUS_FINAL');
         const isLive  = stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME';
+        // 2026-08-14 live-debug pass (D-096): comp.situation carries real down/distance/
+        // possession/red-zone data on every live game -- already present in every
+        // /scoreboard response the Scores grid already fetches, just never parsed.
+        // ESPN's sentinel for "no current down" (right after a score/timeout/kickoff)
+        // is down: -1, so only build a situation object when there's a real down to
+        // show -- an empty/undefined line beats a nonsensical "0th & 0".
+        const sit = comp.situation;
+        let situation = null;
+        if (isLive && sit && typeof sit.down === 'number' && sit.down >= 1 && sit.shortDownDistanceText) {
+            const possAbbr = sit.possession && home?.team?.id === sit.possession ? (home?.team?.abbreviation || '')
+                : sit.possession && away?.team?.id === sit.possession ? (away?.team?.abbreviation || '')
+                : '';
+            situation = {
+                text: possAbbr ? `${possAbbr} · ${sit.shortDownDistanceText}` : sit.shortDownDistanceText,
+                isRedZone: !!sit.isRedZone,
+            };
+        }
         return {
             id:       ev.id,
             name:     ev.name,
@@ -188,6 +205,8 @@ async function fetchNFLScoreboard(opts = {}) {
             // competitions[].broadcasts[] = [{market, names:[...]}]). Home-grid card only;
             // absent broadcasts degrade to no caption, never a placeholder.
             broadcast: comp.broadcasts?.[0]?.names?.[0] || '',
+            // D-096: down/distance + possession + red-zone, live games only, null otherwise.
+            situation,
         };
     }).filter(Boolean);
 }
@@ -478,6 +497,7 @@ function _createNFLGameCard(game) {
             ${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}
             ${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}
         </div>
+        ${game.isLive && game.situation ? `<div class="game-situation${game.situation.isRedZone ? ' game-situation--redzone' : ''}">${_escHtml(game.situation.text)}</div>` : ''}
     `;
     return card;
 }

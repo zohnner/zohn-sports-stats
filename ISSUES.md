@@ -2727,3 +2727,24 @@ Contributor: Finn | Date: 2026-08-14
 Escalation needed: no — the fix is additive (one query param) and doesn't change response shape, status codes, or the allowlist; verified ESPN tolerates the extra param before shipping.
 
 **Fix status:** committed locally, pending owner push. Cannot be live-verified from this session the way the client-JS fixes were (this is a server-side Pages Function; the fix only takes effect once deployed) — next session or the owner should watch a live NFL window after deploy and confirm `/api/nfl?path=/scoreboard` never repeats a stale clock value across a real multi-minute span the way it did here.
+
+---
+
+## NFL Scores dashboard — live down/distance/possession on game cards (D-096)
+
+Task / Finding: Feature — surface real down/distance/possession/red-zone data already fetched but unused on the Scores grid
+Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-14
+
+**What we're trying to accomplish:** owner asked to keep improving the NFL games dashboard after tonight's bug-fix passes (D-093/094/095). The Scores grid (`#nfl-games`) only ever showed score + clock for a live game — no sense of what's actually happening on the field without clicking into the full Live Game Viewer. ESPN's own scoreboard shows down/distance/last-play/field position directly on every card; ours didn't, even though the exact same data is already in the payload.
+
+**Current state:** `fetchNFLScoreboard()` (`js/nfl.js`) already fetches `comp.situation` on every `/scoreboard` call (confirmed live: `down`, `distance`, `shortDownDistanceText`, `possession` team id, `isRedZone` all present and correct on real live games checked tonight — DEN@ATL, TB@NYJ, MIA@WSH) but drops the field entirely during normalization. Zero new fetches needed.
+
+**Spec (Vera):** show a compact situation line — `"{possessing team} · {down} & {distance}"` (e.g. `"TB · 2nd & 8"`) — under the existing status pill, live games only. States: no line at all when not live, when `situation` is null (ESPN's `down: -1` sentinel right after a score/timeout/kickoff — a missing line beats a nonsensical "0th & 0"), or when the possessing team can't be resolved (falls back to just the down/distance text, no dangling separator). No new interaction, no click target change — the whole card is already clickable through to the Live Game Viewer for anyone who wants play-by-play depth.
+
+**Visual (Kael):** reused `.game-weather`'s exact recipe (small caption, top divider, center-aligned, truncates) rather than inventing a new pattern — same house rhythm the card already uses for MLB's weather caption. Red zone (`isRedZone: true`) colors the line `--color-loss` red — not decoration, a real field-position threshold (opponent's 20), which DESIGN.md's color rule explicitly sanctions borrowing win/loss for ("thresholded values... may borrow win/loss"). No new tokens, no border-color changes — border stays team-identity per DESIGN.md's border=identity/badge=state rule, this is a badge-equivalent text treatment, not a border change.
+
+**Feasibility (Axiom):** confirmed no architectural change — pure data-parsing addition in the existing `fetchNFLScoreboard()` normalizer plus one conditional line in `_createNFLGameCard()`. Live-previewed against real production data before shipping (injected the parsing logic against a real `/scoreboard` fetch and the CSS + a rendered preview element into the live page) — computed real values (`"ATL · 2nd & 10"`, `"TB · 2nd & 8"`, `"WSH · 1st & 10"`) for all three currently-live games, visually confirmed legible against the live dark theme, red-zone variant confirmed readable.
+
+**Verified locally:** `node --check` clean on `js/nfl.js`, 0 NUL bytes, brace-balance check clean on `css/components.css`, grep confirmed no cascade conflict (only the 3 new references to `.game-situation`/`.game-situation--redzone` exist anywhere in css/js), `--color-loss` token confirmed present in both themes. Full unit suite 40/40, manifest clean, theme check clean (2 pre-existing unrelated WARNs only). `sw.js` bumped v176→v177.
+
+**Not yet live-verified after deploy** — pending owner push. Next check: confirm the situation line renders on a real live card in production, disappears correctly on final/scheduled cards and during dead-ball/kickoff moments (down:-1), and the red-zone color triggers correctly the next time a live drive reaches the 20.

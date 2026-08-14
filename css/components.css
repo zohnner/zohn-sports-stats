@@ -760,6 +760,26 @@
 .game-weather--dome  { color: var(--text-subtle); }
 .game-weather--outdoor { color: var(--text-muted); }
 
+/* D-096: NFL live down/distance/possession line -- same recipe as .game-weather
+   (small caption, top divider, truncates) so it reads as the same house pattern,
+   not a bespoke NFL-only treatment. Red zone borrows --color-loss per DESIGN.md's
+   own sanctioned exception ("thresholded values... may borrow win/loss") -- it's
+   a real field-position threshold (opponent's 20), not decoration. */
+.game-situation {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+    padding-top: 0.4rem;
+    margin-top: 0.1rem;
+    border-top: 1px solid var(--border-default);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+}
+.game-situation--redzone { color: var(--color-loss); }
+
 .game-margin {
     font-size: 0.68rem;
     font-weight: 700;

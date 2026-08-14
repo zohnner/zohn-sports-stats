@@ -2240,3 +2240,26 @@ After that: sport switcher and picker band both show WNBA. Picker card correctly
 **Implications:** next live NFL window after deploy should confirm `/scoreboard` no longer repeats a stale clock value across a multi-minute span. If the same class of staleness ever surfaces on another sport's proxy Function (`mlb.js`, `ncaaf.js`, `ncaab.js`, `wnba.js` all use the identical `cf.cacheTtl`/`cacheEverything` pattern per CLAUDE.md), the same salt technique applies — not applied there this session, out of NFL scope, flagged the same way D-093 flagged MLB's shared poller bug and D-094 flagged the shared boot-ticker bug.
 
 **Live-verified after push (2026-08-14, `sportstrata-v176`).** Confirmed deployed. Ticker fix (D-094): fresh cold loads of `/#nfl-games` immediately showed the NFL-exclusive ticker (18 items), not MLB. Scoreboard fix (D-095): one request shortly after deploy still returned a stale value (`"3:20 - 1st"` for DEN@ATL when ESPN's own live page had already reached `"15:00 - 2nd"`) — consistent with Cloudflare's rolling deploy propagation window, not the bug recurring. Two follow-up requests ~90 and ~150 seconds later tracked ESPN's real clock correctly (`"14:56 - 2nd"` then `"14:16 - 2nd"`, a 40s real-time gap matching a 40s game-clock gap). Both D-094 and D-095 closed.
+
+## D-096 — NFL Scores dashboard: live down/distance/possession on game cards (2026-08-14)
+
+**Status:** complete (build shipped, live-verification pending deploy)
+**Contributors:** Vera (spec), Kael (visual), Axiom (build)
+**Date opened:** 2026-08-14 | **Date resolved:** 2026-08-14
+
+**Decision needed:**
+  None — a scoped feature addition using data already in hand, logged per TEAM.md's standing convention.
+
+**Context:** Fourth pass of tonight's live-preseason work, this time on the Scores dashboard itself per owner request to keep improving the NFL games dashboard. ESPN's own scoreboard shows down/distance/field-position directly on every live card; SportStrata's only showed score and clock, even though `fetchNFLScoreboard()` already receives ESPN's `situation` object (down, distance, possession, red-zone) on every call and simply discarded it.
+
+**Spec (Vera):** a single compact line under the status pill — `"{possessing team} · {down} & {distance}"` — live games only, and only when ESPN has a real current down (`down >= 1`; ESPN uses `down: -1` as a "no current down" sentinel right after scores/timeouts/kickoffs, so those moments correctly show nothing rather than a garbage line). No new interaction surface.
+
+**Visual (Kael):** new `.game-situation` class, deliberately the same recipe as the existing `.game-weather` caption (small text, top divider, center, truncates) — extends the house pattern rather than inventing one. `.game-situation--redzone` borrows `--color-loss` for the red-zone state, which DESIGN.md's color rule explicitly permits for thresholded values ("thresholded values... may borrow win/loss; decoration may not") — red zone is a real 20-yard-line threshold, not decoration. Border stays team-identity, untouched — this is a badge-equivalent text treatment per the border=identity/badge=state invariant, not a border-color change.
+
+**Feasibility + build (Axiom):** `fetchNFLScoreboard()` (`js/nfl.js`) now parses `comp.situation` into `{ text, isRedZone }` (null when not live or no real current down), resolving the possessing team's abbreviation by comparing `situation.possession` (a team id) against the home/away team ids already in scope. `_createNFLGameCard()` renders the line conditionally. Zero new fetches — the data was already being requested for every Scores-grid load, just dropped during normalization.
+
+**Verified before shipping (live, not just static):** ran the exact new parsing logic against a real production `/scoreboard` fetch mid-session — computed correct real values for all three live games (`"ATL · 2nd & 10"`, `"TB · 2nd & 8"`, `"WSH · 1st & 10"`), injected the new CSS and a rendered preview (including the red-zone color variant) directly into the live production page and screenshotted it against the real dark theme to confirm legibility before writing a single line to disk.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, CSS brace-balance clean, grep confirmed zero cascade conflicts on the new class names, `--color-loss` token confirmed present in both shipped themes. Full unit suite 40/40, manifest clean, theme check clean (2 pre-existing unrelated WARNs only). `sw.js` bumped v176→v177 (`js/nfl.js` and `css/components.css` both changed and are in `STATIC_ASSETS`).
+
+**Implications:** same `comp.situation` field is available on every sport's ESPN-backed scoreboard proxy that has a "situation" concept (none of NCAAF/NCAAB/WNBA's sports have downs, so this is NFL-specific by nature, not a shared-bug situation like D-094/D-095). Not live-verified post-deploy yet — next live NFL window should confirm the line renders correctly on a real card, disappears cleanly on dead-ball moments, and the red-zone color fires when a real drive reaches the 20.
