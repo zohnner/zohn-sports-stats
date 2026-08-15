@@ -488,6 +488,22 @@ function displayNFLGames(games) {
     grid.appendChild(fragment);
 }
 
+// D-099 (2026-08-16): rewritten onto the same `.game-card-header` /
+// `.game-matchup` / `.game-scores` grid MLB's card already uses (see
+// "Game Cards — redesigned" in components.css). Before this, NFL's card used
+// its own `.game-teams`/`.game-vs` wrapper markup, which has never had CSS
+// rules of its own — the two `.game-team` blocks fell back to plain stacked
+// block layout instead of the shared component's 3-column
+// `1fr auto 1fr` grid, so each card rendered as a tall, sparse vertical
+// stack (logo, abbr, score, "@", logo, abbr, score) instead of the compact
+// side-by-side matchup every competitor (ESPN/Yahoo/CBS) uses. Reported live
+// as "hard to read anything on the card" (2026-08-16). NFL's own extras —
+// live down/distance (`.game-situation`, D-096) and stat leaders
+// (`.game-leaders`, D-098) — were already built against this same shared
+// system and needed no changes; only the outer wrapper was on old markup.
+// Team order matches MLB's card exactly (home left, away right, no literal
+// "@" — the grid layout alone conveys the matchup) for one visual recipe
+// across sports, not a bespoke NFL treatment.
 function _createNFLGameCard(game) {
     const card = document.createElement('div');
     card.className = 'game-card' + (game.isLive ? ' game-card--live' : '');
@@ -506,34 +522,58 @@ function _createNFLGameCard(game) {
         try { dateStr = new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
     }
 
+    const teamBlock = (team, won, extraCls) => {
+        const color = getNFLTeamColor(team.abbr);
+        return `
+        <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" data-team-abbr="${_escHtml(team.abbr)}" style="cursor:pointer" role="button" tabindex="0" aria-label="${_escHtml(team.name || team.abbr)}">
+            <div class="game-team-logo" ${color ? `style="background:linear-gradient(135deg,${color}cc,${color}55)"` : ''}>
+                ${team.logo ? `<img class="game-logo-img" src="${_escHtml(team.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                <span class="game-logo-text">${_escHtml(team.abbr)}</span>
+            </div>
+            <div class="game-team-abbr">${_escHtml(team.abbr)}</div>
+            <div class="game-team-name">${_escHtml(team.name || '')}</div>
+        </div>`;
+    };
+
     card.innerHTML = `
-        <div class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</div>
-        <div class="game-teams">
-            <div class="game-team ${game.awayTeam.winner ? 'game-team--winner' : ''}">
-                <div class="game-team-logo">
-                    <img src="${game.awayTeam.logo}" alt="${_escHtml(game.awayTeam.abbr)}" class="game-logo-img" loading="lazy" data-hide-on-error>
-                </div>
-                <span class="game-team-abbr">${_escHtml(game.awayTeam.abbr)}</span>
-                ${hasScore ? `<span class="game-score ${game.awayTeam.winner ? 'game-score--win' : ''}">${as}</span>` : ''}
-            </div>
-            <div class="game-vs">@</div>
-            <div class="game-team ${game.homeTeam.winner ? 'game-team--winner' : ''}">
-                ${hasScore ? `<span class="game-score ${game.homeTeam.winner ? 'game-score--win' : ''}">${hs}</span>` : ''}
-                <span class="game-team-abbr">${_escHtml(game.homeTeam.abbr)}</span>
-                <div class="game-team-logo">
-                    <img src="${game.homeTeam.logo}" alt="${_escHtml(game.homeTeam.abbr)}" class="game-logo-img" loading="lazy" data-hide-on-error>
-                </div>
-            </div>
+        <div class="game-card-header">
+            <span class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</span>
+            <span class="game-status ${statusCls}">${game.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}</span>
         </div>
-        <div class="game-status ${statusCls}">
-            ${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}
-            ${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}
+        <div class="game-matchup">
+            ${teamBlock(game.homeTeam, game.homeTeam.winner)}
+            <div class="game-scores">
+                <span class="game-score ${game.homeTeam.winner ? 'game-score--win' : hasScore && !game.homeTeam.winner ? 'game-score--loss' : ''}">${hasScore ? hs : '—'}</span>
+                <span class="game-scores-sep">:</span>
+                <span class="game-score ${game.awayTeam.winner ? 'game-score--win' : hasScore && !game.awayTeam.winner ? 'game-score--loss' : ''}">${hasScore ? as : '—'}</span>
+            </div>
+            ${teamBlock(game.awayTeam, game.awayTeam.winner, 'game-team--away')}
         </div>
         ${game.isLive && game.situation ? `<div class="game-situation${game.situation.isRedZone ? ' game-situation--redzone' : ''}">${_escHtml(game.situation.text)}</div>` : ''}
         ${game.leaders?.length ? `<div class="game-leaders">${game.leaders.map(l =>
             `<div class="game-leader-row"><span class="game-leader-cat">${_escHtml(l.cat)}</span> ${_escHtml(l.teamAbbr)} ${_escHtml(l.name)} — ${_escHtml(l.stat)}</div>`
         ).join('')}</div>` : ''}
     `;
+
+    card.querySelectorAll('.game-logo-img').forEach(img => {
+        img.addEventListener('load', () => {
+            img.parentElement.querySelector('.game-logo-text')?.style.setProperty('display', 'none');
+        }, { once: true });
+    });
+
+    // Per-team click-through to that team's page (mirrors MLB's card), same
+    // stopPropagation-guarded pattern so it doesn't fight the card-level
+    // click into the game detail view.
+    card.querySelectorAll('.game-team[data-team-abbr]').forEach(el => {
+        const handler = e => {
+            e.stopPropagation();
+            const abbr = el.dataset.teamAbbr;
+            if (abbr) navigateTo('nfl-team-' + abbr);
+        };
+        el.addEventListener('click', handler);
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e); } });
+    });
+
     return card;
 }
 
