@@ -2839,3 +2839,5 @@ Contributor: Owner (decision) / Vera (spec) / Axiom (build) | Date: 2026-08-15
 **Verified locally:** `node --check` clean, 0 NUL bytes, full unit suite clean, manifest clean. `sw.js` bumped v180→v181.
 
 **Not yet live-verified after deploy** — pending owner push.
+
+**Live-verified after push (2026-08-15/16, `sportstrata-v181`).** Confirmed correct on a real production load — NFL's upcoming LAR@KC won the hero over MLB via the followed-team bonus + national broadcast, the first real (not synthetic) confirmation the cross-sport comparison works end-to-end. Zero console errors. D-100 closed.
