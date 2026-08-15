@@ -40,7 +40,14 @@ GOALS.md marked this gate ✅ on 2026-06-01 (key rotated, Worker deployed, `BDL_
 
 | ID | File | Description |
 |---|---|---|
-| — | — | No active P2 items. P2-005 (Broadcast Blurb undeployed) closed and live-verified 2026-08-09 — row deleted per this file's own house rule ("when fixed, delete the row"); full detail kept below and in DECISIONS.md D-068. |
+| P2-006 | js/highlightCard.js | Highlight Card Studio reported completely broken / non-functional (owner report, 2026-08-15) — untriaged, not yet reproduced this session |
+
+### P2-006 — Highlight Card Studio non-functional
+**Contributor:** Owner report | **Date:** 2026-08-15
+
+Owner reports Highlight Card Studio (`js/highlightCard.js` — both the MLB entry point and the NFL entry point added later in the same file) is "completely bugged and not working." Not yet triaged or reproduced this session; logged here to queue for the next debugging pass rather than delay in-flight hero work. Next step: reproduce live (both MLB and NFL launch paths — game view button and player view, per the `Logger.info` call sites already in the file), console-check for a thrown error, and root-cause before proposing a fix.
+
+Historical detail (P2-005, Broadcast Blurb undeployed): closed and live-verified 2026-08-09 — row deleted per this file's own house rule ("when fixed, delete the row"); full detail kept in DECISIONS.md D-068.
 
 ---
 
@@ -2796,3 +2803,22 @@ Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
 **Not yet live-verified after deploy** — pending owner push.
 
 **Live-verified after push (2026-08-15, `sportstrata-v179`).** Confirmed correct on real production cards — both divider paths hold, real values render, scheduled games stay clean. D-098 closed.
+
+---
+
+## Home hero — tie in NFL live-game features (D-099)
+
+Task / Finding: Feature — reuse D-096/D-097/D-098's Scores-grid live detail (situation/broadcast/leaders) inside the NFL home hero, which showed none of it despite already fetching the data
+Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
+
+**What we're trying to accomplish:** owner asked how to tie tonight's new NFL live-game features into the main homepage hero.
+
+**Finding:** `_heroFromNFLGame()` already receives the full game object (situation/broadcast/leaders all present) via `_renderHomeHeroNFL()`'s `fetchNFLScoreboard()` call, but only ever rendered a bare score board — same gap MLB's hero already fixed for itself (D-047 S2, reusing `Scorebug`'s `liveHtml`). Fixed by reusing the exact `.game-situation`/`.game-leaders` markup already shipped for the Scores grid inside `.hero-live-detail` — zero new CSS, zero new fetches.
+
+**Verified live before shipping:** patched the real production home page's hero DOM to force-render the NFL hero path (bypassing the calendar gate for the preview only) against a real live game — confirmed clean render, screenshotted.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, full unit suite clean, manifest clean. `sw.js` bumped v179→v180.
+
+**Flagged, not resolved — real decision for the owner:** `_homeHeroSport()`'s Nov–Feb calendar gate means this new hero treatment is currently unreachable in production. It's not just preseason — September and October (the actual first ~9 weeks of the NFL regular season) are excluded too, every year, by design. Full option writeup in DECISIONS.md D-099.
+
+**Not yet live-verified after deploy** — pending owner push, and pending the calendar-gate decision before it's even reachable in production.

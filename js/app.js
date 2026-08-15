@@ -1425,12 +1425,32 @@ function _openNFLGameFromHero(eventId) {
     if (typeof showNFLGame === 'function') showNFLGame(eventId);
 }
 
+// D-099: reuses the exact .game-situation/.game-leaders markup the NFL Scores
+// grid already ships (D-096/D-098) inside the hero's live-detail slot -- the
+// same "one recipe, everywhere" move MLB's hero already made when it started
+// reusing Scorebug's liveHtml (base/outs/count) instead of showing bare score.
+// Zero new fetch: _renderHomeHeroNFL() already calls fetchNFLScoreboard(),
+// which already returns situation/broadcast/leaders on every game object --
+// this was sitting unused in the hero this whole time, same class of gap as
+// D-097's dead broadcast field.
+function _heroNFLLiveDetail(g) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const sitHtml = g.situation
+        ? `<div class="game-situation${g.situation.isRedZone ? ' game-situation--redzone' : ''}">${_esc(g.situation.text)}</div>`
+        : '';
+    const leadersHtml = g.leaders?.length
+        ? `<div class="game-leaders">${g.leaders.map(l =>
+            `<div class="game-leader-row"><span class="game-leader-cat">${_esc(l.cat)}</span> ${_esc(l.teamAbbr)} ${_esc(l.name)} — ${_esc(l.stat)}</div>`
+          ).join('')}</div>`
+        : '';
+    return (sitHtml || leadersHtml) ? `<div class="hero-live-detail">${sitHtml}${leadersHtml}</div>` : '';
+}
 function _heroFromNFLGame(g, kind) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
-    let kicker, hook, board, cta;
+    let kicker, hook, board, cta, liveDetail = '';
     if (kind === 'live') {
-        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
         const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
         const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
             : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
@@ -1439,10 +1459,11 @@ function _heroFromNFLGame(g, kind) {
             : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
         board = _heroNFLBoard(g, true);
         cta = 'Watch live →';
+        liveDetail = _heroNFLLiveDetail(g);
     } else {
         const d = g.date ? new Date(g.date) : null;
         const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
-        kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
+        kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
         hook = 'Kickoff soon';
         board = _heroNFLBoard(g, false);
         cta = 'Game preview →';
@@ -1454,7 +1475,7 @@ function _heroFromNFLGame(g, kind) {
             <p class="hero-hook">${hook}</p>
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
-        <div class="hero-visual">${board}</div>`;
+        <div class="hero-visual">${board}${liveDetail}</div>`;
     return { kind, html, onClick: () => _openNFLGameFromHero(g.id) };
 }
 
