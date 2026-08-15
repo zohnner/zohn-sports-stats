@@ -1400,6 +1400,16 @@ function _heroFromGame(g, kind) {
 // _renderHomeHeroNFL() finds no live/upcoming game and just hides the hero,
 // same honest empty-state MLB's own branch already uses below. Not a
 // regression from anything that exists today.
+//
+// D-100 (2026-08-15): SUPERSEDED. D-099 flagged that this fixed window kept
+// the new NFL live-detail hero (situation/broadcast/leaders) unreachable in
+// production for 9 months of the year, including a live preseason night this
+// was flagged on. Owner chose cross-sport leverage scoring over widening the
+// window or leaving it as-is (three options written up in DECISIONS.md
+// D-099/D-100) -- _renderHomeHero() below no longer calls this. Left in
+// place, unused, as the documented history of why NFL's hero window was
+// ever calendar-shaped at all; nothing else in the codebase calls it
+// (confirmed via grep before this change).
 function _homeHeroSport() {
     const m = new Date().getMonth() + 1; // 1-12
     return (m === 11 || m === 12 || m === 1 || m === 2) ? 'nfl' : 'mlb';
@@ -1429,10 +1439,10 @@ function _openNFLGameFromHero(eventId) {
 // grid already ships (D-096/D-098) inside the hero's live-detail slot -- the
 // same "one recipe, everywhere" move MLB's hero already made when it started
 // reusing Scorebug's liveHtml (base/outs/count) instead of showing bare score.
-// Zero new fetch: _renderHomeHeroNFL() already calls fetchNFLScoreboard(),
-// which already returns situation/broadcast/leaders on every game object --
-// this was sitting unused in the hero this whole time, same class of gap as
-// D-097's dead broadcast field.
+// Zero new fetch beyond the scoreboard call _renderHomeHero() already makes
+// (D-100) -- situation/broadcast/leaders are already on every game object it
+// fetches, this was sitting unused in the hero this whole time, same class
+// of gap as D-097's dead broadcast field.
 function _heroNFLLiveDetail(g) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const sitHtml = g.situation
@@ -1479,62 +1489,109 @@ function _heroFromNFLGame(g, kind) {
     return { kind, html, onClick: () => _openNFLGameFromHero(g.id) };
 }
 
-async function _renderHomeHeroNFL(host) {
-    let hero = null;
-    try {
-        const games = (typeof fetchNFLScoreboard === 'function')
-            ? ((AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard())
-            : [];
-        AppState.nflGames = games;
-        const live = (games || []).filter(g => g.isLive);
-        const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
-        if (live.length) {
-            hero = _heroFromNFLGame(live[0], 'live');
-        } else if (upcoming.length) {
-            const soonest = upcoming.slice().sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-            hero = _heroFromNFLGame(soonest, 'upcoming');
-        }
-    } catch (err) {
-        Logger.warn('NFL home hero failed', err && err.message, 'APP');
-        hero = null;
-    }
-    if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
-    host.className = `home-hero home-hero--${hero.kind}`;
-    host.innerHTML = hero.html;
-    host.hidden = false;
-    host.setAttribute('role', 'button');
-    host.tabIndex = 0;
-    host.onclick = hero.onClick;
-    host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
-}
+// _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was
+// _homeHeroSport()'s NFL-only branch (calendar-gated, live-then-soonest-
+// upcoming, no cross-sport comparison); _renderHomeHero() below now scores
+// NFL's best live/upcoming candidate against MLB's on shared currency
+// (_nflLeverage/_nflMarquee) and calls _heroFromNFLGame() directly when NFL
+// wins, so this dedicated per-sport wrapper has no remaining caller.
 
+// D-100: cross-sport favorite check, same shape as _gameHasFav below but for
+// NFL team abbreviations -- _isFollowed() (js/auth.js) already takes a sport
+// param, so this is a one-line mirror, not new follow-tracking machinery.
+function _nflGameHasFav(g) {
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('nfl', 'team', g.homeTeam?.abbr) || _isFollowed('nfl', 'team', g.awayTeam?.abbr);
+}
+// NFL-side leverage/marquee scores, calibrated to land in roughly the same
+// numeric range as MLB's leverage()/marquee() in _renderHomeHero() below
+// (both ~1-27 pre-favorite-bonus, both +100 once a followed team is
+// playing) using only data the hero already has in hand -- zero new fetch
+// beyond the scoreboard call itself. `period` stands in for MLB's inning,
+// scaled up (x2) since NFL only runs 4 quarters vs MLB's 9; point-diff
+// closeness stands in for run-diff closeness, rescaled because NFL margins
+// run much larger (one-score/two-score games, not 1-5 runs); and a national
+// broadcast (already-parsed, D-097) stands in for MLB's combined-win-pct
+// signal -- ESPN already curates which games get national coverage, a
+// reasonable zero-fetch proxy for "marquee matchup" when team records
+// themselves aren't part of the scoreboard payload the hero already holds.
+function _nflLeverage(g) {
+    const period = g.period || 1;
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    return (period * 2) + closeness + (g.broadcast ? 4 : 0) + (g.situation?.isRedZone ? 2 : 0)
+        + (_nflGameHasFav(g) ? 100 : 0);
+}
+function _nflMarquee(g) {
+    return (g.broadcast ? 4 : 0) + (_nflGameHasFav(g) ? 100 : 0);
+}
+// D-100 (supersedes the _homeHeroSport() calendar gate above): whichever
+// sport has the more compelling live game wins the hero slot, any day of the
+// year, scored on a shared currency instead of gated by a fixed window. This
+// means every home load now fetches the NFL scoreboard too, not just MLB's
+// -- a real, deliberate cost (one extra proxied API call, ApiCache.TTL.SHORT
+// same as the NFL Scores page itself) accepted in exchange for NFL's live
+// action no longer being invisible on the homepage 9 months a year (D-099's
+// finding: preseason and the first ~9 weeks of the regular season were
+// locked out entirely under the old rule).
 async function _renderHomeHero(games) {
     const host = document.getElementById('homeHero');
     if (!host) return;
-    if (_homeHeroSport() === 'nfl') { await _renderHomeHeroNFL(host); return; }
     const list = Array.isArray(games) ? games : (AppState._homeGames || []);
 
     const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
     const isUpcoming = g => g.status?.abstractGameState === 'Preview';
     const combinedPct = g => (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
+    const mlbLeverage = g => {
+        const inn  = g.linescore?.currentInning || 1;
+        const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
+        return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4
+            + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
+    };
+    const mlbMarquee = g => combinedPct(g) * 4
+        + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
+        + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
+
+    let nflGames = [];
+    try {
+        nflGames = (typeof fetchNFLScoreboard === 'function')
+            ? ((AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard())
+            : [];
+        AppState.nflGames = nflGames;
+    } catch (err) {
+        Logger.warn('NFL hero candidate fetch failed -- MLB-only hero this load', err && err.message, 'APP');
+    }
 
     let hero = null;
-    const live = list.filter(isLive);
-    if (live.length) {
-        const leverage = g => {
-            const inn  = g.linescore?.currentInning || 1;
-            const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
-            return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4
-                + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
-        };
-        hero = _heroFromGame(live.slice().sort((x, y) => leverage(y) - leverage(x))[0], 'live');
+    const mlbLive = list.filter(isLive);
+    const nflLive = (nflGames || []).filter(g => g.isLive);
+    if (mlbLive.length || nflLive.length) {
+        const candidates = [];
+        if (mlbLive.length) {
+            const g = mlbLive.slice().sort((x, y) => mlbLeverage(y) - mlbLeverage(x))[0];
+            candidates.push({ sport: 'mlb', g, score: mlbLeverage(g) });
+        }
+        if (nflLive.length) {
+            const g = nflLive.slice().sort((x, y) => _nflLeverage(y) - _nflLeverage(x))[0];
+            candidates.push({ sport: 'nfl', g, score: _nflLeverage(g) });
+        }
+        const winner = candidates.sort((a, b) => b.score - a.score)[0];
+        hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'live') : _heroFromNFLGame(winner.g, 'live');
     } else {
-        const up = list.filter(isUpcoming);
-        if (up.length) {
-            const marquee = g => combinedPct(g) * 4
-                + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
-                + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
-            hero = _heroFromGame(up.slice().sort((x, y) => marquee(y) - marquee(x))[0], 'upcoming');
+        const mlbUp = list.filter(isUpcoming);
+        const nflUp = (nflGames || []).filter(g => !g.isLive && !g.isFinal);
+        const candidates = [];
+        if (mlbUp.length) {
+            const g = mlbUp.slice().sort((x, y) => mlbMarquee(y) - mlbMarquee(x))[0];
+            candidates.push({ sport: 'mlb', g, score: mlbMarquee(g) });
+        }
+        if (nflUp.length) {
+            const g = nflUp.slice().sort((x, y) => _nflMarquee(y) - _nflMarquee(x))[0];
+            candidates.push({ sport: 'nfl', g, score: _nflMarquee(g) });
+        }
+        if (candidates.length) {
+            const winner = candidates.sort((a, b) => b.score - a.score)[0];
+            hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'upcoming') : _heroFromNFLGame(winner.g, 'upcoming');
         }
     }
     if (!hero) hero = await _heroFromStandings().catch(() => null);

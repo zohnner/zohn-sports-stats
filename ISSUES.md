@@ -2822,3 +2822,20 @@ Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
 **Flagged, not resolved — real decision for the owner:** `_homeHeroSport()`'s Nov–Feb calendar gate means this new hero treatment is currently unreachable in production. It's not just preseason — September and October (the actual first ~9 weeks of the NFL regular season) are excluded too, every year, by design. Full option writeup in DECISIONS.md D-099.
 
 **Not yet live-verified after deploy** — pending owner push, and pending the calendar-gate decision before it's even reachable in production.
+
+---
+
+## Home hero — cross-sport leverage scoring replaces calendar gate (D-100)
+
+Task / Finding: Feature — owner-decided resolution to D-099's flagged gap (NFL hero content unreachable outside Nov-Feb)
+Contributor: Owner (decision) / Vera (spec) / Axiom (build) | Date: 2026-08-15
+
+**Decision:** owner chose cross-sport leverage scoring (option c of three presented in D-099/D-100) over widening the calendar window or leaving it as-is — the only option that surfaces real live NFL action (preseason included) on the homepage.
+
+**Build:** `_renderHomeHero()` now compares MLB's and NFL's best live (or, absent any live game, best upcoming) candidate on a shared scoring currency (`_nflLeverage`/`_nflMarquee`, calibrated to MLB's existing `leverage()`/`marquee()` range) and picks the higher-scoring sport. Zero new CSS, one new proxied fetch per home load (NFL scoreboard, cached same as the NFL Scores page).
+
+**Verified live before shipping:** caught and corrected a false-negative in the first verification pass (reloading `/js/app.js` from the live server tested the *deployed* pre-D-100 code, not local edits) by injecting the real on-disk source directly and confirming with real synthetic data both directions of the comparison (high-leverage NFL beats real live MLB; low-leverage NFL loses to it) plus the true no-NFL-live fallback case. Also re-confirmed the `max-age=14400` browser HTTP-cache gotcha (D-097) affects `app.js` too — needed a second hard reload mid-session.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, full unit suite clean, manifest clean. `sw.js` bumped v180→v181.
+
+**Not yet live-verified after deploy** — pending owner push.
