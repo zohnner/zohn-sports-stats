@@ -486,8 +486,13 @@ function loadHome() {
         <!-- Data-Story hero (D-046 P2) — the day's focal narrative; hidden until populated -->
         <div class="home-hero" id="homeHero" hidden></div>
 
-        <!-- Search prompt bar (P2-004) -->
-        <button class="home-search-bar" onclick="document.getElementById('searchBtn')?.click()" aria-label="Search players">
+        <!-- Search prompt bar (P2-004) — pre-existing bug, unrelated to D-103,
+             caught live 2026-08-15: this referenced a #searchBtn id that has
+             never existed (the real open-search-modal trigger has always been
+             #globalSearchBtn — see index.html/js/search.js). getElementById
+             silently returned null so ?.click() no-op'd — clicking this bar
+             visually focused nothing and the search modal never opened. -->
+        <button class="home-search-bar" onclick="document.getElementById('globalSearchBtn')?.click()" aria-label="Search players">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
             <kbd class="home-search-kbd">⌘K</kbd>
