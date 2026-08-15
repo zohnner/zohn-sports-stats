@@ -40,12 +40,9 @@ GOALS.md marked this gate ✅ on 2026-06-01 (key rotated, Worker deployed, `BDL_
 
 | ID | File | Description |
 |---|---|---|
-| P2-006 | js/highlightCard.js | Highlight Card Studio reported completely broken / non-functional (owner report, 2026-08-15) — untriaged, not yet reproduced this session |
+| — | — | No active P2 items. |
 
-### P2-006 — Highlight Card Studio non-functional
-**Contributor:** Owner report | **Date:** 2026-08-15
-
-Owner reports Highlight Card Studio (`js/highlightCard.js` — both the MLB entry point and the NFL entry point added later in the same file) is "completely bugged and not working." Not yet triaged or reproduced this session; logged here to queue for the next debugging pass rather than delay in-flight hero work. Next step: reproduce live (both MLB and NFL launch paths — game view button and player view, per the `Logger.info` call sites already in the file), console-check for a thrown error, and root-cause before proposing a fix.
+Historical detail (P2-006, Highlight Card Studio "completely bugged"): closed and live-verified 2026-08-16 — root cause was NOT Highlight Card Studio itself but a shared `js/shareCard.js` bug (`navigator.share()` failures other than user-cancel discarded an already-rendered PNG instead of falling back to download), affecting all 5 card-export call sites site-wide. Row deleted per this file's own house rule; full detail kept in DECISIONS.md D-101.
 
 Historical detail (P2-005, Broadcast Blurb undeployed): closed and live-verified 2026-08-09 — row deleted per this file's own house rule ("when fixed, delete the row"); full detail kept in DECISIONS.md D-068.
 

@@ -98,6 +98,33 @@ function _shcToast(msg) {
     setTimeout(() => t.remove(), 2600);
 }
 
+// P2-006 (2026-08-16): plain <a download> fallback, extracted so both
+// shareStatCard() and shareCardElement() can reach it from two places each
+// -- the "no share API" branch, and now also the "share API exists but
+// navigator.share() itself failed" branch below. Root cause of the owner's
+// "completely bugged and not working" report: both functions already had
+// this exact download logic inline for browsers with no Web Share support,
+// but only ever reached it when `navigator.canShare` was falsy up front.
+// When canShare reported true (real desktop Chrome on this session's own
+// Windows machine does) but the later navigator.share() call itself then
+// threw for any reason other than the user backing out of the OS share
+// sheet (live-reproduced: `NotAllowedError: Permission denied`, a real
+// click, not a synthetic one), the old code re-threw unconditionally --
+// discarding an image that had *already* rendered successfully (the actual
+// hard part, html2canvas) and failing the whole export over an unrelated
+// OS-level share failure. Every card-export feature on the site shares this
+// helper (Highlight Card Studio MLB+NFL, leaderboard "share stat" buttons,
+// fantasy mock-draft card) so this one fix closes all five call sites.
+function _shcDownloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    _shcToast('Card saved');
+}
+
 function _shcFileName(d) {
     const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     return `${slug(d.playerName)}-${slug(d.statLabel)}-sportstrata.png`;
@@ -121,16 +148,19 @@ async function shareStatCard(d) {
                     text:  `${d.playerName}: ${d.statValue} ${d.statLabel}${d.rank ? ` (#${d.rank} in MLB)` : ''} — via ${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}`,
                 });
             } catch (err) {
-                if (err?.name !== 'AbortError') throw err;
+                if (err?.name === 'AbortError') {
+                    // user backed out of the OS share sheet on purpose -- nothing more to do
+                } else {
+                    // share() itself failed for a reason that has nothing to do with
+                    // the image (permission denied, unsupported context, etc.) -- the
+                    // PNG already rendered fine, so fall back to a plain download
+                    // instead of failing the whole export (P2-006).
+                    Logger.warn('navigator.share failed, falling back to download', err, 'MLB');
+                    _shcDownloadBlob(blob, _shcFileName(d));
+                }
             }
         } else {
-            const url  = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = _shcFileName(d);
-            link.href = url;
-            link.click();
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-            _shcToast('Card saved');
+            _shcDownloadBlob(blob, _shcFileName(d));
         }
         if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
     } catch (err) {
@@ -176,16 +206,22 @@ async function shareCardElement({ cardEl, fileName, title, text, btn }) {
         const blob = await Logger.time('shareCardElement', () => _shcRenderElementBlob(cardEl), 'MLB');
         const file = new File([blob], fileName, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try { await navigator.share({ files: [file], title, text }); }
-            catch (err) { if (err?.name !== 'AbortError') throw err; }
+            try {
+                await navigator.share({ files: [file], title, text });
+            } catch (err) {
+                if (err?.name === 'AbortError') {
+                    // user backed out of the OS share sheet on purpose -- nothing more to do
+                } else {
+                    // share() itself failed for a reason that has nothing to do with
+                    // the image (permission denied, unsupported context, etc.) -- the
+                    // PNG already rendered fine, so fall back to a plain download
+                    // instead of failing the whole export (P2-006).
+                    Logger.warn('navigator.share failed, falling back to download', err, 'MLB');
+                    _shcDownloadBlob(blob, fileName);
+                }
+            }
         } else {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = url;
-            link.click();
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-            _shcToast('Card saved');
+            _shcDownloadBlob(blob, fileName);
         }
         if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
     } catch (err) {
