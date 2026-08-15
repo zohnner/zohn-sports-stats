@@ -2911,3 +2911,20 @@ Feasibility already checked (see D-103) — a `children` entry becomes `{group, 
 D-102 (2026-08-15, earlier this session) reopened the 2026-08-10 "Analytics" mislabel / NFL Fantasy-dropdown-grouping finding. Don't spec that separately — the mega-menu's pillar structure (Stats & Leaders vs. Tools, and NFL's Fantasy split into Draft Prep/In-Season) resolves it in the same motion. One decision, not two.
 
 **Owner action needed:** sign off on scope — ship the followed-teams rail and the mega-menu together, or phase the rail first (it's pure reuse of existing data, smallest lift) and the mega-menu second (also closes D-102). Nothing here is built against the live site yet.
+
+---
+
+## D-103 post-ship live-verification — 2026-08-15 (see DECISIONS.md D-103 addendum)
+
+Owner approved shipping D-103 directly against the live repo (superseding the phased Vera/Kael/Axiom gate above — see the DECISIONS.md addendum). Three bugs surfaced during live verification after push, each found by actually clicking the shipped feature rather than re-reading the diff, fixed same-session, and confirmed live. All three are closed — kept here as a record of what broke and why, per Folio's "delete when fixed, the fix lives in the commit" rule, this entry is the exception since it's a cross-cutting retrospective rather than an open item.
+
+**1. Mega-panel dropdowns (Stats & Leaders / Tools / Fantasy) confined to trigger width — fixed, commit `7df7740`.**
+`.mega-panel` is `position: absolute`, meant to anchor against `header` (`position: sticky`) so the dropdown spans the full header width. But `.sub-nav-cat` — the panel's actual DOM parent — was still `position: relative`, a leftover from the pre-D-103 `position: fixed` flyout system where ancestor positioning didn't matter. The containing-block search for an absolutely positioned element stops at the first positioned ancestor, so `.sub-nav-cat` silently became the panel's real containing block instead of `header`, squeezing every mega-panel down to the ~100px width of its own trigger button. Fix: dropped `position: relative` from `.sub-nav-cat`.
+
+**2. Followed-team chips navigated to the sport's generic Teams list instead of the specific team — fixed, commits `cb2f5c1` + `bd94b8a`.**
+First pass (`cb2f5c1`) added per-sport resolution (`_favRailGoToTeam`): NFL routes by abbreviation directly, MLB/NCAAF resolve abbreviation → numeric id then route by id, NCAAB/WNBA correctly fall back to the Teams list (no team-detail view exists yet for those two — not a bug). Live-verification caught a second bug in the MLB branch specifically (`bd94b8a`): it called `navigateTo('mlb-team-'+id)`, but unlike NFL/NCAAF, `_renderMLBView`'s switch (`js/navigation.js`) has no `mlb-team-` case at all — every real MLB call site reaches team detail via `showMLBTeamDetail(id)` directly. Routing through `navigateTo()` logged "Unknown MLB view" and rendered nothing. Fixed to call `showMLBTeamDetail()` directly for the MLB branch.
+
+**3. Home page search bar did nothing when clicked — fixed, commit `1cdc80b`. Pre-existing bug, NOT a D-103 regression.**
+`.home-search-bar`'s `onclick` referenced `document.getElementById('searchBtn')`, an id that has never existed anywhere in the codebase (the real trigger has always been `#globalSearchBtn`). `getElementById` returned `null`, so `?.click()` silently no-op'd. Traced via `git log -S` to the button's introduction on 2026-04-30 (commit `5bf59df`), months before D-103 — flagged here only because it surfaced during this session's verification pass, not because the nav work caused it.
+
+**Process note:** all three were caught by actually exercising the shipped feature in Chrome (click the dropdown, click a followed chip, click the search bar) rather than by re-reading the diff — the diff alone looked correct in every case. Worth keeping live-verification as a mandatory step after any nav/routing change, not just a nice-to-have.
