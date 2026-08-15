@@ -2928,3 +2928,21 @@ First pass (`cb2f5c1`) added per-sport resolution (`_favRailGoToTeam`): NFL rout
 `.home-search-bar`'s `onclick` referenced `document.getElementById('searchBtn')`, an id that has never existed anywhere in the codebase (the real trigger has always been `#globalSearchBtn`). `getElementById` returned `null`, so `?.click()` silently no-op'd. Traced via `git log -S` to the button's introduction on 2026-04-30 (commit `5bf59df`), months before D-103 — flagged here only because it surfaced during this session's verification pass, not because the nav work caused it.
 
 **Process note:** all three were caught by actually exercising the shipped feature in Chrome (click the dropdown, click a followed chip, click the search bar) rather than by re-reading the diff — the diff alone looked correct in every case. Worth keeping live-verification as a mandatory step after any nav/routing change, not just a nice-to-have.
+
+---
+
+### `_NFL_TEAM_COLOR` map has real duplicate hex values across unrelated teams — mitigated locally, not fixed at the source (see DECISIONS.md D-104)
+**Date:** 2026-08-15
+
+Discovered live while verifying D-104's new Game Flow chart: `getNFLTeamColor()` returns the identical hex for several unrelated team pairs/groups —
+
+- `#FFB612` — GB, PIT
+- `#FB4F14` — CIN, DEN
+- `#E31837` — ATL, HOU, KC
+- `#C8102E` — NE, SF
+
+Confirmed via a full 32-team sweep against the live map, not a guess. This is a pre-existing gap in `_NFL_TEAM_COLOR`/`_NFL_TEAM_COLOR_ALIAS` (js/nfl.js) — likely each team's color was picked independently against its own jersey/branding without cross-checking for collisions against the other 31. It surfaced concretely because the new Game Flow chart puts two teams' colors directly side by side as a 2-series legend, where a collision reads as a real dataviz failure (PIT vs GB: two indistinguishable gold bars, couldn't tell whose score was whose) — but the same duplicate colors are already in use anywhere the site renders two teams' brand colors together, e.g. the `.game-team-logo` chip backgrounds on every scores/matchup card, which have carried this same ambiguity since those cards shipped, just less visibly (a static logo chip doesn't need to be *distinguished from* the opposing chip the way two overlapping chart series do).
+
+**What was done:** D-104's Game Flow chart works around this locally — when the away team's color would collide with (or is missing relative to) the home team's, the chart falls back to a neutral gray for the away bars instead of the colliding brand color. This makes the chart itself always readable but does not touch the underlying map.
+
+**Not fixed:** an actual fix means either widening the map with enough teams having genuinely distinct hues (hard — several of these are real, correct brand colors that are just naturally close, e.g. multiple teams' primary color is a red or gold in the same family) or accepting some pairs need a secondary differentiator (pattern, saturation shift, etc.) beyond hue alone. That's a cross-cutting color-system decision affecting every place team colors render side by side, not a one-file patch — flagged here for a future session rather than actioned now.

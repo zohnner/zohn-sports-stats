@@ -2452,3 +2452,38 @@ Live candidates from both sports (if any) are compared first — live always bea
   - **Owner action needed:** this is a real product-direction call, not a persona-level decision — "spare no feature" was the brief, but shipping it is a multi-session build (new component, new renderer, five small per-sport additions) against a live, working product. Owner sign-off needed on scope (rail + mega-menu together vs. phased) before Vera's spec-writing turns into a build queue.
 
 **Addendum — 2026-08-15, same day:** Owner reviewed the prototype and said "looks good, continue," which was taken as approval to implement directly against the live repo rather than run the phased Vera-spec → Kael-logo-review → Axiom-confirm gate above. Shipped as commit `b8a1d26` (mega-menu + followed-teams rail across MLB/NFL's sub-nav, all five sports' fav-rail). Three bugs surfaced during post-ship live verification and were fixed same-session — mega-panel width confinement (`7df7740`), fav-rail chip mis-routing including a genuine MLB-specific routing gap (`cb2f5c1`, `bd94b8a`), and an unrelated pre-existing home-search-bar bug surfaced by the same verification pass (`1cdc80b`). Full writeup in ISSUES.md under "D-103 post-ship live-verification — 2026-08-15". Vera's states-spec items (keyboard nav, empty/loading/error states, mobile drawer) remain open and un-actioned — the skip was of the *build* gate, not of that follow-up work, which still stands as a queued next step.
+
+## D-104 — NFL Scores game cards: Game Flow chart + inline records + ghost logo watermark
+**Status:** complete (live-verified before shipping)
+**Contributors:** (none — single-session owner request, no persona review gate; scoped visual/data addition to an already-shipped card, not a new component)
+**Date opened:** 2026-08-15 | **Date resolved:** 2026-08-15
+
+**Decision needed:**
+  Owner reported the just-redesigned NFL card (D-099, same day) as still "unappealing" and offering "very little information" vs. competitors (ESPN/Yahoo/CBS), and asked for a graphic/dataviz/photo brainstorm to close the gap.
+
+**Options considered:**
+  Six were brainstormed and delivered to the owner as an interactive mockup (`nfl-card-graphics-brainstorm.html`, sent + saved as a Cowork artifact) grounded in a live check of ESPN's `/scoreboard` payload (confirmed `records` and `linescores` are already fetched and unused; confirmed `odds`/`predictor` are absent, ruling out a win-probability chart without a new data source):
+  - **A — Game Flow chart:** quarter-by-quarter paired bar chart, team-brand-colored. Real dataviz, highest info density.
+  - **B — Inline W-L records:** `records[].summary`, already fetched. Nearly free.
+  - **C — Ghost logo watermark:** large, low-opacity team-color radial bleeding off the card corner. Cheapest visual-polish lift.
+  - **D — Live field-position bar:** upgrades the existing D-096 down/distance text line to a mini field graphic. Live games only.
+  - **E — Win-margin meter:** thin split bar under the score. Self-assessed weakest — mostly redundant with the score itself.
+  - **F — Featured/hero game:** larger treatment for one marquee game/week, the only option leaning toward a photo background. Needs its own game-selection logic — flagged as phase-2, not part of the first pass.
+
+**Decision:**
+  Owner approved A + B + C together. Implemented against the live repo same session:
+  - `js/nfl.js`: `fetchNFLScoreboard` now parses `record` (per team, via a new `_nflRecordSummary` helper picking the `type:'total'` entry) and `linescores` (per team, via `_nflLinescores`) — both already present in the ESPN payload the function already fetched. `_createNFLGameCard` renders the W-L record under each team abbr, a "Game Flow" quarter-by-quarter bar chart (team-brand-colored, only once real scoring data exists), and a ghost logo watermark (home team's brand color; omitted, not defaulted to accent, when no team color is mapped — DESIGN.md reserves brand orange for actual brand use).
+  - `css/main.css`: `.game-card` gained `position:relative; overflow:hidden` as the ghost logo's containing block/clip.
+  - `css/components.css`: new `.game-team-rec`, `.game-flow*`, `.game-card-ghost-logo` rules; `.game-card-header`/`.game-matchup`/`.game-situation`/`.game-leaders` gained `position:relative; z-index:1` so they stack above the watermark (an absolutely-positioned z-index:0 sibling otherwise paints *above* non-positioned block content per CSS2 stacking order — confirmed against spec, not assumed); the `.game-situation + .game-leaders` border-dedup rule was extended to `.game-situation + .game-flow` / `.game-flow + .game-leaders` since Game Flow now sits between them.
+  - `sw.js`: `CACHE_NAME` bumped v188 → v189.
+
+  **Live-verification caught two real issues before ship, both fixed in the same commit:**
+  1. The brainstorm's proposed 0.05 ghost-logo opacity was confirmed (via computed-style inspection + zoomed screenshot against the deployed page) to render essentially imperceptibly on the dark card surface — correct in the DOM, invisible in practice. Raised to 0.08, the lowest value that read as an intentional accent across multiple team colors without looking like a rendering artifact.
+  2. `getNFLTeamColor()` (the existing, pre-existing `_NFL_TEAM_COLOR` map) has real duplicate hex values across unrelated teams — confirmed live: GB/PIT both `#FFB612`, CIN/DEN both `#FB4F14`, ATL/HOU/KC all `#E31837`, NE/SF both `#C8102E`. Undetected until the Game Flow chart made it visible: PIT vs GB rendered with two indistinguishable gold bars. Fixed narrowly in the chart's own color selection (away side falls back to a neutral gray whenever it would collide with the home color) rather than touching the shared color map — the map itself still has the underlying collision and is used unmodified everywhere else on the site (team logo chips, etc.), which is a separate pre-existing issue, not caused by this change. Flagged in ISSUES.md rather than fixed here, since fixing the map itself is a larger, cross-cutting change outside this session's scope.
+
+**Rationale:**
+  All three options are additive layers (chart, text, background) that don't compete for the same card space, and none required a new data source — the strongest "unappealing → appealing" jump available without a scoping decision (D's live-only constraint, F's featured-game selection logic) hanging over it.
+
+**Implications:**
+  - Options D (live field-position graphic) and E (win-margin meter) were not built — D is a good, narrowly-scoped follow-up; E was the brainstorm's own weakest pick and is not currently planned. F (featured/hero game) remains a phase-2 idea pending a game-selection mechanism.
+  - The `_NFL_TEAM_COLOR` duplicate-hex issue (see above) is real and pre-existing beyond this card — see ISSUES.md for the standalone writeup and affected surfaces.

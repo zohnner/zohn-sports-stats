@@ -1097,6 +1097,12 @@ main {
     box-shadow: var(--shadow-card);
     transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
     animation: fadeUp 0.35s var(--ease-out) both;
+    /* D-104: containing block + clip for .game-card-ghost-logo (Option C
+       watermark) -- overflow:hidden clips the logo's off-corner bleed to the
+       card's own rounded corner without affecting the card's own box-shadow
+       (an element's overflow never clips its own box-shadow/outline). */
+    position: relative;
+    overflow: hidden;
 }
 .game-card:hover {
     transform: translateY(-3px);

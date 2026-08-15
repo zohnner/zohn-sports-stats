@@ -146,6 +146,20 @@ async function fetchNFLTeams() {
 // pre-existing call site still relies on. seasontype: 1=preseason, 2=regular,
 // 3=postseason; season is the year, sent as ESPN's own `dates` param — same three
 // names already proven live in nflStandings.js's fetchNFLPostseason().
+// D-104: helpers for the two record/scoring fields the card-graphics brainstorm
+// (2026-08-15, owner-approved options A + B) surfaces -- both already present
+// on every competitor object /scoreboard returns, just never read before now.
+function _nflRecordSummary(competitor) {
+    const recs = competitor?.records;
+    if (!Array.isArray(recs) || !recs.length) return '';
+    const total = recs.find(r => r.type === 'total') || recs.find(r => r.name === 'overall') || recs[0];
+    return total?.summary || '';
+}
+function _nflLinescores(competitor) {
+    if (!Array.isArray(competitor?.linescores)) return [];
+    return competitor.linescores.map(l => Number(l.value ?? l.displayValue ?? 0) || 0);
+}
+
 async function fetchNFLScoreboard(opts = {}) {
     const params = {};
     if (opts.seasontype) params.seasontype = opts.seasontype;
@@ -206,6 +220,10 @@ async function fetchNFLScoreboard(opts = {}) {
                 logo:   home?.team?.logo || getNFLTeamLogoUrl(home?.team?.abbreviation),
                 score:  parseInt(home?.score || '0', 10),
                 winner: home?.winner === true,
+                // D-104: overall W-L, e.g. "1-0" -- comp.competitors[].records already
+                // in this same /scoreboard payload, just never parsed (confirmed live:
+                // records = [{name,type,summary}], one entry per total/home/road split).
+                record: _nflRecordSummary(home),
             },
             awayTeam: {
                 abbr:   away?.team?.abbreviation || '?',
@@ -213,9 +231,18 @@ async function fetchNFLScoreboard(opts = {}) {
                 logo:   away?.team?.logo || getNFLTeamLogoUrl(away?.team?.abbreviation),
                 score:  parseInt(away?.score || '0', 10),
                 winner: away?.winner === true,
+                record: _nflRecordSummary(away),
             },
             isFinal,
             isLive,
+            // D-104: quarter-by-quarter scoring for the "Game Flow" chart -- comp.
+            // competitors[].linescores ([{value,displayValue,period}]), same payload,
+            // confirmed live and previously unused. Empty arrays pre-kickoff; the
+            // card only renders the chart once at least one period exists.
+            linescores: {
+                home: _nflLinescores(home),
+                away: _nflLinescores(away),
+            },
             statusText: status?.type?.shortDetail || status?.type?.description || '',
             period: status?.period || 0,
             clock:  status?.displayClock || '',
@@ -522,6 +549,12 @@ function _createNFLGameCard(game) {
         try { dateStr = new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
     }
 
+    // D-104 (2026-08-15, owner-approved options A + B + C from the graphics
+    // brainstorm): ghost logo watermark, inline W-L records, quarter-by-quarter
+    // Game Flow chart -- all sourced from fields the card already fetched for
+    // free (see _nflRecordSummary/_nflLinescores above). No new data calls.
+    const homeColor = getNFLTeamColor(game.homeTeam.abbr);
+
     const teamBlock = (team, won, extraCls) => {
         const color = getNFLTeamColor(team.abbr);
         return `
@@ -532,10 +565,71 @@ function _createNFLGameCard(game) {
             </div>
             <div class="game-team-abbr">${_escHtml(team.abbr)}</div>
             <div class="game-team-name">${_escHtml(team.name || '')}</div>
+            ${team.record ? `<div class="game-team-rec">${_escHtml(team.record)}</div>` : ''}
         </div>`;
     };
 
+    // Option A -- Game Flow: paired per-quarter bars, team-brand-colored (the
+    // site's existing identity channel -- see DESIGN.md border=identity rule
+    // and dataviz-skill categorical reasoning applied in the brainstorm doc).
+    // Only rendered once real scoring data exists for at least one period;
+    // scheduled games with empty linescores fall through to nothing, same
+    // "absent degrades to nothing" rule the rest of this file already follows.
+    const homeLS = game.linescores?.home || [];
+    const awayLS = game.linescores?.away || [];
+    const numPeriods = Math.max(homeLS.length, awayLS.length);
+    let flowHtml = '';
+    if (numPeriods > 0 && (game.isFinal || game.isLive)) {
+        const flowHomeColor = homeColor || 'var(--text-secondary)';
+        // Live-verified (2026-08-15) that _NFL_TEAM_COLOR has real duplicate
+        // hexes across unrelated teams -- GB/PIT both #FFB612, CIN/DEN both
+        // #FB4F14, ATL/HOU/KC all #E31837, NE/SF both #C8102E -- so two brand
+        // colors in the same matchup can be visually identical. A 2-series
+        // chart with indistinguishable series colors is a real dataviz
+        // failure (can't tell whose bar is whose), not a cosmetic nit, so the
+        // away side falls back to a neutral gray whenever it would collide
+        // with (or is missing relative to) the home color, same "absent
+        // degrades to nothing" fallback already used for teams with no
+        // mapped color at all.
+        const awayColorRaw = getNFLTeamColor(game.awayTeam.abbr);
+        const flowAwayColor = (awayColorRaw && awayColorRaw !== homeColor) ? awayColorRaw : 'var(--text-muted)';
+        const maxVal = Math.max(1, ...homeLS, ...awayLS);
+        const periodLabel = (i) => i < 4 ? `Q${i + 1}` : (numPeriods - i <= 1 ? 'OT' : `OT${i - 3}`);
+        const bars = Array.from({ length: numPeriods }, (_, i) => {
+            const hv = Number(homeLS[i]) || 0;
+            const av = Number(awayLS[i]) || 0;
+            const hh = Math.max(3, Math.round((hv / maxVal) * 40));
+            const ah = Math.max(3, Math.round((av / maxVal) * 40));
+            return `
+            <div class="game-flow-q">
+                <div class="game-flow-bars">
+                    <div class="game-flow-bar" style="height:${hh}px;background:${flowHomeColor}" title="${_escHtml(game.homeTeam.abbr)} ${periodLabel(i)}: ${hv}"></div>
+                    <div class="game-flow-bar" style="height:${ah}px;background:${flowAwayColor}" title="${_escHtml(game.awayTeam.abbr)} ${periodLabel(i)}: ${av}"></div>
+                </div>
+                <span class="game-flow-q-label">${periodLabel(i)}</span>
+            </div>`;
+        }).join('');
+        flowHtml = `
+        <div class="game-flow">
+            <div class="game-flow-label">Game Flow · Points by Quarter</div>
+            <div class="game-flow-chart">${bars}</div>
+            <div class="game-flow-legend">
+                <span><i style="background:${flowHomeColor}"></i>${_escHtml(game.homeTeam.abbr)}</span>
+                <span><i style="background:${flowAwayColor}"></i>${_escHtml(game.awayTeam.abbr)}</span>
+            </div>
+        </div>`;
+    }
+
+    // Option C -- ghost logo watermark, home team's brand color. Omitted
+    // entirely (not a fallback color) when the team has no mapped brand
+    // color -- DESIGN.md reserves brand orange for actual brand use, so a
+    // decorative element never borrows it as a substitute identity color.
+    const ghostHtml = homeColor
+        ? `<div class="game-card-ghost-logo" style="background:radial-gradient(circle, ${homeColor} 0%, transparent 70%)"></div>`
+        : '';
+
     card.innerHTML = `
+        ${ghostHtml}
         <div class="game-card-header">
             <span class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</span>
             <span class="game-status ${statusCls}">${game.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}</span>
@@ -550,6 +644,7 @@ function _createNFLGameCard(game) {
             ${teamBlock(game.awayTeam, game.awayTeam.winner, 'game-team--away')}
         </div>
         ${game.isLive && game.situation ? `<div class="game-situation${game.situation.isRedZone ? ' game-situation--redzone' : ''}">${_escHtml(game.situation.text)}</div>` : ''}
+        ${flowHtml}
         ${game.leaders?.length ? `<div class="game-leaders">${game.leaders.map(l =>
             `<div class="game-leader-row"><span class="game-leader-cat">${_escHtml(l.cat)}</span> ${_escHtml(l.teamAbbr)} ${_escHtml(l.name)} — ${_escHtml(l.stat)}</div>`
         ).join('')}</div>` : ''}
