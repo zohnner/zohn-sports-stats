@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SportStrata — Nav Reimagine Concept (D-103)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-base:#0d1014; --bg-surface:#14181d; --bg-raised:#1d232b;
+  --bg-card:rgba(20,24,29,.86); --bg-card-hover:rgba(29,35,43,.96);
+  --bg-overlay:rgba(8,10,13,.96); --bg-subtle:rgba(255,255,255,.028);
+  --bg-interactive:rgba(255,255,255,.05); --bg-interactive-hov:rgba(255,255,255,.08);
+  --border-default:rgba(255,255,255,.11); --border-mid:rgba(255,255,255,.15);
+  --border-strong:rgba(255,255,255,.24); --border-accent:rgba(255,122,0,.32);
+  --border-accent-hov:rgba(255,122,0,.55);
+  --text-primary:#f5f7fa; --text-secondary:#c5cbd3; --text-muted:#8a93a3; --text-subtle:#7c8794;
+  --accent:#ff7a00; --accent-light:#ffb347; --accent-subtle:rgba(255,122,0,.10); --accent-border:rgba(255,122,0,.28); --accent-glow:rgba(255,122,0,.22);
+  --color-win:#16c784; --color-loss:#e5484d; --color-live:#ff006e;
+  --color-live-subtle:rgba(255,0,110,.12); --color-live-border:rgba(255,0,110,.30);
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-xl:20px; --radius-full:9999px;
+  --font-sans:'Inter',-apple-system,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --font-display:'Barlow Semi Condensed',var(--font-sans); --font-brand:'Space Grotesk',var(--font-sans);
+  --header-height:60px; --ticker-height:38px; --header-sub-h:44px; --fav-rail-h:52px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
+.eyebrow{font:600 .68rem/1 var(--font-sans);letter-spacing:.09em;text-transform:uppercase;color:var(--text-subtle)}
+
+/* ============ INTRO PANEL ============ */
+.intro{max-width:900px;margin:0 auto;padding:2.5rem 1.5rem 1.5rem}
+.intro .eyebrow{color:var(--accent)}
+.intro h1{font:700 1.9rem/1.2 var(--font-brand);margin:.4rem 0 .6rem}
+.intro h1 b{color:var(--accent);font-weight:700}
+.intro p{color:var(--text-secondary);line-height:1.55;margin:0 0 .6rem;font-size:.95rem}
+.intro .tags{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+.intro .tag{font:600 .72rem var(--font-sans);padding:.3rem .65rem;border-radius:var(--radius-full);background:var(--bg-subtle);border:1px solid var(--border-default);color:var(--text-secondary)}
+
+/* ============ HEADER SHELL ============ */
+.shell{max-width:1400px;margin:1.5rem auto 4rem;border:1px solid var(--border-default);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+header{background:var(--bg-surface);position:relative}
+.header-inner{height:var(--header-height);display:flex;align-items:center;gap:1rem;padding:0 1.25rem;border-bottom:1px solid var(--border-default)}
+.brand{display:flex;align-items:center;gap:.55rem;background:none;border:0;cursor:pointer;color:inherit}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font:800 .9rem var(--font-brand);color:#0f172a}
+.brand-name{font:700 1.02rem var(--font-brand);color:var(--text-primary)}
+.brand-name b{color:var(--accent)}
+.brand-sub{display:block;font:500 .66rem var(--font-sans);color:var(--text-muted);margin-top:-1px}
+.hdr-spacer{flex:1}
+.hdr-search{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-radius:var(--radius-full);background:var(--bg-interactive);border:1px solid var(--border-default);color:var(--text-muted);font-size:.8rem;cursor:pointer;min-width:230px}
+.hdr-search kbd{margin-left:auto;font:600 .65rem var(--font-mono);background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:4px;padding:.1rem .35rem;color:var(--text-subtle)}
+.hdr-icon-btn{width:34px;height:34px;border-radius:var(--radius-full);background:var(--bg-interactive);border:1px solid var(--border-default);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);cursor:pointer}
+.hdr-account{display:flex;align-items:center;gap:.4rem;padding:.35rem .7rem .35rem .35rem;border-radius:var(--radius-full);background:var(--bg-interactive);border:1px solid var(--border-default);cursor:pointer}
+.hdr-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-subtle);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font:700 .65rem var(--font-sans);color:var(--accent-light)}
+
+/* ============ NEW: FOLLOWED-TEAMS RAIL ============ */
+.fav-rail{display:flex;align-items:center;gap:.55rem;height:var(--fav-rail-h);padding:0 1.25rem;overflow-x:auto;border-bottom:1px solid var(--border-default);scrollbar-width:none}
+.fav-rail::-webkit-scrollbar{display:none}
+.fav-rail .fr-label{font:600 .66rem var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle);white-space:nowrap;padding-right:.35rem;border-right:1px solid var(--border-default);margin-right:.2rem}
+.fr-chip{display:flex;align-items:center;gap:.45rem;padding:.32rem .6rem .32rem .4rem;border-radius:var(--radius-full);background:var(--bg-interactive);border:1px solid var(--border-default);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:border-color .15s ease}
+.fr-chip:hover{border-color:var(--border-strong)}
+.fr-logo{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font:800 .6rem var(--font-brand);flex-shrink:0}
+.fr-team{font:600 .76rem var(--font-sans);color:var(--text-secondary)}
+.fr-score{font:600 .76rem var(--font-mono);color:var(--text-primary)}
+.fr-chip.live{border-color:var(--color-live-border);background:var(--color-live-subtle)}
+.fr-chip.live .fr-score{color:var(--color-live)}
+.fr-live-dot{width:6px;height:6px;border-radius:50%;background:var(--color-live);animation:pulse 1.4s ease-in-out infinite}
+.fr-state{font:600 .62rem var(--font-sans);letter-spacing:.03em;text-transform:uppercase;color:var(--text-muted)}
+.fr-chip.live .fr-state{color:var(--color-live)}
+.fr-add{display:flex;align-items:center;gap:.3rem;padding:.32rem .65rem;border-radius:var(--radius-full);border:1px dashed var(--border-mid);color:var(--text-muted);font:600 .74rem var(--font-sans);cursor:pointer;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ============ TICKER ============ */
+.ticker-row{height:var(--ticker-height);display:flex;align-items:center;border-bottom:1px solid var(--border-default);background:var(--bg-base)}
+.ticker-title{font:700 .68rem var(--font-sans);letter-spacing:.06em;color:var(--accent);padding:0 1rem;border-right:1px solid var(--border-default);height:100%;display:flex;align-items:center;background:none;border-top:0;border-bottom:0;border-left:0;cursor:pointer}
+.ticker-scroll{flex:1;display:flex;gap:1.4rem;overflow:hidden;padding:0 1rem;font:600 .74rem var(--font-mono);color:var(--text-secondary);white-space:nowrap}
+.ticker-scroll span.live{color:var(--color-live)}
+
+/* ============ SPORT SWITCHER ============ */
+.sport-switch{display:flex;align-items:center;gap:.3rem;padding:.55rem 1.25rem;border-bottom:1px solid var(--border-default);overflow-x:auto;scrollbar-width:none}
+.sport-switch::-webkit-scrollbar{display:none}
+.sp-btn{position:relative;display:flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:var(--radius-full);border:1px solid transparent;background:none;color:var(--text-muted);font:600 .82rem var(--font-sans);cursor:pointer;white-space:nowrap;transition:all .15s ease}
+.sp-btn:hover{background:var(--bg-interactive);color:var(--text-secondary)}
+.sp-btn.active{background:var(--accent-subtle);border-color:var(--accent-border);color:var(--accent-light)}
+.sp-btn .sp-emoji{font-size:.9rem}
+.sp-live-dot{width:6px;height:6px;border-radius:50%;background:var(--color-live);animation:pulse 1.4s ease-in-out infinite;margin-left:.1rem}
+.sp-btn .sr-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+
+/* ============ MEGA-NAV (pillar sub-nav) ============ */
+.mega-bar{display:flex;align-items:center;gap:.15rem;padding:0 1.25rem;height:var(--header-sub-h);position:relative}
+.mg-tab{height:100%;display:flex;align-items:center;gap:.3rem;padding:0 .9rem;background:none;border:0;color:var(--text-secondary);font:600 .83rem var(--font-sans);cursor:pointer;border-bottom:2px solid transparent}
+.mg-tab:hover{color:var(--text-primary)}
+.mg-tab.open{color:var(--accent-light);border-bottom-color:var(--accent)}
+.mg-caret{font-size:.6rem;opacity:.6;transition:transform .15s ease}
+.mg-tab.open .mg-caret{transform:rotate(180deg)}
+.mg-tab.flat{border-bottom:2px solid transparent}
+.mg-tab.flat.active{color:var(--accent-light);border-bottom-color:var(--accent)}
+
+/* Mega menu panel */
+.mega-panel{position:absolute;left:0;right:0;top:100%;background:var(--bg-raised);border-top:1px solid var(--border-default);border-bottom:1px solid var(--border-default);box-shadow:0 24px 48px rgba(0,0,0,.5);display:none;z-index:20}
+.mega-panel.open{display:block}
+.mega-grid{display:grid;grid-template-columns:repeat(var(--cols,4),1fr);gap:0;max-width:1400px;margin:0 auto}
+.mega-col{padding:1.1rem 1.3rem;border-right:1px solid var(--border-default)}
+.mega-col:last-child{border-right:0}
+.mega-col h4{margin:0 0 .6rem;font:600 .68rem var(--font-sans);letter-spacing:.07em;text-transform:uppercase;color:var(--text-subtle)}
+.mega-col a{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:.4rem 0;color:var(--text-secondary);text-decoration:none;font:500 .87rem var(--font-sans);border-bottom:1px solid transparent}
+.mega-col a:hover{color:var(--accent-light)}
+.mega-col a .hint{font:500 .68rem var(--font-sans);color:var(--text-subtle)}
+.mega-col a .badge-new{font:700 .58rem var(--font-sans);letter-spacing:.04em;color:var(--color-win);background:rgba(22,199,132,.12);border:1px solid rgba(22,199,132,.3);border-radius:4px;padding:.05rem .3rem}
+.mega-feature{background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:.9rem;margin-top:.3rem}
+.mega-feature .eyebrow{color:var(--color-live);display:flex;align-items:center;gap:.35rem}
+.mega-feature .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--color-live);animation:pulse 1.4s ease-in-out infinite}
+.mega-feature .mf-title{font:700 .95rem var(--font-display);margin:.35rem 0 .15rem;color:var(--text-primary)}
+.mega-feature .mf-sub{font:500 .74rem var(--font-sans);color:var(--text-muted)}
+
+main{padding:1.5rem;min-height:120px;background:var(--bg-base);position:relative}
+.mm-hint{text-align:center;color:var(--text-subtle);font-size:.82rem;padding:1.5rem 0}
+
+/* ============ BOTTOM (mobile) ============ */
+.mobile-note{max-width:1400px;margin:0 auto 4rem;padding:0 1.5rem}
+.mobile-frame{width:340px;margin:0 auto;border:1px solid var(--border-default);border-radius:28px;overflow:hidden;background:var(--bg-surface);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.mf-header{padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-default)}
+.mf-fav-rail{display:flex;gap:.4rem;padding:.55rem .8rem;overflow-x:auto;border-bottom:1px solid var(--border-default)}
+.mf-fav-rail .fr-chip{padding:.24rem .5rem .24rem .34rem}
+.mf-body{height:220px;display:flex;align-items:center;justify-content:center;color:var(--text-subtle);font-size:.8rem;background:repeating-linear-gradient(135deg,var(--bg-base),var(--bg-base) 10px,rgba(255,255,255,.012) 10px,rgba(255,255,255,.012) 20px)}
+.mf-bottom{display:flex;border-top:1px solid var(--border-default)}
+.mf-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.55rem 0;color:var(--text-muted);font:600 .6rem var(--font-sans)}
+.mf-tab.active{color:var(--accent-light)}
+.mf-tab .ic{font-size:1rem}
+.mf-drawer{position:absolute;inset:0;background:var(--bg-overlay);display:none;flex-direction:column;padding:.9rem}
+.mf-drawer.open{display:flex}
+.mf-drawer-sec{font:600 .64rem var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--text-subtle);margin:.6rem 0 .3rem}
+.mf-drawer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.mf-drawer-item{display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.5rem .2rem;border-radius:var(--radius-md);background:var(--bg-interactive);font:600 .62rem var(--font-sans);color:var(--text-secondary);text-align:center}
+
+/* ============ TEAM NOTES SECTION ============ */
+.notes{max-width:900px;margin:0 auto 4rem;padding:0 1.5rem}
+.notes h2{font:700 1.15rem var(--font-brand);border-bottom:1px solid var(--border-default);padding-bottom:.6rem;margin:2rem 0 1rem}
+.note-card{background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);padding:1rem 1.1rem;margin-bottom:.7rem}
+.note-card .who{font:700 .8rem var(--font-sans);color:var(--accent-light);margin-bottom:.3rem}
+.note-card p{margin:0;color:var(--text-secondary);font-size:.87rem;line-height:1.55}
+.status-pill{display:inline-block;font:700 .66rem var(--font-sans);letter-spacing:.04em;text-transform:uppercase;padding:.2rem .55rem;border-radius:var(--radius-full);background:rgba(245,179,1,.12);border:1px solid rgba(245,179,1,.35);color:#f5b301;margin-left:.5rem;vertical-align:middle}
+
+@media(max-width:820px){.mega-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="eyebrow">DECISIONS.md D-103 · concept for review, not shipped</div>
+  <h1>Nav reimagine — <b>5 sports, one system</b></h1>
+  <p>Working concept from the 2026-08-15 team session (Vera / Kael / Axiom). Reused wherever it already works (search, sport switcher, state language, dark-first tokens) and rebuilt where five sports outgrew the original design: a unified mega-menu structure, and a followed-teams rail borrowed straight from how ESPN and Yahoo Sports lead with personalization now.</p>
+  <p>Everything below uses real SportStrata tokens from <code>css/variables.css</code> and DESIGN.md's rules — orange stays brand-only, live states use <code>--color-live</code> with a badge (never color alone), numbers sit in Barlow/JetBrains Mono. Click a sport tab, then a pillar tab, to try it.</p>
+  <div class="tags">
+    <span class="tag">Mega-menu pillars</span><span class="tag">Followed-teams rail</span><span class="tag">Live sport-switcher dots</span><span class="tag">Unified Tools/Fantasy labeling</span><span class="tag">Mobile drawer</span>
+  </div>
+</div>
+
+<div class="shell">
+  <header>
+    <div class="header-inner">
+      <button class="brand"><div class="brand-mark">SS</div><div><div class="brand-name">Sport<b>Strata</b></div><span class="brand-sub" id="brandSub">MLB Analytics</span></div></button>
+      <div class="hdr-spacer"></div>
+      <div class="hdr-search">Search players, teams, stats… <kbd>⌘K</kbd></div>
+      <button class="hdr-icon-btn" title="Settings">⚙</button>
+      <button class="hdr-account"><span class="hdr-avatar">z</span></button>
+    </div>
+
+    <!-- NEW -->
+    <div class="fav-rail">
+      <span class="fr-label">Following</span>
+      <div class="fr-chip live"><span class="fr-logo" style="background:rgba(255,0,110,.15);color:#ff6fa8">KC</span><span class="fr-team">Royals</span><span class="fr-score">4–2</span><span class="fr-live-dot"></span><span class="fr-state">Live · 7th</span></div>
+      <div class="fr-chip"><span class="fr-logo" style="background:rgba(59,125,216,.18);color:#7fb0ee">KC</span><span class="fr-team">Chiefs</span><span class="fr-score">—</span><span class="fr-state">Sun 3:25</span></div>
+      <div class="fr-chip"><span class="fr-logo" style="background:rgba(217,119,6,.18);color:#f0ad4e">KU</span><span class="fr-team">Jayhawks</span><span class="fr-score">78–71</span><span class="fr-state">Final</span></div>
+      <div class="fr-chip"><span class="fr-logo" style="background:rgba(245,88,10,.18);color:#ff9d5c">LV</span><span class="fr-team">Aces</span><span class="fr-score">—</span><span class="fr-state">Tomorrow</span></div>
+      <div class="fr-add">+ Add team</div>
+    </div>
+
+    <div class="ticker-row">
+      <button class="ticker-title">SCORES</button>
+      <div class="ticker-scroll">
+        <span class="live">● KC 4–2 CWS · 7th</span><span>NYY 6 BOS 3 Final</span><span>LAD @ SF 9:10pm</span><span>ATL 2 PHI 1 · 5th</span>
+      </div>
+    </div>
+
+    <div class="sport-switch" id="sportSwitch">
+      <button class="sp-btn active" data-sport="mlb"><span class="sp-emoji">⚾</span>MLB<span class="sp-live-dot" aria-hidden="true"></span><span class="sr-live">— live game in progress</span></button>
+      <button class="sp-btn" data-sport="nfl"><span class="sp-emoji">🏈</span>NFL</button>
+      <button class="sp-btn" data-sport="ncaaf"><span class="sp-emoji">🏈</span>NCAAF</button>
+      <button class="sp-btn" data-sport="ncaab"><span class="sp-emoji">🏀</span>NCAAB</button>
+      <button class="sp-btn" data-sport="wnba"><span class="sp-emoji">🏀</span>WNBA<span class="sp-live-dot" aria-hidden="true"></span><span class="sr-live">— live game in progress</span></button>
+    </div>
+
+    <div class="mega-bar" id="megaBar"></div>
+    <div class="mega-panel" id="megaPanel"><div class="mega-grid" id="megaGrid"></div></div>
+  </header>
+
+  <main><div class="mm-hint" id="mmHint">↑ Click a pillar tab (e.g. "Tools") to open the mega-menu.</div></main>
+</div>
+
+<div class="mobile-note">
+  <h2>Mobile — bottom nav + drawer (unchanged shell, wired "More")</h2>
+  <p style="color:var(--text-secondary);font-size:.87rem;max-width:640px">Same pillar data powers the mobile menu panel. Today's <code>.bottom-more</code> button already opens the full menu panel (verified in <code>navigation.js</code> — not a bug). This concept swaps that for a lighter grouped drawer using the same pillar columns as the mega-menu, so mobile and desktop share one information architecture instead of two separately-maintained layouts.</p>
+  <div class="mobile-frame">
+    <div class="mf-header"><div class="brand-name" style="font-size:.85rem">Sport<b style="color:var(--accent)">Strata</b></div><span style="color:var(--text-muted)">⚙</span></div>
+    <div class="mf-fav-rail">
+      <div class="fr-chip live"><span class="fr-logo" style="width:18px;height:18px;background:rgba(255,0,110,.15);color:#ff6fa8;font-size:.55rem">KC</span><span class="fr-score" style="font-size:.7rem">4–2</span></div>
+      <div class="fr-chip"><span class="fr-logo" style="width:18px;height:18px;background:rgba(59,125,216,.18);color:#7fb0ee;font-size:.55rem">KC</span><span class="fr-state" style="font-size:.62rem">Sun</span></div>
+      <div class="fr-chip"><span class="fr-logo" style="width:18px;height:18px;background:rgba(217,119,6,.18);color:#f0ad4e;font-size:.55rem">KU</span><span class="fr-state" style="font-size:.62rem">Final</span></div>
+    </div>
+    <div class="mf-body" id="mfBody">Scores grid renders here</div>
+    <div class="mf-drawer" id="mfDrawer"></div>
+    <div class="mf-bottom">
+      <div class="mf-tab active"><span class="ic">▦</span>Scores</div>
+      <div class="mf-tab"><span class="ic">👤</span>Players</div>
+      <div class="mf-tab"><span class="ic">🏆</span>Leaders</div>
+      <div class="mf-tab"><span class="ic">≡</span>Standings</div>
+      <div class="mf-tab" id="mfMoreTab"><span class="ic">⋯</span>More</div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>Team notes on this concept</h2>
+  <div class="note-card"><div class="who">Vera — UX</div><p>Job-to-be-done for the rail: "let me check my teams without picking a sport first." Right now that takes two decisions (pick sport, then find team); the rail collapses it to zero. State language for the chips reuses DESIGN.md's existing vocabulary exactly — live pink + pulse + text label, final = muted, upcoming = neutral pill with a time, never color alone. Empty state (no follows yet) shows the "+ Add team" affordance expanded to a short prompt, not a blank rail. Mega-menu keyboard behavior: Tab moves between pillar triggers, Enter/Space opens, Arrow keys move within an open panel, Esc closes and returns focus to the trigger — same pattern the existing <code>.sub-nav-menu</code> dropdown already uses, extended, not reinvented.</p></div>
+  <div class="note-card"><div class="who">Kael — Design</div><p>Orange stays brand-only — active sport tab and active pillar underline are the only two new places it appears, both already-sanctioned "active nav" uses per DESIGN.md invariant #3. The live dot on a sport tab is <code>--color-live</code>, never orange, and never color-alone: paired with a visually-hidden "live game in progress" label for screen readers. Mega-panel is one visual recipe reused across all five sports — column count and content change, borders/spacing/type don't, which is the actual "compete with industry" move: consistency, not novelty. No licensed team logos here — real build uses the existing static/ESPN CDN logos already wired into every other component.</p></div>
+  <div class="note-card"><div class="who">Axiom — Engineering</div><p>Everything here is reachable inside current constraints. Followed-teams rail reads <code>AuthState.follows</code> — already unified across all sports since 2026-08-05 (D-046 P5), so this is a new renderer against existing data, not a new data layer. Mega-menu is <code>SUB_NAV_TABS</code>'s existing <code>children</code> shape, widened one level (children can carry a <code>group</code> + optional <code>feature</code> block) and rendered full-width instead of the current narrow <code>position:fixed</code> flyout — CSS + one rendering function change, not an architecture change. Live-dot per sport needs each sport module to expose a cheap <code>hasLiveGame()</code> read — MLB/NFL already compute this for their own ticker polling; NCAAF/NCAAB/WNBA would need the same one-line check added, not built from scratch. No new AppState shape, no new external domain, no CSP change.<span class="status-pill">Feasible, not yet gated</span></p></div>
+  <div class="note-card"><div class="who">Relay — Data</div><p>Live-state for the rail and the sport-switcher dots can ride the polling each sport module already runs for its own ticker/scores view — no new fetch cadence needed if a user is on-page, but the rail is visible from every view (including other sports' pages), so it needs its own light poll when the owning sport isn't the active one. Recommend a single shared 60s poll keyed to whatever's actually followed, not one poll per sport module — avoids five independent timers doing overlapping work.</p></div>
+</div>
+
+<script>
+const PILLARS = {
+  mlb: {cols:5, tabs:[
+    {l:'Scores & Schedule', g:[{t:'Scores & Schedule',items:[["Today's Games",null],['Full Schedule',null],['News',null]]}]},
+    {l:'Standings', flat:true},
+    {l:'Stats & Leaders', g:[{t:'Browse',items:[['Leaders',null],['Compare',null]]}]},
+    {l:'Teams', flat:true},
+    {l:'Tools', g:[{t:'Build',items:[['Stat Builder',null],['Game Prep',null],['Highlight Card',null]]},{t:'Play',items:[['Arcade',null]]}]},
+  ]},
+  nfl: {cols:5, tabs:[
+    {l:'Scores & Schedule', g:[{t:'Scores & Schedule',items:[["Today's Games",null],['Full Schedule',null],['News',null]]}]},
+    {l:'Standings', flat:true},
+    {l:'Stats & Leaders', g:[{t:'Browse',items:[['Leaders',null],['Compare',null],['Highlight Card',null]]}]},
+    {l:'Teams', flat:true},
+    {l:'Fantasy', g:[
+      {t:'Draft Prep',items:[['Value Board',null],['ADP Rankings',null],['Schedule (SOS)',null],['Mock Draft',null],['My Drafts',null]]},
+      {t:'In-Season',items:[['My League',null],['Trending',null],['Injury Report',null],['Waiver Wire',null]]},
+    ], feature:{title:'Mock Draft', sub:'No-login Sleeper ADP simulator', live:false}},
+  ]},
+  ncaaf: {cols:3, tabs:[
+    {l:'Scores & Schedule', g:[{t:'Scores & Schedule',items:[['Scores',null],['News',null]]}]},
+    {l:'Standings', flat:true},
+    {l:'Stats & Leaders', g:[{t:'Browse',items:[['Rankings (AP/CFP)',null],['Leaders',null]]}]},
+    {l:'Teams', flat:true},
+  ]},
+  ncaab: {cols:3, tabs:[
+    {l:'Scores & Schedule', g:[{t:'Scores & Schedule',items:[['Scores',null],['News',null]]}]},
+    {l:'Standings', flat:true},
+    {l:'Stats & Leaders', g:[{t:'Browse',items:[['Rankings (AP/Coaches)',null]]}]},
+    {l:'Teams', flat:true},
+  ]},
+  wnba: {cols:3, tabs:[
+    {l:'Scores & Schedule', g:[{t:'Scores & Schedule',items:[['Scores',null],['News',null]]}]},
+    {l:'Standings', flat:true},
+    {l:'Stats & Leaders', g:[{t:'Browse',items:[['Leaders',null],['Playoff Picture',['badge','NEW']]]}]},
+    {l:'Teams', flat:true},
+  ]},
+};
+const SUB = {mlb:'MLB Analytics', nfl:'NFL Analytics', ncaaf:'College Football', ncaab:'College Basketball', wnba:'WNBA'};
+
+let currentSport = 'mlb', openPillar = null;
+
+function renderMegaBar(sport){
+  const bar = document.getElementById('megaBar');
+  const data = PILLARS[sport];
+  bar.innerHTML = data.tabs.map((t,i) => t.flat
+    ? `<button class="mg-tab flat" data-i="${i}">${t.l}</button>`
+    : `<button class="mg-tab" data-i="${i}">${t.l}<span class="mg-caret">▾</span></button>`
+  ).join('');
+  document.getElementById('megaPanel').classList.remove('open');
+  document.getElementById('mmHint').style.display = 'block';
+  openPillar = null;
+  bar.querySelectorAll('.mg-tab').forEach(btn => btn.addEventListener('click', () => {
+    const i = +btn.dataset.i, tab = data.tabs[i];
+    if (tab.flat) { bar.querySelectorAll('.mg-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.getElementById('megaPanel').classList.remove('open'); document.getElementById('mmHint').textContent = `→ "${tab.l}" would navigate directly (no dropdown needed).`; openPillar=null; return; }
+    if (openPillar === i) { document.getElementById('megaPanel').classList.remove('open'); openPillar = null; bar.querySelectorAll('.mg-tab').forEach(b=>b.classList.remove('open')); return; }
+    openPillar = i;
+    bar.querySelectorAll('.mg-tab').forEach(b=>b.classList.remove('open'));
+    btn.classList.add('open');
+    document.getElementById('mmHint').style.display = 'none';
+    renderMegaPanel(sport, tab);
+  }));
+}
+function renderMegaPanel(sport, tab){
+  const grid = document.getElementById('megaGrid');
+  grid.style.setProperty('--cols', PILLARS[sport].cols);
+  let html = tab.g.map(col => `<div class="mega-col"><h4>${col.t}</h4>${col.items.map(([label,flag])=>`<a href="#">${label}${flag && flag[0]==='badge' ? `<span class="badge-new">${flag[1]}</span>` : ''}</a>`).join('')}</div>`).join('');
+  if (tab.feature) html += `<div class="mega-col"><h4>Featured</h4><div class="mega-feature"><div class="eyebrow"><span class="dot"></span>Live now</div><div class="mf-title">${tab.feature.title}</div><div class="mf-sub">${tab.feature.sub}</div></div></div>`;
+  grid.innerHTML = html;
+  document.getElementById('megaPanel').classList.add('open');
+}
+document.querySelectorAll('.sp-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSport = btn.dataset.sport;
+  document.getElementById('brandSub').textContent = SUB[currentSport];
+  renderMegaBar(currentSport);
+}));
+renderMegaBar('mlb');
+
+document.getElementById('mfMoreTab').addEventListener('click', () => {
+  const d = document.getElementById('mfDrawer');
+  const open = d.classList.toggle('open');
+  if (open) {
+    d.innerHTML = `<div class="mf-drawer-sec">Stats & Leaders</div><div class="mf-drawer-grid">
+      <div class="mf-drawer-item">🏆<br>Leaders</div><div class="mf-drawer-item">⚖️<br>Compare</div></div>
+      <div class="mf-drawer-sec">Tools</div><div class="mf-drawer-grid">
+      <div class="mf-drawer-item">🧮<br>Builder</div><div class="mf-drawer-item">📋<br>Prep</div><div class="mf-drawer-item">🎬<br>Highlight</div><div class="mf-drawer-item">🕹️<br>Arcade</div></div>
+      <div style="margin-top:auto;text-align:center;color:var(--text-subtle);font-size:.7rem;padding-top:.6rem">Tap ⋯ again to close</div>`;
+  }
+});
+</script>
+</body>
+</html>

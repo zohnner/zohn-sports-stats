@@ -280,6 +280,135 @@ header {
 .sub-nav-menu[hidden] { display: none; }
 .sub-nav .sub-nav-drop-item { width: 100%; justify-content: flex-start; text-align: left; }
 
+/* Full-width mega-panel (D-103) — every dropdown pillar (.sub-nav-menu) also carries
+   this class now. Overrides .sub-nav-menu's position:fixed with position:absolute
+   against `header` (position:sticky above, which is the containing block for any
+   absolutely-positioned descendant) so the panel always spans the full header width
+   regardless of which pillar tab opened it or where that tab sits inside the
+   scrollable .sub-nav row — no more per-trigger getBoundingClientRect() positioning
+   in JS (see _toggleSubNavMenu in navigation.js). Cascade order matters: this block
+   must stay after .sub-nav-menu above so its position/border-radius win. */
+.mega-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    min-width: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+}
+.mega-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-8);
+    gap: var(--space-2) var(--space-6);
+}
+.mega-col { min-width: 0; }
+.mega-col h4 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+}
+@media (max-width: 820px) {
+    .mega-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ── Followed-teams rail (D-103) — deliberately NOT inside <header>; see the
+   comment on _renderFavRail() in navigation.js for why. Scrolls with the page,
+   directly above <main>, rather than staying pinned. ─────────────────────── */
+.fav-rail {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-2) var(--space-8);
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border-default);
+}
+.fav-rail::-webkit-scrollbar { display: none; }
+.fav-rail[hidden] { display: none; }
+.fr-label {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    white-space: nowrap;
+    padding-right: var(--space-2);
+    border-right: 1px solid var(--border-default);
+    margin-right: 2px;
+    flex-shrink: 0;
+}
+.fr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem 0.3rem 0.4rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-interactive);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.fr-chip:hover { background: var(--bg-interactive-hov); border-color: var(--border-mid); }
+.fr-chip.live { background: var(--color-live-subtle); border-color: var(--color-live-border); }
+.fr-logo-img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.fr-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-xs);
+    background: var(--bg-raised);
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.fr-team { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+.fr-score {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+.fr-chip.live .fr-score { color: var(--color-live); }
+.fr-score[hidden] { display: none; }
+.fr-state { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text-muted); }
+.fr-chip.live .fr-state { color: var(--color-live); }
+.fr-chip.live .fr-state::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-live);
+    margin-right: 4px;
+    vertical-align: middle;
+    animation: fr-pulse 1.4s ease-in-out infinite;
+}
+@keyframes fr-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+    .fr-chip.live .fr-state::before { animation: none; }
+}
+@media (max-width: 768px) {
+    .fav-rail { padding: var(--space-2) var(--space-4); }
+}
+
 /* Settings button in header */
 .settings-btn {
     display: flex;

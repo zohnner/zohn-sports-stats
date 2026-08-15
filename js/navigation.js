@@ -128,6 +128,15 @@ function setupNavigation() {
     // Apply correct sport UI before hash routing (default sport is mlb)
     _applySportUI(AppState.currentSport);
 
+    // Followed-teams rail (D-103) — rendered once at boot, not on every sport switch
+    // (its content is cross-sport and doesn't change when the active sport does; a
+    // render-per-switch would also mean redundant _dashTodayGamesFor fetches on rapid
+    // sport switching). Re-rendered only when the follow set itself actually changes.
+    if (typeof _renderFavRail === 'function') _renderFavRail();
+    window.addEventListener('ss:follow-changed', () => {
+        if (typeof _renderFavRail === 'function') _renderFavRail();
+    });
+
     // Load from URL hash on first visit
     _loadFromHash();
 }
@@ -1051,14 +1060,25 @@ function _loadFromHash() {
 
 // Updates brand text/icon for the active sport
 // Per-sport sub-nav tab sets. NFL is the D-012 light surface: Scores/Standings/Teams.
+// D-103 (2026-08-15): "Analytics" split into "Stats & Leaders" (pure stat-browsing)
+// and "Tools" (Builder/Prep/Highlight/Arcade) — the old single dropdown mixed both,
+// which is exactly the mislabel flagged 2026-08-10 and reopened in D-102/D-103.
+// `children` (a flat item array) is now `cols` (an array of {t?, items} groups) so a
+// dropdown can render as one or several labeled columns in the full-width mega-panel
+// (see _renderSubNav). A `cols` entry with no `t` renders as an untitled single column.
 const SUB_NAV_TABS = {
     mlb: [
         { v: 'mlb-players', l: 'Players' },
         { v: 'mlb-teams', l: 'Teams' },
         { v: 'mlb-standings', l: 'Standings' },
-        { l: 'Analytics', children: [
-            { v: 'mlb-leaders', l: 'Leaders' }, { v: 'mlb-compare', l: 'Compare' },
-            { v: 'mlb-builder', l: 'Builder' }, { v: 'mlb-prep', l: 'Prep' }, { v: 'mlb-highlight-card', l: 'Highlight' }, { v: 'arcade', l: 'Arcade' },
+        { l: 'Stats & Leaders', cols: [
+            { items: [{ v: 'mlb-leaders', l: 'Leaders' }, { v: 'mlb-compare', l: 'Compare' }] },
+        ] },
+        { l: 'Tools', cols: [
+            { items: [
+                { v: 'mlb-builder', l: 'Builder' }, { v: 'mlb-prep', l: 'Prep' },
+                { v: 'mlb-highlight-card', l: 'Highlight' }, { v: 'arcade', l: 'Arcade' },
+            ] },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -1066,20 +1086,23 @@ const SUB_NAV_TABS = {
         { v: 'nfl-players', l: 'Players' },
         { v: 'nfl-teams', l: 'Teams' },
         { v: 'nfl-standings', l: 'Standings' },
-        { l: 'Analytics', children: [
-            { v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' },
+        { l: 'Stats & Leaders', cols: [
+            { items: [{ v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
         ] },
-        { l: 'Fantasy', children: [
-            { v: 'nfl-draftkit', l: 'Value Board' },
-            { v: 'nfl-rankings', l: 'ADP Rankings' },
-            { v: 'nfl-sos',      l: 'Schedule' },
-            { v: 'nfl-compare',  l: 'Compare' },
-            { v: 'nfl-mock',     l: 'Mock Draft' },
-            { v: 'nfl-mydrafts', l: 'My Drafts' },
-            { v: 'nfl-myleague', l: 'My League' },
-            { v: 'nfl-trending', l: 'Trending' },
-            { v: 'nfl-injuries', l: 'Injury Report' },
-            { v: 'nfl-waivers',  l: 'Waiver Wire' },
+        // Grouped into Draft Prep / In-Season (D-103) — mirrors what MENU_TABS.nfl's
+        // mobile grouping already did; the desktop dropdown was the one place this
+        // 10-item list still rendered flat. `nfl-compare` dropped from here (was
+        // listed in both Analytics and Fantasy before this pass) — it's reachable
+        // from Stats & Leaders now, no view lost, just one path instead of two.
+        { l: 'Fantasy', cols: [
+            { t: 'Draft Prep', items: [
+                { v: 'nfl-draftkit', l: 'Value Board' }, { v: 'nfl-rankings', l: 'ADP Rankings' },
+                { v: 'nfl-sos', l: 'Schedule' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-mydrafts', l: 'My Drafts' },
+            ] },
+            { t: 'In-Season', items: [
+                { v: 'nfl-myleague', l: 'My League' }, { v: 'nfl-trending', l: 'Trending' },
+                { v: 'nfl-injuries', l: 'Injury Report' }, { v: 'nfl-waivers', l: 'Waiver Wire' },
+            ] },
         ] },
         { v: 'news', l: 'News' },
     ],
@@ -1114,13 +1137,19 @@ function _renderSubNav(sport) {
     const tabs = SUB_NAV_TABS[sport] || SUB_NAV_TABS.mlb;
     nav.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
     nav.innerHTML = tabs.map((t, i) => {
-        if (t.children) {
+        if (t.cols) {
             const menuId = `subcat-${sport}-${i}`;
-            const childViews = t.children.flatMap(c => [c.v, ...(c.also || [])]).join(' ');
-            const items = t.children.map(c => `<button class="nav-tab sub-nav-drop-item" data-view="${c.v}" role="menuitem">${c.l}</button>`).join('');
+            const childViews = t.cols.flatMap(c => c.items).flatMap(c => [c.v, ...(c.also || [])]).join(' ');
+            // D-103: full-width mega-panel, one or more labeled columns per dropdown
+            // (was a single flat flyout list — see _toggleSubNavMenu for why the
+            // positioning got simpler, not just the markup).
+            const cols = t.cols.map(col => `<div class="mega-col">
+                ${col.t ? `<h4>${col.t}</h4>` : ''}
+                ${col.items.map(c => `<button class="nav-tab sub-nav-drop-item" data-view="${c.v}" role="menuitem">${c.l}</button>`).join('')}
+            </div>`).join('');
             return `<div class="sub-nav-cat" data-children="${childViews}">
                 <button class="nav-tab sub-nav-parent" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="${menuId}">${t.l}<span class="sub-nav-caret" aria-hidden="true">▾</span></button>
-                <div class="sub-nav-menu" id="${menuId}" role="menu" hidden>${items}</div>
+                <div class="sub-nav-menu mega-panel" id="${menuId}" role="menu" hidden><div class="mega-grid" style="--cols:${t.cols.length}">${cols}</div></div>
             </div>`;
         }
         return `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`;
@@ -1129,8 +1158,14 @@ function _renderSubNav(sport) {
     _syncSubNavParents(AppState.currentView);
 }
 
-// Category-dropdown controller (D-026 P2). Menus are position:fixed (the sub-nav
-// is overflow-x:auto, which would clip an absolute menu) and positioned on open.
+// Category-dropdown controller (D-026 P2, widened to a full-width mega-panel D-103).
+// The panel is `position: absolute; left:0; right:0; top:100%` against `header`
+// (already `position: sticky`, which establishes the containing block) — spans the
+// full header width regardless of which pillar tab opened it, so no per-button
+// getBoundingClientRect() positioning is needed anymore (the old per-trigger-anchored
+// flyout used position:fixed + JS-computed left/top because .sub-nav is overflow-x:auto,
+// which would've clipped an absolutely-positioned child of *that* element specifically —
+// anchoring to `header` instead sidesteps the clip entirely).
 function _syncSubNavParents(view) {
     document.querySelectorAll('#subNav .sub-nav-cat').forEach(cat => {
         const kids = (cat.dataset.children || '').split(' ');
@@ -1149,9 +1184,6 @@ function _toggleSubNavMenu(parent) {
     const willOpen = menu.hidden;
     _closeSubNavMenus();
     if (willOpen) {
-        const r = parent.getBoundingClientRect();
-        menu.style.left = `${Math.round(r.left)}px`;
-        menu.style.top = `${Math.round(r.bottom + 4)}px`;
         menu.hidden = false;
         parent.setAttribute('aria-expanded', 'true');
     }
@@ -1170,21 +1202,24 @@ const _NAV_ICONS = {
     trending:  '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 11l4-4 3 3 5-6"/><path d="M11 4h3v3"/></svg>',
 };
 
+// D-103: 'Stats' renamed 'Stats & Leaders' and Compare moved into it (was
+// mislabeled under 'Tools' on both sports — Compare is stat-browsing, not a
+// tool) to match the desktop mega-menu's Stats & Leaders / Tools split.
 const MENU_TABS = {
     mlb: [
-        { group:'Stats' },
+        { group:'Stats & Leaders' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
         { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-standings', l:'Standings', i:'standings' },
-        { v:'mlb-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
+        { v:'mlb-games', l:'Scores', i:'scores' }, { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'news', l:'News', i:'extra' },
         { group:'Tools' },
-        { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'mlb-builder', l:'Builder', i:'builder' },
+        { v:'mlb-builder', l:'Builder', i:'builder' },
         { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'mlb-highlight-card', l:'Highlight', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
     ],
     nfl: [
-        { group:'Stats' },
+        { group:'Stats & Leaders' },
         { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
-        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'news', l:'News', i:'extra' },
+        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' }, { v:'news', l:'News', i:'extra' },
         { group:'Draft Prep' },
         { v:'nfl-draftkit', l:'Value Board', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
         { v:'nfl-sos', l:'Schedule', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
@@ -1194,7 +1229,7 @@ const MENU_TABS = {
         { v:'nfl-trending', l:'Trending', i:'extra' }, { v:'nfl-injuries', l:'Injury Report', i:'extra' },
         { v:'nfl-waivers', l:'Waiver Wire', i:'extra' },
         { group:'Tools' },
-        { v:'nfl-compare', l:'Compare', i:'compare' }, { v:'nfl-highlight-card', l:'Highlight', i:'extra' },
+        { v:'nfl-highlight-card', l:'Highlight', i:'extra' },
     ],
     ncaaf: [
         { group:'College Football' },
@@ -1301,6 +1336,99 @@ function _renderSportSwitch(sport) {
     }).join('');
 }
 
+// Followed-teams rail (D-103, DECISIONS.md) — a compact, cross-sport strip of the
+// user's followed teams so checking on them doesn't require picking a sport first
+// (the JTBD gap Vera named: today that's a minimum of two decisions). Deliberately
+// NOT inside <header> — the header's rendered height is load-bearing for scroll-offset
+// math throughout the JS (see CLAUDE.md "Header Layout"), and this rail is optional,
+// personalized content that shouldn't force every session to carry that risk. It
+// renders as the first element of the normal document flow, right above <main>,
+// scrolling away with the page rather than staying pinned — a deliberate scope
+// narrowing from the reimagine concept's pinned-header placement (see ISSUES.md).
+//
+// Fully signed-out capable: AuthState.follows already works logged-out (js/auth.js) —
+// this is a new renderer against existing data, not a new data layer. Reuses the exact
+// resolution helpers the Dashboard view already built (_dashGroupFollows/_dashTeamLogo/
+// _dashTodayGamesFor, js/app.js) so logo/live-enrichment coverage matches Dashboard's
+// own disclosed scope exactly: logos resolve for mlb/nfl only, live "today" enrichment
+// for mlb/nfl/ncaaf only. ncaab/wnba followed teams render as text-only chips with no
+// live state — a pre-existing gap this rail inherits from Dashboard, not one it
+// introduces (see ISSUES.md "Fav rail — extend logo/live coverage to ncaab/wnba").
+async function _renderFavRail() {
+    const host = document.getElementById('favRail');
+    if (!host) return;
+
+    if (typeof AuthState === 'undefined' || !AuthState.follows || !AuthState.follows.size ||
+        typeof _dashGroupFollows !== 'function') {
+        host.hidden = true;
+        host.innerHTML = '';
+        return;
+    }
+
+    const bySport = _dashGroupFollows();
+    const teamEntries = [];
+    Object.keys(bySport).forEach(sport => {
+        (bySport[sport].teams || []).forEach(abbr => teamEntries.push({ sport, abbr }));
+    });
+
+    if (!teamEntries.length) {
+        host.hidden = true;
+        host.innerHTML = '';
+        return;
+    }
+
+    host.hidden = false;
+    const esc = typeof _escHtml === 'function' ? _escHtml : (s => String(s));
+    host.innerHTML = '<span class="fr-label">Following</span>' + teamEntries.map(({ sport, abbr }) => {
+        const logo = typeof _dashTeamLogo === 'function' ? _dashTeamLogo(sport, abbr) : null;
+        const logoHtml = logo
+            ? `<img class="fr-logo-img" src="${esc(logo)}" alt="" data-hide-on-error>`
+            : `<span class="fr-logo" aria-hidden="true">${esc(abbr.slice(0, 2))}</span>`;
+        // Team-listing view for every followed sport is uniformly `${sport}-teams`
+        // (confirmed against SUB_NAV_TABS/BOTTOM_NAV_TABS above) — deliberately NOT
+        // app.js's _SPORT_TEAMS_VIEW/_SPORT_LABEL consts here: this function can run
+        // at boot from setupNavigation() (called from app.js's own top-level code,
+        // itself above where those consts are declared later in app.js), and a
+        // `typeof` check on a not-yet-initialized `const` throws (TDZ), it doesn't
+        // safely return 'undefined' like it would for a truly undeclared name. Use
+        // this file's own already-initialized SPORTS_META instead.
+        const view = `${sport}-teams`;
+        const label = (SPORTS_META[sport] && SPORTS_META[sport].label) || sport.toUpperCase();
+        return `<button class="fr-chip" data-fr-sport="${esc(sport)}" data-fr-abbr="${esc(abbr)}" data-fr-view="${esc(view)}">
+            ${logoHtml}<span class="fr-team">${esc(abbr)}</span>
+            <span class="fr-score" data-fr-score hidden></span>
+            <span class="fr-state" data-fr-state>${esc(label)}</span>
+        </button>`;
+    }).join('');
+
+    host.querySelectorAll('.fr-chip').forEach(chip => {
+        chip.addEventListener('click', () => navigateTo(chip.dataset.frView));
+    });
+
+    // Live/today enrichment — fire-and-forget per sport so one slow or failing sport
+    // never blocks another's chips from updating. Matches Dashboard's own mlb/nfl/ncaaf
+    // scope exactly (_dashTodayGamesFor returns [] for any other sport).
+    if (typeof _dashTodayGamesFor !== 'function') return;
+    Object.keys(bySport).forEach(async sport => {
+        const abbrs = bySport[sport].teams || [];
+        if (!abbrs.length) return;
+        let games = [];
+        try { games = await _dashTodayGamesFor(sport, abbrs); } catch (_) { return; }
+        games.forEach(g => {
+            [g.home, g.away].forEach(side => {
+                if (!side || !side.abbr) return;
+                const chip = host.querySelector(`.fr-chip[data-fr-sport="${sport}"][data-fr-abbr="${side.abbr}"]`);
+                if (!chip) return;
+                const stateEl = chip.querySelector('[data-fr-state]');
+                const scoreEl = chip.querySelector('[data-fr-score]');
+                if (g.status === 'live') chip.classList.add('live');
+                if (stateEl) stateEl.textContent = g.pillLabel || (g.status === 'live' ? 'Live' : g.status === 'final' ? 'Final' : 'Today');
+                if (scoreEl && side.score != null) { scoreEl.textContent = side.score; scoreEl.hidden = false; }
+            });
+        });
+    });
+}
+
 function _applySportSearchPlaceholder(sport) {
     const label = (SPORTS.find(s => s.id === sport) || {}).label || '';
     const ph = label ? `Search ${label} players, teams, stats…` : 'Search players, teams, stats…';
@@ -1400,4 +1528,5 @@ if (typeof window !== 'undefined') {
     window.switchSport       = switchSport;
     window.debounce          = debounce;
     window.initMenu          = initMenu;
+    window._renderFavRail    = _renderFavRail;
 }

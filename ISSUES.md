@@ -2838,3 +2838,76 @@ Contributor: Owner (decision) / Vera (spec) / Axiom (build) | Date: 2026-08-15
 **Not yet live-verified after deploy** — pending owner push.
 
 **Live-verified after push (2026-08-15/16, `sportstrata-v181`).** Confirmed correct on a real production load — NFL's upcoming LAR@KC won the hero over MLB via the followed-team bonus + national broadcast, the first real (not synthetic) confirmation the cross-sport comparison works end-to-end. Zero console errors. D-100 closed.
+
+---
+
+## NAV + SEO cohesion session — 5-sport consolidation, 2026-08-15
+
+**Trigger (owner):** revisit nav/menus for cohesion now that NCAAB and WNBA are both live alongside MLB/NFL/NCAAF, and get ahead of NFL's growing tool surface before it turns into sprawl. Full framing and team positions in DECISIONS.md D-102 — findings below are the concrete, actionable pieces that came out of it.
+
+### SEO: NCAAB and WNBA have no edge-rendered path URLs — zero crawlable landing pages
+**Contributor:** Axiom (feasibility) + Relay (data confirm) | **Date:** 2026-08-15
+
+Verified directly (not assumed): `functions/` has `mlb/`, `nfl/`, and `ncaaf/` subdirectories, each with `index.js` (landing page) plus `team/`, `player/` path routes, and MLB/NFL additionally have `standings.js`/`leaders.js`/`rankings.js`. There is no `functions/ncaab/` or `functions/wnba/` directory at all — both sports only have their internal `/api/ncaab*` and `/api/wnba*` data-proxy Functions (`functions/api/ncaab.js`, `ncaabstandings.js`, `wnba.js`, `wnbaathlete.js`, `wnbastandings.js`, `wnbastats.js`), which serve the SPA's own client fetches, not crawlable content. `_routes.json`'s `include` list has `/mlb`, `/mlb/*`, `/nfl`, `/nfl/*`, `/ncaaf`, `/ncaaf/*` but no `/ncaab*` or `/wnba*` entries. `tools/gen-sitemap.cjs` has zero references to `ncaab` or `wnba` (grep-confirmed). Net effect: two fully live sports (D-052, D-092), each with real Scores/Standings/Teams(/Leaders for WNBA) content, are entirely hash-routed and invisible to search crawlers — no path URL, no sitemap entry, no per-page meta/JSON-LD.
+
+**Feasibility (Axiom):** direct clone of the pattern already proven three times over (MLB → NFL → NCAAF). No AppState change, no new external domain (same ESPN host + same-origin `env.ASSETS` already in use), no CSP change. Build: `functions/ncaab/index.js` + `functions/ncaab/team/[id]/[[slug]].js` + `functions/ncaab/team/index.js`-style listing (mirror NCAAF's exact file layout) + `functions/wnba/` equivalents, then add `/ncaab`, `/ncaab/*`, `/wnba`, `/wnba/*` to `_routes.json`, then extend `tools/gen-sitemap.cjs` with NCAAB/WNBA sections mirroring the existing NCAAF section.
+
+**No Vera/Kael gate needed** — this is backend edge-rendering of content that already exists and already has a proven visual template (`_renderSportLanding`, D-045); it's not new user-facing UI. **Ready for Finn once Relay confirms** the existing `/api/ncaab*`/`/api/wnba*` proxies expose everything the landing/team pages need (expected yes — the SPA's live views already consume this data — but confirm before build).
+
+### Settings panel "Default Sport" dropdown missing NCAAB and WNBA options
+**Contributor:** Vera + Axiom | **Date:** 2026-08-15
+
+`index.html`'s `#settingsDefaultSport` `<select>` (Settings panel → Default Sport) lists only `""` (no default), `mlb`, `nfl`, `ncaaf` — NCAAB and WNBA are both live in `SPORTS_META`/`SPORTS` but absent from this control, so a user cannot set either as their default landing sport even though every other nav surface treats them as full peers. Small, low-risk fix: add `<option value="ncaab">NCAAB</option>` and `<option value="wnba">WNBA</option>`. Axiom: no architecture change, this is pure markup — the value just needs to match `SPORTS_META` keys, which `ncaab`/`wnba` already do. Vera: confirm whatever reads `#settingsDefaultSport`'s stored value on boot treats an unrecognized/legacy value the same safe way it already handles `""` (falls through to the sport picker), so this doesn't need its own new state. Ready for Finn.
+
+### Nav rename / Analytics dropdown split — reopened, still unresolved since 2026-08-10
+**Contributor:** Vera | **Date:** 2026-08-15
+
+Restating and extending the 2026-08-10 finding ("Home — Remaining ChatGPT-brief ideas" item 3) since it never got picked up: `SUB_NAV_TABS.mlb` and `SUB_NAV_TABS.nfl` both have an "Analytics" dropdown that mixes pure stat-browsing (Leaders, Compare) with tools (Builder, Prep, Highlight, Arcade for MLB; Highlight for NFL) — "Analytics" doesn't accurately describe either half. Separately, NFL's "Fantasy" sub-nav dropdown is a flat 10 items (Value Board, ADP Rankings, Schedule, Compare, Mock Draft, My Drafts, My League, Trending, Injury Report, Waiver Wire) even though `MENU_TABS.nfl` already splits the same content into "Draft Prep" and "In-Season" groups for the mobile menu panel — the sub-nav dropdown should mirror that grouping rather than staying flat. **Recommendation (unchanged, now the top of my queue):** split "Analytics" into a stat-browsing group and a tools group; split NFL's "Fantasy" sub-nav dropdown the same way its menu panel already is. Not ready for Finn — I'll write the actual before/after label + grouping spec next, then it needs Kael's visual sign-off (dropdown rendering) and Axiom's quick feasibility check (expected trivial — more `.sub-nav-cat` entries, no new CSS) before it's gated.
+
+### NFL Pages Function inventory needed before further NFL API surface work
+**Contributor:** Relay | **Date:** 2026-08-15
+
+`functions/api/` currently has 15 NFL-specific Functions: `nfl.js`, `nfladv.js`, `nflathlete.js`, `nflcareer.js`, `nflfp.js`, `nflgamelog.js`, `nflInsights.js`, `nflplayer.js`, `nflsearch.js`, `nflsos.js`, `nflstandings.js`, `nflstats.js`, `sleeper.js`, `sleeperLink.js`, `draftHistory.js` — plus `alertPrefs.js` which is sport-agnostic but NFL-triggered. Client-side, NFL has grown to `js/nfl.js` (109KB), `js/nflLiveGame.js` (39KB), `js/nflStandings.js` (22KB), `js/fantasy.js` (78KB), `js/sos.js` (8KB), plus shared use of `js/highlightCard.js`. No inventory currently maps which Functions have live call sites vs. which may have been superseded by a later endpoint and left in place. Before the next NFL feature adds a 16th function, do the inventory: grep each function name against `js/nfl.js`/`js/fantasy.js`/`js/nflStandings.js`/`js/nflLiveGame.js` for actual call sites, flag anything with zero live callers, and write the result as a one-time reference table (candidate home: a new "NFL API Surface" subsection under CLAUDE.md's Data Sources, Folio to place once Relay has the findings). Not a build task — a research/documentation pass.
+
+### Doc-sync: CLAUDE.md's Nav System / Nav Routing sections were stale — fixed this session
+**Contributor:** Folio | **Date:** 2026-08-15 | **Status:** fixed
+
+`CLAUDE.md`'s "Nav / Routing" dispatch-logic list was missing the `ncaab-`/`wnba-` prefixes (both dispatch functions, `_renderNCAABView`/`_renderWNBAView`, exist and are wired in `renderCurrentView` — confirmed by reading `js/navigation.js` directly, not assumed). `_applySportUI(sport)`'s documented behavior ("Updates `#brandIcon` and `#brandSub` text only") was wrong — it re-renders `_renderSubNav`, `_renderBottomNav`, `_renderMenuPanel`, `_renderSportSwitch`, and `_applySportSearchPlaceholder` on every call, which is the entire mechanism that makes the nav data-driven per sport. The "Nav System (Three Surfaces)" section described a static, single-sport (MLB), no-dropdown 8-item sub-nav — the real system is `SUB_NAV_TABS`/`MENU_TABS`/`BOTTOM_NAV_TABS`, keyed per sport, with dropdown categories (`.sub-nav-cat`) for MLB's Analytics and NFL's Analytics + Fantasy groups. This exact gap was flagged once already on 2026-08-10 and missed even in the subsequent D-092 doc-sync pass that touched this same file. All three sections corrected in place this session; see the CLAUDE.md diff for exact wording. The "Path URLs & Edge Rendering" section also got a new paragraph cross-referencing the NCAAB/WNBA SEO gap above, so a future session hits the gap in CLAUDE.md directly rather than having to rediscover it by reading `functions/`.
+
+### GOALS.md G6 "Sport Scope" conflicts with shipped NCAAF/NCAAB/WNBA reality — needs owner re-ratification
+**Contributor:** Folio | **Date:** 2026-08-15
+
+`GOALS.md`'s G6 section (dated 2026-07-01, last touched in that ratification pass) states: *"MLB (flagship) and NFL (live beta, D-012) are the two invested sports — the barbell... NBA and NHL are parked."* It does not mention NCAAF, NCAAB, or WNBA at all. Since that date, NCAAF went live (D-042, 2026-07-06), NCAAB went live (D-052, 2026-08-10), and WNBA went live (D-092, 2026-08-10) — all three are described throughout CLAUDE.md as fully in-scope, invested live surfaces with real feature roadmaps. This is a direct, unresolved conflict between the vision document (GOALS.md) and the architecture/decision record (CLAUDE.md + DECISIONS.md): per TEAM.md, Folio records decisions but does not resolve cross-domain conflicts or vision calls unilaterally, and GOALS.md's own header states it requires "owner + all seniors" ratification to change (see how v2 and the 2026-08-09 ads amendment were both explicitly ratified). **Not fixed — flagged for the owner to re-ratify G6** (and, while at it, G2's "MLB Depth First" framing may be worth a look too, though that one wasn't in scope of this session's nav/SEO focus).
+
+### Root `index.html` JSON-LD / meta description are MLB+NFL only
+**Contributor:** Folio + Kael (copy) | **Date:** 2026-08-15
+
+The static `<head>` in `index.html` — the `Organization`/`WebSite` JSON-LD block and the default `<meta name="description">`/OG/Twitter tags — describes the product as "Free MLB and NFL analytics" and "Real-time MLB analytics, standings, player stats, splits, and live scores, plus no-login NFL draft tools." No mention of NCAAF (which has had its own edge-rendered landing page since D-045), let alone NCAAB or WNBA. This is the static fallback shown before `js/navigation.js`'s `_updatePageMeta()` overwrites it per-route, and before `functions/index.js`'s dynamic home edge-render (D-046 P6) kicks in for the bare `/` path — so its main exposure is non-route-specific crawl paths and any share/preview that catches the raw shell before JS runs. Lower priority than the NCAAB/WNBA landing-page gap above (that gap means there's no page to describe correctly; this one means the description of the pages that do exist is out of date), but real and cheap to fix: update the default description/JSON-LD to name all five live sports, phrased in Kael's existing brand voice (no hype words, per DESIGN.md). Not actioned this session — flagged for a future pass, ideally bundled with whatever session builds the NCAAB/WNBA landing pages so the copy update reflects the final sport list in one edit.
+
+---
+
+## Nav reimagine concept — 2026-08-15 (see DECISIONS.md D-103)
+
+**Trigger (owner):** reimagine the nav using the team's full scope, spare no feature, compete with industry counterparts (ESPN, Yahoo Sports, CBS Sports). Scoped to the four sports that outgrew the original nav design — NFL (tool sprawl), NCAAF/NCAAB/WNBA (thinner nav than MLB's reference model) — while MLB stays the visual/structural baseline.
+
+**What shipped this session:** a working interactive HTML prototype, not code against the live site. Saved to `docs/nav-reimagine-concept-2026-08-15.html` in this repo, delivered directly to the owner, and saved as a Cowork artifact for ongoing review. Demonstrates: a followed-teams rail (reads the existing unified `AuthState.follows` data, no new data layer), a full-width mega-menu replacing the current narrow `.sub-nav-menu` flyout (unified pillar structure — Scores & Schedule / Standings / Stats & Leaders / Teams / Tools(+Fantasy) — applied identically across all five sports), and a small live-state pulse dot on sport-switcher tabs with a live game in progress. Full team positions (Vera/Kael/Axiom/Relay) are in DECISIONS.md D-103.
+
+**Not ready for Finn.** This is new-feature-idea scope per TEAM.md, same gate as any other feature this size — a prototype is not a states spec. Concrete next steps, in order:
+
+### 1. Vera to write the real states spec
+**Contributor:** Vera | **Date:** 2026-08-15
+Needed before anything else: followed-teams rail empty state (no follows yet — the prototype's "+ Add team" affordance needs a real first-run treatment, not just an icon), loading state (skeleton chips, not a blank rail, per DESIGN.md's "skeletons speak" rule), error state (a poll failure shouldn't blank the whole rail, just skip refresh silently), mega-menu keyboard behavior (Tab between pillar triggers, Enter/Space to open, Arrow keys within an open panel, Esc to close and return focus — extending the existing `.sub-nav-menu` pattern's behavior, not inventing new keyboard handling), and the mobile drawer's own open/close/empty states.
+
+### 2. Kael to review against real team logos and DESIGN.md
+**Contributor:** Kael | **Date:** 2026-08-15
+Prototype uses placeholder colored-chip logos; needs review against the site's actual ESPN/MLB-CDN team marks and the real light-mode variant (prototype is dark-only). Confirm the mega-panel's shared visual recipe holds up at MLB's 5-column width and NCAAF/NCAAB/WNBA's 3-column width without feeling either cramped or sparse.
+
+### 3. Axiom to confirm the `SUB_NAV_TABS` schema widening
+**Contributor:** Axiom | **Date:** 2026-08-15
+Feasibility already checked (see D-103) — a `children` entry becomes `{group, items}`, optionally a `feature` block; `_renderSubNav`/`_toggleSubNavMenu` get rewritten for full-width instead of `position:fixed` narrow flyout; each of NCAAF/NCAAB/WNBA needs a one-line `hasLiveGame()` read added (MLB/NFL already compute the equivalent for their own ticker polling). No AppState shape change, no new external domain, no CSP change. Confirm this holds once Vera's real spec is in hand — feasibility was checked against the concept, not the final states spec.
+
+### 4. This decision absorbs D-102's still-open Analytics-dropdown split
+**Contributor:** Vera | **Date:** 2026-08-15
+D-102 (2026-08-15, earlier this session) reopened the 2026-08-10 "Analytics" mislabel / NFL Fantasy-dropdown-grouping finding. Don't spec that separately — the mega-menu's pillar structure (Stats & Leaders vs. Tools, and NFL's Fantasy split into Draft Prep/In-Season) resolves it in the same motion. One decision, not two.
+
+**Owner action needed:** sign off on scope — ship the followed-teams rail and the mega-menu together, or phase the rail first (it's pure reuse of existing data, smallest lift) and the mega-menu second (also closes D-102). Nothing here is built against the live site yet.
