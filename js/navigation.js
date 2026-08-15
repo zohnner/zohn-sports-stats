@@ -1354,6 +1354,75 @@ function _renderSportSwitch(sport) {
 // for mlb/nfl/ncaaf only. ncaab/wnba followed teams render as text-only chips with no
 // live state — a pre-existing gap this rail inherits from Dashboard, not one it
 // introduces (see ISSUES.md "Fav rail — extend logo/live coverage to ncaab/wnba").
+// D-103 follow-up (2026-08-15): fav-rail chips originally always sent the user
+// to the sport's generic Teams list (`${sport}-teams`) regardless of which team
+// they clicked — reported live post-ship. Each sport's real team-detail route
+// needs a different key, so this resolves per sport rather than reusing one
+// view for all of them:
+//   nfl   — `nfl-team-{abbr}`   — abbreviation is the route key directly.
+//   mlb   — `mlb-team-{id}`     — needs the numeric MLB Stats API team id;
+//                                 resolved from AppState.mlbTeams (fetched here
+//                                 if not already populated) by `.abbreviation`.
+//   ncaaf — `ncaaf-team-{id}`   — needs the numeric ESPN team id; resolved from
+//                                 fetchNCAAFStandings() (ApiCache-backed, same
+//                                 call the Standings/Teams views already make)
+//                                 by `.abbr`.
+//   ncaab/wnba — no team-detail view exists yet (their Teams-view team chips
+//                aren't links either — see js/ncaab.js, js/wnba.js), so the
+//                Teams-list fallback is the correct destination, not a bug.
+// Any lookup failure (offline, id not found, API error) falls back to the
+// sport's Teams list rather than doing nothing.
+async function _favRailGoToTeam(sport, abbr, fallbackView) {
+    if (AppState.currentSport !== sport) {
+        AppState.currentSport = sport;
+        if (typeof _applySportUI === 'function') _applySportUI(sport);
+    }
+
+    if (sport === 'nfl') {
+        navigateTo('nfl-team-' + abbr);
+        return;
+    }
+
+    if (sport === 'mlb') {
+        try {
+            if (typeof fetchMLBTeams === 'function') {
+                if (!AppState.mlbTeams || AppState.mlbTeams.length === 0) {
+                    AppState.mlbTeams = await fetchMLBTeams();
+                }
+                const team = (AppState.mlbTeams || []).find(t => t.abbreviation === abbr);
+                if (team) { navigateTo('mlb-team-' + team.id); return; }
+            }
+        } catch (err) {
+            Logger.warn('Fav-rail MLB team lookup failed', err, 'NAV');
+        }
+        navigateTo(fallbackView);
+        return;
+    }
+
+    if (sport === 'ncaaf') {
+        try {
+            if (typeof fetchNCAAFStandings === 'function') {
+                const season = (typeof _ncaaf !== 'undefined' && _ncaaf.season) ||
+                    (typeof NCAAF_LAST_SEASON !== 'undefined' ? NCAAF_LAST_SEASON : undefined);
+                const confs = await fetchNCAAFStandings(season);
+                let found = null;
+                for (const c of (confs || [])) {
+                    found = (c.teams || []).find(t => t.abbr === abbr);
+                    if (found) break;
+                }
+                if (found) { navigateTo('ncaaf-team-' + found.id); return; }
+            }
+        } catch (err) {
+            Logger.warn('Fav-rail NCAAF team lookup failed', err, 'NAV');
+        }
+        navigateTo(fallbackView);
+        return;
+    }
+
+    // ncaab / wnba — no team-detail view yet
+    navigateTo(fallbackView);
+}
+
 async function _renderFavRail() {
     const host = document.getElementById('favRail');
     if (!host) return;
@@ -1384,7 +1453,9 @@ async function _renderFavRail() {
         const logoHtml = logo
             ? `<img class="fr-logo-img" src="${esc(logo)}" alt="" data-hide-on-error>`
             : `<span class="fr-logo" aria-hidden="true">${esc(abbr.slice(0, 2))}</span>`;
-        // Team-listing view for every followed sport is uniformly `${sport}-teams`
+        // Fallback destination when a chip's specific team-detail route can't be
+        // resolved (NCAAB/WNBA have no team-detail view yet; MLB/NCAAF id lookups
+        // can fail) — the sport's Teams list is uniformly `${sport}-teams`
         // (confirmed against SUB_NAV_TABS/BOTTOM_NAV_TABS above) — deliberately NOT
         // app.js's _SPORT_TEAMS_VIEW/_SPORT_LABEL consts here: this function can run
         // at boot from setupNavigation() (called from app.js's own top-level code,
@@ -1402,7 +1473,9 @@ async function _renderFavRail() {
     }).join('');
 
     host.querySelectorAll('.fr-chip').forEach(chip => {
-        chip.addEventListener('click', () => navigateTo(chip.dataset.frView));
+        chip.addEventListener('click', () => _favRailGoToTeam(
+            chip.dataset.frSport, chip.dataset.frAbbr, chip.dataset.frView
+        ));
     });
 
     // Live/today enrichment — fire-and-forget per sport so one slow or failing sport
