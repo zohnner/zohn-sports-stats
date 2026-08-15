@@ -2775,3 +2775,22 @@ Contributor: Vera (audit/spec) / Kael (visual) / Axiom (build) | Date: 2026-08-1
 **Not yet live-verified after deploy** — pending owner push. Next check: confirm the caption renders correctly on real production cards and stays absent on the local-only preseason games that should show nothing.
 
 **Live-verified after push (2026-08-15, `sportstrata-v178`).** Confirmed correct on real production cards — clean captions on national-network games, silent on local-only games, no wrap, no regression. D-097 closed.
+
+---
+
+## NFL Scores dashboard — game-wide stat leaders on cards (D-098)
+
+Task / Finding: Feature — the third item queued from D-097's competitive audit (broadcast network shipped, current-play banner already existed, leaders queued pending its own visual gate)
+Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
+
+**What we're trying to accomplish:** ship the last "free" competitive-parity item from D-097's CBS/Yahoo audit — game-wide passing/rushing/receiving leaders — now that it has its own design pass rather than being bolted onto D-097 blind.
+
+**Data confirmed live:** `comp.leaders` returns exactly one leader per category (game-wide, not per-team), 3 categories, present for live and final games, absent for scheduled (ESPN omits the field pre-kickoff — no new empty-state logic needed). Same `/scoreboard` response the grid already fetches.
+
+**Visual decision:** text-only, no headshots — a deliberate divergence from CBS/Yahoo's photo-tile pattern, per DESIGN.md's "professional data tool, not a fantasy casino" posture and to keep this a genuinely zero-new-cost feature (no new image requests). Reused the `.game-weather`/`.game-situation` bordered-caption recipe; deduped the divider when it stacks directly under D-096's situation line so live cards don't show two redundant borders back to back.
+
+**Verified locally:** `node --check` clean, 0 NUL bytes, CSS balanced, grep confirmed no cascade conflicts. Full unit suite (6 files) clean, manifest clean. `sw.js` bumped v178→v179.
+
+**Verified live before shipping:** real leader data injected onto real live and synthetic-final cards in production, screenshotted both the deduped-divider (live) and standalone-divider (final) paths — clean, no wrap, no overflow even on the longest real stat line seen tonight.
+
+**Not yet live-verified after deploy** — pending owner push.

@@ -780,6 +780,40 @@
 }
 .game-situation--redzone { color: var(--color-loss); }
 
+/* D-098: game-wide stat leaders (pass/rush/receive) -- ESPN's comp.leaders,
+   already fetched by every Scores-grid call, just never rendered. Text-only
+   by design (no headshots): DESIGN.md's posture rule is a "professional data
+   tool", not a photo-heavy fantasy app, and 16 cards x 3 new headshot
+   requests each is real new weight for a competitive-parity feature that's
+   supposed to be free. Same bordered-caption recipe as .game-weather/
+   .game-situation -- but when a live card already shows .game-situation
+   above it, the divider is deduped rather than stacking two borders. */
+.game-leaders {
+    padding-top: 0.4rem;
+    margin-top: 0.1rem;
+    border-top: 1px solid var(--border-default);
+}
+.game-situation + .game-leaders {
+    border-top: none;
+    padding-top: 0.25rem;
+    margin-top: 0;
+}
+.game-leader-row {
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.55;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.game-leader-cat {
+    font-weight: 800;
+    color: var(--text-subtle);
+    letter-spacing: 0.3px;
+}
+
 .game-margin {
     font-size: 0.68rem;
     font-weight: 700;

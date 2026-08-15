@@ -167,6 +167,24 @@ async function fetchNFLScoreboard(opts = {}) {
         // ESPN's sentinel for "no current down" (right after a score/timeout/kickoff)
         // is down: -1, so only build a situation object when there's a real down to
         // show -- an empty/undefined line beats a nonsensical "0th & 0".
+        // D-098: resolve ESPN's one-leader-per-category game leaders into a
+        // compact, fixed PASS/RUSH/REC order (ESPN's own category order isn't
+        // guaranteed, so map by the stable `name` key rather than trust position).
+        const LEADER_CAT_LABEL = { passingYards: 'PASS', rushingYards: 'RUSH', receivingYards: 'REC' };
+        let leaders = [];
+        if (Array.isArray(comp.leaders)) {
+            const byCat = {};
+            comp.leaders.forEach(cat => {
+                const label = LEADER_CAT_LABEL[cat.name];
+                const top = cat.leaders?.[0];
+                if (!label || !top?.athlete) return;
+                const teamId = top.athlete.team?.id;
+                const teamAbbr = home?.team?.id === teamId ? (home?.team?.abbreviation || '')
+                    : away?.team?.id === teamId ? (away?.team?.abbreviation || '') : '';
+                byCat[label] = { cat: label, teamAbbr, name: top.athlete.shortName || top.athlete.displayName || '', stat: top.displayValue || '' };
+            });
+            leaders = ['PASS', 'RUSH', 'REC'].map(k => byCat[k]).filter(Boolean);
+        }
         const sit = comp.situation;
         let situation = null;
         if (isLive && sit && typeof sit.down === 'number' && sit.down >= 1 && sit.shortDownDistanceText) {
@@ -214,6 +232,13 @@ async function fetchNFLScoreboard(opts = {}) {
             broadcast: comp.broadcasts?.find(b => b.market === 'national')?.names?.[0] || '',
             // D-096: down/distance + possession + red-zone, live games only, null otherwise.
             situation,
+            // D-098: game-wide stat leaders (passing/rushing/receiving). ESPN's
+            // comp.leaders carries exactly one leader per category (game-wide,
+            // not per-team -- confirmed live) and the field itself is only present
+            // once a game has started (live-checked: present on in-progress and
+            // final games, absent on scheduled), so no separate "not started yet"
+            // branch is needed -- an empty leaders array falls out naturally.
+            leaders,
         };
     }).filter(Boolean);
 }
@@ -505,6 +530,9 @@ function _createNFLGameCard(game) {
             ${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}
         </div>
         ${game.isLive && game.situation ? `<div class="game-situation${game.situation.isRedZone ? ' game-situation--redzone' : ''}">${_escHtml(game.situation.text)}</div>` : ''}
+        ${game.leaders?.length ? `<div class="game-leaders">${game.leaders.map(l =>
+            `<div class="game-leader-row"><span class="game-leader-cat">${_escHtml(l.cat)}</span> ${_escHtml(l.teamAbbr)} ${_escHtml(l.name)} — ${_escHtml(l.stat)}</div>`
+        ).join('')}</div>` : ''}
     `;
     return card;
 }
