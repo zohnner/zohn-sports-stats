@@ -1359,14 +1359,29 @@ function _renderSportSwitch(sport) {
 // they clicked — reported live post-ship. Each sport's real team-detail route
 // needs a different key, so this resolves per sport rather than reusing one
 // view for all of them:
-//   nfl   — `nfl-team-{abbr}`   — abbreviation is the route key directly.
-//   mlb   — `mlb-team-{id}`     — needs the numeric MLB Stats API team id;
-//                                 resolved from AppState.mlbTeams (fetched here
-//                                 if not already populated) by `.abbreviation`.
+//   nfl   — `nfl-team-{abbr}`   — abbreviation is the route key directly, and
+//                                 _renderNFLView (navigation.js) has a real
+//                                 `view.startsWith('nfl-team-')` branch, so
+//                                 navigateTo() reaches showNFLTeamDetail fine.
+//   mlb   — needs the numeric MLB Stats API team id, resolved from
+//                                 AppState.mlbTeams (fetched here if not already
+//                                 populated) by `.abbreviation`. Deliberately
+//                                 calls showMLBTeamDetail(id) directly rather
+//                                 than navigateTo('mlb-team-'+id): unlike NFL/
+//                                 NCAAF, _renderMLBView's switch (navigation.js)
+//                                 has no `mlb-team-` case at all — every other
+//                                 call site in js/mlb.js reaches team detail by
+//                                 calling showMLBTeamDetail() directly, which
+//                                 does its own render + pushState + breadcrumb.
+//                                 Routing this through navigateTo() logged
+//                                 "Unknown MLB view: mlb-team-118" and silently
+//                                 fell through to nothing — caught live 2026-08-15.
 //   ncaaf — `ncaaf-team-{id}`   — needs the numeric ESPN team id; resolved from
 //                                 fetchNCAAFStandings() (ApiCache-backed, same
 //                                 call the Standings/Teams views already make)
-//                                 by `.abbr`.
+//                                 by `.abbr`. _renderNCAAFView (js/ncaaf.js) DOES
+//                                 have a `view.startsWith('ncaaf-team-')` branch,
+//                                 so navigateTo() is correct here (unlike MLB).
 //   ncaab/wnba — no team-detail view exists yet (their Teams-view team chips
 //                aren't links either — see js/ncaab.js, js/wnba.js), so the
 //                Teams-list fallback is the correct destination, not a bug.
@@ -1390,7 +1405,7 @@ async function _favRailGoToTeam(sport, abbr, fallbackView) {
                     AppState.mlbTeams = await fetchMLBTeams();
                 }
                 const team = (AppState.mlbTeams || []).find(t => t.abbreviation === abbr);
-                if (team) { navigateTo('mlb-team-' + team.id); return; }
+                if (team && typeof showMLBTeamDetail === 'function') { showMLBTeamDetail(team.id); return; }
             }
         } catch (err) {
             Logger.warn('Fav-rail MLB team lookup failed', err, 'NAV');
