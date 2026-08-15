@@ -2748,3 +2748,28 @@ Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-14
 **Verified locally:** `node --check` clean on `js/nfl.js`, 0 NUL bytes, brace-balance check clean on `css/components.css`, grep confirmed no cascade conflict (only the 3 new references to `.game-situation`/`.game-situation--redzone` exist anywhere in css/js), `--color-loss` token confirmed present in both themes. Full unit suite 40/40, manifest clean, theme check clean (2 pre-existing unrelated WARNs only). `sw.js` bumped v176→v177.
 
 **Not yet live-verified after deploy** — pending owner push. Next check: confirm the situation line renders on a real live card in production, disappears correctly on final/scheduled cards and during dead-ball/kickoff moments (down:-1), and the red-zone color triggers correctly the next time a live drive reaches the 20.
+
+---
+
+## NFL Scores dashboard — competitive positioning: broadcast network caption (D-097)
+
+Task / Finding: Feature — live competitive audit vs. CBS/NFL.com/Yahoo Sports, surface broadcast network (already-parsed dead data), queue inline leaders, decline weather/odds
+Contributor: Vera (audit/spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
+
+**What we're trying to accomplish:** owner asked, after D-096's down/distance feature shipped and verified, to consider how SportStrata's NFL data display compares to industry competitors and where we can match or beat them. Live-reviewed CBS Sports, NFL.com, and Yahoo Sports' NFL scoreboards against our own Scores grid.
+
+**Findings cross-referenced against our own live `/scoreboard` payload (not assumed):**
+- Broadcast network (CBS/Yahoo/NFL.com all show it): `comp.broadcasts` already parsed by `fetchNFLScoreboard()` since D-043, but only ever consumed by the Home hero — never rendered on the Scores grid card. Zero new fetch cost.
+- "Current play" text (NFL.com's marquee treatment): already shipped in SportStrata's Live Game Viewer (`.nlg-lastplay`), confirmed live — just not duplicated onto the compact grid card, deliberately (see below).
+- Inline game leaders (CBS/Yahoo pattern): confirmed live that `comp.leaders` is present on the same response already fetched, shape confirmed usable. Zero new fetch cost — but not built this pass.
+- Weather + betting odds (Yahoo's pattern): confirmed live, both domed and outdoor venues, that neither exists on `/scoreboard` at all. Real new scope (weather API, or per-game `/summary` for `pickcenter` odds) — Relay's domain.
+
+**Decision:** shipped the broadcast network caption only, this pass. Declined to duplicate the current-play banner onto the grid (already exists in the Live Game Viewer; the grid card is a dense 3-wide tile and ESPN's play text is unbounded free text — a real overflow risk DESIGN.md's density rule flags). Queued inline leaders for a future pass pending its own visual gate — it's a bigger addition to an already 4-line card and needs Kael's design pass on narrow-width behavior, not a same-session bolt-on. Declined weather/odds this pass — not available from the current data source, real new scope outside NFL-display polish.
+
+**Bug caught by live-preview before shipping:** the original `comp.broadcasts?.[0]` selector (any market, first entry) was tested against tonight's full slate before writing to disk. Local-only preseason games (no national feed) returned long, low-value strings — `"Bengals Preseason TV Network"`, `"WUSA9"` — that would have overflowed the compact date line and added noise a national audience doesn't recognize. Fixed to `market: 'national'` only, no fallback; local-only games correctly show no caption.
+
+**Verified locally:** `node --check` clean on `js/nfl.js`, 0 NUL bytes, no new CSS added (reuses `.game-date`'s existing `" · "` separator recipe, same one `.game-status` already uses for its clock). `sw.js` bumped v177→v178.
+
+**Verified live before shipping:** ran the corrected logic against a real production `/scoreboard` fetch (10 games, live + upcoming, mixed national/local-only) — clean short national names (`ESPN`, `NFL Net`, longest 11 chars) on games with a national feed, empty on local-only games as intended. Injected the corrected render onto real live cards in production and screenshotted — caption sits cleanly on the date line, no wrap, no collision with the D-096 situation line beneath it.
+
+**Not yet live-verified after deploy** — pending owner push. Next check: confirm the caption renders correctly on real production cards and stays absent on the local-only preseason games that should show nothing.

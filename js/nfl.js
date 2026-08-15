@@ -202,9 +202,16 @@ async function fetchNFLScoreboard(opts = {}) {
             period: status?.period || 0,
             clock:  status?.displayClock || '',
             // D-043 3a: national network, when ESPN has one (verified live 2026-08-02 —
-            // competitions[].broadcasts[] = [{market, names:[...]}]). Home-grid card only;
-            // absent broadcasts degrade to no caption, never a placeholder.
-            broadcast: comp.broadcasts?.[0]?.names?.[0] || '',
+            // competitions[].broadcasts[] = [{market, names:[...]}]).
+            // D-097: now also rendered on the Scores grid card itself (previously
+            // parsed but never consumed anywhere — dead data). Strictly market:
+            // 'national' only -- live-checked against real preseason games and a
+            // local-only broadcast (comp.broadcasts[0] when there's no national
+            // feed) returns team-network/affiliate strings like "Bengals Preseason
+            // TV Network" or "WUSA9": too long for the date line and not a signal
+            // a national audience recognizes. No national feed => no caption,
+            // same "absent degrades to nothing" rule the field always had.
+            broadcast: comp.broadcasts?.find(b => b.market === 'national')?.names?.[0] || '',
             // D-096: down/distance + possession + red-zone, live games only, null otherwise.
             situation,
         };
@@ -475,7 +482,7 @@ function _createNFLGameCard(game) {
     }
 
     card.innerHTML = `
-        <div class="game-date">${dateStr}</div>
+        <div class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</div>
         <div class="game-teams">
             <div class="game-team ${game.awayTeam.winner ? 'game-team--winner' : ''}">
                 <div class="game-team-logo">

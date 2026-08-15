@@ -2263,3 +2263,32 @@ After that: sport switcher and picker band both show WNBA. Picker card correctly
 **Verified locally:** `node --check` clean, 0 NUL bytes, CSS brace-balance clean, grep confirmed zero cascade conflicts on the new class names, `--color-loss` token confirmed present in both shipped themes. Full unit suite 40/40, manifest clean, theme check clean (2 pre-existing unrelated WARNs only). `sw.js` bumped v176→v177 (`js/nfl.js` and `css/components.css` both changed and are in `STATIC_ASSETS`).
 
 **Implications:** same `comp.situation` field is available on every sport's ESPN-backed scoreboard proxy that has a "situation" concept (none of NCAAF/NCAAB/WNBA's sports have downs, so this is NFL-specific by nature, not a shared-bug situation like D-094/D-095). Not live-verified post-deploy yet — next live NFL window should confirm the line renders correctly on a real card, disappears cleanly on dead-ball moments, and the red-zone color fires when a real drive reaches the 20.
+
+**Live-verified after push (2026-08-14–15).** Owner confirmed pushed; `sw.js` reads `sportstrata-v177` live and the situation line renders on real cards in production, including the red-zone treatment on live drives.
+
+## D-097 — Competitive positioning pass: broadcast network on Scores cards (2026-08-15)
+
+**Status:** complete (build shipped, live-verification pending deploy)
+**Contributors:** Vera (spec/competitive audit), Kael (visual), Axiom (build)
+**Date opened:** 2026-08-15 | **Date resolved:** 2026-08-15
+
+**Decision needed:**
+  Owner asked, after D-096 shipped, to "further consider how we can display this data and mimic/beat our industry competitors" — a vague-direction question, routed per TEAM.md to all three core seniors rather than answered as a single spec.
+
+**Competitive audit (Vera):** live-reviewed CBS Sports, NFL.com, and Yahoo Sports' NFL scoreboards side by side with ours. Findings, matched against what our own `/scoreboard` proxy already returns per game (confirmed live against real preseason games, not assumed):
+  - **Broadcast network** — CBS/Yahoo/NFL.com all caption which channel a game airs on. Our `fetchNFLScoreboard()` already parses `comp.broadcasts` (added D-043 for the Home hero) but the field was never rendered on the Scores grid — pure dead data. Zero new fetches. **Shipped this pass.**
+  - **"Current play" text** — NFL.com's marquee scoreboard treatment. Checked: SportStrata already ships this, in the Live Game Viewer (`js/nflLiveGame.js` `.nlg-lastplay`, confirmed live in production) — just not on the compact Scores grid. Intentionally **not** duplicated onto the grid card (see rejected-scope note below).
+  - **Inline game leaders** (passing/rushing/receiving mini-stats) — CBS/Yahoo pattern. Confirmed live that `comp.leaders` is present on the same `/scoreboard` response already being fetched, full shape usable (`athlete.shortName`, `headshot`, `position.abbreviation`, `displayValue`). Zero new fetches. **Queued, not built this pass** — see below.
+  - **Weather + betting odds** — Yahoo's pattern. Confirmed live (checked both a domed and an outdoor venue) that neither field exists on `/scoreboard` at all. Real new scope: weather needs a new data source, odds needs a per-game `/summary` call (`pickcenter`). **Declined this pass** — Relay's domain, not a same-session quick win.
+
+**Spec + rejected scope (Vera):** the "current play" banner is real, valuable data, but the Scores grid is a dense 3-wide tile layout (DESIGN.md's density-needs-rhythm rule) and ESPN's `lastPlay.text` is unbounded free text — a real play description ("T.Tagovailoa pass complete to T.Hill for 12 yards...") would overflow or force truncation on a compact card in a way a two-word down/distance line doesn't. The Live Game Viewer already gives it the room it needs; duplicating it onto the grid card would violate density discipline for a feature that's already shipped elsewhere. Broadcast network, by contrast, is reliably short (`ESPN`, `FOX`, `NFL Net` — confirmed against every live game tonight, longest was 11 characters) once restricted to `market: 'national'` only, so it fits the existing `.game-date` line with zero layout risk.
+
+**Visual (Kael):** no new class. Appended to the existing `.game-date` caption using the same `" · "` separator the status pill already uses for its clock (`Final · Q4` pattern) — one recipe, not a new one. Text-transform/color inherited from `.game-date`'s existing muted-caps treatment.
+
+**Feasibility + build (Axiom):** `fetchNFLScoreboard()`'s existing `broadcast` field changed from `comp.broadcasts?.[0]` (first entry regardless of market) to `comp.broadcasts?.find(b => b.market === 'national')` — live-testing the original logic against tonight's slate surfaced that local-only preseason games (no national broadcast) were falling through to local-affiliate/team-network strings (`"Bengals Preseason TV Network"`, `"WUSA9"`) that are both too long for the date line and meaningless to a national audience. Caught by live-preview before shipping, not after. National-only, no fallback: absent national broadcast degrades to no caption, same rule the field always had.
+
+**Verified before shipping (live, not static):** ran both the original and corrected parsing logic against a real production `/scoreboard` fetch (10 live/upcoming games, mixed national and local-only). Original logic produced 2 oversized/low-value local strings; corrected logic produced clean short national names on 6 games and empty on 4 local-only games, as intended. Injected the corrected render onto real live cards in production and screenshotted — caption sits cleanly on the date line, doesn't wrap, doesn't compete with the D-096 situation line below it.
+
+**Verified locally:** `node --check` clean on `js/nfl.js`, 0 NUL bytes. No new CSS. `sw.js` bumped v177→v178 (`js/nfl.js` is in `STATIC_ASSETS`).
+
+**Implications:** inline game leaders (from the audit above) is the next real opportunity — data's confirmed free, but it needs its own Kael visual gate before building: a leader mini-row is a bigger addition to an already 4-line card (date, teams, status, situation) and needs a design pass on what to show/hide at narrow widths, not a same-session bolt-on. Not started this pass — flagged for the next NFL dashboard iteration.
