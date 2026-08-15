@@ -2773,3 +2773,5 @@ Contributor: Vera (audit/spec) / Kael (visual) / Axiom (build) | Date: 2026-08-1
 **Verified live before shipping:** ran the corrected logic against a real production `/scoreboard` fetch (10 games, live + upcoming, mixed national/local-only) — clean short national names (`ESPN`, `NFL Net`, longest 11 chars) on games with a national feed, empty on local-only games as intended. Injected the corrected render onto real live cards in production and screenshotted — caption sits cleanly on the date line, no wrap, no collision with the D-096 situation line beneath it.
 
 **Not yet live-verified after deploy** — pending owner push. Next check: confirm the caption renders correctly on real production cards and stays absent on the local-only preseason games that should show nothing.
+
+**Live-verified after push (2026-08-15, `sportstrata-v178`).** Confirmed correct on real production cards — clean captions on national-network games, silent on local-only games, no wrap, no regression. D-097 closed.
