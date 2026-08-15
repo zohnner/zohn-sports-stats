@@ -2794,3 +2794,5 @@ Contributor: Vera (spec) / Kael (visual) / Axiom (build) | Date: 2026-08-15
 **Verified live before shipping:** real leader data injected onto real live and synthetic-final cards in production, screenshotted both the deduped-divider (live) and standalone-divider (final) paths — clean, no wrap, no overflow even on the longest real stat line seen tonight.
 
 **Not yet live-verified after deploy** — pending owner push.
+
+**Live-verified after push (2026-08-15, `sportstrata-v179`).** Confirmed correct on real production cards — both divider paths hold, real values render, scheduled games stay clean. D-098 closed.
