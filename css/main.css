@@ -301,6 +301,7 @@ header {
    in JS (see _toggleSubNavMenu in navigation.js). Cascade order matters: this block
    must stay after .sub-nav-menu above so its position/border-radius win. */
 .mega-panel {
+    display: block;
     position: absolute;
     left: 0;
     right: 0;

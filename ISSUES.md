@@ -3016,3 +3016,20 @@ Owner feedback right after the previous entry shipped: the new Upcoming/Recent G
 `sw.js` CACHE_NAME bumped v193 → v194 (js/nfl.js is a cached static asset).
 
 **Escalation:** none.
+
+---
+
+### Mega-panel nav dropdowns (Stats & Leaders, Fantasy, and MLB's Tools) render shrink-wrapped instead of full-width
+**Contributor:** Finn | **Date:** 2026-08-16
+
+Owner report: "when clicking tools on an nfl page the drop down does not load cleanly." Live repro on the NFL Teams page confirmed it — clicking "Stats & Leaders" or "Fantasy" opened a narrow, left-shifted column hugging the trigger button instead of D-103's intended full-width mega-panel. Same shared CSS applies to every sport's mega-panel pillars (MLB's "Tools"/"Stats & Leaders" included), so this wasn't NFL-specific — it just happened to be reported from an NFL page.
+
+**Root cause:** `.sub-nav-menu` (css/main.css) is `display: flex; flex-direction: column`. `.mega-panel` — applied to the same element alongside `.sub-nav-menu` — overrides `position`, `border-radius`, and the border sides, but never resets `display`. With the flex box still in force, `.mega-grid`'s `max-width: var(--max-width); margin: 0 auto` no longer behaves like a normal block-level "fill then center" container: flexbox auto-margin absorption shrinks the flex item down to its content size along the cross axis and centers *that*, instead of letting it grow to the full header width first. Confirmed live by toggling `display: block` on a `.mega-panel` element via an inline style override in the console — the grid immediately recomputed to the full 1440px `--max-width`, centered under the header.
+
+**Fix:** added `display: block;` to the `.mega-panel` rule (css/main.css) so it fully overrides `.sub-nav-menu`'s flex layout instead of only partially overriding it. No JS changes, no new classes.
+
+**Also investigated — "the same issue also occurs when clicking on your account icon":** could not reproduce a rendering bug on either candidate component. The avatar menu (`.auth-menu`, css/auth.css) opened cleanly via a real simulated click — correctly positioned top-right, no overlap, no shrink-wrap artifact (it's a plain `position:absolute` menu, unrelated to the `.mega-panel`/`.sub-nav-menu` flex system). The settings drawer (`#settingsPanel`/`.settings-panel-drawer`) also opened and closed cleanly once given time for its CSS transition to finish; an earlier premature read of its transform mid-transition had looked like a stuck-closed state but wasn't. Leaving this as resolved/false-alarm for now; flagging that if the owner still sees something odd on the account icon specifically, it needs a screenshot or more precise repro steps since both candidates test clean in isolation.
+
+`sw.js` CACHE_NAME bumped v194 -> v195 (css/main.css is a cached static asset).
+
+**Escalation:** none.
