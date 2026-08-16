@@ -2517,3 +2517,26 @@ Live candidates from both sports (if any) are compared first — live always bea
 **Implications:**
   - The pre-existing `.nlg-situation` dead-code bug (comp.situation always undefined) is now fixed as a byproduct of this build — see ISSUES.md for the standalone writeup.
   - Win-probability chart (D-080's remaining Phase 2 item) is next in queue per owner request — separate build, same live game page.
+
+## D-106 — NFL live game page: win probability chart (D-080 Phase 2, unblocked)
+**Status:** complete (live-verified before shipping)
+**Contributors:** (none — single-session owner request, no persona review gate)
+**Date opened:** 2026-08-16 | **Date resolved:** 2026-08-16
+
+**Decision needed:**
+  D-080 explicitly deferred win probability to "Phase 2... until confirmed reliable on a genuinely live game." D-105's live-verification pass cleared that gate (137 real, monotonically sensible entries on a real 4th-quarter game, home win % climbing as the game resolved) and the owner asked for this queued as the next build.
+
+**Decision:** Added `_nlgWinProbability(data, home, away)` (js/nflLiveGame.js) as a new sidebar card, rendered first (ESPN's own Gamecast places win probability at the top of the sidebar; this codebase's existing order was leaders/fantasy/game-flow/standings, so this is a placement change, not just an addition). No new fetch — `data.winprobability[]` already rides along on the existing `fetchNFLSummary` 20s poll.
+
+  Each entry is `{ homeWinPercentage (0-1), tiePercentage, playId }` — a single number that fully determines both teams' odds, unlike Game Flow's two independent cumulative-score series (D-104). Drew one polyline, not two. Colored two-tone — home team's color where home is favored (above the 50% line), away team's color where away is favored (below) — using two clip-path'd copies of the same polyline (`clipPath` rects splitting the SVG viewBox at the midline) rather than computing exact crossing-point path geometry. This was a deliberate choice to avoid the kind of coordinate-math bug D-105's field viewer caught: clipping lets the renderer handle every crossing for free, with zero custom math to get wrong. A dashed neutral `--border-subtle` line marks the 50% baseline. Legend shows the current leader's abbreviation + win % in that team's color, tying the chart to the same team-brand-color language the rest of the live game page already uses (Game Flow, field viewer), rather than introducing a generic diverging warm/cool pair that would be the only place on the site using it.
+
+  **Live-verified before shipping:** the new function was injected directly into the deployed production page (real completed game, DET @ CIN) against its real `data.winprobability[]` — not a mock. Confirmed the two-tone split lands correctly at a real early-game crossing (the actual game's win probability dipped to 42-48% for home in the first several plays, rendering as a brief away-colored segment before the line settles into a mostly-home-favored path to a final 100%), matching the real final score (CIN won 16-14, home favored for most of the game with DET closing but not overtaking). Renders nothing (fails-safe, same convention as every other sidebar card) when fewer than 2 real entries exist — covers pregame and any malformed-response case without a special branch.
+
+  - `css/nflLiveGame.css`: new `.nlg-wp-svg`/`.nlg-wp-legend` rules, sized and spaced to match the existing `.nlg-flow-svg`/`.nlg-flow-legend` pattern exactly (same 56px height, same card chrome).
+  - `sw.js`: `CACHE_NAME` bumped v190 → v191.
+
+**Rationale:**
+  Reusing the existing summary poll (no new fetch), reusing the established team-brand-color convention (no new color system), and reusing the Game Flow card's own SVG sizing (no new layout math) kept this narrowly scoped to the one genuinely new idea — the two-tone clip-path technique — and verified that one idea against real data before shipping, rather than assuming the clip math was right from the diff alone.
+
+**Implications:**
+  - D-080 Phase 2 is now fully closed. Remaining D-080/D-081 scope is Phase 3 (SportStrats-original analytics: EPA, success rate, CPOE, etc.) — still blocked as scoped in D-081 (3a ship-ready, 3b blocked on nflverse 2026 data not existing yet).

@@ -2,10 +2,10 @@
 // NFL Live Game viewer (D-030, rebuilt D-080 Phase 1) — production-density game
 // dashboard: always-visible score/situation header, a 6-tab body (Summary,
 // Play-by-Play, Box Score, Team Stats, Analytics, Fantasy), and a sidebar
-// (game leaders, fantasy leaders, game flow). Data: ESPN summary via
-// /api/nfl?path=/summary. Polls every 20s while a game is in progress
-// (matches functions/api/nfl.js's ttlFor('/summary') edge-cache TTL exactly —
-// polling faster would just re-serve the same cached response).
+// (win probability, game leaders, fantasy leaders, game flow). Data: ESPN
+// summary via /api/nfl?path=/summary. Polls every 20s while a game is in
+// progress (matches functions/api/nfl.js's ttlFor('/summary') edge-cache TTL
+// exactly — polling faster would just re-serve the same cached response).
 //
 // Update architecture ports MLB's js/liveGame.js pattern (P3-025) rather than
 // this file's old one: the previous version fully replaced the page's
@@ -15,13 +15,14 @@
 // wrapper, tab strip, and inactive tab bodies are never re-rendered. Tab
 // selection lives in _nlg.activeTab and survives every poll.
 //
-// Field-shape note (D-080): drives.previous[].plays[], winprobability[], and
-// leaders[] were live-verified against a real completed ESPN NFL summary
-// response before this file was written (2026-08-09, event 401873271) — not
-// assumed. winprobability was present and populated (188 entries, 170
-// distinct values) for that one game; per D-080 it still ships as Phase 2
-// (not in this file) until confirmed reliable across multiple games,
-// including a genuinely live one, not just a single final preseason game.
+// Field-shape note (D-080, cleared by D-106): drives.previous[].plays[],
+// winprobability[], and leaders[] were live-verified against a real completed
+// ESPN NFL summary response before this file was written (2026-08-09, event
+// 401873271) — not assumed. winprobability was present and populated (188
+// entries, 170 distinct values) for that one game; per D-080 it shipped as
+// Phase 2 only once confirmed reliable across multiple games including a
+// genuinely live one. That check happened during D-105 (137 real, sensibly
+// climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
 const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null };
@@ -710,11 +711,61 @@ function _nlgRenderFantasyTab(data) {
 
 function _nlgSidebarHtml(data, comp, home, away) {
     return `<aside class="nlg-side">
+        ${_nlgWinProbability(data, home, away)}
         ${_nlgSidebarLeaders(data)}
         ${_nlgFantasyLeadersCard(data)}
         ${_nlgGameFlow(comp, home, away)}
         ${_nlgStandingsCard(data, home, away)}
     </aside>`;
+}
+
+// D-106: live win probability chart. data.winprobability[] (ESPN /summary
+// field) was flagged reliable-but-unconfirmed in D-080 ("Phase 2... until
+// confirmed reliable on a genuinely live game") and confirmed during D-105's
+// live testing (137 real, monotonically sensible entries on a real
+// 4th-quarter game, home win % climbing correctly as the game resolved) — no
+// new fetch needed, this rides along on the same summary poll every 20s.
+// Each entry is { homeWinPercentage (0-1), tiePercentage, playId } — a single
+// number that fully determines both teams' odds, not two independent series
+// like Game Flow's cumulative score, so this draws ONE polyline rather than
+// two. Colored two-tone (home team's color above the 50% line, away team's
+// below) via two clip-path'd copies of the same polyline rather than
+// computing exact crossing-point path math — clipping handles the crossings
+// for free and avoids the kind of coordinate-math bug D-105 caught in the
+// field viewer. Renders nothing (fails-safe, same convention as every other
+// sidebar card here) if fewer than 2 real entries exist.
+function _nlgWinProbability(data, home, away) {
+    const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number');
+    if (wp.length < 2) return '';
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const hColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(homeAbbr)) || 'var(--accent)';
+    const aColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(awayAbbr)) || 'var(--text-muted)';
+    const n = wp.length;
+    const w = 220, hgt = 56, pad = 4;
+    const midY = hgt / 2;
+    const xFor = (i) => pad + (i / (n - 1)) * (w - pad * 2);
+    const yFor = (pct) => pad + (1 - pct) * (hgt - pad * 2);
+    const pts = wp.map((p, i) => `${xFor(i).toFixed(1)},${yFor(p.homeWinPercentage).toFixed(1)}`).join(' ');
+    const cur = wp[n - 1].homeWinPercentage;
+    const curAbbr = cur >= 0.5 ? homeAbbr : awayAbbr;
+    const curColor = cur >= 0.5 ? hColor : aColor;
+    const curVal = Math.round((cur >= 0.5 ? cur : 1 - cur) * 100);
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Win Probability</h3>
+        <svg class="nlg-wp-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
+            <defs>
+                <clipPath id="nlg-wp-clip-above"><rect x="0" y="0" width="${w}" height="${midY}"/></clipPath>
+                <clipPath id="nlg-wp-clip-below"><rect x="0" y="${midY}" width="${w}" height="${hgt - midY}"/></clipPath>
+            </defs>
+            <line x1="${pad}" y1="${midY}" x2="${w - pad}" y2="${midY}" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3,3"/>
+            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2" clip-path="url(#nlg-wp-clip-above)"/>
+            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" clip-path="url(#nlg-wp-clip-below)"/>
+        </svg>
+        <div class="nlg-wp-legend">
+            <span style="color:${_escHtml(curColor)}">${_escHtml(curAbbr)} ${curVal}%</span>
+            <span class="pct-caption">Win probability</span>
+        </div>
+    </div>`;
 }
 
 // Playoff-race context (data.standings.groups[], live-verified 2026-08-09):
