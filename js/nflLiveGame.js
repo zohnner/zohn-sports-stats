@@ -24,7 +24,7 @@
 // including a genuinely live one, not just a single final preseason game.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR' };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null };
 
 const _NLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -68,6 +68,14 @@ async function showNFLGame(eventId) {
     }
     try {
         const data = await fetchNFLSummary(eventId);
+        // D-105: fetch the field-viewer's situation data alongside the
+        // summary, but only while the game is actually live -- no point
+        // hitting /scoreboard for a scheduled or final game, and the field
+        // viewer itself only ever renders for a live game anyway.
+        _nlg.situation = null;
+        if (_nlgState(data) === 'in') {
+            try { _nlg.situation = await fetchNFLLiveSituation(eventId); } catch (_) { /* field viewer just omits */ }
+        }
         _nlgRender(data);
         _nlgMaybePoll(data);
     } catch (err) {
@@ -85,6 +93,11 @@ function _nlgMaybePoll(data) {
         if (AppState.currentView !== 'nfl-game-' + _nlg.eventId) { _nlgStop(); return; }
         try {
             const d = await fetchNFLSummary(_nlg.eventId);
+            if (_nlgState(d) === 'in') {
+                try { _nlg.situation = await fetchNFLLiveSituation(_nlg.eventId); } catch (_) { /* keep last situation */ }
+            } else {
+                _nlg.situation = null;
+            }
             _nlgRender(d);
             if (_nlgState(d) !== 'in') _nlgStop();
         } catch (_) { /* keep last render */ }
@@ -192,12 +205,31 @@ function _nlgRenderHeader(comp, home, away) {
         </button>`;
     };
 
-    const sitLine = live && comp.situation
+    // D-105: situation now comes from _nlg.situation (a separate fetch
+    // against /scoreboard -- see fetchNFLLiveSituation in js/nfl.js), NOT
+    // comp.situation. comp here is /summary's header.competitions[0], which
+    // live-verification confirmed NEVER carries a situation field -- this
+    // line was silent dead code before this fix (the `&& comp.situation`
+    // check was always falsy, so .nlg-situation never rendered for any live
+    // game, ever). Filed as a pre-existing bug fixed in the same pass; see
+    // ISSUES.md.
+    const sit = live ? _nlg.situation?.situation : null;
+    const sitLine = sit
         ? `<div class="nlg-situation">
-             ${comp.situation.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(comp.situation.possessionText)}</span>` : ''}
-             ${comp.situation.downDistanceText ? `<span class="nlg-dd">${_escHtml(comp.situation.downDistanceText)}</span>` : ''}
-             ${comp.situation.lastPlay && comp.situation.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(comp.situation.lastPlay.text)}</span>` : ''}
+             ${sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : ''}
+             ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
+             ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
            </div>`
+        : '';
+
+    // Field viewer only renders when we have real numeric position data AND
+    // possession resolves to one of the two teams in this game -- absent
+    // (not defaulted/guessed) otherwise, same "absent degrades to nothing"
+    // rule the rest of this file follows for situation/leaders/etc.
+    const homeTeamId = _nlg.situation?.homeTeamId, awayTeamId = _nlg.situation?.awayTeamId;
+    const possResolves = sit?.possession && (String(sit.possession) === String(homeTeamId) || String(sit.possession) === String(awayTeamId));
+    const fieldHtml = sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
+        ? _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc)
         : '';
 
     headerEl.innerHTML = `
@@ -209,7 +241,82 @@ function _nlgRenderHeader(comp, home, away) {
           </div>
           ${teamBlock(home, 'home')}
         </div>
+        ${fieldHtml}
         ${sitLine}`;
+}
+
+// D-105: ESPN Gamecast-style live field position graphic (concept approved
+// 2026-08-16, see DECISIONS.md D-105). Home renders on the field's left edge
+// and away on the right, matching this page's own .nlg-team--home/away
+// convention (and the card-grid's home-left/away-right layout).
+function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
+    const homeAbbr = home?.team?.abbreviation || '';
+    const awayAbbr = away?.team?.abbreviation || '';
+    const possHome = String(sit.possession) === String(homeTeamId);
+
+    // yardLine is anchored to the HOME team's own goal line -- 0 = home's
+    // goal (the bar's left edge, since home renders on the left), 100 =
+    // away's goal (right edge) -- regardless of which team currently has
+    // the ball. Live-verified against TWO real possession states on the
+    // same live game (2026-08-16): home (BAL) on offense at yardLine 58
+    // ("BAL 58", past their own midfield -- fine either way this is read)
+    // and, critically, away (PHI) on offense at yardLine 19 with
+    // downDistanceText "1st & Goal at BAL 19" (deep in BAL's own
+    // territory). Only a fixed home-anchored scale explains both; an
+    // offense-relative reading (this function's first draft) would put
+    // PHI's 1st-and-goal snap only 19 yards past PHI's own goal --
+    // nowhere near BAL's end zone. The first draft's `100 - yardLine` flip
+    // for an away possession put the ball marker on the wrong side of the
+    // field; caught by live-testing both possession states, not just one,
+    // and confirmed by zooming the actual rendered marker position before
+    // shipping.
+    const ballPct = sit.yardLine;
+    // First-down line: the offense drives toward the DEFENSE's goal, so the
+    // direction depends on who has the ball -- home drives toward 100, away
+    // drives toward 0. Clamped at the goal line for goal-to-go situations
+    // (verified: a real "1st & Goal at BAL 19", distance 19, computes to
+    // exactly yardLine 0 -- the goal line itself, not over/undershooting).
+    const firstDownPct = possHome
+        ? Math.min(100, sit.yardLine + (sit.distance || 0))
+        : Math.max(0, sit.yardLine - (sit.distance || 0));
+    const possColor = possHome ? tc(homeAbbr) : tc(awayAbbr);
+    const homeColor = tc(homeAbbr), awayColor = tc(awayAbbr);
+
+    // Red zone = offense within the DEFENSE's own 20 -- yardLine 80-100
+    // when home has the ball (driving toward away's goal), 0-20 when away
+    // does (driving toward home's goal). No flip/min-max needed now that
+    // the coordinate system itself doesn't flip.
+    const rzLeft = possHome ? 80 : 0;
+    const rzRight = possHome ? 100 : 20;
+    const redZoneHtml = sit.isRedZone
+        ? `<div class="fv-redzone" style="left:${rzLeft}%; width:${(rzRight - rzLeft)}%"></div>`
+        : '';
+
+    const toDots = (n) => Array.from({ length: 3 }, (_, i) =>
+        `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}"></div>`).join('');
+
+    return `
+    <div class="field-viewer">
+        <div class="fv-topline">
+            <span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span>
+            <span class="fv-poss">${possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : ''}${_escHtml(sit.possessionText || '')}</span>
+        </div>
+        <div class="fv-field">
+            <div class="fv-endzone" style="background:${homeColor}">${_escHtml(homeAbbr)}</div>
+            <div class="fv-track">
+                ${redZoneHtml}
+                <div class="fv-firstdown" style="left:${firstDownPct}%"></div>
+                <div class="fv-ball" style="left:${ballPct}%; background:${possColor}"></div>
+            </div>
+            <div class="fv-endzone" style="background:${awayColor}">${_escHtml(awayAbbr)}</div>
+        </div>
+        <div class="fv-yardnums"><span>${_escHtml(homeAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(awayAbbr)}</span></div>
+        <div class="fv-legend">
+            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.homeTimeouts)}</div></div>
+            <div class="fv-key">${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}</div>
+            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.awayTimeouts)}</div><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span></div>
+        </div>
+    </div>`;
 }
 
 // -- Tabs ---------------------------------------------------------------

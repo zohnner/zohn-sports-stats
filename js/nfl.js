@@ -270,6 +270,36 @@ async function fetchNFLScoreboard(opts = {}) {
     }).filter(Boolean);
 }
 
+// D-105: the live game detail page's field viewer needs the FULL raw
+// situation object (numeric down/distance/yardLine/possession/timeouts) --
+// live-verified 2026-08-16 that ESPN's /summary response's
+// header.competitions[0] NEVER carries a situation field at all (checked
+// against two genuinely in-progress games, not just one edge case), unlike
+// /scoreboard's comp.situation, which D-096/D-104 already proved reliable
+// (down, distance, yardLine, downDistanceText, possessionText, isRedZone,
+// homeTimeouts, awayTimeouts, possession, lastPlay -- confirmed live).
+// Direct fetch, no ApiCache: fetchNFLSummary (js/nflLiveGame.js) already
+// polls with a plain no-cache fetch every 20s, and ApiCache.TTL.SHORT's
+// 5-minute window would leave the field viewer stuck on a stale down for
+// minutes. This is safe to call on every poll tick regardless -- the edge
+// function's own /scoreboard cache (60s, functions/api/nfl.js's ttlFor) is
+// what actually throttles the real upstream ESPN calls.
+async function fetchNFLLiveSituation(eventId) {
+    const r = await fetch('/api/nfl?path=/scoreboard');
+    if (!r.ok) return null;
+    const data = await r.json();
+    const ev = (data.events || []).find(e => e.id === eventId);
+    const comp = ev?.competitions?.[0];
+    if (!comp) return null;
+    const home = comp.competitors?.find(c => c.homeAway === 'home');
+    const away = comp.competitors?.find(c => c.homeAway === 'away');
+    return {
+        situation:  comp.situation || null,
+        homeTeamId: home?.team?.id || null,
+        awayTeamId: away?.team?.id || null,
+    };
+}
+
 // fetchNFLStandings/loadNFLStandings/displayNFLStandings removed 2026-08-02 (Finn,
 // live-verify pass): dead code since D-029 shipped js/nflStandings.js, which loads
 // after this file and intentionally redefines all three names in global scope (see

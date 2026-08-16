@@ -52,6 +52,35 @@
 .nlg-bx-name { color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 @media (min-width: 640px) { .nlg-bx-head span:first-child, .nlg-bx-name { flex-basis: 112px; } }
 .nlg-loading, .nlg-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+
+/* ── D-105: Live Field Viewer (Gamecast-style field position graphic) ──
+   Team-color end zones, first-down marker, ball spot, red-zone shading,
+   timeouts remaining. Sits above .nlg-situation in the live header; renders
+   only while a real numeric situation is available (see _nlgFieldViewerHtml,
+   js/nflLiveGame.js) -- absent for scheduled/final games or if the merged
+   /scoreboard fetch fails, never a placeholder/guessed state. */
+.field-viewer { margin: 0 0 0.9rem; }
+.fv-topline { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; gap: 0.75rem; }
+.fv-dd { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.fv-poss { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+.fv-poss-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.fv-field { position: relative; height: 42px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; }
+.fv-endzone { width: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--font-display); font-weight: 800; font-size: 0.6rem; letter-spacing: 1px; color: rgba(255,255,255,0.85); }
+.fv-track { position: relative; flex: 1; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10%); }
+.fv-redzone { position: absolute; top: 0; bottom: 0; background: var(--color-loss-subtle); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
+.fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); }
+.fv-ball { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%,-50%); border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--border-strong), 0 0 8px rgba(0,0,0,0.5); z-index: 2; }
+.fv-yardnums { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 0.3rem; font-family: var(--font-mono); font-size: 0.56rem; color: var(--text-subtle); font-weight: 600; }
+.fv-legend { display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; gap: 0.5rem; flex-wrap: wrap; }
+.fv-timeouts { display: flex; align-items: center; gap: 0.35rem; }
+.fv-to-label { font-size: 0.58rem; font-weight: 700; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.4px; }
+.fv-to-dots { display: flex; gap: 3px; }
+.fv-to-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-mid); }
+.fv-to-dot--on { background: var(--text-secondary); }
+.fv-key { display: flex; align-items: center; gap: 0.9rem; font-size: 0.6rem; color: var(--text-muted); font-weight: 700; }
+.fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+@media (max-width: 640px) { .fv-field { height: 36px; } .fv-endzone { width: 24px; font-size: 0.54rem; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }

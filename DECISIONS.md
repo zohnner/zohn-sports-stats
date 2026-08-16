@@ -2487,3 +2487,33 @@ Live candidates from both sports (if any) are compared first — live always bea
 **Implications:**
   - Options D (live field-position graphic) and E (win-margin meter) were not built — D is a good, narrowly-scoped follow-up; E was the brainstorm's own weakest pick and is not currently planned. F (featured/hero game) remains a phase-2 idea pending a game-selection mechanism.
   - The `_NFL_TEAM_COLOR` duplicate-hex issue (see above) is real and pre-existing beyond this card — see ISSUES.md for the standalone writeup and affected surfaces.
+
+## D-105 — NFL live game page: ESPN Gamecast-style field position viewer
+**Status:** complete (live-verified before shipping)
+**Contributors:** (none — single-session owner request, no persona review gate)
+**Date opened:** 2026-08-16 | **Date resolved:** 2026-08-16
+
+**Decision needed:**
+  Owner asked for a broader look at NFL UX beyond the just-shipped card graphics, specifically requesting a live field-position viewer referencing ESPN's own feature.
+
+**Research:** ESPN's Gamecast field graphic was live-inspected (not assumed) against a real in-progress game on espn.com, cbssports.com, and sports.yahoo.com: a horizontal bar with team-color end zones, a yellow first-down line, a ball-spot/line-of-scrimmage marker, and (ESPN only) animated play replay. CBS and Yahoo have lighter versions; ESPN's is the richest. Full writeup was delivered as a concept mockup (`nfl-field-viewer-concept.html`, sent + saved as a Cowork artifact) before any code was written.
+
+**Data investigation:** `/summary` (the endpoint the live game page already polls every 20s) does **not** carry a `situation` object on `header.competitions[0]` — confirmed live against two different genuinely in-progress games, not assumed from one case. This means `_nlgRenderHeader`'s existing `.nlg-situation` text row (possession/down-distance/last-play) has been dead code since it shipped: `comp.situation` was always `undefined`, so the row never rendered for any live game. `/scoreboard`'s `comp.situation` (already proven reliable by D-096/D-104) has everything needed — `down`, `distance`, `yardLine`, `downDistanceText`, `possessionText`, `isRedZone`, `homeTimeouts`, `awayTimeouts`, `possession`, `lastPlay` — and was added as a second, parallel fetch (`fetchNFLLiveSituation`, js/nfl.js) alongside the existing summary poll, fixing the dead-code bug as a side effect of building the field viewer on a reliable source.
+
+**Decision:** Built and shipped:
+  - `js/nfl.js`: new `fetchNFLLiveSituation(eventId)` — direct fetch (no `ApiCache`, matching `fetchNFLSummary`'s own no-cache pattern) against `/scoreboard`, returns the one matching event's raw `situation` + home/away team ids. The edge function's own 60s `/scoreboard` cache (`functions/api/nfl.js`) is what actually throttles upstream ESPN calls, so calling this every 20s poll tick is cheap.
+  - `js/nflLiveGame.js`: `_nlg.situation` added to the module's poll state; `showNFLGame`/`_nlgMaybePoll` fetch it alongside the summary, only while the game is live. `_nlgRenderHeader` now reads `_nlg.situation` instead of the always-`undefined` `comp.situation` (fixing the dead-code bug for the existing text row too). New `_nlgFieldViewerHtml` renders the graphic: home end zone left / away right (matches the page's own `.nlg-team--home/away` convention), team-color ball marker, first-down line, red-zone shading, timeout pips. Renders only when `down`/`yardLine` are real numbers and `possession` resolves to one of the two teams in the game — absent otherwise, never a guessed/placeholder state.
+  - `css/variables.css`: new `--color-first-down` (`#ffd500` dark / `#8a6d00` light, ≥4.5:1 on the light surface matching `--color-warn`'s existing treatment) + `--color-first-down-glow` tokens. Deliberately a new token rather than reusing `--color-warn` (`#f5b301`, used once for toast warnings) — the two hues sit close enough in hue-space, and close enough to `--accent` orange, that reuse risked reading as "another orange/amber thing" rather than the broadcast-standard first-down yellow; flagged to the owner as an open question in the concept doc before building, approved via "continue with field viewer."
+  - `css/nflLiveGame.css`: new `.field-viewer`/`.fv-*` rules.
+  - `sw.js`: `CACHE_NAME` bumped v189 → v190.
+
+  **Live-verification caught a real coordinate-system bug before shipping, fixed in the same commit:** the first draft assumed ESPN's `situation.yardLine` was relative to whichever team currently has the ball (0 = possessing team's own goal), and flipped the bar position when the away team was on offense. Live-testing against a real "1st & Goal at BAL 19" snap with PHI (away) on offense proved this wrong — `yardLine` is actually anchored to the **home** team's own goal line always, regardless of possession. The first draft's flip put the ball marker on the wrong side of the field for every away-team possession; caught by testing both possession states on the same live game and zooming the actual rendered marker position, not just reading the diff. Fixed: the ball marker uses `yardLine` directly (no flip); only the first-down-line direction and red-zone range depend on possession (which goal the offense is driving toward). Re-verified against two more live possession-flip cases (a second live game, and the same game after a scoring change) before committing.
+
+**Also unblocked, not yet built:** while verifying this live, `data.winprobability[]` (flagged in D-080 as "Phase 2... until confirmed reliable on a genuinely live game") was checked against a real in-progress 4th-quarter game — 137 real, updating entries. That gate is now cleared; owner has asked for this queued as the next build.
+
+**Rationale:**
+  Referencing ESPN's own feature and grounding every visual element in data already live-verified (not assumed) kept this from being a "looks right" build that breaks on the first real edge case — which is exactly what the coordinate-system bug would have shipped as, had it not been caught against a genuinely away-team-possession live state before committing.
+
+**Implications:**
+  - The pre-existing `.nlg-situation` dead-code bug (comp.situation always undefined) is now fixed as a byproduct of this build — see ISSUES.md for the standalone writeup.
+  - Win-probability chart (D-080's remaining Phase 2 item) is next in queue per owner request — separate build, same live game page.

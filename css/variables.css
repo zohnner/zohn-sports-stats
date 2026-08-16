@@ -49,6 +49,14 @@
     --color-error:        #e5484d;
     --color-warn:         #f5b301;
     --color-info:         #4da3ff;
+    /* D-105: reserved for the live field viewer's first-down marker only --
+       broadcast-standard yellow, deliberately distinct from --accent
+       (orange) and --color-warn (amber) so it never reads as "another
+       orange thing" or a real warning state. Not a decoration; it's the
+       one place on the site this specific meaning (yardage needed) shows
+       up, always paired with a text label, never color-alone. */
+    --color-first-down:       #ffd500;
+    --color-first-down-glow:  rgba(255,213,0,0.45);
 
     /* ── Chart chrome + categorical (D-048 P4) ── */
     --chart-grid:            rgba(255,255,255,0.06);
@@ -371,6 +379,10 @@
     --color-info:           #1667c7;
     --color-error:          #c4272b;
     --shadow-live:          0 0 0 1px rgba(199,0,91,0.40);
+    /* D-105: darkened for >= 4.5:1 contrast on light surfaces, same
+       treatment as --color-warn above. */
+    --color-first-down:       #8a6d00;
+    --color-first-down-glow:  rgba(138,109,0,0.25);
     /* Chart categorical — darkened for white (D-048 P7); --chart-focal inherits --accent */
     --chart-1:              #2563eb;
     --chart-2:              #7c3aed;

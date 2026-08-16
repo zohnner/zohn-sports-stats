@@ -2946,3 +2946,12 @@ Confirmed via a full 32-team sweep against the live map, not a guess. This is a 
 **What was done:** D-104's Game Flow chart works around this locally — when the away team's color would collide with (or is missing relative to) the home team's, the chart falls back to a neutral gray for the away bars instead of the colliding brand color. This makes the chart itself always readable but does not touch the underlying map.
 
 **Not fixed:** an actual fix means either widening the map with enough teams having genuinely distinct hues (hard — several of these are real, correct brand colors that are just naturally close, e.g. multiple teams' primary color is a red or gold in the same family) or accepting some pairs need a secondary differentiator (pattern, saturation shift, etc.) beyond hue alone. That's a cross-cutting color-system decision affecting every place team colors render side by side, not a one-file patch — flagged here for a future session rather than actioned now.
+
+---
+
+### NFL live game header's `.nlg-situation` row (possession/down-distance/last-play) never rendered for any live game — fixed, see DECISIONS.md D-105
+**Date:** 2026-08-16
+
+`_nlgRenderHeader` (js/nflLiveGame.js) gated the row on `live && comp.situation`, where `comp` is `/summary`'s `header.competitions[0]`. Live-verified against two genuinely in-progress games (not assumed, not a single edge case): that object never carries a `situation` field in this ESPN response shape — `'situation' in data.header.competitions[0]` is `false` every time, live or not. So `comp.situation` was always `undefined` and the row's ternary always took the empty-string branch. This has presumably been true since the row shipped; nothing about this session's other changes touched it, it just surfaced while building D-105's field viewer, which needed a reliable situation source and went looking for why the existing text row wasn't already using one.
+
+**Fixed as a byproduct of D-105:** the field viewer's new `fetchNFLLiveSituation` (js/nfl.js) fetches `/scoreboard`'s `comp.situation` instead (already proven reliable by D-096/D-104), and `_nlgRenderHeader` now reads that instead of `comp.situation`. The text row renders correctly now, same as the new graphic above it.
