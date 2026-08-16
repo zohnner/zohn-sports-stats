@@ -1836,7 +1836,7 @@ function _renderTeamPage(m) {
         ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2>${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
-    return `${header}${recordCard}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
+    return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
 }
 
 function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
@@ -1931,7 +1931,7 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
         recordChips, recordSeasonLabel: recordChips.length ? `${recordSeason} Season` : '',
         assets, groups,
         rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtml,
+        scheduleHtmlTop: scheduleHtml,
         backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-',
     });
 }

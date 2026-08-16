@@ -3002,3 +3002,17 @@ Full audit report (all seven original findings, plus what wasn't tested — mobi
 **Not done / left alone:** section order on the NFL page differs from MLB's (NFL's Recent Games/Upcoming sit after Roster/Assets; MLB's sit before Roster) — `_renderTeamPage`'s composition order wasn't changed since NCAAF also depends on it and reordering would move NCAAF's Schedule card too, which wasn't asked for. Worth a follow-up if visual parity down to section order matters. Postseason schedule (`seasontype=3`) isn't specially handled — a playoff team's postseason games won't appear until `_nflSeasonPhase()`-style branching is added, same gap the "current phase" default has for any phase ESPN doesn't consider active.
 
 **Escalation:** none.
+
+
+---
+
+### NFL Recent Games / Upcoming shipped in the wrong place on the page — moved up to match MLB
+**Contributor:** Finn | **Date:** 2026-08-16
+
+Owner feedback right after the previous entry shipped: the new Upcoming/Recent Games cards were real and worked, but sat at the very bottom of the NFL team page — after the entire 9-group, 90+ player roster — so the page read as "a long unorganized page" rather than a feature. Root cause: `_renderNFLTeamDetail` fed the new cards into `_renderTeamPage`'s existing `m.scheduleHtml` slot, which that shared function always renders dead last, after the roster. That slot was fine for the old single "Next game" mini-card (a minor afterthought), wrong for a real Recent Games/Upcoming feature that's supposed to be one of the page's main draws — MLB puts the equivalent cards right after the Team Batting/Pitching card, well before the roster.
+
+**Fix:** `_renderTeamPage` (js/nfl.js, shared by NFL and NCAAF) gained a second, optional slot — `m.scheduleHtmlTop` — rendered right after the Team Record card and before Top Fantasy Assets/Roster, mirroring MLB's order. `_renderNFLTeamDetail` now feeds the Upcoming/Recent Games block into `scheduleHtmlTop` instead of `scheduleHtml`. NCAAF's call site (js/ncaaf.js) was **not touched** — it still only populates `scheduleHtml` (its single-game "Schedule" card), which still renders in its original bottom position; `m.scheduleHtmlTop || ''` is a no-op for it. New page order: header → Team Record → Upcoming → Recent Games → Top Fantasy Assets → Roster.
+
+`sw.js` CACHE_NAME bumped v193 → v194 (js/nfl.js is a cached static asset).
+
+**Escalation:** none.
