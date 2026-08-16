@@ -1715,6 +1715,16 @@
     border-color: var(--border-accent);
 }
 
+/* Two-column row layout for game rows (Recent Games / Upcoming) — .roster-row
+   itself is a 3-column grid (avatar/info/stats) for player rows; game rows
+   have no avatar and need a simple flex split instead. See D-107. */
+.roster-row--split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
 .roster-avatar {
     grid-area: avatar;
     width: 44px;

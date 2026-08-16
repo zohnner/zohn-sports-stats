@@ -1594,6 +1594,121 @@ const _NFL_ROSTER_GROUPS = [
     ['K/P', ['K', 'P', 'LS'], 'st'],
 ];
 
+// Per-team schedule (recent results + upcoming games) for the team-detail page's
+// Recent Games / Upcoming cards (P-parity: brings MLB's showMLBTeamDetail click-a-
+// team-see-recent-games capability to NFL). ESPN's /teams/{abbr}/schedule mirrors
+// the same site.web.api.espn.com family already proxied for /teams and /leaders —
+// with no season/seasontype params it returns whatever ESPN considers the "current"
+// slate (live-confirmed 2026-08-16: preseason right now returns exactly this team's
+// 3 preseason games, both played and upcoming; a completed regular season returns
+// all 17 games with real scores). That single call covers both halves of the feature
+// without any phase branching on our side — same "let the data drive it" convention
+// _mlbTeamOddsBio and the roster-stats fallback already use elsewhere in this file.
+async function fetchNFLTeamSchedule(abbr) {
+    const data = await espnNFLFetch(`/teams/${abbr}/schedule`, {}, ApiCache.TTL.SHORT);
+    return (data.events || []).map(ev => {
+        const comp = ev.competitions?.[0];
+        if (!comp) return null;
+        const home = comp.competitors?.find(c => c.homeAway === 'home');
+        const away = comp.competitors?.find(c => c.homeAway === 'away');
+        const isHome = home?.team?.abbreviation === abbr;
+        const me  = isHome ? home : away;
+        const opp = isHome ? away : home;
+        return {
+            id:        ev.id,
+            date:      ev.date,
+            isHome,
+            completed: !!comp.status?.type?.completed,
+            oppAbbr:   opp?.team?.abbreviation || '?',
+            oppLogo:   opp?.team?.logos?.[0]?.href || getNFLTeamLogoUrl(opp?.team?.abbreviation),
+            myScore:   me?.score?.value  ?? null,
+            oppScore:  opp?.score?.value ?? null,
+        };
+    }).filter(Boolean);
+}
+
+// Recent Games card — mirrors MLB's _mlbRecentGamesCard exactly (same
+// .stats-card/.roster-list/.roster-row classes, same W/L color + score
+// treatment). Rows navigate through to the same nfl-game-{id} route the
+// Scores grid's cards already use (_createNFLGameCard), so this is the same
+// game-detail page (win probability, leaders, scoring plays) — no new page.
+function _nflRecentGamesCard(games) {
+    if (!games || !games.length) {
+        return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Recent Games</h2>
+            <p style="color:var(--color-text-muted);text-align:center;padding:2rem">No recent games found.</p>
+        </div>`;
+    }
+    const rows = games.map(g => {
+        const hasScore = g.myScore != null && g.oppScore != null;
+        const isWin    = hasScore && g.myScore > g.oppScore;
+        const isLoss   = hasScore && g.myScore < g.oppScore;
+        const outcome  = hasScore ? (isWin ? 'W' : isLoss ? 'L' : 'T') : '—';
+        const outClr   = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-muted)';
+        const scoreStr = hasScore ? `${g.myScore}–${g.oppScore}` : '—';
+        const scoreClr = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-secondary)';
+        const ha = g.isHome ? 'vs' : '@';
+        let dateStr = '—';
+        if (g.date) { try { dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {} }
+        return `
+            <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                    <span style="font-weight:900;font-size:0.875rem;min-width:26px;color:${outClr}">${outcome}</span>
+                    <span style="color:var(--color-text-muted);font-size:0.75rem;min-width:54px">${dateStr}</span>
+                    <span style="color:var(--color-text-muted);font-size:0.75rem">${ha}</span>
+                    ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
+                    <span style="font-weight:600;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.oppAbbr)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
+                    <span style="font-weight:700;font-size:0.95rem;color:${scoreClr}">${scoreStr}</span>
+                    <span style="font-size:0.65rem;color:#334155">›</span>
+                </div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Recent Games</h2>
+            <div class="roster-list">${rows}</div>
+        </div>`;
+}
+
+// Upcoming card — mirrors MLB's _mlbTeamUpcomingCard. Live games (completed:
+// false, in-progress) fall in here alongside scheduled ones, same as MLB's
+// _fetchMLBTeamUpcoming (`status.abstractGameState !== 'Final'`) — one
+// consistent convention, not a per-sport special case.
+function _nflUpcomingCard(games) {
+    if (!games || !games.length) return '';
+    const rows = games.map(g => {
+        const ha = g.isHome ? 'vs' : '@';
+        let dateStr = '—', timeStr = '';
+        if (g.date) {
+            try {
+                const d = new Date(g.date);
+                dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+            } catch (_) {}
+        }
+        return `
+            <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
+                <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
+                    <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${ha}</span>
+                    ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
+                    <span style="font-weight:600;font-size:0.875rem">${_escHtml(g.oppAbbr)}</span>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                    <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600">${dateStr}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted)">${timeStr}</div>
+                </div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="stats-card" style="grid-column:1/-1">
+            <h2 class="detail-section-title">Upcoming</h2>
+            <div class="roster-list">${rows}</div>
+        </div>`;
+}
+
 async function showNFLTeamDetail(abbr) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
@@ -1621,7 +1736,11 @@ async function showNFLTeamDetail(abbr) {
         ErrorHandler.handle(grid, err, () => showNFLTeamDetail(abbr), { tag: 'NFL', title: 'Failed to Load Team' });
         return;
     }
-    _renderNFLTeamDetail(abbr, stdRow);
+    let schedule = [];
+    try {
+        if (typeof fetchNFLTeamSchedule === 'function') schedule = await fetchNFLTeamSchedule(abbr);
+    } catch (err) { Logger.warn('NFL team schedule fetch failed (team detail)', err, 'NFL'); }
+    _renderNFLTeamDetail(abbr, stdRow, schedule);
 }
 
 // Conference/division is stable NFL data, not in the ESPN team payload and empty
@@ -1720,7 +1839,7 @@ function _renderTeamPage(m) {
     return `${header}${recordCard}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;
 }
 
-function _renderNFLTeamDetail(abbr, stdRow) {
+function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
@@ -1760,29 +1879,22 @@ function _renderNFLTeamDetail(abbr, stdRow) {
             headshot: getNFLSleeperHeadshot(p.player_id),
         }));
 
-    let nextGame = null;
-    const g = (AppState.nflGames || []).find(x => x.homeTeam.abbr === abbr || x.awayTeam.abbr === abbr);
-    if (g) {
-        const home = g.homeTeam.abbr === abbr;
-        const opp  = home ? g.awayTeam : g.homeTeam;
-        let dateStr = '';
-        try { dateStr = new Date(g.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
-        nextGame = { home, oppAbbr: opp.abbr, oppLogo: getNFLTeamLogoUrl(opp.abbr), dateStr };
-    }
-
     const division = _NFL_DIVISIONS[abbr] || '';
-    const scheduleHtml = `<section class="stats-card" style="grid-column:1/-1">
-        <h3 class="detail-section-title">Schedule</h3>
-        ${nextGame
-            ? `<div class="team-next-card">
-                 <span class="team-next-card__label">Next game</span>
-                 <span class="team-next-card__matchup">${nextGame.home ? 'vs' : '@'}
-                   <img src="${nextGame.oppLogo}" alt="" loading="lazy" data-hide-on-error>
-                   <strong>${_escHtml(nextGame.oppAbbr)}</strong></span>
-                 ${nextGame.dateStr ? `<span class="team-next-card__date">${_escHtml(nextGame.dateStr)}</span>` : ''}
-               </div>`
-            : `<div class="team-empty">Full schedule & results post once the ${NFL_FANTASY_SEASON} season nears.</div>`}
-    </section>`;
+    // Recent Games / Upcoming (parity with MLB's showMLBTeamDetail): split the
+    // per-team schedule fetched in showNFLTeamDetail into played vs not-yet-played,
+    // same bucketing convention as MLB's recentGames (fetchMLBTeamSchedule, desc)
+    // and upcomingGames (_fetchMLBTeamUpcoming, asc). Falls back to the old
+    // "schedule posts once the season nears" placeholder when both are empty
+    // (true offseason, or the schedule fetch failed) rather than showing two
+    // empty cards.
+    const recentGames  = schedule.filter(g => g.completed).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
+    const upcomingGames = schedule.filter(g => !g.completed).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 6);
+    const scheduleHtml = (recentGames.length || upcomingGames.length)
+        ? `${_nflUpcomingCard(upcomingGames)}${_nflRecentGamesCard(recentGames)}`
+        : `<section class="stats-card" style="grid-column:1/-1">
+            <h3 class="detail-section-title">Schedule</h3>
+            <div class="team-empty">Full schedule & results post once the ${NFL_FANTASY_SEASON} season nears.</div>
+        </section>`;
 
     // Team Record card (mirrors MLB's Team Batting/Pitching card). stdRow is
     // whatever season fetchNFLStandings() resolved to (NFL_STATS_SEASON — the

@@ -25,7 +25,7 @@
 // same API, not a different one. Switched the upstream host here; every path
 // this file already builds against ESPN_NFL is unchanged.
 const ESPN_NFL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl';
-const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news|summary)\/?$/;
+const ALLOWED_PATHS = /^\/(teams|scoreboard|standings|leaders|news|summary)\/?$|^\/teams\/[A-Za-z]{2,4}\/schedule\/?$/;
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function ttlFor(path) {

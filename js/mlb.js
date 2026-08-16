@@ -3985,7 +3985,7 @@ function _mlbTeamUpcomingCard(games, teamId, colors) {
             : '';
 
         return `
-            <div class="roster-row">
+            <div class="roster-row roster-row--split">
                 <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
                     <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${ha}</span>
                     ${oppLogo ? `<img src="${oppLogo}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
@@ -4114,7 +4114,7 @@ function _mlbRecentGamesCard(games, teamId) {
 
         const clickable = isFinal && g.gamePk;
         return `
-            <div class="roster-row ${clickable ? 'roster-row--clickable' : ''}"
+            <div class="roster-row roster-row--split ${clickable ? 'roster-row--clickable' : ''}"
                  ${clickable ? `onclick="showMLBGameDetail(${g.gamePk}, AppState._mlbTeamRecentGames[${teamId}].find(g=>g.gamePk===${g.gamePk}))"` : ''}>
                 <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
                     <span style="font-weight:900;font-size:0.875rem;min-width:26px;color:${outClr}">${outcome}</span>
