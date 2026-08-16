@@ -5623,7 +5623,7 @@ function displayMLBStandings(divisions, league = 'AL') {
                     <td class="standings-rank standings-rank-cell">${rank}</td>
                     <td class="standings-team-cell">
                         ${logo ? `<img class="standings-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                        <span class="standings-team-name">${team.teamName}</span>
+                        <span class="standings-team-name" title="${_escHtml(team.teamName)}">${team.teamName}</span>
                         ${clinchBadge}
                     </td>
                     <td class="standings-num">${team.wins}</td>
@@ -5764,7 +5764,7 @@ function displayMLBWildCard(divisions) {
                     <td class="standings-rank">${rank}</td>
                     <td class="standings-team-cell">
                         ${logo ? `<img class="standings-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                        <span class="standings-team-name">${team.teamName}</span>
+                        <span class="standings-team-name" title="${_escHtml(team.teamName)}">${team.teamName}</span>
                         ${badge === 'wc' ? `<span class="wc-badge">WC</span>` : ''}
                     </td>
                     <td class="standings-num">${team.wins}</td>

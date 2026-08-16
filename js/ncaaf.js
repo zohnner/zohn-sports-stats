@@ -244,7 +244,7 @@ async function displayNCAAFRankings() {
             <td class="standings-rank-cell"><span class="standings-rank">${rk.current}</span></td>
             <td class="standings-team-cell">
                 ${rk.logo ? `<img class="standings-logo" src="${_escHtml(rk.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="standings-team-name">${_escHtml(rk.name)}</span>
+                <span class="standings-team-name" title="${_escHtml(rk.name)}">${_escHtml(rk.name)}</span>
             </td>
             <td class="standings-num">${_escHtml(rk.record)}</td>
             <td class="standings-num standings-split">${move}</td>
@@ -350,7 +350,7 @@ async function displayNCAAFStandings() {
                     <tbody>${c.teams.map(t => `<tr class="standings-row">
                         <td class="standings-team-cell">
                             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                            <span class="standings-team-name">${_escHtml(t.name)}</span>
+                            <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
                         </td>
                         <td class="standings-num standings-pct">${_escHtml(t.conf || '—')}</td>
                         <td class="standings-num">${_escHtml(t.overall)}</td>

@@ -594,7 +594,7 @@ function _createNFLGameCard(game) {
                 <span class="game-logo-text">${_escHtml(team.abbr)}</span>
             </div>
             <div class="game-team-abbr">${_escHtml(team.abbr)}</div>
-            <div class="game-team-name">${_escHtml(team.name || '')}</div>
+            <div class="game-team-name" title="${_escHtml(team.name || '')}">${_escHtml(team.name || '')}</div>
             ${team.record ? `<div class="game-team-rec">${_escHtml(team.record)}</div>` : ''}
         </div>`;
     };

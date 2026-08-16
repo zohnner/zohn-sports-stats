@@ -289,7 +289,7 @@ async function displayWNBAStandings() {
                     <tbody>${c.teams.map(t => `<tr class="standings-row">
                         <td class="standings-team-cell">
                             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                            <span class="standings-team-name">${_escHtml(t.name)}</span>
+                            <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
                         </td>
                         <td class="standings-num">${_escHtml(t.overall)}</td>
                         <td class="standings-num standings-gb">${_escHtml(t.gb || '—')}</td>
@@ -355,7 +355,7 @@ function _wnbaPlayoffRow(t, rank, gbFrom8) {
         <td class="standings-rank-cell"><span class="standings-rank">${rank}</span></td>
         <td class="standings-team-cell">
             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-            <span class="standings-team-name">${_escHtml(t.name)}</span>
+            <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
         </td>
         <td class="standings-num">${_escHtml(t.overall)}</td>
         <td class="standings-num standings-split">${t.pct != null ? t.pct.toFixed(3).replace(/^0/, '') : '—'}</td>

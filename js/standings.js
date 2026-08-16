@@ -90,7 +90,7 @@ function displayStandings(rows, conf) {
                 <td class="standings-team-cell">
                     <img class="standings-logo" src="${logoUrl}" alt=""
                          loading="lazy" data-hide-on-error>
-                    <span class="standings-team-name">${team.teamCity} ${team.teamName}</span>
+                    <span class="standings-team-name" title="${_escHtml(team.teamCity + ' ' + team.teamName)}">${team.teamCity} ${team.teamName}</span>
                     ${clinchBadge}
                 </td>
                 <td class="standings-num">${team.wins}</td>

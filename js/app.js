@@ -2202,6 +2202,7 @@ async function _loadFootballLandingData(sport) {
     if (!gamesHtml && !leadersHtml) return;
     if (!host.isConnected) return;
     host.innerHTML = gamesHtml + leadersHtml;
+    if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(host);
 }
 
 // ── My Dashboard (D-069 cont'd) — cross-sport personalized view ────────────

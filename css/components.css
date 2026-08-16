@@ -998,7 +998,7 @@
     font-weight: 600;
     color: var(--text-muted);
     text-align: center;
-    max-width: 90px;
+    max-width: 140px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2079,7 +2079,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 120px;
+    max-width: 180px;
 }
 
 /* L10 record coloring */
@@ -2109,6 +2109,7 @@
 
 @media (max-width: 600px) {
     .mlb-division-panel .standings-table { font-size: 0.75rem; }
+    .mlb-division-panel .standings-team-name { max-width: 100px; }
 }
 
 /* ── Ticker Live Badge ────────────────────────────────────── */

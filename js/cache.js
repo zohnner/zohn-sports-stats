@@ -84,7 +84,17 @@ class ApiCache {
      * @param {number} ttl    — lifetime in ms (default: TTL.MEDIUM)
      */
     static #cacheWarnFired = false;
-    static #evictRetried   = false;
+    // Was a one-shot "only ever evict once per page session" flag — found live
+    // 2026-08-16 (UX audit) that once the SECOND quota hit landed (routine on
+    // any session that visits more than a handful of pages), eviction never
+    // ran again for the rest of the session: every ApiCache.set() from then on
+    // failed silently and every page reload went cold. Replaced with a cooldown
+    // so eviction can fire again after some time has passed, instead of exactly
+    // once ever. The cooldown (not "always evict") exists so a single payload
+    // that's bigger than the whole quota can't thrash invalidate('') on every
+    // write for the rest of the session.
+    static #lastEvictAt = 0;
+    static #EVICT_COOLDOWN_MS = 30 * 1000;
 
     static set(raw, data, ttl = this.TTL.MEDIUM) {
         try {
@@ -94,11 +104,12 @@ class ApiCache {
             );
         } catch (e) {
             // Quota exhaustion is the common case (large stat payloads), not
-            // disabled storage — evict our namespace once and retry before
+            // disabled storage — evict our namespace and retry before
             // declaring caching unusable (D-038 V3: the old toast cried
             // "Storage Disabled" while storage worked fine).
-            if (!ApiCache.#evictRetried) {
-                ApiCache.#evictRetried = true;
+            const now = Date.now();
+            if (now - ApiCache.#lastEvictAt > ApiCache.#EVICT_COOLDOWN_MS) {
+                ApiCache.#lastEvictAt = now;
                 try {
                     this.invalidate('');
                     localStorage.setItem(

@@ -152,7 +152,16 @@ function updateNCAABTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
     const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0);
-    if (!scored.length) return; // only NCAAB's own Scores page owns its ticker moment; don't blank the shared ticker if another sport already populated it
+    if (!scored.length) {
+        // Match the sibling pattern in ncaaf.js/nfl.js/mlb.js: show NCAAB's own
+        // idle message. Previously this bailed silently, which left whatever
+        // OTHER sport's idle placeholder text (e.g. NCAAF's football-specific
+        // "season runs late Aug-Jan") sitting in the shared ticker while the
+        // user was actually looking at NCAAB — wrong sport, wrong calendar.
+        ticker.classList.add('ticker--idle');
+        ticker.innerHTML = '<div class="ticker__item">No college hoops scores — season starts in November</div>';
+        return;
+    }
     const items = [...scored, ...scored]
         .map(g => Scorebug.renderTickerItem ? Scorebug.renderTickerItem(Scorebug.normalizeNCAAFGame ? Scorebug.normalizeNCAAFGame(g) : g) : '')
         .join('');
@@ -254,7 +263,7 @@ async function displayNCAABRankings() {
             <td class="standings-rank-cell"><span class="standings-rank">${rk.current}</span></td>
             <td class="standings-team-cell">
                 ${rk.logo ? `<img class="standings-logo" src="${_escHtml(rk.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="standings-team-name">${_escHtml(rk.name)}</span>
+                <span class="standings-team-name" title="${_escHtml(rk.name)}">${_escHtml(rk.name)}</span>
             </td>
             <td class="standings-num">${_escHtml(rk.record)}</td>
             <td class="standings-num standings-split">${move}</td>
@@ -351,7 +360,7 @@ async function displayNCAABStandings() {
                     <tbody>${c.teams.map(t => `<tr class="standings-row">
                         <td class="standings-team-cell">
                             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                            <span class="standings-team-name">${_escHtml(t.name)}</span>
+                            <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
                         </td>
                         <td class="standings-num standings-pct">${_escHtml(t.conf || '—')}</td>
                         <td class="standings-num">${_escHtml(t.overall)}</td>
