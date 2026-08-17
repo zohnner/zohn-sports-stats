@@ -2236,7 +2236,7 @@ function _dashTeamLogo(sport, abbr) {
     return null;
 }
 
-function _dashSectionHtml(sport, data, isDefault, todayGames) {
+function _dashSectionHtml(sport, data, isDefault, todayGames, injuryAlerts) {
     const label = _SPORT_LABEL[sport] || sport.toUpperCase();
     const teamsView = _SPORT_TEAMS_VIEW[sport];
     const playersView = _SPORT_PLAYERS_VIEW[sport];
@@ -2256,10 +2256,21 @@ function _dashSectionHtml(sport, data, isDefault, todayGames) {
     const todayHtml = (todayGames && todayGames.length && typeof Scorebug !== 'undefined')
         ? ('<div class="md-dash-today">' + todayGames.map(function(m) { return Scorebug.renderScoreCard(m); }).join('') + '</div>')
         : '';
+    // Injury alerts (ISSUES.md "Dashboard live enrichment + Manage Follows" follow-up,
+    // 2026-08-17 brainstorm): same "Injury watch" phrasing/color nfl.js already uses on
+    // player cards (--color-loss), not a new visual primitive. Placed above the team
+    // chips, right after the live game card -- state that changed is the most useful
+    // thing the Dashboard can surface, same reasoning as the "plays today" enrichment.
+    const injuryHtml = (injuryAlerts && injuryAlerts.length)
+        ? ('<p class="md-note" style="color:var(--color-loss)">Injury watch: ' +
+            injuryAlerts.map(function(a) { return _escHtml(a.name) + ' (' + _escHtml(a.status) + ')'; }).join(', ') +
+            '</p>')
+        : '';
     return '' +
       '<section class="auth-account-section">' +
         '<p class="auth-account-label">' + _escHtml(label) + (isDefault ? ' <span class="md-note">(default)</span>' : '') + '</p>' +
         todayHtml +
+        injuryHtml +
         (teamChips ? ('<div class="md-pos-filters">' + teamChips + '</div>') : '<p class="md-note">No followed teams.</p>') +
         playerLine +
         defaultBtn +
@@ -2354,15 +2365,32 @@ async function renderDashboardView() {
         return countOf(b) - countOf(a);
     });
 
-    // Fetch each sport's "plays today" games in parallel -- independent fetches,
-    // no reason to serialize them.
+    const hasNFLFollow = sports.indexOf('nfl') !== -1;
+
+    // Fetch each sport's "plays today" games (and NFL injury alerts) in parallel --
+    // independent fetches, no reason to serialize them. Sleeper league-link teaser
+    // (ISSUES.md "Dashboard live enrichment" follow-up, 2026-08-17) piggybacks on the
+    // same Promise.all -- one more cheap, already-built endpoint (/api/sleeperLink,
+    // D-065), not a new fetch pattern.
     const todayGamesBySport = {};
+    const injuryAlertsBySport = {};
+    let sleeperLinkName = null;
     await Promise.all(sports.map(async function(s) {
         todayGamesBySport[s] = await _dashTodayGamesFor(s, bySport[s].teams);
-    }));
+        injuryAlertsBySport[s] = (s === 'nfl') ? await _dashNFLInjuryAlerts(bySport[s].players) : [];
+    }).concat(hasNFLFollow ? [(async function() {
+        try {
+            const linkRes = await fetch('/api/sleeperLink', { credentials: 'same-origin' });
+            if (linkRes.ok) {
+                const body = await linkRes.json();
+                if (body && body.link && body.link.league_name) sleeperLinkName = body.link.league_name;
+            }
+        } catch (e) {
+            if (typeof Logger !== 'undefined') Logger.warn('Dashboard sleeperLink fetch failed', e, 'NFL');
+        }
+    })()] : []));
 
-    const sectionsHtml = sports.map(function(s) { return _dashSectionHtml(s, bySport[s], s === defaultSport, todayGamesBySport[s]); }).join('');
-    const hasNFLFollow = sports.indexOf('nfl') !== -1;
+    const sectionsHtml = sports.map(function(s) { return _dashSectionHtml(s, bySport[s], s === defaultSport, todayGamesBySport[s], injuryAlertsBySport[s]); }).join('');
 
     main.innerHTML = '' +
       '<div class="auth-account-page">' +
@@ -2371,6 +2399,7 @@ async function renderDashboardView() {
         (hasNFLFollow ? (
           '<section class="auth-account-section">' +
             '<p class="auth-account-label">Fantasy</p>' +
+            (sleeperLinkName ? ('<p class="md-note">Linked league: ' + _escHtml(sleeperLinkName) + '</p>') : '') +
             '<div class="md-head-actions">' +
               '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'nfl-mydrafts\')">My Drafts</button>' +
               '<button class="md-btn md-btn--ghost" onclick="navigateTo(\'nfl-myleague\')">My League</button>' +
@@ -2382,6 +2411,26 @@ async function renderDashboardView() {
     // The "plays today" cards render with the same cursor:pointer/role=button affordance
     // as the home page's own game cards -- wire them the same way, or they'd be dead clicks.
     if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(main);
+}
+
+// Injury alerts for followed NFL players (ISSUES.md "Dashboard live enrichment"
+// follow-up, 2026-08-17). NFL-only, disclosed scope limit -- injury_status only
+// exists on the Sleeper player pool (N-17's data source); MLB/NCAAF have no
+// equivalent feed in this codebase today. Reuses the same in-module-memoized
+// fetchNFLSleeperPool()/_nflPoolMap the Injury Report tab and player cards
+// already read -- no new fetch pattern, no new cache.
+async function _dashNFLInjuryAlerts(playerIds) {
+    if (!playerIds || !playerIds.length || typeof fetchNFLSleeperPool !== 'function') return [];
+    try {
+        await fetchNFLSleeperPool();
+        return playerIds
+            .map(function(id) { return typeof _nflPoolMap !== 'undefined' && _nflPoolMap ? _nflPoolMap[id] : null; })
+            .filter(function(p) { return p && p.injury_status; })
+            .map(function(p) { return { name: ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'Unknown player', status: p.injury_status }; });
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Dashboard injury lookup failed', e, 'NFL');
+        return [];
+    }
 }
 
 function _dashSetDefaultSport(sport) {
