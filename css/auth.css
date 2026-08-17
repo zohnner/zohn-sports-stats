@@ -45,10 +45,18 @@
     font-size: 0.85rem;
 }
 
+/* D-108: tight positioned wrapper around the trigger + menu so .auth-menu resolves
+   right:0 against the avatar itself, not the full-viewport <header> (see index.html
+   comment above #authControl for the full containing-block explanation). */
+.auth-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
 .auth-menu {
     position: absolute;
     top: calc(var(--header-height) - 6px);
-    right: 16px;
+    right: 0;
     z-index: 90;
     min-width: 160px;
     background: var(--bg-card);

@@ -122,12 +122,19 @@
             </button>
 
             <!-- Account control (D-031) — signed-out pill / signed-in avatar. Populated by js/auth.js;
-                 hidden until auth state resolves so signed-out users never see a layout flash. -->
-            <button class="auth-control" id="authControl" hidden aria-haspopup="true" aria-expanded="false" aria-controls="authMenu"></button>
-            <div class="auth-menu" id="authMenu" hidden role="menu" aria-label="Account menu">
-                <button class="auth-menu-item" id="authMenuDashboard" role="menuitem" data-view="dashboard">Dashboard</button>
-                <button class="auth-menu-item" id="authMenuAccount" role="menuitem" data-view="account">Account</button>
-                <button class="auth-menu-item" id="authMenuSignOut" role="menuitem">Sign out</button>
+                 hidden until auth state resolves so signed-out users never see a layout flash.
+                 D-108: .auth-wrap gives the menu its own tight position:relative containing block —
+                 without it, .auth-menu (position:absolute) skips past the unpositioned .header-inner
+                 and resolves right:16px against the full-viewport <header> instead of the trigger,
+                 landing the dropdown far right of the avatar on wide viewports. Same containing-block
+                 mechanism documented for the mega-panel at D-103. -->
+            <div class="auth-wrap">
+                <button class="auth-control" id="authControl" hidden aria-haspopup="true" aria-expanded="false" aria-controls="authMenu"></button>
+                <div class="auth-menu" id="authMenu" hidden role="menu" aria-label="Account menu">
+                    <button class="auth-menu-item" id="authMenuDashboard" role="menuitem" data-view="dashboard">Dashboard</button>
+                    <button class="auth-menu-item" id="authMenuAccount" role="menuitem" data-view="account">Account</button>
+                    <button class="auth-menu-item" id="authMenuSignOut" role="menuitem">Sign out</button>
+                </div>
             </div>
 
             <!-- Settings -->

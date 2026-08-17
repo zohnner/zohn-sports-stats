@@ -3084,3 +3084,23 @@ Third item from today's Dashboard/Account-settings team brainstorm — Kael's "s
 `sw.js` CACHE_NAME bumped v198 → v199 (index.html and js/auth.js are both precached static assets). Commit `0bac46c`.
 
 **Escalation:** none.
+
+
+---
+
+### Account-menu dropdown mispositioned far right of the avatar trigger
+**Contributor:** Axiom | **Date:** 2026-08-17
+
+User-reported bug (with screenshots): clicking the signed-in account avatar (`#authControl`) opened `#authMenu` far to the right of the browser window — a large gap of empty header space between the true rightmost header control (the settings gear) and the menu — instead of directly below the avatar. User also flagged that other nav elements might share the bug.
+
+**Root cause:** the exact containing-block-skipping mechanism already diagnosed once this session for the mega-panel dropdowns (D-103, css/main.css ~lines 262-292). `.auth-menu` is `position: absolute; right: 16px`, but its DOM parent, `.header-inner`, has no `position` of its own (it is centered/capped via `max-width` + `margin: 0 auto`). With no positioned ancestor between `.auth-menu` and `<header>`, the global `body > * { position: relative; }` rule (css/main.css line 36) makes `<header>` itself the containing block — so `right: 16px` measured 16px from the true, full-viewport-width browser edge, not from the avatar sitting well short of it on any wide screen.
+
+**Fix (D-108):** wrapped `#authControl` + `#authMenu` together in a new `.auth-wrap` div (index.html) with its own `position: relative` (css/auth.css) — a tight containing block scoped to just the trigger and its menu, standard anchored-dropdown pattern. Changed `.auth-menu`'s `right: 16px` to `right: 0`, so the menu now resolves flush against the wrapper (== the avatar's own right edge) instead of the header. `.auth-wrap` is `display: inline-flex` so it sits in the `.header-inner` flex row exactly as the bare button did before — `#authMenu` stays out of flow via its own `position: absolute`, so wrapping it doesn't add any layout width. No JS changes; `_wireAuthControlEvents()`/`_toggleAuthMenu()` (js/auth.js) only ever toggled `hidden`/`aria-expanded`, confirmed no positioning logic lived there.
+
+**Scope check for "other nav issues like this":** systematically checked every other dropdown/overlay-style nav element for the same pattern. Sub-nav category mega-panels (Stats & Leaders, Tools) are `position: absolute` off an unpositioned ancestor too, but that is the *intentional*, already-documented D-103 behavior (full `<header>`-width panel, chosen on purpose) — re-confirmed live at current viewport width, no regression. The mobile hamburger `.menu-panel` and the ⌘K `.search-overlay` are both `position: fixed` (viewport-anchored, immune to this ancestor-skipping issue). The settings drawer (`.settings-panel`) is also `position: fixed`. No other `role="menu"`/`aria-haspopup` element exists in index.html besides `#authMenu`. Conclusion: `.auth-menu` was the only affected element.
+
+**Verification:** 0 NUL bytes and brace-balance check on both touched files, diff-reviewed against HEAD before commit. Live-verified against production by applying the equivalent wrapper + `right: 0` change directly to the live DOM in a real tab (index.html/auth.css aren't deployed yet): trigger and menu right edges now measure identical (`900.515625` both, diff `0`), screenshot-confirmed the menu renders directly below the avatar, and `.settings-btn`/`.header-inner` positions are unchanged (no layout regression from the new wrapper).
+
+`sw.js` CACHE_NAME bumped v199 → v200 (index.html and css/auth.css are both precached static assets).
+
+**Escalation:** none.
