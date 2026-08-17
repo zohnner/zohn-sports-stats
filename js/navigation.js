@@ -1334,6 +1334,18 @@ function _renderSportSwitch(sport) {
         const on = s.id === sport;
         return `<button class="sport-switch-btn${on ? ' sport-switch-btn--active' : ''}" data-sport="${s.id}" aria-pressed="${on}">${s.label}</button>`;
     }).join('');
+    // Mobile fix (2026-08-17): below 768px .sport-switch is a fixed max-width (140px),
+    // horizontally-scrollable strip (css/main.css) sized back when it held 3 sports
+    // (2026-08-09 fix). Now that NCAAB/WNBA (D-052/D-092) bring it to 5, a cold/deep-link
+    // load into any sport past NFL rendered the strip at its default scroll position (0),
+    // so the active pill sat off-screen with nothing visibly highlighted in view — reported
+    // live as "the sports switcher isn't loading properly." Centering the active pill on
+    // every render fixes it regardless of viewport; scrollIntoView is a harmless no-op when
+    // there's nothing to scroll (desktop, or the active pill is already fully visible).
+    const activeBtn = wrap.querySelector('.sport-switch-btn--active');
+    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
+        activeBtn.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
 }
 
 // Followed-teams rail (D-103, DECISIONS.md) — a compact, cross-sport strip of the
