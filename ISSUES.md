@@ -3033,3 +3033,18 @@ Owner report: "when clicking tools on an nfl page the drop down does not load cl
 `sw.js` CACHE_NAME bumped v194 -> v195 (css/main.css is a cached static asset).
 
 **Escalation:** none.
+
+---
+
+### Mobile sport-switcher didn't show the active sport on cold/deep-link loads into NCAAF/NCAAB/WNBA
+**Contributor:** Axiom | **Date:** 2026-08-17
+
+Owner report: "when a user opens the site on mobile, the sports switcher aspect of the nav isn't loading properly." Live repro (real DOM/CSS state pulled from production, not guessed): below 768px `.sport-switch` (css/main.css) is a fixed `max-width: 140px` horizontally-scrollable strip — sized in the 2026-08-09 header-overflow fix, when it held 3 sports (MLB/NFL/NCAAF). NCAAB (D-052) and WNBA (D-092) have since brought it to 5 pills with no revisit to that width budget. A cold or deep-link load into NCAAF, NCAAB, or WNBA rendered `_renderSportSwitch()`'s output at the strip's default (leftmost) scroll position — confirmed live via `sw.querySelector('.sport-switch-btn--active')`'s bounding rect falling entirely outside the visible 140px box, `scrollLeft: 0`. The active pill existed in the DOM with the correct `aria-pressed`/active class, it just wasn't visible, and nothing scrolled it into view — on a WNBA/NCAAB/NCAAF page, mobile users saw MLB/NFL with neither highlighted, which reads as the switcher not having loaded their current context. No console errors, no JS failure — a pure CSS/UX gap, not a script bug.
+
+**Fix:** `_renderSportSwitch(sport)` (js/navigation.js) now calls `scrollIntoView({ block: 'nearest', inline: 'center' })` on the active pill after every render. No-op on desktop or whenever the pill is already visible; JS-only, no new classes, no CSS changes. Live-verified (headless viewport-resize wasn't reliable in this session's browser automation, so the 140px mobile constraint was reproduced by applying the real mobile media-query declarations as inline styles to the live `.sport-switch` element) — before the fix, loading `#wnba-home` left the WNBA pill's bounding rect entirely outside the 140px box; after, `scrollLeft` moved from 0 to 250 and the pill sits fully inside the box, confirmed both by rect math and a zoomed screenshot.
+
+`sw.js` CACHE_NAME bumped v195 → v196 (js/navigation.js is a cached static asset). Commit `c02b806`.
+
+**Not done / flagged, not fixed:** there's still no visual affordance that the strip scrolls at all (`scrollbar-width: none` hides the only hint) — a user landing on MLB/NFL by default has no cue that NCAAF/NCAAB/WNBA are reachable by swiping. This is the same gap DECISIONS.md already flagged (five sports sharing one switcher sized for three) without resolving. Raised to the team as part of today's broader Dashboard/Settings brainstorm rather than patched unilaterally, since a real fix (edge fade mask, or folding the switcher into the existing nav-reimagine-concept work) is a Kael/Vera call, not a pure bug fix.
+
+**Escalation:** none — the correctness bug is fixed; the discoverability question above is a design decision, not a defect, and is flagged to Kael/Vera rather than escalated as broken.
