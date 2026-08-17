@@ -1021,6 +1021,12 @@ window.addEventListener('ss:follow-changed', () => {
     if (panel && !panel.hidden && typeof _renderSettingsFollowsList === 'function') {
         _renderSettingsFollowsList();
     }
+    // Dashboard section list (2026-08-17): unfollowing the last team/player in a sport
+    // should drop that sport's checkbox immediately, same "keep it in sync either way"
+    // reasoning as the Following list above.
+    if (panel && !panel.hidden && typeof _renderSettingsDashboardSections === 'function') {
+        _renderSettingsDashboardSections();
+    }
 });
 
 // D-043 3a: sport-tab bar. A static element (part of loadHome()'s one-shot
@@ -2336,8 +2342,27 @@ async function renderDashboardView() {
     }
 
     const bySport = _dashGroupFollows();
-    const sports = Object.keys(bySport);
+    const allFollowedSports = Object.keys(bySport);
+    const hiddenSports = typeof _getDashboardHiddenSports === 'function' ? _getDashboardHiddenSports() : [];
+    const sports = allFollowedSports.filter(function(s) { return hiddenSports.indexOf(s) === -1; });
     const defaultSport = typeof _getDefaultSport === 'function' ? _getDefaultSport() : null;
+
+    // Every followed sport hidden via Settings (2026-08-17) is a distinct state from
+    // "not following anything" -- Vera's rule: don't silently render a blank Dashboard,
+    // say why it's empty and point at the fix.
+    if (!sports.length && allFollowedSports.length) {
+        main.innerHTML = '' +
+          '<div class="auth-account-page">' +
+            '<h1 class="auth-account-title">Your Dashboard</h1>' +
+            '<div class="auth-account-section">' +
+              '<p class="auth-sheet-note">You\'ve hidden every section from your Dashboard.</p>' +
+              '<div class="md-head-actions">' +
+                '<button class="md-btn md-btn--ghost" onclick="if (typeof openSettingsPanel === \'function\') openSettingsPanel();">Open Settings</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        return;
+    }
 
     if (!sports.length) {
         main.innerHTML = '' +
@@ -2529,6 +2554,7 @@ function _refreshSettingsPanelState() {
     }
 
     _renderSettingsFollowsList();
+    if (typeof _renderSettingsDashboardSections === 'function') _renderSettingsDashboardSections();
 
     const accountLine = document.getElementById('settingsAccountLine');
     const accountBtn = document.getElementById('settingsAccountBtn');
@@ -2543,6 +2569,45 @@ function _refreshSettingsPanelState() {
         accountBtn.textContent = 'Sign in';
         accountBtn.onclick = () => { _closeSettingsPanel(); if (typeof openAuthSheet === 'function') openAuthSheet(); };
     }
+}
+
+// Dashboard section visibility (2026-08-17, Kael's "soft customization" ceiling from
+// the team brainstorm) -- lists every sport the user currently follows something in
+// (reuses _dashGroupFollows(), the exact same source Dashboard itself renders from,
+// so this list can never drift out of sync with what Dashboard would actually show)
+// with a checkbox per sport. Unchecked = hidden. A sport with zero follows never
+// appears here, same as it never appears on Dashboard itself.
+function _renderSettingsDashboardSections() {
+    const host = document.getElementById('settingsDashboardSections');
+    if (!host) return;
+
+    if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in' || typeof _dashGroupFollows !== 'function') {
+        host.innerHTML = '<p class="md-note">Sign in and follow a team or player to customize your Dashboard.</p>';
+        return;
+    }
+
+    const bySport = _dashGroupFollows();
+    const followedSports = Object.keys(bySport);
+    if (!followedSports.length) {
+        host.innerHTML = '<p class="md-note">Not following anything yet.</p>';
+        return;
+    }
+
+    const hidden = typeof _getDashboardHiddenSports === 'function' ? _getDashboardHiddenSports() : [];
+    host.innerHTML = followedSports.sort().map(function(sport) {
+        const label = (typeof _SPORT_LABEL !== 'undefined' && _SPORT_LABEL[sport]) || sport.toUpperCase();
+        const isHidden = hidden.indexOf(sport) !== -1;
+        return '<label class="md-check"><input type="checkbox" data-dash-section-sport="' + _escHtml(sport) + '"' + (isHidden ? '' : ' checked') + '> ' + _escHtml(label) + '</label>';
+    }).join('');
+
+    host.querySelectorAll('[data-dash-section-sport]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            const sport = cb.dataset.dashSectionSport;
+            const current = typeof _getDashboardHiddenSports === 'function' ? _getDashboardHiddenSports() : [];
+            const next = cb.checked ? current.filter(function(s) { return s !== sport; }) : current.concat([sport]);
+            if (typeof _setDashboardHiddenSports === 'function') _setDashboardHiddenSports(next);
+        });
+    });
 }
 
 // Manage Follows (ISSUES.md "Dashboard live enrichment + Manage Follows") -- the only

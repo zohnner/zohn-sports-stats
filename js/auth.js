@@ -681,6 +681,17 @@ async function _syncPreferencesOnSignIn() {
                 try { localSport = localStorage.getItem(_DEFAULT_SPORT_KEY); } catch (_) {}
                 if (localSport) pushPreference('defaultSport', localSport);
             }
+            // Same one-time fold-up for Dashboard section visibility (2026-08-17) --
+            // a signed-out visitor who already hid sections shouldn't lose that choice
+            // the moment they sign in just because the server has no opinion yet.
+            if (!preferences.dashboardHiddenSports) {
+                let localHidden = null;
+                try {
+                    const raw = localStorage.getItem(_DASHBOARD_HIDDEN_KEY);
+                    localHidden = raw ? JSON.parse(raw) : null;
+                } catch (_) { localHidden = null; }
+                if (Array.isArray(localHidden) && localHidden.length) pushPreference('dashboardHiddenSports', localHidden);
+            }
         }
     } catch (e) {
         Logger.warn('Preference sync failed', e, 'AUTH');
@@ -722,6 +733,35 @@ function _getDefaultSport() {
 function _setDefaultSport(sport) {
     try { localStorage.setItem(_DEFAULT_SPORT_KEY, sport); } catch (_) {}
     if (AuthState.status === 'signed-in') pushPreference('defaultSport', sport);
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard section visibility (2026-08-17, Kael's "soft customization" ceiling
+// from the team brainstorm) -- same local-first shape as Default Sport above,
+// not a new pattern. Stores which sport SECTIONS the user has hidden from their
+// own Dashboard; the underlying follow itself is untouched (hiding is display-
+// only, reversible any time from Settings). Default is the empty array -- every
+// followed sport shows, matching today's behavior for every existing user with
+// zero migration needed.
+// ---------------------------------------------------------------------------
+
+const _DASHBOARD_HIDDEN_KEY = 'zs_dashboard_hidden_sports';
+
+function _getDashboardHiddenSports() {
+    if (window.__SS_SERVER_PREFS && Array.isArray(window.__SS_SERVER_PREFS.dashboardHiddenSports)) {
+        return window.__SS_SERVER_PREFS.dashboardHiddenSports;
+    }
+    try {
+        const raw = localStorage.getItem(_DASHBOARD_HIDDEN_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (_) { return []; }
+}
+
+function _setDashboardHiddenSports(sportsArr) {
+    const clean = Array.isArray(sportsArr) ? sportsArr.filter(s => typeof s === 'string') : [];
+    try { localStorage.setItem(_DASHBOARD_HIDDEN_KEY, JSON.stringify(clean)); } catch (_) {}
+    if (AuthState.status === 'signed-in') pushPreference('dashboardHiddenSports', clean);
 }
 
 // ---------------------------------------------------------------------------
