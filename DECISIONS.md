@@ -2540,3 +2540,30 @@ Live candidates from both sports (if any) are compared first — live always bea
 
 **Implications:**
   - D-080 Phase 2 is now fully closed. Remaining D-080/D-081 scope is Phase 3 (SportStrats-original analytics: EPA, success rate, CPOE, etc.) — still blocked as scoped in D-081 (3a ship-ready, 3b blocked on nflverse 2026 data not existing yet).
+
+## D-107 — Real Dashboard customization (reorderable/pickable widgets) — reopening a twice-settled question
+**Status:** open
+**Contributors:** Vera, Kael, Axiom (team brainstorm, 2026-08-17); owner input pending
+**Date opened:** 2026-08-17 | **Date resolved:** —
+
+**Decision needed:**
+  The owner asked the team to "further develop the customizable dashboard and account settings." This is the third time "customization" has come up (2026-08-09's Dashboard-live-enrichment entry already flagged the fork once — smart-default vs. manual widget-picker/drag-and-drop — and the owner chose smart-default then). Today's session shipped three more smart-default-lane items without reopening that call (NCAAB/WNBA in the Default Sport dropdown; NFL injury alerts + linked-league teaser on Dashboard; per-sport section show/hide toggles in Settings — see ISSUES.md for all three). What's left on the brainstorm menu is the one item that actually *is* the reversal: letting a user reorder Dashboard sections or pick/arrange individual widgets, rather than the site auto-composing the layout from follows. Building that is real, multi-week product work (new AppState-adjacent config shape, a drag-and-drop or reorder-UI pattern that doesn't exist anywhere in this codebase today, new empty/loading/error states for a user-authored layout) — not something to start without the owner explicitly re-opening the fork a third time and saying which way it goes.
+
+**Options considered:**
+  1. **Stay smart-default, permanently.** Keep deepening the auto-composed model (more signal types like today's injury alerts, more teaser cards) and treat "customization" as fully answered by the boolean show/hide toggles shipped today (D-107 becomes moot, closed as "no further action"). Lowest risk, keeps the Dashboard's current zero-setup value proposition intact, but caps how personal the page can ever get — a user can hide a section, not rearrange or choose what's inside one.
+  2. **Add real reordering only** (drag-and-drop or up/down controls to change section order), keeping section *contents* auto-composed. Middle ground: meaningfully more personal without inventing a widget-picker's worth of new UI, but still a genuinely new interaction pattern (nothing in this codebase reorders anything today) and a new persisted-order preference shape.
+  3. **Full widget-picker/drag-and-drop builder** (choose which cards render on Dashboard, independent of what's followed; arrange them freely). Most flexible, most expensive — new component model, new states for a user-authored layout with nothing in it yet, real accessibility work for drag-and-drop specifically (keyboard-operable reordering is its own spec item, not a given), and the clearest deviation from "broadcast-grade authority, zero premium friction" posture Kael has flagged twice now.
+
+**Team positions (2026-08-17 brainstorm):**
+  - **Vera:** Hasn't heard a concrete job-to-be-done for options 2 or 3 yet — "I want to rearrange my Dashboard" isn't itself a JTBD, it's a mechanism. Wants to know what the owner is actually trying to fix or enable before speccing states for either option. If the answer is "nothing's broken, I just want to offer more control," that's a legitimate reason but changes how much state-completeness rigor this needs (a nice-to-have earns less spec depth than a fix for a real friction point).
+  - **Kael:** Option 1 or 2, not 3, on posture grounds — a drag-and-drop builder is a meaningfully different product feeling than anything else on this site, and "every pixel is a vote" cuts against introducing one heavy, novel interaction pattern for a single page. If the owner wants option 3 anyway, wants it scoped as its own visual system pass, not bolted onto the existing card language.
+  - **Axiom:** Feasibility is fine for any of the three — the prefs blob already holds arbitrary JSON, so a section-order array or a full widget-config object costs nothing schema-wise. The real cost is UI pattern (options 2/3 need a reorder interaction this codebase has never built) and scope discipline (GOALS.md's standing warning about config/AppState growing by accretion applies most to option 3). Would want this gated the same way D-031 was — Vera spec, Kael design, Axiom feasibility sign-off, all three in ISSUES.md before Finn touches anything — not built ad hoc.
+
+**Decision:**
+  Pending. Not started — flagging the fork explicitly rather than guessing which of the three the owner means by "further develop."
+
+**Rationale:**
+  n/a until a decision is made.
+
+**Implications:**
+  Whichever option the owner picks, it goes through the same three-gate process D-031 used (Vera JTBD + states → Kael visual → Axiom feasibility → ISSUES.md entry → Finn implements) rather than any one persona building ahead of a spec. Option 1 needs no further team work — it's already shipped. Options 2 and 3 both need a session where the owner states the actual JTBD before Vera specs anything.

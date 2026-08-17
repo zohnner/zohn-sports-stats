@@ -3069,3 +3069,18 @@ Second item shipped from today's Dashboard/Account-settings team brainstorm (see
 **Not done / flagged, not fixed:** this only fires from the Dashboard's own follow-driven sport sections — a user with a linked Sleeper league but zero followed NFL teams/players won't see the teaser (Dashboard's `hasNFLFollow` gate). Small, pre-existing edge case inherited from the Fantasy section's original gate, not introduced by this change; not worth a special-case for now.
 
 **Escalation:** none.
+
+---
+
+### Settings: per-sport Dashboard section visibility toggles
+**Contributor:** Axiom | **Date:** 2026-08-17
+
+Third item from today's Dashboard/Account-settings team brainstorm — Kael's "soft customization" ceiling (boolean show/hide, not a widget picker or drag-and-drop; that's the separate, bigger decision opened as D-107).
+
+**Shipped:** `_getDashboardHiddenSports()`/`_setDashboardHiddenSports()` (js/auth.js) — same local-first + `pushPreference('dashboardHiddenSports', ...)` shape as Default Sport (2026-08-09), including the one-time signed-out-choice fold-up on sign-in. `renderDashboardView()` (js/app.js) filters its `sports` list through the hidden array before any per-sport fetch, and gets a new empty state ("hid every section" vs. "not following anything," per Vera's states-before-screens rule) that links straight to Settings. New `_renderSettingsDashboardSections()` renders one checkbox per sport the user currently follows something in — reuses `_dashGroupFollows()`, the exact same source Dashboard renders from, so the list can't drift out of sync — and the existing `.md-check` class the weekly-digest opt-in already uses. Wired into the existing `ss:follow-changed` listener so unfollowing a sport's last team/player drops its checkbox live. New static "Dashboard" section in the Settings drawer (index.html), between Account and Following.
+
+**Verification:** `node --check` clean on all three touched JS files, 0 NUL bytes on all four touched files, diff-reviewed against HEAD before commit. Live-verified against production by patching all three new/changed functions into a real signed-in tab (not deployed yet): hiding MLB correctly dropped its section while NFL still rendered; hiding every followed sport showed the new empty state with a working Open Settings button; Settings checkboxes rendered correctly checked/unchecked and toggling one persisted to the hidden-sports list. Screenshot-confirmed clean layout, no regression to the other three Settings sections.
+
+`sw.js` CACHE_NAME bumped v198 → v199 (index.html and js/auth.js are both precached static assets). Commit `0bac46c`.
+
+**Escalation:** none.
