@@ -3048,3 +3048,24 @@ Owner report: "when a user opens the site on mobile, the sports switcher aspect 
 **Not done / flagged, not fixed:** there's still no visual affordance that the strip scrolls at all (`scrollbar-width: none` hides the only hint) — a user landing on MLB/NFL by default has no cue that NCAAF/NCAAB/WNBA are reachable by swiping. This is the same gap DECISIONS.md already flagged (five sports sharing one switcher sized for three) without resolving. Raised to the team as part of today's broader Dashboard/Settings brainstorm rather than patched unilaterally, since a real fix (edge fade mask, or folding the switcher into the existing nav-reimagine-concept work) is a Kael/Vera call, not a pure bug fix.
 
 **Escalation:** none — the correctness bug is fixed; the discoverability question above is a design decision, not a defect, and is flagged to Kael/Vera rather than escalated as broken.
+
+---
+
+### Dashboard live enrichment, round 2: NFL injury alerts + linked-league teaser
+**Contributor:** Axiom | **Date:** 2026-08-17
+
+Second item shipped from today's Dashboard/Account-settings team brainstorm (see the session's chat log / DECISIONS.md discussion for the full Vera/Kael/Axiom/Relay/Cipher framing). Stayed deliberately on the smart-default model per the standing 2026-08-09 decision (ISSUES.md "Dashboard live enrichment + Manage Follows" — "customization" was already re-litigated once and the owner chose not to reverse it): no widget picker, no drag-and-drop, both additions ride the Dashboard's existing per-sport data and fetch pattern.
+
+**Injury watch:** `_dashNFLInjuryAlerts()` (js/app.js) cross-references a Dashboard section's followed player ids against the same in-module-memoized Sleeper pool (`fetchNFLSleeperPool()`/`_nflPoolMap`) the Injury Report tab (N-17) and player cards already read — no new fetch, no new cache. NFL-only, disclosed scope limit: no other sport has an injury feed anywhere in this codebase. `_dashSectionHtml` renders it with the exact "Injury watch" phrasing and `--color-loss` treatment `js/nfl.js` already uses on player cards — no new visual primitive — placed above the team-chip row, right after the live "plays today" card, on the reasoning that state-that-changed is the most useful thing the Dashboard can surface (same logic as the plays-today enrichment itself).
+
+**Fantasy section teaser:** the existing Fantasy section (My Drafts / My League buttons, shown whenever the user follows anything NFL) now also fetches `/api/sleeperLink` (D-065, already built, single cheap row read) and shows the linked league's name above the buttons when one exists, instead of two context-free links.
+
+**Feasibility note (why this and not the fantasy roster/grade card also proposed in the brainstorm):** `_mlRenderRoster` (js/fantasy.js, My League's real implementation) pulls rosters + users + league object and runs the VBD grade computation — real fetch cost, not something to duplicate on Dashboard. Kept Dashboard's version to the cheap teaser (league name only, links to the real page) rather than re-implementing roster/grade logic in a second place — consistent with GOALS.md's standing warning about AppState/fetch coordination growing by accretion.
+
+**Verification:** `node --check js/app.js` clean, 0 NUL bytes, diff-reviewed against HEAD before commit. Live-verified against production by patching the three changed functions into a real signed-in tab (js/app.js isn't deployed yet) — a real injured player (Cameron Jordan, Sleeper id 957, "Questionable") synthetically added to a followed-players list rendered the injury-watch line correctly, and the account's real linked league ("zmans") rendered in the Fantasy section teaser. Screenshot-confirmed clean layout, no regression to the existing sections.
+
+`sw.js` CACHE_NAME bumped v197 → v198 (js/app.js is a cached static asset). Commit `15bc21a`.
+
+**Not done / flagged, not fixed:** this only fires from the Dashboard's own follow-driven sport sections — a user with a linked Sleeper league but zero followed NFL teams/players won't see the teaser (Dashboard's `hasNFLFollow` gate). Small, pre-existing edge case inherited from the Fantasy section's original gate, not introduced by this change; not worth a special-case for now.
+
+**Escalation:** none.
