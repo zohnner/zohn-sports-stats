@@ -20,6 +20,15 @@ const AuthState = {
     follows: null,
 };
 
+// D-109: resolves once initAuth() has determined the real signed-in/signed-out status.
+// Any view that branches on AuthState.status during the initial page-load window (before
+// DOMContentLoaded's initAuth() fetch resolves) must await this first -- status starts as
+// 'loading', and treating that as "signed-out" is what caused the Dashboard/Account views
+// to flash the wrong empty state and auto-open the sign-in sheet for already-signed-in
+// users on a cold load straight to #dashboard or #account (ISSUES.md, 2026-08-17).
+let _resolveAuthReady;
+AuthState.ready = new Promise(function(resolve) { _resolveAuthReady = resolve; });
+
 let _authTurnstileToken = '';
 let _authTurnstileWidgetId = null;
 
@@ -47,6 +56,7 @@ async function initAuth() {
     }
     _renderAuthControl();
     _wireAuthControlEvents();
+    if (typeof _resolveAuthReady === 'function') _resolveAuthReady();
     if (AuthState.status === 'signed-in') {
         _syncPreferencesOnSignIn();
         _syncFollowsOnSignIn();
@@ -836,6 +846,14 @@ async function disablePushAlerts() {
 async function renderAccountView() {
     const main = document.getElementById('main');
     if (!main) return;
+
+    // D-109: don't judge signed-in/out from a 'loading' status -- wait for the real
+    // answer first so an already-signed-in user never sees the sign-in prompt flash.
+    if (AuthState.status === 'loading' && AuthState.ready) {
+        main.innerHTML = `<div class="auth-account-loading" role="status">Loading account…</div>`;
+        await AuthState.ready;
+        if (typeof AppState !== 'undefined' && AppState.currentView !== 'account') return;
+    }
 
     if (AuthState.status !== 'signed-in') {
         main.innerHTML = `<div class="auth-account-signedout"><p>Sign in to manage your account.</p></div>`;

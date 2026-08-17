@@ -2335,6 +2335,19 @@ async function renderDashboardView() {
     const main = document.getElementById('main');
     if (!main) return;
 
+    // D-109: a cold load straight to #dashboard runs this before initAuth()'s
+    // /api/auth/get-session fetch resolves -- AuthState.status is still 'loading' at
+    // that point, not 'signed-out'. Treating 'loading' as signed-out flashed the wrong
+    // empty state and auto-opened the sign-in sheet for already-signed-in users, and
+    // since nothing ever re-rendered afterward, closing that unwanted sheet left the
+    // Dashboard permanently stuck showing "Sign in..." (ISSUES.md, 2026-08-17 report).
+    // Wait for the real answer first instead of guessing from an in-progress status.
+    if (typeof AuthState !== 'undefined' && AuthState.status === 'loading' && AuthState.ready) {
+        main.innerHTML = '<div class="auth-account-page"><h1 class="auth-account-title">Your Dashboard</h1><div class="auth-account-loading" role="status">Loading…</div></div>';
+        await AuthState.ready;
+        if (typeof AppState !== 'undefined' && AppState.currentView !== 'dashboard') return;
+    }
+
     if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') {
         main.innerHTML = '<div class="auth-account-page"><h1 class="auth-account-title">Your Dashboard</h1><div class="auth-account-signedout"><p>Sign in to see your followed teams and players in one place, across every sport.</p></div></div>';
         if (typeof openAuthSheet === 'function') openAuthSheet();

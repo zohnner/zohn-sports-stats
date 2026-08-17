@@ -3104,3 +3104,23 @@ User-reported bug (with screenshots): clicking the signed-in account avatar (`#a
 `sw.js` CACHE_NAME bumped v199 → v200 (index.html and css/auth.css are both precached static assets).
 
 **Escalation:** none.
+
+
+---
+
+### Dashboard/Account views raced auth resolution — flashed wrong empty state, stuck after closing the sign-in sheet
+**Contributor:** Axiom | **Date:** 2026-08-17
+
+User report, follow-up to today's Dashboard/Settings work: "the dashboard customization is not very user friendly at all. it also glitches when you try to exit." Investigated live against production (a fresh signed-in tab, cold-loaded straight to `#dashboard`) rather than assuming the report was about the visibility-toggle UX itself.
+
+**Root cause:** `AuthState.status` starts as `'loading'` and only becomes `'signed-in'`/`'signed-out'` after `initAuth()`'s `await fetch('/api/auth/get-session')` resolves (js/auth.js). On a cold page load straight to `#dashboard` (or `#account`), the hash-restore router calls `renderDashboardView()`/`renderAccountView()` synchronously — no network wait — so it very often runs before that fetch resolves. Both functions treated any non-`'signed-in'` status, including `'loading'`, as signed-out: they rendered the "Sign in to see your followed teams..." placeholder and called `openAuthSheet()` — popping the sign-in modal over an already-signed-in user's session. Neither function was ever re-invoked once `initAuth()` actually finished, so closing that unwanted sheet left the page permanently stuck on the wrong empty placeholder — matches the "glitches when you try to exit" report exactly. Reproduced intermittently (network-timing dependent, not 100% of loads), consistent with a race rather than a deterministic bug — confirmed against real production timing, and confirmed deterministically by directly forcing the `'loading'` state in a live tab.
+
+**Fix (D-109):** added `AuthState.ready` — a promise resolved by `initAuth()` right after it settles `AuthState.status`, before the (unrelated) preference/follow sync calls. `renderDashboardView()` (js/app.js) and `renderAccountView()` (js/auth.js) now check for the `'loading'` race specifically: if hit, they render a proper loading state (reusing the existing `.auth-account-loading` class already used elsewhere on the account page — no new CSS) and `await AuthState.ready` before deciding anything, instead of guessing from an in-progress status. Each also bails out cleanly (no render, no auth-sheet call) if `AppState.currentView` has changed away from `dashboard`/`account` by the time the wait resolves, so a user who navigates elsewhere during the brief loading window doesn't get a stale render clobbering whatever they navigated to.
+
+**Verification:** `node --check` clean on both touched files, 0 NUL bytes, diff-reviewed against HEAD before commit. Since js/auth.js and js/app.js aren't deployed yet, live-verified the new guard logic against the real page (not a full cold reload, which can't be scripted here) by reimplementing the exact new code path inline in a live signed-in tab and forcing the three real scenarios: (1) `status:'loading'` resolving to `'signed-in'` — showed the loading placeholder, made zero `openAuthSheet()` calls, then proceeded to the real-content path once resolved; (2) `status:'loading'` resolving to genuinely `'signed-out'` — still correctly showed the signed-out prompt and called `openAuthSheet()` exactly once, confirming the legitimate signed-out path is unchanged; (3) navigating away from the view while the wait was in flight — bailed out with no render and no auth-sheet call. All three matched expected behavior.
+
+`sw.js` CACHE_NAME bumped v200 → v201 (js/auth.js and js/app.js are both precached static assets).
+
+**Not done / flagged, not fixed:** the user's message also called the Dashboard customization surface itself ("Set as my default sport" button, per-sport team chips, Settings visibility toggles — all shipped earlier today) "not very user friendly at all," separate from this glitch. That's a UX-design question, not a defect, and hasn't been triaged yet — flagging for a Vera-led pass rather than guessing at redesign changes unprompted.
+
+**Escalation:** none for the glitch (root-caused and fixed). The broader Dashboard-customization UX critique is unresolved and needs the user's input on scope before Vera scopes a redesign pass.
