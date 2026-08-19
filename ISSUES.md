@@ -1176,3 +1176,19 @@ Same day as the Draft HQ rebuild above (D-111), hours after it shipped and was l
 **Standing takeaway, worth carrying forward:** before shipping any new page module, check whether it's sequenced after an unbounded or very-long list/table in the same render output. If so, either move it above that list or cap/paginate the list — this is now a named, recurring failure mode per the owner, not a one-off to fix and forget.
 
 **Escalation:** none — root-caused, fixed, live-verified, and documented same session. Full architectural writeup and D-111 status correction: DECISIONS.md, D-111 follow-up amendment (2026-08-19).
+
+---
+
+## NFL preseason week-numbering bug + mock-draft home-page visibility — 2026-08-19 (Axiom)
+
+**Contributor:** Axiom (root-cause + fix + live pre-push verification) | **Date:** 2026-08-19
+
+Owner, verbatim: "the nfl preseason is weird there are 3 preseason weeks, however the hall of fame game is a stand alone week before the other three, our logic is wrong in relation to that. there also is no indication that the mock draft exsists on the main landing page, how should we draw attention to it?" Full decision writeup, rationale, and code detail: DECISIONS.md D-113 — this entry is the pointer + verification detail, per this file's convention.
+
+**Bug 1 confirmed against live ESPN data, not just the owner's description:** `seasontype=1` for 2026 has 4 weeks, not 3 — week 1 is the standalone Hall of Fame Game (1 game), weeks 2-4 are the three full preseason weekends. `js/nfl.js`'s `_NFL_SEASONTYPES.weeks: 3` cap silently dropped ESPN week 4 (the third real preseason weekend) from the Scores nav entirely and mislabeled the HOF Game "Wk 1" next to full slates. Fixed: `weeks: 4` + new `_NFL_PRESEASON_WEEK_LABELS` map, same pattern as the existing postseason week-label handling.
+
+**Ask 2 turned out not to be a bug:** live-inspected the real production DOM before assuming the promo was broken — the seasonal-promo-band `'draft'` entry (D-040 1a / D-043 3b) was firing correctly, right now, on the actual home page. The real problem was that it rendered as a bare `.hm-row` directly under the Pennant Races card with no visual distinction from that card's own content — a screenshot confirmed it read as a trailing caption on an MLB widget rather than its own promo. Fixed by reusing the site's existing "border = identity" convention (`.sport-card`/`.sl-card`'s `border-left: 3px solid var(--sport-accent, ...)`) on the promo row, deriving the accent/icon generically from `SPORTS_META` off the promo's own target view rather than hardcoding NFL, plus upgrading `.hm-chip--primary` to a solid accent fill per DESIGN.md's "brand orange = primary CTA" invariant. Live pre-push patch + screenshot confirmed the fix reads clearly (blue border, 🏈 icon, solid orange button) against the same production page.
+
+**Verified:** `node --check` + 0 NUL bytes on `js/nfl.js`, `js/app.js`, `css/main.css`, `sw.js`. **Gap versus the usual bar:** no `tests/` directory or `check-manifest.cjs` was present in this session's staged partial checkout, so the unit suite could not be run this session — flagged in DECISIONS.md D-113 as something to re-run on a full checkout. `sw.js` CACHE_NAME bumped v205 → v206. Committed via the mount-safe git-plumbing workaround, commit `1918766`, exactly the 4 intended files touched.
+
+**Escalation:** none. **Not yet pushed** — owner needs to `git push` before this reaches production; live post-deploy verification still pending.
