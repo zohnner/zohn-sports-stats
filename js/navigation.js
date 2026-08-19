@@ -46,7 +46,20 @@ function setupNavigation() {
     // Delegated so a re-rendered (data-driven) switcher keeps working — D-026.
     document.querySelector('.sport-switch')?.addEventListener('click', e => {
         const b = e.target.closest('.sport-switch-btn[data-sport]');
-        if (b) switchSport(b.dataset.sport);
+        if (!b) return;
+        const sp = b.dataset.sport;
+        // From a neutral view like Home, AppState.currentSport may already equal
+        // sp — it defaults to 'mlb' and stays wherever it was last set even while
+        // the visible switcher shows nothing active — which made switchSport()
+        // early-return and silently do nothing on click. Same fix
+        // _renderSportPicker's card click handler (app.js) already applies.
+        if (sp === AppState.currentSport) {
+            const meta = (typeof SPORTS_META !== 'undefined') ? SPORTS_META[sp] : null;
+            if (typeof _applySportUI === 'function') _applySportUI(sp);
+            navigateTo(meta ? meta.defaultView : sp + '-players');
+        } else {
+            switchSport(sp);
+        }
     });
 
     initMenu();

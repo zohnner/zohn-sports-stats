@@ -1974,9 +1974,24 @@ function enterSport(sport) {
 function _sportPickerStatus(id) {
     const m = new Date().getMonth() + 1; // 1=Jan
     if (id === 'mlb')   return (m >= 3 && m <= 10) ? { cls: 'active', label: 'Regular season' } : { cls: 'idle', label: 'Offseason' };
-    if (id === 'nfl')   { if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
-                          if (m >= 7 && m <= 8)  return { cls: 'active', label: 'Draft season' };
-                          return { cls: 'idle', label: 'Offseason' }; }
+    if (id === 'nfl')   {
+        // Sourced from _nflSeasonPhase() (js/nfl.js, loaded before app.js) instead
+        // of a second, independent month-range check — a hardcoded calendar
+        // boolean here was exactly the class of bug D-063 already fixed once for
+        // NFL's own offseason state (CLAUDE.md explicitly warns against
+        // reintroducing it); this function had quietly done it again under a
+        // different name, showing "Draft season" through real August preseason
+        // games rather than reflecting the actual live season phase.
+        if (typeof _nflSeasonPhase === 'function') {
+            const phase = _nflSeasonPhase();
+            if (phase === 'regular')    return { cls: 'active', label: 'Season underway' };
+            if (phase === 'postseason') return { cls: 'active', label: 'Playoffs' };
+            if (phase === 'preseason')  return { cls: 'active', label: 'Preseason' };
+            return { cls: 'idle', label: 'Offseason' };
+        }
+        if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
+        return { cls: 'idle', label: 'Offseason' };
+    }
     if (id === 'ncaaf') { if (m >= 9 || m === 1) return { cls: 'active', label: 'Season underway' };
                           if (m === 8)           return { cls: 'active', label: 'Kicks off soon' };
                           return { cls: 'idle', label: 'Preview · starts Aug' }; }
