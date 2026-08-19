@@ -869,8 +869,16 @@ function _renderTonightSPSection() {
         const k9Num  = parseFloat(s.strikeoutsPer9Inn);
         const eraPct = !isNaN(eraNum) ? Math.max(0.06, Math.min(1, 1 - (eraNum - 1) / 5)) : null;
         const k9Pct  = !isNaN(k9Num)  ? Math.max(0.06, Math.min(1, k9Num / 14)) : null;
+        // Amended same day, live-verified after push: team color (colors.primary)
+        // was the original fill, but a dark team color (e.g. the Athletics'
+        // #003831) all but disappears against the dark card -- a real
+        // legibility bug, not just a style choice. Quality-threshold color
+        // fixes the contrast and adds real signal (DESIGN.md already sanctions
+        // borrowing win/loss colors for thresholded values, same rule D-096's
+        // red-zone coloring used).
+        const _statQualityColor = (pct) => pct >= 0.65 ? 'var(--color-win)' : pct <= 0.3 ? 'var(--color-loss)' : 'var(--text-muted)';
         const _statBar = (pct) => pct == null ? '' :
-            `<span class="sp-stat-bar" style="--sp-bar-pct:${(pct * 100).toFixed(0)}%;--sp-bar-c:${colors.primary}"></span>`;
+            `<span class="sp-stat-bar" style="--sp-bar-pct:${(pct * 100).toFixed(0)}%;--sp-bar-c:${_statQualityColor(pct)}"></span>`;
 
         const lastName = (pp.fullName || '').split(' ').slice(1).join(' ') || pp.fullName || 'TBD';
 

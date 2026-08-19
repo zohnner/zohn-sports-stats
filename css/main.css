@@ -2479,9 +2479,18 @@ main {
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
+    /* Live-verified bug, found after push (2026-08-19): a loaded headshot was
+       still painting *behind* the .sp-avatar-initials fallback text ("JS"
+       visible over Springs' real photo) because position:absolute + z-index:
+       auto loses to the initials span's explicit position:relative + z-index:
+       0 at the same stacking level, painted in DOM order (initials is the
+       later sibling). z-index:1 forces the loaded image on top unconditionally;
+       the fallback still shows correctly whenever data-hide-on-error removes
+       a failed image, since nothing is left covering the initials then. */
+    z-index: 1;
 }
 .sp-avatar-initials { position: relative; z-index: 0; }
-.sp-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.sp-info { display: flex; flex-direction: column; gap: 0.22rem; min-width: 0; }
 .sp-pitcher--home .sp-info { align-items: flex-end; }
 .sp-name {
     font-size: 0.82rem;
@@ -2496,20 +2505,29 @@ main {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
 }
 .sp-pitcher--home .sp-statline { justify-content: flex-end; }
 
 /* Home redesign pass (2026-08-19): compact ERA/K-9 mini-bars, see the
    _statBar() comment in js/app.js's _spCard() for why this is decoration
-   backing an existing number, not a new computed claim. Team-color fill
-   (--sp-bar-c, set inline per pitcher) matches the existing avatar-gradient
-   and border=identity convention rather than inventing a new stat-color. */
+   backing an existing number, not a new computed claim.
+   Amended same day, live-verified after push: the original fill used the
+   pitcher's own team color (--sp-bar-c), which reads fine for a bright team
+   but is nearly invisible for a dark one (e.g. the Athletics' #003831 green
+   all but disappeared against the dark card). Switched the fill to a
+   3-tier quality-threshold color instead (elite/average/poor -- see
+   _statQualityColor() in js/app.js), which fixes the contrast bug *and* is
+   more meaningful than a team-color decoration: DESIGN.md already sanctions
+   borrowing win/loss colors for thresholded values (the same rule D-096's
+   red-zone coloring used), and this is exactly that case applied to a stat
+   quality bar. Bar itself also sized up slightly (22->26px, 5->6px) for
+   legibility at the smaller card width the Starters grid now uses. */
 .sp-stat-bar {
     display: inline-block;
-    width: 22px;
-    height: 5px;
+    width: 26px;
+    height: 6px;
     margin-left: 0.3em;
     border-radius: 3px;
     background: var(--border-mid);
@@ -2522,7 +2540,7 @@ main {
     position: absolute;
     inset: 0;
     width: var(--sp-bar-pct, 0%);
-    background: var(--sp-bar-c, var(--accent));
+    background: var(--sp-bar-c, var(--text-muted));
     border-radius: inherit;
 }
 .sp-pitcher--home .sp-stat-bar { margin-left: 0; margin-right: 0.3em; }
