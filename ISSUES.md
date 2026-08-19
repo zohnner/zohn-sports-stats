@@ -1101,3 +1101,32 @@ User report, follow-up to today's Dashboard/Settings work: "the dashboard custom
 **Not done / flagged, not fixed:** the user's message also called the Dashboard customization surface itself ("Set as my default sport" button, per-sport team chips, Settings visibility toggles — all shipped earlier today) "not very user friendly at all," separate from this glitch. That's a UX-design question, not a defect, and hasn't been triaged yet — flagging for a Vera-led pass rather than guessing at redesign changes unprompted.
 
 **Escalation:** none for the glitch (root-caused and fixed). The broader Dashboard-customization UX critique is unresolved and needs the user's input on scope before Vera scopes a redesign pass.
+
+
+---
+
+## Home + nav walkthrough — 2026-08-19 (Kael/Vera/Finn)
+
+**Contributor:** Finn (investigation), Kael + Vera (review lens) | **Date:** 2026-08-19
+
+Owner asked for a bug + UX walkthrough of landing pages and nav specifically ("clean and concise," best-practices check), following the mock-draft bug session earlier the same day. Scope: Home + all 6 sport landing views on desktop, the already-shipped D-103 mega-menu/rail/sport-switcher, and a mobile pass. Cross-checked against existing open items first (D-102/D-103 nav-rename and mega-menu work, the mobile sport-switcher scroll fix, the mega-panel width fix, the auth-menu position fix) to avoid re-reporting known ground — none of that work regressed; the mega-menu, followed-teams rail, and sport-switcher scroll-into-view all held up under live re-check.
+
+Two new findings, both fixed and shipped this session:
+
+### Header sport-switch buttons were dead from Home when they matched the current sport
+Live-reproduced: on a cold load (`AppState.currentSport` defaults to `'mlb'`), clicking "MLB" in the header switcher from `#home` did nothing — no navigation, no error, `location.hash` stayed `#home`. Confirmed it's general, not MLB-specific: after switching to NFL then returning to Home, the NFL pill was equally dead. Root cause: `switchSport()`'s `if (sport === AppState.currentSport) return;` guard is correct for in-app pages (clicking your current sport's own tab should no-op) but wrong for Home, which shows no sport as active in the switcher regardless of what `currentSport` actually holds. The big sport-picker cards on Home already carry the exact fix, inline, with a comment explaining the exact failure mode — `_renderSportPicker()`'s click handler in app.js checks for this and calls `_applySportUI` + `navigateTo` directly instead of going through `switchSport()`. The header switcher's delegated click handler (navigation.js) never got the same treatment.
+
+**Fix:** mirrored `_renderSportPicker`'s same-sport guard into the `.sport-switch` delegated handler (navigation.js). **Live-verified before commit** (file not yet deployed) by patching the exact new handler logic into a real production tab and confirming a matching-sport click now advances `AppState.currentView` from `home` to `mlb-home` instead of no-op'ing.
+
+**Secondary finding, not fixed:** `enterSport()` (app.js) is dead code — defined, zero call sites anywhere in the codebase (grep-confirmed). It also has its own latent bug if it were ever wired up: its `defaultViews` map only covers `nba`/`mlb`/`nfl`/`nhl`, so calling it for `ncaaf`/`ncaab`/`wnba` while already on that sport would fall through to `'players'` (the NBA view) instead of that sport's real default view. Moot while unreachable, but flagged for Axiom — either remove it or fix and wire it in, not leave it as a trap for a future session that finds it and assumes it's live.
+
+### NFL home card said "Draft season" during real live preseason games
+Live-observed on today's date (2026-08-19): the NFL tile in Home's sport-picker read "NFL · Draft season," while the very same page's score ticker showed real, finished NFL preseason games (PIT 28–9 GB, NE 13–13 IND, etc.). Root cause: `_sportPickerStatus('nfl')` (app.js) used its own independent, hardcoded `m >= 7 && m <= 8` month-range check instead of the canonical `_nflSeasonPhase()` model (js/nfl.js) that CLAUDE.md explicitly documents as "the actual calendar model behind every NFL offseason/preseason UI decision" — and explicitly warns against reintroducing a hardcoded calendar boolean, since that's the exact bug D-063 already fixed once. This function had quietly done it again, under a different name, in a different file.
+
+**Fix:** `_sportPickerStatus('nfl')` now calls `_nflSeasonPhase()` and maps its four real phases (offseason/preseason/regular/postseason) to labels, with the old month-range logic kept only as a defensive fallback if `_nflSeasonPhase` isn't loaded yet (it always will be — nfl.js loads well before app.js in the script chain). **Live-verified before commit:** patched the new logic into a real tab and confirmed `_sportPickerStatus('nfl')` now returns "Preseason" for today's date, and the re-rendered card reads "NFL · Preseason" instead of "NFL · Draft season."
+
+`sw.js` CACHE_NAME bumped v202 → v203. Commit `5e425ab`.
+
+**Mobile pass — environment-limited, not a findings gap:** genuine responsive-viewport testing wasn't achievable this session — `resize_window` reports success but does not change the tab's actual rendered `window.innerWidth`/`innerHeight` (confirmed twice, fresh tab both times), consistent with a prior session's note on the same tool. Approximated the ≤768px breakpoint by injecting the real CSS rules from `main.css` as an override stylesheet (menu panel, bottom nav, sub-nav hide, sport-switch scroll strip) rather than a true narrow-container reflow. Under that approximation: the mobile menu panel's Stats & Leaders/Tools groups, NFL's Draft Prep/In-Season groups, the bottom nav's 5 tabs, and the "More" button's toggle-into-menu-panel behavior all rendered and behaved correctly on both Home and NFL. One unconfirmed observation — the header search input's placeholder text appeared to overlap the account avatar badge on NFL's page at this simulated width — is explicitly **not** being filed as a bug: the browser viewport never actually narrowed during this test, so a collision that depends on real container width shrinking can't be trusted from this technique the way an on/off `display` toggle can. Needs a genuine narrow-viewport or real-device check before it's treated as a finding.
+
+**Escalation:** none — both findings were root-caused, fixed, and live-verified same session.
