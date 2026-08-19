@@ -639,7 +639,7 @@ function displayNCAAFTeamDetail(team, roster, sched, stats, stdRow) {
         recordChips, recordSeasonLabel: recordChips.length ? `${_ncaaf.season} Season` : '',
         assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String((stats && stats.season) || _ncaaf.season),
         groups, rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
+        scheduleHtmlTop: scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
     };
 
     grid.className = 'player-detail-container';

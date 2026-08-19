@@ -1147,6 +1147,32 @@ Two real, previously-undocumented problems, both root-caused against actual code
 
 Also corrected in the same pass, found while touching this area (Folio's doc-sync rule): CLAUDE.md's Nav System section still described the header's Fantasy dropdown as a flat 10-item list including Compare with no Draft Prep/In-Season titling — both true before D-103, neither true after it shipped. D-103's own code comment already said as much; CLAUDE.md just never caught up. Fixed alongside the D-111 rename rather than left for a future session to trip over.
 
-`sw.js` CACHE_NAME bumped v203 → v204. Commit `27ebbf7`, awaiting owner push.
+`sw.js` CACHE_NAME bumped v203 → v204. Commit `27ebbf7`, pushed and live-verified on sportstrata.cc same day (see follow-up entry below — a placement defect was found in this same shipped work hours later).
 
-**Escalation:** none — root-caused, fixed, and live-verified same session. Not pushed yet; needs the owner's push before it's live on sportstrata.cc.
+**Escalation:** none — root-caused, fixed, and live-verified same session.
+
+---
+
+## Draft HQ Quick Tools placement + NCAAF schedule-card placement — 2026-08-19 (owner-caught, Axiom)
+
+**Contributor:** Axiom (root-cause + fix + codebase-wide search) | **Date:** 2026-08-19
+
+Same day as the Draft HQ rebuild above (D-111), hours after it shipped and was live-verified. Owner, verbatim: "we keep running into this issue where instead of properly implementing a feature, you ammend it to the bottom of the page. FOr example, the feature you just added was put at the bottom of a page below a list of 200 players. there is no world where a user would naturally find that. Understand the issue you made and search the project for similar issues." Two-part instruction: fix the specific bug, and search the whole project for the same recurring pattern — the phrasing "we keep running into this" was treated as a signal this had happened before, not as a one-off complaint.
+
+**The specific bug:** `_dkQuickTools()` — the 4-card link row (Mock Draft / ADP Rankings / Schedule / My Drafts) built as part of D-111 specifically to satisfy "shouldn't have to click away" — was appended at the very end of `_dkRender()`'s HTML output, after the ~200-row Value Rankings table. A user landing on Draft HQ would have to scroll past the entire ranked player list before ever seeing it. Root cause: page sections were sequenced by an abstract importance order (headline insight → secondary insight → deep reference table → secondary tools) with no accounting for the fact that the "deep reference table" sitting in the middle of that order is ~200 rows of effectively unbounded scroll — everything ordered after it is functionally invisible to a real user regardless of its own merit. Bye Week Watch, the *other* module D-111 added, was checked and confirmed **not** to have the same problem — it already rendered before the 200-row table (right after Sleepers/Traps), so no fix was needed there. Only Quick Tools was the actual violation.
+
+**Fix:** moved `_dkQuickTools()` to render immediately after `dk-head` (the H1 + print button), before `dk-controls` — visible on load, no scrolling required. Also corrected a code comment in the same function that still described Quick Tools as being "at the bottom," now stale after the move.
+
+**Codebase-wide search:** used an Explore agent with the full `js/` directory staged (a first attempt was scoped to only 4 files still staged from earlier work — it correctly and transparently reported that limitation rather than guessing, and was re-run with full access rather than trusted as-is). Methodology: for every view-render function (`grid.innerHTML =` or equivalent), read the function in full and flag any 50+-item loop with meaningful content sequenced after it in the same output.
+
+**Found and independently re-verified (read the actual source, not just the agent's report) one further real instance:** NCAAF team detail pages. `displayNCAAFTeamDetail()` (`js/ncaaf.js`) builds a "Next game" schedule card and passes it into the shared `_renderTeamPage(m)` template (`js/nfl.js`, used by both NFL's and NCAAF's team pages) via the `scheduleHtml` property — which that shared template renders dead last, after the full roster. NFL's own team pages (`_renderNFLTeamDetail`, `js/nfl.js`) pass the equivalent content via `scheduleHtmlTop` instead, which renders near the top — confirmed by reading both functions directly. NCAAF's roster section (`groups`, built at `displayNCAAFTeamDetail` lines ~573-577) has no size cap and FBS rosters run 85-130 players across Offense/Defense/Special Teams groups, so the schedule card was landing after a very long uncapped list — same bug class as Quick Tools, different file, different mechanism (a mis-named template slot rather than section ordering), same effect.
+
+**Fix:** changed `js/ncaaf.js`'s `model` object from `scheduleHtml,` to `scheduleHtmlTop: scheduleHtml,`, matching the property name NFL's own team-page builder already uses correctly for the same shared template.
+
+**Checked and confirmed clean (specific reason given for each, not assumed):** MLB (players/teams/leaders/standings/games — all either paginated, tabbed, or genuinely short lists), Home (`loadHome()` — Today's Games and the headline/insights rail are both bounded), Teams/Players/Leaderboards/Standings/Games (NBA-preview surfaces — same bounded patterns), NCAAB (no team-detail page exists yet, so the bug class can't occur there), WNBA (no roster/team-detail page exists yet), NHL (no team roster page), remaining NCAAF views (Scores/Rankings/Standings all bounded), remaining NFL views (Players/Teams/Leaders/Compare/Standings/other Fantasy pages), `fantasy.js`'s other render functions besides `_dkRender`, Player Detail, the Ask Bar (`query.js`), global Search (`search.js`), and Stat Builder — each confirmed individually rather than skimmed as a batch.
+
+**Verified:** `node --check` clean on `js/fantasy.js` and `js/ncaaf.js`, 0 NUL bytes on both, 33/33 unit tests pass, `check-manifest.cjs` clean, `check-themes.cjs` unchanged (same 2 pre-existing light/nl-monarchs warnings — D-038/D-066, unrelated). `sw.js` CACHE_NAME bumped v204 → v205 (both changed files are precached static assets).
+
+**Standing takeaway, worth carrying forward:** before shipping any new page module, check whether it's sequenced after an unbounded or very-long list/table in the same render output. If so, either move it above that list or cap/paginate the list — this is now a named, recurring failure mode per the owner, not a one-off to fix and forget.
+
+**Escalation:** none — root-caused, fixed, live-verified, and documented same session. Full architectural writeup and D-111 status correction: DECISIONS.md, D-111 follow-up amendment (2026-08-19).

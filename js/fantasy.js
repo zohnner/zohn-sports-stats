@@ -1277,9 +1277,11 @@ function _dkRender() {
     </button>`;
 
     // No hq-strip on the dashboard itself (D-111) — this page IS the Draft HQ
-    // hub now, not one of six siblings; the Quick Tools row at the bottom
-    // covers the same lateral moves with an actual description of each tool's
-    // job, which a nav pill can't carry.
+    // hub now, not one of six siblings; the Quick Tools row right below the
+    // header covers the same lateral moves with an actual description of each
+    // tool's job, which a nav pill can't carry. Placed above dk-controls/the
+    // 200-row board on purpose — burying it below an unbounded table is the
+    // exact bug it exists to fix (see the 2026-08-19 placement fix).
     grid.innerHTML = `
       <div class="dk-wrap">
         <div class="dk-head">
@@ -1287,6 +1289,9 @@ function _dkRender() {
           <p class="md-note">Value over replacement from ${ok ? season + ' production' : 'ADP'} · rookies &amp; no-data players market-priced from ADP (<span class="dk-est">est</span>) · ADP from Sleeper${ok ? '' : ' · (production data unavailable — showing ADP)'}</p></div>
           <button class="md-btn md-btn--ghost" onclick="window.print()">Print cheat sheet</button>
         </div>
+
+        ${_dkQuickTools()}
+
         <div class="dk-controls">
           <label>Scoring<select id="dkScoring">${['PPR','Half-PPR','Standard'].map(s=>`<option ${s===_dk.scoring?'selected':''}>${s}</option>`).join('')}</select></label>
           <label>Teams<select id="dkTeams">${[8,10,12,14].map(n=>`<option ${n===_dk.teams?'selected':''}>${n}</option>`).join('')}</select></label>
@@ -1320,8 +1325,6 @@ function _dkRender() {
             </div>`).join('')}
           </div>
         </section>
-
-        ${_dkQuickTools()}
       </div>`;
 
     grid.querySelector('#dkScoring').addEventListener('change', e => { _dk.scoring = e.target.value; _dkRender(); });
