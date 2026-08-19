@@ -143,22 +143,64 @@ function _nflVenueBadge(teamAbbr) {
     return `<span class="md-venue-badge" title="${_escHtml(title)}">${turf ? 'Turf' : 'Grass'}</span>`;
 }
 
-const _MD_POS = ['QB', 'RB', 'WR', 'TE', 'K'];
-const _MD_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa' };
+const _MD_POS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+const _MD_POS_COLOR = { QB: '#ef4444', RB: '#34d399', WR: '#60a5fa', TE: '#fbbf24', K: '#a78bfa', DEF: '#2dd4bf' };
 const _MD_FLEX = ['RB', 'WR', 'TE'];
 // Bench depth caps (starters handled separately by the lineup model)
-const _MD_NEED = { QB: 3, RB: 6, WR: 6, TE: 2, K: 1 };
+const _MD_NEED = { QB: 3, RB: 6, WR: 6, TE: 2, K: 1, DEF: 1 };
 
 async function _mdFetchPool() {
     if (_mdPool) return _mdPool;
     const data = await (await fetch('/api/sleeper?path=/v1/players/nfl')).json();
-    const fp = new Set(_MD_POS);
-    _mdPool = Object.values(data)
-        .filter(p => p && p.active && fp.has(p.position) && p.search_rank != null && p.search_rank < 100000)
+    const skillPos = new Set(['QB', 'RB', 'WR', 'TE', 'K']);
+    // Sleeper's own `active` flag is not a reliable "still in the league" signal --
+    // long-retired veterans (Tom Brady, Drew Brees confirmed live, both years_exp > 20)
+    // still carry active:true with no team, and linger high in ADP-sorted search_rank.
+    // Same non-rookie + no-current-team signal _vbdImplied() already uses to withhold
+    // implied pricing from these players -- applied here too so they never enter the
+    // draftable pool at all, not just lose their value estimate.
+    const isRosterable = p => (p.team && p.team !== 'FA') || (p.years_exp ?? 0) === 0;
+    const skill = Object.values(data)
+        .filter(p => p && p.active && skillPos.has(p.position) && p.search_rank != null && p.search_rank < 100000 && isRosterable(p))
         .map(p => ({ id: p.player_id, name: p.full_name || `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-                     pos: p.position, team: p.team || 'FA', rank: p.search_rank, exp: p.years_exp }))
-        .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
-    _mdPool.forEach((p, i) => { p.adp = i + 1; });  // dense ADP (search_rank has ties)
+                     pos: p.position, team: p.team || 'FA', rank: p.search_rank, exp: p.years_exp }));
+
+    // Team defenses (DEF/DST) -- Sleeper carries all 32 as pseudo-players keyed by team
+    // abbreviation, but never sets search_rank (confirmed live: 0 of 32 have one), which
+    // is why DEF silently never made it into the pool despite being a standard roster
+    // slot on every competitor's mock draft (ESPN/Yahoo/Sleeper itself). No ADP source
+    // exists for them here, so rank by last-season points allowed (fewest = best defense
+    // -- the standard fantasy-industry DST proxy) via the existing fetchNFLStandings()
+    // (nflStandings.js), then space the 32 ranks into the same ADP territory real drafts
+    // place defenses in (kicker range through the end of a 15-round draft). Falls back to
+    // a flat alphabetical order if standings can't be fetched, rather than dropping DEF
+    // again -- DEF must never be pool-empty, empty is the exact bug being fixed.
+    const defs = Object.values(data).filter(p => p && p.position === 'DEF');
+    let defOrder = defs.slice().sort((a, b) => (a.team || a.player_id || '').localeCompare(b.team || b.player_id || ''));
+    try {
+        const season = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : (new Date().getFullYear() - 1);
+        const standings = await fetchNFLStandings(season);
+        const paByAbbr = {};
+        standings.forEach(s => { if (s.abbr && s.pa != null) paByAbbr[s.abbr] = s.pa; });
+        if (Object.keys(paByAbbr).length >= 28) {
+            defOrder = defs.slice().sort((a, b) => {
+                const pa = t => paByAbbr[t.team || t.player_id] != null ? paByAbbr[t.team || t.player_id] : 999;
+                return pa(a) - pa(b);
+            });
+        }
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('DEF ranking fell back to alphabetical -- standings unavailable', e, 'NFL');
+    }
+    const skillMaxRank = skill.reduce((m, p) => Math.max(m, p.rank), 0);
+    const defBase = skillMaxRank ? Math.max(100, Math.min(skillMaxRank, 150)) : 100;
+    const defPseudo = defOrder.map((p, i) => ({
+        id: p.player_id,
+        name: `${p.first_name || ''} ${p.last_name || ''}`.trim() + ' D/ST',
+        pos: 'DEF', team: p.team || p.player_id, rank: defBase + i * 5, exp: 0,
+    }));
+
+    _mdPool = skill.concat(defPseudo).sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+    _mdPool.forEach((p, i) => { p.adp = i + 1; });  // dense ADP (rank has ties / synthetic gaps)
     _mdAssignTiers(_mdPool);
     await _vbdLoad();
     _mdPool.forEach(p => { p._fp = _vbd.map[_vbdKey(p.name, p.pos)] || null; });
@@ -198,7 +240,7 @@ function _mdAdjRank(p) { return p.adp / _mdPosMult(p.pos); }
 
 // ── Lineup-aware roster need ──────────────────────────────────
 function _mdStartReq() {
-    return { QB: _md.superflex ? 2 : 1, RB: 2, WR: 2, TE: 1, K: 1 };
+    return { QB: _md.superflex ? 2 : 1, RB: 2, WR: 2, TE: 1, K: 1, DEF: 1 };
 }
 function _mdNeedScore(roster, pos) {
     const have = c => roster.filter(p => p.pos === c).length;
