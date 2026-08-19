@@ -1954,3 +1954,25 @@ To keep this log focused on decisions that still matter for current work, the fo
     check the Archived-index stub at the bottom of DECISIONS.md before proceeding, per the
     existing tier-3 rule — archiving doesn't relax that discipline, it just moves where the
     detail lives.
+
+---
+
+## D-111 — Draft HQ dashboard rebuild: scoped nav strip, real Draft HQ hub, reopens D-055
+**Status:** shipped, not yet pushed (commit `27ebbf7`, awaiting owner push)
+**Contributors:** Vera (JTBD + IA), Kael (visual review), Axiom (implementation + live-verification)
+**Date opened:** 2026-08-19 | **Date resolved:** 2026-08-19
+
+**Trigger (owner):** "lets do a bug and ux walkthrough with the team... landing pages and navs [should be] clean and concise," followed by a direct, separate ask: Draft HQ "doesn't look broadcaster grade with all the tabs at the top, this should feel like a true dashboard, full of relevant info where you don't have to click away."
+
+**Finding (Vera):** the header's Fantasy mega-menu (D-103) already lists all 10 Draft Prep/In-Season destinations in two labeled columns. Every one of those 10 pages *also* rendered `_hqStrip()` — the same 10 pills, both groups, unlabeled by relevance — at the top of its own body, via `js/fantasy.js`/`js/nfl.js`/`js/sos.js`. D-055 (2026-08-02) grouped what had been one flat 8-pill row into Draft Prep/In-Season clusters but explicitly left as an open follow-up: *"if the desktop Fantasy dropdown's flat list feels crowded once real usage data exists, revisit."* That's what this is — the strip was never trimmed to match, so a page like Schedule showed 4 In-Season pills (My League, Trending, Injury Report, Waiver Wire) it has nothing to do with, on top of a menu the header already renders. Separately, D-103's own comment said `nfl-compare` should be reachable "from Stats & Leaders now, no view lost, just one path instead of two" — but that removal only touched the header dropdown, not this strip, which kept listing Compare under Draft Prep regardless.
+
+The second half of the ask — "shouldn't have to click away" — was a content gap, not a chrome one. `nfl-draftkit` (labeled "Value Board") already had real dashboard-shaped content (Sleepers/Traps + a ranked Value Rankings table) but was treated as one of six co-equal Draft Prep tabs rather than the hub those six pages orbit.
+
+**Decision:**
+1. `_hqStrip(active, group)` now renders only its own group — 5 Draft Prep tabs or 4 In-Season tabs, never both — and drops the "DRAFT HQ" title label (the breadcrumb already says it). `nfl-compare` comes out of the Draft Prep group entirely, completing D-103's half-applied removal; Compare no longer renders any hq-strip.
+2. `nfl-draftkit` is promoted from "one of six" into the literal Draft HQ hub: renamed consistently to "Draft HQ" across breadcrumb, the Fantasy mega-menu item, the mobile menu, and the page H1 (was "Value Board" / "Draft Kit" in different places — three different names for one page). It drops its own hq-strip in favor of a **Quick Tools** link-card row (Mock Draft / ADP Rankings / Schedule / My Drafts, each with a real one-line job-to-be-done description instead of a bare label) and gains a **Bye Week Watch** module that joins sos.js's real `/api/nflsos` schedule data onto the top-40 value-board rows, flagging any week where 3+ of those targets share a bye. Progressive-rendered (page paints immediately, this section fills in async behind a skeleton) and fails open to an honest note if the fetch errors — no invented data; an "ADP movers" module was considered and dropped because there's no real historical-ADP-delta data source in this codebase to back it (Sleeper only exposes a single point-in-time ADP), and DESIGN.md's Receipts pattern rules out fabricating one.
+3. In-Season breadcrumbs (My League/Trending/Injury Report/Waiver Wire) renamed from "Draft HQ · X" to "Fantasy · X" — now that "Draft HQ" names one specific page, reusing it as the umbrella prefix for pages that aren't reachable through that page's own nav would misdescribe them.
+
+**Verified:** `node --check` clean on all 5 changed files, 0 NUL bytes, 33/33 unit tests, `check-manifest.cjs`/`check-themes.cjs` clean (2 pre-existing light/nl-monarchs contrast warnings, unrelated — D-038/D-066). Live-verified pre-push by patching the new functions into a real production tab (the technique documented in the 2026-08-17 Dashboard-brainstorm session): confirmed `_hqStrip('nfl-mock','prep')` renders exactly 5 tabs and `_hqStrip('nfl-myleague','season')` exactly 4, both with no "DRAFT HQ" title; confirmed the rebuilt `_dkRender()` on real production data — Bye Week Watch resolved real clusters (e.g. "Wk 11: Puka Nacua, Bijan Robinson, Jaxon Smith-Njigba..."), Quick Tools rendered as 4 cards; confirmed breadcrumb text for `nfl-draftkit`/`nfl-mock`/`nfl-waivers` matches the new labels exactly. sw.js bumped v203→v204.
+
+**Follow-up:** none queued. If the Draft Prep group (5 tabs) still feels crowded once NFL season traffic gives real usage data, that's a Vera call, not a guess — same discipline D-055 asked for and this entry is honoring.
