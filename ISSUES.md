@@ -1191,4 +1191,4 @@ Owner, verbatim: "the nfl preseason is weird there are 3 preseason weeks, howeve
 
 **Verified:** `node --check` + 0 NUL bytes on `js/nfl.js`, `js/app.js`, `css/main.css`, `sw.js`. **Gap versus the usual bar:** no `tests/` directory or `check-manifest.cjs` was present in this session's staged partial checkout, so the unit suite could not be run this session — flagged in DECISIONS.md D-113 as something to re-run on a full checkout. `sw.js` CACHE_NAME bumped v205 → v206. Committed via the mount-safe git-plumbing workaround, commit `1918766`, exactly the 4 intended files touched.
 
-**Escalation:** none. **Not yet pushed** — owner needs to `git push` before this reaches production; live post-deploy verification still pending.
+**Escalation:** none. Owner pushed same session; live post-deploy verification done on a fresh tab against real production — confirmed `sw.js` at v206, 4 preseason week pills (HOF Game/Wk 1/Wk 2/Wk 3) with "Wk 3" correctly loading the real Aug 27-29 slate, and the home-page promo rendering with its new border/icon/solid-CTA treatment. Full detail: DECISIONS.md D-113.

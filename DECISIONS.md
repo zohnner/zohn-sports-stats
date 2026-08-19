@@ -2011,7 +2011,7 @@ Per the owner's explicit second instruction ("search the project for similar iss
 ---
 
 ## D-113 — NFL preseason week-numbering fix (Hall of Fame Game as its own week) + mock-draft promo visibility on home page
-**Status:** committed locally (commit `1918766`), not yet pushed
+**Status:** pushed and live-verified on production (commits `1918766`, `6f096dc`)
 **Contributors:** Axiom (root-cause, fix, live pre-push verification)
 **Date opened:** 2026-08-19 | **Date resolved:** 2026-08-19
 
@@ -2027,6 +2027,8 @@ Per the owner's explicit second instruction ("search the project for similar iss
 
 **Verified:** `node --check` clean on `js/nfl.js`, `js/app.js`, `css/main.css`, `sw.js`; 0 NUL bytes on all four. No local test suite (`tests/`, `tools/check-manifest.cjs`) was present in this session's staged copy of the repo to run — this is a gap versus the usual verification bar and should be re-run on a full checkout before/after push if the owner wants that extra confirmation. Live pre-push verification in Chrome on real production (`sportstrata.cc`): confirmed the `'draft'` promo row genuinely renders today (2026-08-19) via direct DOM inspection (`.hm-row`, `.hm-chip--primary`, `_hmGo('nfl-mock')`); patched the CSS + row-class change into the live tab and screenshot-confirmed the promo now reads as distinct NFL-owned content (blue left border, 🏈 icon, solid orange "Mock Draft →" button) instead of a trailing pennant-race line. The preseason week-label fix was static- and NUL-verified but not separately live-patched into production (no live preseason nav state to distinguish visually beyond the label text, low regression risk, mirrors an existing pattern 1:1).
 
-**Shipped:** `sw.js` CACHE_NAME bumped v205 → v206 (`js/nfl.js`, `js/app.js`, `css/main.css` are all cached static assets). Committed via the mount-safe git-plumbing workaround, commit `1918766`, exactly 4 files touched (confirmed via `git diff-tree --no-commit-id --name-status -r HEAD`). **Not yet pushed** — owner needs to `git push`.
+**Shipped:** `sw.js` CACHE_NAME bumped v205 → v206 (`js/nfl.js`, `js/app.js`, `css/main.css` are all cached static assets). Committed via the mount-safe git-plumbing workaround, commit `1918766`, exactly 4 files touched (confirmed via `git diff-tree --no-commit-id --name-status -r HEAD`). Doc-sync commit `6f096dc`.
 
-**Escalation:** none — both asks resolved same session. Push + live post-deploy verification remain, per this repo's standard handoff.
+**Live post-deploy verification (2026-08-19, same day, real production, fresh tab — not a pre-push patch):** confirmed `sw.js` serving `sportstrata-v206`; confirmed a raw `fetch()` of the deployed `js/nfl.js`/`js/app.js`/`css/main.css` contains the new code. Then, on a genuinely fresh tab (no carried-over SW/cache state) rather than trusting the raw fetch alone — the first check, on the tab that had been open all session, initially showed stale in-memory JS (3 preseason week pills, no border/icon on the promo row) even though the fetched files were already correct, exactly the stale-while-revalidate trap this repo's process warns about. A fresh tab resolved it: NFL Scores → Preseason now renders 4 pills — "HOF Game / Wk 1 / Wk 2 / Wk 3" — and clicking "Wk 3" correctly loads the real Aug 27-29 full slate (Bills @ Steelers, Browns @ Patriots, etc., 384 elements in the results grid). The home page promo row renders with the blue NFL-accent left border, 🏈 icon, and solid-orange "Mock Draft →" button, matching the pre-push preview exactly.
+
+**Escalation:** none — both asks resolved, shipped, and confirmed live on real production this session.
