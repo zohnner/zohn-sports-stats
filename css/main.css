@@ -1596,6 +1596,19 @@ main {
 /* Today's games section */
 .home-today { margin-bottom: 2rem; }
 
+/* Home redesign pass (2026-08-19, team-routed external roadmap triage --
+   see DECISIONS.md): shared "zone" container so Today's Games / The Latest /
+   Tonight's Starters / Hot Right Now read as distinct thematic blocks
+   instead of one flat scroll -- the roadmap's actual, valid complaint.
+   Reuses --bg-surface (one step up from the page's --bg-base) + the
+   standard card border/radius tokens; no new tokens invented. */
+.home-zone {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.1rem 1.25rem;
+}
+
 .home-section-hdr {
     display: flex;
     align-items: baseline;
@@ -1670,6 +1683,29 @@ main {
    D-038 K2). State lives in the badge (pulse) + this glow only. */
 .home-game-card--live {
     box-shadow: var(--shadow-live);
+}
+
+/* Home redesign pass (2026-08-19): "marquee" treatment for the top-ranked
+   games on the Today's Games grid -- bigger tile, bigger type, without
+   hiding any other game behind an accordion (see .home-zone comment above
+   for the same session's rationale). Span 2 grid columns so it reads as a
+   real size jump against the ~155-165px base tile, not just a border tweak.
+   Explicit rem values, not em multipliers, since .hgc-abbr/.hgc-score's own
+   font-size rule is fully overridden (higher specificity), not compounded --
+   an em here would resolve against inherited context, not their base rem. */
+.home-game-card--marquee {
+    grid-column: span 2;
+    padding: 1.15rem 1.3rem 1rem;
+}
+.home-game-card--marquee .hgc-team-logo {
+    width: 36px;
+    height: 36px;
+}
+.home-game-card--marquee .hgc-abbr {
+    font-size: 0.95rem;
+}
+.home-game-card--marquee .hgc-score {
+    font-size: 1.25rem;
 }
 
 /* Team row: [logo] [abbr ——flex——] [score] */
@@ -2366,9 +2402,16 @@ main {
 
 /* ── Tonight's Starting Pitchers ────────────────────────── */
 .sp-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    /* min(420px, 100%) instead of a bare 420px floor: live-preview against
+       production (2026-08-19) showed 280px truncating pitcher names
+       ("Wilkinson" -> "Wilkin...") and cramming the opponent-history rows;
+       420px reads clean at desktop width. A bare minmax(420px,1fr) floor
+       would force a >420px-wide single column (horizontal overflow) on any
+       viewport narrower than that, so the track's floor is clamped to the
+       container's own width -- one column, no overflow, on phones. */
+    grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+    gap: 0.6rem;
     padding: 0 0 0.25rem;
 }
 .sp-card {
@@ -2457,6 +2500,33 @@ main {
     color: var(--text-muted);
 }
 .sp-pitcher--home .sp-statline { justify-content: flex-end; }
+
+/* Home redesign pass (2026-08-19): compact ERA/K-9 mini-bars, see the
+   _statBar() comment in js/app.js's _spCard() for why this is decoration
+   backing an existing number, not a new computed claim. Team-color fill
+   (--sp-bar-c, set inline per pitcher) matches the existing avatar-gradient
+   and border=identity convention rather than inventing a new stat-color. */
+.sp-stat-bar {
+    display: inline-block;
+    width: 22px;
+    height: 5px;
+    margin-left: 0.3em;
+    border-radius: 3px;
+    background: var(--border-mid);
+    position: relative;
+    vertical-align: middle;
+    overflow: hidden;
+}
+.sp-stat-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--sp-bar-pct, 0%);
+    background: var(--sp-bar-c, var(--accent));
+    border-radius: inherit;
+}
+.sp-pitcher--home .sp-stat-bar { margin-left: 0; margin-right: 0.3em; }
+
 @media (max-width: 480px) {
     .sp-statline { display: none; }
     .sp-avatar   { width: 32px; height: 32px; font-size: 0.6rem; }

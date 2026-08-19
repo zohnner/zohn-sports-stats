@@ -505,7 +505,7 @@ function loadHome() {
         <div class="home-moment" id="homeMoment" hidden></div>
 
         <!-- Today's Games — dominant first module -->
-        <div class="home-today" id="homeTodayGames">
+        <div class="home-today home-zone" id="homeTodayGames">
             <div class="home-section-hdr">
                 <span class="home-section-title">Today's Games</span>
                 <span class="home-section-date">${dateStr}</span>
@@ -523,7 +523,7 @@ function loadHome() {
         </div>
 
         <!-- Headlines + Insights rail (D-046 P3) — news pipeline + templated data bullets -->
-        <div class="home-rail" id="homeRail">
+        <div class="home-rail home-zone" id="homeRail">
             <div class="home-section-hdr">
                 <span class="home-section-title">The Latest</span>
                 <div class="rail-tabs" role="tablist" aria-label="Latest news and insights">
@@ -540,7 +540,7 @@ function loadHome() {
         </div>
 
         <!-- Tonight's Starting Pitchers — populated by _renderTonightSPSection() -->
-        <div id="homeTonightSP">
+        <div id="homeTonightSP" class="home-zone">
             <div class="home-section-hdr">
                 <span class="home-section-title">Tonight's Starters</span>
                 <button class="home-section-link" onclick="navigateTo('mlb-prep')">Game Prep →</button>
@@ -568,7 +568,7 @@ function loadHome() {
         </div>
 
         <!-- Hot Right Now (P2-002) — populated by _renderHotStrip() -->
-        <div id="homeHotStrip">
+        <div id="homeHotStrip" class="home-zone">
             <div class="home-section-hdr">
                 <span class="home-section-title">Hot Right Now</span>
                 <button class="home-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button>
@@ -858,6 +858,20 @@ function _renderTonightSPSection() {
         const k9      = _fmt(s.strikeoutsPer9Inn, 1);
         const pid     = pp.id;
 
+        // Home redesign pass (2026-08-19): compact visual bars backing the
+        // existing ERA/K-9 numbers -- decoration, not a new claim (the
+        // printed number stays the source of truth, DESIGN.md's receipts
+        // pattern). Fixed reference scale, not opponent-relative: ERA 1.00
+        // (elite) -> 6.00 (replacement level), inverted since lower is
+        // better; K/9 0 -> 14 (elite), direct. Clamped so a real outlier
+        // doesn't collapse or blow out the bar.
+        const eraNum = parseFloat(s.era);
+        const k9Num  = parseFloat(s.strikeoutsPer9Inn);
+        const eraPct = !isNaN(eraNum) ? Math.max(0.06, Math.min(1, 1 - (eraNum - 1) / 5)) : null;
+        const k9Pct  = !isNaN(k9Num)  ? Math.max(0.06, Math.min(1, k9Num / 14)) : null;
+        const _statBar = (pct) => pct == null ? '' :
+            `<span class="sp-stat-bar" style="--sp-bar-pct:${(pct * 100).toFixed(0)}%;--sp-bar-c:${colors.primary}"></span>`;
+
         const lastName = (pp.fullName || '').split(' ').slice(1).join(' ') || pp.fullName || 'TBD';
 
         return `
@@ -874,9 +888,9 @@ function _renderTonightSPSection() {
                     <span class="sp-name">${_escHtml(lastName)}</span>
                     <span class="sp-team" style="color:${colors.primary}">${_escHtml(teamAbbr)}</span>
                     <div class="sp-statline">
-                        <span>${era} ERA</span>
+                        <span>${era} ERA${_statBar(eraPct)}</span>
                         <span>${whip} WHIP</span>
-                        <span>${k9} K/9</span>
+                        <span>${k9} K/9${_statBar(k9Pct)}</span>
                         ${wl ? `<span>${wl}</span>` : ''}
                     </div>
                     ${oppTeamId ? `<div class="vs-opp-row" data-vs-placeholder="1"><span class="skeleton-line" style="height:9px;width:120px;display:inline-block"></span></div>` : ''}
@@ -1201,6 +1215,20 @@ async function _loadHomeTodayGames() {
         }
 
         gridEl.innerHTML = cards.join('') + extraCards.join('');
+
+        // Home redesign pass (2026-08-19, team-routed external roadmap triage
+        // -- see DECISIONS.md): mark the top-ranked MLB games as "marquee"
+        // tiles (bigger, more visually dominant) while keeping every game
+        // visible -- no accordion. `cards` is already rank-sorted (favorite +
+        // today/live first, then live, then the rest), so the first 3
+        // rendered nodes are already the right games to lift; this resolves
+        // Vera's flagged tension with D-091's "Today's Games is already the
+        // comprehensive view" rationale by never hiding anything.
+        if (cards.length > 3) {
+            gridEl.querySelectorAll('.home-game-card').forEach((card, i) => {
+                if (i < 3) card.classList.add('home-game-card--marquee');
+            });
+        }
 
         // Update section header with live count badge + filter pills (idempotent)
         const liveCount = mlbResult ? mlbResult.filter(g => g.status?.abstractGameState === 'Live'

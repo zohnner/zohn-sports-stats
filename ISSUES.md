@@ -1192,3 +1192,25 @@ Owner, verbatim: "the nfl preseason is weird there are 3 preseason weeks, howeve
 **Verified:** `node --check` + 0 NUL bytes on `js/nfl.js`, `js/app.js`, `css/main.css`, `sw.js`. **Gap versus the usual bar:** no `tests/` directory or `check-manifest.cjs` was present in this session's staged partial checkout, so the unit suite could not be run this session — flagged in DECISIONS.md D-113 as something to re-run on a full checkout. `sw.js` CACHE_NAME bumped v205 → v206. Committed via the mount-safe git-plumbing workaround, commit `1918766`, exactly the 4 intended files touched.
 
 **Escalation:** none. Owner pushed same session; live post-deploy verification done on a fresh tab against real production — confirmed `sw.js` at v206, 4 preseason week pills (HOF Game/Wk 1/Wk 2/Wk 3) with "Wk 3" correctly loading the real Aug 27-29 slate, and the home-page promo rendering with its new border/icon/solid-CTA treatment. Full detail: DECISIONS.md D-113.
+
+---
+
+## Home page redesign — external-LLM roadmap triage + partial build — 2026-08-19
+
+**Contributor:** Finn (fact-check) / Vera / Kael / Axiom | **Date:** 2026-08-19
+
+Owner pasted a 5-phase home-page redesign roadmap from another LLM. Routed through the normal process rather than built directly (same pattern as the original ChatGPT-brief episode, D-090/D-091), then owner approved implementing whatever the team's triage deemed worthy. Full triage table, rationale, and build/verification detail: DECISIONS.md D-114 — this entry is the pointer, per this file's convention.
+
+**Fact-check caught a stale premise up front:** Phase 1's "move the tweet/social embed" doesn't apply — no social embed exists anywhere on the page (confirmed against `index.html`). Dropped.
+
+**Shipped:** `.home-zone` shared containers (Today's Games / The Latest / Tonight's Starters / Hot Right Now read as distinct blocks now, no DOM reordering); Today's Games "marquee" treatment for the top 3 rank-sorted games (bigger tile, no accordion, nothing hidden — resolves the tension between the roadmap's "hide most games" idea and D-091's "Today's Games is the comprehensive view" reasoning by keeping everything visible); Tonight's Starters converted from an 8-row vertical stack to a responsive grid; small team-colored ERA/K-9 mini-bars on Starters cards (decoration backing the existing numbers, not a new claim).
+
+**Two bugs caught during live pre-ship verification against real production, both fixed same pass:** the Starters grid's first-draft column width (280px) truncated real pitcher names and crowded the existing opponent-history stat rows — widened to 420px. A bare 420px minimum would have caused real horizontal overflow on any phone-width viewport — proven via a synthetic 375px-container test (the resize-window tool didn't affect this session's fixed-resolution display) — fixed with `minmax(min(420px, 100%), 1fr)` instead of a bare floor.
+
+**Declined, not built:** ticker condensing (conflicts with `ux.md`'s standing "do not redesign the score ticker" constraint + D-087's merged-ticker architecture + NCAAF/NCAAB's mobile Scores-nav dependency on it); "SportsStrata Picks"/Lock high-confidence-play badges (GOALS.md's "not a pure betting site" non-goal + D-069's real licensing-review requirement for anything betting-adjacent — routed to the owner as its own product/compliance question, not a design-team call).
+
+**Deferred, needs more before it's buildable:** hero and Starters win-probability bars — no MLB win-probability data source exists anywhere in this codebase (only NFL has one, via D-106/ESPN `/summary`); needs a Relay data-availability pass first. The roadmap's literal DOM-reordering half of Phase 2 also wasn't attempted this pass — the visual-separation fix above addresses the same complaint at lower risk; only revisit reordering with its own Vera/Kael pass if that turns out insufficient.
+
+**Verified:** `node --check` clean on `js/app.js`, 0 NUL bytes on both changed files, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 48-test unit suite passing (6 files). `sw.js` CACHE_NAME bumped v206 → v207 (`js/app.js`, `css/main.css` are both precached static assets). Committed via the mount-safe git-plumbing workaround.
+
+**Not yet live-verified after deploy** — no push access from this session, owner needs to `git push`. Full detail: DECISIONS.md D-114.
