@@ -4288,8 +4288,18 @@ body.view-home .search-global-btn { display: none; }
 .hm-text { color: var(--text-secondary); font-size: 0.82rem; }
 .hm-chip { padding: 0.28rem 0.7rem; border: 1px solid var(--border-mid); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); font-size: 0.76rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: color 130ms ease-out, border-color 130ms ease-out; }
 .hm-chip:hover { color: var(--text-primary); border-color: var(--border-strong); }
-.hm-chip--primary { border-color: var(--accent-border); color: var(--text-primary); }
-.hm-chip--primary:hover { border-color: var(--accent); }
+/* Solid fill, not just an outline -- DESIGN.md invariant #3 ("brand orange =
+   brand only: logo/wordmark, primary CTA, active nav") explicitly calls out
+   primary CTA as one of the few places --accent should be a fill, not a tint.
+   Reuses the exact .md-btn--primary declaration (2026-08-19). */
+.hm-chip--primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.hm-chip--primary:hover { opacity: 0.88; }
+/* Promo rows (the seasonal moment band's non-pennant row, D-040 1a / D-043 3b)
+   get a per-sport identity border so they read as distinct content instead of
+   a trailing line inside the Pennant Races card above them -- same
+   "border = identity" convention already used by .sport-card/.sl-card
+   (2026-08-19, mock-draft-visibility fix). */
+.hm-row--promo { border-left: 3px solid var(--sport-accent, var(--accent)); }
 .hm-race { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.7rem; border: 1px solid var(--border-default); border-radius: var(--radius-full); background: var(--bg-card); cursor: pointer; font-size: 0.78rem; color: var(--text-secondary); transition: border-color 130ms ease-out; }
 .hm-race:hover { border-color: var(--border-strong); }
 .hm-race strong { color: var(--text-primary); font-weight: 800; }

@@ -2913,13 +2913,26 @@ async function _renderHomeMoment() {
     const promo = _activePromoMoment();
     if (!moments.length && !promo) { host.hidden = true; return; }
 
-    const promoRow = promo ? `
-        <div class="hm-row">
-            <span class="hm-kicker">${_escHtml(promo.kicker())}</span>
+    // 2026-08-19 (mock-draft-visibility fix): this row rendered correctly all
+    // along, but sat directly under the Pennant Races card with the same bare
+    // .hm-row treatment as its own header row -- no visual seam, so it read as
+    // a trailing caption on an MLB widget instead of its own promo. Giving it
+    // the sport's own accent as a left border + icon (same "border = identity"
+    // pattern .sport-card already uses) makes it legible as distinct, NFL-owned
+    // content at a glance, without inventing any new class or color.
+    const promoRow = promo ? (() => {
+        const promoSport = promo.primary.view.split('-')[0];
+        const promoMeta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[promoSport]) || {};
+        const promoAccent = promoMeta.accent || 'var(--accent)';
+        const promoIcon = promoMeta.icon ? `${promoMeta.icon} ` : '';
+        return `
+        <div class="hm-row hm-row--promo" style="--sport-accent:${promoAccent}">
+            <span class="hm-kicker">${promoIcon}${_escHtml(promo.kicker())}</span>
             <span class="hm-text">${_escHtml(promo.text())}</span>
             <button class="hm-chip hm-chip--primary" onclick="_hmGo('${promo.primary.view}')">${_escHtml(promo.primary.label)}</button>
             <button class="hm-chip" onclick="_hmGo('${promo.secondary().view}')">${_escHtml(promo.secondary().label)}</button>
-        </div>` : '';
+        </div>`;
+    })() : '';
 
     host.hidden = false;
     host.innerHTML = `<div id="hmPennant">${moments.includes('pennant') ? `

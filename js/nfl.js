@@ -390,7 +390,7 @@ function displayNFLTeams(teams) {
 // a scrollable week-pill row, reusing the exact seasontype/week/dates params
 // nflStandings.js's fetchNFLPostseason() already proves work in production.
 const _NFL_SEASONTYPES = [
-    { type: 1, label: 'Preseason', weeks: 3 },
+    { type: 1, label: 'Preseason', weeks: 4 },
     { type: 2, label: 'Regular Season', weeks: 18 },
     { type: 3, label: 'Postseason', weeks: 5 },
 ];
@@ -398,6 +398,17 @@ const _NFL_SEASONTYPES = [
 // comment (week 4 is the Pro Bowl, not a real round -- kept only so the pill
 // row has no numbering gap).
 const _NFL_POSTSEASON_WEEK_LABELS = { 1: 'Wild Card', 2: 'Divisional', 3: 'Conf. Champ', 4: 'Pro Bowl', 5: 'Super Bowl' };
+// Same numbering-gap pattern for preseason (live-confirmed against ESPN's own
+// seasontype=1 weeks, 2026-08-19): the Hall of Fame Game is its own standalone
+// ESPN week 1 -- a single game, ~1 week before the rest of the league even
+// opens camp scrimmages to the public -- and the three real "full slate"
+// preseason weekends fans mean by "Preseason Week 1/2/3" are ESPN weeks 2-4.
+// `weeks: 3` above used to hard-cap the pill row at ESPN weeks 1-3, which
+// silently dropped the entire third preseason weekend (ESPN week 4, ~16
+// games) from the nav and left the Hall of Fame Game mislabeled "Wk 1" next
+// to full 16-game slates. Fixed to `weeks: 4` + this label map so the pill
+// row matches what ESPN's data (and broadcasters) actually mean.
+const _NFL_PRESEASON_WEEK_LABELS = { 1: 'HOF Game', 2: 'Wk 1', 3: 'Wk 2', 4: 'Wk 3' };
 
 // null = "Today" (the original zero-param/current-week ESPN default). Set to
 // { seasontype, week, season } once the user explicitly picks a tab/week.
@@ -433,7 +444,9 @@ function _renderNFLScoresNav() {
         `<button data-nfl-stype="${t.type}" style="${pillStyle(!!f && t.type === activeType)}">${t.label}</button>`
     ).join('');
 
-    const weekLabel = (w) => activeType === 3 ? (_NFL_POSTSEASON_WEEK_LABELS[w] || `Wk ${w}`) : `Wk ${w}`;
+    const weekLabel = (w) => activeType === 3 ? (_NFL_POSTSEASON_WEEK_LABELS[w] || `Wk ${w}`)
+        : activeType === 1 ? (_NFL_PRESEASON_WEEK_LABELS[w] || `Wk ${w}`)
+        : `Wk ${w}`;
     const weeks = Array.from({ length: typeMeta.weeks }, (_, i) => i + 1);
     const weekBtns = weeks.map(w => {
         const active = !!f && f.week === w;
