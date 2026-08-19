@@ -4535,13 +4535,16 @@
     background: var(--accent-subtle);
 }
 
-/* ── Draft HQ strip (D-035, regrouped D-055) ─────────────────
+/* ── Draft HQ strip (D-035, regrouped D-055, scoped-per-page D-111) ──
    Spans full width inside .players-grid contexts. Wraps to multiple
    lines on narrow screens instead of relying on horizontal scroll — a
    hidden scrollbar gave mobile users no signal that Injury Report /
    Waiver Wire existed off-screen to the right (D-055). Active tab baked
-   at render time. Grouped by _hqStrip() into labeled clusters (.hq-group-
-   label) rather than one flat undifferentiated row. */
+   at render time. D-111: each page now renders only its own group (Draft
+   Prep or In-Season), never both — the header's own Fantasy mega-menu
+   already lists everything, so a full 10-pill strip on every page was
+   showing the same menu twice. .hq-title (the "DRAFT HQ" label) is gone
+   for the same reason — the breadcrumb already says it. */
 .hq-strip {
     grid-column: 1 / -1;
     display: flex;
@@ -4549,14 +4552,6 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     margin: 0 0 1rem;
-}
-.hq-title {
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    color: var(--text-subtle);
-    margin-right: 0.35rem;
-    white-space: nowrap;
 }
 .hq-group-label {
     font-size: 0.58rem;

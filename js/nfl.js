@@ -884,7 +884,7 @@ function displayNFLTrending(adds, drops) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
     grid.style.cssText = '';
-    grid.innerHTML = (typeof _hqStrip === 'function') ? _hqStrip('nfl-trending') : '';
+    grid.innerHTML = (typeof _hqStrip === 'function') ? _hqStrip('nfl-trending', 'season') : '';
 
     const panel = (title, icon, list, accent) => {
         const card = document.createElement('div');
@@ -938,7 +938,7 @@ async function loadNFLInjuries() {
     grid.className = 'players-grid';
     grid.style.cssText = '';
     if (window.setBreadcrumb) setBreadcrumb('nfl-injuries', null);
-    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries') : '') +
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries', 'season') : '') +
         Array.from({ length: 3 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
     try {
         await fetchNFLSleeperPool();
@@ -976,7 +976,7 @@ function displayNFLInjuries() {
         <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">${filtered.length} reported</span>
     </div>`;
 
-    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries') : '') + bar;
+    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries', 'season') : '') + bar;
 
     if (!filtered.length) {
         const empty = document.createElement('div');
@@ -1040,7 +1040,7 @@ async function loadNFLWaivers() {
     grid.className = 'players-grid';
     grid.style.cssText = '';
     if (window.setBreadcrumb) setBreadcrumb('nfl-waivers', null);
-    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers') : '') +
+    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers', 'season') : '') +
         Array.from({ length: 3 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
     try {
         await fetchNFLSleeperPool();
@@ -1086,7 +1086,7 @@ function displayNFLWaivers(adds) {
         <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} adds, last 24h · Source: Sleeper</span>
     </div>`;
 
-    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers') : '') + bar;
+    let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers', 'season') : '') + bar;
 
     if (!shown.length) {
         const empty = document.createElement('div');
@@ -2021,8 +2021,12 @@ async function loadNFLCompare() {
     grid.className = '';
     grid.style.cssText = '';
     if (window.setBreadcrumb) setBreadcrumb('nfl-compare', null);
-    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-compare') : '') +
-        `<div class="skeleton-card" style="min-height:300px"></div>`;
+    // No hq-strip here (D-111) — Compare isn't part of Draft HQ. D-103 already
+    // decided this ("nfl-compare... reachable from Stats & Leaders now, no view
+    // lost, just one path instead of two") and pulled it from the header's
+    // Fantasy dropdown, but this in-page strip kept listing it under Draft Prep
+    // regardless — a Compare page advertising Draft HQ siblings it isn't one of.
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:300px"></div>`;
     try {
         await fetchNFLSleeperPool();
         _renderNFLCompareView();
@@ -2038,7 +2042,7 @@ function _renderNFLCompareView() {
     const top = (_nflPool || []).slice(0, 300);
     const opts = '<option value="">— Select player —</option>' +
         top.map(p => `<option value="${p.player_id}">${_escHtml(p.full_name)} · ${_escHtml(p.team || 'FA')} ${_escHtml(p.position || '')}</option>`).join('');
-    grid.innerHTML = (typeof _hqStrip === 'function' ? _hqStrip('nfl-compare') : '') + `
+    grid.innerHTML = `
         <div class="cmp-page-wrap">
             <div class="cmp-page-hdr"><h1 class="cmp-page-title">Player Compare</h1></div>
             <div class="cmp-selects-row">

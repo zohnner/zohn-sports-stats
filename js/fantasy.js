@@ -273,37 +273,43 @@ async function loadMockDraft() {
     _renderMockSetup(grid);
 }
 
-// ── Draft HQ strip (D-035, regrouped D-055) — one home for the fantasy
-// research views. Rendered by each member view at the top of its own
-// output, so routes, deep links, and .nav-tab[data-view] active-state all
-// keep working. Grouped into Draft Prep (pre-draft research + the
-// simulator) and In-Season (roster-management tools that only make sense
-// once a season is live) — previously one flat row of 8 identical pills
-// with no hierarchy; see ISSUES.md D-055 for the full rationale.
-const _HQ_GROUPS = [
-    { label: 'Draft Prep', tabs: [
-        { v: 'nfl-draftkit', l: 'Value Board' },
+// ── Draft HQ strip (D-035, regrouped D-055, scoped-per-page D-111) — quick
+// lateral nav between sibling Fantasy pages. Rendered by each member view at
+// the top of its own output, so routes, deep links, and .nav-tab[data-view]
+// active-state all keep working. D-055 grouped what had been one flat row of
+// 8 pills into Draft Prep / In-Season clusters, but every page still rendered
+// BOTH clusters (10 pills total) regardless of which one it belonged to — the
+// header's own Fantasy dropdown (SUB_NAV_TABS.nfl, D-103) already renders the
+// same two clusters in a mega-menu, so a Schedule page showing In-Season pills
+// it has nothing to do with was pure duplication, not a second, more useful
+// view of the same information. D-111 scopes the strip to a single group per
+// page (own the request to make Draft HQ pages "not all the tabs at the
+// top") and drops the "DRAFT HQ" title label — the breadcrumb already says
+// that, repeating it a third time added nothing. `nfl-compare` also comes out
+// of the prep group here: D-103's own comment said it should be reachable
+// only from Stats & Leaders "one path instead of two," but only removed it
+// from the header dropdown, not this strip — this finishes that.
+const _HQ_GROUPS = {
+    prep: { label: 'Draft Prep', tabs: [
+        { v: 'nfl-draftkit', l: 'Draft HQ' },
         { v: 'nfl-rankings', l: 'ADP Rankings' },
         { v: 'nfl-sos',      l: 'Schedule' },
-        { v: 'nfl-compare',  l: 'Compare' },
         { v: 'nfl-mock',     l: 'Mock Draft' },
         { v: 'nfl-mydrafts', l: 'My Drafts' },
     ] },
-    { label: 'In-Season', tabs: [
+    season: { label: 'In-Season', tabs: [
         { v: 'nfl-myleague', l: 'My League' },
         { v: 'nfl-trending', l: 'Trending' },
         { v: 'nfl-injuries', l: 'Injury Report' },
         { v: 'nfl-waivers',  l: 'Waiver Wire' },
     ] },
-];
-function _hqStrip(active) {
-    const groups = _HQ_GROUPS.map(g => {
-        const tabs = g.tabs.map(t =>
-            `<button type="button" class="hq-tab${t.v === active ? ' hq-tab--on' : ''}"${t.v === active ? ' aria-current="page"' : ''} onclick="navigateTo('${t.v}')">${t.l}</button>`
-        ).join('');
-        return `<span class="hq-group-label">${g.label}</span>${tabs}`;
-    }).join('');
-    return `<nav class="hq-strip" aria-label="Draft HQ sections"><span class="hq-title">DRAFT HQ</span>${groups}</nav>`;
+};
+function _hqStrip(active, group = 'prep') {
+    const g = _HQ_GROUPS[group] || _HQ_GROUPS.prep;
+    const tabs = g.tabs.map(t =>
+        `<button type="button" class="hq-tab${t.v === active ? ' hq-tab--on' : ''}"${t.v === active ? ' aria-current="page"' : ''} onclick="navigateTo('${t.v}')">${t.l}</button>`
+    ).join('');
+    return `<nav class="hq-strip" aria-label="${g.label} sections"><span class="hq-group-label">${g.label}</span>${tabs}</nav>`;
 }
 
 function _renderMockSetup(grid) {
@@ -871,7 +877,7 @@ async function loadNFLMyLeague() {
     if (window.setBreadcrumb) setBreadcrumb('nfl-myleague', null);
 
     if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') {
-        grid.innerHTML = _hqStrip('nfl-myleague') + `
+        grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `
           <div class="md-wrap">
             <div class="md-empty">
               <h2 class="md-title" style="font-size:1.4rem">My League</h2>
@@ -882,7 +888,7 @@ async function loadNFLMyLeague() {
         return;
     }
 
-    grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div></div></div>`;
+    grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div></div></div>`;
     try {
         const res = await fetch('/api/sleeperLink', { credentials: 'same-origin' });
         if (!res.ok) throw new Error('fetch_failed');
@@ -893,14 +899,14 @@ async function loadNFLMyLeague() {
     } catch (e) {
         if (typeof Logger !== 'undefined') Logger.warn('Sleeper link fetch failed', e, 'NFL');
         const g = document.getElementById('playersGrid');
-        if (g) g.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your league link. Try again.</p><button class="md-btn" onclick="loadNFLMyLeague()">Retry</button></div></div>`;
+        if (g) g.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your league link. Try again.</p><button class="md-btn" onclick="loadNFLMyLeague()">Retry</button></div></div>`;
     }
 }
 
 function _mlRenderLinkForm(errorMsg) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
-    grid.innerHTML = _hqStrip('nfl-myleague') + `
+    grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `
       <div class="md-wrap">
         <div class="md-setup">
           <h1 class="md-title">My League</h1>
@@ -922,7 +928,7 @@ function _mlRenderLinkForm(errorMsg) {
 
 async function _mlLookupAndLink(username) {
     const grid = document.getElementById('playersGrid');
-    grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Looking up ${_escFan(username)}…</p></div></div>`;
+    grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Looking up ${_escFan(username)}…</p></div></div>`;
     try {
         const userRes = await fetch(`/api/sleeper?path=${encodeURIComponent('/v1/user/' + username)}`, { credentials: 'same-origin' });
         const sleeperUser = userRes.ok ? await userRes.json() : null;
@@ -950,7 +956,7 @@ async function _mlLookupAndLink(username) {
 function _mlRenderLeaguePicker(sleeperUser, leagues) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
-    grid.innerHTML = _hqStrip('nfl-myleague') + `
+    grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `
       <div class="md-wrap">
         <h1 class="md-title" style="font-size:1.5rem;text-align:center;margin-bottom:0.25rem">Pick your league</h1>
         <p class="md-sub" style="text-align:center;margin-bottom:1.5rem">${leagues.length} ${NFL_FANTASY_SEASON} leagues found for ${_escFan(sleeperUser.display_name || sleeperUser.username)}.</p>
@@ -976,7 +982,7 @@ function _mlPickLeague(i) {
 
 async function _mlSelectLeague(sleeperUser, league) {
     const grid = document.getElementById('playersGrid');
-    if (grid) grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Linking ${_escFan(league.name)}…</p></div></div>`;
+    if (grid) grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-loading"><p style="text-align:center;color:var(--text-muted)">Linking ${_escFan(league.name)}…</p></div></div>`;
     try {
         const res = await fetch('/api/sleeperLink', {
             method: 'POST',
@@ -1015,7 +1021,7 @@ async function _mlUnlink() {
 
 async function _mlRenderRoster(link) {
     const grid = document.getElementById('playersGrid');
-    if (grid) grid.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div><div class="skeleton-line" style="height:200px"></div></div></div>`;
+    if (grid) grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-loading"><div class="skeleton-line" style="height:32px;width:40%;margin:2rem auto"></div><div class="skeleton-line" style="height:200px"></div></div></div>`;
     try {
         await fetchNFLSleeperPool();
         const [rostersRes, usersRes, leagueRes] = await Promise.all([
@@ -1048,7 +1054,7 @@ async function _mlRenderRoster(link) {
     } catch (e) {
         if (typeof Logger !== 'undefined') Logger.warn('Roster fetch failed', e, 'NFL');
         const g = document.getElementById('playersGrid');
-        if (g) g.innerHTML = _hqStrip('nfl-myleague') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your roster from Sleeper. Try again.</p><button class="md-btn" onclick="_mlRenderRoster(_mlLink)">Retry</button></div></div>`;
+        if (g) g.innerHTML = _hqStrip('nfl-myleague', 'season') + `<div class="md-wrap"><div class="md-empty"><p>Couldn't load your roster from Sleeper. Try again.</p><button class="md-btn" onclick="_mlRenderRoster(_mlLink)">Retry</button></div></div>`;
     }
 }
 
@@ -1133,7 +1139,7 @@ function _mlRenderRosterView(link, roster, me, gradeInfo) {
           </div>
         </div>` : '';
 
-    grid.innerHTML = _hqStrip('nfl-myleague') + `
+    grid.innerHTML = _hqStrip('nfl-myleague', 'season') + `
       <div class="md-wrap md-complete">
         <h1 class="md-title">${_escFan(teamName)}</h1>
         <p class="md-note">${_escFan(link.league_name)} · Record ${record}</p>
@@ -1217,9 +1223,9 @@ async function loadDraftKit() {
     document.getElementById('searchBar')?.style.setProperty('display', 'none');
     document.getElementById('viewHeader')?.style.setProperty('display', 'block');
     if (window.setBreadcrumb) setBreadcrumb('nfl-draftkit', null);
-    grid.innerHTML = `<div class="md-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Building value board…</p></div>`;
+    grid.innerHTML = `<div class="md-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Building Draft HQ…</p></div>`;
     try { await _mdFetchPool(); } catch (e) {
-        grid.innerHTML = `<div class="md-empty"><p>Couldn't load the value board. Try again.</p><button class="md-btn" onclick="loadDraftKit()">Retry</button></div>`;
+        grid.innerHTML = `<div class="md-empty"><p>Couldn't load Draft HQ. Try again.</p><button class="md-btn" onclick="loadDraftKit()">Retry</button></div>`;
         return;
     }
     _dkRender();
@@ -1270,10 +1276,14 @@ function _dkRender() {
         <span class="dk-st-sub">ADP ${r.adp} · Val #${_poolRank.get(r.id)} of ${pool.length}</span>
     </button>`;
 
-    grid.innerHTML = _hqStrip('nfl-draftkit') + `
+    // No hq-strip on the dashboard itself (D-111) — this page IS the Draft HQ
+    // hub now, not one of six siblings; the Quick Tools row at the bottom
+    // covers the same lateral moves with an actual description of each tool's
+    // job, which a nav pill can't carry.
+    grid.innerHTML = `
       <div class="dk-wrap">
         <div class="dk-head">
-          <div><h1 class="md-title" style="margin:0">Draft Kit</h1>
+          <div><h1 class="md-title" style="margin:0">Draft HQ</h1>
           <p class="md-note">Value over replacement from ${ok ? season + ' production' : 'ADP'} · rookies &amp; no-data players market-priced from ADP (<span class="dk-est">est</span>) · ADP from Sleeper${ok ? '' : ' · (production data unavailable — showing ADP)'}</p></div>
           <button class="md-btn md-btn--ghost" onclick="window.print()">Print cheat sheet</button>
         </div>
@@ -1288,6 +1298,11 @@ function _dkRender() {
           <section class="dk-st"><h3 class="team-section__title">Sleepers <span class="team-section__count">value &gt; ADP</span></h3>${sleepers.map(r=>card(r,'sleep')).join('')||'<p class="md-note">—</p>'}</section>
           <section class="dk-st"><h3 class="team-section__title">Traps <span class="team-section__count">ADP &gt; value</span></h3>${traps.map(r=>card(r,'trap')).join('')||'<p class="md-note">—</p>'}</section>
         </div>` : ''}
+
+        <section class="dk-bye" id="dkByeWatch">
+          <h3 class="team-section__title">Bye Week Watch <span class="team-section__count">top 40 value board</span></h3>
+          <div class="skeleton-line" style="height:2.2rem"></div>
+        </section>
 
         <section class="dk-board-sec">
           <h3 class="team-section__title">Value Rankings <span class="team-section__count">${_dk.scoring}${_dk.superflex?' · SF':''}</span></h3>
@@ -1305,12 +1320,99 @@ function _dkRender() {
             </div>`).join('')}
           </div>
         </section>
+
+        ${_dkQuickTools()}
       </div>`;
 
     grid.querySelector('#dkScoring').addEventListener('change', e => { _dk.scoring = e.target.value; _dkRender(); });
     grid.querySelector('#dkTeams').addEventListener('change', e => { _dk.teams = +e.target.value; _dkRender(); });
     grid.querySelector('#dkSF').addEventListener('change', e => { _dk.superflex = e.target.checked; _dkRender(); });
     grid.querySelectorAll('[data-dkpos]').forEach(b => b.addEventListener('click', () => { _dk.pos = b.dataset.dkpos; _dkRender(); }));
+
+    _dkLoadByeWatch(valued.slice(0, 40));
+}
+
+// ── Bye Week Watch (D-111) — real schedule data, not invented. Reuses
+// sos.js's /api/nflsos fetch + cache (shares _sos.data / ApiCache('nflsos'),
+// so whichever of Schedule or this dashboard loads first, the other one
+// reuses it instead of a second round trip). Runs after the main paint so a
+// slow SOS fetch never blocks the value board itself — skeletons speak
+// (DESIGN.md) while it's in flight — and it fails open to an honest note
+// rather than a spinner or a blank section if the fetch errors, matching
+// sos.js's own non-blocking posture for this same data.
+async function _dkFetchByeTeams() {
+    try {
+        let data = (typeof _sos !== 'undefined' && _sos.data) || (window.ApiCache && ApiCache.get('nflsos'));
+        if (!data) {
+            const res = await fetch('/api/nflsos');
+            if (!res.ok) throw new Error('sos ' + res.status);
+            data = await res.json();
+            if (window.ApiCache) ApiCache.set('nflsos', data, ApiCache.TTL.DAILY);
+        }
+        if (typeof _sos !== 'undefined') _sos.data = data;
+        return (data && data.ok && data.teams) ? data.teams : null;
+    } catch (e) {
+        if (typeof Logger !== 'undefined') Logger.warn('Draft HQ bye watch failed', e, 'NFL');
+        return null;
+    }
+}
+
+function _dkByeClusters(rows, teams) {
+    const byeOf = new Map(teams.map(t => [t.team, t.bye]));
+    const buckets = new Map();
+    rows.forEach(r => {
+        const bye = byeOf.get(r.team);
+        if (!bye) return;
+        if (!buckets.has(bye)) buckets.set(bye, []);
+        buckets.get(bye).push(r);
+    });
+    // 3+ of your top-40 targets sharing a bye is a real "don't get caught
+    // empty that week" signal; 1-2 is just how 32 teams split into 18 weeks.
+    return Array.from(buckets.entries())
+        .filter(([, players]) => players.length >= 3)
+        .sort((a, b) => b[1].length - a[1].length);
+}
+
+async function _dkLoadByeWatch(rows) {
+    if (!document.getElementById('dkByeWatch')) return; // navigated away already
+    const teams = await _dkFetchByeTeams();
+    const host = document.getElementById('dkByeWatch'); // re-check: a re-render may have replaced it while this was in flight
+    if (!host) return;
+    if (!teams) {
+        host.innerHTML = `<h3 class="team-section__title">Bye Week Watch <span class="team-section__count">top 40 value board</span></h3><p class="md-note">Bye data isn't available right now.</p>`;
+        return;
+    }
+    const clusters = _dkByeClusters(rows, teams);
+    const body = clusters.length
+        ? clusters.map(([week, players]) => `<div class="dk-bye-row">
+            <span class="dk-bye-week">Wk ${week}</span>
+            <span class="dk-bye-players">${players.map(p => `${_escFan(p.name)} <em>${p.pos}</em>`).join(', ')}</span>
+          </div>`).join('')
+        : `<p class="md-note">No bye-week clusters among your top 40 targets this year — nothing to route around.</p>`;
+    host.innerHTML = `<h3 class="team-section__title">Bye Week Watch <span class="team-section__count">3+ sharing a week, top 40 value board</span></h3>${body}`;
+}
+
+// ── Quick Tools (D-111) — replaces the old hq-strip on this specific page:
+// each of those was an equal-weight nav pill with no context on what it
+// actually did. Compare is deliberately absent — see the hq-strip comment
+// above; D-103 already decided it lives in Stats & Leaders, not Draft HQ.
+function _dkQuickTools() {
+    const tools = [
+        { v: 'nfl-mock',     icon: '🏈', l: 'Mock Draft',   d: 'Full snake draft vs. AI, live grade at the end' },
+        { v: 'nfl-rankings', icon: '📊', l: 'ADP Rankings', d: 'Tiered board sorted by market ADP' },
+        { v: 'nfl-sos',      icon: '🗓️', l: 'Schedule',     d: 'Bye weeks + matchup difficulty by position' },
+        { v: 'nfl-mydrafts', icon: '💾', l: 'My Drafts',    d: 'Revisit your saved mock results' },
+    ];
+    return `<section class="dk-tools">
+        <h3 class="team-section__title">More Draft HQ tools</h3>
+        <div class="dk-tools-grid">
+            ${tools.map(t => `<button class="dk-tool-card" onclick="navigateTo('${t.v}')">
+                <span class="dk-tool-icon">${t.icon}</span>
+                <span class="dk-tool-body"><span class="dk-tool-name">${t.l}</span><span class="dk-tool-desc">${t.d}</span></span>
+                <span class="dk-tool-go" aria-hidden="true">→</span>
+            </button>`).join('')}
+        </div>
+    </section>`;
 }
 
 if (typeof window !== 'undefined') {

@@ -354,15 +354,19 @@ const _NAV_META = {
     'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
     'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
     'nfl-rankings':  { label: 'Draft HQ · ADP Rankings', icon: '📊' },
-    'nfl-draftkit':  { label: 'Draft HQ · Value Board', icon: '📋' },
-    'nfl-mock':      { label: 'Mock Draft',    icon: '🏈' },
+    'nfl-draftkit':  { label: 'Draft HQ', icon: '📋' },
+    'nfl-mock':      { label: 'Draft HQ · Mock Draft', icon: '🏈' },
     'nfl-mydrafts':  { label: 'Draft HQ · My Drafts', icon: '💾' },
-    'nfl-myleague':  { label: 'Draft HQ · My League', icon: '🔗' },
+    // In-Season tools sit outside Draft HQ (D-111) — 'Draft HQ' now names the
+    // specific hub page (nfl-draftkit) instead of standing in for the whole
+    // Fantasy area, so "Draft HQ · Waiver Wire" would misdescribe a page
+    // that isn't reachable through Draft HQ's own nav strip anymore.
+    'nfl-myleague':  { label: 'Fantasy · My League', icon: '🔗' },
     'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
     'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
-    'nfl-trending':  { label: 'Draft HQ · Trending', icon: '🔥' },
-    'nfl-injuries':  { label: 'Draft HQ · Injury Report', icon: '🩺' },
-    'nfl-waivers':   { label: 'Draft HQ · Waiver Wire', icon: '📈' },
+    'nfl-trending':  { label: 'Fantasy · Trending', icon: '🔥' },
+    'nfl-injuries':  { label: 'Fantasy · Injury Report', icon: '🩺' },
+    'nfl-waivers':   { label: 'Fantasy · Waiver Wire', icon: '📈' },
     'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
     'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
     'nfl-standings': { label: 'NFL Standings', icon: '📊' },
@@ -1109,7 +1113,7 @@ const SUB_NAV_TABS = {
         // from Stats & Leaders now, no view lost, just one path instead of two.
         { l: 'Fantasy', cols: [
             { t: 'Draft Prep', items: [
-                { v: 'nfl-draftkit', l: 'Value Board' }, { v: 'nfl-rankings', l: 'ADP Rankings' },
+                { v: 'nfl-draftkit', l: 'Draft HQ' }, { v: 'nfl-rankings', l: 'ADP Rankings' },
                 { v: 'nfl-sos', l: 'Schedule' }, { v: 'nfl-mock', l: 'Mock Draft' }, { v: 'nfl-mydrafts', l: 'My Drafts' },
             ] },
             { t: 'In-Season', items: [
@@ -1234,7 +1238,7 @@ const MENU_TABS = {
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' }, { v:'news', l:'News', i:'extra' },
         { group:'Draft Prep' },
-        { v:'nfl-draftkit', l:'Value Board', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
+        { v:'nfl-draftkit', l:'Draft HQ', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
         { v:'nfl-sos', l:'Schedule', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
         { v:'nfl-mydrafts', l:'My Drafts', i:'extra' },
         { group:'In-Season' },

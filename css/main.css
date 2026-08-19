@@ -3431,6 +3431,7 @@ a:focus:not(:focus-visible),
     .dk-controls,
     .sos-controls,
     .dk-head .md-btn,
+    .dk-tools,
     .no-print,
     .prep-game-list,
     .prep-page-sub { display: none !important; }
@@ -3441,7 +3442,7 @@ a:focus:not(:focus-visible),
 
     /* Ink-friendly Draft Kit + SOS surfaces — meaningful colors (position hues,
        VORP, SOS heatmap cells) sit inline on children, so they survive these. */
-    .dk-board, .dk-row, .dk-row--head, .dk-st-card, .dk-st,
+    .dk-board, .dk-row, .dk-row--head, .dk-st-card, .dk-st, .dk-bye-row,
     .sos-tablewrap, .sos-table, .sos-row {
         background: #fff !important;
         border-color: #ccc !important;
@@ -4082,6 +4083,61 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 .dk-c-tier { color: var(--text-subtle); font-size: 0.7rem; }
 .dk-c-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 @media (max-width: 680px) { .dk-st-grid { grid-template-columns: 1fr; } .dk-row { grid-template-columns: 28px 32px 1fr 48px 54px 44px; } .dk-c-tier, .dk-c-team { display: none; } }
+
+/* ── Bye Week Watch (D-111) — real-data insight module on the Draft HQ
+   dashboard, joining sos.js's schedule data onto the top of the value
+   board. Reuses .dk-st-card's plain-border language (no left accent —
+   that channel belongs to team/sport identity per DESIGN.md, not a
+   generic module) rather than the home sport-card's team-color idiom. */
+.dk-bye { margin-bottom: 1.5rem; }
+.dk-bye-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    padding: 0.45rem 0.1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.82rem;
+}
+.dk-bye-row:last-child { border-bottom: none; }
+.dk-bye-week {
+    flex-shrink: 0;
+    width: 44px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--color-loss);
+}
+.dk-bye-players { color: var(--text-secondary); }
+.dk-bye-players em { font-style: normal; color: var(--text-subtle); font-size: 0.72rem; margin-left: 0.15rem; }
+
+/* ── Quick Tools (D-111) — the Draft HQ dashboard's own lateral nav,
+   replacing the old hq-strip on this one page. Same icon+title+desc+arrow
+   grammar as the home sport-card for a consistent house pattern, but
+   plain-bordered like .dk-st-card since there's no team/sport identity to
+   encode in the border channel here. */
+.dk-tools { margin-top: 1.75rem; }
+.dk-tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; margin-top: 0.6rem; }
+.dk-tool-card {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.75rem 0.9rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-primary);
+    transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.dk-tool-card:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+.dk-tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dk-tool-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.dk-tool-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.dk-tool-name { font-weight: 700; font-size: 0.88rem; }
+.dk-tool-desc { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-tool-go { margin-left: auto; color: var(--text-subtle); font-size: 1.05rem; flex-shrink: 0; transition: transform 150ms ease-out, color 150ms ease-out; }
+.dk-tool-card:hover .dk-tool-go { transform: translateX(2px); color: var(--accent); }
+@media (max-width: 680px) { .dk-tools-grid { grid-template-columns: 1fr; } .dk-tool-desc { white-space: normal; } }
 .md-surv { font-size: 0.7rem; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .md-surv--low { color: var(--color-loss); }
 .md-surv--high { color: var(--color-win); }
