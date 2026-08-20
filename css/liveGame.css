@@ -4,17 +4,43 @@
    ============================================================ */
 
 /* ── Full-page wrapper (showMLBLiveGame) ──────────────────── */
-
+/* Widened from a 680px single column (2026-08-20, DECISIONS.md D-116) — that
+   width was the inline-accordion's own max-width, carried unmodified into
+   the full-page route. On a real page (2504px viewport, live-checked) this
+   read as a narrow floating card with most of the screen empty. The sidebar
+   column earns the space back with data feed/live already returns (venue/
+   weather, mound visits, challenges, umpires) that the page never rendered. */
 .lg-live-page {
-    max-width: 680px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 0 var(--space-3) var(--space-6);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: var(--space-4);
+    align-items: start;
 }
 
+.lg-live-page > .arcade-back-row { grid-column: 1 / -1; }
+
 .lg-live-page .lg-panel {
+    grid-column: 1;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-default);
     border-left: 3px solid var(--lg-team-color, var(--accent));
+}
+
+.lg-sidebar {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+@media (max-width: 900px) {
+    /* No sidebar real estate under ~900px — same responsive posture named
+       for the NFL live viewer's own sidebar (DECISIONS.md D-080). */
+    .lg-live-page { grid-template-columns: 1fr; }
+    .lg-sidebar   { grid-column: 1; }
 }
 
 /* ── Panel container ──────────────────────────────────────── */
@@ -558,3 +584,47 @@
 .lg-dot--hr        circle:not(.lg-dot-focus-ring) { fill: var(--color-pts); stroke: var(--text-primary); stroke-width: 2; }
 .lg-dot--out       circle:not(.lg-dot-focus-ring) { fill: var(--text-subtle); }
 .lg-dot--unknown   circle:not(.lg-dot-focus-ring) { fill: var(--border-mid); }
+
+/* ── Sidebar (page mode) ───────────────────────────────────── */
+.lg-side-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+}
+
+.lg-side-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    padding: 0.2rem 0;
+}
+
+.lg-side-val {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.lg-side-line {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    padding: 0.1rem 0;
+}
+
+.lg-side-line--muted { color: var(--text-muted); }
+
+/* ── Pregame state ─────────────────────────────────────────── */
+.lg-pregame-wrap { padding: var(--space-1) 0; }
+
+/* ── Pitch zone: no pitches yet this at-bat ───────────────────
+   Bases still render below this — only the spatial pitch plot is empty. */
+.lg-zone-empty {
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 0.65rem;
+    padding: var(--space-3) 0;
+}

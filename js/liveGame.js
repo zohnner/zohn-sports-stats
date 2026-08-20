@@ -43,6 +43,7 @@ let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat ob
 let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
 let _lgZoneMode       = new Map(); // gamePk → 'dots' | 'heat' — pitch zone view, session-scoped
+let _lgIsPageMode     = false;  // true when opened via showMLBLiveGame (full page); false for the inline accordion (openLiveGamePanel)
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -90,6 +91,7 @@ function stopLiveGamePolling() {
     _lgLastPitcherId  = null;
     _lgH2HCache       = {};
     _lgLastPollMs     = null;
+    _lgIsPageMode     = false;
 }
 
 function _updatePollTimestamp(state) {
@@ -113,9 +115,10 @@ function _startTsInterval() {
 async function openLiveGamePanel(gamePk, game, cardEl) {
     _closeExistingPanel();
 
-    _lgGamePk    = String(gamePk);
-    _lgFeedCache = null;
-    _lgTriggerEl = cardEl;
+    _lgGamePk     = String(gamePk);
+    _lgFeedCache  = null;
+    _lgTriggerEl  = cardEl;
+    _lgIsPageMode = false;
 
     const panel = _buildSkeletonPanel(game);
     cardEl.insertAdjacentElement('afterend', panel);
@@ -148,6 +151,20 @@ function _pollInterval(game) {
     const state = game?.linescore?.inningState || '';
     if (state === 'Middle' || state === 'End') return LG_BETWEEN_INN_MS;
     if (game?.status?.abstractGameState !== 'Live') return LG_PREGAME_MS;
+    return LG_POLL_MS;
+}
+
+// Same interval logic as _pollInterval, but computed from a fetched feed/live
+// payload (authoritative) rather than the AppState game stub. Used to arm/
+// re-arm polling after every successful poll, including the very first one —
+// previously the first arm in showMLBLiveGame hardcoded LG_POLL_MS regardless
+// of game state, so a pregame page polled every 9s for hours before first pitch.
+function _lgNextInterval(feed) {
+    const status = feed?.gameData?.status || {};
+    const ls     = feed?.liveData?.linescore || {};
+    if (/delay|suspend/i.test(status.detailedState || '')) return 60000;
+    if (status.abstractGameState === 'Preview') return LG_PREGAME_MS;
+    if (ls.inningState === 'Middle' || ls.inningState === 'End') return LG_BETWEEN_INN_MS;
     return LG_POLL_MS;
 }
 
@@ -208,13 +225,10 @@ async function _doPoll(gamePk) {
         }
         _lgLastPitcherId = curPitcherId ?? _lgLastPitcherId;
 
-        const isFinalNow   = feed.gameData?.status?.abstractGameState === 'Final';
-        const isDelayedNow = /delay|suspend/i.test(feed.gameData?.status?.detailedState || '');
-        const isBetweenNow = ls.inningState === 'Middle' || ls.inningState === 'End';
-
+        const isFinalNow = feed.gameData?.status?.abstractGameState === 'Final';
         if (isFinalNow) { stopLiveGamePolling(); return; }
 
-        const newMs = isDelayedNow ? 60000 : isBetweenNow ? LG_BETWEEN_INN_MS : LG_POLL_MS;
+        const newMs = _lgNextInterval(feed);
         if (_lgInterval) {
             clearInterval(_lgInterval);
             _lgInterval = setInterval(() => _doPoll(_lgGamePk), newMs);
@@ -315,6 +329,8 @@ function _renderPanel(panel, feed, gamePk) {
     const away     = feed.gameData?.teams?.away || {};
 
     const isFinal      = status.abstractGameState === 'Final';
+    const isPreview    = status.abstractGameState === 'Preview';
+    const isLive       = status.abstractGameState === 'Live';
     const isDelayed    = /delay|suspend/i.test(status.detailedState || '');
     const homeScore    = ls.teams?.home?.runs ?? '—';
     const awayScore    = ls.teams?.away?.runs ?? '—';
@@ -330,18 +346,35 @@ function _renderPanel(panel, feed, gamePk) {
     const hc = getMLBTeamColors(home.abbreviation);
     panel.style.setProperty('--lg-team-color', hc?.primary || 'var(--accent)');
 
+    // Page-mode breadcrumb refinement — see the best-effort set in
+    // showMLBLiveGame; this corrects it once real abbreviations are in.
+    if (_lgIsPageMode && window.setBreadcrumb) {
+        setBreadcrumb('mlb-games', `${away.abbreviation || '???'} @ ${home.abbreviation || '???'}`);
+    }
+
     let badgeHtml;
-    if (isFinal)        badgeHtml = `<span class="game-status game-status--final lg-status-badge">FINAL</span>`;
-    else if (isDelayed) badgeHtml = `<span class="game-status game-status--sched lg-status-badge">DELAYED</span>`;
-    else                badgeHtml = `<span class="game-status game-status--live lg-status-badge"><span class="live-dot"></span>LIVE</span>`;
+    if (isFinal) {
+        badgeHtml = `<span class="game-status game-status--final lg-status-badge">FINAL</span>`;
+    } else if (isPreview) {
+        const dt = feed.gameData?.datetime;
+        const fp = dt?.time ? `${dt.time} ${dt.ampm || ''}`.trim() : 'SCHEDULED';
+        badgeHtml = `<span class="game-status game-status--sched lg-status-badge">${_escHtml(fp)}</span>`;
+    } else if (isDelayed) {
+        badgeHtml = `<span class="game-status game-status--sched lg-status-badge">DELAYED</span>`;
+    } else {
+        badgeHtml = `<span class="game-status game-status--live lg-status-badge"><span class="live-dot"></span>LIVE</span>`;
+    }
 
     const scorecardLink = isFinal
         ? `<a class="lg-scorecard-link" href="#mlb-scorecard-${gamePk}">Full scorecard →</a>`
         : '';
     // Works for live and final games alike — the boxscore endpoint returns
     // stats-so-far for a live game, so this is deliberately not isFinal-gated
-    // the way scorecardLink is.
-    const highlightLink = `<a class="lg-scorecard-link" href="javascript:void(0)" onclick="openHighlightCardForGame(${gamePk})">Highlight card →</a>`;
+    // the way scorecardLink is. Pregame has no plays to highlight yet, so it
+    // is gated.
+    const highlightLink = !isPreview
+        ? `<a class="lg-scorecard-link" href="javascript:void(0)" onclick="openHighlightCardForGame(${gamePk})">Highlight card →</a>`
+        : '';
 
     panel.querySelector('.lg-header').innerHTML = `
         <button class="lg-close-btn" aria-label="Collapse game view">×</button>
@@ -353,7 +386,7 @@ function _renderPanel(panel, feed, gamePk) {
             <span class="lg-abbr ${homeWon ? 'lg-winner' : ''}">${_escHtml(home.abbreviation || '???')}</span>
         </div>
         <div class="lg-meta-row">
-            ${!isFinal ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${isBetweenInn ? '—' : `${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}`}</span>` : ''}
+            ${isLive ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${isBetweenInn ? '—' : `${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}`}</span>` : ''}
             ${badgeHtml}
             ${scorecardLink}
             ${highlightLink}
@@ -391,22 +424,45 @@ function _renderPanel(panel, feed, gamePk) {
     // Phase 2 + P9-live: pitch zone (dots / heat toggle) + base diagram
     _renderZone(panel, feed, gamePk);
 
-    const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
-    panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
-        const isActive = btn.dataset.lgTab === activeTab;
-        btn.classList.toggle('mlb-group-btn--active', isActive);
-        btn.setAttribute('aria-selected', String(isActive));
-    });
+    const tabsEl    = panel.querySelector('.lg-tabs');
+    const tabpanel  = panel.querySelector('.lg-tab-content');
 
-    const tabpanel = panel.querySelector('.lg-tab-content');
-    if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${activeTab}`);
+    if (isPreview) {
+        // No plays/box score exist yet — show probable pitchers instead of
+        // the tab strip rather than three tabs that all render empty states.
+        tabsEl?.setAttribute('hidden', '');
+        if (tabpanel) {
+            tabpanel.removeAttribute('aria-labelledby');
+            tabpanel.innerHTML = _buildProbablePitchers(
+                feed.gameData?.probablePitchers, away.abbreviation, home.abbreviation
+            );
+        }
+    } else {
+        tabsEl?.removeAttribute('hidden');
+        const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
+        panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
+            const isActive = btn.dataset.lgTab === activeTab;
+            btn.classList.toggle('mlb-group-btn--active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
+        });
 
-    if (activeTab === 'pbp') {
-        tabpanel.innerHTML = _buildPbp(plays.allPlays || []);
-    } else if (activeTab === 'box') {
-        tabpanel.innerHTML = _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
+        if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${activeTab}`);
+
+        if (activeTab === 'pbp') {
+            tabpanel.innerHTML = _buildPbp(plays.allPlays || []);
+        } else if (activeTab === 'box') {
+            tabpanel.innerHTML = _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
+        }
+        // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
     }
-    // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
+
+    // Sidebar (page mode only) — venue/weather, mound visits, challenges,
+    // umpires. All read from feed/live fields already fetched above; no new
+    // requests. See _buildSidebar.
+    if (_lgIsPageMode) {
+        const sidebarEl = document.querySelector('.lg-sidebar');
+        if (sidebarEl) sidebarEl.innerHTML = _buildSidebar(feed);
+    }
 }
 
 function _buildLinescore(ls, awayAbbr, homeAbbr) {
@@ -524,6 +580,74 @@ function _buildBoxScore(boxscore, awayAbbr, homeAbbr) {
     return html + '</div>';
 }
 
+// Pregame tab-body content (page mode) — probable pitchers only, v1. No
+// season stat line here on purpose: gameData.probablePitchers only carries
+// id/fullName/link, and pulling ERA/W-L would mean a new per-pitcher fetch
+// this pass didn't scope. Ships honest and minimal rather than guessing at
+// a stat line with unverified data.
+function _buildProbablePitchers(pp, awayAbbr, homeAbbr) {
+    if (!pp || (!pp.away?.fullName && !pp.home?.fullName)) {
+        return '<div class="lg-pbp-empty">Probable pitchers not yet announced.</div>';
+    }
+    const row = (abbr, p) => `
+        <div class="lg-side-row">
+            <span>${_escHtml(abbr || '')}</span>
+            <span class="lg-side-val">${p?.fullName ? _escHtml(p.fullName) : 'TBD'}</span>
+        </div>`;
+    return `<div class="lg-pregame-wrap">
+        <div class="lg-box-section-title">Probable Pitchers</div>
+        ${row(awayAbbr, pp.away)}
+        ${row(homeAbbr, pp.home)}
+        <div class="lg-matchup-empty" style="margin-top:var(--space-2)">Play-by-play and box score open automatically once the game starts.</div>
+    </div>`;
+}
+
+// Sidebar (page mode only) — surfaces feed/live fields the tab body never
+// rendered: venue/weather, mound visits + challenges remaining per team, and
+// the umpire crew. All read from data _doPoll already fetched; no new
+// requests. liveData.leaders was checked live (2026-08-20) and is NOT a
+// game-leaders module as ESPN's sidebar has — it's hit-distance/hit-speed/
+// pitch-speed tracking that was empty on the game checked, so it is
+// deliberately left out rather than built against an unverified shape.
+function _buildSidebar(feed) {
+    const gd        = feed.gameData || {};
+    const officials = feed.liveData?.boxscore?.officials || [];
+    const mv        = gd.moundVisits;
+    const rv        = gd.review;
+    const weather   = gd.weather;
+    const venue     = gd.venue?.name;
+    const awayAbbr  = gd.teams?.away?.abbreviation || 'Away';
+    const homeAbbr  = gd.teams?.home?.abbreviation || 'Home';
+
+    let html = '';
+
+    if (venue || weather?.condition) {
+        html += `<div class="lg-side-card">
+            <div class="lg-box-section-title">Game Info</div>
+            ${venue ? `<div class="lg-side-line">${_escHtml(venue)}</div>` : ''}
+            ${weather?.condition ? `<div class="lg-side-line">${_escHtml(weather.condition)}${weather.temp ? `, ${_escHtml(weather.temp)}°` : ''}</div>` : ''}
+            ${weather?.wind ? `<div class="lg-side-line lg-side-line--muted">${_escHtml(weather.wind)}</div>` : ''}
+        </div>`;
+    }
+
+    if (mv || rv?.hasChallenges) {
+        html += `<div class="lg-side-card">
+            <div class="lg-box-section-title">Game Notes</div>
+            ${mv ? `<div class="lg-side-row"><span>Mound Visits Left</span><span class="lg-side-val">${_escHtml(awayAbbr)} ${mv.away?.remaining ?? '—'} · ${_escHtml(homeAbbr)} ${mv.home?.remaining ?? '—'}</span></div>` : ''}
+            ${rv?.hasChallenges ? `<div class="lg-side-row"><span>Challenges Left</span><span class="lg-side-val">${_escHtml(awayAbbr)} ${rv.away?.remaining ?? '—'} · ${_escHtml(homeAbbr)} ${rv.home?.remaining ?? '—'}</span></div>` : ''}
+        </div>`;
+    }
+
+    if (officials.length) {
+        html += `<div class="lg-side-card">
+            <div class="lg-box-section-title">Umpires</div>
+            ${officials.map(o => `<div class="lg-side-row"><span>${_escHtml(o.officialType || '')}</span><span class="lg-side-val">${_escHtml(o.official?.fullName || '—')}</span></div>`).join('')}
+        </div>`;
+    }
+
+    return html || '<div class="lg-side-card"><div class="lg-matchup-empty">No additional game details yet.</div></div>';
+}
+
 // ── Phase 2: Pitch zone SVG ───────────────────────────────────
 
 function _lgSvgCoords(pX, pZ) {
@@ -603,9 +727,13 @@ function _buildPitchZone(currentPlay) {
         const category  = _lgDotCategory(code, p.result?.event);
         const pitchType = _escHtml(p.details?.type?.description || '—');
         const velocity  = p.startSpeed ? `${p.startSpeed} mph` : '—';
+        // Confirmed live 2026-08-20 against a real feed/live payload: breaks.spinRate
+        // is populated on real pitches (D-009's 2026-06-12 amendment had this as
+        // unconfirmed for pfxX/pfxZ/breaks.* — that gate is stale, see DECISIONS.md D-116).
+        const spin      = pd.breaks?.spinRate ? `${pd.breaks.spinRate} rpm` : '';
         const result    = _escHtml(p.details?.call?.description || '—');
         const countStr  = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
-        const ariaLabel = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity} — ${result}`);
+        const ariaLabel = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity}${spin ? `, ${spin}` : ''} — ${result}`);
 
         // CSS classes carry all fill/stroke via liveGame.css — SVG presentation
         // attributes don't resolve CSS custom properties, so we rely on CSS only.
@@ -613,6 +741,7 @@ function _buildPitchZone(currentPlay) {
             aria-label="${ariaLabel}"
             data-pitch-type="${pitchType}"
             data-velocity="${_escHtml(velocity)}"
+            data-spin="${_escHtml(spin)}"
             data-result="${result}"
             data-count="${_escHtml(countStr)}">
             <circle cx="${cx}" cy="${cy}" r="4"/>
@@ -685,27 +814,42 @@ function _buildPitchHeat(currentPlay, gamePitches) {
 
 // Renders the zone column (toggle + dots|heat + bases) and wires its events.
 // Called on every poll render and on toggle clicks (re-renders from cache).
+//
+// Base state should never fully disappear once an at-bat context exists
+// (Vera, 2026-08-20 live-game audit) — previously the whole column hid
+// whenever the current at-bat had zero pitches yet (e.g. the moment a new
+// batter steps in), which read as broken rather than "bases are empty."
+// The column now only hides entirely pregame or when there's no play
+// context at all; a fresh at-bat with no pitches yet shows the base
+// diagram with a placeholder in place of the pitch plot.
 function _renderZone(panel, feed, gamePk) {
     const plays       = feed.liveData?.plays || {};
     const currentPlay = plays.currentPlay;
     const pitches     = (currentPlay?.playEvents || []).filter(e => e.isPitch);
     const zoneCol     = panel.querySelector('.lg-zone-col');
     if (!zoneCol) return;
-    if (!(currentPlay?.matchup && pitches.length > 0)) {
+    _lgHideTooltip();
+
+    const isPreview = feed.gameData?.status?.abstractGameState === 'Preview';
+    if (isPreview || !currentPlay) {
         zoneCol.setAttribute('hidden', '');
         zoneCol.innerHTML = '';
         return;
     }
+
     zoneCol.removeAttribute('hidden');
-    _lgHideTooltip();
     const key         = String(gamePk);
     const mode        = _lgZoneMode.get(key) || 'dots';
     const gamePitches = _collectPitcherGamePitches(plays.allPlays, currentPlay.matchup?.pitcher?.id);
     const useHeat     = mode === 'heat' && gamePitches.length > 0;
+    const hasPitches  = pitches.length > 0;
+
     zoneCol.innerHTML =
-        `<div class="lg-zone-section-label">Pitch Zone</div>` +
-        _buildZoneToggle(mode, gamePitches.length) +
-        (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay)) +
+        (hasPitches
+            ? `<div class="lg-zone-section-label">Pitch Zone</div>` +
+              _buildZoneToggle(mode, gamePitches.length) +
+              (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay))
+            : `<div class="lg-zone-empty">Next pitch coming up.</div>`) +
         `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
         _buildBaseDiagram(currentPlay);
     _wireZoneEvents(panel, key);
@@ -748,7 +892,7 @@ function _lgShowTooltip(groupEl, zoneWrap) {
     tip.className = 'lg-pitch-tooltip';
     tip.innerHTML = [
         _escHtml(groupEl.dataset.pitchType),
-        _escHtml(groupEl.dataset.velocity),
+        _escHtml([groupEl.dataset.velocity, groupEl.dataset.spin].filter(Boolean).join(' · ')),
         _escHtml(groupEl.dataset.result),
         _escHtml(groupEl.dataset.count),
     ].join('<br>');
@@ -1010,9 +1154,10 @@ function showMLBLiveGame(gamePk) {
         ? AppState.mlbLiveGame
         : (AppState.mlbGames || []).find(g => g.gamePk === gamePk) || {};
 
-    _lgGamePk    = String(gamePk);
-    _lgFeedCache = null;
-    _lgTriggerEl = null;
+    _lgGamePk     = String(gamePk);
+    _lgFeedCache  = null;
+    _lgTriggerEl  = null;
+    _lgIsPageMode = true;
 
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
@@ -1035,13 +1180,37 @@ function showMLBLiveGame(gamePk) {
     const panel = _buildSkeletonPanel(game);
     page.appendChild(panel);
 
+    // Breadcrumb: best-effort now from the game stub, refined once the feed
+    // loads via _renderPanel. Without this, this route falls through
+    // navigateTo()'s generic setBreadcrumb(view, null) — no _NAV_META entry
+    // exists for a dynamic gamePk route, so it printed the raw hash
+    // ("mlb-live-824801") as the breadcrumb text.
+    if (window.setBreadcrumb) {
+        const awayAbbr = game?.teams?.away?.team?.abbreviation;
+        const homeAbbr = game?.teams?.home?.team?.abbreviation;
+        setBreadcrumb('mlb-games', awayAbbr && homeAbbr ? `${awayAbbr} @ ${homeAbbr}` : 'Live Game');
+    }
+
+    // Sidebar (page mode only) — surfaces feed/live fields the tab body never
+    // rendered (venue/weather, mound visits, challenges, umpires). Filled in
+    // by _renderPanel once the first poll resolves.
+    const sidebarEl = document.createElement('div');
+    sidebarEl.className = 'lg-sidebar';
+    sidebarEl.setAttribute('aria-label', 'Game details');
+    sidebarEl.innerHTML =
+        `<div class="lg-side-card">
+            <div class="skeleton-line" style="height:12px;margin:0.4rem 0;width:70%"></div>
+            <div class="skeleton-line" style="height:12px;margin:0.4rem 0;width:50%"></div>
+        </div>`;
+    page.appendChild(sidebarEl);
+
     grid.innerHTML = '';
     grid.appendChild(page);
     panel.focus();
 
     _doPoll(gamePk).then(() => {
         // Guard against navigation-away during the initial poll
-        if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), LG_POLL_MS);
+        if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
     });
 }
 
