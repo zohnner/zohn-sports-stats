@@ -2081,3 +2081,42 @@ Per the owner's explicit second instruction ("search the project for similar iss
 **Verified locally:** `node --check js/app.js` clean, 0 NUL bytes on both changed files, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (same 2 pre-existing unrelated warnings), full 48-test unit suite passing. Live-verified against real production in Chrome before committing — confirmed the avatar fix directly (clean photo, no overlaid initials) and confirmed the quality-threshold color math in isolation (a spread of realistic ERA/K-9 values lands sensibly across the three tiers, not clumped in one bucket). `sw.js` bumped v207 → v208.
 
 **Not yet live-verified after deploy** — committed locally, owner needs to `git push` again.
+
+## D-115 — Mock Draft engine competitive audit: engine holds up, auction-format gap logged as scoped-not-built roadmap item
+
+**Status:** Open — audit complete and ratified, auction-draft-format follow-up scoped but not built
+**Contributors:** Axiom (architecture/feasibility), Relay (data contract), Vera (consulted — job-to-be-done), Finn (fact-check/logging)
+**Date:** 2026-08-20
+**Trigger:** Owner: "we need to do a logic check on the mock draft. we need to ensure the engine being used can hold up when compared to other competitors."
+
+**Findings (full read of `js/fantasy.js`, 1,484 lines, cross-checked against ESPN/Yahoo/Sleeper/FantasyPros public documentation):**
+
+Holds up well —
+- AI opponents (`_mdAiPick`) blend ADP (`_mdAdjRank`) with lineup-aware need (`_mdNeedScore`) and per-pick randomness across the top-8 eligible candidates, rather than deterministically taking the single highest-ranked need-fit player. Yahoo's documented autopick logic is the deterministic version; ours avoids the "11 bots draft in lockstep" tell.
+- `_mdSurvival`'s 300-run Monte Carlo per render is a real implementation of what FantasyPros' own VBD glossary calls VONA (Value Over Next Available) and describes as "theoretically optimal but practically difficult without algorithmic assistance." We compute it directly, live, every render.
+- `_vbdProj` uses a trained regression (Y = a·X + b per position × scoring format, fit on 10 seasons of nflverse transitions, documented sample sizes/R² in D-039) rather than a flat last-season carry-forward or a black-box blend — more transparent than most competitor VBD tools, which lean on aggregated expert consensus.
+- Rookie/no-production pricing (`_vbdImplied`, ADP-neighbor interpolation) is honestly tagged `est` everywhere it surfaces — better disclosed-uncertainty behavior than tools that blend model and market data without flagging which is which.
+- DEF/K coverage, gap-based tiering, and Superflex support all match competitor baseline coverage.
+- Draft History (save/replay) and My League (link a real Sleeper league, VORP-based grade vs. real rosters) are offered free with sign-in as an optional perk, not gated — more generous than most competitors' free tiers.
+
+Real gap —
+- **No auction/salary-cap draft format.** ESPN, Yahoo, Sleeper, and FantasyPros/DraftWizard all support both snake and auction; Sleeper also supports linear and 3rd-round-reversal. `_renderMockSetup` only exposes Teams/Slot/Rounds/Scoring/Superflex — no budget/bid path anywhere in the file. This looks like a deliberate v1 scope cut (D-027's "next level" list didn't mention auction either), not an oversight, but it's a real, confirmed hole against every major competitor.
+
+Scope limitations, not defects —
+- No live news/injury signal feeding the draft pool or `_mdAiPick`/`_vbdProj`. ESPN's Watson-powered Player Insights explicitly ingests injury/beat-writer sentiment via NLP. Correction to the initial audit note given to the owner: SportStrata already has real injury data elsewhere in the app (the `nfl-injuries` Injury Report tab under Draft HQ's In-Season group) — it's just not wired into the mock draft's pool/projection layer. So the gap is narrower than "no injury data exists": it's "the Injury Report feed isn't connected to the draft engine."
+- No live per-pick "if I draft X, my projected finish becomes Y" (comparable to DraftKick's "Standings Impact"). SportStrata only computes projected finish once, at the end (`_mdRenderComplete` → `_mdTeamValue`).
+- The in-code comment describing tiering as "Boris-Chen-style" is directionally accurate (gap-based, per-position) but not literal — Boris Chen's real methodology clusters on expert-rank *disagreement* (k-means over ECR standard deviation); ours clusters on ADP gap size alone. No functional issue, just an imprecise comment.
+
+**Decision:**
+1. Auction-format mock draft: **valid, real gap — logged as a scoped-not-built roadmap item, not built this session.** Axiom: not a settings-toggle addition — needs a parallel engine (per-team budget tracking, nomination order, AI bid logic distinct from `_mdAiPick`'s pick-order logic, a different `_mdRenderDraft` UI), sized similarly to D-111's Draft HQ rebuild, not a quick add. Vera: the job-to-be-done is real (auction leagues are a common, meaningful format) but deserves its own flow design, not a bolt-on to the existing snake setup screen. Consensus: worth building eventually, but only as its own prioritized, scoped session — logging it here is not authorization to start it.
+2. Injury Report → draft pool integration: **not scoped this pass.** Relay: technically straightforward (the data already exists in-app; the integration point would be `_mdFetchPool`/`_mdAiPick`, no new external source needed) but was never asked for and has real design questions first (does an injury flag suppress a player from AI picks entirely, derate their VORP, or just badge them for the human drafter?) — needs a Vera pass before Axiom builds anything. No ticket opened; revisit only if the owner wants it.
+3. Live per-pick Standings Impact: **not scoped, low priority.** Axiom: feasible (reuses `_mdTeamValue`, already computed) but adds a full-roster-value recompute to every render — a real but minor cost for a nice-to-have, not a competitive gap serious enough to prioritize on its own.
+4. "Boris-Chen-style" comment: not worth a ticket — noted here for whoever next touches `_mdAssignTiers`.
+
+**Rationale:** The engine's core value math (trained-regression VORP, real Monte Carlo survival simulation, need-aware randomized AI opponents) is at or above what's publicly documented for the free tools it competes with. The one concrete gap — auction support — is real but large enough that logging it honestly (rather than quietly deferring it inside this audit, or quietly starting it) is the correct call per ROUTER.md's tier-3 rule: it's a cross-domain (Axiom architecture + Vera flow) capability question, not a bug fix, and shouldn't be silently started or silently dropped.
+
+**Implications:** No code changed this session. Auction-format support stays an open, scoped-not-built idea (ISSUES.md pointer) until explicitly prioritized. Nothing in the existing snake engine needs to change to eventually add it — `_mdPool`/`_vbdProj`/`_vbdReplacement`/tiering are all format-agnostic and would be reused as-is by an auction engine.
+
+**Verified:** Full read of `js/fantasy.js` (all 1,484 lines). Competitive claims cross-checked via web search against ESPN Support's "Draft Methods" article (snake + salary cap confirmed), Sleeper Support's "Do you support auction drafts?" article, FantasyPros Draft Wizard's product page (snake/auction/dynasty/rookie simulators, Draft Assistant, Cheat Sheet Creator), FantasyPros' own VBD/VORP/VONA/VOLS glossary article, and confirmation that Boris Chen's tiering methodology is still live/active (borischen.co). No code shipped, so no `node --check`/manifest/theme/unit-test verification applies.
+
+**Live-verified:** N/A — audit only, nothing deployed.

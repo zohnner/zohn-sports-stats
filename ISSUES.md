@@ -1214,3 +1214,17 @@ Owner pasted a 5-phase home-page redesign roadmap from another LLM. Routed throu
 **Verified:** `node --check` clean on `js/app.js`, 0 NUL bytes on both changed files, `tools/check-manifest.cjs` clean, `tools/check-themes.cjs` clean (2 pre-existing unrelated warnings only), full 48-test unit suite passing (6 files). `sw.js` CACHE_NAME bumped v206 → v207 (`js/app.js`, `css/main.css` are both precached static assets). Committed via the mount-safe git-plumbing workaround.
 
 **Not yet live-verified after deploy** — no push access from this session, owner needs to `git push`. Full detail: DECISIONS.md D-114.
+
+## Mock Draft engine — competitive logic audit — 2026-08-20 (Axiom/Relay/Vera, see DECISIONS.md D-115)
+
+**Contributor:** Axiom (architecture) / Relay (data) / Vera (consulted) / Finn (logging) | **Date:** 2026-08-20
+
+Owner asked for a logic check on the NFL Mock Draft engine (`js/fantasy.js`) against competitor products (ESPN, Yahoo, Sleeper, FantasyPros). Full findings, competitive citations, and consensus: DECISIONS.md D-115 — this entry is the pointer, per this file's convention.
+
+**Verdict:** the engine's core value math (trained-regression VORP, real Monte Carlo pick-survival simulation, need-aware randomized AI opponents) holds up well against what's publicly documented for the free competitor tools.
+
+**Scoped, not built — auction/salary-cap draft format.** Every major competitor (ESPN, Yahoo, Sleeper, FantasyPros) supports both snake and auction drafts; SportStrata's Mock Draft is snake-only. Real, confirmed gap, but sized as its own build (a parallel bid-based engine, not a settings toggle) — logging it, not starting it.
+
+**Also noted, not scoped:** the existing NFL Injury Report (`nfl-injuries`) isn't wired into the draft pool/AI picks; no live per-pick "projected finish" during the draft (only computed once at the end); the `_mdAssignTiers` comment overstates its similarity to Boris Chen's actual clustering methodology (cosmetic, not functional).
+
+**No code changed.**
