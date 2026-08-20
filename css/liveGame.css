@@ -225,6 +225,14 @@
 
 .lg-tabs { margin: var(--space-3) 0 var(--space-2); }
 
+/* [hidden] alone loses to .mlb-group-toggle-rows display:flex (author-
+   origin beats user-agent [hidden] regardless of specificity/order) --
+   live-caught 2026-08-20 on the pregame STL@CIN page: .lg-tabs carries
+   both classes, hidden="" was set correctly but computedDisplay stayed
+   "flex", leaving Play-by-Play/Box Score tabs clickable pregame (D-116
+   follow-up). */
+.lg-tabs[hidden] { display: none; }
+
 .lg-tab-content { min-height: 80px; }
 
 /* ── Play-by-Play ─────────────────────────────────────────── */
