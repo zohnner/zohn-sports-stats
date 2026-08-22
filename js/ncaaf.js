@@ -96,7 +96,11 @@ function _ncaafGameCard(g) {
     const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
         : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
         : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}">
+    // Clickable into the Phase-1 game skeleton (js/ncaafLiveGame.js,
+    // 2026-08-22) -- role/tabindex/onclick mirrors the same accessible-link
+    // pattern already used for team chips and leader rows in this file
+    // (search '_ncaaf-team-link'/nfl-lrow--link above), not a new pattern.
+    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" aria-label="${_escHtml(g.awayTeam.name)} at ${_escHtml(g.homeTeam.name)}" onclick="navigateTo('ncaaf-game-${_escHtml(String(g.id))}')">
         ${row(g.awayTeam)}
         ${row(g.homeTeam)}
         <div class="hgc-card-footer">${pill}</div>
@@ -167,6 +171,7 @@ function _renderNCAAFView(view) {
     if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
     if (view.startsWith('ncaaf-player-')) { showNCAAFPlayer(view.slice('ncaaf-player-'.length)); return; }
     if (view.startsWith('ncaaf-team-')) { showNCAAFTeam(view.slice('ncaaf-team-'.length)); return; }
+    if (view.startsWith('ncaaf-game-')) { if (typeof showNCAAFGame === 'function') showNCAAFGame(view.slice('ncaaf-game-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'ncaaf-standings': displayNCAAFStandings(); break;

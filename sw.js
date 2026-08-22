@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v210';
+const CACHE_NAME    = 'sportstrata-v211';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -58,6 +58,7 @@ const STATIC_ASSETS = [
     '/js/sos.js',
     '/js/nhl.js',
     '/js/ncaaf.js',
+    '/js/ncaafLiveGame.js',
     '/js/ncaab.js',
     '/js/wnba.js',
     '/js/glossary.js',
