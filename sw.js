@@ -125,6 +125,30 @@ self.addEventListener('fetch', e => {
         return;
     }
 
+    // /api/* is dynamic data (scores, box scores, standings...), never a static
+    // asset -- it must NEVER go through the stale-while-revalidate cache below.
+    // Found live 2026-08-22: this handler's only exclusions were method/origin/
+    // navigation, so every /api/ fetch fell through into "all other same-origin
+    // assets" by omission, not by design (the block's own comment always said
+    // "JS, CSS, images, fonts"). Real, reproduced impact -- a completed NFL
+    // game's /api/nfl?path=/summary&event=... response was still serving a
+    // 2-day-old pregame "Scheduled" payload (no score at all) on first visit,
+    // because the SW's Cache Storage held whatever was fetched the last time
+    // that exact URL was hit and nothing had re-hit it since. This is a much
+    // wider exposure than D-095's edge-cache staleness (which only affects the
+    // window between this Function and ESPN) -- inspecting the live cache
+    // confirmed 84 stale /api/ entries already sitting in the v208 cache
+    // (MLB and NFL alike), any of which could be served first-hit indefinitely.
+    // Fix: let /api/ requests go straight to the network so the origin's own
+    // Cache-Control/TTL logic (functions/api/*.js's ttlFor()) governs
+    // freshness, same as this file's existing posture of failing loud (via
+    // the app's own ErrorHandler) rather than silently serving something
+    // wrong on a network hiccup.
+    if (url.pathname.startsWith('/api/')) {
+        e.respondWith(fetch(e.request));
+        return;
+    }
+
     // Stale-while-revalidate for all other same-origin assets (JS, CSS, images, fonts).
     // Cache-first here previously froze deployed JS/CSS until CACHE_NAME was bumped —
     // returning users kept running old code after every deploy. SWR serves the cached

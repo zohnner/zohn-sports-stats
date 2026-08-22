@@ -1253,3 +1253,17 @@ Contributor: Finn | Date: 2026-08-22
 **Result:** shipped same session (small, low-risk, additive fix -- one card's omission condition, no new data source, no shape change). Committed locally via the mount's plumbing-commit workaround; pending owner push.
 
 Escalation needed: no.
+
+---
+
+## Service worker caching /api/ responses as static assets — site-wide stale-data bug (D-117)
+
+Task / Finding: Continuing tonight's NFL live-game polish pass, a completed preseason game's live game page rendered as pregame (no score, wrong status) on first visit -- traced to `sw.js`, not the NFL code. Full record: DECISIONS.md D-117 -- this entry is the pointer, per this file's convention.
+
+**Verdict:** real, site-wide, previously-undiscovered bug. `sw.js`'s stale-while-revalidate fetch handler had no path exclusion for `/api/*` -- every dynamic data call (every sport, not just NFL) was being treated as a cacheable static asset with no TTL, confirmed live via direct Cache Storage inspection (84 stale `/api/` entries already sitting in the deployed `sportstrata-v208` cache). A URL's first hit after a long gap could serve arbitrarily old cached JSON before self-correcting on the next hit.
+
+**Fixed:** `/api/*` requests now go straight to network, bypassing the SW cache entirely, letting each Pages Function's own `Cache-Control`/TTL logic govern freshness as originally intended. Rides the same `sw.js` v208->v209 bump already in flight this session (see the NFL live-game-viewer entry above).
+
+**No code changed beyond `sw.js`** -- this is a service-worker-only fix, no page JS touched.
+
+Escalation needed: no -- shipped same session, committed locally, pending owner push.
