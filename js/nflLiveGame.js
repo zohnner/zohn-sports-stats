@@ -323,7 +323,18 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // -- Tabs ---------------------------------------------------------------
 
 function _nlgTabsHtml() {
-    return `<div class="gv-tabs" role="tablist">${_NLG_TABS.map(t => `<button type="button" class="gv-tab ${_nlg.activeTab === t.id ? 'gv-tab--active' : ''}" role="tab" aria-selected="${_nlg.activeTab === t.id}" onclick="_nlgSwitchTab('${t.id}')">${_escHtml(t.label)}</button>`).join('')}</div>`;
+    // Each tab button carries a stable id + aria-controls pointing at the one
+    // shared tabpanel below (aria-labelledby on that panel is kept in sync in
+    // _nlgRenderActiveTabBody, since the panel element itself is reused across
+    // renders, not recreated). Found live 2026-08-22: this component (this
+    // codebase's first tablist, D-080) had role/aria-selected on the buttons
+    // but no aria-controls and no id/role/aria-labelledby on the panel they
+    // control -- screen readers announced tab state correctly but never
+    // exposed the tab<->panel relationship. Additive/wiring-only fix; the
+    // roving-tabindex + arrow-key navigation pattern ARIA's Tabs practice also
+    // calls for is a real interaction-model change to this novel component,
+    // not touched here -- flagged separately rather than bundled into this fix.
+    return `<div class="gv-tabs" role="tablist">${_NLG_TABS.map(t => `<button type="button" id="gv-tab-${t.id}" class="gv-tab ${_nlg.activeTab === t.id ? 'gv-tab--active' : ''}" role="tab" aria-selected="${_nlg.activeTab === t.id}" aria-controls="gv-tabpanel" onclick="_nlgSwitchTab('${t.id}')">${_escHtml(t.label)}</button>`).join('')}</div>`;
 }
 
 function _nlgSwitchTab(tab) {
@@ -352,6 +363,9 @@ function _nlgRenderActiveTabBody() {
         default: html = _nlgRenderSummaryTab(data, comp, home, away);
     }
     panel.innerHTML = html;
+    panel.id = 'gv-tabpanel';
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', 'gv-tab-' + _nlg.activeTab);
     panel.scrollTop = scrollTop;
 }
 

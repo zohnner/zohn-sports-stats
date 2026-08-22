@@ -1267,3 +1267,18 @@ Task / Finding: Continuing tonight's NFL live-game polish pass, a completed pres
 **No code changed beyond `sw.js`** -- this is a service-worker-only fix, no page JS touched.
 
 Escalation needed: no -- shipped same session, committed locally, pending owner push.
+
+---
+
+## NFL live game tabs — wire aria-controls/tabpanel role for the gv-tabs component
+
+Task / Finding: Accessibility gap in `.gv-tabs` (this codebase's first tablist, D-080) -- buttons had `role="tab"`/`aria-selected` but no `aria-controls`, and the shared panel had no `id`/`role="tabpanel"`/`aria-labelledby`, so the tab<->panel relationship was never exposed to assistive tech even though each tab's selected state was.
+Contributor: Finn | Date: 2026-08-22
+
+**Fix:** each tab button gets a stable `id="gv-tab-{id}"` + `aria-controls="gv-tabpanel"`; the shared panel gets `id="gv-tabpanel"`, `role="tabpanel"`, and `aria-labelledby` kept in sync with the active tab on every render (`_nlgRenderActiveTabBody`, since the panel element is reused, not recreated, across poll-driven re-renders and tab switches). Live-verified by monkey-patching both functions into the live page and switching tabs -- `aria-labelledby` tracked the active tab correctly on every switch.
+
+**Not done, flagged rather than bundled in:** full WAI-ARIA Tabs authoring-practice roving-tabindex + arrow-key navigation (all six buttons currently have the browser's default `tabIndex 0`, so Tab reaches each one individually rather than one stop + arrow keys). That's a real interaction-model change to a component this codebase built new for D-080 -- worth a look, not a same-session bugfix; noting it here for whoever picks up the next accessibility pass rather than building it ad hoc.
+
+**No `sw.js` bump needed beyond the one already in flight this session** (D-117) -- `nflLiveGame.js` is already being re-cached by that bump.
+
+Escalation needed: no.
