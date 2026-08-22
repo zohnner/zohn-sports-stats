@@ -1270,7 +1270,7 @@ async function showNFLPlayerDetail(id) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-player', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
     try {
         await fetchNFLSleeperPool();
     } catch (err) {
@@ -1286,6 +1286,7 @@ function _renderNFLPlayerDetail(p) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-players', p.full_name);
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
@@ -1307,7 +1308,7 @@ function _renderNFLPlayerDetail(p) {
         ['Depth Chart', p.depth_chart_order ? `${p.depth_chart_position || pos} ${p.depth_chart_order}` : '—'],
         ['Status',      p.injury_status || p.status || '—'],
     ].map(([l, v]) =>
-        `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-value">${_escHtml(String(v))}</span></div>`
+        `<div class="player-bio-item"><span class="bio-label">${l}</span><span class="bio-value">${_escHtml(String(v))}</span></div>`
     ).join('');
 
     const adpBadge = p._adp ? `<span class="player-hero-pos" style="background:${posColor};color:#0b0b0d">#${p._adp} ADP</span>` : '';
@@ -1332,9 +1333,9 @@ function _renderNFLPlayerDetail(p) {
         ],
         teamRow: `${teamLogo ? `<img src="${teamLogo}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}${teamBtn}`,
         meta: [`${NFL_FANTASY_SEASON} NFL Season \u00b7 Fantasy profile`],
+        slots: [`<div class="player-bio-grid" style="margin-top:0.5rem">${bio}</div>`],
     });
 
-    const _profileBody = `<div class="player-details detail-bio-wide">${bio}</div>`;
     const _seasonRow = `<div class="detail-season-row">
             <span class="detail-season-label">Stats season</span>
             <select onchange="_nflChangeDetailSeason(this.value)" class="detail-season-select">${_seasonOpts}</select>
@@ -1346,10 +1347,9 @@ function _renderNFLPlayerDetail(p) {
 
     grid.innerHTML = `
         ${_nflHeader}
-        ${detailSection({ title: 'Player Profile', body: _profileBody })}
         ${_seasonRow}
-        <div id="nfl-advanced"></div>
         <div id="nfl-stat-line"></div>
+        <div id="nfl-advanced"></div>
         <div id="nfl-gamelog"></div>
         <div id="nfl-career"></div>
         ${detailSection({ title: 'Fantasy Outlook', body: _fantasyBody })}
@@ -1471,14 +1471,11 @@ async function _loadNFLPlayerStats(p, season) {
         const _statPos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
         const groupsHtml = _nflStatByPos(data.groups, _statPos, g => g.key).map(g => {
             const color = _NFL_STAT_GROUP_COLOR[g.key] || 'var(--accent)';
-            const chips = g.stats.map(([l, v]) =>
-                `<div style="text-align:center;min-width:54px">
-                    <div style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">${_escHtml(String(v))}</div>
-                    <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.5px;color:var(--text-muted)">${_escHtml(l)}</div>
-                </div>`).join('');
+            const tiles = g.stats.map(([l, v]) =>
+                `<div class="stat-item"><div class="stat-value">${_escHtml(String(v))}</div><div class="stat-label">${_escHtml(l)}</div></div>`).join('');
             return `<div style="margin-bottom:0.9rem">
-                <div style="font-size:0.68rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:${color};margin-bottom:0.4rem">${_escHtml(g.label)}</div>
-                <div style="display:flex;flex-wrap:wrap;gap:0.6rem 1.1rem">${chips}</div>
+                <div style="font-size:0.68rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:${color};margin-bottom:0.5rem">${_escHtml(g.label)}</div>
+                <div class="stats-grid">${tiles}</div>
             </div>`;
         }).join('');
 
@@ -2145,7 +2142,7 @@ async function showNFLEspnPlayer(espnId) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-player', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
     _nflDetailPlayer = null;
     _nflEspnId = espnId;
 
