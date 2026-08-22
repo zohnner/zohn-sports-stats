@@ -5,6 +5,11 @@
 // bots; fail-safe. Sources the already-curated /api/nflstats (same-origin, same
 // season default the client itself uses) rather than re-implementing ESPN's
 // two-stage leaders->athlete resolution here — one definition of "NFL leaders."
+//
+// D-114 update: each leader's team now links to /nfl/team/:abbr (confirmed live
+// that /api/nflstats already returns ESPN-style abbreviations like "LAR"/"KC",
+// matching the team page's :abbr param directly — no name→abbr map needed here),
+// plus a back-link to /nfl.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -27,8 +32,11 @@ export async function onRequest(context) {
         const sections = categories.map(c => {
             const leaders = (c.leaders || []).slice(0, 5);
             if (!leaders.length) return null;
-            const items = leaders.map(l =>
-                `<li>${esc(l.name)} (${esc(l.team)}) — ${esc(l.value)} ${esc(c.unit)}</li>`).join('');
+            const items = leaders.map(l => {
+                const teamCode = String(l.team || '').toUpperCase();
+                const teamHtml = teamCode ? `<a href="/nfl/team/${esc(teamCode.toLowerCase())}">${esc(teamCode)}</a>` : '';
+                return `<li>${esc(l.name)}${teamHtml ? ` (${teamHtml})` : ''} — ${esc(l.value)} ${esc(c.unit)}</li>`;
+            }).join('');
             return { c, leaders, html: `<h2>${esc(c.label)} Leaders</h2><ol>${items}</ol>` };
         }).filter(Boolean);
 
@@ -50,6 +58,7 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>NFL Stat Leaders — ${season}</h1>` +
             `<p>Current ${season} NFL leaders across passing, rushing, receiving and defensive categories. Full leaderboards for every stat on SportStrata — free, no login, no ads.</p>` +
+            `<p><a href="/nfl">NFL Home</a></p>` +
             sections.map(s => s.html).join('') + `</section>`;
 
         let html = await (await shell(env, request.url)).text();

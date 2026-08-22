@@ -2,6 +2,10 @@
 // Clones the proven D-041 edge-render pattern: serve the real SPA shell with a
 // per-sport <head> + a crawlable content snapshot + window.__SS_ROUTE hint the
 // SPA honors on boot. Same HTML for humans and bots. Fail-safe to the app.
+//
+// D-114 update: promoted "#ncaaf-rankings" and "#ncaaf-standings" to their real
+// paths (both Functions already existed) — Leaders/Scores stay hash-only since
+// no real path exists for either yet.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -15,7 +19,7 @@ const DESC  = "Free college football coverage: AP/Coaches/CFP rankings, conferen
 const H1    = "College Football Stats";
 const CANON = 'https://sportstrata.cc/ncaaf';
 const ROUTE = "ncaaf-home";
-const CARDS = [["Rankings", "#ncaaf-rankings"], ["Standings", "#ncaaf-standings"], ["Leaders", "#ncaaf-leaders"], ["Scores", "#ncaaf-scores"]];
+const CARDS = [["Rankings", "/ncaaf/rankings"], ["Standings", "/ncaaf/standings"], ["Leaders", "#ncaaf-leaders"], ["Scores", "#ncaaf-scores"]];
 
 export async function onRequest(context) {
     const { request, env } = context;

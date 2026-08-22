@@ -2,6 +2,10 @@
 // Same contract as the team function: one HTML for all clients (SPA shell via env.ASSETS
 // with per-player head + Person JSON-LD + crawlable snapshot + __SS_ROUTE hint), assets
 // absolutized for the deep path, fail-safe fallback to the untouched app.
+//
+// D-114 update: the player's team now links to /mlb/team/:abbr, plus back-links to
+// /mlb and /mlb/leaders — this page previously rendered the team as plain text with
+// zero outbound links.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -11,6 +15,22 @@ function esc(s) {
 function shell(env, url) {
     return env.ASSETS.fetch(new URL('/index.html', url));
 }
+
+// MLB full-name → abbreviation, live-verified against
+// https://statsapi.mlb.com/api/v1/teams?sportId=1&season=<current> (D-114).
+// Duplicated deliberately — see the same map's comment in functions/mlb/leaders.js.
+const MLB_TEAM_ABBR = {
+    'Arizona Diamondbacks': 'AZ', 'Athletics': 'ATH', 'Atlanta Braves': 'ATL',
+    'Baltimore Orioles': 'BAL', 'Boston Red Sox': 'BOS', 'Chicago Cubs': 'CHC',
+    'Chicago White Sox': 'CWS', 'Cincinnati Reds': 'CIN', 'Cleveland Guardians': 'CLE',
+    'Colorado Rockies': 'COL', 'Detroit Tigers': 'DET', 'Houston Astros': 'HOU',
+    'Kansas City Royals': 'KC', 'Los Angeles Angels': 'LAA', 'Los Angeles Dodgers': 'LAD',
+    'Miami Marlins': 'MIA', 'Milwaukee Brewers': 'MIL', 'Minnesota Twins': 'MIN',
+    'New York Mets': 'NYM', 'New York Yankees': 'NYY', 'Philadelphia Phillies': 'PHI',
+    'Pittsburgh Pirates': 'PIT', 'San Diego Padres': 'SD', 'San Francisco Giants': 'SF',
+    'Seattle Mariners': 'SEA', 'St. Louis Cardinals': 'STL', 'Tampa Bay Rays': 'TB',
+    'Texas Rangers': 'TEX', 'Toronto Blue Jays': 'TOR', 'Washington Nationals': 'WSH'
+};
 
 export async function onRequest(context) {
     const { request, env, params } = context;
@@ -41,10 +61,16 @@ export async function onRequest(context) {
             ...(pos ? { jobTitle: pos } : {}),
             ...(team ? { affiliation: { '@type': 'SportsTeam', name: team } } : {})
         });
+
+        const tabbr = team ? MLB_TEAM_ABBR[team] : null;
+        const teamHtml = tabbr ? `<a href="/mlb/team/${tabbr.toLowerCase()}">${esc(team)}</a>` : esc(team);
+        const bioLine = [pos ? esc(pos) : '', team ? teamHtml : ''].filter(Boolean).join(' · ');
+
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
-            `<p>${esc([pos, team].filter(Boolean).join(' · '))}</p>` +
-            `<p>${esc(name)} season stats, advanced metrics, splits and game logs on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>${bioLine}</p>` +
+            `<p>${esc(name)} season stats, advanced metrics, splits and game logs on SportStrata — free, no login, no ads.</p>` +
+            `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p></section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html

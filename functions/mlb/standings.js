@@ -2,6 +2,10 @@
 // Same contract as the team/player functions: one HTML for all clients (SPA shell via
 // env.ASSETS + per-page head + crawlable division-table snapshot + __SS_ROUTE hint),
 // assets absolutized, fail-safe fallback to the untouched app.
+//
+// D-114 update: team names now link to /mlb/team/:abbr, plus back-links to /mlb and
+// /mlb/leaders — this page previously rendered plain-text team names with zero
+// outbound links.
 
 const DIV = { 200: 'AL West', 201: 'AL East', 202: 'AL Central', 203: 'NL West', 204: 'NL East', 205: 'NL Central' };
 const DIV_ORDER = [201, 202, 200, 204, 205, 203];
@@ -12,6 +16,22 @@ function esc(s) {
     }[c]));
 }
 function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
+
+// MLB full-name → abbreviation, live-verified against
+// https://statsapi.mlb.com/api/v1/teams?sportId=1&season=<current> (D-114).
+// Duplicated deliberately — see the same map's comment in functions/mlb/leaders.js.
+const MLB_TEAM_ABBR = {
+    'Arizona Diamondbacks': 'AZ', 'Athletics': 'ATH', 'Atlanta Braves': 'ATL',
+    'Baltimore Orioles': 'BAL', 'Boston Red Sox': 'BOS', 'Chicago Cubs': 'CHC',
+    'Chicago White Sox': 'CWS', 'Cincinnati Reds': 'CIN', 'Cleveland Guardians': 'CLE',
+    'Colorado Rockies': 'COL', 'Detroit Tigers': 'DET', 'Houston Astros': 'HOU',
+    'Kansas City Royals': 'KC', 'Los Angeles Angels': 'LAA', 'Los Angeles Dodgers': 'LAD',
+    'Miami Marlins': 'MIA', 'Milwaukee Brewers': 'MIL', 'Minnesota Twins': 'MIN',
+    'New York Mets': 'NYM', 'New York Yankees': 'NYY', 'Philadelphia Phillies': 'PHI',
+    'Pittsburgh Pirates': 'PIT', 'San Diego Padres': 'SD', 'San Francisco Giants': 'SF',
+    'Seattle Mariners': 'SEA', 'St. Louis Cardinals': 'STL', 'Tampa Bay Rays': 'TB',
+    'Texas Rangers': 'TEX', 'Toronto Blue Jays': 'TOR', 'Washington Nationals': 'WSH'
+};
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -39,8 +59,10 @@ export async function onRequest(context) {
             tables += `<h2>${esc(DIV[id] || 'Division')}</h2><ul>`;
             rows.forEach(tr => {
                 const nm = (tr.team && tr.team.name) || 'Team';
+                const abbr = MLB_TEAM_ABBR[nm];
+                const teamHtml = abbr ? `<a href="/mlb/team/${abbr.toLowerCase()}">${esc(nm)}</a>` : esc(nm);
                 const gb = (tr.gamesBack && tr.gamesBack !== '-') ? ` (${esc(tr.gamesBack)} GB)` : '';
-                tables += `<li>${esc(nm)} — ${esc(String(tr.wins))}–${esc(String(tr.losses))}${gb}</li>`;
+                tables += `<li>${teamHtml} — ${esc(String(tr.wins))}–${esc(String(tr.losses))}${gb}</li>`;
             });
             tables += '</ul>';
         });
@@ -54,7 +76,8 @@ export async function onRequest(context) {
             name: `${season} MLB Standings`, description: desc, url: canonical,
             creator: { '@type': 'Organization', name: 'SportStrata' }
         });
-        const snapshot = `<section class="ss-prerender"><h1>${season} MLB Standings</h1>${tables}</section>`;
+        const snapshot = `<section class="ss-prerender"><h1>${season} MLB Standings</h1>` +
+            `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p>${tables}</section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html

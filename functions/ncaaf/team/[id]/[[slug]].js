@@ -1,5 +1,11 @@
 // Pages Function: /ncaaf/team/:id(/:slug) — crawlable, prerendered NCAAF team page (D-045 P2).
 // SPA shell + per-team head (SportsTeam JSON-LD) + crawlable snapshot + __SS_ROUTE=ncaaf-team-{id}.
+//
+// D-114 update: added back-links to /ncaaf, /ncaaf/standings, /ncaaf/rankings. A
+// full ~130-team FBS directory was deprioritized (unlike MLB/NFL, this function
+// fetches only the single requested team by id — no full team list is already
+// in hand, so a directory here would mean an new, untested API call); back-links
+// alone still connect every team page back into the crawlable hub graph.
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 
 function esc(s) {
@@ -33,7 +39,8 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc([abbr, summary].filter(Boolean).join(' · '))}</p>` +
-            `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p></section>`;
+            `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p>` +
+            `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p></section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html

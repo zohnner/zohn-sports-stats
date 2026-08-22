@@ -1,6 +1,10 @@
 // Pages Function: /nfl/team/:abbr(/:slug) — crawlable, prerendered NFL team page (D-045 P2).
 // Clones the D-041 pattern: SPA shell via env.ASSETS + per-team head (SportsTeam JSON-LD)
 // + crawlable snapshot + __SS_ROUTE=nfl-team-{ABBR}. Same HTML for humans and bots; fail-safe.
+//
+// D-114 update: added back-links to /nfl, /nfl/leaders, plus an "Other NFL Teams"
+// directory (reusing the `list` already fetched below at zero extra cost) — team
+// pages previously had zero outbound links.
 const TEAMS = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams';
 
 function esc(s) {
@@ -30,9 +34,18 @@ export async function onRequest(context) {
         const title = `${name} — Roster, Depth Chart, Schedule & Fantasy | SportStrata`;
         const desc  = `${name} — NFL roster and depth chart, schedule, standings, and top fantasy assets by ADP. Free, no login.`;
         const jsonld = JSON.stringify({ '@context': 'https://schema.org', '@type': 'SportsTeam', name, sport: 'American Football', url: canonical });
+
+        const otherTeams = list.map(w => w.team)
+            .filter(t => t && t.abbreviation && t.displayName && String(t.abbreviation).toUpperCase() !== A.toUpperCase())
+            .slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
+        const teamLinks = otherTeams.map(t =>
+            `<li><a href="/nfl/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.displayName)}</a></li>`).join('');
+
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
-            `<p>${esc(name)} NFL roster, depth chart, schedule, standings and fantasy assets on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>${esc(name)} NFL roster, depth chart, schedule, standings and fantasy assets on SportStrata — free, no login, no ads.</p>` +
+            `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
+            `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul></section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html

@@ -4,6 +4,11 @@
 // snapshot in the main host, and a window.__SS_ROUTE hint the SPA honors on boot.
 // Fail-safe: any error falls back to the untouched app, so a broken render never
 // produces a dead page. Same HTML for humans and bots (no dynamic-rendering sniff).
+//
+// D-114 update: added back-links to /mlb, /mlb/leaders, /mlb/standings plus an
+// "Other MLB Teams" directory (reusing the `teams` list already fetched below at
+// zero extra cost) — team pages previously had zero outbound links, so a crawler
+// that reached one had no way to discover any other page on the site.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -46,10 +51,19 @@ export async function onRequest(context) {
             ...(lg ? { memberOf: { '@type': 'SportsOrganization', name: lg } } : {})
         });
 
+        const otherTeams = teams
+            .filter(t => t.abbreviation && t.name && t.id !== id)
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name));
+        const teamLinks = otherTeams.map(t =>
+            `<li><a href="/mlb/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.name)}</a></li>`).join('');
+
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc(lg)}${div ? ' · ' + esc(div) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
-            `<p>Live ${esc(name)} team stats, roster, schedule, standings and playoff odds on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>Live ${esc(name)} team stats, roster, schedule, standings and playoff odds on SportStrata — free, no login, no ads.</p>` +
+            `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a> · <a href="/mlb/standings">MLB Standings</a></p>` +
+            `<h2>Other MLB Teams</h2><ul>${teamLinks}</ul></section>`;
 
         let html = await (await shell(env, request.url)).text();
 

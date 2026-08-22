@@ -1,6 +1,13 @@
 // Pages Function: /nfl/player/:id(/:slug) — crawlable, prerendered NFL player page (D-045 P2).
 // The route carries the Sleeper player id, so we resolve name/team/pos from Sleeper's bulk
 // players map (cf-cached 24h). SPA shell + Person JSON-LD + snapshot + __SS_ROUTE=nfl-player-{id}.
+//
+// D-114 update: the player's team now links to /nfl/team/:abbr when the code is a
+// confirmed-valid NFL abbreviation, plus back-links to /nfl and /nfl/leaders. Sleeper's
+// feed occasionally uses a different alias for the same franchise than the ESPN-sourced
+// team page does (e.g. legacy "WAS"/"JAC"/"OAK"/"SD"/"STL" codes) — normalize the known
+// cases and otherwise only link when the code is in the confirmed 32-team set, so an
+// unrecognized code fails safe to plain text instead of a dead link.
 const SLEEPER = 'https://api.sleeper.app/v1/players/nfl';
 
 function esc(s) {
@@ -9,6 +16,11 @@ function esc(s) {
     }[c]));
 }
 function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
+
+// ESPN's live NFL abbreviation set (matches /nfl/team/:abbr) — verified via
+// https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams (D-114).
+const NFL_TEAM_ALIAS = { WAS: 'WSH', JAC: 'JAX', OAK: 'LV', SD: 'LAC', STL: 'LAR' };
+const NFL_TEAM_CODES = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LAC','LAR','LV','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SEA','SF','TB','TEN','WSH']);
 
 export async function onRequest(context) {
     const { request, env, params } = context;
@@ -34,10 +46,19 @@ export async function onRequest(context) {
             ...(pos ? { jobTitle: pos } : {}),
             ...(team ? { affiliation: { '@type': 'SportsTeam', name: team } } : {})
         });
+
+        const teamRaw = String(team || '').toUpperCase();
+        const teamCode = NFL_TEAM_ALIAS[teamRaw] || teamRaw;
+        const teamHtml = team
+            ? (NFL_TEAM_CODES.has(teamCode) ? `<a href="/nfl/team/${teamCode.toLowerCase()}">${esc(team)}</a>` : esc(team))
+            : '';
+        const bioLine = [pos ? esc(pos) : '', teamHtml].filter(Boolean).join(' · ');
+
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
-            `<p>${esc([pos, team].filter(Boolean).join(' · '))}</p>` +
-            `<p>${esc(name)} NFL season stats, fantasy value, advanced metrics and game logs on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>${bioLine}</p>` +
+            `<p>${esc(name)} NFL season stats, fantasy value, advanced metrics and game logs on SportStrata — free, no login, no ads.</p>` +
+            `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p></section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html

@@ -10,6 +10,9 @@
 // prerendered snapshot below IS the page, for humans and crawlers alike. A future
 // interactive glossary (search/filter/grouping) is a Kael+Vera visual/UX call, not an
 // SEO-plumbing one; this ships the indexable content now rather than waiting on that.
+//
+// D-114 update: added back-links to / and /mlb (and /mlb/leaders) — this page
+// previously had zero outbound links, a dead end for any crawler that reached it.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -92,6 +95,7 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>MLB Stat Glossary</h1>` +
             `<p>Plain-language definitions for every stat SportStrata tracks, from basic counting stats to advanced Statcast metrics. Free, no login required.</p>` +
+            `<p><a href="/">SportStrata Home</a> · <a href="/mlb">MLB Stats</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p>` +
             `<dl>${rows}</dl></section>`;
 
         let html = await (await shell(env, request.url)).text();

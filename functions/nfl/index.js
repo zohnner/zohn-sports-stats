@@ -2,6 +2,10 @@
 // Clones the proven D-041 edge-render pattern: serve the real SPA shell with a
 // per-sport <head> + a crawlable content snapshot + window.__SS_ROUTE hint the
 // SPA honors on boot. Same HTML for humans and bots. Fail-safe to the app.
+//
+// D-114 update: added a real "Stat Leaders" card pointing at /nfl/leaders (no
+// real path existed for standings yet, so that card stays hash-only) plus a
+// full 32-team directory linking down into /nfl/team/:abbr.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -15,7 +19,25 @@ const DESC  = "Free NFL fantasy tools: live Monte Carlo mock draft, value-based 
 const H1    = "NFL Stats & Fantasy Tools";
 const CANON = 'https://sportstrata.cc/nfl';
 const ROUTE = "nfl-home";
-const CARDS = [["Mock Draft", "#nfl-mock"], ["Draft Kit", "#nfl-draftkit"], ["Standings", "#nfl-standings"], ["Scores", "#nfl-games"]];
+const CARDS = [["Stat Leaders", "/nfl/leaders"], ["Mock Draft", "#nfl-mock"], ["Draft Kit", "#nfl-draftkit"], ["Standings", "#nfl-standings"], ["Scores", "#nfl-games"]];
+
+async function teamDirectory() {
+    try {
+        const r = await fetch(
+            'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
+            { cf: { cacheTtl: 86400, cacheEverything: true } }
+        );
+        if (!r.ok) return '';
+        const data = await r.json();
+        const list = (data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];
+        const teams = list.map(w => w.team).filter(t => t && t.abbreviation && t.displayName)
+            .slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
+        if (!teams.length) return '';
+        const items = teams.map(t =>
+            `<li><a href="/nfl/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.displayName)}</a></li>`).join('');
+        return `<h2>All 32 NFL Teams</h2><ul>${items}</ul>`;
+    } catch (_) { return ''; }
+}
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -28,9 +50,10 @@ export async function onRequest(context) {
             about: { '@type': 'SportsOrganization', name: "National Football League", sport: "American Football" }
         });
         const links = CARDS.map(c => `<li><a href="${esc(c[1])}">${esc(c[0])}</a></li>`).join('');
+        const teams = await teamDirectory();
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
-            `<p>${esc(DESC)}</p><ul>${links}</ul></section>`;
+            `<p>${esc(DESC)}</p><ul>${links}</ul>${teams}</section>`;
 
         let html = await (await shell(env, request.url)).text();
         html = html
