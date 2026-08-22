@@ -74,9 +74,9 @@ FAIL on exit 1 — a file referenced by index.html is missing from `sw.js` STATI
 
 **11. Theme contrast contract**
 ```bash
-node tools/check-themes.cjs
+node tools/check-themes.cjs --strict
 ```
-Report-only for now (advisory). Once existing theme debts are cleared, switch to `--strict` and FAIL on errors. Any NEW theme must pass clean before merge.
+FAIL on exit 1 — every live `[data-theme]` block must clear WCAG AA on the core text/bg pairs. Flipped to `--strict` in D-047 once the theme set was pruned to dark/light/nl-monarchs (all pass clean). Any NEW theme must pass strict before merge.
 
 **12. NUL-byte corruption scan (mount-write hazard)**
 ```bash
