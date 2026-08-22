@@ -43,3 +43,7 @@ X Post/
 # it or track it — no build step lives in this repo, ever.
 videocreation/
 _git_stale_locks_to_delete/
+
+# Python bytecode cache (bot/) — never commit compiled artifacts
+__pycache__/
+*.pyc
