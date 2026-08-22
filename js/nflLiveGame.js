@@ -814,7 +814,16 @@ function _nlgStandingsCard(data, home, away) {
 
 function _nlgSidebarLeaders(data) {
     const leaders = data.leaders || [];
-    if (!leaders.length) return '';
+    // Fixed live 2026-08-22: the old guard only checked the top-level
+    // leaders[] array (one entry per team, always present pregame),
+    // not whether either team actually HAS a populated leader category
+    // yet. Pregame, ESPN returns leaders[] with two team blocks whose
+    // own `.leaders` (categories) are empty -- this rendered a card with
+    // "Game Leaders / DET / WSH" and nothing underneath, violating this
+    // file's own "absent degrades to nothing, never a placeholder shell"
+    // rule (see D-105). Now a team block is omitted unless it produced
+    // at least one real row, and the whole card is omitted unless at
+    // least one team block survived.
     const block = (tb) => {
         const abbr = (tb.team || {}).abbreviation || '';
         const cats = (tb.leaders || []).slice(0, 3);
@@ -824,9 +833,11 @@ function _nlgSidebarLeaders(data) {
             const name = (top.athlete && (top.athlete.shortName || top.athlete.displayName)) || '';
             return `<div class="nlg-leader-row"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-name">${_escHtml(name)}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>`;
         }).join('');
-        return `<div class="nlg-leader-team"><div class="nlg-leader-team-title">${_escHtml(abbr)}</div>${rows}</div>`;
+        return rows ? `<div class="nlg-leader-team"><div class="nlg-leader-team-title">${_escHtml(abbr)}</div>${rows}</div>` : '';
     };
-    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Leaders</h3>${leaders.map(block).join('')}</div>`;
+    const blocks = leaders.map(block).filter(Boolean);
+    if (!blocks.length) return '';
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Leaders</h3>${blocks.join('')}</div>`;
 }
 
 function _nlgFantasyLeadersCard(data) {
