@@ -5,7 +5,12 @@
 // D-114 update: added back-links to /nfl, /nfl/leaders, plus an "Other NFL Teams"
 // directory (reusing the `list` already fetched below at zero extra cost) — team
 // pages previously had zero outbound links.
-const TEAMS = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams';
+// D-114 fix: site.api.espn.com is Cloudflare-egress-blocked (D-062, Akamai 403) --
+// this file was never updated with the host-swap fix already applied everywhere
+// else in functions/api/*.js, so every NFL team page silently fell back to the
+// plain shell. site.web.api.espn.com serves the identical response shape.
+const TEAMS = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams';
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -19,7 +24,7 @@ export async function onRequest(context) {
     const abbr = String(params.abbr || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     try {
         if (!abbr || !env.ASSETS) return shell(env, request.url);
-        const r = await fetch(TEAMS, { cf: { cacheTtl: 86400, cacheEverything: true } });
+        const r = await fetch(TEAMS, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } });
         if (!r.ok) return shell(env, request.url);
         const data = await r.json();
         const list = (data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];

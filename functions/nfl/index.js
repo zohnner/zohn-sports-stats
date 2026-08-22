@@ -14,6 +14,12 @@ function esc(s) {
 }
 function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
+// D-062: site.api.espn.com is Cloudflare-egress-blocked (Akamai 403); every
+// functions/api/*.js proxy already swaps to site.web.api.espn.com (byte-identical
+// shape). Using the working host + UA from the start here, since teamDirectory()
+// is new in this same change.
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
 const TITLE = "NFL Fantasy Tools, Mock Draft, Rankings & Scores | SportStrata";
 const DESC  = "Free NFL fantasy tools: live Monte Carlo mock draft, value-based (VORP) rankings, tiers and sleepers, standings and live scores. No login, no ads.";
 const H1    = "NFL Stats & Fantasy Tools";
@@ -24,8 +30,8 @@ const CARDS = [["Stat Leaders", "/nfl/leaders"], ["Mock Draft", "#nfl-mock"], ["
 async function teamDirectory() {
     try {
         const r = await fetch(
-            'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
-            { cf: { cacheTtl: 86400, cacheEverything: true } }
+            'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams',
+            { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } }
         );
         if (!r.ok) return '';
         const data = await r.json();

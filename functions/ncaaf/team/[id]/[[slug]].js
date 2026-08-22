@@ -6,7 +6,13 @@
 // fetches only the single requested team by id — no full team list is already
 // in hand, so a directory here would mean an new, untested API call); back-links
 // alone still connect every team page back into the crawlable hub graph.
-const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+// D-114 fix: site.api.espn.com is Cloudflare-egress-blocked (D-062, Akamai 403) --
+// this file was never updated with the host-swap fix already applied everywhere
+// else in functions/api/*.js, so every NCAAF team page silently fell back to the
+// plain shell. site.web.api.espn.com serves the identical response shape (live-
+// verified against this exact college-football/teams/:id path before switching).
+const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -20,7 +26,7 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
-        const tr = await fetch(`${SITE}/teams/${id}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+        const tr = await fetch(`${SITE}/teams/${id}`, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 3600, cacheEverything: true } });
         if (!tr.ok) return shell(env, request.url);
         const team = (await tr.json()).team;
         if (!team || !(team.displayName || team.name)) return shell(env, request.url);

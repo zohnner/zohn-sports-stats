@@ -12,6 +12,12 @@ function esc(s) {
 }
 function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
+// D-062 fix (found live while verifying D-114): site.api.espn.com is Cloudflare-
+// egress-blocked (Akamai 403) -- this file predates that discovery and was never
+// updated with the host-swap fix already applied everywhere in functions/api/*.js,
+// so every NFL game page silently fell back to the plain shell.
+const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
 function fmtDate(iso) {
     try {
         return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -24,8 +30,8 @@ export async function onRequest(context) {
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
         const r = await fetch(
-            `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`,
-            { cf: { cacheTtl: 120, cacheEverything: true } }
+            `https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`,
+            { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 120, cacheEverything: true } }
         );
         if (!r.ok) return shell(env, request.url);
         const data = await r.json();
