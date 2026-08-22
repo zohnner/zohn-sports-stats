@@ -1306,3 +1306,81 @@ Contributor: Finn | Date: 2026-08-22
 **Result:** shipped same session (small, low-risk, additive fix — one className reset in two functions, no shape/behavior change beyond fixing the collapse). Committed locally via the mount's plumbing-commit workaround; pending owner push.
 
 Escalation needed: no (for the layout fix). The roster-name anomaly may need Relay (data/API) once someone looks at it — not escalated yet, just logged.
+
+
+---
+
+## NFL Live Game Viewer — immersion brainstorm, two ideas taken to Vera — GATED, spec stage only (2026-08-22)
+
+**Contributors:** Vera (behavioral spec, this entry) | Kael + Axiom not yet consulted
+**Date:** 2026-08-22
+**Status:** spec-complete for Vera's gate; NOT implemented, NOT visually specced, NOT feasibility-checked. Per ROUTER.md, a new feature idea starts with Vera before anyone designs or codes — this is that first gate, not a green light to build.
+
+**Context:** owner asked to brainstorm ways to make the NFL live game viewer (`js/nflLiveGame.js`, D-080 Phase 1) feel more immersive. Two ideas came out of that pass as worth taking further; both are genuinely new scope (not bugfixes), so per this file's own routing rule they get specced here rather than built ad hoc. A third finding from that same pass — `.nlg-header` (`css/nflLiveGame.css` line 93) is not sticky, only `.nlg-side` is (confirmed by reading the actual CSS live, not assumed from D-080's own text, which never explicitly promised a sticky header) — is the trigger for idea 1 below, not a restatement of an existing unmet requirement.
+
+---
+
+### Idea 1 — Sticky score header while scrolling the live game page
+
+**Job to be done:** "I'm three screens deep in Play-by-Play or Box Score, scrolling to catch up on a drive — I should never have to scroll back up to check the score, clock, or down/distance. That context should just be there." Right now `.nlg-header` (score, team names/logos, clock, field position viewer) scrolls away with the rest of the page the moment the user moves past it; only the sidebar (leaders/win-probability/game flow) stays pinned. For a page whose entire premise is live-tracking a game in progress, losing the score off-screen while reading the play log is a real gap, not a nitpick — the job this page exists to do (know what's happening, right now) gets harder the moment you start using its own tabs.
+
+**Friction inventory today:** scrolling down into any tab (Play-by-Play especially, since it's the longest) pushes the header fully off-screen; the only way back to score/clock/down-distance is scrolling up, which loses your place in the play log; on mobile this is worse since the viewport is shorter and the header is taller relative to it (the field position viewer alone is non-trivial height).
+
+**Proposed behavior:**
+- `.nlg-header` becomes `position: sticky; top: calc(var(--header-height) + var(--ticker-height) + var(--header-sub-h))` — pinned directly under the site's own sticky header stack, matching the exact pattern `.nlg-side` already uses one level down (`+ 1rem` for its own gap). No new stickiness mechanism invented — this is the site's established pattern, applied to a second element on the same page for the first time.
+- **Not the full header at full height.** The pregame/live/final score row + clock/quarter + a compact one-line down-and-distance stay pinned. The field position viewer graphic (the tall part) does **not** stick — it scrolls away with the rest of the page. Reasoning: the field viewer is the richest visual on the page and deserves real space when the user is actively looking at it (i.e., on the Summary tab, scrolled to the top); pinning it permanently would eat a large fixed slice of viewport on every tab, working against the exact density discipline DESIGN.md asks for elsewhere on this page. A collapsed sticky header is a compact instrument panel, not a shrunk-down copy of the hero.
+- **Transition state:** the header does not visually change shape when it becomes sticky (no re-layout, no size jump) — it simply stops moving with the page once its scroll position would take it past the pin point. This matches DESIGN.md's motion rule directly: "motion communicates state, never decorates." A layout shift here would look like a bug, not a feature.
+- **Live-update behavior while sticky:** score/clock/down-distance continue to diff-render in place exactly as they do today (the existing `_nlgMaybePoll`/section-diff architecture already handles this) — stickiness only changes position, not the update mechanism. No new poll logic needed.
+- **z-index:** must sit above tab content but below the site's own header stack (`.header-inner`/`.header-ticker`/`.sub-nav`) — same layering the sidebar already respects.
+
+**States to spec:**
+- *Default (page loaded, not yet scrolled):* header renders in normal flow, identical to today — no visual difference until the user actually scrolls past it.
+- *Sticky/pinned (scrolled past the header's natural position):* compact score/clock/down-distance bar pinned under the site header. A subtle bottom border or shadow (existing `--shadow-sm`/`--border-default` tokens, not a new one) to visually separate it from tab content sliding underneath — the same "is this floating above something" cue `.nlg-side` doesn't currently need (it has empty space beside it, not content sliding under it) but this element does.
+- *Live game, sticky:* clock/score update in place, no flicker, no re-pin animation on each poll tick.
+- *Final/pregame, sticky:* same compact bar, showing final score or kickoff countdown instead of a live clock — reuses whatever the non-sticky header already shows in those states, just in the pinned position.
+- *Mobile (≤900px, where `.nlg-side` already unpins per the existing media query):* the sticky header stays pinned — this is arguably more valuable on mobile, not less, since the shorter viewport means the header would otherwise scroll away even faster. Confirm the compact bar's height doesn't eat too much of an already-short mobile viewport; may need a shorter mobile-specific compact layout (e.g., score only, clock/down-distance dropped) rather than assuming the desktop compact bar just reflows. Flagging this as an open question for Kael's visual pass, not deciding it here.
+- *Tab switch while sticky:* header stays pinned and unaffected — tab switching only changes body content below it, consistent with how the page already separates header/sidebar from `.gv-tabpanel`.
+
+**What the user does next:** glances at the pinned score/clock without losing their place in whatever they were reading — no explicit action, this is a passive-context feature. No new interactive element, so no new keyboard/focus state to add; existing tab focus order is unaffected since the sticky header contains no new focusable controls.
+
+**Accessibility:** no new interactive elements, so no new tab-stops or ARIA needed. One real consideration: `position: sticky` elements can end up in an unexpected place in screen-reader linear reading order if not careful — since this preserves the header's existing DOM position (only changes CSS position, not DOM order), reading order is unaffected. Confirm with a screen reader pass before shipping regardless, since this is exactly the kind of assumption that should be verified, not asserted.
+
+**Explicitly not in this spec:** the field position viewer becoming sticky (named and rejected above), any new data or polling behavior, any change to the six-tab structure itself.
+
+---
+
+### Idea 2 — Big-play Highlight Card auto-suggest (D-080 Phase 3's deferred item)
+
+**Job to be done:** "That was a huge play — I want to make a shareable card of it right now, while it's fresh, without digging through the Highlight Card Studio's game/player picker to find the exact play I just watched." Today, creating a highlight card from a live game requires leaving the live view, opening the Studio fresh (or via the existing "Create Highlight Card" button, which pre-selects the *game* but still requires manually picking the *player* and stats), with no connection to any specific big moment that just happened on screen.
+
+**Scope check against D-080/D-081 first, before speccing behavior:** D-080 Phase 3 named "auto-suggested Highlight Cards from major plays" as deferred, explicitly because computing what counts as a "major play" the way D-080 originally framed it (EPA-based significance) needs nflverse play-by-play data that D-081 confirmed does not exist for the 2026 season yet (`play_by_play_2026.*` still absent as of this session's own recheck, tonight). **That EPA-based version of this feature is still blocked — this spec does not reopen or route around that blocker.** What follows is a deliberately smaller version that does not need EPA at all, scoped to only what's actually available live today.
+
+**What "big play" means here, without EPA:** a rule-based, no-model definition built entirely from data `js/nflLiveGame.js` already has in hand from the existing scoring-plays/play-by-play parse: any scoring play (TD, FG, safety — already flagged in ESPN's `scoringPlays` array, which the page already reads), or a single play with a large yardage gain (a fixed threshold — e.g. 20+ yards, a number to sanity-check against real play distributions before committing, not asserted here) with a real turnover (INT/fumble recovery) also qualifying. This is intentionally the same class of "no new data source" rule-based approach D-081 already used for Phase 3a's Success Rate/Drive Efficiency — proven pattern, not a new one.
+
+**Proposed behavior:**
+- When a qualifying play happens (detected on the same poll tick that already updates the page — no new fetch), a small, dismissible prompt appears — not a modal, not an interruption of whatever the user is currently looking at. Anchored near the top of the page (below the sticky header from Idea 1, if both ship) or as a toast-style element, final placement is Kael's call, not decided here.
+- Prompt copy names the actual play plainly — e.g. "Mahomes to Kelce, 34-yd TD -- make a card?" -- never a generic "Big play detected!" (ux.md's own rule: no placeholder text as a stand-in for real labels; this is the same principle applied to a system-generated prompt).
+- Two actions: **Create Card** (jumps straight into the Highlight Card Studio with both the game *and* the specific player from that play pre-selected — a step beyond today's `openNFLHighlightCardForGame`, which only pre-fills the game) and **Dismiss** (closes the prompt, no further action, does not suppress future prompts for later plays in the same game).
+- **Does not auto-open the Studio.** The user chose to be on the live game page; auto-navigating away from what they're watching the moment something exciting happens would be exactly the kind of interruption ux.md's "every interaction has a cost" principle warns against — it would cost them their place in whatever they were reading, for a feature meant to reduce friction, not add it.
+- **Rate limiting:** if multiple qualifying plays happen close together (a shootout with back-to-back scores), only show one prompt at a time — a new qualifying play while a prompt is already showing replaces its content rather than stacking a second prompt. No more than one prompt visible ever.
+- **Auto-dismiss:** the prompt is not permanent chrome — it should clear itself after a reasonable window (e.g., the next poll tick that has no new qualifying play, or a fixed timeout) rather than sitting on screen indefinitely as stale advice about a play that already scrolled by. Exact timing is an implementation detail for whoever builds this, not pinned down here, but "it never goes away on its own" is explicitly the wrong answer.
+
+**States to spec:**
+- *Default:* no prompt — this is the overwhelmingly common state, most poll ticks have no qualifying play.
+- *Qualifying play detected:* prompt appears with a short, named entrance (matching DESIGN.md's 120-150ms ease-out standard for state changes — this is a state change, not decoration, so the existing rule applies directly, no new motion budget needed).
+- *User clicks Create Card:* prompt dismisses, `navigateTo('nfl-highlight-card')` fires with both eventId and the specific player pre-selected — extending `_hcNflPendingEventId`'s existing single-value handoff pattern (`js/highlightCard.js`) to also carry a player reference; exact shape (athlete id? the same `side:group:index` key the picker's own `<select>` already uses, confirmed live this session while reproducing the layout bug?) is Axiom's call, not decided here.
+- *User clicks Dismiss:* prompt clears immediately, no card created, no future suppression.
+- *User does nothing:* prompt auto-clears per the timeout above.
+- *Pregame/Final:* feature is inert — no plays are happening pregame, and "final" state has no new plays to detect; existing `openNFLHighlightCardForGame` entry point remains the only path from a finished game, unchanged.
+- *Multiple qualifying plays in sequence:* replace-not-stack behavior above.
+- *Mobile:* prompt must not cover the score header or block the tabs — placement needs its own mobile treatment, flagged for Kael same as Idea 1's mobile question.
+
+**What the user does next:** either lands in the Studio with game+player pre-selected (a genuinely faster path than today's game-only preselect) and continues the existing Studio flow (stats -> animation -> color, all unchanged), or dismisses and keeps watching — both are complete, non-dead-end outcomes.
+
+**Accessibility:** the prompt is a new interactive element with two real actions — needs a visible focus state on both buttons, keyboard reachability (not just mouse/touch), and should not trap focus (this is a live page the user may be actively reading via screen reader elsewhere) — likely an `aria-live="polite"` announcement region so screen reader users are told a card-worthy moment happened, not just sighted users via a visual toast. Exact ARIA pattern to be confirmed against a live screen reader test before shipping, consistent with this file's "accessibility is not a checkbox" standing rule.
+
+**Explicitly not in this spec:** the EPA-based "major play" detection D-080 originally named (still blocked on nflverse data per D-081, unchanged by this entry), any change to the Studio's own flow once entered, auto-navigation without user action.
+
+---
+
+**Gate status: Vera's behavioral spec only.** Both ideas need Kael's visual pass (prompt placement/treatment for Idea 2, mobile compact-header layout for Idea 1) and Axiom's feasibility check (exact data shape for the play-detection rule in Idea 2, confirming the sticky positioning math against the real header height stack for Idea 1) before either is buildable. Neither is scheduled; this entry exists so the idea isn't lost or rebuilt from scratch later, per this file's own "don't leave a finding undocumented" rule.
