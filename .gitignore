@@ -42,3 +42,4 @@ X Post/
 # because that's where the folder picker landed. Never let the site repo see
 # it or track it — no build step lives in this repo, ever.
 videocreation/
+_git_stale_locks_to_delete/
