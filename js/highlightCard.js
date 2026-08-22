@@ -91,6 +91,19 @@ function _hcResetState() {
 async function displayMLBHighlightCard() {
     const container = document.getElementById('playersGrid');
     if (!container) return;
+    // navigateTo() unconditionally restores #playersGrid's className to
+    // 'players-grid' (the 5-up card-grid layout) for every non-home view,
+    // before this function ever runs — it has no idea the Studio is about
+    // to render its own .hcs-shell/.hcs-layout two-column grid instead of a
+    // card grid. Left in place, that class cascades onto .hcs-shell as a
+    // grid ITEM confined to one ~262px card cell, crushing .hcs-layout's
+    // own grid-template-columns down to a sliver — reads exactly like the
+    // mobile <=768px collapse even at full desktop width, because the
+    // 768px media query never actually fires. Reset it here, matching
+    // statBuilder.js's own 'grid.className = builder-container' pattern
+    // for the same reason. .hcs-shell is self-contained (display:flex; no
+    // parent-supplied layout), so an empty class is enough.
+    container.className = '';
     _hcResetState();
     const presetGamePk = _hcPendingGamePk;
     _hcPendingGamePk = null;
@@ -467,6 +480,8 @@ function _hcNflResetState() {
 async function displayNFLHighlightCard() {
     const container = document.getElementById('playersGrid');
     if (!container) return;
+    // See the identical reset in displayMLBHighlightCard() above for why.
+    container.className = '';
     _hcNflResetState();
     const presetEventId = _hcNflPendingEventId;
     _hcNflPendingEventId = null;
