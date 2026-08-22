@@ -10,7 +10,7 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 | ID | File | Description |
 |---|---|---|
-| — | — | No active P2 items. |
+| P2-007 | js/highlightCard.js (data) | NFL Highlight Card Studio player picker for at least one game (Aug 21 NYJ@PIT) lists college-football names (Cade Klubnik, Drew Allar, Will Howard, Jack Sawyer) instead of NFL rosters — found 2026-08-22 during the layout-bug repro below, not yet root-caused. |
 
 Historical detail (P2-006, Highlight Card Studio "completely bugged"): closed and live-verified 2026-08-16 — root cause was NOT Highlight Card Studio itself but a shared `js/shareCard.js` bug (`navigator.share()` failures other than user-cancel discarded an already-rendered PNG instead of falling back to download), affecting all 5 card-export call sites site-wide. Row deleted per this file's own house rule; full detail kept in DECISIONS.md D-101.
 
@@ -1282,3 +1282,27 @@ Contributor: Finn | Date: 2026-08-22
 **No `sw.js` bump needed beyond the one already in flight this session** (D-117) -- `nflLiveGame.js` is already being re-cached by that bump.
 
 Escalation needed: no.
+
+
+---
+
+## Highlight Card Studio — desktop rendered the mobile (<=768px) layout regardless of viewport width — 2026-08-22
+
+Task / Finding: Owner-reported bug, live-reproduced and fixed same session.
+Contributor: Finn | Date: 2026-08-22
+
+**Repro:** Opened NFL Highlight Card Studio (`#nfl-highlight-card`) in a real Chrome tab at 1864px window width (well above the 768px breakpoint) and screenshotted it — the game picker and preview pane rendered as two cramped ~262px-wide boxes side by side instead of the intended `minmax(260px,360px) 1fr` two-column spread. Confirmed the `@media (max-width:768px)` rule in `css/components.css` never fired (`window.innerWidth` was 1864 throughout) — this was not a media-query bug.
+
+**Root cause (found via computed-style inspection, not guessing from the CSS):** `navigateTo()` in `js/navigation.js` (line ~225) unconditionally resets `#playersGrid`'s className to `'players-grid'` (the 5-up MLB/NFL player-card grid) for every non-`home` view, before the view's own render function runs — this exists so card-grid views (`mlb-players`, `nfl-teams`, etc.) always start from a known class after leaving `home`'s custom layout. `displayMLBHighlightCard()` / `displayNFLHighlightCard()` (`js/highlightCard.js`) never override that className before writing `.hcs-shell`/`.hcs-layout` into the same `#playersGrid` container — so the leftover `players-grid` 5-column grid cascaded onto `.hcs-shell` as a grid *item*, confining it to one ~262px card cell. `.hcs-layout`'s own nested grid then had only that ~262px to divide, collapsing its `1fr` preview column to a ~110px sliver — visually indistinguishable from the real mobile stack, at any desktop width.
+
+**Fix:** both functions now set `container.className = '';` immediately after grabbing the container, before writing anything — matching the existing precedent in `js/statBuilder.js` (`grid.className = 'builder-container'`), which resets the same leftover class for its own non-card-grid view. `.hcs-shell` is self-contained (`display:flex`, no dependency on a parent-supplied grid), so an empty class is sufficient — no new CSS needed.
+
+**Live-verified before committing** (monkey-patched both functions into the running production page, not assumed from the diff): NFL Studio at the empty-state and game-selected steps, and MLB Studio at the empty-state step, all rendered the correct two-column desktop layout after the patch. `node --check` clean, 0 NUL bytes.
+
+**Scope note:** this bug affected *both* MLB and NFL Highlight Card Studio identically (same container, same missing reset) — the owner only reported NFL, but MLB had the same defect and is fixed in the same commit.
+
+**Unrelated finding surfaced during repro, not fixed here:** the NFL Highlight Card Studio's player picker for the Aug 21 NYJ @ PIT game listed names that are not NFL players on either roster — e.g. "Cade Klubnik," "Drew Allar," "Will Howard," "Jack Sawyer" (current college football players — Clemson/Penn State/Ohio State) — under both the "away" and "home" option groups. This looks like a real data-correctness bug in the boxscore/roster source for that game (possibly an ESPN athlete-id collision or wrong-sport response), separate from the layout bug above. Not investigated further this session — flagging for a follow-up rather than letting it go undocumented.
+
+**Result:** shipped same session (small, low-risk, additive fix — one className reset in two functions, no shape/behavior change beyond fixing the collapse). Committed locally via the mount's plumbing-commit workaround; pending owner push.
+
+Escalation needed: no (for the layout fix). The roster-name anomaly may need Relay (data/API) once someone looks at it — not escalated yet, just logged.
