@@ -2155,6 +2155,7 @@ async function showNFLEspnPlayer(espnId) {
         prof = pr || {}; career = cr;
     } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }
     if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found', '🏈'); return; }
+    if (window.setBreadcrumb) setBreadcrumb('nfl-players', prof.name);
 
     const years = [];
     (career && career.categories || []).forEach(c => (c.seasons || []).forEach(sn => { if (sn.year && years.indexOf(sn.year) < 0) years.push(sn.year); }));
@@ -2163,6 +2164,7 @@ async function showNFLEspnPlayer(espnId) {
 
     const pos = prof.pos || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
+    const teamColor = (prof.team && getNFLTeamColor(prof.team)) || posColor;
     const initials = (prof.name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const retired = prof.statusType && prof.statusType !== 'active';
     const bits = [prof.team, (prof.height && prof.weight) ? `${prof.height}, ${prof.weight}` : '', prof.college, prof.debutYear ? `Debut ${prof.debutYear}` : '', prof.jersey ? '#' + prof.jersey : ''].filter(Boolean);
