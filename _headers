@@ -10,3 +10,14 @@
 
 /sitemap.xml
   Cache-Control: no-transform
+
+# sw.js was never given its own cache rule, so Cloudflare's edge cached it
+# like any other static .js asset (long default TTL) — that's directly at
+# odds with how the browser's own SW update check is supposed to work: the
+# browser fetches this exact URL bypassing its OWN http cache to look for
+# new bytes, but an edge that's still serving an old cached copy defeats
+# that regardless of what the browser does. Root-caused 2026-08-23 (D-116)
+# after CACHE_NAME bumps kept failing to reach some real users even after
+# the SW's own STATIC_ASSETS + activate-handler cache-busting was correct.
+/sw.js
+  Cache-Control: no-cache

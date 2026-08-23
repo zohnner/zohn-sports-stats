@@ -29,5 +29,16 @@
     { "type": "pro_bowl", "season": 2014, "team": "DET" },
     { "type": "pro_bowl", "season": 2023, "team": "LAR" },
     { "type": "pro_bowl", "season": 2025, "team": "LAR" }
+  ],
+  "lamar jackson": [
+    { "type": "season_mvp", "season": 2019, "team": "BAL" },
+    { "type": "season_mvp", "season": 2023, "team": "BAL" },
+    { "type": "all_pro", "season": 2019, "team": "BAL" },
+    { "type": "all_pro", "season": 2023, "team": "BAL" },
+    { "type": "all_pro", "season": 2024, "team": "BAL" },
+    { "type": "pro_bowl", "season": 2019, "team": "BAL" },
+    { "type": "pro_bowl", "season": 2021, "team": "BAL" },
+    { "type": "pro_bowl", "season": 2023, "team": "BAL" },
+    { "type": "pro_bowl", "season": 2024, "team": "BAL" }
   ]
 }
