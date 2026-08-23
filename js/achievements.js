@@ -129,7 +129,7 @@ const _achvDataCache = {};
 async function _loadAwardsData(sport) {
     if (_achvDataCache[sport]) return _achvDataCache[sport];
     try {
-        const res = await fetch(`data/awards-${sport}.json`);
+        const res = await fetch(`/data/awards-${sport}.json`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         _achvDataCache[sport] = data;
