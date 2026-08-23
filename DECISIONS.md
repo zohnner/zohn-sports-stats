@@ -2065,9 +2065,9 @@ Per the owner's explicit second instruction ("search the project for similar iss
 ---
 
 ## D-115 — NFL player-page visual/structural parity with MLB, Phase 1 (breadcrumb, bio chips, stat tiles, section order)
-**Status:** all four phases committed locally (`e59c313`/`5b129c7` pushed; `eedb05a`/`5fc9d85`/`187b7bc`/`efde4ec`/`b59f490` pending push); Phase 1 + the teamColor fix are live-verified on production, Phases 2-4 are pre-push-previewed only
-**Contributors:** Axiom (root-cause, fix, live preview each phase)
-**Date opened:** 2026-08-22 | **Date resolved:** all four phases committed 2026-08-22; post-deploy verification for Phases 2-4 pending push
+**Status:** pushed and live-verified on production — all four phases shipped and confirmed, D-115 closed
+**Contributors:** Axiom (root-cause, fix, live preview each phase, post-deploy verification)
+**Date opened:** 2026-08-22 | **Date resolved:** 2026-08-22 (all four phases, same day)
 
 **Trigger (owner):** "we need to start a workflow to bring the nfl player pages up to speed with mlb. They should look as identical as possible" — a follow-up to D-114, same session. Clarified via a follow-up question that "start a workflow" meant "start the work," not literal multi-agent orchestration.
 
@@ -2104,6 +2104,6 @@ While spot-checking the second breadcrumb call site (`showNFLEspnPlayer`, the al
 
 All three phases' `sw.js` bump (v212 -> v213, in Phase 2's commit) covers Phases 2-4 together since Phase 3/4 only touched `js/nfl.js` again on top of the same still-undeployed bump.
 
-**Not yet pushed as of this update.** All three phases were verified pre-commit by injecting the patched functions into a real production tab and re-invoking them against real player data (same discipline as Phase 1 and the teamColor fix), not by testing the actual deployed files — that post-deploy pass (fresh tab, hard reload past the browser-HTTP-cache trap this session already hit twice) still needs to happen once pushed.
+**Update 2026-08-22 (Axiom) — pushed, post-deploy live-verification passed on all three phases.** Confirmed the push landed (`git fetch origin main` matches local HEAD at `ab2a84c`). Live-verified on a fresh tab against real production, past the same browser-HTTP-cache trap hit twice already this session (SW/cache clear alone wasn't enough; a hard reload — Ctrl+Shift+R — was required to get the executing page off the cached pre-deploy JS): `/nfl/player/4046` (Mahomes) confirmed the Stat Profile radar renders in the correct position with the correct 6 real (non-null-pct) axes and real KC team color, the `#nfl-radar-card` wrapper is visible (`display: ''`, not the default `none`), the hero share button exists and has a wired `onclick`, and the Career trend chart exists (`Chart.getChart('nfl-pd-career-trend')`) with all 4 expected pills (YDS/TD/INT/RTG). Breadcrumb still correctly resolves to "NFL Players > Patrick Mahomes". Screenshot matches every pre-push preview exactly.
 
-**Escalation:** none — all four phases are additive and fail-safe (no routing/data-fetch contract changed, only render output), each shipped as its own commit per this repo's "one PR per phase" convention. Once pushed and post-deploy-verified, D-115 is fully closed with no further NFL player-page parity work queued.
+**Escalation:** none — all four phases are additive and fail-safe (no routing/data-fetch contract changed, only render output), each shipped as its own commit per this repo's "one PR per phase" convention. D-115 is fully closed; no further NFL player-page parity work is queued.
