@@ -23,10 +23,14 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: bot/requirements.txt
+          cache-dependency-path: bot/requirements-core.txt
 
       - name: Install dependencies
-        run: pip install -r bot/requirements.txt
+        # digest.py only needs the core deps -- not the NFL/visualizer stack
+        # (numpy/pandas/matplotlib/nfl_data_py/nflreadpy/rich) in the full
+        # requirements.txt. A bad pin in that stack broke this job for two
+        # weeks even though digest.py never imports any of it.
+        run: pip install -r bot/requirements-core.txt
 
       - name: Restore history DB
         uses: actions/cache@v4

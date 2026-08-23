@@ -1,0 +1,13 @@
+# Core deps for the MLB social digest / auto-poster (digest.py, main.py,
+# data_fetcher.py, stat_analyzer.py, tweet_generator.py, x_poster.py).
+# Kept separate from requirements.txt so mlb-bot.yml never has to install
+# the heavy NFL/visualizer stack (numpy/pandas/matplotlib/nfl_data_py/
+# nflreadpy/rich) just to generate a digest -- a broken pin in that stack
+# (see requirements.txt) took the whole digest job down with it for two
+# weeks (2026-08-16 through 2026-08-23, runs #46-#70) even though digest.py
+# never imports any of those packages.
+mlb-statsapi==1.8.0
+tweepy==4.15.0
+python-dotenv==1.0.1
+requests==2.32.3
+schedule==1.2.2
