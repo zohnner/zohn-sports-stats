@@ -1349,17 +1349,24 @@ function _renderNFLPlayerDetail(p) {
     grid.innerHTML = `
         ${_nflHeader}
         ${_seasonRow}
-        <div class="stats-card" id="nfl-radar-card" style="display:none">
-            <h2 class="detail-section-title">Stat Profile</h2>
-            <div style="position:relative;height:260px">
-                <canvas id="nfl-player-radar"></canvas>
+        <div class="nlg-layout">
+            <div class="nlg-main">
+                <div class="stats-card" id="nfl-radar-card" style="display:none">
+                    <h2 class="detail-section-title">Stat Profile</h2>
+                    <div style="position:relative;height:260px">
+                        <canvas id="nfl-player-radar"></canvas>
+                    </div>
+                </div>
+                <div id="nfl-stat-line"></div>
+                <div id="nfl-advanced"></div>
+                <div id="nfl-gamelog"></div>
+                <div id="nfl-career"></div>
+                ${detailSection({ title: 'Fantasy Outlook', body: _fantasyBody })}
             </div>
+            <aside class="nlg-side">
+                <div id="nfl-trophy-case"></div>
+            </aside>
         </div>
-        <div id="nfl-stat-line"></div>
-        <div id="nfl-advanced"></div>
-        <div id="nfl-gamelog"></div>
-        <div id="nfl-career"></div>
-        ${detailSection({ title: 'Fantasy Outlook', body: _fantasyBody })}
     `;
 
     _nflDetailPlayer = p;
@@ -1368,6 +1375,7 @@ function _renderNFLPlayerDetail(p) {
     _nflCareerEspnId = null;
     _loadNFLPlayerStats(p, NFL_STATS_SEASON);
     _loadNFLAdvanced(p, NFL_STATS_SEASON);
+    if (typeof initTrophyCase === 'function') initTrophyCase('nfl', p.full_name, 'nfl-trophy-case');
 }
 
 let _nflDetailPlayer = null, _nflDetailSeason = null, _nflCareerEspnId = null, _nflEspnId = null, _nflEspnSeason = null;
@@ -2312,16 +2320,24 @@ async function showNFLEspnPlayer(espnId) {
                 </div>
             </div>
         </div>
-        <div id="nfl-career"></div>
-        ${years.length ? `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.6rem 0 0.45rem;padding:0 0.1rem">
-            <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Game log season</span>
-            <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
-        </div>` : ''}
-        <div id="nfl-gamelog"></div>
-        <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
+        <div class="nlg-layout">
+            <div class="nlg-main">
+                <div id="nfl-career"></div>
+                ${years.length ? `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.6rem 0 0.45rem;padding:0 0.1rem">
+                    <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Game log season</span>
+                    <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
+                </div>` : ''}
+                <div id="nfl-gamelog"></div>
+                <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
+            </div>
+            <aside class="nlg-side">
+                <div id="nfl-trophy-case"></div>
+            </aside>
+        </div>
     `;
     _loadNFLCareer(espnId, (prof && prof.pos) || '');
     if (years.length) _loadNFLGameLog(espnId, _nflEspnSeason);
+    if (typeof initTrophyCase === 'function' && prof.name) initTrophyCase('nfl', prof.name, 'nfl-trophy-case');
 }
 
 if (typeof window !== 'undefined') {

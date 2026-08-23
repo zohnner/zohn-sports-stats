@@ -164,6 +164,15 @@
     --color-fav-subtle:        rgba(244,114,182,0.12);
     --color-fav-border:        rgba(244,114,182,0.40);
 
+    /* ── Award / hardware (D-116) ──
+       Trophy Case tiles only. Distinct from --accent (brand orange,
+       D-047 invariant #3: brand orange = brand only), from stat-category
+       tokens (mark category, not achievement), and from --color-tier-*
+       (performance grading, not "did they win it"). ── */
+    --color-award:         #e0a52c;
+    --color-award-subtle:  rgba(224,165,44,0.10);
+    --color-award-border:  rgba(224,165,44,0.28);
+
     /* ── Scorecard surface ──
        Paper-physical aesthetic — intentional break from dark-mode surface.
        Rule: these tokens apply only within .scorecard-* selectors in scorecard.css. ── */
@@ -432,6 +441,11 @@
     --color-chip:        #4f46e5;
     --color-chip-bg:     rgba(79,70,229,0.09);
     --color-chip-border: rgba(79,70,229,0.38);
+
+    /* Award / hardware — darkened for AA contrast on white (D-116) */
+    --color-award:         #9c6b00;
+    --color-award-subtle:  rgba(156,107,0,0.10);
+    --color-award-border:  rgba(156,107,0,0.28);
 }
 
 /* ── Tribute theme (retained) ──────────────────────────────

@@ -1,0 +1,19 @@
+{
+  "patrick mahomes": [
+    { "type": "championship", "season": 2019, "team": "KC" },
+    { "type": "championship", "season": 2022, "team": "KC" },
+    { "type": "championship", "season": 2023, "team": "KC" },
+    { "type": "championship_mvp", "season": 2019, "team": "KC" },
+    { "type": "championship_mvp", "season": 2022, "team": "KC" },
+    { "type": "championship_mvp", "season": 2023, "team": "KC" },
+    { "type": "season_mvp", "season": 2018, "team": "KC" },
+    { "type": "season_mvp", "season": 2022, "team": "KC" }
+  ],
+  "kenneth walker": [
+    { "type": "championship", "season": 2025, "team": "SEA" },
+    { "type": "championship_mvp", "season": 2025, "team": "SEA" }
+  ],
+  "matthew stafford": [
+    { "type": "season_mvp", "season": 2025, "team": "LAR" }
+  ]
+}
