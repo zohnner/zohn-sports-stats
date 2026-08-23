@@ -2237,3 +2237,55 @@ Second, while checking whether the live site was actually serving current data (
 **Verified:** 0 NUL bytes on `_headers` after the edit.
 
 **Not yet done:** re-confirm `sw.js`'s `CACHE_NAME` shows `v218` live now that the purge has happened (not yet re-checked after this specific edit); the owner may want to spot-check the actual Lamar Jackson player page rendering (not just the raw JSON) once this commits and deploys.
+
+---
+
+## D-117 — MLB Live Game Viewer Reimagine: Relay data-feasibility audit + re-validated phased plan
+**Status:** open — Phase 1 not yet specced by Kael, not implemented
+**Contributors:** Relay (this entry), Vera/Kael/Axiom not yet engaged past this audit
+**Date opened:** 2026-08-23 | **Date resolved:** —
+
+**Trigger:** owner brought an external LLM's UX analysis + ASCII mockups plus a reference screenshot for reimagining `mlb-live-{id}` (image authoritative on layout, analysis directional on priority/reasoning). Same page flagged before — see D-009 (original phase-gated build) and its 2026-06-12 amendment (pitch heat map reactivated, trajectory animation gated on unconfirmed `pfxX`/`pfxZ`/`breaks.*`). Per ROUTER.md's own rule, a request that reopens settled ground is tier-3 regardless of framing — this audit exists because two of D-009's findings (win probability, pitch trajectory data) needed to be re-checked against real live data before anyone designs or builds around them, not assumed still true two months later.
+
+**Scope check:** D-009 (live game architecture), its 2026-06-12 amendment (heat map/trajectory gate), D-116 (Trophy Case engine), and the NFL win-probability precedent (D-080 to D-105 to D-106 — the exact "don't build on an unconfirmed field, re-verify against a real live game first" discipline this audit follows) all reviewed before touching data.
+
+**Method:** live-verified against real in-progress MLB games this session (ten games live, incl. Rays-Orioles gamePk 824799, Nationals-Marlins). Neither this sandbox's shell nor the owner's device shell can reach `statsapi.mlb.com`/`espn.com` directly (both 403 at the egress proxy) — verification went through the WebFetch tool instead, which truncates large payloads before its summarization model sees them. Caught this concretely: a first pass against the full `feed/live` payload for 824799 falsely reported no `spinRate`/`breaks` (contradicting `liveGame.js`'s own 2026-08-20 live-confirmed comment); switching to the smaller `playByPlay` endpoint returned a complete, unbalanced-brace-free document with real quotable data. Anywhere a fetch came back truncated, that's stated explicitly below as unresolved, not reported as a negative finding.
+
+**Findings, re-ranked by actual buildability (not the analysis's stated priority order):**
+
+| # | Feature | Status | Note |
+|---|---|---|---|
+| 1 | Game hierarchy / hero restructure | No new data needed | Pure IA/visual against the reference image |
+| 2 | Win probability (fetched) | **Confirmed still absent from MLB Stats API** | Full `playByPlay` for 824799 checked end-to-end, no `winProbability` field — D-009 item 7 reaffirmed, not stale |
+| 2b | Win probability (ESPN MLB summary) | **Unresolved — tool truncation, not a negative finding** | Every fetch of ESPN's MLB `summary` endpoint truncated before reaching a conclusive answer. Recommend not pursuing this path regardless: a second live-data vendor for MLB is a vendor decision this project treats deliberately, and the option below doesn't need it |
+| 3 | Win probability (computed in-house) | **Buildable now** | Same class as `js/odds.js`'s existing Monte Carlo odds — all inputs (inning/half, outs, base state, score) already flow through every poll. Needs a vetted empirical win-expectancy table sourced before Axiom codes anything — not fabricated in this entry |
+| 4 | Pitch trajectory data (`pfxX`/`pfxZ`/`breaks.*`) | **Confirmed live — the 2026-06-12 D-009 gate is stale** | Real values on real pitches, 824799, this afternoon. `breakHorizontal` specifically not confirmed in the sample pulled — cheap follow-up check before Phase 3 starts |
+| 5 | Batter vs. pitcher matchup | **Already shipped** | `liveGame.js` Matchup tab (`vsPlayer` H2H + arsenal) since D-009 Phase 2 — needs re-placement in the hero, not new data |
+| 6 | hitData (exit velo/launch angle/distance/MLB's own `hardness` class) | **Confirmed live** | Present on a real flyout in 824799's play-by-play — feeds Game Pulse hard-hit detection and real HR/hard-hit play-by-play callouts without inventing our own threshold |
+| 7 | Game Pulse (derived context) | **Half buildable now, half gated on #3** | hitData-streak half buildable today; win-probability-delta half needs #3 shipped first |
+| 8 | Bullpen Availability panel (reference image) | **Already shipped, wrong page** | `_fetchBullpenRest()`/`_populateBullpenSection()` in `js/mlb.js` (Game Prep) already fetch real `numberOfPitches` per reliever over the last 3 games — reuse/integration task, not new data |
+| 9 | AL-West mini standings / mini leaderboard / Due Up rail (reference image) | **Buildable now** | Standings + leaderboard are existing app-wide state; Due Up is an index lookup against `battingOrder` (already read in the existing box-score code) — no new fetch |
+| 10 | "Where to Watch" broadcast chip (reference image) | Likely buildable, unverified | MLB Stats API schedule `broadcasts` hydrate is the standard path (same shape already proven for NFL/NCAAF from ESPN) but not confirmed populated for MLB in this codebase yet |
+| 11 | Embedded batter/pitcher player card (season stats + today's line) | **Buildable now** | Season stats already fetched sitewide; today's line comes from box score data already parsed in `liveGame.js`. **Trophy Case link explicitly excluded from this feature per owner direction 2026-08-23** — do not add it |
+| 12 | "Last 50 plate appearances" outcome-log bar (reference image) | **Unverified — not scheduled** | No endpoint checked for a clean per-PA outcome history this session. Do not let Kael/Vera design this widget until Relay confirms one exists — may require repeated game-log fetches, changing its cost |
+
+**Decision — re-ranked phase order (supersedes the external analysis's stated priority order for this build):**
+
+| Phase | Scope | Gate |
+|---|---|---|
+| 1 | Command-center restructure: hierarchy/contrast pass against the reference image, batter/pitcher hero, Due Up rail, mini standings, mini leaderboard, broadcast chip. Zero new data. | Vera states spec (done, see ISSUES.md) → Kael visual → Axiom → live-verify against a real in-progress game |
+| 2 | Bullpen Availability, integrated from Game Prep's existing `_fetchBullpenRest` | Phase 1 shipped + live-verified |
+| 3 | Pitch trajectory animation (gate: confirm `breakHorizontal` first) + pitch-mix wheel | Phase 2 shipped + live-verified |
+| 4 | Game Pulse (hard-hit/streak half only) + rich play-by-play with real exit-velo/distance callouts | Phase 3 shipped + live-verified against a real batted-ball event (opportunistic — note if none occurs during the verification window) |
+| 5 | Embedded player card (season stats + today's line only — **no Trophy Case link**) | No dependency on Phase 6; may ship earlier if reprioritized |
+| 6 | In-house win-expectancy model — Relay sources and cites a real empirical WE table before Axiom writes the lookup; unblocks Game Pulse's WP-delta half | Phase 5 shipped + live-verify the computed curve's *shape* against a real game (~50/50 in a scoreless 1st, swings hard toward the leader late), not just that it renders |
+
+**Not scheduled:** the "last 50 PA" outcome-log visualization (item 12) — needs its own Relay feasibility check first.
+
+**Implications:**
+- Kael/Vera/Axiom do not start Phase 1 work until Vera's states spec (this session, see ISSUES.md) is reviewed and gated per ROUTER.md.
+- Each phase is live-verified against a real game before the next phase starts — same discipline as D-009's original phase gates and the NFL win-probability precedent (D-080/D-105/D-106).
+- Phase 6 (win-expectancy model) is explicitly not to be built with invented/guessed numbers — the empirical table must be sourced and cited before implementation.
+- No ESPN MLB proxy Function is being added as part of this build (item 2b) — single-vendor discipline for MLB data holds.
+
+**Escalation:** none yet — audit only, no code shipped, no route or data contract changed.

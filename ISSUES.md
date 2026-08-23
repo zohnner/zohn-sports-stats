@@ -1412,3 +1412,59 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 - Data source: hand-curated static JSON, same precedent as `data/trades.json`/`data/stadiums.json` — no live API surface exists for career award/championship history on any source this site already integrates (MLB Stats API, ESPN, Sleeper, nflverse), confirmed by Relay. See DECISIONS.md D-116 for the full sourcing decision and the standing seasonal-upkeep question.
 
 **Gate status: all three gates present — Finn-buildable.** Built and live-verified this session; see DECISIONS.md D-116 for the full build/verification writeup, including the mid-session placement/imagery pivot and the exact players/data verified against real sources.
+
+---
+
+## MLB Live Game Command Center — Phase 1 states spec (D-117 Phase 1), 2026-08-23
+
+**Contributors:** Vera (this entry) | Kael/Axiom not yet consulted
+**Status:** spec-complete for Vera's gate; NOT visually specced, NOT implemented. Per ROUTER.md, this is the first gate on a new feature idea, not a green light to build.
+
+**Job to be done:** "A game I care about is live right now — I want to know, in one glance, what's happening this second: score, inning, count, who's up, who's on the mound, and whether this at-bat matters." Today's `mlb-live-{id}` page answers this correctly but flatly — the scoreline, inning/count, and LIVE badge sit in a compact header of equal visual weight to everything below it (linescore, tabs, sidebar), so a returning glance has to actively hunt for "what's happening right now" instead of having it announced. This phase does not add a single new fact to the page — every field it touches is already fetched and already rendered somewhere. The job is making the two or three facts that matter most impossible to miss, and giving the facts that matter less (umpires, mound visits) less competing weight.
+
+**Scope for this phase, per D-117's re-ranked plan:** hierarchy/contrast pass on the existing header; a batter/pitcher hero block (reusing Matchup-tab data, D-009 Phase 2, already shipped — this is re-placement, not new data); a Due Up rail (battingOrder index lookup, no new fetch); mini standings (existing `AppState.mlbStandings`); mini leaderboard (existing `MLB_LEADER_CATS`); a broadcast chip (pending Relay's confirmation that MLB schedule `broadcasts` hydrate is populated — if it isn't by the time this ships, this one element is cut from Phase 1 rather than blocking the rest). Explicitly excluded from this phase: pitch trajectory, Bullpen Availability, Game Pulse, win probability, the embedded player card — each is its own later phase in D-117 and is not to be pulled forward into this one.
+
+**Friction inventory today:**
+- Score, inning/half, and count all render at the same type weight and position as the LIVE badge — nothing tells the eye where to land first.
+- The batter/pitcher matchup (who's actually up right now) lives inside the Matchup tab, a click away, not in the glanceable header — for the single most-asked question on a live page ("who's batting"), that's one interaction too many.
+- Sidebar currently spends permanent space on Umpires and Game Notes (mound visits/challenges) — real information, but not the first thing anyone opens a live game page to see. It currently out-competes anything more useful that could occupy that space.
+- No sense of "what's coming" (Due Up) or "how do these teams compare in the standings race" without leaving the page.
+
+**Proposed behavior:**
+- **Header hierarchy.** Score and team abbreviations get the largest type on the page (they're already the largest, but not by enough margin against inning/count — increase the gap). Inning/half + count move to a clearly secondary line directly beneath, in a single readable phrase (e.g. "TOP 3RD - 3-2 COUNT - 2 OUT") rather than three separately-styled chips competing for attention. LIVE badge stays but becomes a small, consistently-placed status anchor, not a competing focal point — it answers "is this happening now," the header answers "what is happening now," and the two shouldn't fight for the same visual weight.
+- **Batter/pitcher hero block.** New element beneath the header, above the existing tab row: current batter (name, season AVG or OPS — whichever `showMLBLiveGame` already has cheapest access to) and current pitcher (name, today's pitch count, velocity of the last pitch if available from the existing pitch-zone data) side by side. This does not replace the Matchup tab — the Matchup tab keeps its deeper H2H/arsenal content; this hero is the "who's up right now" glance, the tab is "tell me more."
+- **Due Up rail.** Small, secondary element — next 2-3 batters in the order after the current one. Not a new tab, not competing with the hero block for primary attention; a compact list, similar visual weight to the existing sidebar cards.
+- **Mini standings / mini leaderboard.** Sidebar additions, replacing some of the current permanent weight given to Umpires/Game Notes — those don't disappear, they move down in priority order rather than being removed (Vera's states below cover where they land).
+- **Broadcast chip.** Single line, existing sidebar "Game Info" card is the natural home — do not invent a new card just for one line of text.
+
+**States to spec:**
+
+*Pregame (status.abstractGameState === 'Preview'):* hero block shows probable pitchers only (matches the existing `_buildProbablePitchers` honesty rule — no fabricated stat line for a pitcher who hasn't been confirmed as starting today). No batter shown — there is no "current batter" pregame. Due Up rail is hidden entirely, not shown empty (there's no batting order established as "next" before the game starts). Mini standings and mini leaderboard render normally — they're day-agnostic. Header shows scheduled start time in place of inning/count.
+
+*Live, mid-at-bat (the common case):* hero block shows real batter/pitcher, updates in place on each poll exactly as the rest of the page already diff-renders (no new polling mechanism — this reuses `_doPoll`'s existing render pass). Due Up rail shows the next batters correctly ordered from the current battingOrder index.
+
+*Live, between batters/no-pitch-yet (a batter has been announced but the first pitch of the at-bat hasn't landed):* hero block still shows the new batter/pitcher pairing — this is not an empty state, the matchup itself is real and known the moment MLB Stats API reports the new `currentPlay.matchup`, even before `playEvents` has an entry. Count line shows "0-0 COUNT - [outs] OUT" rather than hiding the count row (a missing count is confusing; a genuine 0-0 is not).
+
+*Scoring play just happened:* header score flashes using the site's existing score-flash mechanism (`_flashScore`, already shipped) — no new animation invented for this phase. Hero block updates to the next batter once the play resolves; it does not try to "hold" the previous batter's card as a highlight — that kind of moment-capture treatment belongs to Phase 4 (Game Pulse / rich play-by-play), not this phase.
+
+*Extra innings:* identical treatment to regulation — no special-cased layout. The header already handles inning number generically.
+
+*Delay / suspended (status.detailedState matches `/delay|suspend/i`, per the existing `_lgNextInterval` check):* hero block shows the last-known batter/pitcher pairing with a small "Game Delayed" note in place of the count line, rather than blanking the hero — the last real matchup is still useful context during a rain delay, a blank card is not. Due Up rail stays as last computed.
+
+*Final:* hero block is removed entirely (there is no "current batter" in a finished game) — replaced by a simple "Final" state matching the header's own final-score treatment. Due Up rail hidden. Mini standings/leaderboard stay, since those remain relevant after the final out.
+
+*No live game today for this matchup (arriving at a `mlb-live-{id}` route for a game that's actually days away, or the season's in its Nov-Feb gap):* this phase doesn't change existing offseason/no-game handling — out of scope here, already covered by MLB_SEASON's existing offseason logic elsewhere in `mlb.js`.
+
+*Poll failure / reconnecting:* hero block and Due Up rail hold their last good render (same "stale but present beats blank" principle as the rest of the page) while the existing `_updateBadge(panel, 'reconnecting')` mechanism handles the status indicator — no separate error state invented for these two new elements specifically.
+
+*Mobile (<=768px):* hero block (batter/pitcher) stacks vertically rather than side-by-side — two full-width cards, batter above pitcher, matching the existing mobile-stacking convention already used elsewhere on this page (the zone column already drops below the play-by-play log per D-009's mobile ruling). Due Up rail and mini standings/leaderboard collapse into the same single-column sidebar order already established for `.lg-side-card`s on mobile — no new breakpoint behavior invented.
+
+*Broadcast chip unavailable (Relay's hydrate check comes back negative or unpopulated):* the line simply doesn't render — no "Broadcast: TBD" placeholder. This element is optional decoration, not core information; a missing broadcast fact isn't worth a placeholder line per ux.md's "no placeholder text as a substitute for real labels" rule.
+
+**What the user does next:** glances at the hero for "who's up," optionally opens the Matchup tab for H2H depth (unchanged existing flow), optionally scrolls to Due Up to see who's coming, optionally checks the sidebar standings/leaderboard without leaving the page. No new dead ends — every existing tab/interaction still works exactly as before; this phase only reorders visual weight and adds two small new elements.
+
+**Accessibility:** hero block and Due Up rail are non-interactive information displays (no new focus stops, no new keyboard interaction) — same tier as the existing sidebar cards. Score-flash animation on scoring plays already respects the site's existing reduced-motion handling; nothing new to add there. Header hierarchy change is a visual/typographic change only — DOM order and existing `aria-live` regions on the poll-timestamp element are unaffected. Mini standings/leaderboard reuse existing table/list markup patterns already screen-reader-tested elsewhere on the site (standings.js, leaderboards.js) rather than inventing new markup.
+
+**Explicitly not in this spec:** pitch trajectory animation, Bullpen Availability, Game Pulse, win probability (fetched or computed), the embedded player card, and the "last 50 PA" widget — all later D-117 phases or explicitly unscheduled, not pulled forward here.
+
+**Gate status: Vera's behavioral spec only.** Needs Kael's visual pass (exact hero block layout against the reference image, hierarchy/contrast token choices, mobile stacking treatment) and Axiom's feasibility confirmation (cheapest path to season AVG/OPS for the hero without a new per-poll fetch, exact battingOrder-index math for Due Up) before this is buildable.
