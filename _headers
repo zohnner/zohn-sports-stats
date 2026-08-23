@@ -21,3 +21,22 @@
 # the SW's own STATIC_ASSETS + activate-handler cache-busting was correct.
 /sw.js
   Cache-Control: no-cache
+
+# data/*.json had no dedicated cache rule either, so it rode Cloudflare's
+# same default per-file-type edge caching as any other static asset --
+# confirmed 2026-08-23 (D-116) as the actual mechanism behind a "not
+# displaying" report that turned out to have nothing to do with a custom
+# Cache Rule (owner checked -- none existed on the zone) or with this
+# repo's own CACHE_NAME/service-worker logic, both of which were already
+# correct. Edge nodes had simply cached older copies of data/awards-*.json
+# before this fix existed, under Cloudflare's default (multi-hour) TTL,
+# and no header change can retroactively expire an object already sitting
+# in an edge cache -- only a manual purge does that, which is what
+# resolved the immediate incident. This rule is the actual prevention:
+# a short edge TTL so a future award-data push doesn't need a manual
+# purge to reach users within a reasonable window. Deliberately not
+# no-cache like sw.js -- these files don't carry sw.js's "must always get
+# fresh bytes to detect an update" contract, so some edge caching is fine,
+# it just needs to not be hours long.
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
