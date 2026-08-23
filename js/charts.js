@@ -396,6 +396,102 @@ class StatsCharts {
     }
 
     /**
+     * NFL "Stat Profile" radar — league-percentile snapshot for a skill-position
+     * player, sourced from Next Gen Stats via nflverse. Unlike mlbRadar, no
+     * hand-tuned position maxes are needed here: _loadNFLAdvanced already
+     * resolves each axis to a 0-100 percentile server-side, so this chart
+     * plots that percentile directly and reserves the tooltip for the real,
+     * formatted value + unit.
+     *
+     * @param {string} canvasId
+     * @param {Array<{ label: string, color: string, metrics: Array<{label,value,unit,pct}> }>} datasets
+     * @returns {Chart|null}
+     */
+    static nflRadar(canvasId, datasets) {
+        const t = this.#getTheme();
+        // Skip axes with no percentile yet (small qualified-sample metrics like
+        // Aggressiveness/Intended Air Yds can be null) — plotting a missing value
+        // as 0 would misread as "worst possible" instead of "no data".
+        const labels = (datasets[0]?.metrics || []).filter(m => m.pct != null).map(m => m.label);
+        const fmt = v => { const n = +v; if (!isFinite(n)) return '—'; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
+
+        return this.#create(canvasId, {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: datasets.map(ds => {
+                    const fill = ds.color.startsWith('#')
+                        ? ds.color + '26'
+                        : ds.color.replace(/[\d.]+\)$/, '0.15)');
+                    const byLabel = new Map((ds.metrics || []).map(m => [m.label, m]));
+                    return {
+                        label: ds.label,
+                        data: labels.map(l => {
+                            const m = byLabel.get(l);
+                            return (m && m.pct != null) ? Math.max(0, Math.min(100, m.pct)) : 0;
+                        }),
+                        borderColor: ds.color,
+                        backgroundColor: fill,
+                        pointBackgroundColor: ds.color,
+                        pointBorderColor: 'transparent',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2,
+                    };
+                }),
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { display: false, stepSize: 25 },
+                        grid:        { color: 'rgba(255,255,255,0.08)' },
+                        angleLines:  { color: 'rgba(255,255,255,0.06)' },
+                        pointLabels: {
+                            color: t.tick,
+                            font: { family: t.font, size: 11, weight: '600' },
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: datasets.length > 1,
+                        position: 'bottom',
+                        labels: {
+                            color: t.tick,
+                            usePointStyle: true,
+                            pointStyleWidth: 8,
+                            padding: 16,
+                            font: { family: t.font, size: 11 },
+                        },
+                    },
+                    tooltip: {
+                        backgroundColor: t.tooltipBg,
+                        borderColor: t.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#94a3b8',
+                        padding: 10,
+                        callbacks: {
+                            label: ctx => {
+                                const lbl = labels[ctx.dataIndex];
+                                const m = (datasets[ctx.datasetIndex]?.metrics || []).find(x => x.label === lbl);
+                                if (!m) return '';
+                                const val = fmt(m.value) + (m.unit ? ` ${m.unit}` : '');
+                                const pct = m.pct != null ? ` (${m.pct}th pct)` : '';
+                                return ` ${ctx.dataset.label}: ${val}${pct}`;
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
+    /**
      * MLB game-log trend line.
      *
      * Hitter  metrics: AVG (rolling), HR, RBI per game (last 20 ABs)

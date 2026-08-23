@@ -1348,6 +1348,12 @@ function _renderNFLPlayerDetail(p) {
     grid.innerHTML = `
         ${_nflHeader}
         ${_seasonRow}
+        <div class="stats-card" id="nfl-radar-card" style="display:none">
+            <h2 class="detail-section-title">Stat Profile</h2>
+            <div style="position:relative;height:260px">
+                <canvas id="nfl-player-radar"></canvas>
+            </div>
+        </div>
         <div id="nfl-stat-line"></div>
         <div id="nfl-advanced"></div>
         <div id="nfl-gamelog"></div>
@@ -1371,6 +1377,8 @@ function _nflChangeDetailSeason(season) {
     const _sel = document.querySelector('#playersGrid select[onchange*="_nflChangeDetailSeason"]');
     if (_sel && String(_sel.value) !== season) _sel.value = season;
     ['nfl-advanced', 'nfl-stat-line', 'nfl-gamelog'].forEach(id => { const e = document.getElementById(id); if (e) { e.className = ''; e.innerHTML = ''; } });
+    const _radarCard = document.getElementById('nfl-radar-card');
+    if (_radarCard) _radarCard.style.display = 'none';
     if (_nflDetailPlayer) { _loadNFLPlayerStats(_nflDetailPlayer, season); _loadNFLAdvanced(_nflDetailPlayer, season); }
 }
 
@@ -1582,6 +1590,21 @@ async function _loadNFLAdvanced(p, season) {
             <h2 class="detail-section-title">Key Metrics · Next Gen Stats</h2>
             ${rows}
             <p class="pct-caption">${data.season}${_ngsLag} season · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
+
+        // Stat Profile radar — same NGS metrics as the percentile bars above,
+        // just plotted as a shape instead of a list (mirrors MLB's Stat Profile card).
+        // Needs >=3 real (non-null-pct) axes to be a meaningful polygon.
+        const radarCard = document.getElementById('nfl-radar-card');
+        const _radarAxes = data.metrics.filter(m => m.pct != null).length;
+        if (radarCard && _radarAxes >= 3 && window.StatsCharts && StatsCharts.nflRadar) {
+            const radarColor = getNFLTeamColor(p.team) || '#ff7a00';
+            radarCard.style.display = '';
+            StatsCharts.nflRadar('nfl-player-radar', [{
+                label: p.full_name,
+                color: radarColor,
+                metrics: data.metrics,
+            }]);
+        }
     } catch (e) { Logger.warn('NFL advanced stats load failed', e, 'NFL'); }
 }
 
