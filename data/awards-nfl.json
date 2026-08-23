@@ -7,13 +7,27 @@
     { "type": "championship_mvp", "season": 2022, "team": "KC" },
     { "type": "championship_mvp", "season": 2023, "team": "KC" },
     { "type": "season_mvp", "season": 2018, "team": "KC" },
-    { "type": "season_mvp", "season": 2022, "team": "KC" }
+    { "type": "season_mvp", "season": 2022, "team": "KC" },
+    { "type": "opoy", "season": 2018, "team": "KC" },
+    { "type": "all_pro", "season": 2018, "team": "KC" },
+    { "type": "all_pro", "season": 2022, "team": "KC" },
+    { "type": "pro_bowl", "season": 2018, "team": "KC" },
+    { "type": "pro_bowl", "season": 2019, "team": "KC" },
+    { "type": "pro_bowl", "season": 2020, "team": "KC" },
+    { "type": "pro_bowl", "season": 2021, "team": "KC" },
+    { "type": "pro_bowl", "season": 2022, "team": "KC" },
+    { "type": "pro_bowl", "season": 2023, "team": "KC" }
   ],
   "kenneth walker": [
     { "type": "championship", "season": 2025, "team": "SEA" },
     { "type": "championship_mvp", "season": 2025, "team": "SEA" }
   ],
   "matthew stafford": [
-    { "type": "season_mvp", "season": 2025, "team": "LAR" }
+    { "type": "season_mvp", "season": 2025, "team": "LAR" },
+    { "type": "comeback_poy", "season": 2011, "team": "DET" },
+    { "type": "all_pro", "season": 2025, "team": "LAR" },
+    { "type": "pro_bowl", "season": 2014, "team": "DET" },
+    { "type": "pro_bowl", "season": 2023, "team": "LAR" },
+    { "type": "pro_bowl", "season": 2025, "team": "LAR" }
   ]
 }

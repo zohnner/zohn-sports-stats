@@ -36,11 +36,18 @@
 // taxonomy-config update instead of breaking.
 const ACHIEVEMENT_TAXONOMY = {
     nfl: {
-        championship:             { label: 'Super Bowl Championship', short: 'Super Bowl',      group: 1 },
-        championship_mvp:         { label: 'Super Bowl MVP',           short: 'Super Bowl MVP',  group: 2 },
-        season_mvp:                { label: 'NFL Most Valuable Player', short: 'NFL MVP',         group: 2 },
-        conference_championship:  { label: 'Conference Championship',  short: 'Conf. Champion',  group: 3 },
-        all_pro:                  { label: 'First-Team All-Pro',       short: 'All-Pro',         group: 3 },
+        championship:             { label: 'Super Bowl Championship',           short: 'Super Bowl',      group: 1 },
+        championship_mvp:         { label: 'Super Bowl MVP',                     short: 'Super Bowl MVP',  group: 2 },
+        season_mvp:                { label: 'NFL Most Valuable Player',           short: 'NFL MVP',         group: 2 },
+        opoy:                      { label: 'AP Offensive Player of the Year',    short: 'Off. POY',        group: 2 },
+        dpoy:                      { label: 'AP Defensive Player of the Year',    short: 'Def. POY',        group: 2 },
+        conference_championship:  { label: 'Conference Championship',            short: 'Conf. Champion',  group: 3 },
+        all_pro:                  { label: 'First-Team All-Pro',                 short: 'All-Pro',         group: 3 },
+        oroty:                     { label: 'AP Offensive Rookie of the Year',    short: 'Off. ROY',        group: 3 },
+        droty:                     { label: 'AP Defensive Rookie of the Year',    short: 'Def. ROY',        group: 3 },
+        walter_payton_moty:        { label: 'Walter Payton NFL Man of the Year',  short: 'Walter Payton MOTY', group: 3 },
+        comeback_poy:              { label: 'AP Comeback Player of the Year',     short: 'Comeback POY',    group: 3 },
+        pro_bowl:                  { label: 'Pro Bowl',                           short: 'Pro Bowl',        group: 4 },
     },
     mlb: {
         championship:      { label: 'World Series Championship', short: 'World Series', group: 1 },
