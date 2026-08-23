@@ -1328,6 +1328,7 @@ function _renderNFLPlayerDetail(p) {
         name: p.full_name,
         chips: [
             { html: `<span class="player-hero-pos" style="background:${_nflAlpha(posColor, 20)};color:${posColor}">${_escHtml(pos)}</span>` },
+            { html: `<button class="shc-share-btn" id="nfl-hero-share" aria-label="Share ${_escHtml(p.full_name)}'s stat card" title="Share stat card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg></button>` },
             ...(adpBadge ? [{ html: adpBadge }] : []),
             ...(typeof renderFollowStar === 'function' ? [{ html: renderFollowStar('nfl', 'player', p.player_id) }] : []),
         ],
@@ -1381,6 +1382,17 @@ function _nflChangeDetailSeason(season) {
     if (_radarCard) _radarCard.style.display = 'none';
     if (_nflDetailPlayer) { _loadNFLPlayerStats(_nflDetailPlayer, season); _loadNFLAdvanced(_nflDetailPlayer, season); }
 }
+
+// Per-position "headline" stat for the hero share card (P3-027-style, mirrors MLB's
+// OPS/ERA choice) -- matched by stat GROUP KEY first, then label, so e.g. a QB's
+// rushing "YDS" never gets picked up instead of passing "YDS".
+const _NFL_HEADLINE_STAT = {
+    QB: { group: 'passing',   label: 'YDS' },
+    RB: { group: 'rushing',   label: 'YDS' },
+    FB: { group: 'rushing',   label: 'YDS' },
+    WR: { group: 'receiving', label: 'YDS' },
+    TE: { group: 'receiving', label: 'YDS' },
+};
 
 // Stat groups/categories that make sense per position — a QB never shows kicking,
 // a kicker never shows receiving. Falls back to the full set if filtering empties it.
@@ -1493,6 +1505,33 @@ async function _loadNFLPlayerStats(p, season) {
             ${groupsHtml}
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
         `;
+
+        // Hero share button (mirrors MLB's #mlb-hero-share, P3-027 Phase 2) — only the
+        // 5 skill positions this session's Key Metrics/radar work already covers have a
+        // defined headline stat; anyone else's button quietly removes itself.
+        const heroBtn = document.getElementById('nfl-hero-share');
+        if (heroBtn) {
+            const headline = _NFL_HEADLINE_STAT[_statPos];
+            const grp = headline && data.groups.find(g => g.key === headline.group);
+            const stat = grp && grp.stats.find(([l]) => l === headline.label);
+            if (headline && stat && typeof shareStatCard === 'function') {
+                heroBtn.onclick = () => {
+                    shareStatCard({
+                        playerId: p.player_id,
+                        playerName: p.full_name || '',
+                        teamAbbr: p.team || '',
+                        position: _statPos,
+                        statLabel: `${data.season} ${headline.label}`,
+                        statValue: String(stat[1]),
+                        rank: null,
+                        headshotUrl: getNFLSleeperHeadshot(p.player_id),
+                        btn: heroBtn,
+                    });
+                };
+            } else {
+                heroBtn.remove();
+            }
+        }
     } catch (e) { Logger.warn('NFL player stats load failed', e, 'NFL'); _nflStatsUnavailable(host, p.full_name); }
 }
 
