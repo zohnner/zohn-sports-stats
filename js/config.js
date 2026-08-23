@@ -61,12 +61,19 @@ function getNBATeamLogoUrl(abbr) {
     return abbr ? `https://a.espncdn.com/i/teamlogos/nba/500/${abbr.toLowerCase()}.png` : null;
 }
 
-// Normalize a player name for cross-source matching (BDL vs NBA.com).
-// Strips dots, Jr./Sr./I/II/III/IV suffixes, and extra whitespace.
+// Normalize a player name for cross-source matching (BDL vs NBA.com,
+// and — as of D-116's MLB Trophy Case build — MLB Stats API vs the
+// hand-curated data/awards-mlb.json, where raw accented characters are
+// common, e.g. "José Ramírez" / "Julio Rodríguez"). Strips diacritics
+// (same .normalize('NFD') + combining-mark-strip pattern already used
+// for the Baseball Savant slug builder, js/mlb.js ~L1782), dots,
+// Jr./Sr./I/II/III/IV suffixes, and extra whitespace.
 // "P.J. Washington Jr." → "pj washington"  |  "PJ Washington" → "pj washington"
+// "José Ramírez" → "jose ramirez"
 function _normName(name) {
     return String(name || '')
         .toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
         .replace(/\./g, '')
         .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
         .replace(/\s+/g, ' ')

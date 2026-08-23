@@ -2073,6 +2073,9 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             </div>
         </div>
 
+        <div class="nlg-layout">
+        <div class="nlg-main">
+
         <div class="stats-card" id="mlb-blurb-card" style="display:none"></div>
         <div class="stats-card" id="mlb-scout-card" style="display:none"></div>
 
@@ -2169,6 +2172,12 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         </div>
 
         ${_mlbCompareCard(player, group)}
+
+        </div>
+        <aside class="nlg-side">
+            <div id="mlb-trophy-case"></div>
+        </aside>
+        </div>
     `;
 
     // Render radar chart immediately
@@ -2198,6 +2207,8 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             },
         }], 'pitching');
     }
+
+    if (typeof initTrophyCase === 'function' && player.fullName) initTrophyCase('mlb', player.fullName, 'mlb-trophy-case');
 
     // Wire compare dropdowns
     document.getElementById('mlb-cmp-select-b')?.addEventListener('change', e => _onMLBCompareChange(player, stats, group, colors));
