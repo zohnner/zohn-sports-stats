@@ -1516,3 +1516,13 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 ---
 
 **Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before Phase 2 starts, per D-117.
+
+---
+
+**Shipped + live-verified, 2026-08-23 (commit 7a94868).** Hero, Due Up rail, and sidebar mini standings/leaders all built and verified against a real in-progress game (TB @ BAL, gamePk 824799) by patching the running production page in Chrome and forcing a re-render — the same monkey-patch-a-live-tab technique used to verify D-116. Confirmed live: the hero's synchronous shell (name/badge/pitch count) and its async season AVG/OPS patch both render correctly; the entrance-motion class fires on a real batter/pitcher change (caught live — the game advanced from top 9th to bottom 9th mid-verification) and does not fire on a same-batter re-render; Due Up correctly lists the next three in the real batting order; both sidebar widgets render real data.
+
+One real bug caught in this pass, not by static review: Axiom's feasibility write-up above assumed `AppState.mlbStandings` team objects carry `.abbreviation`/`.gamesBack` (by analogy with the team-object shape used elsewhere in the codebase). The actual shape uses `.teamAbbr`/`.gb` — confirmed by dumping a real team object from the live `AppState.mlbStandings` in the browser console. `_lgBuildMiniStandings` silently returned `''` (its own try/catch swallowed nothing — the bug was a field-name mismatch inside the `.find()`/`.map()`, not a thrown error) until this was caught by literally screenshotting the sidebar and noticing the standings card wasn't there. Fixed in `js/liveGame.js` before commit; `_lgBuildMiniLeaders` was checked against the same live data and its field names (`s.player.fullName`, `s.stat.ops`) were correct as specced. Lesson for future phases: a feasibility pass reasoning from an existing pattern is not the same as reading the actual field names off a live object — the live-verification gate exists precisely to catch this class of bug before it ships silently (an empty sidebar card, not a crash).
+
+Not covered by this live-verification pass (no preview-state or final-state game was live at verification time): the hero's `isPreview` (probable pitchers) and `isFinal` (hero retired) branches. Both are short, low-risk conditionals already covered by `node --check`, but per this project's own discipline they're unverified-against-real-data until a pregame or completed game confirms them — flagging rather than silently assuming, the same way D-118 flagged its own unverified branches for NCAAF.
+
+Phase 2 (Bullpen Availability) is next, gated on this phase staying live-clean after deploy per D-117's phase-gate rule.
