@@ -1,0 +1,30 @@
+# Trophy Case research watchlist -- MLB (D-116)
+#
+# One player full name per line. Consumed by trophy_case_research.py via
+# .github/workflows/trophy-case-research.yml's scheduled run. This is a
+# starting list, not a fixed roster -- add/remove names as the site's most-
+# viewed player pages change. Ambiguous names (shared with a non-MLB
+# Wikidata entry, or another athlete of the same name) will come back
+# SKIPPED in the research summary and need an explicit --qid override
+# rather than a guess; check the run's summary.txt for any SKIPPED lines
+# before assuming this list "just works."
+#
+# Already-seeded players (Ohtani, Altuve, Greinke, Betts, Acuna Jr.) are
+# included so future runs can refresh/cross-check their existing data, not
+# just add new players.
+
+Shohei Ohtani
+Jose Altuve
+Zack Greinke
+Mookie Betts
+Ronald Acuna Jr.
+Aaron Judge
+Juan Soto
+Corbin Burnes
+Freddie Freeman
+Bobby Witt Jr.
+Gunnar Henderson
+Jose Ramirez
+Yordan Alvarez
+Paul Skenes
+Elly De La Cruz

@@ -1,0 +1,35 @@
+# Trophy Case research watchlist -- NFL (D-116)
+#
+# One player full name per line. Consumed by trophy_case_research.py via
+# .github/workflows/trophy-case-research.yml's scheduled run. This is a
+# starting list, not a fixed roster -- add/remove names as the site's most-
+# viewed player pages change. Ambiguous names (shared with a non-NFL
+# Wikidata entry, or another athlete of the same name) will come back
+# SKIPPED in the research summary and need an explicit --qid override
+# rather than a guess; check the run's summary.txt for any SKIPPED lines
+# before assuming this list "just works."
+#
+# Already-seeded players (Mahomes, Kenneth Walker III, Matthew Stafford,
+# Lamar Jackson) are included so future runs can refresh/cross-check their
+# existing data, not just add new players.
+
+Patrick Mahomes
+Kenneth Walker III
+Matthew Stafford
+Lamar Jackson
+Josh Allen
+Joe Burrow
+Justin Jefferson
+Ja'Marr Chase
+Christian McCaffrey
+Micah Parsons
+T.J. Watt
+Myles Garrett
+Aaron Donald
+Travis Kelce
+Tyreek Hill
+CeeDee Lamb
+Saquon Barkley
+Derrick Henry
+Jalen Hurts
+C.J. Stroud
