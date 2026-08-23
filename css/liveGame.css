@@ -96,7 +96,7 @@
 
 .lg-abbr {
     font-family: var(--font-display);
-    font-size: var(--text-sm);
+    font-size: var(--text-lg);
     font-weight: 700;
     color: var(--text-muted);
     min-width: 2.5rem;
@@ -106,7 +106,7 @@
 
 .lg-score {
     font-family: var(--font-display);
-    font-size: var(--text-2xl);
+    font-size: var(--text-4xl);
     font-weight: 800;
     color: var(--text-primary);
     min-width: 2rem;
@@ -635,4 +635,147 @@
     color: var(--text-subtle);
     font-size: 0.65rem;
     padding: var(--space-3) 0;
+}
+
+/* ── Phase 1 (D-117): Batter/pitcher hero ─────────────────────
+   New territory, not a retrofit — full-width, sits between the linescore
+   and the tab row. Same shell language as .lg-side-card so it doesn't
+   invent a new surface, but taller: this is the page's primary content,
+   not a sidebar fact (Kael, D-117 Phase 1). */
+.lg-hero {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin: var(--space-3) 0;
+    position: relative;
+}
+
+.lg-hero--new {
+    animation: lgEntrySlide 200ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-hero--new { animation: none; }
+}
+
+.lg-hero-side {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.lg-hero-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border-default);
+    flex: 0 0 1px;
+}
+
+/* Sizing override only — .player-avatar (css/components.css) already solves
+   the gradient/contrast problem (team color at reduced opacity over the
+   card background + fixed white text, never a flat solid team-color fill,
+   which is what keeps this legible across every team's color regardless of
+   its own luminance). Reused, not reinvented (Kael, D-117 Phase 1). */
+.lg-hero-badge {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0;
+    font-size: var(--text-sm);
+    box-shadow: none;
+    border: none;
+}
+
+.lg-hero-body { min-width: 0; }
+
+.lg-hero-role {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-subtle);
+}
+
+.lg-hero-name {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: var(--text-lg);
+    color: var(--text-primary);
+    line-height: 1.25;
+    overflow-wrap: break-word;
+}
+
+.lg-hero-stat {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+.lg-hero-delay {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-3);
+    font-size: 0.65rem;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .lg-hero { flex-direction: column; }
+    .lg-hero-divider { width: 100%; height: 1px; align-self: auto; }
+}
+
+/* ── Phase 1 (D-117): Due Up rail ──────────────────────────────
+   Compact strip below the hero — three next batters, same visual weight
+   as the existing sidebar fact-list idiom, never competing with the hero. */
+.lg-dueup-wrap { margin-bottom: var(--space-2); }
+
+.lg-dueup {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.lg-dueup-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.1rem;
+    padding: 0.35rem 0.25rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+
+.lg-dueup-name {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.lg-dueup-pos {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-subtle);
+}
+
+/* ── Phase 1 (D-117): Mini standings team-color dot ────────────
+   Reuses the team-color-as-inline-style convention already sanctioned
+   for logos (DESIGN.md "team colors are data") — no new token. */
+.lg-mini-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    margin-right: 0.35rem;
 }

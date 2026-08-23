@@ -44,6 +44,8 @@ let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshne
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
 let _lgZoneMode       = new Map(); // gamePk → 'dots' | 'heat' — pitch zone view, session-scoped
 let _lgIsPageMode     = false;  // true when opened via showMLBLiveGame (full page); false for the inline accordion (openLiveGamePanel)
+let _lgLastHeroBatterId = null; // batter id from previous poll — hero entrance-motion gate (D-117 Phase 1)
+let _lgSeasonStatCache  = {};   // { playerId: seasonHittingStatObj | null } — hero batter AVG/OPS cache (D-117 Phase 1)
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -90,6 +92,11 @@ function stopLiveGamePolling() {
     _lgPrevScores     = null;
     _lgLastPitcherId  = null;
     _lgH2HCache       = {};
+    _lgLastHeroBatterId = null;
+    _lgSeasonStatCache  = {};
+    _lgMiniStandingsHtml   = '';
+    _lgMiniLeadersHtml     = '';
+    _lgSidebarExtrasGamePk = null;
     _lgLastPollMs     = null;
     _lgIsPageMode     = false;
 }
@@ -282,6 +289,8 @@ function _buildSkeletonPanel(game) {
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
         <div class="lg-poll-ts" aria-live="polite"></div>
+        <div class="lg-hero-host"></div>
+        <div class="lg-dueup-host"></div>
         <div class="lg-body">
             <div class="lg-zone-col" hidden></div>
             <div class="lg-tab-col">
@@ -421,6 +430,17 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
+    // Phase 1 (D-117): batter/pitcher hero + Due Up rail — both built from
+    // data this poll already fetched except the hero's batter season line,
+    // which is fetched separately and gated on the batter actually changing.
+    const heroHost = panel.querySelector('.lg-hero-host');
+    if (heroHost) {
+        heroHost.innerHTML = _buildHero(feed);
+        _lgMaybeFetchHeroBatterLine(feed, panel);
+    }
+    const dueUpHost = panel.querySelector('.lg-dueup-host');
+    if (dueUpHost) dueUpHost.innerHTML = _buildDueUp(feed);
+
     // Phase 2 + P9-live: pitch zone (dots / heat toggle) + base diagram
     _renderZone(panel, feed, gamePk);
 
@@ -456,12 +476,21 @@ function _renderPanel(panel, feed, gamePk) {
         // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
     }
 
-    // Sidebar (page mode only) — venue/weather, mound visits, challenges,
-    // umpires. All read from feed/live fields already fetched above; no new
-    // requests. See _buildSidebar.
+    // Sidebar (page mode only) — mini standings + mini leaders (D-117 Phase 1,
+    // prepended ahead of venue/notes/umpires per Vera's priority ordering)
+    // then venue/weather, mound visits, challenges, umpires. All read from
+    // feed/live fields already fetched above except the two mini widgets,
+    // which reuse the site's existing shared standings/leaders fetches —
+    // fetched once per game (see _lgFetchSidebarExtras), not once per poll.
     if (_lgIsPageMode) {
         const sidebarEl = document.querySelector('.lg-sidebar');
-        if (sidebarEl) sidebarEl.innerHTML = _buildSidebar(feed);
+        if (sidebarEl) {
+            sidebarEl.innerHTML = _lgMiniStandingsHtml + _lgMiniLeadersHtml + _buildSidebar(feed);
+        }
+        if (_lgSidebarExtrasGamePk !== String(gamePk)) {
+            _lgSidebarExtrasGamePk = String(gamePk);
+            _lgFetchSidebarExtras(gamePk, away.abbreviation, home.abbreviation);
+        }
     }
 }
 
@@ -974,6 +1003,260 @@ function _wireZoneEvents(panel, gamePk) {
             zoneWrap.focus();
         }
     });
+}
+
+// ── Phase 1 (D-117): Batter/pitcher hero + Due Up rail ─────────
+// Hero is built synchronously from data _renderPanel already has (matchup,
+// box score pitching line, current at-bat pitches) — only the batter's
+// season AVG/OPS needs a new fetch, and that fetch is gated on the batter
+// actually changing, not on poll cadence (Axiom, D-117 Phase 1 feasibility).
+
+async function _lgFetchBatterSeasonLine(batterId) {
+    if (_lgSeasonStatCache[batterId] !== undefined) return _lgSeasonStatCache[batterId];
+    try {
+        const data = await mlbFetch(
+            `/people/${batterId}/stats`,
+            { stats: 'season', season: MLB_SEASON, group: 'hitting' },
+            ApiCache.TTL.MEDIUM
+        );
+        const line = data?.stats?.[0]?.splits?.[0]?.stat || null;
+        _lgSeasonStatCache[batterId] = line;
+        return line;
+    } catch (err) {
+        Logger.warn('Hero batter season-line fetch failed', err, 'LIVE');
+        _lgSeasonStatCache[batterId] = null;
+        return null;
+    }
+}
+
+function _lgInitial(name) {
+    return (name || '?').trim().charAt(0).toUpperCase() || '?';
+}
+
+function _buildHero(feed) {
+    const status       = feed.gameData?.status || {};
+    const isPreview    = status.abstractGameState === 'Preview';
+    const isFinal      = status.abstractGameState === 'Final';
+    const isDelayed    = /delay|suspend/i.test(status.detailedState || '');
+
+    // No "current batter" in a finished game — hero is retired entirely,
+    // matching Vera's Final state spec (D-117 Phase 1).
+    if (isFinal) return '';
+
+    if (isPreview) {
+        const pp = feed.gameData?.probablePitchers;
+        if (!pp || (!pp.away?.fullName && !pp.home?.fullName)) return '';
+        const away = feed.gameData?.teams?.away || {};
+        const home = feed.gameData?.teams?.home || {};
+        const awayClr = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
+        const homeClr = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
+        const side = (abbr, p, color) => `<div class="lg-hero-side">
+            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${color}cc,${color}55)">${_lgInitial(p?.fullName)}</div>
+            <div class="lg-hero-body">
+                <div class="lg-hero-role">${_escHtml(abbr || '')} Probable</div>
+                <div class="lg-hero-name">${p?.fullName ? _escHtml(p.fullName) : 'TBD'}</div>
+            </div>
+        </div>`;
+        return `<div class="lg-hero lg-hero--pregame">
+            ${side(away.abbreviation, pp.away, awayClr)}
+            <div class="lg-hero-divider"></div>
+            ${side(home.abbreviation, pp.home, homeClr)}
+        </div>`;
+    }
+
+    const currentPlay = feed.liveData?.plays?.currentPlay;
+    const matchup      = currentPlay?.matchup;
+    if (!matchup?.batter?.id || !matchup?.pitcher?.id) return '';
+
+    const batterId     = matchup.batter.id;
+    const pitcherId    = matchup.pitcher.id;
+    const batterName   = matchup.batter.fullName || '';
+    const pitcherName  = matchup.pitcher.fullName || '';
+    const isTop        = !!feed.liveData?.linescore?.isTopInning;
+    const battingTeam  = isTop ? feed.gameData?.teams?.away : feed.gameData?.teams?.home;
+    const pitchingTeam = isTop ? feed.gameData?.teams?.home : feed.gameData?.teams?.away;
+    const batClr       = getMLBTeamColors(battingTeam?.abbreviation)?.primary  || 'var(--accent)';
+    const pitClr       = getMLBTeamColors(pitchingTeam?.abbreviation)?.primary || 'var(--accent)';
+
+    // Pitcher line: today's pitch count + last-pitch velocity — both already
+    // in hand from data this poll already fetched, zero new requests.
+    const boxscore   = feed.liveData?.boxscore || {};
+    const pSide      = isTop ? 'home' : 'away';
+    const pStats     = boxscore.teams?.[pSide]?.players?.[`ID${pitcherId}`]?.stats?.pitching || {};
+    const pitchCount = pStats.numberOfPitches ?? '—';
+    const pitchesThrown = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const lastVelo    = pitchesThrown.length ? pitchesThrown[pitchesThrown.length - 1].startSpeed : null;
+
+    const cachedLine = _lgSeasonStatCache[batterId];
+    const battingStatHtml = cachedLine === undefined ? 'Loading…'
+        : cachedLine === null ? '—'
+        : `${cachedLine.avg ?? '—'} AVG · ${cachedLine.ops ?? '—'} OPS`;
+
+    // Motion gate: only a real batter change gets the entrance animation —
+    // a poll that re-renders the same at-bat should never replay it
+    // (Kael, D-117 Phase 1 — "motion marks a real state change, never a refresh").
+    const changed = _lgLastHeroBatterId !== batterId;
+    _lgLastHeroBatterId = batterId;
+
+    const delayNote = isDelayed ? '<div class="lg-hero-delay">Game Delayed</div>' : '';
+
+    return `<div class="lg-hero${changed ? ' lg-hero--new' : ''}" data-batter-id="${batterId}">
+        <div class="lg-hero-side">
+            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${batClr}cc,${batClr}55)">${_lgInitial(batterName)}</div>
+            <div class="lg-hero-body">
+                <div class="lg-hero-role">Batting</div>
+                <div class="lg-hero-name">${_escHtml(batterName)}</div>
+                <div class="lg-hero-stat" data-hero-batter-stat>${_escHtml(battingStatHtml)}</div>
+            </div>
+        </div>
+        <div class="lg-hero-divider"></div>
+        <div class="lg-hero-side">
+            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${pitClr}cc,${pitClr}55)">${_lgInitial(pitcherName)}</div>
+            <div class="lg-hero-body">
+                <div class="lg-hero-role">Pitching</div>
+                <div class="lg-hero-name">${_escHtml(pitcherName)}</div>
+                <div class="lg-hero-stat">${pitchCount} pitches${lastVelo ? ` · ${lastVelo} mph` : ''}</div>
+            </div>
+        </div>
+        ${delayNote}
+    </div>`;
+}
+
+// Kicks off the cached season-line fetch for the current batter (if not
+// already cached) and patches just the stat-line node when it resolves —
+// guarded against a batter change mid-flight (Axiom, D-117 Phase 1).
+function _lgMaybeFetchHeroBatterLine(feed, panel) {
+    const batterId = feed.liveData?.plays?.currentPlay?.matchup?.batter?.id;
+    if (!batterId || _lgSeasonStatCache[batterId] !== undefined) return;
+    _lgFetchBatterSeasonLine(batterId).then(line => {
+        if (_lgFeedCache !== feed) return; // a newer poll already superseded this one
+        const heroEl = panel.querySelector('.lg-hero');
+        if (!heroEl || heroEl.dataset.batterId !== String(batterId)) return; // batter moved on
+        const statEl = heroEl.querySelector('[data-hero-batter-stat]');
+        if (statEl) statEl.textContent = line ? `${line.avg ?? '—'} AVG · ${line.ops ?? '—'} OPS` : '—';
+    });
+}
+
+function _buildDueUp(feed) {
+    const status       = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') return '';
+
+    const currentPlay = feed.liveData?.plays?.currentPlay;
+    const batterId     = currentPlay?.matchup?.batter?.id;
+    if (!batterId) return '';
+
+    const boxscore = feed.liveData?.boxscore || {};
+    const side      = feed.liveData?.linescore?.isTopInning ? 'away' : 'home';
+    const team      = boxscore.teams?.[side] || {};
+    const order     = team.battingOrder || [];
+    const idx       = order.indexOf(batterId);
+    if (idx === -1 || !order.length) return '';
+
+    const players  = team.players || {};
+    const upcoming = [1, 2, 3].map(n => order[(idx + n) % order.length]);
+
+    const rows = upcoming.map(pid => {
+        const p   = players[`ID${pid}`] || {};
+        const nm  = p.person?.fullName || '';
+        const pos = p.position?.abbreviation || '';
+        if (!nm) return '';
+        return `<div class="lg-dueup-item">
+            <span class="lg-dueup-name">${_escHtml(nm)}</span>
+            <span class="lg-dueup-pos">${_escHtml(pos)}</span>
+        </div>`;
+    }).filter(Boolean).join('');
+
+    if (!rows) return '';
+
+    return `<div class="lg-dueup-wrap">
+        <div class="lg-box-section-title">Due Up</div>
+        <div class="lg-dueup">${rows}</div>
+    </div>`;
+}
+
+// ── Phase 1 (D-117): Mini standings + mini leaders (sidebar) ───
+// Reuse the site's existing shared caches — fetchMLBStandingsFull() and
+// _fetchMLBLeaderSplits(), the same primitives the Standings and Leaders
+// views already use — rather than a scoped one-off. A cold direct link to
+// mlb-live-{id} (a shared URL, a bookmark) is a realistic entry path with
+// AppState not yet warm, not an edge case (Axiom, D-117 Phase 1 feasibility).
+// Fetched once per game open (gated by _lgSidebarExtrasGamePk), not per poll.
+
+async function _lgBuildMiniStandings(homeAbbr, awayAbbr) {
+    try {
+        if (!AppState.mlbStandings) {
+            AppState.mlbStandings = await fetchMLBStandingsFull();
+        }
+    } catch (err) {
+        Logger.warn('Mini standings fetch failed', err, 'LIVE');
+        return '';
+    }
+    const divisions = AppState.mlbStandings || [];
+    // Field names confirmed against the real deployed AppState.mlbStandings
+    // shape (live-verified 2026-08-23, gamePk 824799) — teamAbbr/gb, not the
+    // abbreviation/gamesBack names Axiom's feasibility pass assumed by
+    // analogy with the team-object shape used elsewhere in the codebase.
+    const div = divisions.find(d =>
+        (d.teams || []).some(t => t.teamAbbr === homeAbbr || t.teamAbbr === awayAbbr)
+    );
+    if (!div || !(div.teams || []).length) return '';
+
+    const rows = div.teams.slice(0, 5).map(t => {
+        const clr = getMLBTeamColors(t.teamAbbr)?.primary || 'var(--text-muted)';
+        const gb  = t.gb === '-' ? '—' : (t.gb ?? '—');
+        return `<div class="lg-side-row">
+            <span><span class="lg-mini-dot" style="background:${clr}"></span>${_escHtml(t.teamAbbr || '')}</span>
+            <span class="lg-side-val">${t.wins ?? '—'}-${t.losses ?? '—'} · ${gb}</span>
+        </div>`;
+    }).join('');
+
+    return `<div class="lg-side-card">
+        <div class="lg-box-section-title">${_escHtml(div.division || 'Standings')}</div>
+        ${rows}
+    </div>`;
+}
+
+async function _lgBuildMiniLeaders() {
+    try {
+        if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
+            await _fetchMLBLeaderSplits(MLB_SEASON);
+        }
+    } catch (err) {
+        Logger.warn('Mini leaders fetch failed', err, 'LIVE');
+        return '';
+    }
+    const hitting = AppState.mlbLeaderSplits?.hitting || [];
+    const top = hitting
+        .filter(s => s.stat?.ops != null && (s.stat.plateAppearances || 0) >= 100)
+        .sort((a, b) => (parseFloat(b.stat.ops) || 0) - (parseFloat(a.stat.ops) || 0))
+        .slice(0, 5);
+    if (!top.length) return '';
+
+    const rows = top.map(s => `<div class="lg-side-row">
+        <span>${_escHtml(s.player?.fullName || '')}</span>
+        <span class="lg-side-val">${_escHtml(String(s.stat.ops))}</span>
+    </div>`).join('');
+
+    return `<div class="lg-side-card">
+        <div class="lg-box-section-title">OPS Leaders</div>
+        ${rows}
+    </div>`;
+}
+
+let _lgMiniStandingsHtml   = '';
+let _lgMiniLeadersHtml     = '';
+let _lgSidebarExtrasGamePk = null;
+
+async function _lgFetchSidebarExtras(gamePk, awayAbbr, homeAbbr) {
+    const [standingsHtml, leadersHtml] = await Promise.all([
+        _lgBuildMiniStandings(homeAbbr, awayAbbr),
+        _lgBuildMiniLeaders(),
+    ]);
+    if (_lgSidebarExtrasGamePk !== String(gamePk)) return; // superseded by a different game
+    _lgMiniStandingsHtml = standingsHtml;
+    _lgMiniLeadersHtml   = leadersHtml;
+    const el = document.querySelector('.lg-sidebar');
+    if (el && _lgFeedCache) el.innerHTML = _lgMiniStandingsHtml + _lgMiniLeadersHtml + _buildSidebar(_lgFeedCache);
 }
 
 // ── Phase 2: H2H data + Matchup tab ──────────────────────────
