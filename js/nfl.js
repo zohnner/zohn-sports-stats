@@ -1412,6 +1412,16 @@ function _nflStatByPos(items, pos, keyOf) {
 }
 
 // Career year-by-year table (ESPN /api/nflcareer) — season-independent.
+// Per-category-key trend stats for the Career section's year-over-year chart
+// (mirrors MLB's _MLB_CAREER_TREND_HITTING/_PITCHING pattern). Only the primary
+// position-matching category gets a trend -- a QB's Rushing table, e.g., stays
+// a plain table, same as it already was.
+const _NFL_CAREER_TREND = {
+    passing:   [{ key: 'YDS', label: 'YDS', color: '#60a5fa' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'INT', label: 'INT', color: '#f87171' }, { key: 'RTG', label: 'RTG', color: '#a78bfa' }],
+    rushing:   [{ key: 'YDS', label: 'YDS', color: '#fb923c' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'AVG', label: 'AVG', color: '#60a5fa' }],
+    receiving: [{ key: 'YDS', label: 'YDS', color: '#a78bfa' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'REC', label: 'REC', color: '#60a5fa' }],
+};
+
 async function _loadNFLCareer(espnId, pos) {
     if (!espnId) return;
     const host = document.getElementById('nfl-career');
@@ -1428,7 +1438,10 @@ async function _loadNFLCareer(espnId, pos) {
         if (!data.found || !data.categories || !data.categories.length) return;
         if (!document.body.contains(host)) return;
 
-        const tables = _nflStatByPos(data.categories, pos, c => c.name).map(c => {
+        const cats = _nflStatByPos(data.categories, pos, c => c.name);
+        let primaryTrend = null; // { cat, statsRows, pills } for the first eligible category only
+
+        const tables = cats.map((c, idx) => {
             const head = `<th class="nfl-tbl-sticky-head">SZN</th><th class="nfl-tbl-left">TM</th>` +
                 (c.labels || []).map(l => `<th>${_escHtml(l)}</th>`).join('');
             const rows = (c.seasons || []).map(sn => `<tr onclick="_nflCareerRowClick('${sn.year}')" style="cursor:pointer">
@@ -1440,14 +1453,62 @@ async function _loadNFLCareer(espnId, pos) {
                 <td class="nfl-tbl-sticky-plain">Career</td><td></td>
                 ${(c.totals || []).map(v => `<td class="nfl-tbl-center">${_escHtml(String(v))}</td>`).join('')}
             </tr>`;
+
+            // First category with >=2 seasons and a known trend-stat set gets the
+            // year-over-year chart underneath its table (matches MLB's placement).
+            const pills = _NFL_CAREER_TREND[c.name];
+            let trendHtml = '';
+            if (!primaryTrend && pills && c.seasons && c.seasons.length >= 2) {
+                const usable = pills.filter(p2 => (c.labels || []).includes(p2.key));
+                if (usable.length) {
+                    const canvasId = 'nfl-pd-career-trend';
+                    const controlsId = 'nfl-career-trend-controls';
+                    const btns = usable.map((p2, i) =>
+                        `<button class="career-stat-btn${i === 0 ? ' active' : ''}" data-stat="${p2.key}" data-color="${p2.color}">${p2.label}</button>`
+                    ).join('');
+                    trendHtml = `<div class="career-trend-section">
+                        <div class="career-trend-controls" id="${controlsId}">${btns}</div>
+                        <div class="chart-wrap chart-wrap--tall" style="margin-top:0.75rem">
+                            <canvas id="${canvasId}"></canvas>
+                        </div>
+                    </div>`;
+                    // Zip labels+values into a {LABEL: number} row per season, stripping
+                    // display commas ("5,097" -> 5097) -- careerTrend() does a bare
+                    // parseFloat, which silently truncates at the first comma otherwise.
+                    const statsRows = (c.seasons || []).map(sn => {
+                        const stats = {};
+                        (c.labels || []).forEach((l, i) => { stats[l] = parseFloat(String(sn.stats?.[i] ?? '').replace(/,/g, '')); });
+                        return { season: parseInt(sn.year, 10), stats };
+                    });
+                    primaryTrend = { canvasId, controlsId, pills: usable, statsRows };
+                }
+            }
+
             return `<div class="nfl-tbl-group">
                 <div class="nfl-tbl-group-title">${_escHtml(c.displayName)}</div>
                 <div class="table-wrapper" style="overflow-x:auto"><table class="stats-table" style="min-width:max-content;white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${rows}${totals}</tbody></table></div>
+                ${trendHtml}
             </div>`;
         }).join('');
 
         host.className = 'stats-card';
         host.innerHTML = `<h2 class="detail-section-title">Career</h2>${tables}<p class="nfl-tbl-note">Regular season · tap a row to load that season above · Source: ESPN.</p>`;
+
+        if (primaryTrend && window.StatsCharts && StatsCharts.careerTrend) {
+            const chronRows = primaryTrend.statsRows.slice().sort((a, b) => a.season - b.season);
+            const renderTrend = (statKey, color) => StatsCharts.careerTrend(primaryTrend.canvasId, chronRows, statKey, color);
+            renderTrend(primaryTrend.pills[0].key, primaryTrend.pills[0].color);
+            const controls = document.getElementById(primaryTrend.controlsId);
+            if (controls) {
+                controls.addEventListener('click', e => {
+                    const btn = e.target.closest('.career-stat-btn');
+                    if (!btn) return;
+                    controls.querySelectorAll('.career-stat-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderTrend(btn.dataset.stat, btn.dataset.color);
+                });
+            }
+        }
     } catch (e) { Logger.warn('NFL career load failed', e, 'NFL'); }
 }
 
