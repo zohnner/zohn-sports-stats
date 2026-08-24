@@ -1408,6 +1408,29 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 
 **Gate status (updated 2026-08-24): all three gates present for both ideas.** Kael's visual pass and Axiom's feasibility check are done (above) — one real structural correction found for Idea 1 (the sticky rule needs a new wrapper, not `.nlg-header` itself), one small existing-component extension identified for Idea 2 (a new action-button toast variant). See DECISIONS.md D-118 for the consensus record. Neither is scheduled — this stays a spec, not a build queue entry, until the owner ratifies scheduling one or both (same standing pattern as D-043).
 
+---
+
+## NFL Field Position Viewer — visual rebuild + broadcast-realism polish, Phases 1-4 (D-105 follow-on), 2026-08-22 to 2026-08-24
+
+**Status:** all four phases shipped, committed, live-verified in production. No open items on this thread.
+**Contributors:** Axiom (implementation, all phases) — iteration on an already-shipped, already-gated feature (D-105 cleared all three gates originally), so this ran as direct dev+design polish with live verification rather than a fresh Vera/Kael spec cycle, consistent with how this file treats refinement of existing scope vs. new feature ideas.
+
+**Phase 1 — orientation fix + 3D visual rebuild (`1e041f9`):** the field viewer's endzone/ball/first-down positions were mirrored relative to the score header's established away-left/home-right convention — fixed via a display-only `disp()` mirror that leaves the underlying yardLine math (0 = home goal, 100 = away goal; live-verified against two real possession states, 2026-08-16) untouched. Same commit rebuilt the flat 2D bar into a tilted 3D field (`perspective: 450px` / `rotateX(22deg)` desktop, `350px`/`18deg` mobile — values tuned live against a real game, checked for end-zone text legibility at each step), plus diagonal-stripe endzone texture and turf coloring.
+
+**Phase 2 — ESPN-style play arrows (`aa7381f`):** new `_nlgPlayArrowHtml` renders a run/pass/kick/sack/turnover-styled arrow (or an incomplete-pass badge) from `situation.lastPlay`, reusing data already polled — zero new fetches. One-time entrance animation only when `lastPlay.id` changes from the previous render (`_nlg.lastPlayArrowId`), never on first paint or a same-state re-render — this file's standing motion rule. Administrative plays (timeout, two-minute warning, penalty, etc.) correctly render no arrow, matching the "absent degrades to nothing" convention.
+
+**Possession stated in plain English (`e33414d`):** ESPN's raw `possessionText` ("SEA 21") doesn't read as "Seahawks have the ball" to a first-time visitor who doesn't know scorebug conventions — both the field-viewer strip and the header situation line now say "[Team] ball" explicitly, falling back to the raw string only if the team name doesn't resolve. Motivated directly by an owner question: "who has the ball? what has happened so far?"
+
+**Phase 3 — possession-dot pulse + timeout-burn flash (`ee85960`):** possession dot now pulses via the same opacity-keyframe convention `.nlg-livebadge` already uses, instead of sitting static. Timeout dots flash red-to-gray for 900ms when a team's count actually drops between polls (`_nlg.lastTimeouts` tracks prior counts per team, same before/after-render pattern as Phase 2's `lastPlayArrowId`) — never fires on first paint or an unchanged re-render. Both animations hard-skip under `prefers-reduced-motion`.
+
+**Phase 4 — broadcast-realism pass (`4581f4e`):** mow-stripe turf (5-yard alternating bands, was a flat 10-yard tint), the ball rebuilt as an inline SVG with a sheen gradient/seams/laces (was a flat CSS ellipse — still tinted by the possessing team's color, keeping that identity), the red zone given the same 45deg diagonal hazard stripe `.fv-endzone` already established (was an ~8%-opacity flat tint, easy to miss even knowing to look for it), and a stadium-light overlay (soft overhead glow + top/bottom vignette) on `.fv-field` for depth. Play arrow got a subtle drop-shadow so it reads as sitting above the turf rather than printed flat on it. No new animations added, so no new reduced-motion guard was needed.
+
+**Live-verification methodology note (a real bug found and fixed mid-session, worth keeping):** SW-unregister + Cache-Storage-clear + a normal `navigate()` is **not** sufficient to prove a deploy actually landed on this site — the browser's own native HTTP disk cache is a separate layer neither of those touches, and a plain `<script src>` page-load can silently keep serving a stale cached copy from before the SW check even ran, even while a direct `fetch(url, {cache:'no-store'})` in the same tab shows the correct new source. This produced a real false alarm mid-Phase-3 (timeout-flash logic looked broken against byte-verified-correct deployed source) until a **hard reload (Ctrl+Shift+R)** resolved it. `fa2e0fe` (owner's own fix, found independently while re-verifying D-117 Phase 5) closes this gap going forward with a short edge-cache TTL on `/js/*`/`/css/*` — but a hard reload is still the safest first move whenever live-verified code doesn't behave like the deployed source says it should.
+
+**Gate status: shipped and live-verified in production, all four phases.** D-118 (immersion ideas — sticky header, big-play auto-suggest) remains a separate, not-yet-scheduled spec layered on top of this same viewer.
+
+---
+
 ## Trophy Case — cross-sport career achievements engine (D-116), 2026-08-23
 
 **Job to be done:** "This player won a championship / an MVP — I want to see that at a glance on their page, the way I'd expect any real sports-reference site to show it," without digging through a full career stat table to reconstruct it. Today no player detail page (any of the 5 sports) shows career hardware anywhere — stat tables show performance, not what it earned.
