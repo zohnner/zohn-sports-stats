@@ -40,3 +40,19 @@
 # it just needs to not be hours long.
 /data/*
   Cache-Control: public, max-age=300, must-revalidate
+
+# js/*.js and css/*.css had no dedicated cache rule either, so they rode
+# Cloudflare's same default long per-file-type edge caching /data/*.json
+# and /sw.js already got bitten by (see above, D-116) -- confirmed
+# 2026-08-24 (D-117 Phase 5) when a real fresh browser tab loaded updated
+# JS (the deploy clearly reached that edge node) but stale CSS from
+# before the deploy (a *different* edge node/cache entry for the same
+# push), so the new player-card feature's styling silently didn't apply
+# even though the underlying code and data were correct. Same fix as
+# /data/*: a short edge TTL so a future js/css push doesn't need a manual
+# purge to reach every user within a reasonable window.
+/js/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/css/*
+  Cache-Control: public, max-age=300, must-revalidate
