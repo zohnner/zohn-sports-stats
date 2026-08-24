@@ -215,20 +215,25 @@ function _nlgRenderHeader(comp, home, away) {
     // game, ever). Filed as a pre-existing bug fixed in the same pass; see
     // ISSUES.md.
     const sit = live ? _nlg.situation?.situation : null;
-    const sitLine = sit
-        ? `<div class="nlg-situation">
-             ${sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : ''}
-             ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
-             ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
-           </div>`
-        : '';
 
     // Field viewer only renders when we have real numeric position data AND
     // possession resolves to one of the two teams in this game -- absent
     // (not defaulted/guessed) otherwise, same "absent degrades to nothing"
-    // rule the rest of this file follows for situation/leaders/etc.
+    // rule the rest of this file follows for situation/leaders/etc. Computed
+    // before sitLine below (moved up, was after) so sitLine can name the
+    // possessing team in plain English instead of ESPN's raw "SEA 21".
     const homeTeamId = _nlg.situation?.homeTeamId, awayTeamId = _nlg.situation?.awayTeamId;
     const possResolves = sit?.possession && (String(sit.possession) === String(homeTeamId) || String(sit.possession) === String(awayTeamId));
+    const sitPossTeamName = possResolves
+        ? (String(sit.possession) === String(homeTeamId) ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name))
+        : null;
+    const sitLine = sit
+        ? `<div class="nlg-situation">
+             ${sitPossTeamName ? `<span class="nlg-poss">🏈 ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : '')}
+             ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
+             ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
+           </div>`
+        : '';
     const fieldHtml = sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
         ? _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc)
         : '';
@@ -266,6 +271,12 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const awayAbbr = away?.team?.abbreviation || '';
     const possHome = String(sit.possession) === String(homeTeamId);
     const disp = (v) => 100 - v;
+    // Plain-English possession label -- a viewer who does not already know
+    // scorebug conventions cannot read "SEA 21" (ESPNs raw possessionText,
+    // just a field location) as "Seahawks have the ball". Named explicitly
+    // here instead, using the same team objects already in scope; falls
+    // back to the raw ESPN string only if it somehow does not resolve.
+    const possTeamName = (possHome ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name)) || "";
 
     // yardLine is anchored to the HOME team's own goal line -- 0 = home's
     // goal, 100 = away's goal -- regardless of which team currently has
@@ -314,7 +325,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     <div class="field-viewer">
         <div class="fv-topline">
             <span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span>
-            <span class="fv-poss">${possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : ''}${_escHtml(sit.possessionText || '')}</span>
+            <span class="fv-poss">${possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : ''}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
         </div>
         <div class="fv-field">
             <div class="fv-endzone" style="background-color:${awayColor}">${_escHtml(awayAbbr)}</div>
