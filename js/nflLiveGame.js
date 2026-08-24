@@ -246,18 +246,29 @@ function _nlgRenderHeader(comp, home, away) {
         ${sitLine}`;
 }
 
-// D-105: ESPN Gamecast-style live field position graphic (concept approved
-// 2026-08-16, see DECISIONS.md D-105). Home renders on the field's left edge
-// and away on the right, matching this page's own .nlg-team--home/away
-// convention (and the card-grid's home-left/away-right layout).
+// D-105/Phase-1 field redesign: ESPN Gamecast-style live field position
+// graphic (concept approved 2026-08-16, see DECISIONS.md D-105; visual
+// rebuild + orientation fix 2026-08-24, see D-1xx). Away renders on the
+// field's left edge and home on the right -- this now genuinely matches
+// the score header immediately above it (_nlgRenderHeader renders
+// teamBlock(away) then teamBlock(home): away-left, home-right). An
+// earlier version of this function put home on the left instead, and its
+// own comment claimed that matched the header -- it didn't. Live-verified
+// against the real SEA@TEN game 2026-08-24: SEA (away) sat left in the
+// score card above but right in the field bar below it. Fixed here by
+// leaving the underlying yardLine math untouched (0 = home's own goal,
+// 100 = away's own goal -- still what every comment below refers to) and
+// only mirroring the DISPLAY position via disp(v) = 100 - v, since
+// yardLine 100 (away's goal) now sits at the visual left edge and
+// yardLine 0 (home's goal) at the visual right edge.
 function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const homeAbbr = home?.team?.abbreviation || '';
     const awayAbbr = away?.team?.abbreviation || '';
     const possHome = String(sit.possession) === String(homeTeamId);
+    const disp = (v) => 100 - v;
 
     // yardLine is anchored to the HOME team's own goal line -- 0 = home's
-    // goal (the bar's left edge, since home renders on the left), 100 =
-    // away's goal (right edge) -- regardless of which team currently has
+    // goal, 100 = away's goal -- regardless of which team currently has
     // the ball. Live-verified against TWO real possession states on the
     // same live game (2026-08-16): home (BAL) on offense at yardLine 58
     // ("BAL 58", past their own midfield -- fine either way this is read)
@@ -270,7 +281,8 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // for an away possession put the ball marker on the wrong side of the
     // field; caught by live-testing both possession states, not just one,
     // and confirmed by zooming the actual rendered marker position before
-    // shipping.
+    // shipping. disp() below is a SEPARATE, later mirroring step for
+    // display only -- it does not change this paragraph's math.
     const ballPct = sit.yardLine;
     // First-down line: the offense drives toward the DEFENSE's goal, so the
     // direction depends on who has the ball -- home drives toward 100, away
@@ -285,12 +297,13 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 
     // Red zone = offense within the DEFENSE's own 20 -- yardLine 80-100
     // when home has the ball (driving toward away's goal), 0-20 when away
-    // does (driving toward home's goal). No flip/min-max needed now that
-    // the coordinate system itself doesn't flip.
+    // does (driving toward home's goal). Still expressed in yardLine space
+    // here; disp() converts the [rzLeft,rzRight] pair to a display
+    // left%/width% span below.
     const rzLeft = possHome ? 80 : 0;
     const rzRight = possHome ? 100 : 20;
     const redZoneHtml = sit.isRedZone
-        ? `<div class="fv-redzone" style="left:${rzLeft}%; width:${(rzRight - rzLeft)}%"></div>`
+        ? `<div class="fv-redzone" style="left:${disp(rzRight)}%; width:${(rzRight - rzLeft)}%"></div>`
         : '';
 
     const toDots = (n) => Array.from({ length: 3 }, (_, i) =>
@@ -303,23 +316,22 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
             <span class="fv-poss">${possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : ''}${_escHtml(sit.possessionText || '')}</span>
         </div>
         <div class="fv-field">
-            <div class="fv-endzone" style="background:${homeColor}">${_escHtml(homeAbbr)}</div>
+            <div class="fv-endzone" style="background-color:${awayColor}">${_escHtml(awayAbbr)}</div>
             <div class="fv-track">
                 ${redZoneHtml}
-                <div class="fv-firstdown" style="left:${firstDownPct}%"></div>
-                <div class="fv-ball" style="left:${ballPct}%; background:${possColor}"></div>
+                <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
+                <div class="fv-ball" style="left:${disp(ballPct)}%; background-color:${possColor}"></div>
             </div>
-            <div class="fv-endzone" style="background:${awayColor}">${_escHtml(awayAbbr)}</div>
+            <div class="fv-endzone" style="background-color:${homeColor}">${_escHtml(homeAbbr)}</div>
         </div>
-        <div class="fv-yardnums"><span>${_escHtml(homeAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(awayAbbr)}</span></div>
+        <div class="fv-yardnums"><span>${_escHtml(awayAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(homeAbbr)}</span></div>
         <div class="fv-legend">
-            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.homeTimeouts)}</div></div>
+            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts)}</div></div>
             <div class="fv-key">${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}</div>
-            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.awayTimeouts)}</div><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span></div>
+            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.homeTimeouts)}</div><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span></div>
         </div>
     </div>`;
 }
-
 // -- Tabs ---------------------------------------------------------------
 
 function _nlgTabsHtml() {
