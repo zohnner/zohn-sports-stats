@@ -1652,3 +1652,59 @@ Phase 4 (Game Pulse hard-hit half + rich play-by-play) is next, gated on this ph
 ---
 
 **Gate status: Phase 3 shipped + live-verified.** Live-verify against a real in-progress game before Phase 4 starts, per D-117.
+
+## MLB Live Game Command Center — Phase 4 states + visual + feasibility spec (D-117 Phase 4), 2026-08-24
+
+Relay's Phase 4 feasibility addendum (DECISIONS.md D-117) confirms `hitData` re-verified live on a second real game and defines "streak" concretely as the current pitcher's consecutive-strikeout count. Two features: hard-hit callouts appended to the existing Play-by-Play tab, and a K-streak segment appended to the hero's existing pitcher stat line. Vera/Kael/Axiom gates below, same tier-3 discipline as Phases 1-3.
+
+**Vera — states:**
+
+*Hard-hit callouts render inline with no new loading state.* `_buildPbp` already renders synchronously from `_lgFeedCache` every poll — the hard-hit callout is text appended to a play's existing description string in the same pass, not a separate fetch or a skeleton. A play qualifies when its pitch event's `hitData.hardness === 'hard'`; the callout text is the real `launchSpeed` (formatted "X.X mph") and `totalDistance` ("Y ft") pulled straight from that same object — never a derived or estimated number.
+
+*HR takes visual precedence over hard-hit on the same play.* A play can satisfy both `eventType === 'home_run'` and `hardness === 'hard'` simultaneously (most HRs are hard-hit balls). When both are true, only the HR's existing 💥 treatment applies — the hard-hit modifier is skipped. Two badges on one line for two facts that mostly overlap would read as redundant emphasis, not new information.
+
+*K-streak only shows at 2+, resets on any non-strikeout outcome or a pitching change.* A streak of exactly 1 strikeout isn't a "streak" in the broadcast sense this feature is modeling — the pitcher stat line looks exactly as it does today (`"87 pitches · 95.1 mph"`) until a second consecutive strikeout makes it a real streak worth calling out. The count is recomputed fresh from `allPlays` every render (not incrementally tracked in module state), so a pitching change or a new pitcher naturally starts at zero with no explicit reset code needed — the filter is already scoped to `matchup.pitcher.id`, and a new pitcher has no prior strikeouts in `allPlays` under their own id.
+
+*Preview/Final games.* Hard-hit callouts: Play-by-Play tab already renders for Final games (postgame reference, same reasoning as every other phase's postgame-stays-useful rule) — a completed game's hard-hit balls are exactly the kind of fact a box-score reader wants. Preview: no plays exist yet, `_buildPbp` already shows its own empty state, nothing to add. K-streak: the hero itself is retired entirely on `isFinal` (Phase 1's existing rule) and doesn't render pregame, so this indicator simply doesn't apply outside a live game — no new gating needed, inherits the hero's existing state machine.
+
+**Edge case: a hard-hit ball that results in an error, not a hit or out.** `hitData` is attached to the pitch event regardless of the eventual fielding outcome — an error on a 105 mph grounder still carries real `hitData`, and the callout renders the same way. The play's own `result.description` already correctly describes it as an error; this feature only appends velo/distance, it doesn't reinterpret the outcome.
+
+---
+
+**Kael — visual (against the shipped `.lg-pbp-entry`/`.lg-hero-stat` vocabulary):**
+
+*Hard-hit callout.* New `.lg-pbp-entry--hardhit` modifier, styled the same shape as the existing `--scoring`/`--pitching-change` modifiers (colored left border, no new layout) rather than a new card or icon system. Left-border color pulls from the existing `--color-pts` token already used elsewhere in this file for "notable positive offensive event" (the same reasoning `.lg-zone-legend--hit` already applies to in-play pitch dots) — not a new color, not the win/loss pair (a hard-hit out isn't a win/loss signal, it's a quality-of-contact signal). No emoji prefix for this modifier — 💥 is reserved for the rarer, bigger fact (a home run); adding a second emoji vocabulary for "merely hard-hit" would dilute both. The velo/distance callout text appends after the play description in the existing muted/secondary text weight, parenthetical in tone: `Groundout. (103.8 mph, 22 ft)`.
+
+*K-streak.* No new element — appends as a third `·`-separated segment to the pitcher's existing `.lg-hero-stat` line, same font, same weight, same separator style already used between pitch count and velocity. No color change, no badge, no icon: this is a small derived fact riding along with two other small derived facts already living on that exact line, not a headline the hero should compete with itself over.
+
+**Stress test.** A pitcher's immaculate inning (3 strikeouts, 9 pitches) — streak count reads "3 K streak" correctly, no truncation or special-casing needed since the filter naturally counts however many consecutive strikeouts exist. A game with zero hard-hit balls recorded yet (early innings, all soft contact) — Play-by-Play tab renders exactly as it does today, no empty "Hard hit: none yet" placeholder; omission over invented confidence, the same rule this project has applied since Phase 1's broadcast chip.
+
+---
+
+**Axiom — feasibility:**
+
+**Hard-hit callouts — confirmed buildable, one conditional added inside an already-iterating loop.** `_buildPbp`'s existing per-play loop already builds `desc`/`isScore`/`isHR`/`cls` from each `play`; a new `isHardHit` check (`play.playEvents?.some(e => e.hitData?.hardness === 'hard') && !isHR`) and the corresponding text append are additions to variables already being built in that same loop iteration — no new pass over `allPlays`, no new fetch. `hitData` field names (`launchSpeed`, `totalDistance`, `hardness`) confirmed live per Relay's addendum, not assumed by analogy to any other sport's shape in this codebase.
+
+**K-streak — confirmed buildable, one new small helper mirroring an existing pattern.** A new `_lgPitcherKStreak(allPlays, pitcherId)` walks `allPlays` filtered to `matchup.pitcher.id === pitcherId` in reverse, counting consecutive `result.eventType === 'strikeout'` until a non-match — same reverse-scan shape already used for `_lgSvgCoords`'s "most recent pitch with a zone" lookup in `_lgZoneGeom`, not a new algorithmic pattern for this file. Called once per `_buildHero` render, reading `feed.liveData.plays.allPlays` which `_buildHero` doesn't currently receive as a parameter — confirmed `_buildHero(feed)` already has the full `feed` object in scope, so `feed.liveData?.plays?.allPlays` is directly reachable with no signature change needed.
+
+**No new module state, no new dispatch, no script-load-order change, no new endpoint.**
+
+**Sign-off:** feasible as specced. Ready for implementation.
+
+---
+
+**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before Phase 5 starts, per D-117. Per the phase table, the hard-hit callout verification is opportunistic — if no real `hardness: "hard"` batted ball occurs during the verification window, that half is noted as unverified-against-a-fresh-event rather than skipped or faked.
+
+**Shipped + live-verified, 2026-08-24 (commit aaedfb1).** Both halves were built and verified against a real in-progress game (ATL @ MIL, gamePk 823745) using the same monkey-patch-a-live-tab technique used for Phases 1-3, injected via three smaller split calls this time after a single large combined payload hit a transmission-size issue (a `URIError: URI malformed` on `decodeURIComponent` — confirmed via a local Node round-trip of the exact same base64 that the encoding itself was valid, isolating the fault to the size of a single tool call rather than the content; splitting into one call per function resolved it cleanly). Noting this as a tooling lesson for future large-payload injections, distinct from the CSS-truncation lesson from Phase 3.
+
+The hard-hit callout half satisfied the phase table's "opportunistic" gate with a genuine event, not a synthetic one: 3 real hard-hit balls (confirmed `hardness: "hard"` from the live feed, not simulated) occurred during the verification window and rendered correctly in the Play-by-Play tab with real exit velo/distance — e.g. "David Hamilton lines out sharply to second baseman Ozzie Albies. (100.7 mph, 192 ft)" — styled with the new colored-left-border modifier, visually distinct from scoring/HR/pitching-change entries without introducing a new icon vocabulary.
+
+The K-streak half was confirmed correct against real data at streak=1 (no note shown, correctly below the 2+ threshold) but the real game hadn't produced a genuine 2+ streak for the current pitcher during the verification window, so the >=2 branch itself was exercised with a synthetic-play test (2 cloned strikeout plays appended to a deep-cloned copy of the real feed for the real current pitcher, matching the same synthetic-injection technique proven in Phase 3's trajectory-entrance verification) — confirmed the hero line correctly renders "3 K streak" once the threshold is crossed. Flagging this distinction explicitly: the hard-hit half is verified against a real occurring event, the K-streak threshold-crossing is verified against a synthetic one, since a real 2-strikeout streak didn't happen to land during this verification window.
+
+Not covered by this live-verification pass: a batted ball resulting in an error rather than a hit/out (no error occurred during the verification window — the spec's stated behavior, that `hitData` attaches regardless of fielding outcome, follows directly from the API's own structure and was reasoned through rather than observed); a pitching change interrupting an in-progress K-streak (the reverse-scan's own filter naturally handles this by construction — a new pitcher has no prior strikeouts under their id — but wasn't observed live mid-verification).
+
+Phase 5 (embedded player card, season stats + today's line only, no Trophy Case link) is next, gated on this phase staying live-clean after deploy per D-117's phase-gate rule.
+
+---
+
+**Gate status: Phase 4 shipped + live-verified.** Live-verify against a real in-progress game before Phase 5 starts, per D-117.
