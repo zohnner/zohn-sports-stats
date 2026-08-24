@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null };
 
 const _NLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -308,6 +308,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 
     const toDots = (n) => Array.from({ length: 3 }, (_, i) =>
         `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}"></div>`).join('');
+    const arrowHtml = _nlgPlayArrowHtml(sit, disp);
 
     return `
     <div class="field-viewer">
@@ -318,6 +319,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
         <div class="fv-field">
             <div class="fv-endzone" style="background-color:${awayColor}">${_escHtml(awayAbbr)}</div>
             <div class="fv-track">
+                ${arrowHtml}
                 ${redZoneHtml}
                 <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
                 <div class="fv-ball" style="left:${disp(ballPct)}%; background-color:${possColor}"></div>
@@ -332,6 +334,65 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
         </div>
     </div>`;
 }
+
+// D-105 Phase 2: ESPN-style play arrow -- draws the previous play's
+// start->end yardline as a directional path over the turf, styled by play
+// type (run/pass/kick/sack/turnover/incomplete). Reads sit.lastPlay, which
+// is already flowing through the same /scoreboard situation poll the rest
+// of this field viewer reads (fetchNFLLiveSituation, D-105) -- confirmed
+// live 2026-08-24 that lastPlay already carries type.text, start.yardLine,
+// and end.yardLine on this SAME home-anchored 0-100 scale ballPct/
+// firstDownPct use, so no conversion beyond disp() is needed and no new
+// fetch was added. Only plays a one-time entrance animation when
+// lastPlay.id changes from the previous render (_nlg.lastPlayArrowId) --
+// matches this file's existing "motion marks a real change the user
+// didn't see happen yet, never a first paint or same-state re-render"
+// convention (see the live badge / tab switch code elsewhere in this file).
+function _nlgPlayArrowHtml(sit, disp) {
+    const lp = sit.lastPlay;
+    if (!lp || !lp.type || typeof lp.start?.yardLine !== 'number' || typeof lp.end?.yardLine !== 'number') return '';
+    const label = (lp.type.text || '').toLowerCase();
+    // Administrative entries carry no real field trajectory to draw --
+    // skip rather than invent one (this file's "absent degrades to
+    // nothing" rule, same one fieldHtml itself already follows above).
+    if (/timeout|two-minute|end of|coin toss|kneel|spike/.test(label)) return '';
+    if (/penalty/.test(label)) return '';
+
+    const isNew = !!lp.id && lp.id !== _nlg.lastPlayArrowId;
+    if (lp.id) _nlg.lastPlayArrowId = lp.id;
+    const cls = 'fv-arrow' + (isNew ? ' fv-arrow--entering' : '');
+    const x1 = disp(lp.start.yardLine), x2 = disp(lp.end.yardLine);
+
+    // Incomplete pass: start and end yardLine are the same spot (the ball
+    // comes back to the line of scrimmage) -- a stationary "no gain"
+    // marker, not a zero-length arrow pretending there's a distance.
+    if (/incomplet/.test(label)) {
+        return `<svg class="${cls}" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <g transform="translate(${x1},20)">
+                <circle r="3.4" class="fv-arrow-badge-ring"/>
+                <path d="M-1.6,-1.6 L1.6,1.6 M-1.6,1.6 L1.6,-1.6" class="fv-arrow-badge-x"/>
+            </g>
+        </svg>`;
+    }
+
+    let kind = 'run', apexY = 20;
+    if (/sack/.test(label)) kind = 'sack';
+    else if (/interception|fumble/.test(label)) kind = 'turnover';
+    else if (/punt|field goal|extra point|kickoff/.test(label)) { kind = 'kick'; apexY = 3; }
+    else if (/pass/.test(label)) { kind = 'pass'; apexY = 8; }
+
+    const midX = (x1 + x2) / 2;
+    const d = apexY === 20 ? `M${x1},20 L${x2},20` : `M${x1},20 Q${midX},${apexY} ${x2},20`;
+    return `<svg class="${cls} fv-arrow--${kind}" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+            <marker id="fvArrowHead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" class="fv-arrow-head"/>
+            </marker>
+        </defs>
+        <path d="${d}" class="fv-arrow-path" marker-end="url(#fvArrowHead)"/>
+    </svg>`;
+}
+
 // -- Tabs ---------------------------------------------------------------
 
 function _nlgTabsHtml() {

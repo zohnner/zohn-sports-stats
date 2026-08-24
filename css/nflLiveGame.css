@@ -72,6 +72,20 @@
 .fv-track::after { top: 72%; }
 .fv-redzone { position: absolute; top: 0; bottom: 0; background: var(--color-loss-subtle); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
 .fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); }
+.fv-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.fv-arrow-path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
+.fv-arrow--run .fv-arrow-path, .fv-arrow--run .fv-arrow-head { stroke: var(--text-primary); fill: var(--text-primary); }
+.fv-arrow--pass .fv-arrow-path { stroke: var(--accent); stroke-dasharray: 4 3; }
+.fv-arrow--pass .fv-arrow-head { fill: var(--accent); }
+.fv-arrow--kick .fv-arrow-path { stroke: var(--text-secondary); stroke-dasharray: 2 3; }
+.fv-arrow--kick .fv-arrow-head { fill: var(--text-secondary); }
+.fv-arrow--sack .fv-arrow-path, .fv-arrow--sack .fv-arrow-head { stroke: var(--color-loss); fill: var(--color-loss); }
+.fv-arrow--turnover .fv-arrow-path, .fv-arrow--turnover .fv-arrow-head { stroke: var(--color-loss); fill: var(--color-loss); stroke-dasharray: 2 2; }
+.fv-arrow-badge-ring { fill: none; stroke: var(--color-loss); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.fv-arrow-badge-x { stroke: var(--color-loss); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.fv-arrow--entering { animation: fvArrowIn 480ms ease-out; }
+@keyframes fvArrowIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .fv-arrow--entering { animation: none; } }
 .fv-ball { position: absolute; top: 50%; width: 16px; height: 11px; border-radius: 50% / 42%; transform: translate(-50%,-50%); border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--border-strong), 0 3px 6px rgba(0,0,0,0.5); z-index: 2; }
 .fv-yardnums { display: flex; justify-content: space-between; padding: 0 34px; margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.56rem; color: var(--text-subtle); font-weight: 600; }
 .fv-legend { display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; gap: 0.5rem; flex-wrap: wrap; }
