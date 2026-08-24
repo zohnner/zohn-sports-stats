@@ -1834,4 +1834,4 @@ Relay's Phase 6 data-sourcing audit (DECISIONS.md D-117) confirms a real, cited,
 
 ---
 
-**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before this phase ships, per D-117 (none in progress as of this spec — Phase 6 will need to wait for one, same as noted in the Phase 5 re-verification addendum above).
+**Gate status: shipped and synthetically verified, 2026-08-24 (commit pending).** No live game was in progress at implementation time; verified via the synthetic-but-real-data technique (real shipped function code + a real subset of the win-expectancy table, injected into a live production tab against a real completed game's data with state forced to Live for rendering purposes only). Full verification writeup in DECISIONS.md's "D-117 addendum — Phase 6 ... shipped + synthetically verified" entry. Live re-verification against a genuinely in-progress game remains open, same as Phase 5's own history, but is not a blocker.
