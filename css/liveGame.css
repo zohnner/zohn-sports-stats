@@ -276,6 +276,18 @@
 
 .lg-pbp-entry--hr::before { content: '💥 '; }
 
+/* D-117 Phase 4: hard-hit callout — reuses the --scoring/--pitching-change
+   colored-left-border shape, no new icon vocabulary (Kael, D-117 Phase 4). */
+.lg-pbp-entry--hardhit {
+    border-left: 2px solid var(--color-pts);
+    padding-left: calc(0.5rem - 2px);
+}
+
+.lg-pbp-hardhit-note {
+    color: var(--text-subtle);
+    font-size: 0.65rem;
+}
+
 .lg-pbp-entry--new {
     animation: lgEntrySlide 200ms ease-out;
 }

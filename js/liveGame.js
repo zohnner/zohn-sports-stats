@@ -557,8 +557,21 @@ function _buildPbp(allPlays) {
             const score   = isScore
                 ? ` <span class="lg-pbp-score">${play.result?.awayScore}–${play.result?.homeScore}</span>`
                 : '';
-            const cls = `lg-pbp-entry${isScore ? ' lg-pbp-entry--scoring' : ''}${isHR ? ' lg-pbp-entry--hr' : ''}`;
-            html += `<div class="${cls}">${desc}${score}</div>`;
+
+            // D-117 Phase 4: hard-hit callout, real launchSpeed/totalDistance
+            // appended straight from hitData — never derived or estimated.
+            // HR keeps its own 💥 treatment; the two aren't stacked on one
+            // play, since a home run already communicates the bigger fact
+            // (Kael, D-117 Phase 4).
+            const hardHitEvent = !isHR
+                ? (play.playEvents || []).find(e => e.hitData?.hardness === 'hard')
+                : null;
+            const hardHitNote = hardHitEvent
+                ? ` <span class="lg-pbp-hardhit-note">(${hardHitEvent.hitData.launchSpeed} mph, ${hardHitEvent.hitData.totalDistance} ft)</span>`
+                : '';
+
+            const cls = `lg-pbp-entry${isScore ? ' lg-pbp-entry--scoring' : ''}${isHR ? ' lg-pbp-entry--hr' : ''}${hardHitEvent ? ' lg-pbp-entry--hardhit' : ''}`;
+            html += `<div class="${cls}">${desc}${hardHitNote}${score}</div>`;
         }
     }
     return html + '</div>';
@@ -1142,6 +1155,24 @@ function _lgInitial(name) {
     return (name || '?').trim().charAt(0).toUpperCase() || '?';
 }
 
+// D-117 Phase 4: current pitcher's consecutive-strikeout streak — reverse
+// scan of allPlays filtered to this pitcher, same shape as
+// _lgZoneGeom's "most recent pitch with a zone" reverse lookup. Recomputed
+// fresh every render (no module state), so a pitching change naturally
+// starts at zero — the new pitcher simply has no prior strikeouts under
+// their own id (Axiom, D-117 Phase 4).
+function _lgPitcherKStreak(allPlays, pitcherId) {
+    if (!Array.isArray(allPlays) || pitcherId == null) return 0;
+    let streak = 0;
+    for (let i = allPlays.length - 1; i >= 0; i--) {
+        const play = allPlays[i];
+        if (play?.matchup?.pitcher?.id !== pitcherId) continue;
+        if (play.result?.eventType === 'strikeout') { streak++; continue; }
+        break;
+    }
+    return streak;
+}
+
 function _buildHero(feed) {
     const status       = feed.gameData?.status || {};
     const isPreview    = status.abstractGameState === 'Preview';
@@ -1196,6 +1227,11 @@ function _buildHero(feed) {
     const pitchesThrown = (currentPlay?.playEvents || []).filter(e => e.isPitch);
     const lastVelo    = pitchesThrown.length ? pitchesThrown[pitchesThrown.length - 1].startSpeed : null;
 
+    // D-117 Phase 4: K-streak only shows at 2+ — a single strikeout isn't
+    // a "streak" in the broadcast sense this feature models (Vera, D-117 Phase 4).
+    const kStreak     = _lgPitcherKStreak(feed.liveData?.plays?.allPlays, pitcherId);
+    const kStreakNote = kStreak >= 2 ? ` · ${kStreak} K streak` : '';
+
     const cachedLine = _lgSeasonStatCache[batterId];
     const battingStatHtml = cachedLine === undefined ? 'Loading…'
         : cachedLine === null ? '—'
@@ -1224,7 +1260,7 @@ function _buildHero(feed) {
             <div class="lg-hero-body">
                 <div class="lg-hero-role">Pitching</div>
                 <div class="lg-hero-name">${_escHtml(pitcherName)}</div>
-                <div class="lg-hero-stat">${pitchCount} pitches${lastVelo ? ` · ${lastVelo} mph` : ''}</div>
+                <div class="lg-hero-stat">${pitchCount} pitches${lastVelo ? ` · ${lastVelo} mph` : ''}${kStreakNote}</div>
             </div>
         </div>
         ${delayNote}
