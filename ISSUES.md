@@ -1590,3 +1590,65 @@ Phase 3 (pitch trajectory animation + pitch-mix wheel) is next, gated on this ph
 ---
 
 **Gate status: Phase 2 shipped + live-verified.** Live-verify against a real in-progress game before Phase 3 starts, per D-117.
+
+## MLB Live Game Command Center — Phase 3 states + visual + feasibility spec (D-117 Phase 3), 2026-08-24
+
+Relay's Phase 3 feasibility addendum (DECISIONS.md D-117) clears the last open gate (`breakHorizontal`, confirmed live across all 188 pitches of a second real game) and identifies two features: a trajectory-style entrance animation on the newest dot in the already-shipped `.lg-pitch-zone` plot, and a new pitch-mix wheel scoped to the current pitcher, living in the same always-visible `.lg-zone-col` sidebar (Pitch Zone → Pitch Mix → Bases, grouping the pitcher's two facts before the baserunner fact). Vera/Kael/Axiom gates below, same tier-3 discipline as Phases 1-2.
+
+**Vera — states:**
+
+*Trajectory animation fires only on a genuinely new pitch.* `_renderZone` already re-runs every poll; today it rebuilds the full dot list from scratch each time with no concept of "which of these already existed." Phase 3 adds a per-at-bat "last known pitch count" check (same shape as Phase 1's `_lgLastHeroBatterId` change-detection, not a new pattern): if the current at-bat's pitch count grew since the last render, only the newest dot(s) animate in; every prior dot in the same at-bat renders in its already-settled final position, same as today. On a fresh tab open, a new at-bat starting, or a page load where a game is already mid-at-bat, nothing animates — the whole plot appears as it does today. This mirrors Phase 1's own rule for the hero's entrance motion exactly: motion marks a real change the user didn't see happen yet, never a first paint or a same-state re-render.
+
+*Reduced motion is a hard skip, not a shorter animation.* `prefers-reduced-motion: reduce` disables the entrance path entirely — the new dot appears at its final position instantly, same as every other dot. No "shorter version" of the animation; Phase 1 already established this exact rule for `.lg-hero--new` and Phase 3 follows it verbatim, not a fresh judgment call.
+
+*Pitch-mix wheel renders synchronously, no skeleton.* Like the zone plot itself, the wheel is built from data already sitting in `_lgFeedCache` (no fetch) — it renders in the same pass as `_renderZone`, no loading state needed. Scoped to `currentPlay.matchup.pitcher.id`, the same pitcher-scoping `_collectPitcherGamePitches` already uses for the heat view — when the pitcher changes (a new reliever enters), the wheel resets to the new pitcher's own game-to-date mix, not a combined-team mix. A pitcher with only 1-2 pitches thrown so far still gets a real (if small) wheel — a tiny honest sample, not an error state and not hidden pending a "big enough" threshold that doesn't exist anywhere else in this codebase's stat displays.
+
+*Preview/Final games.* The wheel lives inside the same `zoneCol` block already gated on `!isPreview && currentPlay` — pregame, it's hidden along with the rest of the zone column, no new gating logic. Postgame (`isFinal`), it stays visible showing the final pitcher's full-game mix, same "useful postgame reference" reasoning Phase 2 used for keeping the Bullpen tab visible after Final.
+
+**Empty edge case.** A pitcher who has thrown zero pitches so far this game (just entered, first pitch not yet thrown) — matches the existing `hasPitches` check already gating `_buildPitchZone` vs. the "Next pitch coming up." empty state; the wheel follows the same branch, not rendered until at least one real pitch exists for the current pitcher.
+
+---
+
+**Kael — visual (against the shipped `.lg-pitch-zone`/`.lg-zone-col` vocabulary):**
+
+*Trajectory animation.* Reuses the existing `.lg-pitch-zone` SVG's `viewBox="0 0 100 140"` coordinate system verbatim — no new geometry, no second SVG. The newest dot's `<g class="lg-dot-group">` gets an additional `lg-dot--entering` class on the render where it's new; CSS drives a short (~260ms) path from a fixed near-top origin (`cx=50, cy=8`, roughly where a pitch would visually "release" at the top of the plot) to its real `(cx, cy)`, curved via a `translate` timing tied to the pitch's `breakHorizontal` sign (bows left or right, not a literal 3D arc — a broadcast-style stylized curve, matching Relay's audit conclusion) and fading/scaling in rather than snapping. `@media (prefers-reduced-motion: reduce)` strips the class's animation entirely, matching `.lg-hero--new`'s existing override pattern one-for-one.
+
+*Pitch-mix wheel.* One new SVG donut (`role="img"`, full aria-label summarizing the breakdown, e.g. "Pitch mix: 4 Sinker, 6 Slider..." for screen readers, since a color-only donut is inaccessible on its own) sized to sit comfortably in the `.lg-zone-col` sidebar width — same column width the pitch-zone plot already fits inside, no layout change to the column itself. New small categorical palette for pitch *type* (distinct hue per code: FF/SI/SL/CH/FC/FS/CU/KC, capped at a fixed set with an "Other" bucket for anything outside it) — desaturated, secondary-weight per DESIGN.md's category-not-importance rule, since this is a breakdown fact, not a headline stat, and must stay visually subordinate to the ball/strike/in-play ordinance already governing the dots directly above it. A compact legend below the wheel lists each type's code, count, and percentage — reusing the existing `.lg-zone-legend` row idiom (font size, spacing) rather than inventing new legend markup.
+
+*Placement.* New `.lg-zone-section-label` "Pitch Mix" directly below the existing Pitch Zone block, before the "Bases" label — groups the pitcher's two facts (location, mix) together ahead of the unrelated baserunner fact, not alphabetical or arbitrary ordering.
+
+**Stress test.** A pitcher who has thrown 10+ pitch types in extra innings (multiple relievers cycling in a bullpen game) — capped palette's "Other" bucket absorbs anything past the fixed set rather than growing the palette per-game, keeping the wheel legible instead of a wedge-per-rare-pitch mess. A single-pitch-type pitcher (a situational specialist who's thrown only sliders) renders as a full, single-color ring — a valid, correctly-honest state, not a rendering edge case to special-case around.
+
+---
+
+**Axiom — feasibility:**
+
+**Trajectory animation — confirmed buildable on already-shipped code, zero new fetch.** `breakHorizontal` (and every other physics field this needs) is live-confirmed per Relay's addendum above, walked across all 188 pitches of a real game with zero gaps — not a single-sample check. The only new module state is a per-at-bat "last rendered pitch count" tracker (e.g. `_lgZoneLastPitchCount`, a `{gamePk_atBatIndex: count}`-shaped map reset the same way `_lgZoneMode` already is), explicitly assigned as `window._lgZoneLastPitchCount` at injection time for live verification — the exact `let`-in-eval scoping bug caught and fixed twice already this project (Phase 1's mini-standings vars, Phase 2's bullpen-rest vars) is not going to be repeated a third time by skipping that step.
+
+**Pitch-mix wheel — confirmed buildable, one new small helper function.** A new `_collectPitcherPitchTypes(allPlays, pitcherId)` mirrors `_collectPitcherGamePitches`'s existing filter (`play.matchup.pitcher.id === pitcherId`, iterate `playEvents` where `isPitch`) but tallies `details.type.code`/`details.type.description` counts instead of SVG coordinates — same iteration, different accumulator, sitting right next to the function it's modeled on. `details.type.code`/`.description` are confirmed live and human-readable as-is (no lookup table needed) per Relay's addendum.
+
+**Render path — extends `_renderZone`'s existing `zoneCol.innerHTML` build by one block, no new dispatch.** The wheel and its section label are appended between the existing Pitch Zone block and the Bases block inside the same string-concatenation `_renderZone` already does — no new function call site, no new tab, no new `data-lg-tab` branch (unlike Phases 1-2, this doesn't touch `_switchTab` or `_buildSkeletonPanel` at all, since `.lg-zone-col` is a persistent always-rendered column, not tab content).
+
+**No script-load-order change, no new external dependency, no CSP change, no new endpoint.**
+
+**Sign-off:** feasible as specced. Ready for implementation.
+
+---
+
+**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before Phase 4 starts, per D-117.
+
+**Shipped + live-verified, 2026-08-24 (commit 75596fe).** Both features were built and verified against a real in-progress game (ATL @ MIL, gamePk 823745) using the same monkey-patch-a-live-tab technique used for Phases 1-2. Confirmed live: the Pitch Mix donut renders real per-pitcher type/count/percentage breakdowns (e.g. a 4-pitch sample split FF 67% / SI 33%) in the correct sidebar position between Pitch Zone and Bases; it correctly rescoped to a different pitcher's own game-to-date mix when the live game's pitcher changed mid-verification.
+
+The trajectory-entrance animation was verified with a synthetic-pitch injection test (appending a cloned pitch event to a deep-cloned copy of the real live feed, since waiting for an actual new pitch to land mid-verification isn't reliable): re-rendering with unchanged data produced zero `.lg-dot--entering` elements (no animation replay on a same-state re-render, as specced); re-rendering with one new pitch appended produced exactly one entering dot with correctly computed `--lg-enter-dx`/`--lg-enter-dy` offset and a `--lg-enter-bow` value whose sign matched the synthetic pitch's `breakHorizontal` sign. One issue caught and fixed *before* it could reach a real verification result: the CSS snippet used to inject the feature into the live tab for testing was extracted with a fixed line count that truncated the top of the appended block, silently dropping the base `.lg-dot--entering { animation: ... }` rule while keeping the `@keyframes` and `@media (reduced-motion)` blocks — this was a verification-tooling mistake, not a bug in the shipped file (confirmed via `grep` that `css/liveGame.css` on disk had always had the complete rule); caught because `getComputedStyle` on the entering dot reported `animationName: null` instead of `lgDotEnter`, re-extracted with the correct range, and the animation applied correctly on retest (`animationName: "lgDotEnter"`, `animationDuration: "0.26s"`).
+
+`breakHorizontal` and every other pitch physics field Relay's Phase 3 addendum needed were walked across all 188 pitches of the live game with zero missing — not a single-sample check. The 2026-06-12 D-009 trajectory-data gate is now conclusively stale.
+
+Not covered by this live-verification pass: the actual browser-rendered motion of the CSS keyframe animation (confirmed the animation is correctly *applied* via `getComputedStyle`, not visually watched frame-by-frame — a screenshot can't capture a 260ms transition, and this project doesn't have a video-capture step in its verification toolchain); `prefers-reduced-motion: reduce` behavior specifically (the CSS override rule was confirmed present in the injected stylesheet's parsed `cssRules`, but not exercised by actually toggling the OS-level media feature in this browser session); a pitcher with 8+ distinct pitch types exercising the wheel's "Other" bucket (today's pitchers stayed within the named palette). Flagging as unverified-against-real-data rather than assuming, per this project's discipline.
+
+Also worth noting: `main` advanced by one unrelated commit (an NFL field viewer fix) between this phase's implementation and its commit step, from other work landing on the same shared repo. Confirmed it was a genuine fast-forward (the NFL commit builds directly on this project's own last commit, not a divergent branch) before committing Phase 3 on top of it — no history was overwritten or lost.
+
+Phase 4 (Game Pulse hard-hit half + rich play-by-play) is next, gated on this phase staying live-clean after deploy per D-117's phase-gate rule.
+
+---
+
+**Gate status: Phase 3 shipped + live-verified.** Live-verify against a real in-progress game before Phase 4 starts, per D-117.
