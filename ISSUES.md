@@ -1708,3 +1708,59 @@ Phase 5 (embedded player card, season stats + today's line only, no Trophy Case 
 ---
 
 **Gate status: Phase 4 shipped + live-verified.** Live-verify against a real in-progress game before Phase 5 starts, per D-117.
+
+## MLB Live Game Command Center — Phase 5 states + visual + feasibility spec (D-117 Phase 5), 2026-08-24
+
+Relay's Phase 5 reuse-point re-check (DECISIONS.md D-117) corrects the original audit: the embedded player card needs zero new fetches for either half. Season stats and today's line both already live on every boxscore player entry already sitting in `_lgFeedCache` — `seasonStats.batting`/`seasonStats.pitching` for the season line, `stats.batting`/`stats.pitching` for today's line (not `.hitting`, which was the original audit's wrong key name). Vera/Kael/Axiom gates below, same tier-3 discipline as Phases 1-4.
+
+**Hard constraint, restated once more for this spec directly (not just Relay's audit above): season stats + today's line only. No Trophy Case link, per owner direction 2026-08-23.**
+
+**Vera — states:**
+
+*Scope: which names are clickable.* Only names already rendered as their own distinct element with a known player id in scope: the hero's batter and pitcher (`.lg-hero-name`, both ids already local variables in `_buildHero`), and the three Due Up rail names (`.lg-dueup-name`, `pid` already the loop variable in `_buildDueUp`). Play-by-play entries are plain description text with no distinct per-player element to hang a click handler on without new text-parsing — out of scope for this phase, not a state to build around (reuse over reinvent: don't invent name-parsing to manufacture a click target that doesn't already exist as one).
+
+*Card opens on click, anchored near the clicked name, one instance at a time.* Same interaction shape as the existing pitch-zone tooltip (`_lgShowTooltip`/`_lgHideTooltip`): clicking a second name closes any open card first, so at most one card exists in the DOM at once. Dismisses on: clicking outside the card, pressing Escape, clicking the same name again (toggle), or the live-game panel's own tab switch / close (existing `_switchTab`/`_closeExistingPanel` already tear down transient UI on those paths — the card just needs to be included in that teardown, not a new mechanism).
+
+*Card content — two lines, not a scrollable sub-page.* Season line and today's line, one row each, reusing `.lg-side-row`/`.lg-side-val`. Today's line uses the boxscore's own pre-formatted `summary` string verbatim (`"1-4 | K, RBI"` for a batter, `"1.0 IP, 0 ER, K, 0 BB"` for a pitcher) rather than hand-assembling one from individual fields — MLB's own broadcast-style summary is already the exact convention wanted, and reassembling it risks inventing a slightly different format that reads as an inconsistency next to every other summary string this site already surfaces verbatim elsewhere. Season line is a short slash-line: batters get `AVG/OBP/SLG` (`.avg`/`.obp`/`.slg`) plus `HR`/`RBI`; pitchers get `ERA`/`WHIP`/`W-L` (`.era`/`.whip`/`.wins`-`.losses`) plus `K`. Same omission rule as the hero's existing season-stat display: a missing/placeholder value (`".---"` or `undefined`) renders as `—`, never a guessed number.
+
+*A player with no games this season yet.* `seasonStats.batting`/`.pitching` still resolves to an object (confirmed shape doesn't disappear), just with placeholder strings for rate stats — the `—` fallback above already covers this without a separate empty state. No fetch can fail here since there's no fetch — this is a formatting case, not a loading or error state.
+
+*Preview/Final games.* Both click targets (hero, Due Up) already fully retire outside Live per existing rules — the hero returns `''` on Final and only renders pregame-name-cards with no stat line in Preview, and Due Up returns `''` whenever `status.abstractGameState !== 'Live'`. The embedded card therefore has no click target to attach to outside Live, inheriting both existing gates with no new gating code needed — the same "state machine already handles it" pattern Phase 4's K-streak relied on.
+
+---
+
+**Kael — visual (against the shipped `.lg-hero`/`.lg-dueup`/`.lg-side-card`/`.lg-pitch-tooltip` vocabulary):**
+
+*Shell: `.lg-side-card`'s surface language, `.lg-pitch-tooltip`'s positioning mechanics.* New `.lg-player-card` reuses `.lg-side-card`'s background/border/radius/padding tokens (visually consistent with every other card-shaped surface on this page) but is `position: absolute` and anchored near the clicked name the same way `.lg-pitch-tooltip` anchors near a clicked dot — clamped within the panel's bounds, flipping above/below when it would overflow, exactly the existing `_lgShowTooltip` clamping logic. Not a new visual system, a recombination of two that already exist.
+
+*Trigger affordance.* Clickable names get `cursor: pointer` and the same subtle hover-underline already used nowhere else in this file yet but consistent with standard link affordance elsewhere in the site's CSS (checked `css/components.css` for the sitewide link-hover convention rather than inventing a new one) — a small dotted underline on hover, no color change (color is reserved for team-color badges/dots on this page, not interactive-text signaling).
+
+*Card internals.* Player name as a small header row (reuse `.lg-hero-role`'s uppercase-label sizing for "Season" / "Today" sub-labels, not a new type scale), two `.lg-side-row`/`.lg-side-val` pairs beneath. A close `×` reusing `.lg-close-btn`'s existing style rather than a new icon button.
+
+*Stress test.* A pitcher who has thrown a perfect game through 7 (`summary: "7.0 IP, 0 H, 0 R, 0 BB, 9 K"` or similar long string) — row wraps naturally under `.lg-side-val`'s existing text handling, no truncation needed since these summary strings are already short by construction (MLB's own broadcast convention keeps them terse). A name near the panel's right edge — card clamps left instead of centering past the boundary, same logic already proven for the pitch tooltip against the zone wrap's edges.
+
+---
+
+**Axiom — feasibility:**
+
+**Confirmed buildable, zero new fetches, one new render function plus one new event-delegation block.** All data already sits in `_lgFeedCache.liveData.boxscore.teams.{away|home}.players["ID{id}"]`, already fetched every poll for the reasons Phase 1 through 4 established. A new `_buildPlayerCard(feed, playerId, side)` locates the right boxscore entry (mirrors the existing `pStats = boxscore.teams?.[pSide]?.players?.[...]` lookup shape from `_buildHero`, generalized to accept either side/either stat category), branches on `stats.batting` vs `stats.pitching` being present to pick the right field set, and returns the card's HTML — a pure function of data already in scope, same shape as every other `_build*` function in this file.
+
+**Event wiring — one delegated click listener on the panel, not one per name.** Hero and Due Up names don't currently carry `data-player-id` attributes; adding `data-player-id`/`data-player-side` to `.lg-hero-name` and `.lg-dueup-name` in their existing template strings (both already have the id/side in scope at the point they're built) is a small addition to strings already being built, not new state. A single delegated `click` listener (mirroring the existing `zoneWrap.addEventListener('click', ...)` delegation pattern in `_wireZoneEvents`) on the panel catches clicks on any `[data-player-id]`, looks up the id/side, and calls `_buildPlayerCard` — new names added to future phases automatically work by adding the same two data attributes, no new wiring per name.
+
+**No new module state beyond the single open-card reference.** One `let _lgPlayerCardEl = null` mirroring `_lgPitchTooltipEl`'s existing single-instance-tracker pattern exactly — same show/hide/toggle shape, not a new pattern.
+
+**No new endpoint, no new poll-cadence gating, no script-load-order change.**
+
+**Sign-off:** feasible as specced. Ready for implementation.
+
+---
+
+**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before this phase ships, per D-117.
+
+**Shipped + live-verified, 2026-08-24 (commit 688a3dc).** Built against a real in-progress game (ATL @ MIL, gamePk 823745) using the same monkey-patch-a-live-tab technique used for Phases 1-4, injected in separate smaller calls per function (following Phase 4's large-payload lesson). Verified on the live, unpatched-except-for-this-injection page: clicking the hero's pitcher name (Dylan Lee) opened a card anchored directly below the name showing "SEASON: 2.15 ERA · 0.78 WHIP · 5-0 · 73 K" and "TODAY: 0.2 IP, ER, K, 0 BB" — both pulled straight from the live boxscore's `seasonStats.pitching`/`stats.pitching`, matching the game's real state at verification time (confirmed via a screenshot). Clicking a Due Up batter (Jackson Chourio) opened a card showing his real season slash-line (".278 AVG · .342 OBP · .462 SLG · 17 HR · 50 RBI") and today's box-score summary ("1-4"). All five trigger points wired correctly (2 hero names, 3 Due Up names) with correct id/side/role data attributes read straight from variables already in scope at each build site.
+
+Dismissal verified in three ways: clicking the same name again toggles the card closed (confirmed within a single execution tick, avoiding a false negative from the live poll re-rendering the hero between separate test calls — noting this as a testing-technique note, not a shipped bug, in the same spirit as Phase 3's CSS-truncation lesson); pressing Escape closes it; clicking anywhere else in the panel closes it. No Trophy Case link anywhere in the card — confirmed by construction, since the card's HTML only ever contains the season line and today's line per `_buildPlayerCard`, never a third row.
+
+Not covered by this live-verification pass: the "—" fallback for a player with placeholder season-stat strings (no such player was clicked during the verification window; the fallback logic mirrors the hero's own already-verified `cachedLine === null ? '—' : ...` pattern from Phase 1, reasoned through rather than freshly observed); a player with zero at-bats/pitches so far today rendering "No at-bats yet"/"No pitches yet today" (every player clicked during verification had already recorded some action today); Play-by-Play entries are correctly NOT clickable, per this phase's stated scope (no distinct per-player element exists there to wire).
+
+**Gate status: Phase 5 shipped + live-verified.**
