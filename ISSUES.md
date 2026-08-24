@@ -1347,6 +1347,17 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 
 **Explicitly not in this spec:** the field position viewer becoming sticky (named and rejected above), any new data or polling behavior, any change to the six-tab structure itself.
 
+**Kael — visual (2026-08-24):**
+- Sticky compact bar reuses `.nlg-score`'s existing row (team abbr/logo, score, status/clock) at its current type scale — no new component, just the existing header row minus the field viewer and full team-name/record text.
+- Down-distance (`.nlg-situation`) stays in the sticky bar on desktop (`>900px`) as a second, smaller row under the score row — it's the "what's happening on this play" fact the job-to-be-done names; dropping it would leave the bar answering "what's the score" but not "what's happening now."
+- Mobile (`≤900px`, the same breakpoint `.nlg-side` already unpins at): drop `.nlg-situation` from the sticky bar, score row only. Resolves the spec's own open question — a two-row sticky bar eats too much of a short viewport for what it's protecting (the content scrolling underneath), and full down-distance context is one glance away at the top of the Summary tab.
+- Pinned-state separation: `border-bottom: 1px solid var(--border-default)` + `box-shadow: var(--shadow-sm)` — both existing tokens, matches the spec's own ask, no new ones needed.
+
+**Axiom — feasibility (2026-08-24):**
+- Sticky offset math confirmed against the real token values (`css/variables.css:293-295`): `--header-height:60px` + `--ticker-height:38px` + `--header-sub-h:36px` = 134px — the exact same expression already live on `.nlg-side` (`css/nflLiveGame.css:118`). No new tokens, no guessing.
+- **Real gap the spec didn't catch:** `.nlg-header` can't get `position: sticky` as literally proposed. `_nlgRenderHeader` (`js/nflLiveGame.js:186-247`) sets `headerEl.innerHTML` to one flat block — `.nlg-score`, `${fieldHtml}` (the field viewer), and `${sitLine}` (down-distance) all as siblings inside `.nlg-header` itself. Making `.nlg-header` sticky would pin the field viewer too, directly contradicting the spec's "field viewer does not stick" requirement. Fix is small but real: wrap `.nlg-score` + `sitLine` in a new `.nlg-header-pin` child and apply the sticky rule there instead, leaving `fieldHtml` as a sibling outside it. One template restructure in `_nlgRenderHeader`, no new data or fetch — corrects which element the CSS targets, doesn't change the spec's behavior.
+- Everything else (diff-render continuing unmodified while pinned, z-index layering under the site header stack) checked out against the actual render path — no other surprises.
+
 ---
 
 ### Idea 2 — Big-play Highlight Card auto-suggest (D-080 Phase 3's deferred item)
@@ -1381,9 +1392,21 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 
 **Explicitly not in this spec:** the EPA-based "major play" detection D-080 originally named (still blocked on nflverse data per D-081, unchanged by this entry), any change to the Studio's own flow once entered, auto-navigation without user action.
 
+**Kael — visual (2026-08-24):**
+- Toast, not top-anchored. A top placement would compete directly with Idea 1's sticky header for the same real estate if both ship, and this site already has a dismissible toast system (`ErrorHandler.toast()`, `js/errorHandler.js`; markup in `css/components.css:326-372`) that nothing but error/warn/success/info messages currently uses. Reuse it rather than inventing a second notification chrome — same container, same entrance/exit animation, same `--z-toast` layer, same bottom-of-viewport placement the user may already know from an existing toast.
+- Real gap: `ErrorHandler.toast()` is message + auto-dismiss + a close button only — no action-button slot today. Needs one new variant (`type: 'action'` or a dedicated template) with a `Create Card` / `Dismiss` button pair inside `.toast-body`, styled with the same pill-button convention this page's `hcs-pill`-family already uses elsewhere. Small, additive change to `errorHandler.js`, not a new component.
+- Mobile: the existing toast container already reflows at narrow widths (`css/components.css:340`) — confirm the two-button row doesn't wrap awkwardly at ~360px before shipping, but no bespoke mobile layout is expected to be needed the way Idea 1's header needed one.
+- The spec's own copy example ("Mahomes to Kelce, 34-yd TD — make a card?") maps directly onto the existing `toast-title`/`toast-message` split — no new copy pattern to invent.
+
+**Axiom — feasibility (2026-08-24):**
+- Player-reference handoff reuses the exact `side:group:id` key format the Highlight Card Studio's own player `<select>` already emits and parses (`js/highlightCard.js:271-275`, confirmed live this session while reproducing the Studio's layout bug) — no new ID scheme. Extend `_hcNflPendingEventId`'s existing single-value handoff (`js/highlightCard.js:465-469`) with a sibling `_hcNflPendingPlayerKey`, set together by a new `openNFLHighlightCardForPlay(eventId, playerKey)`, read/cleared the same way the existing preset-event-id already is (`js/highlightCard.js:486-487`).
+- Play-detection rule needs zero new fetches, confirmed: `scoringPlays` and `situation.lastPlay`/`statYardage` are already-polled fields — the same ones Phase 2's play arrows parse (shipped this session) — so the 20-yard/turnover rule is pure client-side filtering on data already in hand.
+- Rate-limit/auto-dismiss state is one small addition to `_nlg` (a last-shown-play-id plus an active-suggestion slot) — the same "track what changed since the previous render" shape this session already shipped twice tonight (`lastPlayArrowId`, `lastTimeouts`), not a new pattern to design.
+- No architectural risk in either idea. Both are buildable in a single normal session once scheduled.
+
 ---
 
-**Gate status: Vera's behavioral spec only.** Both ideas need Kael's visual pass (prompt placement/treatment for Idea 2, mobile compact-header layout for Idea 1) and Axiom's feasibility check (exact data shape for the play-detection rule in Idea 2, confirming the sticky positioning math against the real header height stack for Idea 1) before either is buildable. Neither is scheduled; this entry exists so the idea isn't lost or rebuilt from scratch later, per this file's own "don't leave a finding undocumented" rule.
+**Gate status (updated 2026-08-24): all three gates present for both ideas.** Kael's visual pass and Axiom's feasibility check are done (above) — one real structural correction found for Idea 1 (the sticky rule needs a new wrapper, not `.nlg-header` itself), one small existing-component extension identified for Idea 2 (a new action-button toast variant). See DECISIONS.md D-118 for the consensus record. Neither is scheduled — this stays a spec, not a build queue entry, until the owner ratifies scheduling one or both (same standing pattern as D-043).
 
 ## Trophy Case — cross-sport career achievements engine (D-116), 2026-08-23
 
@@ -1764,3 +1787,51 @@ Dismissal verified in three ways: clicking the same name again toggles the card 
 Not covered by this live-verification pass: the "—" fallback for a player with placeholder season-stat strings (no such player was clicked during the verification window; the fallback logic mirrors the hero's own already-verified `cachedLine === null ? '—' : ...` pattern from Phase 1, reasoned through rather than freshly observed); a player with zero at-bats/pitches so far today rendering "No at-bats yet"/"No pitches yet today" (every player clicked during verification had already recorded some action today); Play-by-Play entries are correctly NOT clickable, per this phase's stated scope (no distinct per-player element exists there to wire).
 
 **Gate status: Phase 5 shipped + live-verified.**
+
+## MLB Live Game Command Center — Phase 6 states + visual + feasibility spec (D-117 Phase 6), 2026-08-24
+
+Relay's Phase 6 data-sourcing audit (DECISIONS.md D-117) confirms a real, cited, spot-checked empirical win-expectancy table (Retrosheet-derived, via the same Tango/Birnbaum methodology Baseball-Reference and FanGraphs both credit) and confirms every state variable it needs — inning, half, outs, base state, score differential — is already available live, several already reused from Phases 1-2. This phase scopes to the win-probability *indicator itself*: a live "who's favored, by how much" display. It does NOT include the win-probability-*delta*-per-play half of the old Game Pulse item from the original audit (item 7's second half) — that stays deferred, now unblocked in principle but not in this phase's scope, since it's a distinct feature (a running log of WPA swings per play) built on top of this one, not part of it.
+
+**Vera — states:**
+
+*Live only.* Renders only when `status.abstractGameState === 'Live'` — Preview has no inning/outs/bases/score state to key the table on (same reasoning Due Up already applies), and Final is a settled result where a win-probability bar would just be a decorative 100/0 or 0/100 restating information the scoreboard already shows more clearly. Retires alongside the hero and Due Up rail.
+
+*Placement: primary content, not a sidebar fact.* A new `.lg-winprob` bar sits directly below the linescore and above the hero — the same "this is the page's primary content, not a side fact" reasoning Phase 1 gave for the hero's own placement, because who's favored to win is at least as central a fact as who's currently batting. Full width, always visible regardless of which tab (PBP/Box/Matchup/Bullpen) is active, matching the hero/Due Up's own tab-independent placement.
+
+*Recomputed fresh every render, no module state.* Same pattern as Phase 4's K-streak: a pure function of `linescore.currentInning`, `linescore.isTopInning`, `linescore.outs`, `currentPlay.runners`, and `homeScore - awayScore`, all already in hand every poll. No caching, no staleness to manage, no reset needed on inning/pitcher/batter changes since it's derived fresh from the current feed every time.
+
+*Off-table states get a defined, citable fallback — never an invented number.* Two cases, both resolved the same way Baseball-Reference's own published methodology resolves them (cited in Relay's addendum), not invented for this project: an inning beyond what's embedded clamps to the table's max embedded inning (BR's own precedent: "extras are just repeats of the ninth inning" — the identical idea, capping rather than extrapolating); a score differential beyond what's embedded clamps to the table's max/min embedded value (BR's own precedent: "any lead of more than 11 is treated as 11" — same idea, different cap value depending on what Axiom's table actually retains). A state that's simply never reached in the table (a bases-loaded, 2-out, +19 blowout in the 3rd, say) falls back the same way — clamp score differential first, then re-check.
+
+*Delayed/suspended games.* Inherits the existing `isDelayed` flag already computed in `_renderPanel` — the bar still renders (the game state itself, e.g. score/inning/outs, doesn't change just because there's a delay), consistent with how the hero already keeps rendering through a delay and just adds its own "Game Delayed" note alongside.
+
+**Edge case: the top of an extra inning with the score tied and the visiting team already used their whole roster's worth of bench.** Out of scope — the table has no concept of roster/bullpen exhaustion, only game-state frequency. This is a known, accepted limitation of any Retrosheet-derived win-expectancy table (not something Baseball-Reference's or FanGraphs' versions model either), not a gap specific to this implementation.
+
+---
+
+**Kael — visual (against the shipped `.lg-hero`/`.lg-side-card`/team-color vocabulary):**
+
+*A single split bar, not two separate numbers side by side.* `.lg-winprob` is a horizontal bar divided at the home team's win percentage, each half filled with that team's real color (`getMLBTeamColors`, the same "team colors are data" convention already used for the hero's avatar gradients and the standings dots — not a new color language). Away team's abbreviation + percentage left-aligned in the away-colored segment, home team's right-aligned in the home segment, matching the scoreline's own away-left/home-right ordering directly above it.
+
+*No motion on ordinary polls — only a real probability swing animates.* The bar's divider position transitions smoothly (a simple CSS `transition` on `width`, not a keyframe entrance like the hero's batter-change animation) whenever the underlying percentage changes between polls, so a big swing (a home run, a bases-loaded walk) visibly moves the bar rather than jump-cutting — but a poll that returns the exact same percentage causes zero visual change, same "motion marks a real state change" discipline as every prior phase's animation work.
+
+*Numbers, not just color.* Percentages are always printed as text inside each segment (e.g. "ATL 62%"), never color-only — this project's own accessibility posture (already reflected in `.lg-score--win`/`.lg-score--loss` pairing color with structure, never color alone) carries over directly.
+
+**Stress test.** A 27-run blowout in the 9th — bar shows the clamped-to-table-edge percentage (effectively 99%+/1%-, not a fabricated 100/0), still reads correctly as "essentially decided" without claiming false certainty. A brand new 0-0 tied top-of-1st, 0 outs, bases empty — bar shows the small, real home-field-edge percentage from the table (Relay's spot check: 59.4% at this exact state) rather than a naive 50/50, which is itself a small piece of evidence the number is real and not invented.
+
+---
+
+**Axiom — feasibility:**
+
+**Table construction is real, scoped implementation work — described here, not yet done.** Relay's fetched `probs.txt` (16,112 rows, every inning 1-25, score differential -27 to +27) is too large and too sparse-tailed to ship verbatim to a static site. Build a compact derived table: cap embedded innings at 9 (innings 10+ summed into the inning-9 bucket — summing raw counts, not averaging percentages, is the statistically correct way to merge samples of the same conceptual state); cap score differential at the table's own natural point where sample sizes stay meaningful (Relay flagged ~25% of rows have under 5 occurrences, concentrated at the extreme tails — Axiom picks the actual cutoff during implementation, then documents it, matching BR's own ±11 precedent in spirit though not necessarily the same exact number). Resulting table keyed by `${half}${inning}_${outs}_${baseState}_${scoreDiff}` → home win probability, built once from Relay's real counts (`homeWinCount / totalCount`), not touched again at runtime.
+
+**Live-state mapping — every piece already proven live, reusing existing extraction, not new field discovery.** `half` from `linescore.isTopInning` (Phase 1). `inning` from `linescore.currentInning`, clamped to the table's max (new clamp, trivial). `outs` from `linescore.outs` (Phase 1). `scoreDiff` = `homeScore - awayScore`, both already computed in `_renderPanel`, clamped to the table's min/max (new clamp, trivial). `baseState` = the exact same 3-bit derivation Phase 2's `_buildBaseDiagram` already performs against `currentPlay.runners[].movement.end` — reused directly, not reimplemented, to guarantee the two features can never disagree about who's on base.
+
+**New function, no new fetch, no new module state.** `_lgWinProbability(feed)` computes the lookup key from the feed already in `_lgFeedCache` and returns the home team's probability (or `null` outside Live, handled by the caller the same way the hero already handles its own `isFinal`/`isPreview` early-returns). `_buildWinProb(feed)` renders the bar HTML from that number plus team colors/abbreviations already available via `getMLBTeamColors`/`feed.gameData.teams`.
+
+**No new endpoint, no new script-load-order change, no new poll-cadence gating.**
+
+**Sign-off:** feasible once the table is built, every live input already proven, no open questions block starting implementation.
+
+---
+
+**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before this phase ships, per D-117 (none in progress as of this spec — Phase 6 will need to wait for one, same as noted in the Phase 5 re-verification addendum above).
