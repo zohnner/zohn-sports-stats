@@ -1526,3 +1526,67 @@ One real bug caught in this pass, not by static review: Axiom's feasibility writ
 Not covered by this live-verification pass (no preview-state or final-state game was live at verification time): the hero's `isPreview` (probable pitchers) and `isFinal` (hero retired) branches. Both are short, low-risk conditionals already covered by `node --check`, but per this project's own discipline they're unverified-against-real-data until a pregame or completed game confirms them — flagging rather than silently assuming, the same way D-118 flagged its own unverified branches for NCAAF.
 
 Phase 2 (Bullpen Availability) is next, gated on this phase staying live-clean after deploy per D-117's phase-gate rule.
+
+---
+
+## MLB Live Game Command Center — Phase 2 states + visual + feasibility spec (D-117 Phase 2), 2026-08-23
+
+Relay's Phase 2 feasibility addendum (DECISIONS.md D-117) confirms a new `Bullpen` tab, combining today's live pitch counts (from `boxscore`, zero new fetch) with rest-day status for not-yet-used relievers (reusing `js/mlb.js`'s `_fetchBullpenRest`, fetched once per game open). Vera/Kael/Axiom gates below, same tier-3 discipline as Phase 1.
+
+**Vera — states:**
+
+*Tab entry (synchronous, zero delay).* Clicking `Bullpen` renders immediately from data already in `_lgFeedCache` — no loading skeleton needed for this half, matching how `pbp`/`box` already work. Two team sections (away over home, matching every other team-ordering convention in this file), each listing pitchers who have thrown at least one pitch in today's game, sorted most-pitches-first, showing name + pitch count. A team with no bullpen usage yet today (starter still going, 0 relievers used) shows "No relievers used yet" rather than an empty section — an empty section with no ceiling reads as a loading failure, not as good news.
+
+*Rest-day half (async, patches in).* Below each team's today's-usage list, a "Available" sub-list of rested relievers (not yet used today) with their days-of-rest pill, populated by `_fetchBullpenRest` the same skeleton-then-patch way the `matchup` tab already works: a thin skeleton line under the synchronous content while the fetch runs, replaced in place when it resolves. If `_fetchBullpenRest` returns empty for a team (no reliever appearance in the last 3 Final games — e.g. a long All-Star-break-adjacent gap), that team's Available section is omitted rather than showing "All fresh" as a guess — omission over invented confidence, same rule Phase 1 used for the broadcast chip.
+
+*Preview/Final games.* No bullpen usage exists pregame — the tab itself is hidden in `isPreview` state (matching how the tab strip is already replaced by probable-pitchers content pregame). Postgame (`isFinal`), the tab stays visible and useful — today's full bullpen usage for a completed game is exactly the kind of postgame reference a box score exists for; only the rest-day "Available" half is dropped (rest-for-what — the game's over).
+
+*Long relief outing edge case.* A pitcher who threw in relief AND is today's current pitcher (mid-appearance, boxscore updating live) shows their live-updating pitch count same as any other reliever — no special-casing against the hero, which already shows the same number for whoever's currently on the mound. Redundant across two locations is fine; it's the same fact shown twice, not a inconsistency risk, since both read the identical `boxscore` object each poll.
+
+---
+
+**Kael — visual (against the shipped `.bullpen-pill` vocabulary):**
+
+New tab button reads "Bullpen" in the existing `.mlb-group-btn` tab strip — fourth position, after Matchup, so the three original tabs keep their positions and nothing that already works shifts under a returning user's thumb.
+
+Today's-usage rows reuse `.lg-side-row`/`.lg-side-val` (the same row shape Phase 1's mini standings/leaders already established) rather than inventing a new row component — pitcher name left, pitch count right, monospace (`--font-mono`, this file's number-display convention for tabular receipts). No bar-chart visualization: a proportional bar implies a shared maximum worth comparing against, but a starter-turned-long-reliever's count and a one-batter specialist's count aren't the same kind of number, and a bar would falsely suggest they are. A plain number is the honest presentation Baseball-Savant-style broadcast authority calls for here — precision over decoration.
+
+Available (rested) relievers keep the exact shipped `.bullpen-pill`/`--hot`/`--warm`/`--ok`/`--fresh` markup and colors verbatim — this is the one place in Phase 2 design where "don't reinvent, reuse" is not a preference but a requirement: the same rest-day fact means the same color everywhere in the app, Game Prep or live game, or the color stops being trustworthy shorthand.
+
+Team sections separated by `.lg-box-section-title` (team abbreviation, team-color text — same identity-via-border/color idiom used throughout), not a heavier divider; two teams' bullpens in one tab is dense but not visually competing content, so a light section label is enough.
+
+**Stress test.** A team with 6+ relievers used today (extra-innings bullpen game): list scrolls within the tab panel's existing scroll container, no truncation — a truncated bullpen usage list on the exact day it matters most (a bullpen game) would be the worst possible time to hide data. A pitcher who appears in both today's-usage AND would otherwise also qualify for the rest-day list (used today, so not "available") — explicitly excluded from the Available half by the `_fetchBullpenRest` reuse's own filter, no double-listing.
+
+---
+
+**Axiom — feasibility:**
+
+**Today's pitch counts — confirmed zero new fetch, reusing an already-parsed object.** `_renderPanel`'s existing `boxscore` local (`feed.liveData?.boxscore || {}`) already flows into `_buildBoxScore`; the same object, iterated over `teams[side].players`, gives every appeared pitcher's `stats.pitching.numberOfPitches`. A new `_buildBullpenTab(feed)` function reads this exact object — no new module state beyond what the tab dispatch itself needs.
+
+**Rest-day half — confirmed `_fetchBullpenRest` is safely callable from `liveGame.js` as-is.** It's a plain top-level `async function` in `mlb.js`, loaded before `liveGame.js` in `index.html`'s script order (confirmed by grep — `mlb.js` precedes `liveGame.js`), so it's already in scope with no import needed, same as `fetchMLBStandingsFull`/`_fetchMLBLeaderSplits` were for Phase 1. No signature change needed — takes a bare `teamId`, which `_renderPanel` already has via `feed.gameData.teams.{away,home}.id`.
+
+**Dispatch — extends `_switchTab`'s existing if/else chain by one branch, same shape as `matchup`'s.** `tabId === 'bullpen'` renders the synchronous today's-usage half immediately, then kicks off `_fetchBullpenRest` for both teams (cached per-game like Phase 1's `_lgSidebarExtrasGamePk`, since rest-day standing doesn't change mid-poll) and patches the Available sub-lists in when both resolve — mirroring `matchup`'s `.then()`/`_lgFeedCache === feed` supersede-guard exactly, not a new pattern.
+
+**Skeleton/tab-bar changes — one new button, one new `data-lg-tab` value, no markup restructure.** `_buildSkeletonPanel`'s tab strip gets a fourth `<button>`; `_renderPanel`'s `isPreview` branch already hides the whole tab strip pregame (existing behavior, correctly covers the "no tab" pregame state Vera specced without new code).
+
+**Verified against the live-caught Phase 1 bug before it repeats: field names checked against real data, not assumed by analogy.** `_fetchBullpenRest`'s return shape (`{name, daysAgo, ip, pitches, gs}` per player id, confirmed by reading its own source, not inferred) and `boxscore.teams[side].players[id].stats.pitching`'s field names (`numberOfPitches`, `gamesStarted`, `inningsPitched` — the same fields Phase 1's hero already reads successfully from this exact object) are both grounded in code already proven against live data this session, not fresh assumptions. Live verification still required before commit regardless — this reduces risk, it doesn't replace the gate.
+
+**No script-load-order change, no new external dependency, no CSP change.**
+
+**Sign-off:** feasible as specced. Ready for implementation.
+
+---
+
+**Gate status: all three gates complete — ready for implementation.** Live-verify against a real in-progress game before Phase 3 starts, per D-117.
+
+**Shipped + live-verified, 2026-08-23/24 (commit 4a5d561).** The Bullpen tab was built and verified against a real in-progress game (ATL @ MIL, gamePk 823745) using the same monkey-patch-a-live-tab technique used for Phase 1 and D-116. Confirmed live: the tab button renders in the tab strip and switches correctly; today's usage rows render synchronously from the cached live feed (correctly showed "No relievers used yet" for both teams — the game was still in its starters, an honest empty state rather than an invented positive one, per Vera's states spec); the async rest-day fetch resolves once per game and patches in below the usage rows without re-fetching on a second tab visit; rest-day pills render with the correct hot/warm/ok/fresh color scale, reusing `.bullpen-pill`/`.bullpen-team-section`/`.bullpen-abbr` verbatim as specced.
+
+One real bug caught in this pass, not by static review: `_lgFetchBullpenRest`'s `usedTodayIds` was built from `boxscore.teams.*.players`, which — confirmed by dumping the real boxscore object live — lists the *entire* ~27-man active roster for the game, not just players who've actually appeared. Every rest-eligible reliever (e.g. ATL's Brent Suter, 1 day rest, `gs:0`) was being excluded as "used today" purely for being on the roster, so the availability section silently rendered empty every time despite real rest-eligible arms existing. Confirmed by reading the same players' `stats.pitching` objects directly: an unused player's pitching stat category is an empty `{}`; the API only populates it once a pitcher actually takes the mound. Fixed by filtering `usedTodayIds` to players with a non-empty `stats.pitching` object before excluding them. Re-verified live after the fix: 11 rest-day pills rendered correctly across both teams. Same lesson as Phase 1's mini-standings bug — a feasibility assumption about a data shape (here, "the boxscore players list means participation") has to be checked against the real object, not inferred from the field's name.
+
+Not covered by this live-verification pass: a game state with an active save situation (bullpen already heavily used, fewer/no rest-eligible arms) and a completed/Final game (the tab's `isFinal` guard that skips the rest-day fetch). Both are short conditionals already covered by `node --check`; flagging as unverified-against-real-data rather than assuming, per this project's discipline.
+
+Phase 3 (pitch trajectory animation + pitch-mix wheel) is next, gated on this phase staying live-clean after deploy per D-117's phase-gate rule.
+
+---
+
+**Gate status: Phase 2 shipped + live-verified.** Live-verify against a real in-progress game before Phase 3 starts, per D-117.

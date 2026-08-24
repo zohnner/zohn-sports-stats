@@ -2241,8 +2241,8 @@ Second, while checking whether the live site was actually serving current data (
 ---
 
 ## D-117 — MLB Live Game Viewer Reimagine: Relay data-feasibility audit + re-validated phased plan
-**Status:** open — Phase 1 not yet specced by Kael, not implemented
-**Contributors:** Relay (this entry), Vera/Kael/Axiom not yet engaged past this audit
+**Status:** open — Phase 1 shipped + live-verified (commit 7a94868, 2026-08-23). Phase 2 (Bullpen Availability) shipped + live-verified (commit 4a5d561, 2026-08-24) — see ISSUES.md closeout for the usedTodayIds bug caught and fixed during verification. Phase 3 (pitch trajectory + pitch-mix wheel) not yet started, gated on Phase 2 staying live-clean post-deploy.
+**Contributors:** Relay (audit + Phase 2 addendum), Vera/Kael/Axiom (Phase 1 + Phase 2 gates, see ISSUES.md), Axiom (Phase 1 + Phase 2 implementation)
 **Date opened:** 2026-08-23 | **Date resolved:** —
 
 **Trigger:** owner brought an external LLM's UX analysis + ASCII mockups plus a reference screenshot for reimagining `mlb-live-{id}` (image authoritative on layout, analysis directional on priority/reasoning). Same page flagged before — see D-009 (original phase-gated build) and its 2026-06-12 amendment (pitch heat map reactivated, trajectory animation gated on unconfirmed `pfxX`/`pfxZ`/`breaks.*`). Per ROUTER.md's own rule, a request that reopens settled ground is tier-3 regardless of framing — this audit exists because two of D-009's findings (win probability, pitch trajectory data) needed to be re-checked against real live data before anyone designs or builds around them, not assumed still true two months later.
@@ -2274,7 +2274,7 @@ Second, while checking whether the live site was actually serving current data (
 | Phase | Scope | Gate |
 |---|---|---|
 | 1 | Command-center restructure: hierarchy/contrast pass against the reference image, batter/pitcher hero, Due Up rail, mini standings, mini leaderboard, broadcast chip. Zero new data. | Vera states spec (done, see ISSUES.md) → Kael visual → Axiom → live-verify against a real in-progress game |
-| 2 | Bullpen Availability, integrated from Game Prep's existing `_fetchBullpenRest` | Phase 1 shipped + live-verified |
+| 2 | Bullpen Availability, integrated from Game Prep's existing `_fetchBullpenRest` | Phase 2 shipped + live-verified (commit 4a5d561, 2026-08-24) |
 | 3 | Pitch trajectory animation (gate: confirm `breakHorizontal` first) + pitch-mix wheel | Phase 2 shipped + live-verified |
 | 4 | Game Pulse (hard-hit/streak half only) + rich play-by-play with real exit-velo/distance callouts | Phase 3 shipped + live-verified against a real batted-ball event (opportunistic — note if none occurs during the verification window) |
 | 5 | Embedded player card (season stats + today's line only — **no Trophy Case link**) | No dependency on Phase 6; may ship earlier if reprioritized |
@@ -2289,3 +2289,26 @@ Second, while checking whether the live site was actually serving current data (
 - No ESPN MLB proxy Function is being added as part of this build (item 2b) — single-vendor discipline for MLB data holds.
 
 **Escalation:** none yet — audit only, no code shipped, no route or data contract changed.
+
+
+---
+
+### D-117 addendum — Relay's Phase 2 feasibility audit (Bullpen Availability), 2026-08-23
+
+Phase 1 is shipped and live-verified (see above and ISSUES.md). Per D-117's own phase-gate rule, Phase 2 starts now. Re-auditing item 8 from the original table ("already shipped, wrong page") at the level of detail actual implementation needs, not just the earlier buildability check.
+
+**What already exists, read in full before assuming its shape:** `js/mlb.js`'s `_fetchBullpenRest(teamId)` (~line 7056) and `_populateBullpenSection(...)` (~line 7104), shipped for the pregame **Game Prep** view. It pulls each team's last 3 *Final* games via `/schedule` + `/game/{pk}/boxscore`, keeps the most-recent appearance per pitcher where `gamesStarted === 0` (relievers only) and `inningsPitched > 0`, and renders a days-of-rest pill (hot/warm/ok/fresh, 4-color scale already in `css/components.css` ~3480-3498) per team. This is genuinely reusable as-is for the "who's rested" half of a live-game bullpen view — same fetch, same rest-day math, zero changes needed to `_fetchBullpenRest` itself.
+
+**What it does NOT cover — the reference image's actual ask:** "per-pitcher pitch counts" for *today's* game specifically. `_fetchBullpenRest` only looks at *Final* games before today, so a reliever who has already thrown 20 pitches in the live game right now shows up nowhere in its output (today's game isn't Final yet). That data lives somewhere else entirely: `feed.liveData.boxscore.teams.{away,home}.players`, the exact same boxscore object `_renderPanel` already destructures every poll (used today for the Phase 1 hero's pitcher pitch count and for the Box Score tab). Any pitcher who has appeared in today's game has a `stats.pitching.numberOfPitches` entry there already, live, updated every poll, zero new fetch.
+
+**Feasibility conclusion — two data sources, one view, no new endpoints:**
+1. **Today's live bullpen usage (pitch counts):** `boxscore.teams[side].players`, filter `stats.pitching.gamesStarted === 0 && parseFloat(stats.pitching.inningsPitched || 0) + (stats.pitching.numberOfPitches || 0) > 0` (a reliever who has entered but not yet recorded an out still has a real pitch count worth showing). Already in `_renderPanel`'s existing `boxscore` local — zero new fetch, updates every poll like the rest of the panel.
+2. **Rest status for relievers NOT yet used today:** reuse `_fetchBullpenRest(teamId)` verbatim (it's a global from `mlb.js`'s script-load order, reachable from `liveGame.js` exactly like `fetchMLBStandingsFull`/`_fetchMLBLeaderSplits` already are in Phase 1). Fetched once per game open, not per poll — same `_lgSidebarExtrasGamePk`-style gate Phase 1 already established, not a new pattern.
+
+**Where it lives:** a fourth tab (`Bullpen`) alongside Play-by-Play / Box Score / Matchup, not a new sidebar card or a new full-width section. Reasoning: Phase 1 already added real vertical weight (hero + Due Up) above the tab row; a per-pitcher chart for two teams' bullpens is dense enough to want its own scroll space rather than compressing into a `.lg-side-card`, and the tab-panel mechanism (`_switchTab`, `_lgTabMap`, `data-lg-tab`) already exists and already handles exactly this shape of content (see `matchup`'s skeleton-then-async-patch pattern) — no new dispatch mechanism, same "cheapest path" discipline as Phase 1.
+
+**Visual vocabulary:** reuse the shipped `.bullpen-pill`/`.bullpen-pill--hot/warm/ok/fresh`/`.bullpen-abbr`/`.bullpen-team-section` classes verbatim for the rest-day half (already color-discipline-correct — red-ish for recently used, green for fresh, matching DESIGN.md's category-not-importance rule since this is state, not brand). The pitch-count half needs one new element (a compact per-pitcher row: name + today's pitch count, sorted most-used-today first) — new markup, no new color tokens.
+
+**Not building:** a numeric or visual "who should warm up next" recommendation — that's a judgment call belonging to a broadcast analyst, not this feature; the chart shows facts (rest days, today's pitch count), not advice.
+
+**Sign-off:** feasible as scoped, zero new endpoints, reuses two existing functions and one existing dispatch mechanism verbatim. Ready for Vera/Kael/Axiom passes (see ISSUES.md).
