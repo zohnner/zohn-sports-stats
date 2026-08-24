@@ -799,3 +799,67 @@
     padding-top: var(--space-2);
     border-top: 1px solid var(--border-default);
 }
+
+/* ── D-117 Phase 3: Pitch trajectory entrance + pitch-mix wheel ──
+   New territory built on top of the shipped .lg-pitch-zone/.lg-zone-col
+   vocabulary — same coordinate system, same section-label idiom, same
+   reduced-motion discipline as .lg-hero--new (D-117 Phase 1). */
+
+.lg-dot--entering {
+    animation: lgDotEnter 260ms ease-out;
+}
+@keyframes lgDotEnter {
+    0%   { transform: translate(var(--lg-enter-dx), var(--lg-enter-dy)); opacity: 0; }
+    55%  { transform: translate(calc(var(--lg-enter-dx) * 0.35 + var(--lg-enter-bow)), calc(var(--lg-enter-dy) * 0.35)); opacity: 0.85; }
+    100% { transform: translate(0, 0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-dot--entering { animation: none; }
+}
+
+.lg-mix-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.lg-pitch-mix {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 auto;
+    display: block;
+}
+
+.lg-mix-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1 1 0;
+}
+
+.lg-mix-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.lg-mix-legend-swatch {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    flex: 0 0 auto;
+}
+
+.lg-mix-legend-code {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.lg-mix-legend-count {
+    color: var(--text-muted);
+    margin-left: auto;
+}

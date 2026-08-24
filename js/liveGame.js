@@ -43,6 +43,7 @@ let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat ob
 let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
 let _lgZoneMode       = new Map(); // gamePk → 'dots' | 'heat' — pitch zone view, session-scoped
+let _lgZoneLastPitchCount = new Map(); // `${gamePk}_${atBatIndex}` → pitch count last rendered — D-117 Phase 3 trajectory-entrance gate
 let _lgIsPageMode     = false;  // true when opened via showMLBLiveGame (full page); false for the inline accordion (openLiveGamePanel)
 let _lgLastHeroBatterId = null; // batter id from previous poll — hero entrance-motion gate (D-117 Phase 1)
 let _lgSeasonStatCache  = {};   // { playerId: seasonHittingStatObj | null } — hero batter AVG/OPS cache (D-117 Phase 1)
@@ -738,6 +739,76 @@ function _collectPitcherGamePitches(allPlays, pitcherId) {
     return out;
 }
 
+// ── D-117 Phase 3: Pitch-mix wheel ────────────────────────────
+// Same pitcher-scoping filter as _collectPitcherGamePitches above, tallying
+// pitch-type counts instead of SVG coordinates (Axiom, D-117 Phase 3).
+function _collectPitcherPitchTypes(allPlays, pitcherId) {
+    if (!Array.isArray(allPlays) || pitcherId == null) return [];
+    const counts = new Map(); // code → { code, description, count }
+    for (const play of allPlays) {
+        if (play?.matchup?.pitcher?.id !== pitcherId) continue;
+        for (const e of (play.playEvents || [])) {
+            if (!e.isPitch) continue;
+            const code = e.details?.type?.code || '??';
+            const desc = e.details?.type?.description || code;
+            const entry = counts.get(code) || { code, description: desc, count: 0 };
+            entry.count++;
+            counts.set(code, entry);
+        }
+    }
+    return Array.from(counts.values()).sort((a, b) => b.count - a.count);
+}
+
+// Fixed small palette for pitch TYPE (distinct from the dots' ball/strike/
+// in-play RESULT colors above) — desaturated/secondary per DESIGN.md's
+// category-not-importance rule, since this is a breakdown fact, not a
+// headline stat. Anything outside this set falls into "Other" rather than
+// growing the palette per-game (Kael, D-117 Phase 3).
+const LG_PITCH_TYPE_COLORS = {
+    FF: '#8ab4f8', SI: '#7cc7a4', FC: '#c58af9', SL: '#f4a261',
+    CU: '#5aa9e6', CH: '#e8c468', FS: '#e07a9e', KC: '#9d8df1',
+    ST: '#6ec6b0', SV: '#d98b6b',
+};
+const LG_PITCH_TYPE_OTHER_COLOR = 'var(--text-muted)';
+
+function _buildPitchMixWheel(pitcherId, allPlays) {
+    const types = _collectPitcherPitchTypes(allPlays, pitcherId);
+    if (!types.length) return '';
+
+    const total = types.reduce((s, t) => s + t.count, 0);
+    const R = 40, CX = 50, CY = 50, STROKE = 14;
+    const circumference = 2 * Math.PI * R;
+
+    let offset = 0;
+    let arcsHtml = '';
+    let legendHtml = '';
+    let ariaParts = [];
+    types.forEach((t, i) => {
+        const color = LG_PITCH_TYPE_COLORS[t.code] || LG_PITCH_TYPE_OTHER_COLOR;
+        const frac  = t.count / total;
+        const dash  = frac * circumference;
+        const pct   = Math.round(frac * 100);
+        arcsHtml += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${color}" stroke-width="${STROKE}"
+            stroke-dasharray="${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}"
+            stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${CX} ${CY})"/>`;
+        offset += dash;
+        legendHtml += `<div class="lg-mix-legend-item">
+            <span class="lg-mix-legend-swatch" style="background:${color}"></span>
+            <span class="lg-mix-legend-code">${_escHtml(t.code)}</span>
+            <span class="lg-mix-legend-count">${t.count} (${pct}%)</span>
+        </div>`;
+        ariaParts.push(`${t.count} ${_escHtml(t.description)}`);
+    });
+
+    return `<div class="lg-mix-wrap">
+        <svg class="lg-pitch-mix" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img"
+            aria-label="Pitch mix: ${_escHtml(ariaParts.join(', '))}">
+            ${arcsHtml}
+        </svg>
+        <div class="lg-mix-legend">${legendHtml}</div>
+    </div>`;
+}
+
 function _buildZoneToggle(mode, heatCount) {
     const heatOn = mode === 'heat';
     const heatDisabled = heatCount < 1;
@@ -747,9 +818,10 @@ function _buildZoneToggle(mode, heatCount) {
     </div>`;
 }
 
-function _buildPitchZone(currentPlay) {
+function _buildPitchZone(currentPlay, enterFromIdx) {
     const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
     const { zx, zy, zw, zh, gridHtml } = _lgZoneGeom(currentPlay);
+    if (enterFromIdx == null) enterFromIdx = Infinity;
 
     let dotsHtml = '';
     for (let i = 0; i < pitches.length; i++) {
@@ -772,15 +844,30 @@ function _buildPitchZone(currentPlay) {
         const countStr  = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
         const ariaLabel = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity}${spin ? `, ${spin}` : ''} — ${result}`);
 
+        // D-117 Phase 3: only the newest dot(s) since the last render get the
+        // trajectory-entrance animation — a fixed near-top origin (50, 8),
+        // bowed at the midpoint by breakHorizontal's sign, purely stylized
+        // (not a physics sim), stripped entirely under prefers-reduced-motion
+        // via CSS (Kael/Vera, D-117 Phase 3).
+        const isEntering = i >= enterFromIdx;
+        let enterStyle = '';
+        if (isEntering) {
+            const dx  = +(50 - cx).toFixed(1);
+            const dy  = +(8 - cy).toFixed(1);
+            const bh  = pd.breaks?.breakHorizontal;
+            const bow = bh ? (bh > 0 ? 6 : -6) : 0;
+            enterStyle = ` style="--lg-enter-dx:${dx}px;--lg-enter-dy:${dy}px;--lg-enter-bow:${bow}px"`;
+        }
+
         // CSS classes carry all fill/stroke via liveGame.css — SVG presentation
         // attributes don't resolve CSS custom properties, so we rely on CSS only.
-        dotsHtml += `<g class="lg-dot-group lg-dot--${category}" tabindex="0" role="button"
+        dotsHtml += `<g class="lg-dot-group lg-dot--${category}${isEntering ? ' lg-dot--entering' : ''}" tabindex="0" role="button"
             aria-label="${ariaLabel}"
             data-pitch-type="${pitchType}"
             data-velocity="${_escHtml(velocity)}"
             data-spin="${_escHtml(spin)}"
             data-result="${result}"
-            data-count="${_escHtml(countStr)}">
+            data-count="${_escHtml(countStr)}"${enterStyle}>
             <circle cx="${cx}" cy="${cy}" r="4"/>
             <circle cx="${cx}" cy="${cy}" r="7" class="lg-dot-focus-ring"/>
             <text class="lg-dot-text" x="${cx}" y="${cy}" font-size="5" text-anchor="middle" dominant-baseline="central">${i + 1}</text>
@@ -877,16 +964,30 @@ function _renderZone(panel, feed, gamePk) {
     zoneCol.removeAttribute('hidden');
     const key         = String(gamePk);
     const mode        = _lgZoneMode.get(key) || 'dots';
-    const gamePitches = _collectPitcherGamePitches(plays.allPlays, currentPlay.matchup?.pitcher?.id);
+    const pitcherId   = currentPlay.matchup?.pitcher?.id;
+    const gamePitches = _collectPitcherGamePitches(plays.allPlays, pitcherId);
     const useHeat     = mode === 'heat' && gamePitches.length > 0;
     const hasPitches  = pitches.length > 0;
+
+    // D-117 Phase 3: detect whether this at-bat grew a new pitch since the
+    // last render of THIS at-bat specifically (a fresh at-bat, a fresh tab
+    // open, or a page load mid-at-bat all start with no "last known count"
+    // for that key, so nothing animates on first paint — Vera, D-117 Phase 3).
+    const abKey         = `${key}_${currentPlay.atBatIndex}`;
+    const lastPitchCount = _lgZoneLastPitchCount.has(abKey) ? _lgZoneLastPitchCount.get(abKey) : pitches.length;
+    const enterFromIdx   = pitches.length > lastPitchCount ? lastPitchCount : Infinity;
+    _lgZoneLastPitchCount.set(abKey, pitches.length);
 
     zoneCol.innerHTML =
         (hasPitches
             ? `<div class="lg-zone-section-label">Pitch Zone</div>` +
               _buildZoneToggle(mode, gamePitches.length) +
-              (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay))
+              (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx))
             : `<div class="lg-zone-empty">Next pitch coming up.</div>`) +
+        (hasPitches
+            ? `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Pitch Mix</div>` +
+              _buildPitchMixWheel(pitcherId, plays.allPlays)
+            : '') +
         `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
         _buildBaseDiagram(currentPlay);
     _wireZoneEvents(panel, key);
