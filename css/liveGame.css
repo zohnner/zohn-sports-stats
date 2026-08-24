@@ -779,3 +779,23 @@
     border-radius: var(--radius-full);
     margin-right: 0.35rem;
 }
+
+/* ── D-117 Phase 2: Bullpen tab ─────────────────────────────────
+   Today's usage reuses .lg-side-row/.lg-side-val (Phase 1's row shape).
+   Rest-day availability reuses .bullpen-pill/.bullpen-team-section/
+   .bullpen-abbr verbatim (already shipped for Game Prep, css above ~3480)
+   — same fact, same color, wherever it appears (Kael, D-117 Phase 2). */
+.lg-bullpen-team { margin-bottom: var(--space-3); }
+
+.lg-bullpen-empty {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 0.2rem 0;
+}
+
+.lg-bullpen-available-wrap {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border-default);
+}

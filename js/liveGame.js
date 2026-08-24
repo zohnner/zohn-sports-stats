@@ -97,6 +97,8 @@ function stopLiveGamePolling() {
     _lgMiniStandingsHtml   = '';
     _lgMiniLeadersHtml     = '';
     _lgSidebarExtrasGamePk = null;
+    _lgBullpenRestHtml     = { away: '', home: '' };
+    _lgBullpenRestGamePk   = null;
     _lgLastPollMs     = null;
     _lgIsPageMode     = false;
 }
@@ -298,6 +300,7 @@ function _buildSkeletonPanel(game) {
                     <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
                     <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"     aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
                     <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
+                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-bullpen" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="bullpen">Bullpen</button>
                 </div>
                 <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
                     <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
@@ -472,6 +475,11 @@ function _renderPanel(panel, feed, gamePk) {
             tabpanel.innerHTML = _buildPbp(plays.allPlays || []);
         } else if (activeTab === 'box') {
             tabpanel.innerHTML = _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
+        } else if (activeTab === 'bullpen') {
+            // Phase 2 (D-117): cheap to rebuild every poll (boxscore's already in
+            // hand) — only the async rest-day fetch is gated to once per game,
+            // triggered from _switchTab, not here.
+            tabpanel.innerHTML = _buildBullpenTab(feed, gamePk);
         }
         // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
     }
@@ -1259,6 +1267,121 @@ async function _lgFetchSidebarExtras(gamePk, awayAbbr, homeAbbr) {
     if (el && _lgFeedCache) el.innerHTML = _lgMiniStandingsHtml + _lgMiniLeadersHtml + _buildSidebar(_lgFeedCache);
 }
 
+// ── D-117 Phase 2: Bullpen tab ────────────────────────────────
+// Today's live usage (pitch counts) reads boxscore — already in
+// _lgFeedCache every poll, zero new fetch. Rest-day availability for
+// relievers not yet used today reuses mlb.js's _fetchBullpenRest verbatim
+// (global via script load order, same reuse discipline as Phase 1's
+// fetchMLBStandingsFull/_fetchMLBLeaderSplits), fetched once per game open,
+// gated lazily on first tab entry (Axiom, D-117 Phase 2).
+
+let _lgBullpenRestHtml   = { away: '', home: '' };
+let _lgBullpenRestGamePk = null;
+
+function _lgBullpenRestPill(name, daysAgo) {
+    const [cls, label] = daysAgo === 0 ? ['bullpen-pill--hot',   'Yesterday']
+                       : daysAgo === 1 ? ['bullpen-pill--warm',  '1 day rest']
+                       : daysAgo === 2 ? ['bullpen-pill--ok',    '2 days rest']
+                       :                 ['bullpen-pill--fresh', `${daysAgo}d rest`];
+    const lastName = (name || '').split(' ').slice(-1)[0] || name || '';
+    return `<span class="bullpen-pill ${cls}" title="${_escHtml(name || '')} — last pitched ${daysAgo === 0 ? 'yesterday' : daysAgo + ' days ago'}">${_escHtml(lastName)} <span class="bullpen-pill-rest">${_escHtml(label)}</span></span>`;
+}
+
+function _buildBullpenUsageRows(players, teamAbbr, teamColor) {
+    const used = Object.values(players || {})
+        .filter(p => {
+            const pit = p.stats?.pitching;
+            if (!pit || (pit.gamesStarted || 0) > 0) return false;
+            return parseFloat(pit.inningsPitched || 0) > 0 || (pit.numberOfPitches || 0) > 0;
+        })
+        .sort((a, b) => (b.stats.pitching.numberOfPitches || 0) - (a.stats.pitching.numberOfPitches || 0));
+
+    const rows = used.map(p => `<div class="lg-side-row">
+        <span>${_escHtml(p.person?.fullName || '')}</span>
+        <span class="lg-side-val">${p.stats.pitching.numberOfPitches ?? 0} P</span>
+    </div>`).join('');
+
+    return `<div class="lg-bullpen-team">
+        <div class="lg-box-section-title" style="color:${teamColor}">${_escHtml(teamAbbr || '')}</div>
+        ${rows || '<div class="lg-bullpen-empty">No relievers used yet.</div>'}
+    </div>`;
+}
+
+function _buildBullpenTab(feed, gamePk) {
+    const boxscore = feed.liveData?.boxscore || {};
+    const away     = feed.gameData?.teams?.away || {};
+    const home     = feed.gameData?.teams?.home || {};
+    const awayClr  = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
+    const homeClr  = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
+    const isFinal  = feed.gameData?.status?.abstractGameState === 'Final';
+
+    const usageHtml = _buildBullpenUsageRows(boxscore.teams?.away?.players, away.abbreviation, awayClr)
+        + _buildBullpenUsageRows(boxscore.teams?.home?.players, home.abbreviation, homeClr);
+
+    let availableHtml = '';
+    if (!isFinal) {
+        const fetched = String(_lgBullpenRestGamePk) === String(gamePk);
+        if (!fetched) {
+            availableHtml = '<div class="skeleton-line" style="height:14px;margin:0.6rem 0;width:70%"></div>';
+        } else if (_lgBullpenRestHtml.away || _lgBullpenRestHtml.home) {
+            availableHtml = `<div class="lg-bullpen-available-wrap">${_lgBullpenRestHtml.away}${_lgBullpenRestHtml.home}</div>`;
+        }
+        // fetched but both empty (no reliever appearance in the last 3 Final
+        // games for either team) → omitted, not a guessed "All fresh"
+        // (Vera, D-117 Phase 2 — omission over invented confidence).
+    }
+
+    return usageHtml + availableHtml;
+}
+
+async function _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr) {
+    const [awayRest, homeRest] = await Promise.all([
+        _fetchBullpenRest(awayId),
+        _fetchBullpenRest(homeId),
+    ]);
+    if (String(_lgBullpenRestGamePk) !== String(gamePk)) return; // superseded by a different game
+
+    const boxscore = _lgFeedCache?.liveData?.boxscore || {};
+    // Boxscore's players map lists the FULL active roster for the game (all
+    // ~27 players), not just those who've appeared — confirmed live against
+    // ATL@MIL (823745): unused relievers like Brent Suter showed up here
+    // with an empty {} pitching stat line. Filter to players who actually
+    // have a populated pitching line (the API only attaches one once a
+    // pitcher takes the mound) so "used today" means "has pitched today,"
+    // not "is on the active roster" (caught during D-117 Phase 2 live
+    // verification, 2026-08-23).
+    const usedTodayIds = new Set(
+        [
+            ...Object.values(boxscore.teams?.away?.players || {}),
+            ...Object.values(boxscore.teams?.home?.players || {}),
+        ]
+            .filter(p => Object.keys(p.stats?.pitching || {}).length > 0)
+            .map(p => p.person?.id)
+            .filter(Boolean)
+    );
+
+    const renderSide = (restMap, abbr) => {
+        const color  = getMLBTeamColors(abbr)?.primary || 'var(--text-muted)';
+        const rested = Object.entries(restMap || {})
+            .filter(([pid, p]) => p.gs === 0 && p.daysAgo <= 3 && !usedTodayIds.has(Number(pid)))
+            .sort((a, b) => a[1].daysAgo - b[1].daysAgo);
+        if (!rested.length) return '';
+        return `<div class="bullpen-team-section">
+            <span class="bullpen-abbr" style="color:${color}">${_escHtml(abbr || '')}</span>
+            ${rested.map(([, p]) => _lgBullpenRestPill(p.name, p.daysAgo)).join('')}
+        </div>`;
+    };
+
+    _lgBullpenRestHtml.away = renderSide(awayRest, awayAbbr);
+    _lgBullpenRestHtml.home = renderSide(homeRest, homeAbbr);
+
+    const panel    = document.querySelector('.lg-panel');
+    const tabpanel = panel?.querySelector('.lg-tab-content');
+    if (tabpanel && _lgTabMap.get(String(gamePk)) === 'bullpen' && _lgFeedCache) {
+        tabpanel.innerHTML = _buildBullpenTab(_lgFeedCache, gamePk);
+    }
+}
+
 // ── Phase 2: H2H data + Matchup tab ──────────────────────────
 
 async function _lgFetchH2H(batterId, pitcherId) {
@@ -1378,6 +1501,24 @@ function _switchTab(panel, tabId, gamePk) {
             Logger.warn('Matchup content failed', err, 'LIVE');
             if (_lgFeedCache === feed) tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
         });
+    } else if (tabId === 'bullpen') {
+        // Phase 2 (D-117): today's usage renders synchronously (boxscore's
+        // already in _lgFeedCache); rest-day availability is fetched once per
+        // game, lazily on first entry into this tab — not eagerly like Phase
+        // 1's mini standings, since this content is behind a tab click, not
+        // always visible (Axiom, D-117 Phase 2).
+        tabpanel.innerHTML = _buildBullpenTab(feed, gamePk);
+        const isFinal = feed.gameData?.status?.abstractGameState === 'Final';
+        if (!isFinal && String(_lgBullpenRestGamePk) !== String(gamePk)) {
+            const awayId   = feed.gameData?.teams?.away?.id;
+            const homeId   = feed.gameData?.teams?.home?.id;
+            const awayAbbr = feed.gameData?.teams?.away?.abbreviation || '';
+            const homeAbbr = feed.gameData?.teams?.home?.abbreviation || '';
+            if (awayId && homeId) {
+                _lgBullpenRestGamePk = String(gamePk);
+                _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr);
+            }
+        }
     }
 }
 
