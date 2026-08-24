@@ -343,7 +343,23 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 ${arrowHtml}
                 ${redZoneHtml}
                 <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
-                <div class="fv-ball" style="left:${disp(ballPct)}%; background-color:${possColor}"></div>
+                <svg class="fv-ball" style="left:${disp(ballPct)}%" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="fvBallSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
+                            <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
+                            <stop offset="100%" stop-color="#000" stop-opacity="0.28"/>
+                        </linearGradient>
+                    </defs>
+                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="${possColor}" stroke="var(--bg-card)" stroke-width="2"/>
+                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="url(#fvBallSheen)"/>
+                    <path d="M5,10 Q16,3 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+                    <path d="M5,10 Q16,17 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+                    <line x1="12.5" y1="10" x2="19.5" y2="10" stroke="#fff" stroke-width="1" stroke-opacity="0.9"/>
+                    <line x1="14" y1="8.2" x2="14" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                    <line x1="16" y1="8.2" x2="16" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                    <line x1="18" y1="8.2" x2="18" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                </svg>
             </div>
             <div class="fv-endzone" style="background-color:${homeColor}">${_escHtml(homeAbbr)}</div>
         </div>

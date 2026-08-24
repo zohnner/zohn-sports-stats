@@ -66,15 +66,27 @@
 .fv-poss-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; animation: fvPossPulse 1.6s ease-in-out infinite; }
 @keyframes fvPossPulse { 50% { opacity: 0.4; } }
 .fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; transform: rotateX(22deg); transform-origin: 50% 100%; box-shadow: 0 16px 26px -12px rgba(0,0,0,0.55); }
+/* Stadium light: soft overhead glow + top/bottom vignette, layered above every
+   child (endzones, turf, ball, arrow -- z-index:3 beats the ball's 2) so the
+   whole field reads as lit from above rather than flat-printed. Pure CSS,
+   pointer-events:none so it never intercepts anything underneath. */
+.fv-field::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3; background: radial-gradient(ellipse 70% 90% at 50% 15%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.28) 100%); }
 .fv-endzone { width: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--font-display); font-weight: 800; font-size: 0.6rem; letter-spacing: 1px; color: rgba(255,255,255,0.85); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0 6px, transparent 6px 12px); }
-.fv-track { position: relative; flex: 1; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.35) 1.5px, transparent 1.5px, transparent 10%), repeating-linear-gradient(90deg, #1f6b34 0%, #1f6b34 10%, #195c2b 10%, #195c2b 20%); }
+/* Mow stripes every 5 yards (twice the 10-yard yard-line spacing below) --
+   the alternating-band convention every broadcast field graphic uses so the
+   turf reads as textured grass, not a flat green rectangle. */
+.fv-track { position: relative; flex: 1; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.35) 1.5px, transparent 1.5px, transparent 10%), repeating-linear-gradient(90deg, #1f6f37 0%, #1f6f37 5%, #184f26 5%, #184f26 10%); }
 .fv-track::before, .fv-track::after { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: repeating-linear-gradient(90deg, transparent 0, transparent 4.5%, rgba(255,255,255,0.5) 4.5%, rgba(255,255,255,0.5) 5%); }
 .fv-track::before { top: 28%; }
 .fv-track::after { top: 72%; }
-.fv-redzone { position: absolute; top: 0; bottom: 0; background: var(--color-loss-subtle); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
+/* Diagonal hazard stripe reuses the exact pattern .fv-endzone already
+   established (45deg, 0.1-ish opacity) so "red zone" and "end zone" read as
+   the same visual language -- danger/scoring territory -- instead of a new
+   texture invented just for this one band. */
+.fv-redzone { position: absolute; top: 0; bottom: 0; background-color: var(--color-loss-subtle); background-image: repeating-linear-gradient(45deg, rgba(229,72,77,0.12) 0 6px, transparent 6px 12px); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
 .fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); }
 .fv-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.fv-arrow-path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
+.fv-arrow-path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
 .fv-arrow--run .fv-arrow-path, .fv-arrow--run .fv-arrow-head { stroke: var(--text-primary); fill: var(--text-primary); }
 .fv-arrow--pass .fv-arrow-path { stroke: var(--accent); stroke-dasharray: 4 3; }
 .fv-arrow--pass .fv-arrow-head { fill: var(--accent); }
@@ -87,7 +99,12 @@
 .fv-arrow--entering { animation: fvArrowIn 480ms ease-out; }
 @keyframes fvArrowIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .fv-arrow--entering, .fv-poss-dot, .fv-to-dot--used { animation: none; } }
-.fv-ball { position: absolute; top: 50%; width: 16px; height: 11px; border-radius: 50% / 42%; transform: translate(-50%,-50%); border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--border-strong), 0 3px 6px rgba(0,0,0,0.5); z-index: 2; }
+/* Ball is an inline SVG (not a flat div) so it can carry a real sheen
+   gradient + seam/lace detail instead of a solid tinted ellipse -- the same
+   "reads as a real object, not a colored blob" bar the field/endzones/arrows
+   already clear. Fixed pixel size (not stretched with the track's own
+   preserveAspectRatio:none), positioned the same way the old div was. */
+.fv-ball { position: absolute; top: 50%; width: 22px; height: 13.75px; transform: translate(-50%,-50%); z-index: 2; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5)); }
 .fv-yardnums { display: flex; justify-content: space-between; padding: 0 34px; margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.56rem; color: var(--text-subtle); font-weight: 600; }
 .fv-legend { display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; gap: 0.5rem; flex-wrap: wrap; }
 .fv-timeouts { display: flex; align-items: center; gap: 0.35rem; }
