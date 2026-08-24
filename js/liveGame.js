@@ -39,6 +39,7 @@ let _lgTriggerEl      = null;   // card element that opened the panel (focus ret
 let _lgPrevScores     = null;   // { away, home } for score-change flash detection
 let _lgLastPitcherId  = null;   // pitcher id from previous poll — pitching change detection
 let _lgPitchTooltipEl = null;   // active pitch tooltip DOM node or null
+let _lgPlayerCardEl   = null;   // active embedded player card DOM node or null — D-117 Phase 5
 let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat obj }
 let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
@@ -328,6 +329,28 @@ function _buildSkeletonPanel(game) {
             : (idx - 1 + tabs.length) % tabs.length;
         tabs[next].focus();
         tabs[next].click();
+    });
+
+    // D-117 Phase 5: one delegated listener catches clicks on any current
+    // or future [data-player-id] trigger (hero names, Due Up names) —
+    // matches _wireZoneEvents' delegation shape, no per-name wiring.
+    panel.addEventListener('click', e => {
+        const trigger = e.target.closest?.('[data-player-id]');
+        if (trigger) {
+            if (!_lgFeedCache) return;
+            _lgShowPlayerCard(
+                trigger, panel, _lgFeedCache,
+                Number(trigger.dataset.playerId),
+                trigger.dataset.playerSide,
+                trigger.dataset.playerRole
+            );
+            return;
+        }
+        if (_lgPlayerCardEl && !e.target.closest('.lg-player-card')) _lgHidePlayerCard();
+    });
+
+    panel.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && _lgPlayerCardEl) _lgHidePlayerCard();
     });
 
     return panel;
@@ -1076,6 +1099,85 @@ function _lgHideTooltip() {
     }
 }
 
+// ── Phase 5 (D-117): Embedded player card ───────────────────
+// Same single-instance-tracker pattern as _lgPitchTooltipEl. Reads
+// entirely from _lgFeedCache's already-fetched boxscore — Relay's Phase 5
+// reuse-point re-check confirmed seasonStats.{batting|pitching} (season
+// line) and stats.{batting|pitching} (today's line, NOT .hitting) are
+// both already present on every boxscore player entry, so this is zero
+// new fetches. Season stats + today's line only — Trophy Case link
+// explicitly excluded per owner direction 2026-08-23 (D-117 Phase 5).
+
+function _lgFmtStat(v) {
+    if (v === undefined || v === null || v === '' || v === '.---' || v === '-.--') return '—';
+    return v;
+}
+
+function _buildPlayerCard(feed, playerId, side, role) {
+    const boxscore = feed.liveData?.boxscore || {};
+    const entry     = boxscore.teams?.[side]?.players?.[`ID${playerId}`];
+    if (!entry) return '';
+
+    const name     = entry.person?.fullName || '';
+    const today    = entry.stats?.[role] || {};
+    const season   = entry.seasonStats?.[role] || {};
+    const hasToday = Object.keys(today).length > 0;
+
+    const f = _lgFmtStat;
+    const seasonLine = role === 'pitching'
+        ? `${f(season.era)} ERA · ${f(season.whip)} WHIP · ${f(season.wins)}-${f(season.losses)} · ${f(season.strikeOuts)} K`
+        : `${f(season.avg)} AVG · ${f(season.obp)} OBP · ${f(season.slg)} SLG · ${f(season.homeRuns)} HR · ${f(season.rbi)} RBI`;
+    const todayLine = hasToday && today.summary
+        ? today.summary
+        : (role === 'pitching' ? 'No pitches yet today' : 'No at-bats yet');
+
+    return `<div class="lg-player-card" role="dialog" aria-label="${_escHtml(name)} stats">
+        <button type="button" class="lg-player-card-close" aria-label="Close player card">×</button>
+        <div class="lg-player-card-name">${_escHtml(name)}</div>
+        <div class="lg-hero-role">Season</div>
+        <div class="lg-side-line">${_escHtml(seasonLine)}</div>
+        <div class="lg-hero-role">Today</div>
+        <div class="lg-side-line">${_escHtml(todayLine)}</div>
+    </div>`;
+}
+
+function _lgShowPlayerCard(triggerEl, panel, feed, playerId, side, role) {
+    if (_lgPlayerCardEl?._forTrigger === triggerEl) { _lgHidePlayerCard(); return; }
+    _lgHidePlayerCard();
+
+    const html = _buildPlayerCard(feed, playerId, side, role);
+    if (!html) return;
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const cardEl = wrap.firstElementChild;
+    panel.appendChild(cardEl);
+    cardEl._forTrigger = triggerEl;
+    _lgPlayerCardEl = cardEl;
+
+    const tr    = triggerEl.getBoundingClientRect();
+    const pr    = panel.getBoundingClientRect();
+    const cardH = cardEl.offsetHeight;
+    const cardW = cardEl.offsetWidth;
+
+    let top  = tr.bottom - pr.top + 6;
+    let left = tr.left   - pr.left;
+    if (top + cardH > pr.height) top = Math.max(0, tr.top - pr.top - cardH - 6);
+    left = Math.max(0, Math.min(left, pr.width - cardW));
+
+    cardEl.style.top  = `${top}px`;
+    cardEl.style.left = `${left}px`;
+
+    cardEl.querySelector('.lg-player-card-close')?.addEventListener('click', _lgHidePlayerCard);
+}
+
+function _lgHidePlayerCard() {
+    if (_lgPlayerCardEl) {
+        _lgPlayerCardEl.remove();
+        _lgPlayerCardEl = null;
+    }
+}
+
 function _wireZoneEvents(panel, gamePk) {
     const toggle = panel.querySelector('.lg-zone-col .lg-zone-toggle');
     if (toggle && gamePk != null) {
@@ -1222,6 +1324,7 @@ function _buildHero(feed) {
     // in hand from data this poll already fetched, zero new requests.
     const boxscore   = feed.liveData?.boxscore || {};
     const pSide      = isTop ? 'home' : 'away';
+    const bSide      = isTop ? 'away' : 'home';
     const pStats     = boxscore.teams?.[pSide]?.players?.[`ID${pitcherId}`]?.stats?.pitching || {};
     const pitchCount = pStats.numberOfPitches ?? '—';
     const pitchesThrown = (currentPlay?.playEvents || []).filter(e => e.isPitch);
@@ -1250,7 +1353,7 @@ function _buildHero(feed) {
             <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${batClr}cc,${batClr}55)">${_lgInitial(batterName)}</div>
             <div class="lg-hero-body">
                 <div class="lg-hero-role">Batting</div>
-                <div class="lg-hero-name">${_escHtml(batterName)}</div>
+                <button type="button" class="lg-hero-name lg-player-name-trigger" data-player-id="${batterId}" data-player-side="${bSide}" data-player-role="batting">${_escHtml(batterName)}</button>
                 <div class="lg-hero-stat" data-hero-batter-stat>${_escHtml(battingStatHtml)}</div>
             </div>
         </div>
@@ -1259,7 +1362,7 @@ function _buildHero(feed) {
             <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${pitClr}cc,${pitClr}55)">${_lgInitial(pitcherName)}</div>
             <div class="lg-hero-body">
                 <div class="lg-hero-role">Pitching</div>
-                <div class="lg-hero-name">${_escHtml(pitcherName)}</div>
+                <button type="button" class="lg-hero-name lg-player-name-trigger" data-player-id="${pitcherId}" data-player-side="${pSide}" data-player-role="pitching">${_escHtml(pitcherName)}</button>
                 <div class="lg-hero-stat">${pitchCount} pitches${lastVelo ? ` · ${lastVelo} mph` : ''}${kStreakNote}</div>
             </div>
         </div>
@@ -1306,7 +1409,7 @@ function _buildDueUp(feed) {
         const pos = p.position?.abbreviation || '';
         if (!nm) return '';
         return `<div class="lg-dueup-item">
-            <span class="lg-dueup-name">${_escHtml(nm)}</span>
+            <button type="button" class="lg-dueup-name lg-player-name-trigger" data-player-id="${pid}" data-player-side="${side}" data-player-role="batting">${_escHtml(nm)}</button>
             <span class="lg-dueup-pos">${_escHtml(pos)}</span>
         </div>`;
     }).filter(Boolean).join('');
@@ -1610,6 +1713,7 @@ async function _buildMatchupContent(feed) {
 // ── Tab switching ─────────────────────────────────────────────
 
 function _switchTab(panel, tabId, gamePk) {
+    _lgHidePlayerCard();
     _lgTabMap.set(gamePk, tabId);
     panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
         const active = btn.dataset.lgTab === tabId;

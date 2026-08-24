@@ -46,6 +46,7 @@
 /* ── Panel container ──────────────────────────────────────── */
 
 .lg-panel {
+    position: relative;
     border-left: 3px solid var(--lg-team-color, var(--accent));
     background: var(--bg-surface);
     border-top: 1px solid var(--border-default);
@@ -527,6 +528,74 @@
     z-index: 10;
     box-shadow: var(--shadow-sm);
     line-height: 1.6;
+}
+
+/* ── Phase 5 (D-117): Embedded player card ───────────────────
+   Same shell as .lg-side-card (background/border/radius/padding), same
+   anchored-overlay mechanics as .lg-pitch-tooltip (clamped near the
+   clicked element) — a recombination of two vocabularies already on
+   this page, not a new one (Kael, D-117 Phase 5). */
+.lg-player-card {
+    position: absolute;
+    z-index: 20;
+    width: 210px;
+    max-width: calc(100% - var(--space-3) * 2);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    box-shadow: var(--shadow-sm);
+}
+
+.lg-player-card-name {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    padding-right: 1.25rem;
+    margin-bottom: var(--space-1);
+    overflow-wrap: break-word;
+}
+
+.lg-player-card .lg-hero-role { margin-top: var(--space-2); }
+.lg-player-card .lg-hero-role:first-of-type { margin-top: 0; }
+
+.lg-player-card-close {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--text-subtle);
+    padding: 0 0.25rem;
+    transition: color var(--transition-fast);
+}
+.lg-player-card-close:hover { color: var(--text-secondary); }
+
+/* Reusable trigger dressing for any clickable player name — resets
+   button chrome so it reads identically to the .lg-hero-name /
+   .lg-dueup-name text it decorates, per Kael's Phase 5 pass. */
+.lg-player-name-trigger {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--border-mid);
+}
+.lg-player-name-trigger:hover,
+.lg-player-name-trigger:focus-visible {
+    text-decoration-color: var(--text-subtle);
 }
 
 /* ── Phase 2: Base runner diagram ──────────────────────────── */
