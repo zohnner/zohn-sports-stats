@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v221';
+const CACHE_NAME    = 'sportstrata-v222';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

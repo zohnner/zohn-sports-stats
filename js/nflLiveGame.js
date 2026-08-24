@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null } };
 
 const _NLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -50,7 +50,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -317,8 +317,18 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
         ? `<div class="fv-redzone" style="left:${disp(rzRight)}%; width:${(rzRight - rzLeft)}%"></div>`
         : '';
 
-    const toDots = (n) => Array.from({ length: 3 }, (_, i) =>
-        `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}"></div>`).join('');
+    // Timeout dots flash red-then-fade when a team's count drops from what
+    // the previous render showed, so a burned timeout reads as an event the
+    // user can see happen, not a silent disappearance -- same "motion marks
+    // a real change, never a first paint" rule as the play arrows above
+    // (_nlg.lastTimeouts tracks each team's prior count between renders).
+    const toDots = (n, team) => {
+        const prev = _nlg.lastTimeouts[team];
+        const usedIdx = (typeof n === 'number' && typeof prev === 'number' && n < prev) ? n : -1;
+        if (typeof n === 'number') _nlg.lastTimeouts[team] = n;
+        return Array.from({ length: 3 }, (_, i) =>
+            `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === usedIdx ? ' fv-to-dot--used' : ''}"></div>`).join('');
+    };
     const arrowHtml = _nlgPlayArrowHtml(sit, disp);
 
     return `
@@ -339,9 +349,9 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
         </div>
         <div class="fv-yardnums"><span>${_escHtml(awayAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(homeAbbr)}</span></div>
         <div class="fv-legend">
-            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts)}</div></div>
+            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts, 'away')}</div></div>
             <div class="fv-key">${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}</div>
-            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.homeTimeouts)}</div><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span></div>
+            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.homeTimeouts, 'home')}</div><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span></div>
         </div>
     </div>`;
 }
