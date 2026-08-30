@@ -99,8 +99,12 @@
     opacity: 1;
 }
 
-/* Team abbreviation */
+/* Team abbreviation + score — one font-family shared between the two (a real
+   broadcast score bug never mixes typefaces between the team code and the
+   number next to it), score staying the heavier weight so it's still the
+   value your eye lands on first. */
 .ticker-team {
+    font-family: var(--font-mono);
     font-weight: 800;
     font-size: 0.75rem;
     color: var(--text-secondary);
@@ -118,6 +122,16 @@
     text-align: center;
 }
 .ticker-score--win { color: var(--color-win); }
+
+/* Away/home grouping (Scorebug's renderTickerItem — MLB/NFL/NCAAF/NCAAB and
+   the home cross-sport ticker): team+score kept together as one unit either
+   side of the status/time pill, matching a broadcast bug's
+   "AWAY score · TIME · HOME score" reading order. */
+.ticker-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
 
 /* Live game: pulsing dot before the item */
 .ticker__item--live::before {

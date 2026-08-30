@@ -15,9 +15,13 @@
 .nlg-status--live { color: var(--color-live); }
 .nlg-vs { font-size: 0.7rem; color: var(--text-subtle); margin-top: 0.2rem; }
 .nlg-situation { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; background: color-mix(in srgb, var(--color-live) 8%, transparent); border: 1px solid color-mix(in srgb, var(--color-live) 30%, transparent); border-radius: var(--radius-md); padding: 0.5rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem; }
-.nlg-poss { font-weight: 700; color: var(--text-primary); }
-.nlg-dd { color: var(--text-secondary); }
-.nlg-lastplay { width: 100%; text-align: center; font-size: 0.74rem; color: var(--text-muted); }
+.nlg-poss { font-weight: 800; color: var(--text-primary); }
+.nlg-dd { font-weight: 700; color: var(--text-primary); }
+/* Last play text was the same low-contrast/small treatment as everything
+   around it and got lost -- now a distinct full-width row with a label and
+   real contrast, not just a muted trailing span. */
+.nlg-lastplay { width: 100%; display: flex; gap: 0.4rem; text-align: left; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); border-top: 1px solid color-mix(in srgb, var(--color-live) 25%, transparent); padding-top: 0.4rem; margin-top: 0.1rem; }
+.nlg-lastplay::before { content: 'LAST PLAY'; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; color: var(--text-subtle); align-self: flex-start; margin-top: 0.15rem; }
 .nlg-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); margin-bottom: 1rem; overflow: hidden; }
 .nlg-sum { cursor: pointer; padding: 0.6rem 1rem; font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); list-style: none; display: flex; justify-content: space-between; align-items: center; }
 .nlg-sum::-webkit-details-marker { display: none; }
@@ -61,9 +65,10 @@
    /scoreboard fetch fails, never a placeholder/guessed state. */
 .field-viewer { margin: 0 0 0.9rem; perspective: 450px; }
 .fv-topline { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; gap: 0.75rem; }
-.fv-dd { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-primary); }
-.fv-poss { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+.fv-dd { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--text-primary); }
+.fv-poss { font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
 .fv-poss-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; animation: fvPossPulse 1.6s ease-in-out infinite; }
+.fv-poss-logo { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
 @keyframes fvPossPulse { 50% { opacity: 0.4; } }
 .fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; transform: rotateX(22deg); transform-origin: 50% 100%; box-shadow: 0 16px 26px -12px rgba(0,0,0,0.55); }
 /* Stadium light: soft overhead glow + top/bottom vignette, layered above every
@@ -71,7 +76,22 @@
    whole field reads as lit from above rather than flat-printed. Pure CSS,
    pointer-events:none so it never intercepts anything underneath. */
 .fv-field::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3; background: radial-gradient(ellipse 70% 90% at 50% 15%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.28) 100%); }
-.fv-endzone { width: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--font-display); font-weight: 800; font-size: 0.6rem; letter-spacing: 1px; color: rgba(255,255,255,0.85); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0 6px, transparent 6px 12px); }
+/* Logo + abbreviation, upright (not rotated) -- a recognizable team mark
+   reads faster than a single vertical letter string, and this is what lets
+   a viewer tell the two ends (and therefore which is the home team's end)
+   apart at a glance. */
+.fv-endzone { width: 34px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: var(--font-display); font-weight: 800; letter-spacing: 0.5px; color: rgba(255,255,255,0.9); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0 6px, transparent 6px 12px); }
+.fv-endzone-logo { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+.fv-endzone-abbr { font-size: 0.5rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+/* Home team's mark painted at midfield, like real stadium turf -- a white
+   silhouette (not the logo's own colors) so it reads against any team's
+   color scheme, low-opacity so it never competes with the ball/lines above it. */
+.fv-centerlogo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15%; aspect-ratio: 1; opacity: 0.16; pointer-events: none; z-index: 0; }
+.fv-centerlogo img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(1); }
+/* Line of scrimmage -- broadcast blue, paired with the first-down yellow
+   below. Sits at the same spot as the ball marker; z-index keeps it under
+   the ball so the ball still reads as sitting on the line, not floating. */
+.fv-scrimmage { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--color-scrimmage); box-shadow: 0 0 6px var(--color-scrimmage-glow); z-index: 1; }
 /* Mow stripes every 5 yards (twice the 10-yard yard-line spacing below) --
    the alternating-band convention every broadcast field graphic uses so the
    turf reads as textured grass, not a flat green rectangle. */
@@ -84,7 +104,7 @@
    the same visual language -- danger/scoring territory -- instead of a new
    texture invented just for this one band. */
 .fv-redzone { position: absolute; top: 0; bottom: 0; background-color: var(--color-loss-subtle); background-image: repeating-linear-gradient(45deg, rgba(229,72,77,0.12) 0 6px, transparent 6px 12px); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
-.fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); }
+.fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); z-index: 1; }
 .fv-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .fv-arrow-path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
 .fv-arrow--run .fv-arrow-path, .fv-arrow--run .fv-arrow-head { stroke: var(--text-primary); fill: var(--text-primary); }
@@ -117,7 +137,7 @@
 .fv-key { display: flex; align-items: center; gap: 0.9rem; font-size: 0.6rem; color: var(--text-muted); font-weight: 700; }
 .fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-@media (max-width: 640px) { .field-viewer { perspective: 350px; } .fv-field { height: 76px; transform: rotateX(18deg); } .fv-endzone { width: 26px; font-size: 0.54rem; } .fv-yardnums { padding: 0 26px; } }
+@media (max-width: 640px) { .field-viewer { perspective: 350px; } .fv-field { height: 76px; transform: rotateX(18deg); } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }

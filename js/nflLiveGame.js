@@ -271,6 +271,12 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const awayAbbr = away?.team?.abbreviation || '';
     const possHome = String(sit.possession) === String(homeTeamId);
     const disp = (v) => 100 - v;
+    // Logos for the endzones/possession marker/center-field mark — same lookup
+    // order teamBlock() in _nlgRenderHeader already uses (ESPN's own logos[0]
+    // first, getNFLTeamLogoUrl as fallback), not a new source.
+    const logoFor = (t) => (t?.team?.logos && t.team.logos[0] && t.team.logos[0].href) || (typeof getNFLTeamLogoUrl === 'function' ? getNFLTeamLogoUrl(t?.team?.abbreviation) : '') || '';
+    const homeLogo = logoFor(home), awayLogo = logoFor(away);
+    const possLogo = possHome ? homeLogo : awayLogo;
     // Plain-English possession label -- a viewer who does not already know
     // scorebug conventions cannot read "SEA 21" (ESPNs raw possessionText,
     // just a field location) as "Seahawks have the ball". Named explicitly
@@ -330,19 +336,33 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
             `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === usedIdx ? ' fv-to-dot--used' : ''}"></div>`).join('');
     };
     const arrowHtml = _nlgPlayArrowHtml(sit, disp);
+    // Line of scrimmage — broadcast blue, separate from the first-down yellow.
+    // Sits at the SAME spot as the ball marker (yardLine is the pre-snap line
+    // of scrimmage), drawn behind the ball so the ball icon still reads as the
+    // focal point sitting ON the line, not floating independent of it.
+    const scrimmageHtml = `<div class="fv-scrimmage" style="left:${disp(ballPct)}%"></div>`;
+    // Center-field mark — the HOME team's logo painted at midfield, the way a
+    // real stadium's turf is branded. Purely decorative/identity, so it sits
+    // low in the stack (behind redzone/firstdown/ball) and never intercepts.
+    const centerLogoHtml = homeLogo ? `<div class="fv-centerlogo"><img src="${_escHtml(homeLogo)}" alt="" data-hide-on-error></div>` : '';
 
     return `
     <div class="field-viewer">
         <div class="fv-topline">
             <span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span>
-            <span class="fv-poss">${possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : ''}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
+            <span class="fv-poss">${possLogo ? `<img class="fv-poss-logo" src="${_escHtml(possLogo)}" alt="" data-hide-on-error>` : (possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : '')}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
         </div>
         <div class="fv-field">
-            <div class="fv-endzone" style="background-color:${awayColor}">${_escHtml(awayAbbr)}</div>
+            <div class="fv-endzone" style="background-color:${awayColor}">
+                ${awayLogo ? `<img class="fv-endzone-logo" src="${_escHtml(awayLogo)}" alt="" data-hide-on-error>` : ''}
+                <span class="fv-endzone-abbr">${_escHtml(awayAbbr)}</span>
+            </div>
             <div class="fv-track">
+                ${centerLogoHtml}
                 ${arrowHtml}
                 ${redZoneHtml}
                 <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
+                ${scrimmageHtml}
                 <svg class="fv-ball" style="left:${disp(ballPct)}%" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="fvBallSheen" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -361,12 +381,18 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                     <line x1="18" y1="8.2" x2="18" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
                 </svg>
             </div>
-            <div class="fv-endzone" style="background-color:${homeColor}">${_escHtml(homeAbbr)}</div>
+            <div class="fv-endzone" style="background-color:${homeColor}">
+                ${homeLogo ? `<img class="fv-endzone-logo" src="${_escHtml(homeLogo)}" alt="" data-hide-on-error>` : ''}
+                <span class="fv-endzone-abbr">${_escHtml(homeAbbr)}</span>
+            </div>
         </div>
         <div class="fv-yardnums"><span>${_escHtml(awayAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(homeAbbr)}</span></div>
         <div class="fv-legend">
             <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts, 'away')}</div></div>
-            <div class="fv-key">${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}</div>
+            <div class="fv-key">
+                <span><i style="background:var(--color-scrimmage)"></i>Scrimmage</span>
+                ${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}
+            </div>
             <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.homeTimeouts, 'home')}</div><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span></div>
         </div>
     </div>`;
@@ -412,11 +438,19 @@ function _nlgPlayArrowHtml(sit, disp) {
         </svg>`;
     }
 
+    // Apex values are deliberately far apart, not just nudged -- at the
+    // viewBox's 100x40 aspect ratio, stretched via preserveAspectRatio="none"
+    // onto a track many times wider than it is tall, a modest height delta
+    // (the previous kick=3/pass=8, only 5 units apart) reads as visually
+    // identical once squashed. Punts/kickoffs get a real ballistic arc
+    // (apex near the very top of the box); passes stay a much flatter,
+    // line-drive trajectory -- the two should never look alike again.
     let kind = 'run', apexY = 20;
     if (/sack/.test(label)) kind = 'sack';
     else if (/interception|fumble/.test(label)) kind = 'turnover';
-    else if (/punt|field goal|extra point|kickoff/.test(label)) { kind = 'kick'; apexY = 3; }
-    else if (/pass/.test(label)) { kind = 'pass'; apexY = 8; }
+    else if (/punt|kickoff/.test(label)) { kind = 'kick'; apexY = 1.5; }
+    else if (/field goal|extra point/.test(label)) { kind = 'kick'; apexY = 6; }
+    else if (/pass/.test(label)) { kind = 'pass'; apexY = 15; }
 
     const midX = (x1 + x2) / 2;
     const d = apexY === 20 ? `M${x1},20 L${x2},20` : `M${x1},20 Q${midX},${apexY} ${x2},20`;

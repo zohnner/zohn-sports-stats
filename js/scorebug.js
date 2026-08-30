@@ -167,6 +167,13 @@
     // scan-by-league reason; the ticker needs it at least as much since items
     // carry less context. Shipped on every item, not just a mixed view — one
     // rendering path, no view-aware branching in the builder itself.
+    //
+    // Broadcast score-bug anatomy (owner feedback, 2026-08-29): AWAY team+score,
+    // then the status/clock in the middle, then HOME team+score — not two teams
+    // stacked next to each other with the state pill tacked on at the end. Team
+    // abbreviation and score now share one font (`.ticker-team`/`.ticker-score`
+    // both font-mono, see ticker.css) instead of sans-for-name/mono-for-score,
+    // which is what made the strip read as two mismatched typefaces glued together.
     function renderTickerItem(m) {
         const itemCls = m.status === 'live' ? ' ticker__item--live' : m.status === 'final' ? ' ticker__item--final' : '';
         const pillLbl = m.status === 'final' ? 'F' : m.status === 'live' ? m.pillLabel : 'SCH';
@@ -175,17 +182,18 @@
         // MLB click wiring reads data-game-pk; the others read data-game-id (setupTickerClicks).
         const idName = m.sport === 'mlb' ? 'data-game-pk' : 'data-game-id';
         const idAttr = (m.id != null && m.id !== '') ? `${idName}="${esc(m.id)}" ` : '';
+        const side = (s, align) => `
+                <span class="ticker-side ticker-side--${align}">
+                    ${s.logo ? `<img class="ticker-logo${s.darkSafe ? ' ticker-logo--chip' : ''}" src="${s.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                    <span class="ticker-team">${esc(s.abbr)}</span>
+                    <span class="ticker-score${scoreCls(s.winner)}">${s.score ?? 0}</span>
+                </span>`;
         return `
             <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
                 ${glyph ? `<span class="ticker-glyph" aria-hidden="true">${glyph}</span>` : ''}
-                ${m.home.logo ? `<img class="ticker-logo${m.home.darkSafe ? ' ticker-logo--chip' : ''}" src="${m.home.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="ticker-team">${esc(m.home.abbr)}</span>
-                <span class="ticker-score${scoreCls(m.home.winner)}">${m.home.score ?? 0}</span>
-                <span class="ticker-divider">–</span>
-                <span class="ticker-score${scoreCls(m.away.winner)}">${m.away.score ?? 0}</span>
-                <span class="ticker-team">${esc(m.away.abbr)}</span>
-                ${m.away.logo ? `<img class="ticker-logo${m.away.darkSafe ? ' ticker-logo--chip' : ''}" src="${m.away.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${side(m.away, 'away')}
                 <span class="ticker-status-pill ticker-status-pill--${m.pillCls}">${esc(pillLbl)}</span>
+                ${side(m.home, 'home')}
             </div>`;
     }
 
