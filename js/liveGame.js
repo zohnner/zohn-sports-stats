@@ -103,6 +103,8 @@ function stopLiveGamePolling() {
     _lgBullpenRestGamePk   = null;
     _lgLastPollMs     = null;
     _lgIsPageMode     = false;
+    _lgZoneMode.clear();
+    _lgZoneLastPitchCount.clear();
 }
 
 function _updatePollTimestamp(state) {
@@ -139,9 +141,13 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
         if (e.key === 'Escape') _closeExistingPanel();
     });
 
+    // First arm uses _lgNextInterval(feed) — the authoritative post-poll
+    // interval, same as showMLBLiveGame — not _pollInterval(game)'s stale
+    // AppState stub, which could hold a pregame LG_POLL_MS poll for hours
+    // before first pitch (the exact bug _lgNextInterval was built to fix,
+    // missed here since this is a separate entry point — D-117 debug pass).
     await _doPoll(gamePk);
-    const interval = _pollInterval(game);
-    _lgInterval = setInterval(() => _doPoll(_lgGamePk), interval);
+    if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
 }
 
 // ── Internal ─────────────────────────────────────────────────
@@ -158,18 +164,12 @@ function _closeExistingPanel() {
     trigger?.focus();
 }
 
-function _pollInterval(game) {
-    const state = game?.linescore?.inningState || '';
-    if (state === 'Middle' || state === 'End') return LG_BETWEEN_INN_MS;
-    if (game?.status?.abstractGameState !== 'Live') return LG_PREGAME_MS;
-    return LG_POLL_MS;
-}
-
-// Same interval logic as _pollInterval, but computed from a fetched feed/live
-// payload (authoritative) rather than the AppState game stub. Used to arm/
-// re-arm polling after every successful poll, including the very first one —
-// previously the first arm in showMLBLiveGame hardcoded LG_POLL_MS regardless
-// of game state, so a pregame page polled every 9s for hours before first pitch.
+// Computed from a fetched feed/live payload (authoritative), not the
+// AppState game stub — used to arm/re-arm polling after every successful
+// poll on both entry points (openLiveGamePanel, showMLBLiveGame), including
+// each one's very first arm. Previously each entry point's first arm
+// hardcoded LG_POLL_MS regardless of game state, so a pregame page polled
+// every 9s for hours before first pitch.
 function _lgNextInterval(feed) {
     const status = feed?.gameData?.status || {};
     const ls     = feed?.liveData?.linescore || {};
@@ -198,7 +198,15 @@ async function _doPoll(gamePk) {
         _updatePollTimestamp('tick');
         if (!_lgTsInterval) _startTsInterval();
 
-        const stateKey = `${ls.currentInning}|${ls.inningState}|${ls.teams?.away?.runs}|${ls.teams?.home?.runs}`;
+        // Outs/balls/strikes/current-batter are on this same lightweight
+        // linescore payload and change on nearly every pitch — without them
+        // in the key, a strikeout, walk, or groundout that doesn't change
+        // the score or inning never triggers a feed/live refetch, so the
+        // hero, Due Up, win prob, pitch mix, and PBP all sit frozen for the
+        // rest of the half-inning (found during the D-117 post-ship debug
+        // pass, 2026-08-30 — pre-existing gate, made much more visible now
+        // that six phases of "live" UI depend on per-play freshness).
+        const stateKey = `${ls.currentInning}|${ls.inningState}|${ls.outs}|${ls.balls}|${ls.strikes}|${ls.offense?.batter?.id}|${ls.teams?.away?.runs}|${ls.teams?.home?.runs}`;
         if (stateKey === _lgLastState) return;
         _lgLastState = stateKey;
 
