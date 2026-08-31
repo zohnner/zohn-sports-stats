@@ -147,7 +147,8 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
     // before first pitch (the exact bug _lgNextInterval was built to fix,
     // missed here since this is a separate entry point — D-117 debug pass).
     await _doPoll(gamePk);
-    if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
+    // Equality, not just truthiness — see showMLBLiveGame's matching guard.
+    if (_lgGamePk === String(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
 }
 
 // ── Internal ─────────────────────────────────────────────────
@@ -1992,8 +1993,13 @@ function showMLBLiveGame(gamePk) {
     panel.focus();
 
     _doPoll(gamePk).then(() => {
-        // Guard against navigation-away during the initial poll
-        if (_lgGamePk) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
+        // Equality, not just truthiness — a second showMLBLiveGame/
+        // openLiveGamePanel call for a DIFFERENT game before this poll
+        // resolves already reassigned _lgGamePk, so a bare truthy check
+        // here would still arm a second interval on top of that newer
+        // call's own, leaking an orphaned duplicate poller for the
+        // session (found during the D-117 debug pass, 2026-08-31).
+        if (_lgGamePk === String(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
     });
 }
 
