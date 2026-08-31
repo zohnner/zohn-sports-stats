@@ -1394,6 +1394,36 @@ function _lgPitcherKStreak(allPlays, pitcherId) {
     return streak;
 }
 
+// Live-verified 2026-08-31 against a real game (SF @ ATL, gamePk 824911):
+// currentPlay.matchup still points at the just-completed at-bat's batter/
+// pitcher for the whole Middle/End window between half-innings — it only
+// advances once the new half's first pitch is thrown. linescore.offense.batter
+// and linescore.defense.pitcher, by contrast, are already correct in both
+// states (checked byte-for-byte against currentPlay.matchup during a live
+// at-bat, where they matched exactly) — offense/defense are the reliable
+// source, not currentPlay. Team side is resolved by matching team id rather
+// than isTopInning, since isTopInning is also "last-completed-half," not
+// "upcoming half" (it stays true through Middle, false through End) — both
+// windows live-verified against this same game (Middle of the 2nd via a
+// captured-feed replay, End of the 3rd live in the browser minutes later).
+function _lgCurrentMatchup(feed) {
+    const ls      = feed.liveData?.linescore || {};
+    const home    = feed.gameData?.teams?.home || {};
+    const away    = feed.gameData?.teams?.away || {};
+    const batter  = ls.offense?.batter;
+    const pitcher = ls.defense?.pitcher;
+    if (!batter?.id || !pitcher?.id) return null;
+    const bSide = ls.offense?.team?.id === home.id ? 'home' : 'away';
+    const pSide = bSide === 'home' ? 'away' : 'home';
+    return {
+        batterId: batter.id, batterName: batter.fullName || '',
+        pitcherId: pitcher.id, pitcherName: pitcher.fullName || '',
+        battingTeam: bSide === 'home' ? home : away,
+        pitchingTeam: pSide === 'home' ? home : away,
+        bSide, pSide,
+    };
+}
+
 function _buildHero(feed) {
     const status       = feed.gameData?.status || {};
     const isPreview    = status.abstractGameState === 'Preview';
@@ -1426,27 +1456,28 @@ function _buildHero(feed) {
     }
 
     const currentPlay = feed.liveData?.plays?.currentPlay;
-    const matchup      = currentPlay?.matchup;
-    if (!matchup?.batter?.id || !matchup?.pitcher?.id) return '';
+    const matchup      = _lgCurrentMatchup(feed);
+    if (!matchup) return '';
 
-    const batterId     = matchup.batter.id;
-    const pitcherId    = matchup.pitcher.id;
-    const batterName   = matchup.batter.fullName || '';
-    const pitcherName  = matchup.pitcher.fullName || '';
-    const isTop        = !!feed.liveData?.linescore?.isTopInning;
-    const battingTeam  = isTop ? feed.gameData?.teams?.away : feed.gameData?.teams?.home;
-    const pitchingTeam = isTop ? feed.gameData?.teams?.home : feed.gameData?.teams?.away;
+    const { batterId, pitcherId, batterName, pitcherName, battingTeam, pitchingTeam, bSide, pSide } = matchup;
     const batClr       = getMLBTeamColors(battingTeam?.abbreviation)?.primary  || 'var(--accent)';
     const pitClr       = getMLBTeamColors(pitchingTeam?.abbreviation)?.primary || 'var(--accent)';
+
+    // Between half-innings, currentPlay still refers to the just-finished
+    // at-bat — real for pitch count (a boxscore running total, keyed off the
+    // now-correct pitcherId) but not for "last pitch": that pitch belongs to
+    // whichever pitcher just finished the prior half, not the one about to
+    // take the mound. Suppress it rather than mislabel it (Axiom, live debug
+    // 2026-08-31).
+    const ls          = feed.liveData?.linescore || {};
+    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
 
     // Pitcher line: today's pitch count + last-pitch velocity — both already
     // in hand from data this poll already fetched, zero new requests.
     const boxscore   = feed.liveData?.boxscore || {};
-    const pSide      = isTop ? 'home' : 'away';
-    const bSide      = isTop ? 'away' : 'home';
     const pStats     = boxscore.teams?.[pSide]?.players?.[`ID${pitcherId}`]?.stats?.pitching || {};
     const pitchCount = pStats.numberOfPitches ?? '—';
-    const pitchesThrown = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    const pitchesThrown = isBetweenInn ? [] : (currentPlay?.playEvents || []).filter(e => e.isPitch);
     const lastVelo    = pitchesThrown.length ? pitchesThrown[pitchesThrown.length - 1].startSpeed : null;
 
     // D-117 Phase 4: K-streak only shows at 2+ — a single strikeout isn't
@@ -1493,7 +1524,7 @@ function _buildHero(feed) {
 // already cached) and patches just the stat-line node when it resolves —
 // guarded against a batter change mid-flight (Axiom, D-117 Phase 1).
 function _lgMaybeFetchHeroBatterLine(feed, panel) {
-    const batterId = feed.liveData?.plays?.currentPlay?.matchup?.batter?.id;
+    const batterId = _lgCurrentMatchup(feed)?.batterId;
     if (!batterId || _lgSeasonStatCache[batterId] !== undefined) return;
     _lgFetchBatterSeasonLine(batterId).then(line => {
         if (_lgFeedCache !== feed) return; // a newer poll already superseded this one
@@ -1508,12 +1539,12 @@ function _buildDueUp(feed) {
     const status       = feed.gameData?.status || {};
     if (status.abstractGameState !== 'Live') return '';
 
-    const currentPlay = feed.liveData?.plays?.currentPlay;
-    const batterId     = currentPlay?.matchup?.batter?.id;
+    const matchup  = _lgCurrentMatchup(feed);
+    const batterId = matchup?.batterId;
     if (!batterId) return '';
 
     const boxscore = feed.liveData?.boxscore || {};
-    const side      = feed.liveData?.linescore?.isTopInning ? 'away' : 'home';
+    const side      = matchup.bSide;
     const team      = boxscore.teams?.[side] || {};
     const order     = team.battingOrder || [];
     const idx       = order.indexOf(batterId);
