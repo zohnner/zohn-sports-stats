@@ -831,6 +831,8 @@ Verified directly (not assumed): `functions/` has `mlb/`, `nfl/`, and `ncaaf/` s
 
 **No Vera/Kael gate needed** — this is backend edge-rendering of content that already exists and already has a proven visual template (`_renderSportLanding`, D-045); it's not new user-facing UI. **Ready for Finn once Relay confirms** the existing `/api/ncaab*`/`/api/wnba*` proxies expose everything the landing/team pages need (expected yes — the SPA's live views already consume this data — but confirm before build).
 
+**Resolved, narrower than scoped above (2026-08-31, DECISIONS.md D-121):** line 830's build plan assumed `functions/ncaab/team/[id]/[[slug]].js` was buildable the same way NCAAF's was — checking `js/ncaab.js`/`js/wnba.js`'s `_render{NCAAB,WNBA}View` dispatch directly (not assumed) found that assumption wrong: neither sport has a client-side per-team route yet, only a teams grid, and NCAAB has no player-detail view at all. Shipped instead: `functions/ncaab/index.js` + `standings.js`, `functions/wnba/index.js` + `standings.js` + `leaders.js` + `player/[id]/[[slug]].js` (WNBA's player route is real — `wnba-player-{id}`/`showWNBAPlayer`, D-092 Resolution 5). `_routes.json` and `tools/gen-sitemap.cjs` updated to match; all four data-driven templates smoke-tested locally via `wrangler pages dev` against live upstreams. Team pages for both sports, and a player page for NCAAB, stay open — but now gated behind those client-side features shipping first, not behind more edge-render work. See D-121 for the full record.
+
 ### Settings panel "Default Sport" dropdown missing NCAAB and WNBA options
 **Contributor:** Vera + Axiom | **Date:** 2026-08-15
 

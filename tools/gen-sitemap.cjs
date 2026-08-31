@@ -9,11 +9,20 @@
  *   node tools/gen-sitemap.cjs --dry      # prints the url count, writes nothing
  *
  * Only lists paths that have a real edge-render template today:
- *   landings /mlb /nfl /ncaaf · the 4 static stubs · /mlb/standings · /mlb/leaders
- *   /nfl/leaders · /ncaaf/standings · /ncaaf/rankings · /glossary
+ *   landings /mlb /nfl /ncaaf /ncaab /wnba · the 4 static stubs · /mlb/standings
+ *   /mlb/leaders · /nfl/leaders · /ncaaf/standings · /ncaaf/rankings
+ *   /ncaab/standings · /wnba/standings · /wnba/leaders · /glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug} · /nfl/game/{id} (rolling window)
+ *   /wnba/player/{espnId}/{slug}
+ *
+ * NCAAB and WNBA deliberately have no /team/ or (NCAAB) /player/ entries —
+ * neither sport has a client-side team-detail route yet, and NCAAB has no
+ * player-detail view at all (confirmed against js/ncaab.js/js/wnba.js's
+ * _render*View dispatch during the 2026-08-31 SEO audit, DECISIONS.md D-121).
+ * Don't add those sections here until the underlying SPA views exist —
+ * a sitemap entry with nothing real to hydrate into is worse than no entry.
  *
  * D-056: /mlb/game/{pk} pages (D-050) previously had zero lasting discovery path —
  * the home page only links each day's games while they're on it (~1 day), so a
@@ -58,13 +67,16 @@ async function main() {
 
     // 1) static / landings / stubs
     add(urlTag('/', 'daily', '1.0'));
-    for (const s of ['mlb', 'nfl', 'ncaaf']) add(urlTag('/' + s, 'daily', '0.9'));
+    for (const s of ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba']) add(urlTag('/' + s, 'daily', '0.9'));
     for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
     add(urlTag('/mlb/leaders', 'daily', '0.7'));
     add(urlTag('/nfl/leaders', 'daily', '0.7'));
     add(urlTag('/ncaaf/standings', 'daily', '0.7'));
     add(urlTag('/ncaaf/rankings', 'weekly', '0.7'));
+    add(urlTag('/ncaab/standings', 'daily', '0.7'));
+    add(urlTag('/wnba/standings', 'daily', '0.7'));
+    add(urlTag('/wnba/leaders', 'daily', '0.7'));
     add(urlTag('/glossary', 'monthly', '0.6'));
 
     // 2) MLB teams
@@ -169,6 +181,16 @@ async function main() {
             .sort((a, b) => a.search_rank - b.search_rank);
         for (const p of rows) add(urlTag(`/nfl/player/${p.player_id}/${slug(p.full_name)}`, 'weekly', '0.5'));
     } catch (e) { console.error('NFL players:', e.message); }
+
+    // 8) WNBA players — the site's own compact leaders endpoint (names+ids in one call)
+    try {
+        const wl = await jget(`${BASE}/api/wnbastats`);
+        for (const cat of (wl.categories || [])) {
+            for (const l of (cat.leaders || [])) {
+                if (l.id && l.name) add(urlTag(`/wnba/player/${l.id}/${slug(l.name)}`, 'weekly', '0.5'));
+            }
+        }
+    } catch (e) { console.error('WNBA players:', e.message); }
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
     if (DRY) { console.log(`[dry] ${urls.length} urls (nothing written)`); return; }

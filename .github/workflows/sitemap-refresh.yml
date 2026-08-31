@@ -1,0 +1,60 @@
+name: SportStrata Sitemap Refresh
+
+# Keeps sitemap.xml current without relying on someone remembering to run
+# tools/gen-sitemap.cjs by hand ("owner/CI-run" per that file's own header
+# comment). Found stale 2026-08-31 (SEO audit): the committed sitemap
+# predated the D-057 commit that added nfl/leaders, ncaaf/standings,
+# ncaaf/rankings and ncaaf/player to the generator, so those sections had
+# been shipping as templates for weeks with zero sitemap presence, plus the
+# rolling mlb/game and nfl/game discovery windows had aged out entirely.
+#
+# Auto-commits straight to main (owner's call, 2026-08-31) since the output
+# is fully deterministic script output already reviewed once as code, not
+# hand-authored content. The MIN_URLS floor below exists because
+# gen-sitemap.cjs deliberately fails open per-section (try/catch around each
+# upstream fetch, logged not thrown) so a partial upstream outage doesn't
+# error the whole script — that's the right call for a one-off manual run,
+# but wrong for an unattended cron that pushes to main: without a floor, a
+# bad ESPN day would silently shrink the live sitemap instead of failing loud.
+
+on:
+  schedule:
+    - cron: '30 12 * * *'   # ~8:30 AM ET daily — after overnight games settle, ahead of the 11:00/10:00 UTC bot jobs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate sitemap
+        run: node tools/gen-sitemap.cjs
+
+      - name: Sanity floor — fail instead of committing a degraded sitemap
+        run: |
+          count=$(grep -c '<url>' sitemap.xml)
+          echo "Generated sitemap has $count urls"
+          # 800 is comfortably below the ~1600-1700 urls a healthy run produces
+          # (all sources reachable) and comfortably above what's left if ESPN
+          # is fully unreachable (NCAAF+NFL teams/players/games all fail,
+          # leaving mostly MLB + the static pages) — see comment above.
+          if [ "$count" -lt 800 ]; then
+            echo "::error::Sitemap only has $count urls (floor: 800) — likely an upstream outage during generation. Not committing a degraded sitemap."
+            exit 1
+          fi
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- sitemap.xml; then
+            echo "sitemap.xml unchanged, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sitemap.xml
+          git commit -m "chore: refresh sitemap.xml [automated]"
+          git push
