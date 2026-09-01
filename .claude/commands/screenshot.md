@@ -21,12 +21,41 @@ sleep 2
 
 ```javascript
 // b) cdp_screenshot.js — write this once, reuse for any URL/viewport. Run with: node cdp_screenshot.js <outfile.png> <url> [width] [height]
+//
+// Uses an isolated browser context (Target.createBrowserContext) per call, not
+// the browser's default tab. Verified 2026-08-31 while checking a real JS fix:
+// reusing the same tab across many navigations in one long-running headless
+// Chrome process let this site's service worker (sw.js precaches /js/*) start
+// shadowing every subsequent request for an edited file with the SW's cached
+// copy -- Network.setCacheDisabled does NOT stop this, since a service worker
+// intercepts at a layer above the HTTP cache. A code edit kept reading as
+// "not applied" for several navigations in a row until switching to a fresh
+// isolated context, which has no SW registration at all. If you ever see a
+// screenshot that doesn't reflect a file you just changed, suspect the SW
+// before the edit -- confirm by diffing `curl localhost:PORT/js/whatever.js`
+// (ground truth: what the server actually serves) against what the page shows.
 const fs = require('fs');
 async function main() {
-  const [, , outFile, url, w, h] = process.argv;
+  const [, , outFile, url, w, h, waitMs] = process.argv;
   const width = Number(w) || 390, height = Number(h) || 844;
-  const r = await fetch('http://localhost:9333/json');
-  const tab = (await r.json()).find(t => t.type === 'page');
+  const wait = Number(waitMs) || 6000;
+
+  const ver = await (await fetch('http://localhost:9333/json/version')).json();
+  const browserWs = new WebSocket(ver.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { browserWs.onopen = res; browserWs.onerror = rej; });
+  let bidc = 0;
+  function bsend(method, params) {
+    return new Promise(resolve => {
+      const id = ++bidc;
+      const h = ev => { const m = JSON.parse(ev.data); if (m.id === id) { browserWs.removeEventListener('message', h); resolve(m.result); } };
+      browserWs.addEventListener('message', h);
+      browserWs.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  const { browserContextId } = await bsend('Target.createBrowserContext', {});
+  const { targetId } = await bsend('Target.createTarget', { url: 'about:blank', browserContextId });
+  const tab = (await (await fetch('http://localhost:9333/json')).json()).find(t => t.id === targetId);
   const ws = new WebSocket(tab.webSocketDebuggerUrl);
   await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
   let idc = 0;
@@ -38,23 +67,31 @@ async function main() {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
+
+  await send('Network.enable', {});
+  await send('Network.setCacheDisabled', { cacheDisabled: true });
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 800 });
   await send('Page.navigate', { url });
-  await new Promise(res => setTimeout(res, 3500)); // let the SPA boot + fetch
-  const shot = await send('Page.captureScreenshot', { format: 'png' });
+  await new Promise(res => setTimeout(res, wait)); // let the SPA boot + fetch -- pages chaining several fetches (e.g. Draft HQ) can need 10-15s+, not the old 3.5s default
+  // clip to width×height so you get the visible viewport, not the full scrollable page
+  const shot = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width, height, scale: 1 } });
   fs.writeFileSync(outFile, Buffer.from(shot.data, 'base64'));
-  console.log('saved', outFile, `${width}x${height}`);
+  console.log('saved', outFile, `${width}x${height} wait=${wait}ms`);
   ws.close();
+  await bsend('Target.disposeBrowserContext', { browserContextId });
+  browserWs.close();
 }
 main().catch(e => { console.error('ERROR', e); process.exit(1); });
 ```
 
 ```bash
-# c) Run it
-node cdp_screenshot.js "$TEMP/ss_mobile.png" "http://localhost:3001/#some-view" 390 844
+# c) Run it. Pass a longer wait (ms) for pages that chain several fetches.
+node cdp_screenshot.js "$TEMP/ss_mobile.png" "http://localhost:3001/#some-view" 390 844 6000
 ```
 
 If you need to sanity-check the viewport itself (not just eyeball the screenshot), the same CDP connection can `Runtime.evaluate` `window.innerWidth`/`document.body.scrollWidth` vs. a target element's `scrollWidth` — a scrollWidth exceeding innerWidth is real overflow; don't conclude overflow from a screenshot's visual proportions alone, since that's exactly what produced the false positive this note is warning about.
+
+**Full-page vs. viewport-only:** the script above clips to the viewport. For a long page (e.g. a team roster), either bump `height` well past the content (`captureBeyondViewport: true` in the `captureScreenshot` call instead of `clip` also works, but pair it with a *small* window height passed to `setDeviceMetricsOverride` or you'll get a giant image that's hard to read at any zoom — better to request a specific tall `height` like 3000 and clip to that).
 
 **4. View screenshots** using the Read tool.
 

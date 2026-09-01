@@ -1989,8 +1989,18 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
         || { abbr, name: abbr, logo: getNFLTeamLogoUrl(abbr), color: '#334155', record: '' };
     if (window.setBreadcrumb) setBreadcrumb('nfl-teams', team.name || abbr);
     const sAbbr  = _nflSleeperAbbr(abbr);
+    // `p.active` is Sleeper's "still rostered somewhere in the league" flag, not
+    // "on this team's active/53-man roster" — it stays true for players on IR.
+    // Live-verified 2026-08-31 (Week 1 roster-cut audit): Sleeper's own `status`
+    // field is a clean binary league-wide (`Active`/`Inactive`, no other values),
+    // and every current `status:'Inactive'` player carries `injury_status:'IR'`.
+    // Without this check, IR players were counted in the Offense/Defense/Special
+    // Teams tallies and mixed into position groups as if roster-eligible, on
+    // every team's page. They're not dropped from the site — the Injury Report
+    // (displayNFLInjuries) is the dedicated place IR players surface, deliberately
+    // unfiltered there since that page's whole point is showing who's out.
     const roster = Object.values(_nflPoolMap || {})
-        .filter(p => p && p.active && p.team === sAbbr && p.position && p.position !== 'DEF');
+        .filter(p => p && p.active && p.status !== 'Inactive' && p.team === sAbbr && p.position && p.position !== 'DEF');
 
     const sortFn = (a, b) =>
         (a.depth_chart_order || 99) - (b.depth_chart_order || 99) ||
