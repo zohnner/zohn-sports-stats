@@ -838,6 +838,8 @@ Verified directly (not assumed): `functions/` has `mlb/`, `nfl/`, and `ncaaf/` s
 
 `index.html`'s `#settingsDefaultSport` `<select>` (Settings panel → Default Sport) lists only `""` (no default), `mlb`, `nfl`, `ncaaf` — NCAAB and WNBA are both live in `SPORTS_META`/`SPORTS` but absent from this control, so a user cannot set either as their default landing sport even though every other nav surface treats them as full peers. Small, low-risk fix: add `<option value="ncaab">NCAAB</option>` and `<option value="wnba">WNBA</option>`. Axiom: no architecture change, this is pure markup — the value just needs to match `SPORTS_META` keys, which `ncaab`/`wnba` already do. Vera: confirm whatever reads `#settingsDefaultSport`'s stored value on boot treats an unrecognized/legacy value the same safe way it already handles `""` (falls through to the sport picker), so this doesn't need its own new state. Ready for Finn.
 
+**Doc-sync correction (2026-08-31):** checked `index.html` directly rather than trusting this entry — both `<option value="ncaab">`/`<option value="wnba">` are already present (line ~271-272), and `_getDefaultSport`/`_setDefaultSport` (js/auth.js) are plain generic string get/set against `localStorage`/server prefs with no hardcoded sport list, so both values already round-trip correctly with zero code changes needed. This was fixed in some undocumented pass between 2026-08-15 and now and never got a "Fix:" note here — closing it out now that it's confirmed, not assumed.
+
 ### Nav rename / Analytics dropdown split — reopened, still unresolved since 2026-08-10
 **Contributor:** Vera | **Date:** 2026-08-15
 

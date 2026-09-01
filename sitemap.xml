@@ -13,6 +13,7 @@
     <url><loc>https://sportstrata.cc/mlb/standings</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/mlb/leaders</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/nfl/leaders</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/standings</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/standings</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/rankings</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/ncaab/standings</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
@@ -49,84 +50,84 @@
     <url><loc>https://sportstrata.cc/mlb/team/lad</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/wsh</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/nym</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/670541/yordan-alvarez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/650333/luis-arraez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/670541/yordan-alvarez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/802415/chandler-simpson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/693304/nick-gonzales</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/672640/otto-lopez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/518692/freddie-freeman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/650490/yandy-d-az</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/672640/otto-lopez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/672515/gabriel-moreno</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/650490/yandy-d-az</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/671739/michael-harris-ii</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/800050/chase-delauter</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/808982/jung-hoo-lee</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/689414/liam-hicks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/664983/jake-mccarthy</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/681198/tj-rumfield</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/808982/jung-hoo-lee</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/676475/alec-burleson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/689414/liam-hicks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/671277/luis-garc-a-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/691023/jordan-walker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/677951/bobby-witt-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/695506/jac-caglianone</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/691718/pete-crow-armstrong</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/669364/xavier-edwards</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/678882/ceddanne-rafaela</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/669364/xavier-edwards</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/691406/junior-caminero</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/665487/fernando-tatis-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/694192/jackson-chourio</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/691718/pete-crow-armstrong</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/660271/shohei-ohtani</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/666018/jonathan-aranda</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/694192/jackson-chourio</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/686948/drake-baldwin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/673548/seiya-suzuki</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/666018/jonathan-aranda</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/807712/luke-keaschall</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/701807/carson-benge</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/676391/ernie-clement</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/805808/kevin-mcgonigle</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/694384/nolan-schanuel</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/680757/steven-kwan</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/575929/willson-contreras</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/673548/seiya-suzuki</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/807712/luke-keaschall</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/669016/brandon-marsh</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/805808/kevin-mcgonigle</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/641343/jake-bauers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/677649/ezequiel-duran</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/668227/randy-arozarena</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/575929/willson-contreras</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/669016/brandon-marsh</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/682985/riley-greene</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/681624/andy-pages</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/677649/ezequiel-duran</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/682829/elly-de-la-cruz</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/661388/william-contreras</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/805367/chase-meidroth</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/643289/mauricio-dub-n</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/624413/pete-alonso</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/643289/mauricio-dub-n</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/647304/josh-naylor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/803011/sam-antonacci</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/668227/randy-arozarena</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/682928/cj-abrams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/701398/sal-stewart</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/547180/bryce-harper</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/695578/james-wood</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/666182/bo-bichette</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/663538/nico-hoerner</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/668804/bryan-reynolds</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/607043/brandon-nimmo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/650489/willi-castro</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/663538/nico-hoerner</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/666182/bo-bichette</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/668804/bryan-reynolds</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/669003/garrett-mitchell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/650489/willi-castro</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/681082/bryson-stott</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/621566/matt-olson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/665489/vladimir-guerrero-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/677800/wilyer-abreu</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/608324/alex-bregman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/641355/cody-bellinger</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/621566/matt-olson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/670623/isaac-paredes</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/701762/nick-kurtz</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/605137/josh-bell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/608324/alex-bregman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/672695/geraldo-perdomo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/668930/brice-turang</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/645277/ozzie-albies</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/700250/ben-rice</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/696100/hunter-goodman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/543807/george-springer</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/545121/ildemaro-vargas</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/677800/wilyer-abreu</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/695734/daylen-lile</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/702332/caleb-durbin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/672695/geraldo-perdomo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/645277/ozzie-albies</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/605137/josh-bell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/700250/ben-rice</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/543807/george-springer</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/668930/brice-turang</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/696100/hunter-goodman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/545121/ildemaro-vargas</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/646240/rafael-devers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/702332/caleb-durbin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/664040/brandon-lowe</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/571970/max-muncy</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/694819/jacob-misiorowski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -143,10 +144,10 @@
     <url><loc>https://sportstrata.cc/mlb/player/607259/nick-martinez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/690997/nolan-mclean</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/666200/jes-s-luzardo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/650633/michael-king</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/676917/cade-cavalli</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/592662/robbie-ray</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/656492/foster-griffin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/650633/michael-king</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/672456/keider-montero</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/680732/sean-burke</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/608379/michael-wacha</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -160,20 +161,19 @@
     <url><loc>https://sportstrata.cc/mlb/player/669372/j-t-ginn</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/657277/logan-webb</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/694973/paul-skenes</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/671737/taj-bradley</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/700241/michael-mcgreevy</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/676440/tanner-bibee</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/693821/bryce-elder</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/671737/taj-bradley</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/702070/noah-cameron</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/668909/gavin-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/684007/shota-imanaga</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/669358/shane-baz</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/669923/george-kirby</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/680694/kyle-bradish</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/693821/bryce-elder</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/player/669923/george-kirby</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/694738/landen-roupp</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/664285/framber-valdez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/693433/bryan-woo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/player/669432/trevor-rogers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/669022/mackenzie-gore</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/671096/andrew-abbott</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/592332/kevin-gausman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -182,17 +182,6 @@
     <url><loc>https://sportstrata.cc/mlb/player/605400/aaron-nola</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/518876/merrill-kelly</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/642547/freddy-peralta</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824514</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824478</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822939</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823427</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823343</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824725</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823589</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824077</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823668</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824641</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824320</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/824803</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/823341</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/824398</loc><changefreq>never</changefreq><priority>0.4</priority></url>
@@ -382,6 +371,21 @@
     <url><loc>https://sportstrata.cc/mlb/game/824314</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/823982</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/825040</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824472</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/823340</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/822929</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824391</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824716</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/822687</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/823661</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824070</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824633</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/822854</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824148</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/824313</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/823984</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/825038</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/823908</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2000/abilene-christian-wildcats</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2001/adams-state-grizzlies</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2003/adrian-bulldogs</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
@@ -1689,15 +1693,15 @@
     <url><loc>https://sportstrata.cc/wnba/player/4065870/jackie-young</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4398674/rhyne-howard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4433790/azzi-fudd</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/wnba/player/3146151/ariel-atkins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/wnba/player/2590093/kiah-stokes</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/wnba/player/2529130/natasha-howard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4433404/cameron-brink</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/wnba/player/4398729/emily-engstler</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/wnba/player/2590093/kiah-stokes</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/wnba/player/4790266/awak-kuier</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4433405/kamilla-cardoso</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4398776/nalyssa-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4068042/natasha-mack</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/wnba/player/2529130/natasha-howard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/4398966/olivia-nelson-ododa</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/5208983/isobel-borlase</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/wnba/player/2327695/rebekah-gardner</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/wnba/player/2529622/kayla-thornton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 </urlset>
