@@ -757,6 +757,17 @@ async function fetchNFLSleeperPool() {
     return _nflPool;
 }
 
+// Team defense/special-teams entries (position 'DEF') have no full_name in
+// Sleeper's pool -- only first_name/last_name (e.g. "Houston"/"Texans") --
+// which rendered as a blank name on Trending and Waiver Wire (found live
+// 2026-08-31, both surfaces pull from Sleeper's trending endpoint, which
+// includes DEF as a real fantasy position). Individual skill-position
+// players always have full_name, so this only changes DEF's own display.
+function _nflPlayerName(p) {
+    if (!p) return '';
+    return p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || p.team || '';
+}
+
 function getNFLSleeperHeadshot(id) {
     return id ? `https://sleepercdn.com/content/nfl/players/${id}.jpg` : null;
 }
@@ -906,7 +917,7 @@ function displayNFLTrending(adds, drops) {
         const items = (list || []).slice(0, 12);
         const rows = items.map((e, i) => {
             const p    = _nflPoolMap?.[e.player_id];
-            const name = p ? p.full_name : 'Unknown player';
+            const name = p ? _nflPlayerName(p) : 'Unknown player';
             const meta = p ? `${p.team || 'FA'}${p.position ? ' · ' + p.position : ''}` : '';
             const hs   = getNFLSleeperHeadshot(e.player_id);
             const clickAttr = p ? ` onclick="navigateTo('nfl-player-${e.player_id}')"` : '';
@@ -1120,7 +1131,7 @@ function displayNFLWaivers(adds) {
         <div onclick="navigateTo('nfl-player-${p.player_id}')" class="nfl-lrow nfl-lrow--link" style="align-items:flex-start">
             <div class="nfl-lrow-av"><img src="${hs || ''}" alt="" loading="lazy" data-hide-on-error></div>
             <div class="nfl-lrow-main">
-                <div class="nfl-lrow-name">${_escHtml(p.full_name)}</div>
+                <div class="nfl-lrow-name">${_escHtml(_nflPlayerName(p))}</div>
                 <div class="nfl-lrow-meta">${_escHtml(p.team || 'FA')}${p.position ? ' · ' + _escHtml(p.position) : ''}</div>
                 ${hint}
             </div>
