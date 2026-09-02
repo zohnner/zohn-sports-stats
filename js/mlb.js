@@ -3177,13 +3177,19 @@ function _createMLBGameCard(game) {
     const card      = document.createElement('div');
     card.className  = 'game-card';
 
-    // Only final/live games have meaningful box scores to show
-    const clickable = game.status?.abstractGameState === 'Final' || game.status?.abstractGameState === 'Live';
-    const isLiveCard = game.status?.abstractGameState === 'Live';
+    // Preview games route to the live-game page too, not just Live/Final —
+    // showMLBLiveGame's Preview state (probable-pitcher stat cards, key
+    // hitters, form) is real, clickable content now, not the bare-names
+    // placeholder it used to be. Before this, a scheduled game had NO click
+    // handler at all, so on any morning before the day's first pitch every
+    // single card on the Scores page was unclickable (found live 2026-09-02).
+    const gameState     = game.status?.abstractGameState;
+    const clickable     = gameState === 'Final' || gameState === 'Live' || gameState === 'Preview';
+    const opensLivePage = gameState === 'Live' || gameState === 'Preview';
     if (clickable && game.gamePk) {
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => {
-            if (isLiveCard) {
+            if (opensLivePage) {
                 AppState.mlbLiveGame = game;
                 navigateTo('mlb-live-' + game.gamePk);
             } else {
