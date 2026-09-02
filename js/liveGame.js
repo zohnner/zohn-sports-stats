@@ -48,6 +48,8 @@ let _lgZoneLastPitchCount = new Map(); // `${gamePk}_${atBatIndex}` → pitch co
 let _lgIsPageMode     = false;  // true when opened via showMLBLiveGame (full page); false for the inline accordion (openLiveGamePanel)
 let _lgLastHeroBatterId = null; // batter id from previous poll — hero entrance-motion gate (D-117 Phase 1)
 let _lgSeasonStatCache  = {};   // { playerId: seasonHittingStatObj | null } — hero batter AVG/OPS cache (D-117 Phase 1)
+let _lgPregameHtml    = '';     // cached rendered pregame-preview HTML (page mode only)
+let _lgPregameGamePk  = null;   // gamePk _lgPregameHtml belongs to / is being fetched for
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -105,6 +107,8 @@ function stopLiveGamePolling() {
     _lgIsPageMode     = false;
     _lgZoneMode.clear();
     _lgZoneLastPitchCount.clear();
+    _lgPregameHtml    = '';
+    _lgPregameGamePk  = null;
 }
 
 function _updatePollTimestamp(state) {
@@ -147,11 +151,25 @@ async function openLiveGamePanel(gamePk, game, cardEl) {
     // before first pitch (the exact bug _lgNextInterval was built to fix,
     // missed here since this is a separate entry point — D-117 debug pass).
     await _doPoll(gamePk);
-    // Equality, not just truthiness — see showMLBLiveGame's matching guard.
-    if (_lgGamePk === String(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
+    if (_lgShouldArmPolling(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
 }
 
 // ── Internal ─────────────────────────────────────────────────
+
+// Shared arm-guard for both entry points. Equality (not just truthiness) on
+// gamePk, matching each call site's own prior comment. Also refuses to arm
+// for a game that's already Final on its very first poll (e.g. a deep link
+// straight to a finished game) — found live 2026-09-02 alongside the
+// _doPoll isFinalNow fix: without this, both showMLBLiveGame and
+// openLiveGamePanel would unconditionally arm a 9s interval after the
+// first poll resolves, regardless of game state, which kept polling a
+// finished game forever and periodically flashed the status badge back to
+// "LIVE" (_updateBadge(panel,'live') runs unconditionally at the top of
+// every _doPoll, before the Final check) each time that interval fired.
+function _lgShouldArmPolling(gamePk) {
+    return _lgGamePk === String(gamePk)
+        && _lgFeedCache?.gameData?.status?.abstractGameState !== 'Final';
+}
 
 function _closeExistingPanel() {
     if (document.querySelector('.lg-panel')?.closest('.lg-live-page')) {
@@ -245,8 +263,23 @@ async function _doPoll(gamePk) {
         }
         _lgLastPitcherId = curPitcherId ?? _lgLastPitcherId;
 
+        // Stop polling once a game goes Final — no more updates are coming.
+        // Deliberately NOT the full stopLiveGamePolling(): that also wipes
+        // _lgGamePk/_lgFeedCache/_lgTabMap/etc., which are exactly what tab
+        // switching (_switchTab), the Matchup H2H fetch, and every other
+        // still-live interaction on this now-static panel depend on. Found
+        // live 2026-09-02: calling the full teardown here meant clicking
+        // Box Score/Matchup/Bullpen on ANY finished game silently did
+        // nothing — the tab buttons toggled active but the content stayed
+        // frozen on whichever tab happened to be showing at the moment the
+        // game went Final, since _switchTab bails out immediately once
+        // _lgFeedCache is null.
         const isFinalNow = feed.gameData?.status?.abstractGameState === 'Final';
-        if (isFinalNow) { stopLiveGamePolling(); return; }
+        if (isFinalNow) {
+            if (_lgInterval)   { clearInterval(_lgInterval);   _lgInterval   = null; }
+            if (_lgTsInterval) { clearInterval(_lgTsInterval); _lgTsInterval = null; }
+            return;
+        }
 
         const newMs = _lgNextInterval(feed);
         if (_lgInterval) {
@@ -494,9 +527,9 @@ function _renderPanel(panel, feed, gamePk) {
         tabsEl?.setAttribute('hidden', '');
         if (tabpanel) {
             tabpanel.removeAttribute('aria-labelledby');
-            tabpanel.innerHTML = _buildProbablePitchers(
-                feed.gameData?.probablePitchers, away.abbreviation, home.abbreviation
-            );
+            tabpanel.innerHTML = _lgIsPageMode
+                ? _buildPregamePreview(feed, gamePk)
+                : _buildProbablePitchers(feed.gameData?.probablePitchers, away.abbreviation, home.abbreviation);
         }
     } else {
         tabsEl?.removeAttribute('hidden');
@@ -690,6 +723,204 @@ function _buildProbablePitchers(pp, awayAbbr, homeAbbr) {
     </div>`;
 }
 
+// ── Pregame preview (page mode only) ────────────────────────────
+// Full stat spread for the Preview state — pitcher cards, key hitters, team
+// form — replacing the bare-names v1 above on the dedicated live-game page.
+// The inline accordion (openLiveGamePanel) keeps _buildProbablePitchers()
+// unchanged; this is deliberately page-mode-only (too much for a card
+// expansion in a scrolling list).
+//
+// Mirrors the data js/mlb.js's Game Prep sheet (_openGamePrepSheet) already
+// proves out — same endpoints, same derived-stat formulas, same top-5-by-OPS
+// threshold — but rendered through this file's own lg-* markup rather than
+// Game Prep's prep-* print-sheet layout, and fetched once per game open
+// (gated by _lgPregameGamePk), not once per 60s pregame poll.
+
+function _lgFip(s) {
+    const ip = parseFloat(s?.inningsPitched || 0);
+    if (!ip || s?.homeRuns == null) return '—';
+    return ((13 * (s.homeRuns || 0) + 3 * ((s.baseOnBalls || 0) + (s.hitBatsmen || 0)) - 2 * (s.strikeOuts || 0)) / ip + 3.10).toFixed(2);
+}
+function _lgBb9(s) {
+    const ip = parseFloat(s?.inningsPitched || 0);
+    if (!ip || s?.baseOnBalls == null) return '—';
+    return ((s.baseOnBalls || 0) / ip * 9).toFixed(1);
+}
+
+function _lgBuildPitcherCard(ppInfo, abbr, teamColor) {
+    const pid    = ppInfo?.id;
+    const name   = ppInfo?.fullName || 'TBD';
+    const stats  = pid ? (AppState.mlbPlayerStats?.pitching?.[pid] || null) : null;
+    const hs     = pid ? getMLBPlayerHeadshotUrl(pid) : '';
+    const avatar = hs
+        ? `<img src="${hs}" alt="" class="lg-pregame-pp-avatar" loading="lazy" data-hide-on-error>`
+        : `<div class="lg-pregame-pp-avatar lg-pregame-pp-avatar--init">${_lgInitial(name)}</div>`;
+    const rec = stats?.wins != null ? `${stats.wins}-${stats.losses}` : '';
+
+    return `<div class="lg-side-card lg-pregame-pp-card" style="border-left:3px solid ${teamColor}">
+        <div class="lg-pregame-pp-top">
+            ${avatar}
+            <div>
+                <div class="lg-pregame-pp-role">${_escHtml(abbr || '')} Probable</div>
+                <div class="lg-hero-name">${_escHtml(name)}</div>
+                ${rec ? `<div class="lg-side-line lg-side-line--muted">${rec}</div>` : ''}
+            </div>
+        </div>
+        ${stats ? `<div class="lg-pregame-pp-stats">
+            <span><b>${stats.era != null ? parseFloat(stats.era).toFixed(2) : '—'}</b>ERA</span>
+            <span><b>${_lgFip(stats)}</b>FIP</span>
+            <span><b>${stats.whip != null ? parseFloat(stats.whip).toFixed(2) : '—'}</b>WHIP</span>
+            <span><b>${stats.strikeoutsPer9Inn != null ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1) : '—'}</b>K/9</span>
+            <span><b>${_lgBb9(stats)}</b>BB/9</span>
+            <span><b>${stats.strikeOuts ?? '—'}</b>K</span>
+        </div>` : pid ? `<div class="lg-side-line lg-side-line--muted">Stats unavailable</div>` : ''}
+    </div>`;
+}
+
+function _lgBuildKeyHitters(splits, abbr) {
+    const top = (splits || [])
+        .filter(s => s.player?.id && parseFloat(s.stat?.ops || 0) > 0 && (s.stat?.atBats || 0) >= 20)
+        .sort((a, b) => parseFloat(b.stat?.ops || 0) - parseFloat(a.stat?.ops || 0))
+        .slice(0, 5);
+    if (!top.length) return '';
+
+    const rows = top.map(({ player: p, stat: s }) => {
+        const hs  = getMLBPlayerHeadshotUrl(p.id);
+        const img = hs
+            ? `<img src="${hs}" alt="" class="lg-pregame-hitter-hs" loading="lazy" data-hide-on-error>`
+            : `<div class="lg-pregame-hitter-init">${_escHtml((p.fullName || '?')[0])}</div>`;
+        return `<button type="button" class="lg-pregame-hitter-row" onclick="showMLBPlayerDetail(${p.id},'hitting')">
+            ${img}
+            <div class="lg-pregame-hitter-info">
+                <span class="lg-pregame-hitter-name">${_escHtml(p.fullName || '')}</span>
+                <span class="lg-pregame-hitter-stats">${s.avg || '.000'} · ${s.homeRuns ?? '—'} HR · ${s.ops || '.000'} OPS</span>
+            </div>
+        </button>`;
+    }).join('');
+
+    return `<div class="lg-side-card">
+        <div class="lg-box-section-title">${_escHtml(abbr || '')} Key Hitters</div>
+        ${rows}
+    </div>`;
+}
+
+function _lgBuildFormStrip(awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
+    const awaySt = typeof _standingsTeam === 'function' ? _standingsTeam(awayTeamId) : null;
+    const homeSt = typeof _standingsTeam === 'function' ? _standingsTeam(homeTeamId) : null;
+    if (!awaySt && !homeSt) return '';
+
+    const row = (abbr, st) => {
+        if (!st) return '';
+        const isW   = (st.streak || '').startsWith('W');
+        const posRd = (st.rdiff  || '').startsWith('+');
+        const splitTxt = [st.home ? `Home ${st.home}` : '', st.away ? `Away ${st.away}` : ''].filter(Boolean).join(' · ');
+        return `<div class="lg-pregame-form-row">
+            <span class="lg-pregame-form-abbr">${_escHtml(abbr || '')}</span>
+            ${st.streak ? `<span class="lg-form-badge lg-form-badge--${isW ? 'w' : 'l'}">${_escHtml(st.streak)}</span>` : ''}
+            ${st.rdiff && st.rdiff !== '—' ? `<span class="lg-form-badge lg-form-badge--${posRd ? 'pos' : 'neg'}" title="Run differential">${_escHtml(st.rdiff)} R</span>` : ''}
+            ${splitTxt ? `<span class="lg-side-line--muted">${_escHtml(splitTxt)}</span>` : ''}
+        </div>`;
+    };
+
+    return `<div class="lg-side-card">
+        <div class="lg-box-section-title">Form</div>
+        ${row(awayAbbr, awaySt)}
+        ${row(homeAbbr, homeSt)}
+    </div>`;
+}
+
+function _lgAssemblePregameHtml(pp, away, home, hittersHtml, formHtml) {
+    const awayClr = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
+    const homeClr = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
+    return `<div class="lg-pregame-wrap">
+        <div class="lg-pregame-pitchers">
+            ${_lgBuildPitcherCard(pp.away, away.abbreviation, awayClr)}
+            ${_lgBuildPitcherCard(pp.home, home.abbreviation, homeClr)}
+        </div>
+        ${hittersHtml || ''}
+        ${formHtml || ''}
+        <div class="lg-matchup-empty" style="margin-top:var(--space-2)">Play-by-play and box score open automatically once the game starts.</div>
+    </div>`;
+}
+
+// Synchronous — called from _renderPanel on every pregame poll. Returns the
+// cached fully-built HTML once _lgFetchPregameExtras resolves; before that,
+// pitcher cards render immediately (from whatever's already in AppState) with
+// a loading placeholder standing in for hitters/form, and the fetch is kicked
+// off exactly once per game open.
+function _buildPregamePreview(feed, gamePk) {
+    const gd   = feed.gameData || {};
+    const pp   = gd.probablePitchers || {};
+    const away = gd.teams?.away || {};
+    const home = gd.teams?.home || {};
+
+    if (!pp.away?.fullName && !pp.home?.fullName) {
+        return '<div class="lg-pbp-empty">Probable pitchers not yet announced.</div>';
+    }
+
+    if (_lgPregameGamePk === String(gamePk) && _lgPregameHtml) {
+        return _lgPregameHtml;
+    }
+
+    if (_lgPregameGamePk !== String(gamePk)) {
+        _lgPregameGamePk = String(gamePk);
+        _lgPregameHtml   = '';
+        _lgFetchPregameExtras(gamePk, feed);
+    }
+
+    return _lgAssemblePregameHtml(pp, away, home,
+        `<div class="skeleton-line" style="height:90px;border-radius:12px;margin-top:var(--space-3)"></div>`,
+        '');
+}
+
+async function _lgFetchPregameExtras(gamePk, feed) {
+    const gd   = feed.gameData || {};
+    const pp   = gd.probablePitchers || {};
+    const away = gd.teams?.away || {};
+    const home = gd.teams?.home || {};
+    const awayPitcherId = pp.away?.id;
+    const homePitcherId = pp.home?.id;
+    const _needsStats = id => id && !AppState.mlbPlayerStats?.pitching?.[id];
+
+    const [awayPPRes, homePPRes, awayHitRes, homeHitRes] = await Promise.allSettled([
+        _needsStats(awayPitcherId) ? mlbFetch(`/people/${awayPitcherId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
+        _needsStats(homePitcherId) ? mlbFetch(`/people/${homePitcherId}/stats`, { stats: 'season', group: 'pitching', season: MLB_SEASON }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
+        away.id ? mlbFetch('/stats', { stats: 'season', group: 'hitting', sportId: 1, season: MLB_SEASON, teamId: away.id }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
+        home.id ? mlbFetch('/stats', { stats: 'season', group: 'hitting', sportId: 1, season: MLB_SEASON, teamId: home.id }, ApiCache.TTL.MEDIUM) : Promise.resolve(null),
+    ]);
+
+    // Cache into AppState.mlbPlayerStats.pitching — same shared cache Game
+    // Prep and player-detail read from, so visiting either next is warm.
+    const _cacheStats = (id, res) => {
+        if (!id || res.status !== 'fulfilled' || !res.value) return;
+        const stat = res.value?.stats?.[0]?.splits?.[0]?.stat;
+        if (stat) {
+            if (!AppState.mlbPlayerStats.pitching) AppState.mlbPlayerStats.pitching = {};
+            AppState.mlbPlayerStats.pitching[id] = stat;
+        }
+    };
+    _cacheStats(awayPitcherId, awayPPRes);
+    _cacheStats(homePitcherId, homePPRes);
+
+    const _splits = res => (res.status === 'fulfilled' ? res.value?.stats?.[0]?.splits || [] : []);
+    const hittersHtml = `<div class="lg-pregame-hitters">
+        ${_lgBuildKeyHitters(_splits(awayHitRes), away.abbreviation)}
+        ${_lgBuildKeyHitters(_splits(homeHitRes), home.abbreviation)}
+    </div>`;
+    const formHtml = _lgBuildFormStrip(away.id, home.id, away.abbreviation, home.abbreviation);
+
+    _lgPregameHtml = _lgAssemblePregameHtml(pp, away, home, hittersHtml, formHtml);
+
+    // Only touch the DOM if still on the same game, still page mode, and
+    // still Preview — mirrors the guard style already used by
+    // _lgFetchSidebarExtras/_lgFetchBullpenRest (the game may have started,
+    // or the user navigated away, by the time these fetches resolve).
+    if (_lgGamePk !== String(gamePk) || !_lgIsPageMode) return;
+    if (_lgFeedCache?.gameData?.status?.abstractGameState !== 'Preview') return;
+    const tabpanel = document.querySelector('.lg-panel .lg-tab-content');
+    if (tabpanel) tabpanel.innerHTML = _lgPregameHtml;
+}
+
 // Sidebar (page mode only) — surfaces feed/live fields the tab body never
 // rendered: venue/weather, mound visits + challenges remaining per team, and
 // the umpire crew. All read from data _doPoll already fetched; no new
@@ -706,13 +937,19 @@ function _buildSidebar(feed) {
     const venue     = gd.venue?.name;
     const awayAbbr  = gd.teams?.away?.abbreviation || 'Away';
     const homeAbbr  = gd.teams?.home?.abbreviation || 'Home';
+    const pf        = typeof _PARK_FACTORS !== 'undefined' ? _PARK_FACTORS[gd.teams?.home?.id] : null;
+    const parkBadge = pf > 1.05
+        ? `<span class="lg-park-badge lg-park-badge--hit" title="Hitter-friendly park (PF ${pf.toFixed(2)})">Park +</span>`
+        : pf < 0.95
+        ? `<span class="lg-park-badge lg-park-badge--pit" title="Pitcher-friendly park (PF ${pf.toFixed(2)})">Park −</span>`
+        : '';
 
     let html = '';
 
     if (venue || weather?.condition) {
         html += `<div class="lg-side-card">
             <div class="lg-box-section-title">Game Info</div>
-            ${venue ? `<div class="lg-side-line">${_escHtml(venue)}</div>` : ''}
+            ${venue ? `<div class="lg-side-line">${_escHtml(venue)}${parkBadge}</div>` : ''}
             ${weather?.condition ? `<div class="lg-side-line">${_escHtml(weather.condition)}${weather.temp ? `, ${_escHtml(weather.temp)}°` : ''}</div>` : ''}
             ${weather?.wind ? `<div class="lg-side-line lg-side-line--muted">${_escHtml(weather.wind)}</div>` : ''}
         </div>`;
@@ -1435,6 +1672,11 @@ function _buildHero(feed) {
     if (isFinal) return '';
 
     if (isPreview) {
+        // Page mode's pregame tab now renders full pitcher cards (headshot,
+        // record, ERA/FIP/WHIP/K9/BB9) — this compact name-only hero would
+        // just repeat the same two names above them. Keep it for the inline
+        // accordion, where it's the only pregame content shown.
+        if (_lgIsPageMode) return '';
         const pp = feed.gameData?.probablePitchers;
         if (!pp || (!pp.away?.fullName && !pp.home?.fullName)) return '';
         const away = feed.gameData?.teams?.away || {};
@@ -1795,14 +2037,21 @@ async function _lgFetchH2H(batterId, pitcherId) {
 }
 
 async function _buildMatchupContent(feed) {
+    // Sourced from _lgCurrentMatchup (linescore.offense/defense), not
+    // currentPlay.matchup — same stale-pairing bug as the hero card/Due Up
+    // rail (fixed 2026-08-31, see ISSUES.md), left open here at the time
+    // pending "a future pass." currentPlay.matchup doesn't advance until the
+    // new half's first pitch, so during the Middle/End window it still names
+    // the batter/pitcher from the at-bat that just ended.
     const currentPlay = feed.liveData?.plays?.currentPlay;
-    const matchup     = currentPlay?.matchup;
+    const matchup      = _lgCurrentMatchup(feed);
     if (!matchup) return '<div class="lg-pbp-empty">No at-bat in progress.</div>';
 
-    const batterId    = matchup.batter?.id;
-    const pitcherId   = matchup.pitcher?.id;
-    const batterName  = _escHtml(matchup.batter?.fullName  || '');
-    const pitcherName = _escHtml(matchup.pitcher?.fullName || '');
+    const batterId    = matchup.batterId;
+    const pitcherId   = matchup.pitcherId;
+    const batterName  = _escHtml(matchup.batterName  || '');
+    const pitcherName = _escHtml(matchup.pitcherName || '');
+    const isBetweenInn = ['Middle', 'End'].includes(feed.liveData?.linescore?.inningState);
 
     const [h2h, arsenalRows] = await Promise.all([
         (batterId && pitcherId) ? _lgFetchH2H(batterId, pitcherId) : Promise.resolve(null),
@@ -1830,8 +2079,11 @@ async function _buildMatchupContent(feed) {
         </tr></tbody></table>`;
     }
 
-    // Block 2 — This At-Bat (only if pitches thrown)
-    const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    // Block 2 — This At-Bat (only if pitches thrown). Skipped entirely
+    // between innings: currentPlay.playEvents still belongs to the at-bat
+    // that just ended, not the new batter named above, so showing it here
+    // would attribute the old at-bat's pitch count to the new matchup.
+    const pitches = (!isBetweenInn ? (currentPlay?.playEvents || []) : []).filter(e => e.isPitch);
     const ls      = feed.liveData?.linescore || {};
     let block2Html = '';
     if (pitches.length > 0) {
@@ -1886,11 +2138,16 @@ function _switchTab(panel, tabId, gamePk) {
         tabpanel.innerHTML = `
             <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:85%"></div>
             <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:70%"></div>`;
+        // Guard on the active tab, not just the feed — found live 2026-09-02:
+        // clicking away to another tab before this async H2H/arsenal fetch
+        // resolves let the stale promise overwrite whatever tab the user had
+        // since switched to (the feed-only guard doesn't change on a tab
+        // switch, only on the next poll).
         _buildMatchupContent(feed).then(html => {
-            if (_lgFeedCache === feed) tabpanel.innerHTML = html;
+            if (_lgFeedCache === feed && _lgTabMap.get(gamePk) === 'matchup') tabpanel.innerHTML = html;
         }).catch(err => {
             Logger.warn('Matchup content failed', err, 'LIVE');
-            if (_lgFeedCache === feed) tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
+            if (_lgFeedCache === feed && _lgTabMap.get(gamePk) === 'matchup') tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
         });
     } else if (tabId === 'bullpen') {
         // Phase 2 (D-117): today's usage renders synchronously (boxscore's
@@ -2029,8 +2286,11 @@ function showMLBLiveGame(gamePk) {
         // resolves already reassigned _lgGamePk, so a bare truthy check
         // here would still arm a second interval on top of that newer
         // call's own, leaking an orphaned duplicate poller for the
-        // session (found during the D-117 debug pass, 2026-08-31).
-        if (_lgGamePk === String(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
+        // session (found during the D-117 debug pass, 2026-08-31). Also
+        // skips arming for a game that's already Final on this first poll
+        // (see _lgShouldArmPolling) — a deep link straight to a finished
+        // game otherwise polled it forever every 9s.
+        if (_lgShouldArmPolling(gamePk)) _lgInterval = setInterval(() => _doPoll(_lgGamePk), _lgNextInterval(_lgFeedCache));
     });
 }
 
