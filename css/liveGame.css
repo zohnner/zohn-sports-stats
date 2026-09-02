@@ -137,14 +137,71 @@
     color: var(--text-secondary);
 }
 
-.lg-count-pill {
+/* ── Situation bar: count / outs / bases in one spot ─────────
+   Replaces the old header count pill + a base diagram that used to sit at
+   the bottom of the pitch-zone column, ~600px away with the linescore/
+   win-prob/hero/due-up sandwiched between them (owner feedback,
+   2026-09-02). This is the one place those three facts live now, directly
+   under the score line — the first thing below the fold, same job a
+   broadcast score bug does. Empty (no game) renders nothing: the host div
+   just collapses, no empty-card flash for Preview/Final states. */
+.lg-situation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-full);
-    padding: 0.15rem 0.6rem;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--text-secondary);
+    border-top: 2px solid var(--lg-team-color, var(--accent));
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.lg-sit-counts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.lg-sit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.lg-sit-label {
+    width: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-subtle);
+}
+
+.lg-sit-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-strong);
+    background: transparent;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.lg-sit-dot--ball.is-lit   { background: var(--accent);     border-color: var(--accent); }
+.lg-sit-dot--strike.is-lit { background: var(--color-loss); border-color: var(--color-loss); }
+.lg-sit-dot--out.is-lit    { background: var(--text-primary); border-color: var(--text-primary); }
+
+.lg-sit-bases {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.lg-sit-bases .lg-base-diagram { width: 64px; height: 64px; }
+
+@media (max-width: 480px) {
+    .lg-situation { gap: var(--space-3); padding: var(--space-2); }
+    .lg-sit-bases .lg-base-diagram { width: 52px; height: 52px; }
 }
 
 .lg-status-badge {

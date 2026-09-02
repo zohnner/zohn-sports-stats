@@ -311,9 +311,6 @@ function _buildSkeletonPanel(game) {
     const awayAbbr  = game?.teams?.away?.team?.abbreviation || '???';
     const half      = game?.linescore?.isTopInning ? '▲' : '▼';
     const inning    = game?.linescore?.currentInning || '—';
-    const balls     = game?.linescore?.balls ?? '?';
-    const strikes   = game?.linescore?.strikes ?? '?';
-    const outs      = game?.linescore?.outs ?? '?';
 
     panel.innerHTML = `
         <div class="lg-header">
@@ -327,10 +324,10 @@ function _buildSkeletonPanel(game) {
             </div>
             <div class="lg-meta-row">
                 <span class="lg-inning">${half}${inning}</span>
-                <span class="lg-count-pill">${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}</span>
                 <span class="game-status game-status--live lg-status-badge"><span class="live-dot"></span>LIVE</span>
             </div>
         </div>
+        <div class="lg-situation-host"></div>
         <div class="lg-linescore-wrap">
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
@@ -417,10 +414,6 @@ function _renderPanel(panel, feed, gamePk) {
     const awayWon      = isFinal && awayScore > homeScore;
     const half         = ls.isTopInning ? '▲' : '▼';
     const inning       = ls.currentInning || '—';
-    const balls        = ls.balls ?? '?';
-    const strikes      = ls.strikes ?? '?';
-    const outs         = ls.outs ?? '?';
-    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
 
     const hc = getMLBTeamColors(home.abbreviation);
     panel.style.setProperty('--lg-team-color', hc?.primary || 'var(--accent)');
@@ -465,13 +458,19 @@ function _renderPanel(panel, feed, gamePk) {
             <span class="lg-abbr ${homeWon ? 'lg-winner' : ''}">${_escHtml(home.abbreviation || '???')}</span>
         </div>
         <div class="lg-meta-row">
-            ${isLive ? `<span class="lg-inning">${half}${inning}</span><span class="lg-count-pill">${isBetweenInn ? '—' : `${balls}-${strikes} · ${outs} Out${outs !== 1 ? 's' : ''}`}</span>` : ''}
+            ${isLive ? `<span class="lg-inning">${half}${inning}</span>` : ''}
             ${badgeHtml}
             ${scorecardLink}
             ${highlightLink}
         </div>`;
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
+
+    // Count/outs/bases — see _buildSituationBar for why this is one
+    // consolidated spot now instead of a header pill plus a diagram
+    // buried at the bottom of the pitch-zone column.
+    const situationHost = panel.querySelector('.lg-situation-host');
+    if (situationHost) situationHost.innerHTML = _buildSituationBar(feed);
 
     panel.querySelector('.lg-linescore-wrap').innerHTML =
         _buildLinescore(ls, away.abbreviation, home.abbreviation);
@@ -1265,6 +1264,9 @@ function _renderZone(panel, feed, gamePk) {
     const enterFromIdx   = pitches.length > lastPitchCount ? lastPitchCount : Infinity;
     _lgZoneLastPitchCount.set(abKey, pitches.length);
 
+    // Bases used to render here too — moved into _buildSituationBar, right
+    // under the score line, so it's not a second copy 600px away from the
+    // count/outs it belongs next to (owner feedback, 2026-09-02).
     zoneCol.innerHTML =
         (hasPitches
             ? `<div class="lg-zone-section-label">Pitch Zone</div>` +
@@ -1274,9 +1276,7 @@ function _renderZone(panel, feed, gamePk) {
         (hasPitches
             ? `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Pitch Mix</div>` +
               _buildPitchMixWheel(pitcherId, plays.allPlays)
-            : '') +
-        `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Bases</div>` +
-        _buildBaseDiagram(currentPlay);
+            : '');
     _wireZoneEvents(panel, key);
 }
 
@@ -1308,6 +1308,48 @@ function _buildBaseDiagram(currentPlay) {
         <rect x="46" y="26" width="8" height="8" transform="rotate(45,50,30)" class="${baseCls('1B')}"/>
         <polygon points="26,52 34,52 36,48 30,46 24,48" class="lg-home-plate-shape"/>
     </svg>`;
+}
+
+// ── Game Situation bar — count, outs, bases in one glanceable spot ──
+// Owner feedback (2026-09-02): this info was scattered — a tiny count pill
+// up in the header meta-row, the base diagram all the way at the bottom of
+// the pitch-zone column, ~600px apart with the linescore/win-prob/hero/
+// due-up sandwiched between them. Every broadcast score bug puts count,
+// outs, and bases in one fixed spot for exactly this reason; this
+// consolidates them the same way, directly under the score line, ahead of
+// everything else. Reuses _buildBaseDiagram verbatim — one diagram, not a
+// second copy — so the old bottom-of-zone-column one is removed, not
+// duplicated (see _renderZone).
+function _buildSituationBar(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') return '';
+
+    const ls           = feed.liveData?.linescore || {};
+    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
+    const currentPlay  = feed.liveData?.plays?.currentPlay;
+
+    // Between half-innings ls.balls/strikes/outs still hold the just-ended
+    // at-bat's final numbers (the same staleness _lgCurrentMatchup routes
+    // around for the hero card) — a fresh half genuinely has an empty
+    // count, no outs, and empty bases, so show that instead of leftovers.
+    const balls   = isBetweenInn ? 0 : (ls.balls   ?? 0);
+    const strikes = isBetweenInn ? 0 : (ls.strikes ?? 0);
+    const outs    = isBetweenInn ? 0 : (ls.outs    ?? 0);
+    const basesHtml = _buildBaseDiagram(isBetweenInn ? null : currentPlay);
+
+    const dots = (count, max, cls) =>
+        Array.from({ length: max }, (_, i) =>
+            `<span class="lg-sit-dot lg-sit-dot--${cls}${i < count ? ' is-lit' : ''}"></span>`
+        ).join('');
+
+    return `<div class="lg-situation" role="group" aria-label="Count ${balls}-${strikes}, ${outs} out${outs !== 1 ? 's' : ''}">
+        <div class="lg-sit-counts">
+            <div class="lg-sit-row"><span class="lg-sit-label">B</span>${dots(balls, 3, 'ball')}</div>
+            <div class="lg-sit-row"><span class="lg-sit-label">S</span>${dots(strikes, 2, 'strike')}</div>
+            <div class="lg-sit-row"><span class="lg-sit-label">O</span>${dots(outs, 2, 'out')}</div>
+        </div>
+        <div class="lg-sit-bases">${basesHtml}</div>
+    </div>`;
 }
 
 // ── Phase 6 (D-117): In-house win-expectancy model ──────────
