@@ -137,25 +137,18 @@
     color: var(--text-secondary);
 }
 
-/* ── Situation bar: count / outs / bases in one spot ─────────
+/* ── Situation: count / outs / bases in one spot ─────────────
    Replaces the old header count pill + a base diagram that used to sit at
-   the bottom of the pitch-zone column, ~600px away with the linescore/
-   win-prob/hero/due-up sandwiched between them (owner feedback,
-   2026-09-02). This is the one place those three facts live now, directly
-   under the score line — the first thing below the fold, same job a
-   broadcast score bug does. Empty (no game) renders nothing: the host div
-   just collapses, no empty-card flash for Preview/Final states. */
+   the bottom of the pitch-zone column, ~600px away. Lives inside .lg-now-
+   card (see that rule for full context) directly under the matchup, so
+   the base layout here is minimal — .lg-now-card .lg-situation below
+   supplies the divider/spacing for that context, which is the only one
+   this ever renders in. */
 .lg-situation {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-4);
-    background: var(--bg-raised);
-    border: 1px solid var(--border-default);
-    border-top: 2px solid var(--lg-team-color, var(--accent));
-    border-radius: var(--radius-md);
-    padding: var(--space-2) var(--space-3);
-    margin-bottom: var(--space-3);
 }
 
 .lg-sit-counts {
@@ -1016,11 +1009,52 @@
     padding: var(--space-3) 0;
 }
 
-/* ── Phase 1 (D-117): Batter/pitcher hero ─────────────────────
-   New territory, not a retrofit — full-width, sits between the linescore
-   and the tab row. Same shell language as .lg-side-card so it doesn't
-   invent a new surface, but taller: this is the page's primary content,
-   not a sidebar fact (Kael, D-117 Phase 1). */
+/* ── "Now" card: matchup + situation + due up, one unit ───────
+   Redesigned 2026-09-02 after owner feedback that the page's top-to-bottom
+   order didn't match how anyone actually watches a live game: score, then
+   linescore, then straight into "what's happening right now" — who's up,
+   the count, who's on base, who's next — before any secondary reference
+   detail (pitch zone, box score, win probability). .lg-hero/.lg-situation/
+   .lg-dueup-wrap keep their own building-block markup/classes (reused by
+   the inline accordion too, where this wrapper still applies) but lose
+   their individual card chrome here in favor of one shared border, so it
+   reads as a single module instead of three stacked cards. */
+.lg-now-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-top: 2px solid var(--lg-team-color, var(--accent));
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin: var(--space-3) 0;
+}
+.lg-now-card[hidden] { display: none; }
+
+.lg-now-card .lg-hero {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0 0 var(--space-3);
+}
+.lg-now-card .lg-situation {
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border-default);
+    border-radius: 0;
+    padding: var(--space-3) 0;
+    margin: 0;
+}
+.lg-now-card .lg-dueup-wrap {
+    border-top: 1px solid var(--border-default);
+    padding-top: var(--space-3);
+    margin: 0;
+}
+.lg-now-card .lg-hero:last-child,
+.lg-now-card .lg-situation:last-child { margin-bottom: 0; }
+
+/* Batter/pitcher matchup — same shell language as .lg-side-card originally
+   (Kael, D-117 Phase 1), now nested inside .lg-now-card above instead of
+   standalone (Kael, 2026-09-02 redesign). */
 .lg-hero {
     display: flex;
     align-items: stretch;

@@ -327,14 +327,14 @@ function _buildSkeletonPanel(game) {
                 <span class="game-status game-status--live lg-status-badge"><span class="live-dot"></span>LIVE</span>
             </div>
         </div>
-        <div class="lg-situation-host"></div>
         <div class="lg-linescore-wrap">
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
-        <div class="lg-winprob-host"></div>
-        <div class="lg-poll-ts" aria-live="polite"></div>
-        <div class="lg-hero-host"></div>
-        <div class="lg-dueup-host"></div>
+        <div class="lg-now-card" hidden>
+            <div class="lg-hero-host"></div>
+            <div class="lg-situation-host"></div>
+            <div class="lg-dueup-host"></div>
+        </div>
         <div class="lg-body">
             <div class="lg-zone-col" hidden></div>
             <div class="lg-tab-col">
@@ -351,7 +351,9 @@ function _buildSkeletonPanel(game) {
                     <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
                 </div>
             </div>
-        </div>`;
+        </div>
+        <div class="lg-winprob-host"></div>
+        <div class="lg-poll-ts" aria-live="polite"></div>`;
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
@@ -466,27 +468,8 @@ function _renderPanel(panel, feed, gamePk) {
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
 
-    // Count/outs/bases — see _buildSituationBar for why this is one
-    // consolidated spot now instead of a header pill plus a diagram
-    // buried at the bottom of the pitch-zone column.
-    const situationHost = panel.querySelector('.lg-situation-host');
-    if (situationHost) situationHost.innerHTML = _buildSituationBar(feed);
-
     panel.querySelector('.lg-linescore-wrap').innerHTML =
         _buildLinescore(ls, away.abbreviation, home.abbreviation);
-
-    // D-117 Phase 6: win-probability bar, recomputed fresh every render.
-    const winProbHost = panel.querySelector('.lg-winprob-host');
-    if (winProbHost) winProbHost.innerHTML = _buildWinProb(feed);
-
-    // Ensure the freshness row exists in re-rendered panels (fallback for panels
-    // that were built before this element was added to the skeleton template)
-    if (!panel.querySelector('.lg-poll-ts')) {
-        const ts = document.createElement('div');
-        ts.className = 'lg-poll-ts';
-        ts.setAttribute('aria-live', 'polite');
-        panel.querySelector('.lg-linescore-wrap')?.insertAdjacentElement('afterend', ts);
-    }
 
     // Delay/suspension reason note
     const existingNote = panel.querySelector('.lg-delay-note');
@@ -503,19 +486,51 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
-    // Phase 1 (D-117): batter/pitcher hero + Due Up rail — both built from
-    // data this poll already fetched except the hero's batter season line,
-    // which is fetched separately and gated on the batter actually changing.
+    // "Now" card — matchup, count/outs/bases, and due up, one unit right
+    // after the score/linescore and ahead of win probability, the pitch
+    // zone, and the tabs. Rebuilt after owner feedback (2026-09-02) that
+    // the previous top-to-bottom order didn't match how anyone actually
+    // watches a live game: score, then "what's happening right now" (who's
+    // up, the count, who's on, who's next), THEN secondary reference detail
+    // (pitch-by-pitch zone, box score, win probability) — the same
+    // priority order ESPN/MLB Gameday use for their own live modules, not
+    // score → box-score-adjacent stats → the actual at-bat buried below
+    // them. Empty (Preview page-mode, Final) for all three builders, so the
+    // card itself is hidden rather than showing as an empty bordered box.
     const heroHost = panel.querySelector('.lg-hero-host');
     if (heroHost) {
         heroHost.innerHTML = _buildHero(feed);
         _lgMaybeFetchHeroBatterLine(feed, panel);
     }
+    const situationHost = panel.querySelector('.lg-situation-host');
+    if (situationHost) situationHost.innerHTML = _buildSituationBar(feed);
+
     const dueUpHost = panel.querySelector('.lg-dueup-host');
     if (dueUpHost) dueUpHost.innerHTML = _buildDueUp(feed);
 
+    const nowCard = panel.querySelector('.lg-now-card');
+    if (nowCard) {
+        const hasContent = [heroHost, situationHost, dueUpHost].some(el => el?.textContent.trim());
+        nowCard.toggleAttribute('hidden', !hasContent);
+    }
+
     // Phase 2 + P9-live: pitch zone (dots / heat toggle) + base diagram
     _renderZone(panel, feed, gamePk);
+
+    // D-117 Phase 6: win-probability bar, recomputed fresh every render.
+    // Below the Now card and the tabs on purpose — secondary/nice-to-have,
+    // not moment-to-moment info anyone needs to watch a live game.
+    const winProbHost = panel.querySelector('.lg-winprob-host');
+    if (winProbHost) winProbHost.innerHTML = _buildWinProb(feed);
+
+    // Ensure the freshness row exists in re-rendered panels (fallback for panels
+    // that were built before this element was added to the skeleton template)
+    if (!panel.querySelector('.lg-poll-ts')) {
+        const ts = document.createElement('div');
+        ts.className = 'lg-poll-ts';
+        ts.setAttribute('aria-live', 'polite');
+        panel.querySelector('.lg-winprob-host')?.insertAdjacentElement('afterend', ts);
+    }
 
     const tabsEl    = panel.querySelector('.lg-tabs');
     const tabpanel  = panel.querySelector('.lg-tab-content');
