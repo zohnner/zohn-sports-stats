@@ -100,6 +100,7 @@ function stopLiveGamePolling() {
     _lgSeasonStatCache  = {};
     _lgMiniStandingsHtml   = '';
     _lgMiniLeadersHtml     = '';
+    _lgSeasonSeriesHtml    = '';
     _lgSidebarExtrasGamePk = null;
     _lgBullpenRestHtml     = { away: '', home: '' };
     _lgBullpenRestGamePk   = null;
@@ -578,11 +579,11 @@ function _renderPanel(panel, feed, gamePk) {
     if (_lgIsPageMode) {
         const sidebarEl = document.querySelector('.lg-sidebar');
         if (sidebarEl) {
-            sidebarEl.innerHTML = _lgMiniStandingsHtml + _lgMiniLeadersHtml + _buildSidebar(feed);
+            sidebarEl.innerHTML = _lgMiniStandingsHtml + _lgSeasonSeriesHtml + _lgMiniLeadersHtml + _buildSidebar(feed);
         }
         if (_lgSidebarExtrasGamePk !== String(gamePk)) {
             _lgSidebarExtrasGamePk = String(gamePk);
-            _lgFetchSidebarExtras(gamePk, away.abbreviation, home.abbreviation);
+            _lgFetchSidebarExtras(gamePk, away.id, home.id, away.abbreviation, home.abbreviation);
         }
     }
 }
@@ -1942,18 +1943,72 @@ async function _lgBuildMiniLeaders() {
 
 let _lgMiniStandingsHtml   = '';
 let _lgMiniLeadersHtml     = '';
+let _lgSeasonSeriesHtml    = '';
 let _lgSidebarExtrasGamePk = null;
 
-async function _lgFetchSidebarExtras(gamePk, awayAbbr, homeAbbr) {
-    const [standingsHtml, leadersHtml] = await Promise.all([
+async function _lgFetchSidebarExtras(gamePk, awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
+    const [standingsHtml, leadersHtml, seriesHtml] = await Promise.all([
         _lgBuildMiniStandings(homeAbbr, awayAbbr),
         _lgBuildMiniLeaders(),
+        _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr),
     ]);
     if (_lgSidebarExtrasGamePk !== String(gamePk)) return; // superseded by a different game
     _lgMiniStandingsHtml = standingsHtml;
     _lgMiniLeadersHtml   = leadersHtml;
+    _lgSeasonSeriesHtml  = seriesHtml;
     const el = document.querySelector('.lg-sidebar');
-    if (el && _lgFeedCache) el.innerHTML = _lgMiniStandingsHtml + _lgMiniLeadersHtml + _buildSidebar(_lgFeedCache);
+    if (el && _lgFeedCache) el.innerHTML = _lgMiniStandingsHtml + _lgSeasonSeriesHtml + _lgMiniLeadersHtml + _buildSidebar(_lgFeedCache);
+}
+
+// Season series — head-to-head record between these two teams this season,
+// visualized as a split bar (same recipe as .lg-winprob: one bar, two
+// team-colored segments sized by win share) rather than a text line, per
+// owner direction (2026-09-02). MLB's schedule endpoint supports a direct
+// teamId+opponentId head-to-head filter — live-verified (NYM/PHI, 2026
+// season: 13 scheduled meetings, 9 already Final, isWinner present and
+// correct on both sides of every completed game) — so this is one fetch,
+// not a client-side join across each team's full schedule.
+async function _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
+    if (!awayTeamId || !homeTeamId) return '';
+    try {
+        const data = await mlbFetch('/schedule', {
+            sportId: 1, season: MLB_SEASON, teamId: awayTeamId, opponentId: homeTeamId, gameType: 'R',
+        }, ApiCache.TTL.MEDIUM);
+        const games = (data.dates || []).flatMap(d => d.games || []);
+
+        let awayWins = 0, homeWins = 0;
+        for (const g of games) {
+            if (g.status?.abstractGameState !== 'Final') continue;
+            const gAway = g.teams?.away, gHome = g.teams?.home;
+            if (gAway?.team?.id === awayTeamId) {
+                if (gAway.isWinner) awayWins++; else if (gHome?.isWinner) homeWins++;
+            } else if (gHome?.team?.id === awayTeamId) {
+                if (gHome.isWinner) awayWins++; else if (gAway?.isWinner) homeWins++;
+            }
+        }
+        const total = awayWins + homeWins;
+        if (!total) return '';
+
+        const awayClr = getMLBTeamColors(awayAbbr)?.primary || 'var(--text-muted)';
+        const homeClr = getMLBTeamColors(homeAbbr)?.primary || 'var(--text-muted)';
+        const awayPct = (awayWins / total * 100).toFixed(1);
+        const homePct = (100 - awayPct).toFixed(1);
+
+        return `<div class="lg-side-card">
+            <div class="lg-box-section-title">Season Series</div>
+            <div class="lg-series-bar" role="group" aria-label="Season series ${_escHtml(awayAbbr)} ${awayWins}, ${_escHtml(homeAbbr)} ${homeWins}">
+                <div class="lg-series-seg" style="width:${awayPct}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
+                    ${awayWins ? `<span class="lg-series-label">${_escHtml(awayAbbr)} ${awayWins}</span>` : ''}
+                </div>
+                <div class="lg-series-seg" style="width:${homePct}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
+                    ${homeWins ? `<span class="lg-series-label">${_escHtml(homeAbbr)} ${homeWins}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    } catch (err) {
+        Logger.warn('Season series fetch failed', err, 'LIVE');
+        return '';
+    }
 }
 
 // ── D-117 Phase 2: Bullpen tab ────────────────────────────────

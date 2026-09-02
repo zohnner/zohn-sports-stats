@@ -321,6 +321,42 @@
     .lg-winprob-seg { transition: none; }
 }
 
+/* ── Season series (sidebar) ──────────────────────────────────
+   Same recipe as .lg-winprob above — one bar, two team-color gradient
+   segments sized by win share — just sidebar-scaled (shorter, no
+   transition since a season series doesn't shift mid-poll the way win
+   probability does). Deliberately not a text line ("NYM lead 5-2") per
+   owner direction (2026-09-02): the split width communicates who's
+   dominating the matchup before you've read a single number. */
+.lg-series-bar {
+    display: flex;
+    height: 26px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+}
+
+.lg-series-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.lg-series-seg:first-child { border-right: 1px solid rgba(0,0,0,0.2); }
+
+.lg-series-label {
+    padding: 0 0.35rem;
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ── Tab content area ─────────────────────────────────────── */
 
 .lg-tabs { margin: var(--space-3) 0 var(--space-2); }
