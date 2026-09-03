@@ -555,24 +555,49 @@
     padding: 0;
 }
 
-/* ── Phase 2: Two-column body layout ──────────────────────── */
-.lg-body {
-    display: flex;
-    gap: var(--space-3);
-    align-items: flex-start;
-    margin-top: var(--space-2);
+.lg-tab-col {
+    min-width: 0;
 }
 
+/* Pitch zone + mix — nested inside .lg-now-card (see that rule), same
+   section-divider treatment as .lg-situation/.lg-dueup-wrap above it.
+   Moved here from a standalone 130px sidebar column (2026-09-02, second
+   round of owner feedback the same day the "Now" card shipped: the pitch
+   zone/mix read as disconnected from the rest of the at-bat info off in
+   its own column next to the tab strip). Only ever nested now, so the
+   base rule owns the full section styling rather than assuming a flex-row
+   sibling context that no longer exists. */
 .lg-zone-col {
-    flex: 0 0 130px;
+    border-top: 1px solid var(--border-default);
+    padding: var(--space-3) 0;
+}
+.lg-zone-col[hidden] { display: none; }
+/* Final games: hero/situation are empty (retired postgame) but the zone
+   stays as a full-game reference, so it ends up first in the card — no
+   divider needed above content with nothing visually preceding it. */
+.lg-zone-col--leading { border-top: none; padding-top: 0; }
+
+.lg-pitch-detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-start;
+}
+
+.lg-pitch-detail-zone {
+    flex: 0 0 170px;
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
 }
+.lg-pitch-detail-zone .lg-pitch-zone { max-width: 170px; }
 
-.lg-tab-col {
-    flex: 1 1 0;
-    min-width: 0;
+.lg-pitch-detail-mix {
+    flex: 1 1 220px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
 }
 
 .lg-zone-section-label {
@@ -583,12 +608,9 @@
     letter-spacing: 0.4px;
 }
 
-@media (max-width: 768px) {
-    .lg-body { flex-direction: column; }
-    /* D-009 mobile order: lead with the play-by-play log; the spatial zone
-       drops below the fold (lower-priority view on a phone). */
-    .lg-tab-col  { order: 1; }
-    .lg-zone-col { width: 100%; flex: none; order: 2; }
+@media (max-width: 480px) {
+    .lg-pitch-detail-zone { flex-basis: 100%; }
+    .lg-pitch-detail-zone .lg-pitch-zone { max-width: 220px; margin: 0 auto; }
 }
 
 /* ── Pitch zone view toggle (Dots / Heat) ──────────────────── */

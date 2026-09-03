@@ -334,23 +334,21 @@ function _buildSkeletonPanel(game) {
         <div class="lg-now-card" hidden>
             <div class="lg-hero-host"></div>
             <div class="lg-situation-host"></div>
+            <div class="lg-zone-col" hidden></div>
             <div class="lg-dueup-host"></div>
         </div>
-        <div class="lg-body">
-            <div class="lg-zone-col" hidden></div>
-            <div class="lg-tab-col">
-                <div class="mlb-group-toggle-row lg-tabs" role="tablist">
-                    <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
-                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"     aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
-                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
-                    <button class="mlb-group-btn"                        role="tab" id="lg-tab-bullpen" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="bullpen">Bullpen</button>
-                </div>
-                <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
-                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
-                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:75%"></div>
-                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
-                    <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
-                </div>
+        <div class="lg-tab-col">
+            <div class="mlb-group-toggle-row lg-tabs" role="tablist">
+                <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"     aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-bullpen" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="bullpen">Bullpen</button>
+            </div>
+            <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
+                <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
+                <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:75%"></div>
+                <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
+                <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
             </div>
         </div>
         <div class="lg-winprob-host"></div>
@@ -487,17 +485,19 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
-    // "Now" card — matchup, count/outs/bases, and due up, one unit right
-    // after the score/linescore and ahead of win probability, the pitch
-    // zone, and the tabs. Rebuilt after owner feedback (2026-09-02) that
-    // the previous top-to-bottom order didn't match how anyone actually
-    // watches a live game: score, then "what's happening right now" (who's
-    // up, the count, who's on, who's next), THEN secondary reference detail
-    // (pitch-by-pitch zone, box score, win probability) — the same
-    // priority order ESPN/MLB Gameday use for their own live modules, not
-    // score → box-score-adjacent stats → the actual at-bat buried below
-    // them. Empty (Preview page-mode, Final) for all three builders, so the
-    // card itself is hidden rather than showing as an empty bordered box.
+    // "Now" card — matchup, count/outs/bases, pitch detail (zone + mix),
+    // and due up: everything about the current at-bat as one unit, right
+    // after the score/linescore and ahead of the tabs and win probability.
+    // Rebuilt after owner feedback (2026-09-02) that the page's order
+    // didn't match how anyone actually watches a live game — and a second
+    // round of feedback the same day that the pitch zone/mix specifically
+    // still read as disconnected from the rest of the at-bat info, sitting
+    // in its own column next to the tab strip instead of with the matchup
+    // and count it's describing. Same priority order ESPN/MLB Gameday use
+    // for their own live modules: lead with "what's happening right now,"
+    // reference detail (box score, matchup/bullpen tabs, win probability)
+    // after. Empty (Preview page-mode, Final-with-no-zone-content) for all
+    // four pieces, so the card itself is hidden rather than showing empty.
     const heroHost = panel.querySelector('.lg-hero-host');
     if (heroHost) {
         heroHost.innerHTML = _buildHero(feed);
@@ -506,17 +506,27 @@ function _renderPanel(panel, feed, gamePk) {
     const situationHost = panel.querySelector('.lg-situation-host');
     if (situationHost) situationHost.innerHTML = _buildSituationBar(feed);
 
+    // Phase 2 + P9-live: pitch zone (dots / heat toggle) + pitch mix wheel.
+    // Runs before the visibility check below so a Final game's zone content
+    // (kept visible postgame as a full-game pitch-mix reference, D-117
+    // Phase 2/3) still counts toward keeping the card shown even though
+    // hero/situation/dueUp are all intentionally empty once a game is Final.
+    _renderZone(panel, feed, gamePk);
+    const zoneCol = panel.querySelector('.lg-zone-col');
+    // Final games render hero/situation empty (both intentionally retired
+    // postgame) but keep the zone content as a full-game reference — drop
+    // its divider in that case so it doesn't read as a section break with
+    // nothing above it, just the card's own top edge.
+    zoneCol?.classList.toggle('lg-zone-col--leading', !(heroHost?.textContent.trim() || situationHost?.textContent.trim()));
+
     const dueUpHost = panel.querySelector('.lg-dueup-host');
     if (dueUpHost) dueUpHost.innerHTML = _buildDueUp(feed);
 
     const nowCard = panel.querySelector('.lg-now-card');
     if (nowCard) {
-        const hasContent = [heroHost, situationHost, dueUpHost].some(el => el?.textContent.trim());
+        const hasContent = [heroHost, situationHost, zoneCol, dueUpHost].some(el => el?.textContent.trim());
         nowCard.toggleAttribute('hidden', !hasContent);
     }
-
-    // Phase 2 + P9-live: pitch zone (dots / heat toggle) + base diagram
-    _renderZone(panel, feed, gamePk);
 
     // D-117 Phase 6: win-probability bar, recomputed fresh every render.
     // Below the Now card and the tabs on purpose — secondary/nice-to-have,
@@ -1283,16 +1293,31 @@ function _renderZone(panel, feed, gamePk) {
     // Bases used to render here too — moved into _buildSituationBar, right
     // under the score line, so it's not a second copy 600px away from the
     // count/outs it belongs next to (owner feedback, 2026-09-02).
-    zoneCol.innerHTML =
-        (hasPitches
-            ? `<div class="lg-zone-section-label">Pitch Zone</div>` +
-              _buildZoneToggle(mode, gamePitches.length) +
-              (useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx))
-            : `<div class="lg-zone-empty">Next pitch coming up.</div>`) +
-        (hasPitches
-            ? `<div class="lg-zone-section-label" style="margin-top:var(--space-2)">Pitch Mix</div>` +
-              _buildPitchMixWheel(pitcherId, plays.allPlays)
-            : '');
+    //
+    // Zone + mix now render side by side, not stacked — this section moved
+    // from a cramped 130px sidebar column into the full-width .lg-now-card
+    // (second round of owner feedback, same day: the pitch zone/mix read as
+    // disconnected from the rest of the at-bat info, off in its own column
+    // next to the tab strip). .lg-pitch-zone's own width:100% only makes
+    // sense capped now that its container is wide — see .lg-pitch-detail-
+    // zone's max-width in the CSS, not here.
+    if (!hasPitches) {
+        zoneCol.innerHTML = `<div class="lg-zone-empty">Next pitch coming up.</div>`;
+        _wireZoneEvents(panel, key);
+        return;
+    }
+    const mixHtml = _buildPitchMixWheel(pitcherId, plays.allPlays);
+    zoneCol.innerHTML = `<div class="lg-pitch-detail">
+        <div class="lg-pitch-detail-zone">
+            <div class="lg-zone-section-label">Pitch Zone</div>
+            ${_buildZoneToggle(mode, gamePitches.length)}
+            ${useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx)}
+        </div>
+        ${mixHtml ? `<div class="lg-pitch-detail-mix">
+            <div class="lg-zone-section-label">Pitch Mix</div>
+            ${mixHtml}
+        </div>` : ''}
+    </div>`;
     _wireZoneEvents(panel, key);
 }
 
@@ -1991,17 +2016,27 @@ async function _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr) 
 
         const awayClr = getMLBTeamColors(awayAbbr)?.primary || 'var(--text-muted)';
         const homeClr = getMLBTeamColors(homeAbbr)?.primary || 'var(--text-muted)';
-        const awayPct = (awayWins / total * 100).toFixed(1);
-        const homePct = (100 - awayPct).toFixed(1);
+
+        // Floored, not a straight percentage split — a shutout series (e.g.
+        // 1-0) otherwise renders as one full-bleed segment with no visible
+        // second side, which reads as a broken/truncated bar rather than a
+        // 1-0 record (found live 2026-09-02: it was mistaken for the win-
+        // probability bar, which uses the same visual language on purpose
+        // but always has two real percentages, never a vanished side).
+        const FLOOR = 14;
+        let awayPct = awayWins / total * 100;
+        if (awayWins === 0) awayPct = FLOOR;
+        else if (homeWins === 0) awayPct = 100 - FLOOR;
+        const homePct = 100 - awayPct;
 
         return `<div class="lg-side-card">
             <div class="lg-box-section-title">Season Series</div>
             <div class="lg-series-bar" role="group" aria-label="Season series ${_escHtml(awayAbbr)} ${awayWins}, ${_escHtml(homeAbbr)} ${homeWins}">
-                <div class="lg-series-seg" style="width:${awayPct}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
-                    ${awayWins ? `<span class="lg-series-label">${_escHtml(awayAbbr)} ${awayWins}</span>` : ''}
+                <div class="lg-series-seg" style="width:${awayPct.toFixed(1)}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
+                    <span class="lg-series-label">${_escHtml(awayAbbr)} ${awayWins}</span>
                 </div>
-                <div class="lg-series-seg" style="width:${homePct}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
-                    ${homeWins ? `<span class="lg-series-label">${_escHtml(homeAbbr)} ${homeWins}</span>` : ''}
+                <div class="lg-series-seg" style="width:${homePct.toFixed(1)}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
+                    <span class="lg-series-label">${_escHtml(homeAbbr)} ${homeWins}</span>
                 </div>
             </div>
         </div>`;
