@@ -60,9 +60,11 @@ function setupNavigation() {
         } else {
             switchSport(sp);
         }
+        _closeSportSwitchMenu();
     });
 
     initMenu();
+    _initSportSwitchMenu();
     if (typeof initGlobalSearch === 'function') initGlobalSearch();
 
     // Search (debounced) — NBA does live API search; MLB does local filter
@@ -201,6 +203,47 @@ function _closeMenu() {
     panel.hidden = true;
     btn?.classList.remove('menu-btn--open');
     btn?.setAttribute('aria-expanded', 'false');
+}
+
+// Mobile sport switcher (2026-08-29) — same trigger+dropdown pattern as
+// initMenu/_openMenu/_closeMenu above and .auth-control/.auth-menu in auth.js.
+// .sport-switch-trigger only exists visually below 768px (css/main.css); above that
+// the pill row is always visible so open/close are no-ops there.
+function _initSportSwitchMenu() {
+    const trigger = document.getElementById('sportSwitchTrigger');
+    const panel   = document.getElementById('sportSwitch');
+    if (!trigger || !panel) return;
+
+    trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        panel.classList.contains('sport-switch--open') ? _closeSportSwitchMenu() : _openSportSwitchMenu();
+    });
+
+    document.addEventListener('click', e => {
+        if (panel.classList.contains('sport-switch--open') && !panel.contains(e.target) && !trigger.contains(e.target)) {
+            _closeSportSwitchMenu();
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') _closeSportSwitchMenu();
+    });
+}
+
+function _openSportSwitchMenu() {
+    const trigger = document.getElementById('sportSwitchTrigger');
+    const panel   = document.getElementById('sportSwitch');
+    if (!panel) return;
+    panel.classList.add('sport-switch--open');
+    trigger?.setAttribute('aria-expanded', 'true');
+}
+
+function _closeSportSwitchMenu() {
+    const trigger = document.getElementById('sportSwitchTrigger');
+    const panel   = document.getElementById('sportSwitch');
+    if (!panel) return;
+    panel.classList.remove('sport-switch--open');
+    trigger?.setAttribute('aria-expanded', 'false');
 }
 
 // ── Core navigation function ─────────────────────────────────
@@ -1351,18 +1394,15 @@ function _renderSportSwitch(sport) {
         const on = s.id === sport;
         return `<button class="sport-switch-btn${on ? ' sport-switch-btn--active' : ''}" data-sport="${s.id}" aria-pressed="${on}">${s.label}</button>`;
     }).join('');
-    // Mobile fix (2026-08-17): below 768px .sport-switch is a fixed max-width (140px),
-    // horizontally-scrollable strip (css/main.css) sized back when it held 3 sports
-    // (2026-08-09 fix). Now that NCAAB/WNBA (D-052/D-092) bring it to 5, a cold/deep-link
-    // load into any sport past NFL rendered the strip at its default scroll position (0),
-    // so the active pill sat off-screen with nothing visibly highlighted in view — reported
-    // live as "the sports switcher isn't loading properly." Centering the active pill on
-    // every render fixes it regardless of viewport; scrollIntoView is a harmless no-op when
-    // there's nothing to scroll (desktop, or the active pill is already fully visible).
-    const activeBtn = wrap.querySelector('.sport-switch-btn--active');
-    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
-        activeBtn.scrollIntoView({ block: 'nearest', inline: 'center' });
-    }
+    // Mobile trigger (2026-08-29 rework, see css/main.css) mirrors whichever sport is
+    // active so .sport-switch-trigger always reads correctly even though the full list
+    // now lives in a dropdown instead of an inline row. sport === null is the neutral
+    // Home state (_renderSportSwitch(null)) — no sport reads as active.
+    const meta = SPORTS_META[sport];
+    const triggerIcon = document.getElementById('sportSwitchTriggerIcon');
+    const triggerLabel = document.getElementById('sportSwitchTriggerLabel');
+    if (triggerIcon) triggerIcon.textContent = meta ? meta.icon : '🏟';
+    if (triggerLabel) triggerLabel.textContent = meta ? meta.label : 'Sports';
 }
 
 // Followed-teams rail (D-103, DECISIONS.md) — a compact, cross-sport strip of the
@@ -1602,7 +1642,7 @@ const _PAGE_META = {
     'mlb-compare':   { title: 'SportStrata — Compare Players', desc: 'Side-by-side MLB player comparison with stat bars and percentile rings.' },
     'mlb-scorecard': { title: 'SportStrata — Game Scorecard',  desc: 'Play-by-play baseball scorecard for any MLB game.' },
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
-    'news':          { title: 'SportStrata — News',           desc: 'Latest NFL and MLB headlines, injuries, and storylines.' },
+    'news':          { title: 'SportStrata — News',           desc: 'Latest NFL, MLB, and NCAAF headlines, injuries, and storylines.' },
     'nfl-sos':       { title: 'SportStrata — NFL Strength of Schedule', desc: 'Fantasy strength of schedule by position, weighted for the fantasy playoffs.' },
     'nfl-highlight-card': { title: 'SportStrata — NFL Highlight Card Studio', desc: 'Build an animated, shareable highlight card for any player from a recent NFL game.' },
     'ncaab-scores':    { title: 'SportStrata — College Basketball Scores',    desc: 'Live NCAA men\'s basketball scores and today\'s scoreboard.' },

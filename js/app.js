@@ -273,6 +273,50 @@ setupNavigation();
     setInterval(_poll, 60000);
 })();
 
+// Live score polling — NCAAF (60s; mirrors NFL). A real, previously-unnoticed
+// gap: MLB and NFL have both had a live-poll loop for a while (ISSUES.md
+// "Home — Cross-sport score ticker" flagged this exact absence in passing),
+// but nothing ever refreshed AppState.ncaafGames or re-rendered the Scores
+// view/ticker on a live game day — a user sitting on ncaaf-scores during a
+// live game would never see it update without manually navigating away and
+// back. Surfaced while reworking the Scores page itself (2026-08-30) to add
+// live game cards/badges that would otherwise have nothing to refresh them.
+(function setupNCAAFLivePolling() {
+    const FORCE_REFRESH_MS = 5 * 60 * 1000;
+    let _lastFetchAt = 0;
+    async function _poll() {
+        try {
+            if (AppState.currentSport !== 'ncaaf') return;
+            if (typeof fetchNCAAFScoreboard !== 'function') return;
+            const cached = AppState.ncaafGames || [];
+            const hasLive = cached.some(g => g.isLive);
+            const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
+            if (cached.length > 0 && !hasLive && !dueForRecheck) return;
+
+            if (AppState.currentView === 'ncaaf-scores' && typeof displayNCAAFScores === 'function') {
+                // displayNCAAFScores() already does fetch + nav rebuild + (when the
+                // filter is the "Today" default) the ticker update in one place —
+                // re-running it beats duplicating that logic here. The fetch inside
+                // it lands on fetchNCAAFScoreboard's own ApiCache.TTL.SHORT (5 min)
+                // entry for these exact params, so this isn't a second real
+                // network round-trip, just a second cache read.
+                await displayNCAAFScores();
+            } else {
+                const games = await fetchNCAAFScoreboard(_ncaafScoresFilter || {});
+                AppState.ncaafGames = games;
+                // Same home-ownership rule as the MLB/NFL loops — merged ticker owns
+                // #scoreTicker while on Home, and only the real "Today" default
+                // feeds it (mirrors displayNCAAFScores' own ticker rule).
+                if (AppState.currentView !== 'home' && !_ncaafScoresFilter && typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
+            }
+            _lastFetchAt = Date.now();
+            const liveCount = (AppState.ncaafGames || []).filter(g => g.isLive).length;
+            if (liveCount > 0 && window.Logger) Logger.info(`NCAAF live poll: ${liveCount} live`, undefined, 'POLL');
+        } catch (err) { if (window.Logger) Logger.warn('NCAAF live poll failed', err.message, 'POLL'); }
+    }
+    setInterval(_poll, 60000);
+})();
+
 // Live score polling — Home's merged cross-sport ticker (ISSUES.md "Home —
 // Cross-sport score ticker"). Runs only while AppState.currentView === 'home';
 // the MLB/NFL loops above skip their own ticker render in that state so the
@@ -1536,6 +1580,77 @@ function _heroFromNFLGame(g, kind) {
     return { kind, html, onClick: () => _openNFLGameFromHero(g.id) };
 }
 
+// 2026-09-03: NCAAF mirror of _heroNFLBoard/_heroNFLLiveDetail/
+// _openNFLGameFromHero/_heroFromNFLGame — same shell markup (.hero-board/
+// .hero-row/.hero-kicker/.hero-headline/etc.), so no new CSS is needed, only
+// a #rank badge added next to a ranked team's abbreviation (a real CFB-
+// specific signal NFL's board has no equivalent of).
+function _heroNCAAFBoard(g, showScore) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const tc = t => t.color ? `#${String(t.color).replace('#', '')}` : 'var(--accent)';
+    const row = (t, winner) => `
+        <div class="hero-row${winner ? ' hero-row--win' : ''}" style="--tc:${tc(t)}">
+            ${t.logo ? `<img class="hero-row-logo" src="${_esc(t.logo)}" alt="${_esc(t.abbr)}" data-hide-on-error>` : `<span class="hero-row-logo"></span>`}
+            <span class="hero-row-abbr">${t.rank ? `#${t.rank} ` : ''}${_esc(t.abbr)}</span>
+            <span class="hero-row-score">${showScore ? (t.score ?? 0) : ''}</span>
+        </div>`;
+    const aw = showScore && (g.awayTeam.score ?? 0) > (g.homeTeam.score ?? 0);
+    const hw = showScore && (g.homeTeam.score ?? 0) > (g.awayTeam.score ?? 0);
+    return `<div class="hero-board">${row(g.awayTeam, aw)}${row(g.homeTeam, hw)}</div>`;
+}
+
+function _openNCAAFGameFromHero(eventId) {
+    if (!eventId) return;
+    if (AppState.currentSport !== 'ncaaf' && typeof switchSport === 'function') switchSport('ncaaf');
+    if (typeof showNCAAFGame === 'function') showNCAAFGame(eventId);
+}
+
+// Same reuse-the-Scores-grid-recipe move D-099 made for NFL: g.situation is
+// UNCONFIRMED for CFB (see fetchNCAAFScoreboard's own comment) so this reads
+// only .text/.isRedZone defensively and renders nothing at all if the field
+// or those two sub-fields are absent -- never a guessed/partial line.
+function _heroNCAAFLiveDetail(g) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const sitHtml = g.situation?.text
+        ? `<div class="game-situation${g.situation.isRedZone ? ' game-situation--redzone' : ''}">${_esc(g.situation.text)}</div>`
+        : '';
+    return sitHtml ? `<div class="hero-live-detail">${sitHtml}</div>` : '';
+}
+
+function _heroFromNCAAFGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
+    let kicker, hook, board, cta, liveDetail = '';
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
+        const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
+        const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
+            : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
+        hook = leadTeam
+            ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
+            : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
+        board = _heroNCAAFBoard(g, true);
+        cta = 'Watch live →';
+        liveDetail = _heroNCAAFLiveDetail(g);
+    } else {
+        const d = g.date ? new Date(g.date) : null;
+        const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+        kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
+        hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Kickoff soon';
+        board = _heroNCAAFBoard(g, false);
+        cta = 'Game preview →';
+    }
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}${liveDetail}</div>`;
+    return { kind, html, onClick: () => _openNCAAFGameFromHero(g.id) };
+}
+
 // _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was
 // _homeHeroSport()'s NFL-only branch (calendar-gated, live-then-soonest-
 // upcoming, no cross-sport comparison); _renderHomeHero() below now scores
@@ -1549,6 +1664,12 @@ function _heroFromNFLGame(g, kind) {
 function _nflGameHasFav(g) {
     if (typeof _isFollowed !== 'function') return false;
     return _isFollowed('nfl', 'team', g.homeTeam?.abbr) || _isFollowed('nfl', 'team', g.awayTeam?.abbr);
+}
+
+// 2026-09-03: same one-line mirror as _nflGameHasFav, for NCAAF.
+function _ncaafGameHasFav(g) {
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('ncaaf', 'team', g.homeTeam?.abbr) || _isFollowed('ncaaf', 'team', g.awayTeam?.abbr);
 }
 // NFL-side leverage/marquee scores, calibrated to land in roughly the same
 // numeric range as MLB's leverage()/marquee() in _renderHomeHero() below
@@ -1571,6 +1692,30 @@ function _nflLeverage(g) {
 }
 function _nflMarquee(g) {
     return (g.broadcast ? 4 : 0) + (_nflGameHasFav(g) ? 100 : 0);
+}
+
+// 2026-09-03: same leverage/marquee mirror as NFL's, for NCAAF, calibrated to
+// the same rough numeric range (period*2 + closeness + broadcast bonus, same
+// as NFL -- CFB also runs 4 quarters, so no rescaling needed there). Marquee
+// adds a ranked-matchup bonus NFL has no equivalent of (no Top 25 polls in
+// the pros): +3 for one ranked team in the game, +3 more (6 total) when both
+// are ranked -- a real, CFB-specific "this is the marquee game" signal
+// that's already sitting on every scoreboard game object (homeTeam.rank/
+// awayTeam.rank, from fetchNCAAFScoreboard's mk()) and was otherwise unused
+// for hero purposes. No leaders-based signal (comp.leaders is confirmed
+// absent from the CFB scoreboard, see fetchNCAAFScoreboard's own comment) --
+// an honest gap, not an oversight, matching this file's existing NFL/MLB
+// leverage functions' own "only score what's really there" discipline.
+function _ncaafLeverage(g) {
+    const period = g.period || 1;
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    return (period * 2) + closeness + (g.broadcast ? 4 : 0) + (g.situation?.isRedZone ? 2 : 0)
+        + (_ncaafGameHasFav(g) ? 100 : 0);
+}
+function _ncaafMarquee(g) {
+    const rankedBonus = (g.homeTeam?.rank ? 3 : 0) + (g.awayTeam?.rank ? 3 : 0);
+    return (g.broadcast ? 4 : 0) + rankedBonus + (_ncaafGameHasFav(g) ? 100 : 0);
 }
 // D-100 (supersedes the _homeHeroSport() calendar gate above): whichever
 // sport has the more compelling live game wins the hero slot, any day of the
@@ -1609,10 +1754,26 @@ async function _renderHomeHero(games) {
         Logger.warn('NFL hero candidate fetch failed -- MLB-only hero this load', err && err.message, 'APP');
     }
 
+    // 2026-09-03: same cross-sport scoring extended to NCAAF -- a third
+    // scoreboard fetch alongside MLB/NFL's, same ApiCache.TTL.SHORT cost
+    // already accepted for NFL under D-100. AppState.ncaafGames may already
+    // be warm from setupNCAAFLivePolling's own 60s refresh (js/app.js), same
+    // reuse-before-refetch pattern as nflGames above.
+    let ncaafGames = [];
+    try {
+        ncaafGames = (typeof fetchNCAAFScoreboard === 'function')
+            ? ((AppState.ncaafGames && AppState.ncaafGames.length) ? AppState.ncaafGames : await fetchNCAAFScoreboard())
+            : [];
+        AppState.ncaafGames = ncaafGames;
+    } catch (err) {
+        Logger.warn('NCAAF hero candidate fetch failed -- MLB/NFL-only hero this load', err && err.message, 'APP');
+    }
+
     let hero = null;
     const mlbLive = list.filter(isLive);
     const nflLive = (nflGames || []).filter(g => g.isLive);
-    if (mlbLive.length || nflLive.length) {
+    const ncaafLive = (ncaafGames || []).filter(g => g.isLive);
+    if (mlbLive.length || nflLive.length || ncaafLive.length) {
         const candidates = [];
         if (mlbLive.length) {
             const g = mlbLive.slice().sort((x, y) => mlbLeverage(y) - mlbLeverage(x))[0];
@@ -1622,11 +1783,18 @@ async function _renderHomeHero(games) {
             const g = nflLive.slice().sort((x, y) => _nflLeverage(y) - _nflLeverage(x))[0];
             candidates.push({ sport: 'nfl', g, score: _nflLeverage(g) });
         }
+        if (ncaafLive.length) {
+            const g = ncaafLive.slice().sort((x, y) => _ncaafLeverage(y) - _ncaafLeverage(x))[0];
+            candidates.push({ sport: 'ncaaf', g, score: _ncaafLeverage(g) });
+        }
         const winner = candidates.sort((a, b) => b.score - a.score)[0];
-        hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'live') : _heroFromNFLGame(winner.g, 'live');
+        hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'live')
+            : winner.sport === 'nfl' ? _heroFromNFLGame(winner.g, 'live')
+            : _heroFromNCAAFGame(winner.g, 'live');
     } else {
         const mlbUp = list.filter(isUpcoming);
         const nflUp = (nflGames || []).filter(g => !g.isLive && !g.isFinal);
+        const ncaafUp = (ncaafGames || []).filter(g => !g.isLive && !g.isFinal);
         const candidates = [];
         if (mlbUp.length) {
             const g = mlbUp.slice().sort((x, y) => mlbMarquee(y) - mlbMarquee(x))[0];
@@ -1636,9 +1804,15 @@ async function _renderHomeHero(games) {
             const g = nflUp.slice().sort((x, y) => _nflMarquee(y) - _nflMarquee(x))[0];
             candidates.push({ sport: 'nfl', g, score: _nflMarquee(g) });
         }
+        if (ncaafUp.length) {
+            const g = ncaafUp.slice().sort((x, y) => _ncaafMarquee(y) - _ncaafMarquee(x))[0];
+            candidates.push({ sport: 'ncaaf', g, score: _ncaafMarquee(g) });
+        }
         if (candidates.length) {
             const winner = candidates.sort((a, b) => b.score - a.score)[0];
-            hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'upcoming') : _heroFromNFLGame(winner.g, 'upcoming');
+            hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'upcoming')
+                : winner.sport === 'nfl' ? _heroFromNFLGame(winner.g, 'upcoming')
+                : _heroFromNCAAFGame(winner.g, 'upcoming');
         }
     }
     if (!hero) hero = await _heroFromStandings().catch(() => null);

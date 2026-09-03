@@ -993,6 +993,10 @@
     letter-spacing: 0.5px;
 }
 
+/* AP/CFP Top 25 rank prefix on NCAAF game cards — no NFL equivalent (no poll
+   in a pro league), so this class is NCAAF-only, unlike the rest of .game-*. */
+.game-team-rank { color: var(--accent); font-weight: 800; }
+
 .game-team-name {
     font-size: 0.65rem;
     font-weight: 600;
@@ -4660,12 +4664,23 @@
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
 }
+.ncaaf-team-chip-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.1rem;
+}
 .ncaaf-team-chip-name {
     font-size: 0.86rem;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.ncaaf-team-chip-record {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
 }
 
 /* ── Shared detail-frame chrome (D-044 P1) — named classes replacing

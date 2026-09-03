@@ -9,7 +9,14 @@ import { buildAuth } from './auth/_instance.js';
 // (400 invalid_follow, swallowed by toggleFollow's "kept local" catch -- no visible
 // error, just permanent non-sync). Caught in a documentation/security sweep, not a bug
 // report -- worth a live check that NBA follows actually persist across sign-out/in now.
-const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf', 'nba']);
+// 'wnba' added 2026-09-03 -- same exact gap: js/wnba.js's player detail (D-092
+// Resolution 5) calls renderFollowStar('wnba', 'player', ...) but this allowlist was
+// never updated when that shipped, so every signed-in WNBA follow has been silently
+// 400ing since Resolution 5 went live. Found via a grep sweep for renderFollowStar
+// call sites vs. this set while working on unrelated NCAAF feature work, not a bug
+// report. js/ncaab.js has zero renderFollowStar call sites (no follow star wired up
+// yet for NCAAB) -- 'ncaab' deliberately not added here until that ships client-side.
+const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf', 'nba', 'wnba']);
 const VALID_ENTITY_TYPES = new Set(['team', 'player']);
 
 async function requireSession(context) {

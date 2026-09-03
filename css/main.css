@@ -2935,6 +2935,16 @@ main {
 @media (max-width: 768px) {
     /* Sub-nav hidden on mobile — menu button + bottom nav handle navigation */
     .sub-nav { display: none; }
+    /* Header overflow fix (2026-08-29): the header gear icon is redundant with the
+       "Settings" row already in the mobile menu panel's footer (#themeToggleBtn,
+       same openSettingsPanel() call) -- on a narrow phone, brand + sport switcher +
+       search + auth + this gear + the hamburger itself didn't all fit on one row, and
+       with nothing set to shrink or wrap, the hamburger (the only way to open the nav
+       menu on mobile) was the item that silently lost the fight and got pushed off the
+       right edge of the header, reachable only by scrolling the whole page sideways.
+       Dropping this duplicate control removes one fixed-width item + one gap without
+       losing functionality — Settings stays one tap away via the menu panel. */
+    .settings-btn { display: none; }
     /* Search button: icon-only on mobile */
     .search-global-btn { flex: none; width: 36px; height: 36px; margin: 0; padding: 0; border: none; }
     /* Menu grid: 2 columns on small screens */
@@ -3970,7 +3980,12 @@ body.a2hs-open { padding-bottom: 4.5rem; }
     color: var(--text-secondary);
 }
 
-/* ── Sport switcher (header MLB / NFL) ─────────────────────── */
+/* ── Sport switcher (header MLB / NFL / …) ─────────────────── */
+.sport-switch-wrap {
+    position: relative;
+    margin-left: var(--space-3);
+    flex-shrink: 0;
+}
 .sport-switch {
     display: inline-flex;
     gap: 2px;
@@ -3978,10 +3993,6 @@ body.a2hs-open { padding-bottom: 4.5rem; }
     background: var(--bg-raised);
     border: 1px solid var(--border-mid);
     border-radius: var(--radius-full);
-    margin-left: var(--space-3);
-    flex-shrink: 0;
-}
-.sport-switch {
     box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 .sport-switch-btn {
@@ -3998,32 +4009,80 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 }
 .sport-switch-btn--active { background: var(--accent); color: var(--text-on-accent); }
 .sport-switch-btn:hover:not(.sport-switch-btn--active) { color: var(--text-primary); }
-@media (max-width: 480px) {
-    .sport-switch { margin-left: var(--space-2); }
-    .sport-switch-btn { padding: 3px 9px; }
+
+/* Mobile trigger (hidden on desktop — the inline pill row above has room for it there) */
+.sport-switch-trigger {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-full);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sport-switch-trigger:hover { border-color: var(--border-accent-hov); }
+.sport-switch-caret { opacity: 0.7; transition: transform var(--transition-fast); }
+.sport-switch-trigger[aria-expanded="true"] .sport-switch-caret { transform: rotate(180deg); }
+
+/* Mobile fix (2026-08-29): the header-inner row has no room to show 5 sports as inline
+   pills (brand + search + auth + settings + menu already claim nearly the full width on a
+   narrow phone) -- an earlier fix clipped .sport-switch to a 140px horizontally-scrolling
+   strip, but at pill-row sizing that showed less than two full labels at a time with no
+   snap point, so mid-scroll you'd land on a half-visible pill with no way to tell which
+   sport it was. Replaced with the same trigger+dropdown pattern already proven by
+   .auth-control/.auth-menu: .sport-switch-trigger shows only the active sport and opens
+   .sport-switch as a full-width, vertically-stacked dropdown sheet -- every sport fully
+   readable, no scrolling, one tap. */
+@media (max-width: 768px) {
+    .sport-switch-trigger { display: inline-flex; }
+    .sport-switch-wrap { margin-left: var(--space-2); }
+    .sport-switch {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 90;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        padding: 6px;
+        min-width: 172px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-mid);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+    }
+    .sport-switch.sport-switch--open { display: flex; }
+    .sport-switch-btn {
+        width: 100%;
+        text-align: left;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+    }
 }
 
-/* Mobile audit fix (2026-08-09): .header-inner has no flex-wrap and .brand/.settings-btn/
-   .menu-btn are all flex-shrink:0 by design (they're the essential, always-reachable
-   controls). .sport-switch was ALSO flex-shrink:0 -- measured live on production at
-   desktop width, brand+sport-switch+auth+settings alone already total ~500px, with the
-   mobile-only .menu-btn (40px, hidden ≥769px) adding yet more right at the breakpoint
-   where it appears. With nothing to give, that overflow would push .menu-btn -- the only
-   way to reach the nav menu on mobile -- off the visible header entirely. Letting
-   .sport-switch shrink and scroll internally (same overflow-x pattern already used by
-   .dk-board/.sos-tablewrap) keeps every other header control fully visible and reachable;
-   the tradeoff is a small swipe on the sport pills themselves on the narrowest phones. */
-@media (max-width: 768px) {
-    .sport-switch {
-        flex-shrink: 1;
-        min-width: 0;
-        max-width: 140px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-    .sport-switch::-webkit-scrollbar { display: none; }
-    .sport-switch-btn { flex-shrink: 0; }
+/* Header overflow fix, part 2 (2026-08-29): dropping the redundant settings icon
+   (above) wasn't enough on its own -- measured live at real phone widths (320/375/390),
+   brand wordmark + sport trigger + search icon + auth pill + hamburger still didn't
+   reliably fit on one row with nothing left to give, and depending on whether "Sign in"
+   happened to wrap to two lines the hamburger would be fully visible, half-clipped, or
+   pushed off-screen entirely with no scroll affordance -- reachable only by swiping the
+   whole sticky header sideways. The wordmark is the one purely decorative element in
+   that row (you already know you're in SportStrata once you're past the front door,
+   and the icon logo alone still reads as the brand mark) and the biggest single chunk
+   of width, so it's what gives on a narrow phone. 480px covers essentially every phone
+   in portrait; iPad-class widths (600–768, still "mobile" by this app's breakpoint)
+   keep the full wordmark since they were never the ones overflowing. */
+@media (max-width: 480px) {
+    .brand-text { display: none; }
 }
 
 /* NFL Scores week navigator (2026-08-09) — same scrollbar-hiding trick as

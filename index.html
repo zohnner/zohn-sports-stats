@@ -107,10 +107,21 @@
                 </div>
             </button>
 
-            <!-- Sport switcher (MLB / NFL) -->
-            <div class="sport-switch" role="group" aria-label="Choose sport">
-                <button class="sport-switch-btn sport-switch-btn--active" data-sport="mlb" aria-pressed="true">MLB</button>
-                <button class="sport-switch-btn" data-sport="nfl" aria-pressed="false">NFL</button>
+            <!-- Sport switcher — desktop: inline pill row. Mobile (<=768px): the pill row can't
+                 fit 5 sports in the cramped header-inner row, so .sport-switch-trigger shows only
+                 the active sport and opens .sport-switch as a full-row dropdown sheet instead of
+                 the old clipped horizontal-scroll strip (see css/main.css for the fix history). -->
+            <div class="sport-switch-wrap">
+                <button class="sport-switch-trigger" id="sportSwitchTrigger" type="button"
+                        aria-haspopup="true" aria-expanded="false" aria-controls="sportSwitch" aria-label="Choose sport">
+                    <span id="sportSwitchTriggerIcon" aria-hidden="true">⚾</span>
+                    <span id="sportSwitchTriggerLabel">MLB</span>
+                    <svg class="sport-switch-caret" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="sport-switch" id="sportSwitch" role="group" aria-label="Choose sport">
+                    <button class="sport-switch-btn sport-switch-btn--active" data-sport="mlb" aria-pressed="true">MLB</button>
+                    <button class="sport-switch-btn" data-sport="nfl" aria-pressed="false">NFL</button>
+                </div>
             </div>
 
             <!-- Global search button (⌘K) — expands on desktop -->

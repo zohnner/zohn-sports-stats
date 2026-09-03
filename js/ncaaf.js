@@ -42,8 +42,27 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
     return json;
 }
 
-async function fetchNCAAFScoreboard() {
-    const data = await espnNCAAFFetch('/scoreboard', {}, ApiCache.TTL.SHORT);
+// Records + linescores mirror NFL's _nflRecordSummary/_nflLinescores (nfl.js) —
+// live-confirmed 2026-08-30 that ESPN's CFB scoreboard carries the exact same
+// competitor.records ([{name,type,summary}]) and competitor.linescores
+// ([{value,period}]) shapes, just never parsed here before.
+function _ncaafRecordSummary(competitor) {
+    const recs = competitor?.records;
+    if (!Array.isArray(recs) || !recs.length) return '';
+    const total = recs.find(r => r.type === 'total') || recs.find(r => r.name === 'overall') || recs[0];
+    return total?.summary || '';
+}
+function _ncaafLinescores(competitor) {
+    if (!Array.isArray(competitor?.linescores)) return [];
+    return competitor.linescores.map(l => Number(l.value ?? l.displayValue ?? 0) || 0);
+}
+
+async function fetchNCAAFScoreboard(opts = {}) {
+    const params = {};
+    if (opts.seasontype) params.seasontype = opts.seasontype;
+    if (opts.week)       params.week = opts.week;
+    if (opts.season)     params.dates = opts.season;
+    const data = await espnNCAAFFetch('/scoreboard', params, ApiCache.TTL.SHORT);
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -54,20 +73,42 @@ async function fetchNCAAFScoreboard() {
         const isFinal = stName.startsWith('STATUS_FINAL');
         const isLive  = stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME';
         const mk = (t) => ({
+            id:     t?.team?.id || '',
             abbr:   t?.team?.abbreviation || '?',
             name:   t?.team?.displayName  || '',
             logo:   t?.team?.logo || '',
+            // Raw hex, no '#' -- same shape displayNCAAFTeamDetail already parses
+            // off the /teams/{id} payload; live-confirmed present on scoreboard
+            // competitor.team too (2026-08-30), so no separate color map needed
+            // the way NFL's 32-team _NFL_TEAM_COLOR is (CFB has 130+ FBS teams).
+            color:  t?.team?.color || '',
             score:  parseInt(t?.score || '0', 10),
             rank:   t?.curatedRank?.current && t.curatedRank.current <= 25 ? t.curatedRank.current : null,
             winner: t?.winner === true,
+            record: _ncaafRecordSummary(t),
         });
         return {
             id: ev.id, name: ev.name, date: ev.date,
             homeTeam: mk(home), awayTeam: mk(away),
             isFinal, isLive,
             statusText: status?.type?.shortDetail || status?.type?.description || '',
+            period: status?.period || 0,
             // D-043 3a: same shape as NFL's, verified live 2026-08-02.
             broadcast: comp.broadcasts?.[0]?.names?.[0] || '',
+            // Quarter-by-quarter scoring for the Game Flow chart (mirrors NFL's
+            // D-104) — comp.leaders (game-wide stat leaders) is confirmed ABSENT
+            // from the CFB scoreboard payload (checked live against a completed
+            // game), unlike NFL's, so there's no leaders row here — an honest
+            // gap, not an oversight.
+            linescores: { home: _ncaafLinescores(home), away: _ncaafLinescores(away) },
+            // Home-hero live-detail (2026-09-03) — mirrors NFL's comp.situation
+            // read (D-096/D-104), same field on the same /scoreboard endpoint.
+            // UNCONFIRMED for CFB specifically as of this write (no NCAAF game
+            // was live when this shipped) — degrades to null/absent exactly like
+            // every other "not yet live-verified" field in this file, never
+            // assumed populated. Live-check this the same way D-096 did for NFL
+            // before trusting isRedZone/downDistanceText beyond a plain text line.
+            situation: comp.situation || null,
         };
     }).filter(Boolean);
 }
@@ -86,64 +127,212 @@ function _ncaafOffseasonState() {
     </div>`;
 }
 
+// ── Scores week/season navigator (2026-08-30, mirrors nfl.js's
+// _renderNFLScoresNav) — the zero-param /scoreboard call only ever returns
+// whatever narrow "current week" window ESPN feels like, with no way to
+// browse a different one. CFB's own calendar shape is NOT the same as NFL's
+// though (live-confirmed 2026-08-30 against ESPN's leagues[0].calendar):
+// regular season is 15 numbered weeks, but postseason is two NAMED groups —
+// "Bowls" (value=1) and "CFP" (value=999) — not sequential week numbers, so
+// postseason gets its own two-pill row instead of a week-count range.
+const _NCAAF_SEASONTYPES = [
+    { type: 2, label: 'Regular Season', weeks: 15 },
+    { type: 3, label: 'Postseason', postseasonGroups: [{ value: 1, label: 'Bowls' }, { value: 999, label: 'CFP' }] },
+];
+// null = ESPN's own "today" default; else { seasontype, week, season }.
+let _ncaafScoresFilter = null;
+
+function _renderNCAAFScoresNav() {
+    const grid = document.getElementById('playersGrid');
+    const main = document.querySelector('main');
+    if (!grid || !main) return;
+    document.getElementById('ncaafScoresNav')?.remove();
+
+    const f = _ncaafScoresFilter;
+    const activeType = f ? f.seasontype : 2;
+    const season = f ? f.season : NCAAF_SEASON;
+    const typeMeta = _NCAAF_SEASONTYPES.find(t => t.type === activeType) || _NCAAF_SEASONTYPES[0];
+
+    const pillStyle = (active) => `padding:0.32rem 0.78rem;border-radius:var(--radius-full);
+        border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+        background:${active ? 'var(--accent)' : 'transparent'};
+        color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+        font-weight:700;font-size:0.74rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+
+    const todayBtn = `<button data-ncaaf-stoday="1" style="${pillStyle(!f)}">Today</button>`;
+    const typeBtns = _NCAAF_SEASONTYPES.map(t =>
+        `<button data-ncaaf-stype="${t.type}" style="${pillStyle(!!f && t.type === activeType)}">${t.label}</button>`
+    ).join('');
+
+    const subPillStyle = (active) => `padding:0.3rem 0.66rem;border-radius:var(--radius-full);
+        border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
+        background:${active ? 'var(--accent)' : 'transparent'};
+        color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
+        font-weight:600;font-size:0.7rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+    const subBtns = typeMeta.postseasonGroups
+        ? typeMeta.postseasonGroups.map(g => `<button data-ncaaf-sweek="${g.value}" style="${subPillStyle(!!f && f.week === g.value)}">${g.label}</button>`).join('')
+        : Array.from({ length: typeMeta.weeks }, (_, i) => i + 1)
+            .map(w => `<button data-ncaaf-sweek="${w}" style="${subPillStyle(!!f && f.week === w)}">Wk ${w}</button>`).join('');
+
+    const nav = document.createElement('div');
+    nav.id = 'ncaafScoresNav';
+    nav.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;padding:0 0.25rem 0.9rem';
+    nav.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem">
+            ${todayBtn}${typeBtns}
+            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">${season}</span>
+        </div>
+        <div class="nfl-week-scroll" style="display:flex;align-items:center;gap:0.35rem;overflow-x:auto;padding-bottom:2px">${subBtns}</div>
+    `;
+    main.insertBefore(nav, grid);
+
+    nav.querySelector('[data-ncaaf-stoday]').onclick = () => { _ncaafScoresFilter = null; displayNCAAFScores(); };
+    nav.querySelectorAll('[data-ncaaf-stype]').forEach(btn => {
+        btn.onclick = () => {
+            const type = parseInt(btn.dataset.ncaafStype, 10);
+            const meta = _NCAAF_SEASONTYPES.find(t => t.type === type);
+            const firstWeek = meta.postseasonGroups ? meta.postseasonGroups[0].value : 1;
+            _ncaafScoresFilter = { seasontype: type, week: firstWeek, season: NCAAF_SEASON };
+            displayNCAAFScores();
+        };
+    });
+    nav.querySelectorAll('[data-ncaaf-sweek]').forEach(btn => {
+        btn.onclick = () => {
+            _ncaafScoresFilter = { seasontype: activeType, week: parseInt(btn.dataset.ncaafSweek, 10), season };
+            displayNCAAFScores();
+        };
+    });
+}
+
+// D-104-style rework (2026-08-30): moved off the compact home-page
+// `.home-game-card` markup onto the same `.game-card`/`.game-team`/
+// `.game-matchup` component MLB/NFL's own Scores pages use — per-team click-
+// through to the team page, inline W-L records, and a Game Flow quarter chart
+// (all three fields live-confirmed present on the CFB scoreboard payload,
+// 2026-08-30). No stat-leaders row: comp.leaders is confirmed absent for CFB,
+// unlike NFL's feed — an honest gap, not a card that silently does less.
 function _ncaafGameCard(g) {
-    const row = (t, other) => `
-        <div class="hgc-row">
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:28px;height:28px">` : '<span style="width:28px"></span>'}
-            <span class="hgc-team">${t.rank ? `<span class="hgc-rank">#${t.rank}</span> ` : ''}${_escHtml(t.abbr)}</span>
-            <span class="hgc-score ${g.isFinal && t.winner ? 'hgc-score--win' : ''}" style="margin-left:auto">${(g.isFinal || g.isLive) ? t.score : ''}</span>
+    const hs = g.homeTeam.score, as = g.awayTeam.score;
+    const hasScore = g.isFinal || g.isLive || hs > 0 || as > 0;
+    const statusCls = g.isFinal ? 'game-status--final' : g.isLive ? 'game-status--live' : 'game-status--sched';
+
+    let dateStr = '';
+    if (g.date) {
+        try { dateStr = new Date(g.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); } catch (_) {}
+    }
+
+    const teamBlock = (t, won, extraCls) => `
+        <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" ${t.id ? `onclick="event.stopPropagation(); navigateTo('ncaaf-team-${_escHtml(String(t.id))}')" role="button" tabindex="0"` : ''} aria-label="${_escHtml(t.name || t.abbr)}">
+            <div class="game-team-logo" ${t.color ? `style="background:linear-gradient(135deg,#${_escHtml(t.color)}cc,#${_escHtml(t.color)}55)"` : ''}>
+                ${t.logo ? `<img class="game-logo-img" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                <span class="game-logo-text">${_escHtml(t.abbr)}</span>
+            </div>
+            <div class="game-team-abbr">${t.rank ? `<span class="game-team-rank">#${t.rank}</span> ` : ''}${_escHtml(t.abbr)}</div>
+            <div class="game-team-name" title="${_escHtml(t.name || '')}">${_escHtml(t.name || '')}</div>
+            ${t.record ? `<div class="game-team-rec">${_escHtml(t.record)}</div>` : ''}
         </div>`;
-    const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
-        : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
-        : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    // Clickable into the Phase-1 game skeleton (js/ncaafLiveGame.js,
-    // 2026-08-22) -- role/tabindex/onclick mirrors the same accessible-link
-    // pattern already used for team chips and leader rows in this file
-    // (search '_ncaaf-team-link'/nfl-lrow--link above), not a new pattern.
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" aria-label="${_escHtml(g.awayTeam.name)} at ${_escHtml(g.homeTeam.name)}" onclick="navigateTo('ncaaf-game-${_escHtml(String(g.id))}')">
-        ${row(g.awayTeam)}
-        ${row(g.homeTeam)}
-        <div class="hgc-card-footer">${pill}</div>
+
+    const homeLS = g.linescores?.home || [];
+    const awayLS = g.linescores?.away || [];
+    const numPeriods = Math.max(homeLS.length, awayLS.length);
+    let flowHtml = '';
+    if (numPeriods > 0 && (g.isFinal || g.isLive)) {
+        const homeColor = g.homeTeam.color ? `#${g.homeTeam.color}` : 'var(--text-secondary)';
+        const awayColorRaw = g.awayTeam.color ? `#${g.awayTeam.color}` : null;
+        const awayColor = (awayColorRaw && awayColorRaw !== homeColor) ? awayColorRaw : 'var(--text-muted)';
+        const maxVal = Math.max(1, ...homeLS, ...awayLS);
+        const periodLabel = (i) => i < 4 ? `Q${i + 1}` : (numPeriods - i <= 1 ? 'OT' : `OT${i - 3}`);
+        const bars = Array.from({ length: numPeriods }, (_, i) => {
+            const hv = Number(homeLS[i]) || 0, av = Number(awayLS[i]) || 0;
+            const hh = Math.max(3, Math.round((hv / maxVal) * 40));
+            const ah = Math.max(3, Math.round((av / maxVal) * 40));
+            return `
+            <div class="game-flow-q">
+                <div class="game-flow-bars">
+                    <div class="game-flow-bar" style="height:${hh}px;background:${homeColor}" title="${_escHtml(g.homeTeam.abbr)} ${periodLabel(i)}: ${hv}"></div>
+                    <div class="game-flow-bar" style="height:${ah}px;background:${awayColor}" title="${_escHtml(g.awayTeam.abbr)} ${periodLabel(i)}: ${av}"></div>
+                </div>
+                <span class="game-flow-q-label">${periodLabel(i)}</span>
+            </div>`;
+        }).join('');
+        flowHtml = `
+        <div class="game-flow">
+            <div class="game-flow-label">Game Flow · Points by Quarter</div>
+            <div class="game-flow-chart">${bars}</div>
+            <div class="game-flow-legend">
+                <span><i style="background:${homeColor}"></i>${_escHtml(g.homeTeam.abbr)}</span>
+                <span><i style="background:${awayColor}"></i>${_escHtml(g.awayTeam.abbr)}</span>
+            </div>
+        </div>`;
+    }
+
+    const ghostHtml = g.homeTeam.color
+        ? `<div class="game-card-ghost-logo" style="background:radial-gradient(circle, #${_escHtml(g.homeTeam.color)} 0%, transparent 70%)"></div>`
+        : '';
+
+    return `<div class="game-card${g.isLive ? ' game-card--live' : ''}" style="cursor:pointer" onclick="navigateTo('ncaaf-game-${_escHtml(String(g.id))}')">
+        ${ghostHtml}
+        <div class="game-card-header">
+            <span class="game-date">${_escHtml(dateStr)}${g.broadcast ? ` · ${_escHtml(g.broadcast)}` : ''}</span>
+            <span class="game-status ${statusCls}">${g.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(g.statusText || (g.isFinal ? 'Final' : 'Scheduled'))}</span>
+        </div>
+        <div class="game-matchup">
+            ${teamBlock(g.homeTeam, g.homeTeam.winner)}
+            <div class="game-scores">
+                <span class="game-score ${g.homeTeam.winner ? 'game-score--win' : hasScore && !g.homeTeam.winner ? 'game-score--loss' : ''}">${hasScore ? hs : '—'}</span>
+                <span class="game-scores-sep">:</span>
+                <span class="game-score ${g.awayTeam.winner ? 'game-score--win' : hasScore && !g.awayTeam.winner ? 'game-score--loss' : ''}">${hasScore ? as : '—'}</span>
+            </div>
+            ${teamBlock(g.awayTeam, g.awayTeam.winner, 'game-team--away')}
+        </div>
+        ${flowHtml}
     </div>`;
 }
 
 async function displayNCAAFScores() {
     const grid = document.getElementById('playersGrid');
-    if (!grid) return;
-    grid.className = 'home-container';
-    const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const main = document.querySelector('main');
+    if (!grid || !main) return;
+    if (window.setBreadcrumb) setBreadcrumb('ncaaf-scores', null);
 
-    if (_ncaafIsOffseason()) {
-        grid.innerHTML = _ncaafOffseasonState();
-        return;
-    }
+    _renderNCAAFScoresNav();
 
-    grid.innerHTML = `
-        <div class="home-today">
-            <div class="home-section-hdr">
-                <span class="home-section-title">College Football — Top 25 Scoreboard</span>
-                <span class="home-section-date">${dateStr}</span>
-            </div>
-            <div class="home-today-grid" id="ncaafScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-            </div>
-        </div>`;
+    grid.className = 'games-grid';
+    grid.innerHTML = Array.from({ length: 6 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
 
     try {
-        const games = await fetchNCAAFScoreboard();
+        const games = await fetchNCAAFScoreboard(_ncaafScoresFilter || {});
         AppState.ncaafGames = games;
-        const cell = document.getElementById('ncaafScoresGrid');
-        if (!cell) return;
-        cell.innerHTML = games.length
-            ? games.map(_ncaafGameCard).join('')
-            : `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">No games on the board right now — check back on game day.</p></div>`;
-        if (typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
+
+        if (!games.length) {
+            grid.className = '';
+            // The offseason full-page state only applies to the real "Today"
+            // default — a user who explicitly browsed to a past/future week
+            // that happens to have no games (or hasn't been scheduled yet)
+            // shouldn't be told the whole sport is dormant.
+            grid.innerHTML = (!_ncaafScoresFilter && _ncaafIsOffseason())
+                ? _ncaafOffseasonState()
+                : `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">No games in this window — try a different week.</p></div>`;
+            if (!_ncaafScoresFilter && typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
+            return;
+        }
+
+        const liveCount = games.filter(g => g.isLive).length;
+        const liveHead = liveCount
+            ? `<div class="nfl-gameday-head" style="grid-column:1/-1"><span class="nlg-livebadge">● LIVE NOW</span> ${liveCount} game${liveCount > 1 ? 's' : ''} in progress</div>`
+            : '';
+        const rank = (game) => game.isLive ? 0 : (!game.isFinal ? 1 : 2);
+        const ordered = games.slice().sort((a, b) => rank(a) - rank(b));
+        grid.innerHTML = liveHead + ordered.map(_ncaafGameCard).join('');
+
+        // Only the real "Today" default feeds the site-wide ticker — browsing a
+        // past/future week shouldn't push those scores into the header ticker
+        // (mirrors nfl.js's loadNFLGames).
+        if (!_ncaafScoresFilter && typeof updateNCAAFTicker === 'function') updateNCAAFTicker(games);
     } catch (err) {
         Logger.warn('NCAAF scoreboard failed', err, 'NCAAF');
-        const cell = document.getElementById('ncaafScoresGrid');
-        if (cell) cell.innerHTML = `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">Couldn't load college scores. <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="displayNCAAFScores()">Retry</button></p></div>`;
+        grid.className = '';
+        grid.innerHTML = `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">Couldn't load college scores. <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="displayNCAAFScores()">Retry</button></p></div>`;
     }
 }
 
@@ -386,14 +575,30 @@ async function displayNCAAFTeams() {
         document.getElementById('ncaafTeamsBody').innerHTML = _ncaafErr('No teams returned for the ' + _ncaaf.season + ' season.', 'displayNCAAFTeams');
         return;
     }
-    document.getElementById('ncaafTeamsBody').innerHTML = confs.map(c => `
+    document.getElementById('ncaafTeamsBody').innerHTML = confs.map(c => {
+        // Alphabetical within each conference — the standings API returns teams
+        // in whatever order ESPN's tree happened to list them, not sorted, which
+        // made a 15-18 team conference tedious to scan for one specific team.
+        const sorted = c.teams.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        return `
         <section style="margin-bottom:var(--space-4)">
             <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
-            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
+            <div class="ncaaf-team-grid">${sorted.map(t => {
+                // Overall record is already parsed by _ncaafStandingRow for the Standings
+                // view (t.overall) — the Teams grid just never rendered it. "0-0" reads as
+                // real data before kickoff, so it's suppressed the same way the team-detail
+                // Team Record card already suppresses an all-zero preseason row.
+                const hasRecord = t.overall && t.overall !== '—' && !/^0-0$/.test(t.overall);
+                return `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
-                <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
-            </div>`).join('')}</div>
-        </section>`).join('') +
+                <div class="ncaaf-team-chip-info">
+                    <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
+                    ${hasRecord ? `<span class="ncaaf-team-chip-record">${_escHtml(t.overall)}</span>` : ''}
+                </div>
+            </div>`;
+            }).join('')}</div>
+        </section>`;
+    }).join('') +
         `<p class="standings-legend">FBS teams grouped by conference (${_escHtml(String(_ncaaf.season))}). Source: ESPN.</p>`;
 }
 
