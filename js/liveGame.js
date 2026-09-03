@@ -41,6 +41,7 @@ let _lgLastPitcherId  = null;   // pitcher id from previous poll — pitching ch
 let _lgPitchTooltipEl = null;   // active pitch tooltip DOM node or null
 let _lgPlayerCardEl   = null;   // active embedded player card DOM node or null — D-117 Phase 5
 let _lgH2HCache       = {};     // { "batterId_pitcherId": vsPlayerTotal stat obj }
+let _lgStatcastSeasonCache = {}; // { "batterId_pitcherId": rendered HTML string } — Statcast tab season-percentile block
 let _lgLastPollMs     = null;   // timestamp of last completed poll (for freshness display)
 let _lgTsInterval     = null;   // secondary interval — updates "Updated Xs ago" text
 let _lgZoneMode       = new Map(); // gamePk → 'dots' | 'heat' — pitch zone view, session-scoped
@@ -70,6 +71,19 @@ const _LG_DOT_CLASS = {
     E: 'hit',      // In play (fielding error)
 };
 
+// Pitch velocity — live-verified 2026-09-02 against a real feed/live
+// payload (a pre-existing bug found while building the Statcast tab's
+// this-game velocity/spin aggregation, not introduced by this redesign):
+// the real field is playEvents[].pitchData.startSpeed, NOT a top-level
+// playEvents[].startSpeed — every existing call site in this file (the
+// pitch tooltip, the hero's "last velocity" line) was reading the
+// always-undefined top-level field and silently showing "—". Checking
+// pitchData.startSpeed first, with the old top-level path kept only as a
+// defensive fallback, fixes all of them at once.
+function _lgPitchVelo(pitchEvent) {
+    return pitchEvent?.pitchData?.startSpeed ?? pitchEvent?.startSpeed ?? null;
+}
+
 function _lgDotCategory(code, event) {
     if (code === 'X') {
         const evt = (event || '').toLowerCase();
@@ -78,6 +92,84 @@ function _lgDotCategory(code, event) {
         return 'hit';
     }
     return _LG_DOT_CLASS[code] || 'unknown';
+}
+
+// ── Baseball terminology mapping ────────────────────────────────
+// MLB Stats API call codes / eventTypes → the exact broadcast terms this
+// redesign standardizes on (owner spec, 2026-09-02 IA redesign). Used
+// everywhere a pitch result or play result is displayed — pitch tooltip,
+// pitch sequence list, Last Play, Play-by-Play tab — so labeling is
+// consistent across every surface rather than re-derived ad hoc per
+// component.
+const _LG_CALL_TERMS = {
+    C: 'CALLED STRIKE',
+    S: 'SWINGING STRIKE',
+    W: 'SWINGING STRIKE',
+    T: 'SWINGING STRIKE',
+    F: 'FOUL',
+    R: 'FOUL',
+    B: 'BALL',
+    D: 'BALL IN PLAY',
+    E: 'BALL IN PLAY',
+    X: 'BALL IN PLAY',
+};
+function _lgCallTerm(code, fallback) {
+    return _LG_CALL_TERMS[code] || fallback || 'PITCH';
+}
+
+const _LG_EVENT_TERMS = {
+    walk: 'WALK',
+    intent_walk: 'INTENTIONAL WALK',
+    hit_by_pitch: 'HBP',
+    strikeout: 'STRIKEOUT',
+    strikeout_double_play: 'STRIKEOUT DOUBLE PLAY',
+    field_error: 'ERROR',
+    error: 'ERROR',
+    catcher_interf: 'CATCHER INTERFERENCE',
+    double_play: 'DOUBLE PLAY',
+    grounded_into_double_play: 'DOUBLE PLAY',
+    triple_play: 'TRIPLE PLAY',
+    home_run: 'HOME RUN',
+    single: 'SINGLE',
+    double: 'DOUBLE',
+    triple: 'TRIPLE',
+    sac_fly: 'SACRIFICE FLY',
+    sac_bunt: 'SACRIFICE BUNT',
+    field_out: 'BALL IN PLAY',
+    force_out: 'BALL IN PLAY',
+};
+function _lgEventTerm(eventType) {
+    if (!eventType) return '';
+    return _LG_EVENT_TERMS[eventType] || eventType.replace(/_/g, ' ').toUpperCase();
+}
+
+// Standard ordinal suffix (10 → "10TH", 1 → "1ST", 21 → "21ST"), uppercase
+// to match the badge/situation-readout treatment.
+function _lgOrdinal(n) {
+    n = Number(n) || 0;
+    const suffixes = ['TH', 'ST', 'ND', 'RD'];
+    const v = n % 100;
+    return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+}
+
+// Base occupancy as a broadcast phrase — RUNNER ON 1ST / RUNNERS ON 1ST AND
+// 3RD / BASES LOADED / BASES EMPTY. Shares _lgOccupiedBases with the base
+// diamond and the win-expectancy lookup so all three can never disagree
+// about who's on base. `offense` is linescore.offense (or null/undefined
+// between half-innings — see _buildCurrentSituation's isBetweenInn gate).
+function _lgBaseStatePhrase(offense) {
+    const occupied = _lgOccupiedBases(offense);
+    if (!occupied.size) return 'BASES EMPTY';
+    if (occupied.size === 3) return 'BASES LOADED';
+    const labels = { '1B': '1ST', '2B': '2ND', '3B': '3RD' };
+    const order = ['1B', '2B', '3B'].filter(b => occupied.has(b)).map(b => labels[b]);
+    return `RUNNER${order.length > 1 ? 'S' : ''} ON ${order.join(' AND ')}`;
+}
+
+// Runner In Scoring Position — occupied 2nd or 3rd.
+function _lgRisp(offense) {
+    const occupied = _lgOccupiedBases(offense);
+    return occupied.has('2B') || occupied.has('3B');
 }
 
 // ── Public API ───────────────────────────────────────────────
@@ -96,6 +188,7 @@ function stopLiveGamePolling() {
     _lgPrevScores     = null;
     _lgLastPitcherId  = null;
     _lgH2HCache       = {};
+    _lgStatcastSeasonCache = {};
     _lgLastHeroBatterId = null;
     _lgSeasonStatCache  = {};
     _lgMiniStandingsHtml   = '';
@@ -323,35 +416,32 @@ function _buildSkeletonPanel(game) {
                 <span class="lg-score">${homeScore}</span>
                 <span class="lg-abbr">${_escHtml(homeAbbr)}</span>
             </div>
+            <div class="lg-half-badge-row">
+                <span class="lg-half-badge">${half}${inning}</span>
+            </div>
             <div class="lg-meta-row">
-                <span class="lg-inning">${half}${inning}</span>
                 <span class="game-status game-status--live lg-status-badge"><span class="live-dot"></span>LIVE</span>
             </div>
         </div>
         <div class="lg-linescore-wrap">
             <div class="skeleton-line" style="height:36px;margin:0.5rem 0"></div>
         </div>
-        <div class="lg-now-card" hidden>
-            <div class="lg-hero-host"></div>
-            <div class="lg-situation-host"></div>
-            <div class="lg-zone-col" hidden></div>
-            <div class="lg-dueup-host"></div>
-        </div>
         <div class="lg-tab-col">
             <div class="mlb-group-toggle-row lg-tabs" role="tablist">
-                <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-pbp"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
-                <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"     aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
-                <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
-                <button class="mlb-group-btn"                        role="tab" id="lg-tab-bullpen" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="bullpen">Bullpen</button>
+                <button class="mlb-group-btn mlb-group-btn--active" role="tab" id="lg-tab-live"     aria-selected="true"  aria-controls="lg-tabpanel" data-lg-tab="live">Live</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-pbp"      aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="pbp">Play-by-Play</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-box"      aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="box">Box Score</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-matchup"  aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="matchup">Matchup</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-statcast" aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="statcast">Statcast</button>
+                <button class="mlb-group-btn"                        role="tab" id="lg-tab-bullpen"  aria-selected="false" aria-controls="lg-tabpanel" data-lg-tab="bullpen">Bullpen</button>
             </div>
-            <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-pbp">
+            <div class="lg-tab-content" role="tabpanel" id="lg-tabpanel" aria-labelledby="lg-tab-live">
                 <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:90%"></div>
                 <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:75%"></div>
                 <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:82%"></div>
                 <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:60%"></div>
             </div>
         </div>
-        <div class="lg-winprob-host"></div>
         <div class="lg-poll-ts" aria-live="polite"></div>`;
 
     panel.querySelector('.lg-close-btn')?.addEventListener('click', _closeExistingPanel);
@@ -399,8 +489,6 @@ function _buildSkeletonPanel(game) {
 
 function _renderPanel(panel, feed, gamePk) {
     const ls       = feed.liveData?.linescore || {};
-    const plays    = feed.liveData?.plays || {};
-    const boxscore = feed.liveData?.boxscore || {};
     const status   = feed.gameData?.status || {};
     const home     = feed.gameData?.teams?.home || {};
     const away     = feed.gameData?.teams?.away || {};
@@ -449,6 +537,14 @@ function _renderPanel(panel, feed, gamePk) {
         ? `<a class="lg-scorecard-link" href="javascript:void(0)" onclick="openHighlightCardForGame(${gamePk})">Highlight card →</a>`
         : '';
 
+    // Half-inning badge is the scorebug's second-most-prominent element
+    // (priority-hierarchy item #2, right after the score) — a real "TOP
+    // 10TH"/"BOT 10TH" state readout, not a small mono arrow+number tag
+    // buried in the meta row alongside the status badge and links.
+    const halfInningHtml = isLive
+        ? `<div class="lg-half-badge-row"><span class="lg-half-badge">${ls.isTopInning ? '▲ TOP' : '▼ BOT'} ${_escHtml(_lgOrdinal(inning))}</span></div>`
+        : '';
+
     panel.querySelector('.lg-header').innerHTML = `
         <button class="lg-close-btn" aria-label="Collapse game view">×</button>
         <div class="lg-scoreline">
@@ -458,8 +554,8 @@ function _renderPanel(panel, feed, gamePk) {
             <span class="lg-score ${homeWon ? 'lg-score--win' : isFinal && !homeWon ? 'lg-score--loss' : ''}" data-side="home">${homeScore}</span>
             <span class="lg-abbr ${homeWon ? 'lg-winner' : ''}">${_escHtml(home.abbreviation || '???')}</span>
         </div>
+        ${halfInningHtml}
         <div class="lg-meta-row">
-            ${isLive ? `<span class="lg-inning">${half}${inning}</span>` : ''}
             ${badgeHtml}
             ${scorecardLink}
             ${highlightLink}
@@ -485,62 +581,13 @@ function _renderPanel(panel, feed, gamePk) {
         existingNote.remove();
     }
 
-    // "Now" card — matchup, count/outs/bases, pitch detail (zone + mix),
-    // and due up: everything about the current at-bat as one unit, right
-    // after the score/linescore and ahead of the tabs and win probability.
-    // Rebuilt after owner feedback (2026-09-02) that the page's order
-    // didn't match how anyone actually watches a live game — and a second
-    // round of feedback the same day that the pitch zone/mix specifically
-    // still read as disconnected from the rest of the at-bat info, sitting
-    // in its own column next to the tab strip instead of with the matchup
-    // and count it's describing. Same priority order ESPN/MLB Gameday use
-    // for their own live modules: lead with "what's happening right now,"
-    // reference detail (box score, matchup/bullpen tabs, win probability)
-    // after. Empty (Preview page-mode, Final-with-no-zone-content) for all
-    // four pieces, so the card itself is hidden rather than showing empty.
-    const heroHost = panel.querySelector('.lg-hero-host');
-    if (heroHost) {
-        heroHost.innerHTML = _buildHero(feed);
-        _lgMaybeFetchHeroBatterLine(feed, panel);
-    }
-    const situationHost = panel.querySelector('.lg-situation-host');
-    if (situationHost) situationHost.innerHTML = _buildSituationBar(feed);
-
-    // Phase 2 + P9-live: pitch zone (dots / heat toggle) + pitch mix wheel.
-    // Runs before the visibility check below so a Final game's zone content
-    // (kept visible postgame as a full-game pitch-mix reference, D-117
-    // Phase 2/3) still counts toward keeping the card shown even though
-    // hero/situation/dueUp are all intentionally empty once a game is Final.
-    _renderZone(panel, feed, gamePk);
-    const zoneCol = panel.querySelector('.lg-zone-col');
-    // Final games render hero/situation empty (both intentionally retired
-    // postgame) but keep the zone content as a full-game reference — drop
-    // its divider in that case so it doesn't read as a section break with
-    // nothing above it, just the card's own top edge.
-    zoneCol?.classList.toggle('lg-zone-col--leading', !(heroHost?.textContent.trim() || situationHost?.textContent.trim()));
-
-    const dueUpHost = panel.querySelector('.lg-dueup-host');
-    if (dueUpHost) dueUpHost.innerHTML = _buildDueUp(feed);
-
-    const nowCard = panel.querySelector('.lg-now-card');
-    if (nowCard) {
-        const hasContent = [heroHost, situationHost, zoneCol, dueUpHost].some(el => el?.textContent.trim());
-        nowCard.toggleAttribute('hidden', !hasContent);
-    }
-
-    // D-117 Phase 6: win-probability bar, recomputed fresh every render.
-    // Below the Now card and the tabs on purpose — secondary/nice-to-have,
-    // not moment-to-moment info anyone needs to watch a live game.
-    const winProbHost = panel.querySelector('.lg-winprob-host');
-    if (winProbHost) winProbHost.innerHTML = _buildWinProb(feed);
-
     // Ensure the freshness row exists in re-rendered panels (fallback for panels
     // that were built before this element was added to the skeleton template)
     if (!panel.querySelector('.lg-poll-ts')) {
         const ts = document.createElement('div');
         ts.className = 'lg-poll-ts';
         ts.setAttribute('aria-live', 'polite');
-        panel.querySelector('.lg-winprob-host')?.insertAdjacentElement('afterend', ts);
+        panel.querySelector('.lg-tab-col')?.insertAdjacentElement('afterend', ts);
     }
 
     const tabsEl    = panel.querySelector('.lg-tabs');
@@ -548,7 +595,7 @@ function _renderPanel(panel, feed, gamePk) {
 
     if (isPreview) {
         // No plays/box score exist yet — show probable pitchers instead of
-        // the tab strip rather than three tabs that all render empty states.
+        // the tab strip rather than six tabs that all render empty states.
         tabsEl?.setAttribute('hidden', '');
         if (tabpanel) {
             tabpanel.removeAttribute('aria-labelledby');
@@ -558,7 +605,7 @@ function _renderPanel(panel, feed, gamePk) {
         }
     } else {
         tabsEl?.removeAttribute('hidden');
-        const activeTab = _lgTabMap.get(String(gamePk)) || 'pbp';
+        const activeTab = _lgTabMap.get(String(gamePk)) || 'live';
         panel.querySelectorAll('[data-lg-tab]').forEach(btn => {
             const isActive = btn.dataset.lgTab === activeTab;
             btn.classList.toggle('mlb-group-btn--active', isActive);
@@ -567,17 +614,12 @@ function _renderPanel(panel, feed, gamePk) {
 
         if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${activeTab}`);
 
-        if (activeTab === 'pbp') {
-            tabpanel.innerHTML = _buildPbp(plays.allPlays || []);
-        } else if (activeTab === 'box') {
-            tabpanel.innerHTML = _buildBoxScore(boxscore, away.abbreviation, home.abbreviation);
-        } else if (activeTab === 'bullpen') {
-            // Phase 2 (D-117): cheap to rebuild every poll (boxscore's already in
-            // hand) — only the async rest-day fetch is gated to once per game,
-            // triggered from _switchTab, not here.
-            tabpanel.innerHTML = _buildBullpenTab(feed, gamePk);
-        }
-        // matchup tab: don't auto-rebuild on poll — tab click handles the async fetch
+        // Every poll refreshes only whichever tab is currently active — LIVE
+        // updates near-real-time while a viewer is watching it, but a poll
+        // tick never disturbs Box Score/Matchup/Statcast/Bullpen content the
+        // user isn't looking at (mirrors js/nflLiveGame.js's D-080
+        // mount-shell-once / update-active-tab-only discipline).
+        _renderActiveLgTab(panel, feed, gamePk);
     }
 
     // Sidebar (page mode only) — mini standings + mini leaders (D-117 Phase 1,
@@ -647,6 +689,7 @@ function _buildPbp(allPlays) {
         html += `<div class="lg-pbp-inning">${inningLabel}</div>`;
         for (const play of plays) {
             const desc    = _escHtml(play.result?.description || '');
+            const term    = _lgEventTerm(play.result?.eventType);
             const isScore = play.about?.isScoringPlay;
             const isHR    = play.result?.eventType === 'home_run';
             const score   = isScore
@@ -665,8 +708,9 @@ function _buildPbp(allPlays) {
                 ? ` <span class="lg-pbp-hardhit-note">(${hardHitEvent.hitData.launchSpeed} mph, ${hardHitEvent.hitData.totalDistance} ft)</span>`
                 : '';
 
+            const termHtml = term ? `<span class="lg-pbp-term">${_escHtml(term)}</span> ` : '';
             const cls = `lg-pbp-entry${isScore ? ' lg-pbp-entry--scoring' : ''}${isHR ? ' lg-pbp-entry--hr' : ''}${hardHitEvent ? ' lg-pbp-entry--hardhit' : ''}`;
-            html += `<div class="${cls}">${desc}${hardHitNote}${score}</div>`;
+            html += `<div class="${cls}">${termHtml}${desc}${hardHitNote}${score}</div>`;
         }
     }
     return html + '</div>';
@@ -1071,6 +1115,33 @@ function _collectPitcherPitchTypes(allPlays, pitcherId) {
     return Array.from(counts.values()).sort((a, b) => b.count - a.count);
 }
 
+// ── Statcast tab — this-game pitch velocity/spin aggregates ───
+// Same pitcher-scoping filter as _collectPitcherPitchTypes, additionally
+// averaging startSpeed/breaks.spinRate per pitch type — both already on
+// every pitch event from feed/live, zero new fetch.
+function _collectPitcherPitchTypeStats(allPlays, pitcherId) {
+    if (!Array.isArray(allPlays) || pitcherId == null) return [];
+    const groups = new Map();
+    for (const play of allPlays) {
+        if (play?.matchup?.pitcher?.id !== pitcherId) continue;
+        for (const e of (play.playEvents || [])) {
+            if (!e.isPitch) continue;
+            const code = e.details?.type?.code || '??';
+            const desc = e.details?.type?.description || code;
+            const g = groups.get(code) || { code, description: desc, count: 0, veloSum: 0, veloN: 0, spinSum: 0, spinN: 0 };
+            g.count++;
+            const velo = _lgPitchVelo(e);
+            if (velo) { g.veloSum += velo; g.veloN++; }
+            const spin = e.pitchData?.breaks?.spinRate;
+            if (spin) { g.spinSum += spin; g.spinN++; }
+            groups.set(code, g);
+        }
+    }
+    return Array.from(groups.values())
+        .map(g => ({ ...g, avgVelo: g.veloN ? g.veloSum / g.veloN : null, avgSpin: g.spinN ? g.spinSum / g.spinN : null }))
+        .sort((a, b) => b.count - a.count);
+}
+
 // Fixed small palette for pitch TYPE (distinct from the dots' ball/strike/
 // in-play RESULT colors above) — desaturated/secondary per DESIGN.md's
 // category-not-importance rule, since this is a breakdown fact, not a
@@ -1083,42 +1154,29 @@ const LG_PITCH_TYPE_COLORS = {
 };
 const LG_PITCH_TYPE_OTHER_COLOR = 'var(--text-muted)';
 
-function _buildPitchMixWheel(pitcherId, allPlays) {
+// Compact label/count/bar rows — replaces the old donut-chart wheel per
+// the redesign's "replace decorative pitch-mix charts with compact
+// readable tables/bars" requirement. Same visual language as mlb.js's
+// Statcast percentile card (.sc-row: label / bar / value in one line),
+// reimplemented under lg-* classes so liveGame.css stays self-contained.
+function _buildPitchMixBars(pitcherId, allPlays) {
     const types = _collectPitcherPitchTypes(allPlays, pitcherId);
     if (!types.length) return '';
 
     const total = types.reduce((s, t) => s + t.count, 0);
-    const R = 40, CX = 50, CY = 50, STROKE = 14;
-    const circumference = 2 * Math.PI * R;
-
-    let offset = 0;
-    let arcsHtml = '';
-    let legendHtml = '';
-    let ariaParts = [];
-    types.forEach((t, i) => {
+    const rows = types.map(t => {
         const color = LG_PITCH_TYPE_COLORS[t.code] || LG_PITCH_TYPE_OTHER_COLOR;
-        const frac  = t.count / total;
-        const dash  = frac * circumference;
-        const pct   = Math.round(frac * 100);
-        arcsHtml += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${color}" stroke-width="${STROKE}"
-            stroke-dasharray="${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}"
-            stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${CX} ${CY})"/>`;
-        offset += dash;
-        legendHtml += `<div class="lg-mix-legend-item">
-            <span class="lg-mix-legend-swatch" style="background:${color}"></span>
-            <span class="lg-mix-legend-code">${_escHtml(t.code)}</span>
-            <span class="lg-mix-legend-count">${t.count} (${pct}%)</span>
+        const pct   = Math.round((t.count / total) * 100);
+        return `<div class="lg-mix-row">
+            <span class="lg-mix-row-code" style="color:${color}">${_escHtml(t.code)}</span>
+            <span class="lg-mix-row-bar-wrap"><span class="lg-mix-row-bar" style="width:${pct}%;background:${color}"></span></span>
+            <span class="lg-mix-row-val">${t.count} <span class="lg-mix-row-pct">(${pct}%)</span></span>
         </div>`;
-        ariaParts.push(`${t.count} ${_escHtml(t.description)}`);
-    });
+    }).join('');
 
-    return `<div class="lg-mix-wrap">
-        <svg class="lg-pitch-mix" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img"
-            aria-label="Pitch mix: ${_escHtml(ariaParts.join(', '))}">
-            ${arcsHtml}
-        </svg>
-        <div class="lg-mix-legend">${legendHtml}</div>
-    </div>`;
+    const ariaParts = types.map(t => `${t.count} ${_escHtml(t.description)}`);
+
+    return `<div class="lg-mix-rows" role="img" aria-label="Pitch mix: ${_escHtml(ariaParts.join(', '))}">${rows}</div>`;
 }
 
 function _buildZoneToggle(mode, heatCount) {
@@ -1127,6 +1185,64 @@ function _buildZoneToggle(mode, heatCount) {
     return `<div class="lg-zone-toggle" role="group" aria-label="Pitch zone view">
         <button type="button" class="lg-zone-toggle-btn ${!heatOn ? 'lg-zone-toggle-btn--active' : ''}" data-lg-zone="dots" aria-pressed="${!heatOn}">Dots</button>
         <button type="button" class="lg-zone-toggle-btn ${heatOn ? 'lg-zone-toggle-btn--active' : ''}" data-lg-zone="heat" aria-pressed="${heatOn}"${heatDisabled ? ' disabled' : ''}>Heat</button>
+    </div>`;
+}
+
+// Purely geometric, relative to the strike-zone rectangle only — never
+// "inside"/"outside," which would require the batter's handedness to be
+// meaningful and this data flow doesn't carry batSide reliably enough to
+// state it as fact.
+function _lgPitchLocationLabel(cx, cy, zx, zy, zw, zh) {
+    const col = cx < zx ? 'LEFT' : cx > zx + zw ? 'RIGHT' : '';
+    const row = cy < zy ? 'HIGH' : cy > zy + zh ? 'LOW' : '';
+    if (!col && !row) return 'MIDDLE';
+    return [row, col].filter(Boolean).join(' ');
+}
+
+// Chronological pitch-by-pitch list for the current at-bat: #, type,
+// velocity, result (via the shared _lgCallTerm table so wording matches the
+// tooltip/PBP/Last Play), and a zone-relative location. Supports the
+// current plate appearance rather than dominating it — the strike-zone SVG
+// beside it is deliberately small; this list carries the chronological
+// detail a small dot plot alone can't.
+function _buildPitchSequenceList(currentPlay) {
+    const pitches = (currentPlay?.playEvents || []).filter(e => e.isPitch);
+    if (!pitches.length) return '';
+
+    const { zx, zy, zw, zh } = _lgZoneGeom(currentPlay);
+    const rows = pitches.map((p, i) => {
+        const pd = p.pitchData || {};
+        const pX = pd.coordinates?.pX;
+        const pZ = pd.coordinates?.pZ;
+        let loc = '—';
+        if (pX != null && pZ != null) {
+            const { x: cx, y: cy } = _lgSvgCoords(pX, pZ);
+            loc = _lgPitchLocationLabel(cx, cy, zx, zy, zw, zh);
+        }
+        const code   = p.details?.call?.code || '';
+        const term   = _lgCallTerm(code, p.details?.call?.description);
+        const type   = p.details?.type?.description || '—';
+        const veloN  = _lgPitchVelo(p);
+        const velo   = veloN ? `${veloN}` : '—';
+        const resCls = _lgDotCategory(code, p.result?.event);
+        return `<div class="lg-pitchseq-row">
+            <span class="lg-pitchseq-num">${i + 1}</span>
+            <span class="lg-pitchseq-type">${_escHtml(type)}</span>
+            <span class="lg-pitchseq-velo">${_escHtml(velo)}</span>
+            <span class="lg-pitchseq-result lg-pitchseq-result--${resCls}">${_escHtml(term)}</span>
+            <span class="lg-pitchseq-loc">${_escHtml(loc)}</span>
+        </div>`;
+    }).join('');
+
+    return `<div class="lg-pitchseq" role="table" aria-label="Pitch sequence, this at-bat">
+        <div class="lg-pitchseq-row lg-pitchseq-row--header" role="row">
+            <span class="lg-pitchseq-num">#</span>
+            <span class="lg-pitchseq-type">Type</span>
+            <span class="lg-pitchseq-velo">MPH</span>
+            <span class="lg-pitchseq-result">Result</span>
+            <span class="lg-pitchseq-loc">Location</span>
+        </div>
+        ${rows}
     </div>`;
 }
 
@@ -1147,12 +1263,13 @@ function _buildPitchZone(currentPlay, enterFromIdx) {
         const code      = p.details?.call?.code || '';
         const category  = _lgDotCategory(code, p.result?.event);
         const pitchType = _escHtml(p.details?.type?.description || '—');
-        const velocity  = p.startSpeed ? `${p.startSpeed} mph` : '—';
+        const veloN     = _lgPitchVelo(p);
+        const velocity  = veloN ? `${veloN} mph` : '—';
         // Confirmed live 2026-08-20 against a real feed/live payload: breaks.spinRate
         // is populated on real pitches (D-009's 2026-06-12 amendment had this as
         // unconfirmed for pfxX/pfxZ/breaks.* — that gate is stale, see DECISIONS.md D-116).
         const spin      = pd.breaks?.spinRate ? `${pd.breaks.spinRate} rpm` : '';
-        const result    = _escHtml(p.details?.call?.description || '—');
+        const result    = _escHtml(_lgCallTerm(code, p.details?.call?.description));
         const countStr  = `${p.count?.balls ?? '?'}-${p.count?.strikes ?? '?'} count`;
         const ariaLabel = _escHtml(`Pitch ${i + 1}: ${pitchType} ${velocity}${spin ? `, ${spin}` : ''} — ${result}`);
 
@@ -1251,6 +1368,17 @@ function _buildPitchHeat(currentPlay, gamePitches) {
 // Renders the zone column (toggle + dots|heat + bases) and wires its events.
 // Called on every poll render and on toggle clicks (re-renders from cache).
 //
+// Deliberately NOT built in this redesign pass (2026-09-02 IA redesign):
+// an ABS challenge state/outcome overlay, and a live pitch-timer countdown.
+// Neither is confirmed present on feed/live in this codebase's own field
+// inventory (unlike spin rate, which wasn't shipped until live-verified
+// 2026-08-20 — see the pitchData.breaks.spinRate note in _buildPitchZone).
+// Do not add UI for either without first live-verifying the exact field
+// shape against a real game that has an active ABS challenge or pitch
+// clock in progress, matching the same discipline js/nflLiveGame.js's
+// D-080 Phase 3b used for EPA/win-prob (gated on data that didn't exist
+// yet) and D-105/D-106 used for MLB's own spin-rate confirmation.
+//
 // Base state should never fully disappear once an at-bat context exists
 // (Vera, 2026-08-20 live-game audit) — previously the whole column hid
 // whenever the current at-bat had zero pitches yet (e.g. the moment a new
@@ -1290,31 +1418,36 @@ function _renderZone(panel, feed, gamePk) {
     const enterFromIdx   = pitches.length > lastPitchCount ? lastPitchCount : Infinity;
     _lgZoneLastPitchCount.set(abKey, pitches.length);
 
-    // Bases used to render here too — moved into _buildSituationBar, right
-    // under the score line, so it's not a second copy 600px away from the
-    // count/outs it belongs next to (owner feedback, 2026-09-02).
-    //
-    // Zone + mix stack vertically, not side by side — tried side by side
-    // first (this section moved from a cramped 130px sidebar column into
-    // the full-width .lg-now-card the same day), but the pairing doesn't
-    // work: the zone SVG's viewBox reserves a lot of vertical space above
-    // the strike zone for high/outside pitches, so with few pitches thrown
-    // it's mostly empty while the pitch-mix wheel is a small circle that
-    // always looks "full" — top-aligned side by side that reads as
-    // staggered/misaligned rather than balanced (owner feedback,
-    // 2026-09-02, second round same day). Stacking removes the mismatch
-    // instead of trying to paper over it with height-matching tricks.
+    // Bases render in their own promoted Base Diamond component (see
+    // _buildBaseDiamond) — this column is pitch-level detail only: zone,
+    // sequence list, and mix bars stack vertically, not side by side, so a
+    // sparse at-bat's mostly-empty zone SVG doesn't fight a "small and
+    // always looks full" mix chart for the same row.
     if (!hasPitches) {
         zoneCol.innerHTML = `<div class="lg-zone-empty">Next pitch coming up.</div>`;
         _wireZoneEvents(panel, key);
         return;
     }
-    const mixHtml = _buildPitchMixWheel(pitcherId, plays.allPlays);
+    const mixHtml = _buildPitchMixBars(pitcherId, plays.allPlays);
+    const seqHtml = _buildPitchSequenceList(currentPlay);
+    // Zone is deliberately small (priority-hierarchy item #8, supporting
+    // detail, not the page's dominant visual) — the pitch sequence list
+    // carries the chronological detail (#, type, velocity, result,
+    // location) the shrunk zone alone can't show. Dot color = the umpire's
+    // actual call, dot position = tracked pitch location — this is real
+    // tracking + real ball/strike data, not a computed/automated
+    // strike-zone determination, and the caption below says so explicitly
+    // rather than letting the visualization imply more than it is.
     zoneCol.innerHTML = `<div class="lg-pitch-detail-zone">
         <div class="lg-zone-section-label">Pitch Zone</div>
         ${_buildZoneToggle(mode, gamePitches.length)}
         ${useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx)}
+        <div class="lg-zone-honesty-note">Dot position is tracked pitch location; dot color is the umpire's call — not an automated strike-zone determination.</div>
     </div>
+    ${seqHtml ? `<div class="lg-pitch-detail-seq">
+        <div class="lg-zone-section-label">Pitch Sequence</div>
+        ${seqHtml}
+    </div>` : ''}
     ${mixHtml ? `<div class="lg-pitch-detail-mix">
         <div class="lg-zone-section-label">Pitch Mix</div>
         ${mixHtml}
@@ -1322,11 +1455,26 @@ function _renderZone(panel, feed, gamePk) {
     _wireZoneEvents(panel, key);
 }
 
-// ── Phase 2: Base runner diagram ──────────────────────────────
-
-// Shared by _buildBaseDiagram and Phase 6's win-expectancy lookup so the
-// two features can never disagree about who's on base (Axiom, D-117 Phase 6).
-function _lgOccupiedBases(currentPlay) {
+// ── Base occupancy — shared primitive ─────────────────────────
+// Sourced from linescore.offense.first/second/third — a direct per-base
+// {id, fullName} object, absent/null when the base is empty — live-verified
+// 2026-09-02 against three real in-progress games (DET@MIN, NYY@LAA,
+// STL@LAD) as both populated correctly mid-at-bat AND more reliable than
+// currentPlay.runners[].movement.end, which came back empty or without a
+// resolved .end in two of the three despite the game genuinely having
+// baserunners. Falls back to the old runners-array derivation only if
+// linescore.offense is entirely unavailable (defensive, not the primary
+// path). Shared by the base diamond, the Current Situation readout, and
+// Phase 6's win-expectancy lookup so none of the three can ever disagree
+// about who's on base.
+function _lgOccupiedBases(offense, currentPlay) {
+    if (offense) {
+        const occ = new Set();
+        if (offense.first)  occ.add('1B');
+        if (offense.second) occ.add('2B');
+        if (offense.third)  occ.add('3B');
+        return occ;
+    }
     const runners = currentPlay?.runners || [];
     return new Set(
         runners
@@ -1335,62 +1483,97 @@ function _lgOccupiedBases(currentPlay) {
     );
 }
 
-function _buildBaseDiagram(currentPlay) {
-    const occupied = _lgOccupiedBases(currentPlay);
-
-    const baseCls = base => occupied.has(base) ? 'lg-base-occupied' : 'lg-base-empty';
-
-    return `<svg class="lg-base-diagram" viewBox="0 0 60 60" width="56" xmlns="http://www.w3.org/2000/svg" aria-label="Base runner positions" style="pointer-events:none">
-        <line x1="30" y1="12" x2="50" y2="30" class="lg-base-line"/>
-        <line x1="50" y1="30" x2="30" y2="48" class="lg-base-line"/>
-        <line x1="30" y1="48" x2="10" y2="30" class="lg-base-line"/>
-        <line x1="10" y1="30" x2="30" y2="12" class="lg-base-line"/>
-        <rect x="26" y="8"  width="8" height="8" transform="rotate(45,30,12)" class="${baseCls('2B')}"/>
-        <rect x="6"  y="26" width="8" height="8" transform="rotate(45,10,30)" class="${baseCls('3B')}"/>
-        <rect x="46" y="26" width="8" height="8" transform="rotate(45,50,30)" class="${baseCls('1B')}"/>
-        <polygon points="26,52 34,52 36,48 30,46 24,48" class="lg-home-plate-shape"/>
-    </svg>`;
+// {base → {id, fullName} | null} straight from linescore.offense — the
+// same object _lgOccupiedBases reads, so a base's occupied/empty state and
+// its runner identity can never disagree with each other.
+function _lgRunnerByBase(offense) {
+    return { '1B': offense?.first || null, '2B': offense?.second || null, '3B': offense?.third || null };
 }
 
-// ── Game Situation bar — count, outs, bases in one glanceable spot ──
-// Owner feedback (2026-09-02): this info was scattered — a tiny count pill
-// up in the header meta-row, the base diagram all the way at the bottom of
-// the pitch-zone column, ~600px apart with the linescore/win-prob/hero/
-// due-up sandwiched between them. Every broadcast score bug puts count,
-// outs, and bases in one fixed spot for exactly this reason; this
-// consolidates them the same way, directly under the score line, ahead of
-// everything else. Reuses _buildBaseDiagram verbatim — one diagram, not a
-// second copy — so the old bottom-of-zone-column one is removed, not
-// duplicated (see _renderZone).
-function _buildSituationBar(feed) {
+// ── Current Situation readout — priority-hierarchy items #2-5 as one
+// composed line ("TOP 10TH · 1 OUT · RUNNER ON 1ST · 2-1 COUNT"), the exact
+// broadcast-shorthand shape a viewer reads to understand the game in one
+// glance. Live-only; a fresh half-inning (Middle/End window) shows a
+// genuinely empty state rather than the just-ended at-bat's leftover
+// numbers — same staleness guard _lgCurrentMatchup established for the
+// hero card, applied here too since it hasn't been live-verified whether
+// linescore.offense resets immediately on the half-inning flip the way
+// offense.batter/defense.pitcher are already confirmed to.
+function _buildCurrentSituation(feed) {
     const status = feed.gameData?.status || {};
     if (status.abstractGameState !== 'Live') return '';
 
     const ls           = feed.liveData?.linescore || {};
     const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
-    const currentPlay  = feed.liveData?.plays?.currentPlay;
+    const offense      = isBetweenInn ? null : ls.offense;
+    const half         = ls.isTopInning ? 'TOP' : 'BOT';
+    const ord          = _lgOrdinal(ls.currentInning || 0);
 
-    // Between half-innings ls.balls/strikes/outs still hold the just-ended
-    // at-bat's final numbers (the same staleness _lgCurrentMatchup routes
-    // around for the hero card) — a fresh half genuinely has an empty
-    // count, no outs, and empty bases, so show that instead of leftovers.
     const balls   = isBetweenInn ? 0 : (ls.balls   ?? 0);
     const strikes = isBetweenInn ? 0 : (ls.strikes ?? 0);
     const outs    = isBetweenInn ? 0 : (ls.outs    ?? 0);
-    const basesHtml = _buildBaseDiagram(isBetweenInn ? null : currentPlay);
+    const basePhrase = _lgBaseStatePhrase(offense);
+    const risp        = _lgRisp(offense);
 
-    const dots = (count, max, cls) =>
-        Array.from({ length: max }, (_, i) =>
-            `<span class="lg-sit-dot lg-sit-dot--${cls}${i < count ? ' is-lit' : ''}"></span>`
-        ).join('');
+    return `<div class="lg-situation" role="group" aria-label="${half} ${ord}, ${outs} out${outs !== 1 ? 's' : ''}, ${_escHtml(basePhrase)}, ${balls}-${strikes} count">
+        <span class="lg-sit-half">${half} ${_escHtml(ord)}</span>
+        <span class="lg-sit-sep">·</span>
+        <span class="lg-sit-outs">${outs} OUT${outs !== 1 ? 'S' : ''}</span>
+        <span class="lg-sit-sep">·</span>
+        <span class="lg-sit-bases-phrase">${_escHtml(basePhrase)}</span>
+        ${risp ? '<span class="lg-sit-risp">RISP</span>' : ''}
+        <span class="lg-sit-sep">·</span>
+        <span class="lg-sit-count">${balls}-${strikes} COUNT</span>
+    </div>`;
+}
 
-    return `<div class="lg-situation" role="group" aria-label="Count ${balls}-${strikes}, ${outs} out${outs !== 1 ? 's' : ''}">
-        <div class="lg-sit-counts">
-            <div class="lg-sit-row"><span class="lg-sit-label">B</span>${dots(balls, 3, 'ball')}</div>
-            <div class="lg-sit-row"><span class="lg-sit-label">S</span>${dots(strikes, 2, 'strike')}</div>
-            <div class="lg-sit-row"><span class="lg-sit-label">O</span>${dots(outs, 2, 'out')}</div>
-        </div>
-        <div class="lg-sit-bases">${basesHtml}</div>
+// ── Base Diamond — promoted to a primary visual element (priority #4),
+// ~150px instead of the old 56px situation-bar inset. Each occupied base is
+// an independently focusable/clickable SVG group carrying data-player-id/
+// -side/-role, so the panel's existing delegated [data-player-id] click
+// listener (wired once in _buildSkeletonPanel — the same mechanism behind
+// every hero/due-up name) opens the runner's player card with zero new
+// wiring. A base only becomes interactive when linescore.offense actually
+// names the runner — if that field is ever absent, the base still renders
+// occupied but silently isn't clickable, never fabricating a name (same
+// "omission over invented confidence" discipline as the rest of this file).
+function _buildBaseDiamond(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') return '';
+
+    const ls           = feed.liveData?.linescore || {};
+    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
+    const offense       = isBetweenInn ? null : ls.offense;
+    const matchup        = _lgCurrentMatchup(feed);
+    const side           = matchup?.bSide || 'away';
+
+    const occupied      = _lgOccupiedBases(offense);
+    const runnerByBase  = _lgRunnerByBase(offense);
+
+    const baseLabel = { '1B': '1st', '2B': '2nd', '3B': '3rd' };
+    const baseShape = (base, cx, cy) => {
+        const cls  = occupied.has(base) ? 'lg-base-occupied' : 'lg-base-empty';
+        const rect = `<rect x="${cx - 4}" y="${cy - 4}" width="8" height="8" transform="rotate(45,${cx},${cy})" class="${cls}"/>`;
+        const runner = runnerByBase[base];
+        if (occupied.has(base) && runner?.id) {
+            return `<g class="lg-diamond-base-group" tabindex="0" role="button"
+                data-player-id="${runner.id}" data-player-side="${side}" data-player-role="batting"
+                aria-label="Runner on ${baseLabel[base]}: ${_escHtml(runner.fullName || '')}">${rect}</g>`;
+        }
+        return rect;
+    };
+
+    return `<div class="lg-diamond-wrap">
+        <svg class="lg-diamond" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Base runners">
+            <line x1="30" y1="12" x2="50" y2="30" class="lg-base-line"/>
+            <line x1="50" y1="30" x2="30" y2="48" class="lg-base-line"/>
+            <line x1="30" y1="48" x2="10" y2="30" class="lg-base-line"/>
+            <line x1="10" y1="30" x2="30" y2="12" class="lg-base-line"/>
+            ${baseShape('2B', 30, 12)}
+            ${baseShape('3B', 10, 30)}
+            ${baseShape('1B', 50, 30)}
+            <polygon points="26,52 34,52 36,48 30,46 24,48" class="lg-home-plate-shape"/>
+        </svg>
     </div>`;
 }
 
@@ -1428,9 +1611,9 @@ for (const [h, inn, outs, bs, diff, permille] of LG_WE_TABLE) {
 }
 
 // Same 3-bit encoding as LG_WE_TABLE's baseState column, built from the
-// exact same occupied-bases set _buildBaseDiagram already computes.
-function _lgBaseStateIndex(currentPlay) {
-    const occupied = _lgOccupiedBases(currentPlay);
+// exact same occupied-bases set the base diamond already computes.
+function _lgBaseStateIndex(offense) {
+    const occupied = _lgOccupiedBases(offense);
     return (occupied.has('1B') ? 1 : 0) + (occupied.has('2B') ? 2 : 0) + (occupied.has('3B') ? 4 : 0);
 }
 
@@ -1445,11 +1628,10 @@ function _lgWinProbability(feed) {
     const ls = feed.liveData?.linescore || {};
     if (ls.currentInning == null || ls.outs == null) return null;
 
-    const currentPlay = feed.liveData?.plays?.currentPlay;
     const half        = ls.isTopInning ? 0 : 1;
     const inning      = Math.min(ls.currentInning, LG_WE_MAX_INNING);
     const outs         = Math.min(ls.outs, 2);
-    const baseState    = _lgBaseStateIndex(currentPlay);
+    const baseState    = _lgBaseStateIndex(ls.offense);
     const homeScore    = ls.teams?.home?.runs ?? 0;
     const awayScore    = ls.teams?.away?.runs ?? 0;
 
@@ -1745,7 +1927,14 @@ function _lgCurrentMatchup(feed) {
     };
 }
 
-function _buildHero(feed) {
+// Batter/pitcher matchup card — priority-hierarchy items #6/#7. The
+// BALLS-STRIKES/OUTS count (#5) is rendered directly under the batter's
+// name here, not off in a separate situation widget, per the redesign's
+// "count must sit next to who's at the plate" requirement — the standalone
+// Current Situation readout still states it too (broadcast convention
+// repeats the count in more than one place), but this is the copy that's
+// spatially adjacent to the batter.
+function _buildMatchupWithCount(feed) {
     const status       = feed.gameData?.status || {};
     const isPreview    = status.abstractGameState === 'Preview';
     const isFinal      = status.abstractGameState === 'Final';
@@ -1804,7 +1993,7 @@ function _buildHero(feed) {
     const pStats     = boxscore.teams?.[pSide]?.players?.[`ID${pitcherId}`]?.stats?.pitching || {};
     const pitchCount = pStats.numberOfPitches ?? '—';
     const pitchesThrown = isBetweenInn ? [] : (currentPlay?.playEvents || []).filter(e => e.isPitch);
-    const lastVelo    = pitchesThrown.length ? pitchesThrown[pitchesThrown.length - 1].startSpeed : null;
+    const lastVelo    = pitchesThrown.length ? _lgPitchVelo(pitchesThrown[pitchesThrown.length - 1]) : null;
 
     // D-117 Phase 4: K-streak only shows at 2+ — a single strikeout isn't
     // a "streak" in the broadcast sense this feature models (Vera, D-117 Phase 4).
@@ -1824,6 +2013,13 @@ function _buildHero(feed) {
 
     const delayNote = isDelayed ? '<div class="lg-hero-delay">Game Delayed</div>' : '';
 
+    const outs    = isBetweenInn ? 0 : (ls.outs    ?? 0);
+    const balls   = isBetweenInn ? 0 : (ls.balls   ?? 0);
+    const strikes = isBetweenInn ? 0 : (ls.strikes ?? 0);
+    const countHtml = !isBetweenInn
+        ? `<div class="lg-hero-count">${balls}-${strikes} <span class="lg-hero-count-sep">·</span> ${outs} OUT${outs !== 1 ? 'S' : ''}</div>`
+        : '';
+
     return `<div class="lg-hero${changed ? ' lg-hero--new' : ''}" data-batter-id="${batterId}">
         <div class="lg-hero-side">
             <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${batClr}cc,${batClr}55)">${_lgInitial(batterName)}</div>
@@ -1831,6 +2027,7 @@ function _buildHero(feed) {
                 <div class="lg-hero-role">Batting</div>
                 <button type="button" class="lg-hero-name lg-player-name-trigger" data-player-id="${batterId}" data-player-side="${bSide}" data-player-role="batting">${_escHtml(batterName)}</button>
                 <div class="lg-hero-stat" data-hero-batter-stat>${_escHtml(battingStatHtml)}</div>
+                ${countHtml}
             </div>
         </div>
         <div class="lg-hero-divider"></div>
@@ -1861,10 +2058,19 @@ function _lgMaybeFetchHeroBatterLine(feed, panel) {
     });
 }
 
+// ON DECK / IN THE HOLE — priority-hierarchy item #10 — source directly
+// from linescore.offense.onDeck/.inHole (live-verified 2026-09-02 alongside
+// the base-occupancy fix: same object, same reliability, gives {id,
+// fullName} with no battingOrder-index math needed). The third batter out
+// has no such field, so it still falls back to walking battingOrder from
+// the current batter's index — there's no standard broadcast name for
+// "two after on deck" anyway, so it renders unlabeled.
 function _buildDueUp(feed) {
     const status       = feed.gameData?.status || {};
     if (status.abstractGameState !== 'Live') return '';
 
+    const ls           = feed.liveData?.linescore || {};
+    const isBetweenInn = ls.inningState === 'Middle' || ls.inningState === 'End';
     const matchup  = _lgCurrentMatchup(feed);
     const batterId = matchup?.batterId;
     if (!batterId) return '';
@@ -1874,19 +2080,25 @@ function _buildDueUp(feed) {
     const team      = boxscore.teams?.[side] || {};
     const order     = team.battingOrder || [];
     const idx       = order.indexOf(batterId);
-    if (idx === -1 || !order.length) return '';
+    const players   = team.players || {};
+    const posOf     = pid => players[`ID${pid}`]?.position?.abbreviation || '';
 
-    const players  = team.players || {};
-    const upcoming = [1, 2, 3].map(n => order[(idx + n) % order.length]);
+    const onDeck  = !isBetweenInn ? ls.offense?.onDeck : null;
+    const inHole  = !isBetweenInn ? ls.offense?.inHole : null;
+    const thirdId = (idx !== -1 && order.length) ? order[(idx + 3) % order.length] : null;
 
-    const rows = upcoming.map(pid => {
-        const p   = players[`ID${pid}`] || {};
-        const nm  = p.person?.fullName || '';
-        const pos = p.position?.abbreviation || '';
+    const slots = [
+        onDeck?.id ? { pid: onDeck.id, nm: onDeck.fullName || '', label: 'ON DECK' } : null,
+        inHole?.id ? { pid: inHole.id, nm: inHole.fullName || '', label: 'IN THE HOLE' } : null,
+        thirdId    ? { pid: thirdId,   nm: players[`ID${thirdId}`]?.person?.fullName || '', label: '' } : null,
+    ].filter(Boolean);
+
+    const rows = slots.map(({ pid, nm, label }) => {
         if (!nm) return '';
         return `<div class="lg-dueup-item">
+            ${label ? `<span class="lg-dueup-slot">${label}</span>` : ''}
             <button type="button" class="lg-dueup-name lg-player-name-trigger" data-player-id="${pid}" data-player-side="${side}" data-player-role="batting">${_escHtml(nm)}</button>
-            <span class="lg-dueup-pos">${_escHtml(pos)}</span>
+            <span class="lg-dueup-pos">${_escHtml(posOf(pid))}</span>
         </div>`;
     }).filter(Boolean).join('');
 
@@ -1895,6 +2107,39 @@ function _buildDueUp(feed) {
     return `<div class="lg-dueup-wrap">
         <div class="lg-box-section-title">Due Up</div>
         <div class="lg-dueup">${rows}</div>
+    </div>`;
+}
+
+// ── Last Play — priority-hierarchy item #9. Standalone and prominent (not
+// just the top entry of the Play-by-Play tab) so a viewer understands what
+// just happened without opening a tab. The most recently COMPLETED play —
+// filtered to plays with a resolved result, since currentPlay may still be
+// an in-progress at-bat with no result yet — run through the same
+// _lgEventTerm table Play-by-Play uses, so labeling matches everywhere.
+function _buildLastPlay(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState === 'Preview') return '';
+
+    const allPlays  = feed.liveData?.plays?.allPlays || [];
+    const completed = allPlays.filter(p => p.result?.description);
+    const play      = completed[completed.length - 1];
+    if (!play) return '';
+
+    const desc    = _escHtml(play.result?.description || '');
+    const term    = _lgEventTerm(play.result?.eventType);
+    const isScore = play.about?.isScoringPlay;
+    const isHR    = play.result?.eventType === 'home_run';
+    const scoreHtml = isScore
+        ? `<span class="lg-lastplay-score">${play.result?.awayScore}–${play.result?.homeScore}</span>`
+        : '';
+
+    return `<div class="lg-lastplay${isScore ? ' lg-lastplay--scoring' : ''}">
+        <div class="lg-lastplay-label">Last Play</div>
+        <div class="lg-lastplay-body">
+            ${term ? `<span class="lg-lastplay-term">${_escHtml(term)}${isHR ? ' 💥' : ''}</span>` : ''}
+            <span class="lg-lastplay-desc">${desc}</span>
+            ${scoreHtml}
+        </div>
     </div>`;
 }
 
@@ -2260,7 +2505,226 @@ async function _buildMatchupContent(feed) {
     </div>`;
 }
 
+// ── STATCAST tab — advanced pitch/batted-ball metrics, strictly separate
+// from LIVE per the redesign's live-vs-analytics split. Two kinds of
+// content: (1) this-game aggregates computed client-side from data this
+// poll already fetched (pitch-type velocity/spin, batted-ball exit
+// velocity/launch angle — hitData.launchAngle read here for the first time
+// in this file) — genuinely live, zero new requests; (2) season Statcast
+// percentiles for the current batter/pitcher via mlb.js's existing
+// fetchStatcast()/_renderStatcastCard() (same .sc-grid/.sc-row component
+// the player-detail page already uses), fetched async and patched in once
+// resolved, explicitly captioned as season data — Savant's own cache TTL
+// is DAILY (up to 12h stale), so this must never read as live-in-this-
+// at-bat data.
+function _buildStatcastTab(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState === 'Preview') {
+        return '<div class="lg-pbp-empty">Statcast data will appear once the game starts.</div>';
+    }
+
+    const allPlays   = feed.liveData?.plays?.allPlays || [];
+    const matchup    = _lgCurrentMatchup(feed);
+    const pitcherId  = matchup?.pitcherId ?? feed.liveData?.plays?.currentPlay?.matchup?.pitcher?.id;
+
+    const seasonKey = matchup ? `${matchup.batterId}_${matchup.pitcherId}` : null;
+    const statcastSeasonHtml = seasonKey && _lgStatcastSeasonCache[seasonKey] !== undefined
+        ? _lgStatcastSeasonCache[seasonKey]
+        : `<div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:80%"></div>
+           <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:65%"></div>`;
+
+    const pitchStats = pitcherId ? _collectPitcherPitchTypeStats(allPlays, pitcherId) : [];
+    const pitchRows  = pitchStats.length ? pitchStats.map(t => {
+        const color   = LG_PITCH_TYPE_COLORS[t.code] || LG_PITCH_TYPE_OTHER_COLOR;
+        const veloPct = t.avgVelo ? Math.max(0, Math.min(100, Math.round((t.avgVelo / 105) * 100))) : 0;
+        return `<div class="lg-mix-row">
+            <span class="lg-mix-row-code" style="color:${color}">${_escHtml(t.code)}</span>
+            <span class="lg-mix-row-bar-wrap"><span class="lg-mix-row-bar" style="width:${veloPct}%;background:${color}"></span></span>
+            <span class="lg-mix-row-val">${t.avgVelo ? t.avgVelo.toFixed(1) : '—'} mph${t.avgSpin ? ` · ${Math.round(t.avgSpin)} rpm` : ''}</span>
+        </div>`;
+    }).join('') : '<div class="lg-matchup-empty">No pitch data yet this game.</div>';
+
+    // Batted balls this game — every play with hitData, chronological,
+    // across both teams. Only launchSpeed/totalDistance were read anywhere
+    // in this file before now (the PBP hard-hit callout); launchAngle is
+    // genuinely new.
+    const battedBalls = [];
+    for (const play of allPlays) {
+        for (const e of (play.playEvents || [])) {
+            if (e.hitData?.launchSpeed == null) continue;
+            battedBalls.push({
+                batter:      play.matchup?.batter?.fullName || '—',
+                exitVelo:    e.hitData.launchSpeed,
+                launchAngle: e.hitData.launchAngle,
+                distance:    e.hitData.totalDistance,
+                result:      _lgEventTerm(play.result?.eventType) || (play.result?.event || '').toUpperCase(),
+            });
+        }
+    }
+    battedBalls.reverse(); // most recent first — matches _buildPbp's convention
+    const battedRows = battedBalls.length ? battedBalls.map(b => `<div class="lg-statcast-bb-row">
+        <span class="lg-statcast-bb-batter">${_escHtml(b.batter)}</span>
+        <span class="lg-statcast-bb-stat">${b.exitVelo} mph</span>
+        <span class="lg-statcast-bb-stat">${b.launchAngle != null ? `${b.launchAngle}°` : '—'}</span>
+        <span class="lg-statcast-bb-stat">${b.distance != null ? `${b.distance} ft` : '—'}</span>
+        <span class="lg-statcast-bb-result">${_escHtml(b.result)}</span>
+    </div>`).join('') : '<div class="lg-matchup-empty">No batted-ball data yet this game.</div>';
+
+    return `<div class="lg-statcast-wrap">
+        <div class="lg-matchup-block">
+            <div class="lg-box-section-title">This Game — Pitch Velocity &amp; Spin</div>
+            <div class="lg-mix-rows">${pitchRows}</div>
+        </div>
+        <div class="lg-matchup-block">
+            <div class="lg-box-section-title">This Game — Batted Balls</div>
+            ${battedBalls.length ? `<div class="lg-statcast-bb-header">
+                <span>Batter</span><span>Exit Velo</span><span>Launch Angle</span><span>Distance</span><span>Result</span>
+            </div>
+            <div class="lg-statcast-bb-scroll">${battedRows}</div>` : battedRows}
+        </div>
+        <div class="lg-matchup-block" data-statcast-season>${statcastSeasonHtml}</div>
+    </div>`;
+}
+
+// Fetches season Statcast percentiles for the current batter/pitcher and
+// patches them into the tab's season-context host once resolved — guarded
+// against a stale feed/tab switch the same way _buildMatchupContent's async
+// fetch is (Statcast tab click 2026-09-02 debug pass). Cached per matchup
+// (_lgStatcastSeasonCache) so re-polling the same at-bat doesn't re-flash
+// the skeleton every 9s for data that's explicitly not live anyway.
+async function _lgFetchStatcastSeasonContext(feed, gamePk) {
+    const matchup = _lgCurrentMatchup(feed);
+    if (!matchup) return;
+    const { batterId, pitcherId, batterName, pitcherName } = matchup;
+    const key = `${batterId}_${pitcherId}`;
+    if (_lgStatcastSeasonCache[key] !== undefined) return; // already fetched, _buildStatcastTab rendered it synchronously
+
+    const [batterData, pitcherData] = await Promise.all([
+        batterId  ? fetchStatcast(batterId, 'batter')   : Promise.resolve(null),
+        pitcherId ? fetchStatcast(pitcherId, 'pitcher') : Promise.resolve(null),
+    ]);
+
+    const batterHtml  = batterData  ? `<div class="lg-box-section-title">${_escHtml(batterName  || 'Batter')} — Season Percentiles</div>${_renderStatcastCard(batterData, 'hitting')}`   : '';
+    const pitcherHtml = pitcherData ? `<div class="lg-box-section-title">${_escHtml(pitcherName || 'Pitcher')} — Season Percentiles</div>${_renderStatcastCard(pitcherData, 'pitching')}` : '';
+    const html = (batterHtml || pitcherHtml)
+        ? `<div class="lg-statcast-season-caption">Season percentiles — not live, updated daily</div>${batterHtml}${pitcherHtml}`
+        : '<div class="lg-matchup-empty">No season Statcast data available.</div>';
+    _lgStatcastSeasonCache[key] = html;
+
+    if (_lgFeedCache !== feed || _lgTabMap.get(String(gamePk)) !== 'statcast') return;
+    const host = document.querySelector('.lg-panel [data-statcast-season]');
+    if (host) host.innerHTML = html;
+}
+
+// ── LIVE tab — composes everything a viewer needs to follow the game and
+// nothing else (progressive disclosure: live state first, traditional
+// stats live in Box Score/Matchup/Bullpen, advanced analytics live in
+// Statcast — never all at once). Order follows the priority hierarchy:
+// Last Play (#9, but read first so a returning viewer immediately knows
+// what just happened) sits above Current Situation (#2-5) and the Base
+// Diamond (#4) reinforcing it, then the Batter/Pitcher+count card (#6/#7),
+// then pitch detail (#8, zone/mix — placeholder host filled by _renderZone
+// after insertion since it does its own DOM query + event wiring), then Due
+// Up (#10), then win probability last as a secondary/computed estimate.
+function _buildLiveTabContent(feed) {
+    const status = feed.gameData?.status || {};
+    const isFinal = status.abstractGameState === 'Final';
+
+    const lastPlayHtml = _buildLastPlay(feed);
+    const situationHtml = _buildCurrentSituation(feed);
+    const diamondHtml   = _buildBaseDiamond(feed);
+    const matchupHtml   = _buildMatchupWithCount(feed);
+    const dueUpHtml     = _buildDueUp(feed);
+    const winProbHtml   = _buildWinProb(feed);
+
+    const hasLiveContent = lastPlayHtml || situationHtml || diamondHtml || matchupHtml || dueUpHtml;
+
+    // Final games: hero/situation/diamond/dueUp are all intentionally empty
+    // (nothing "current" about a finished game), but the pitch-zone content
+    // stays as a full-game reference (D-117 Phase 2/3) — so the zone host
+    // still needs to render, just without a divider above it since nothing
+    // precedes it.
+    if (!hasLiveContent) {
+        return `<div class="lg-zone-col${isFinal ? ' lg-zone-col--leading' : ''}" hidden></div>`;
+    }
+
+    return `
+        ${lastPlayHtml}
+        ${situationHtml}
+        ${diamondHtml}
+        ${matchupHtml}
+        <div class="lg-zone-col" hidden></div>
+        ${dueUpHtml}
+        ${winProbHtml}
+    `;
+}
+
 // ── Tab switching ─────────────────────────────────────────────
+// _renderActiveLgTab is the single dispatcher for tab CONTENT, called both
+// on every poll tick (from _renderPanel, refreshing only whichever tab is
+// currently active) and on a tab click (from _switchTab) — mirrors
+// js/nflLiveGame.js's D-080 mount-shell-once / update-active-tab-only
+// split, so a poll never disturbs a tab the viewer isn't looking at, and
+// switching tabs never gets clobbered by the next poll tick.
+
+function _renderActiveLgTab(panel, feed, gamePk) {
+    const tabpanel = panel.querySelector('.lg-tab-content');
+    if (!tabpanel) return;
+
+    const activeTab = _lgTabMap.get(String(gamePk)) || 'live';
+    const scrollTop = tabpanel.scrollTop;
+    const away = feed.gameData?.teams?.away?.abbreviation || '';
+    const home = feed.gameData?.teams?.home?.abbreviation || '';
+
+    if (activeTab === 'live') {
+        tabpanel.innerHTML = _buildLiveTabContent(feed);
+        // The zone host needs to exist in the DOM before _renderZone can
+        // query/populate it — same reason _lgMaybeFetchHeroBatterLine runs
+        // after the matchup card markup is inserted, not before.
+        _renderZone(panel, feed, gamePk);
+        _lgMaybeFetchHeroBatterLine(feed, panel);
+    } else if (activeTab === 'pbp') {
+        tabpanel.innerHTML = _buildPbp(feed.liveData?.plays?.allPlays || []);
+    } else if (activeTab === 'box') {
+        tabpanel.innerHTML = _buildBoxScore(feed.liveData?.boxscore || {}, away, home);
+    } else if (activeTab === 'matchup') {
+        tabpanel.innerHTML = `
+            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:85%"></div>
+            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:70%"></div>`;
+        // Guard on the active tab, not just the feed — found live 2026-09-02:
+        // clicking away to another tab before this async H2H/arsenal fetch
+        // resolves let the stale promise overwrite whatever tab the user had
+        // since switched to (the feed-only guard doesn't change on a tab
+        // switch, only on the next poll).
+        _buildMatchupContent(feed).then(html => {
+            if (_lgFeedCache === feed && _lgTabMap.get(String(gamePk)) === 'matchup') tabpanel.innerHTML = html;
+        }).catch(err => {
+            Logger.warn('Matchup content failed', err, 'LIVE');
+            if (_lgFeedCache === feed && _lgTabMap.get(String(gamePk)) === 'matchup') tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
+        });
+    } else if (activeTab === 'statcast') {
+        tabpanel.innerHTML = _buildStatcastTab(feed);
+        _lgFetchStatcastSeasonContext(feed, gamePk);
+    } else if (activeTab === 'bullpen') {
+        // Phase 2 (D-117): today's usage renders synchronously (boxscore's
+        // already in _lgFeedCache); rest-day availability is fetched once per
+        // game, lazily on first entry into this tab — not eagerly like Phase
+        // 1's mini standings, since this content is behind a tab click, not
+        // always visible (Axiom, D-117 Phase 2).
+        tabpanel.innerHTML = _buildBullpenTab(feed, gamePk);
+        const isFinal = feed.gameData?.status?.abstractGameState === 'Final';
+        if (!isFinal && String(_lgBullpenRestGamePk) !== String(gamePk)) {
+            const awayId = feed.gameData?.teams?.away?.id;
+            const homeId = feed.gameData?.teams?.home?.id;
+            if (awayId && homeId) {
+                _lgBullpenRestGamePk = String(gamePk);
+                _lgFetchBullpenRest(gamePk, awayId, homeId, away, home);
+            }
+        }
+    }
+
+    tabpanel.scrollTop = scrollTop;
+}
 
 function _switchTab(panel, tabId, gamePk) {
     _lgHidePlayerCard();
@@ -2273,49 +2737,7 @@ function _switchTab(panel, tabId, gamePk) {
     const tabpanel = panel.querySelector('.lg-tab-content');
     if (tabpanel) tabpanel.setAttribute('aria-labelledby', `lg-tab-${tabId}`);
     if (!_lgFeedCache) return;
-
-    const feed = _lgFeedCache;
-    const away = feed.gameData?.teams?.away?.abbreviation || '';
-    const home = feed.gameData?.teams?.home?.abbreviation || '';
-
-    if (tabId === 'pbp') {
-        tabpanel.innerHTML = _buildPbp(feed.liveData?.plays?.allPlays || []);
-    } else if (tabId === 'box') {
-        tabpanel.innerHTML = _buildBoxScore(feed.liveData?.boxscore || {}, away, home);
-    } else if (tabId === 'matchup') {
-        tabpanel.innerHTML = `
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:85%"></div>
-            <div class="skeleton-line" style="height:14px;margin:0.4rem 0;width:70%"></div>`;
-        // Guard on the active tab, not just the feed — found live 2026-09-02:
-        // clicking away to another tab before this async H2H/arsenal fetch
-        // resolves let the stale promise overwrite whatever tab the user had
-        // since switched to (the feed-only guard doesn't change on a tab
-        // switch, only on the next poll).
-        _buildMatchupContent(feed).then(html => {
-            if (_lgFeedCache === feed && _lgTabMap.get(gamePk) === 'matchup') tabpanel.innerHTML = html;
-        }).catch(err => {
-            Logger.warn('Matchup content failed', err, 'LIVE');
-            if (_lgFeedCache === feed && _lgTabMap.get(gamePk) === 'matchup') tabpanel.innerHTML = '<div class="lg-matchup-empty">Matchup data unavailable.</div>';
-        });
-    } else if (tabId === 'bullpen') {
-        // Phase 2 (D-117): today's usage renders synchronously (boxscore's
-        // already in _lgFeedCache); rest-day availability is fetched once per
-        // game, lazily on first entry into this tab — not eagerly like Phase
-        // 1's mini standings, since this content is behind a tab click, not
-        // always visible (Axiom, D-117 Phase 2).
-        tabpanel.innerHTML = _buildBullpenTab(feed, gamePk);
-        const isFinal = feed.gameData?.status?.abstractGameState === 'Final';
-        if (!isFinal && String(_lgBullpenRestGamePk) !== String(gamePk)) {
-            const awayId   = feed.gameData?.teams?.away?.id;
-            const homeId   = feed.gameData?.teams?.home?.id;
-            const awayAbbr = feed.gameData?.teams?.away?.abbreviation || '';
-            const homeAbbr = feed.gameData?.teams?.home?.abbreviation || '';
-            if (awayId && homeId) {
-                _lgBullpenRestGamePk = String(gamePk);
-                _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr);
-            }
-        }
-    }
+    _renderActiveLgTab(panel, _lgFeedCache, gamePk);
 }
 
 // ── Status badge ──────────────────────────────────────────────
