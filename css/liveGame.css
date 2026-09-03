@@ -577,27 +577,30 @@
    divider needed above content with nothing visually preceding it. */
 .lg-zone-col--leading { border-top: none; padding-top: 0; }
 
-.lg-pitch-detail {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    align-items: flex-start;
-}
-
+/* Stacked, not side by side — tried side by side first, but the pairing
+   doesn't work: the zone SVG's viewBox reserves a lot of vertical space
+   above the strike zone for high/outside pitches, so with few pitches
+   thrown it's mostly empty while the pitch-mix wheel is a small circle
+   that always looks "full." Top-aligned side by side read as staggered/
+   misaligned rather than balanced (owner feedback, 2026-09-02). Stacking
+   removes the mismatch instead of height-matching around it. */
 .lg-pitch-detail-zone {
-    flex: 0 0 170px;
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+    align-items: center;
+    text-align: center;
 }
-.lg-pitch-detail-zone .lg-pitch-zone { max-width: 170px; }
+.lg-pitch-detail-zone .lg-zone-section-label,
+.lg-pitch-detail-zone .lg-zone-toggle { align-self: center; }
+.lg-pitch-detail-zone .lg-pitch-zone { width: 220px; max-width: 100%; }
+.lg-pitch-detail-zone .lg-zone-wrap { width: 220px; max-width: 100%; }
 
 .lg-pitch-detail-mix {
-    flex: 1 1 220px;
-    min-width: 200px;
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+    margin-top: var(--space-3);
 }
 
 .lg-zone-section-label {
@@ -606,11 +609,6 @@
     color: var(--text-subtle);
     text-transform: uppercase;
     letter-spacing: 0.4px;
-}
-
-@media (max-width: 480px) {
-    .lg-pitch-detail-zone { flex-basis: 100%; }
-    .lg-pitch-detail-zone .lg-pitch-zone { max-width: 220px; margin: 0 auto; }
 }
 
 /* ── Pitch zone view toggle (Dots / Heat) ──────────────────── */

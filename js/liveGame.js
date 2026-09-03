@@ -1294,30 +1294,31 @@ function _renderZone(panel, feed, gamePk) {
     // under the score line, so it's not a second copy 600px away from the
     // count/outs it belongs next to (owner feedback, 2026-09-02).
     //
-    // Zone + mix now render side by side, not stacked — this section moved
-    // from a cramped 130px sidebar column into the full-width .lg-now-card
-    // (second round of owner feedback, same day: the pitch zone/mix read as
-    // disconnected from the rest of the at-bat info, off in its own column
-    // next to the tab strip). .lg-pitch-zone's own width:100% only makes
-    // sense capped now that its container is wide — see .lg-pitch-detail-
-    // zone's max-width in the CSS, not here.
+    // Zone + mix stack vertically, not side by side — tried side by side
+    // first (this section moved from a cramped 130px sidebar column into
+    // the full-width .lg-now-card the same day), but the pairing doesn't
+    // work: the zone SVG's viewBox reserves a lot of vertical space above
+    // the strike zone for high/outside pitches, so with few pitches thrown
+    // it's mostly empty while the pitch-mix wheel is a small circle that
+    // always looks "full" — top-aligned side by side that reads as
+    // staggered/misaligned rather than balanced (owner feedback,
+    // 2026-09-02, second round same day). Stacking removes the mismatch
+    // instead of trying to paper over it with height-matching tricks.
     if (!hasPitches) {
         zoneCol.innerHTML = `<div class="lg-zone-empty">Next pitch coming up.</div>`;
         _wireZoneEvents(panel, key);
         return;
     }
     const mixHtml = _buildPitchMixWheel(pitcherId, plays.allPlays);
-    zoneCol.innerHTML = `<div class="lg-pitch-detail">
-        <div class="lg-pitch-detail-zone">
-            <div class="lg-zone-section-label">Pitch Zone</div>
-            ${_buildZoneToggle(mode, gamePitches.length)}
-            ${useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx)}
-        </div>
-        ${mixHtml ? `<div class="lg-pitch-detail-mix">
-            <div class="lg-zone-section-label">Pitch Mix</div>
-            ${mixHtml}
-        </div>` : ''}
-    </div>`;
+    zoneCol.innerHTML = `<div class="lg-pitch-detail-zone">
+        <div class="lg-zone-section-label">Pitch Zone</div>
+        ${_buildZoneToggle(mode, gamePitches.length)}
+        ${useHeat ? _buildPitchHeat(currentPlay, gamePitches) : _buildPitchZone(currentPlay, enterFromIdx)}
+    </div>
+    ${mixHtml ? `<div class="lg-pitch-detail-mix">
+        <div class="lg-zone-section-label">Pitch Mix</div>
+        ${mixHtml}
+    </div>` : ''}`;
     _wireZoneEvents(panel, key);
 }
 
