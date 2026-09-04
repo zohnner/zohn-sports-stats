@@ -86,7 +86,14 @@
 /* Home team's mark painted at midfield, like real stadium turf -- a white
    silhouette (not the logo's own colors) so it reads against any team's
    color scheme, low-opacity so it never competes with the ball/lines above it. */
-.fv-centerlogo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15%; aspect-ratio: 1; opacity: 0.16; pointer-events: none; z-index: 0; }
+/* Sized off the field's HEIGHT (fixed at 100px / 76px mobile via .fv-field),
+   not width -- .fv-track is flex:1 and can run 1000px+ wide on a real desktop
+   viewport, so a width-relative size scaled with it far past the field's own
+   height and got clipped into an oversized, blurry blob by .fv-field's
+   overflow:hidden. height:62% of a 100px field is ~62px, comfortably inside
+   the track regardless of how wide the viewport is; width:auto + aspect-ratio
+   keeps it square without depending on track width at all. */
+.fv-centerlogo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 62%; width: auto; aspect-ratio: 1; opacity: 0.16; pointer-events: none; z-index: 0; }
 .fv-centerlogo img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(1); }
 /* Line of scrimmage -- broadcast blue, paired with the first-down yellow
    below. Sits at the same spot as the ball marker; z-index keeps it under
@@ -168,10 +175,20 @@
 .nlg-leader-team { margin-bottom: 0.5rem; }
 .nlg-leader-team:last-child { margin-bottom: 0; }
 .nlg-leader-team-title { font-size: 0.7rem; font-weight: 800; color: var(--accent); margin-bottom: 0.15rem; }
-.nlg-leader-row { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.76rem; }
+/* Two lines per leader, not one 3-column row -- a real ESPN category label
+   ("Passing Yards") plus a full stat line ("17/19, 243 YDS, 4 TD") already
+   fill most of a ~250px sidebar card's width between them, so cramming the
+   player's name into whatever's left as a third grid column meant the name
+   -- the one piece a reader actually cares about -- was what silently
+   truncated ("A. Simmo…", "D. Olug…"), every time, for both real category
+   labels and stat lines this size. Category + value now share a top line
+   (both short enough to coexist); the name gets its own full-width line
+   below, where it fits without an ellipsis in the normal case. */
+.nlg-leader-row { padding: 0.2rem 0; font-size: 0.76rem; }
+.nlg-leader-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
 .nlg-leader-cat { color: var(--text-subtle); font-size: 0.66rem; text-transform: uppercase; }
-.nlg-leader-name { color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nlg-leader-val { font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.nlg-leader-name { display: block; color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nlg-leader-val { font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
 .nlg-flow-svg { width: 100%; height: 56px; display: block; }
 .nlg-flow-legend { display: flex; justify-content: space-between; font-size: 0.66rem; font-weight: 700; margin-top: 0.2rem; }

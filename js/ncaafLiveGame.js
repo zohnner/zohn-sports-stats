@@ -761,6 +761,14 @@ function _nclgWinProbability(data, home, away) {
 // reads, different category set (passingYards/rushingYards/receivingYards/
 // sacks/totalTackles vs NFL's own categories), which this already reads
 // generically off each category's own label, not a hardcoded list.
+// D-134: rows used to be one 3-column grid line (category | name | value).
+// A real ESPN category label ("Passing Yards") and a full stat line ("17/19,
+// 243 YDS, 4 TD") already eat most of a narrow sidebar card's width, so the
+// player's name -- the one thing a reader actually wants to read -- was what
+// silently truncated ("A. Simmo…", "D. Olug…", live-confirmed 2026-09-03).
+// Same fix as js/nflLiveGame.js's _nlgSidebarLeaders (identical prior code,
+// same bug): category+value now share a top line; name gets its own
+// full-width line below (see css/nflLiveGame.css, shared by both files).
 function _nclgSidebarLeaders(data) {
     const leaders = data.leaders || [];
     const block = (tb) => {
@@ -770,7 +778,9 @@ function _nclgSidebarLeaders(data) {
             const top = c.leaders && c.leaders[0];
             if (!top) return '';
             const name = (top.athlete && (top.athlete.shortName || top.athlete.displayName)) || '';
-            return `<div class="nlg-leader-row"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-name">${_escHtml(name)}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>`;
+            return `<div class="nlg-leader-row">` +
+                `<div class="nlg-leader-row-top"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>` +
+                `<span class="nlg-leader-name">${_escHtml(name)}</span></div>`;
         }).join('');
         return rows ? `<div class="nlg-leader-team"><div class="nlg-leader-team-title">${_escHtml(abbr)}</div>${rows}</div>` : '';
     };

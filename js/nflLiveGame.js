@@ -982,6 +982,12 @@ function _nlgSidebarLeaders(data) {
     // rule (see D-105). Now a team block is omitted unless it produced
     // at least one real row, and the whole card is omitted unless at
     // least one team block survived.
+    // D-134: rows used to be one 3-column grid line (category | name | value).
+    // A real category label ("Passing Yards") and a full stat line ("17/19,
+    // 243 YDS, 4 TD") already eat most of a narrow sidebar card's width, so the
+    // player's name -- the one thing a reader actually wants to read -- was
+    // what silently truncated ("A. Simmo…"). Category+value now share a top
+    // line; name gets its own full-width line below (see css/nflLiveGame.css).
     const block = (tb) => {
         const abbr = (tb.team || {}).abbreviation || '';
         const cats = (tb.leaders || []).slice(0, 3);
@@ -989,7 +995,9 @@ function _nlgSidebarLeaders(data) {
             const top = c.leaders && c.leaders[0];
             if (!top) return '';
             const name = (top.athlete && (top.athlete.shortName || top.athlete.displayName)) || '';
-            return `<div class="nlg-leader-row"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-name">${_escHtml(name)}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>`;
+            return `<div class="nlg-leader-row">` +
+                `<div class="nlg-leader-row-top"><span class="nlg-leader-cat">${_escHtml(c.shortDisplayName || c.displayName || c.name || '')}</span><span class="nlg-leader-val">${_escHtml(top.displayValue || '')}</span></div>` +
+                `<span class="nlg-leader-name">${_escHtml(name)}</span></div>`;
         }).join('');
         return rows ? `<div class="nlg-leader-team"><div class="nlg-leader-team-title">${_escHtml(abbr)}</div>${rows}</div>` : '';
     };
