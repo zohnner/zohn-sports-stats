@@ -20,16 +20,26 @@
 // quirk NFL's own standings card already had to work around. Every tab and
 // sidebar card below is built against that confirmed shape.
 //
-// The ONE piece still unconfirmed is the live field position graphic (down
-// & distance, ball spot, first-down line) — NFL's D-105 needed a genuinely
-// in-progress game to verify /scoreboard's `situation` shape, and no NCAAF
-// game was live as of this check (the SJSU @ USC game used to verify
-// everything else had already gone final; the next kickoff is Sept 3).
-// That piece stays deferred until a live game confirms it the same way
-// D-105 did for NFL — do not build it on the NFL shape as an assumption.
+// D-130 (2026-09-03): the live field position graphic (down & distance,
+// ball spot, first-down line, play arrow) now ships too. Ported from
+// js/nflLiveGame.js's D-105 field viewer, which was built and iterated live
+// against real games over several sessions — the port keeps that file's
+// exact math/orientation/red-zone/play-arrow logic (all still applies
+// verbatim to NCAAF's identical `/scoreboard` situation shape, confirmed by
+// D-129), just renamed `_nlg*` → `_nclg*` and switched team-color lookup
+// from NFL's static abbr→hex map to NCAAF's own `_nclgTeamColor(team)`
+// (reads `team.color` directly off the competitor object — this file has
+// never needed a static map the way NFL's 32-team one is, since CFB's 130+
+// FBS teams already carry color on every response). Deliberately NOT a
+// shared function reused across both files: `_nlgPlayArrowHtml` closes over
+// NFL's own `_nlg.lastPlayArrowId`/`_nlg.lastTimeouts` module state, and
+// reusing it as-is would let switching between an NFL game and an NCAAF game
+// in the same session corrupt each other's "did this play just change"
+// animation-trigger state — same sport-prefixed-clone discipline this file
+// already follows for its tabs/sidebar.
 // ============================================================
 
-const _nclg = { eventId: null, timer: null, activeTab: 'summary', lastData: null };
+const _nclg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null } };
 
 const _NCLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -74,6 +84,13 @@ async function showNCAAFGame(eventId) {
     }
     try {
         const data = await fetchNCAAFSummary(eventId);
+        // D-130: field-viewer situation is a separate fetch against /scoreboard
+        // (/summary's header never carries it — confirmed absent by D-129, same
+        // as NFL's D-105 finding), only while the game is actually live.
+        _nclg.situation = null;
+        if (_nclgState(data) === 'in') {
+            try { _nclg.situation = await fetchNCAAFLiveSituation(eventId); } catch (_) { /* field viewer just omits */ }
+        }
         _nclgRender(data);
         _nclgMaybePoll(data);
     } catch (err) {
@@ -104,6 +121,11 @@ function _nclgMaybePoll(data) {
         if (AppState.currentView !== 'ncaaf-game-' + _nclg.eventId) { _nclgStop(); return; }
         try {
             const d = await fetchNCAAFSummary(_nclg.eventId);
+            if (_nclgState(d) === 'in') {
+                try { _nclg.situation = await fetchNCAAFLiveSituation(_nclg.eventId); } catch (_) { /* keep last situation */ }
+            } else {
+                _nclg.situation = null;
+            }
             _nclgRender(d);
             if (_nclgState(d) !== 'in') _nclgStop();
         } catch (_) { /* keep last render */ }
@@ -209,6 +231,27 @@ function _nclgRenderHeader(comp, home, away) {
         </button>`;
     };
 
+    // D-130: same "absent degrades to nothing" rule the rest of this file
+    // follows — sit/field viewer only render when the separate /scoreboard
+    // situation fetch (_nclg.situation, set in showNCAAFGame/the poll loop)
+    // actually resolved AND possession names one of this game's two teams.
+    const sit = live ? _nclg.situation?.situation : null;
+    const homeTeamId = _nclg.situation?.homeTeamId, awayTeamId = _nclg.situation?.awayTeamId;
+    const possResolves = sit?.possession && (String(sit.possession) === String(homeTeamId) || String(sit.possession) === String(awayTeamId));
+    const sitPossTeamName = possResolves
+        ? (String(sit.possession) === String(homeTeamId) ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name))
+        : null;
+    const sitLine = sit
+        ? `<div class="nlg-situation">
+             ${sitPossTeamName ? `<span class="nlg-poss">🏈 ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : '')}
+             ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
+             ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
+           </div>`
+        : '';
+    const fieldHtml = sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
+        ? _nclgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away)
+        : '';
+
     headerEl.innerHTML = `
         <div class="nlg-score ${live ? 'nlg-score--live' : ''}">
           ${teamBlock(away, 'away')}
@@ -217,7 +260,151 @@ function _nclgRenderHeader(comp, home, away) {
             <div class="nlg-vs">@</div>
           </div>
           ${teamBlock(home, 'home')}
-        </div>`;
+        </div>
+        ${fieldHtml}
+        ${sitLine}`;
+}
+
+// D-130: ESPN Gamecast-style live field position graphic, ported verbatim
+// (math/orientation/red-zone/play-arrow logic unchanged) from js/nflLiveGame.js's
+// _nlgFieldViewerHtml (D-105, iterated live across several real games — see
+// that function's own comments for the full history of why the math is
+// shaped the way it is). Away renders left, home renders right, matching
+// teamBlock(away) then teamBlock(home) immediately above. Team color comes
+// from _nclgTeamColor(team) (NCAAF's own competitor.team.color read) rather
+// than NFL's static abbr→hex map — the one real difference from the source.
+function _nclgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away) {
+    const homeAbbr = home?.team?.abbreviation || '';
+    const awayAbbr = away?.team?.abbreviation || '';
+    const possHome = String(sit.possession) === String(homeTeamId);
+    const disp = (v) => 100 - v;
+    const logoFor = (t) => t?.team?.logos?.[0]?.href || '';
+    const homeLogo = logoFor(home), awayLogo = logoFor(away);
+    const possLogo = possHome ? homeLogo : awayLogo;
+    const possTeamName = (possHome ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name)) || "";
+
+    // yardLine is anchored to the HOME team's own goal line (0 = home's goal,
+    // 100 = away's goal) regardless of possession — same home-anchored scale
+    // NFL's D-105 live-verified against two real possession states; not
+    // re-derived here, just reused (see that function's comment for the proof).
+    const ballPct = sit.yardLine;
+    const firstDownPct = possHome
+        ? Math.min(100, sit.yardLine + (sit.distance || 0))
+        : Math.max(0, sit.yardLine - (sit.distance || 0));
+    const possColor = possHome ? _nclgTeamColor(home.team) : _nclgTeamColor(away.team);
+    const homeColor = _nclgTeamColor(home.team), awayColor = _nclgTeamColor(away.team);
+
+    const rzLeft = possHome ? 80 : 0;
+    const rzRight = possHome ? 100 : 20;
+    const redZoneHtml = sit.isRedZone
+        ? `<div class="fv-redzone" style="left:${disp(rzRight)}%; width:${(rzRight - rzLeft)}%"></div>`
+        : '';
+
+    const toDots = (n, team) => {
+        const prev = _nclg.lastTimeouts[team];
+        const usedIdx = (typeof n === 'number' && typeof prev === 'number' && n < prev) ? n : -1;
+        if (typeof n === 'number') _nclg.lastTimeouts[team] = n;
+        return Array.from({ length: 3 }, (_, i) =>
+            `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === usedIdx ? ' fv-to-dot--used' : ''}"></div>`).join('');
+    };
+    const arrowHtml = _nclgPlayArrowHtml(sit, disp);
+    const scrimmageHtml = `<div class="fv-scrimmage" style="left:${disp(ballPct)}%"></div>`;
+    const centerLogoHtml = homeLogo ? `<div class="fv-centerlogo"><img src="${_escHtml(homeLogo)}" alt="" data-hide-on-error></div>` : '';
+
+    return `
+    <div class="field-viewer">
+        <div class="fv-topline">
+            <span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span>
+            <span class="fv-poss">${possLogo ? `<img class="fv-poss-logo" src="${_escHtml(possLogo)}" alt="" data-hide-on-error>` : (possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : '')}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
+        </div>
+        <div class="fv-field">
+            <div class="fv-endzone" style="background-color:${awayColor}">
+                ${awayLogo ? `<img class="fv-endzone-logo" src="${_escHtml(awayLogo)}" alt="" data-hide-on-error>` : ''}
+                <span class="fv-endzone-abbr">${_escHtml(awayAbbr)}</span>
+            </div>
+            <div class="fv-track">
+                ${centerLogoHtml}
+                ${arrowHtml}
+                ${redZoneHtml}
+                <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
+                ${scrimmageHtml}
+                <svg class="fv-ball" style="left:${disp(ballPct)}%" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="fvBallSheenNcaaf" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
+                            <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
+                            <stop offset="100%" stop-color="#000" stop-opacity="0.28"/>
+                        </linearGradient>
+                    </defs>
+                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="${possColor}" stroke="var(--bg-card)" stroke-width="2"/>
+                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="url(#fvBallSheenNcaaf)"/>
+                    <path d="M5,10 Q16,3 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+                    <path d="M5,10 Q16,17 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+                    <line x1="12.5" y1="10" x2="19.5" y2="10" stroke="#fff" stroke-width="1" stroke-opacity="0.9"/>
+                    <line x1="14" y1="8.2" x2="14" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                    <line x1="16" y1="8.2" x2="16" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                    <line x1="18" y1="8.2" x2="18" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
+                </svg>
+            </div>
+            <div class="fv-endzone" style="background-color:${homeColor}">
+                ${homeLogo ? `<img class="fv-endzone-logo" src="${_escHtml(homeLogo)}" alt="" data-hide-on-error>` : ''}
+                <span class="fv-endzone-abbr">${_escHtml(homeAbbr)}</span>
+            </div>
+        </div>
+        <div class="fv-yardnums"><span>${_escHtml(awayAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(homeAbbr)}</span></div>
+        <div class="fv-legend">
+            <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts, 'away')}</div></div>
+            <div class="fv-key">
+                <span><i style="background:var(--color-scrimmage)"></i>Scrimmage</span>
+                ${sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`}
+            </div>
+            <div class="fv-timeouts"><div class="fv-to-dots">${toDots(sit.homeTimeouts, 'home')}</div><span class="fv-to-label">${_escHtml(homeAbbr)} TO</span></div>
+        </div>
+    </div>`;
+}
+
+// D-130: ported verbatim from js/nflLiveGame.js's _nlgPlayArrowHtml (D-105
+// Phase 2) — same play-type classification, same arc-vs-line-drive logic.
+// Only difference: reads/writes _nclg.lastPlayArrowId instead of NFL's own
+// module state (see this file's header comment for why that split matters).
+function _nclgPlayArrowHtml(sit, disp) {
+    const lp = sit.lastPlay;
+    if (!lp || !lp.type || typeof lp.start?.yardLine !== 'number' || typeof lp.end?.yardLine !== 'number') return '';
+    const label = (lp.type.text || '').toLowerCase();
+    if (/timeout|two-minute|end of|coin toss|kneel|spike/.test(label)) return '';
+    if (/penalty/.test(label)) return '';
+
+    const isNew = !!lp.id && lp.id !== _nclg.lastPlayArrowId;
+    if (lp.id) _nclg.lastPlayArrowId = lp.id;
+    const cls = 'fv-arrow' + (isNew ? ' fv-arrow--entering' : '');
+    const x1 = disp(lp.start.yardLine), x2 = disp(lp.end.yardLine);
+
+    if (/incomplet/.test(label)) {
+        return `<svg class="${cls}" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <g transform="translate(${x1},20)">
+                <circle r="3.4" class="fv-arrow-badge-ring"/>
+                <path d="M-1.6,-1.6 L1.6,1.6 M-1.6,1.6 L1.6,-1.6" class="fv-arrow-badge-x"/>
+            </g>
+        </svg>`;
+    }
+
+    let kind = 'run', apexY = 20;
+    if (/sack/.test(label)) kind = 'sack';
+    else if (/interception|fumble/.test(label)) kind = 'turnover';
+    else if (/punt|kickoff/.test(label)) { kind = 'kick'; apexY = 1.5; }
+    else if (/field goal|extra point/.test(label)) { kind = 'kick'; apexY = 6; }
+    else if (/pass/.test(label)) { kind = 'pass'; apexY = 15; }
+
+    const midX = (x1 + x2) / 2;
+    const d = apexY === 20 ? `M${x1},20 L${x2},20` : `M${x1},20 Q${midX},${apexY} ${x2},20`;
+    return `<svg class="${cls} fv-arrow--${kind}" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+            <marker id="fvArrowHeadNcaaf" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" class="fv-arrow-head"/>
+            </marker>
+        </defs>
+        <path d="${d}" class="fv-arrow-path" marker-end="url(#fvArrowHeadNcaaf)"/>
+    </svg>`;
 }
 
 function _nclgNav(teamId) {

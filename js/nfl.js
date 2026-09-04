@@ -174,7 +174,19 @@ async function fetchNFLScoreboard(opts = {}) {
         const status = comp.status;
         const stName = status?.type?.name || 'STATUS_SCHEDULED';
         const isFinal = stName.startsWith('STATUS_FINAL');
-        const isLive  = stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME';
+        // D-129: applying NCAAF's same-day fix here preemptively (NFL kickoff is one
+        // week out). The old `stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME'`
+        // check was live-verified broken for NCAAF's identical ESPN scoreboard shape --
+        // ESPN uses other `type.name` values (STATUS_END_PERIOD, confirmed; likely
+        // STATUS_END_OF_HALF too) while a game is genuinely still in progress, which
+        // that enum silently missed. `type.state` is ESPN's own canonical pre/in/post
+        // classification and is a strict superset of the old match (verified against
+        // live 'in', 'post'-final, and 'pre'-scheduled NCAAF games in the same check),
+        // so this can only recover missed-live cases, never un-match a real one. Not
+        // yet live-verified against an actual NFL game specifically (none in progress
+        // as of this fix) -- same shape, same upstream API family, low risk, but
+        // confirm once Week 1 goes live rather than assuming.
+        const isLive  = status?.type?.state === 'in';
         // 2026-08-14 live-debug pass (D-096): comp.situation carries real down/distance/
         // possession/red-zone data on every live game -- already present in every
         // /scoreboard response the Scores grid already fetches, just never parsed.

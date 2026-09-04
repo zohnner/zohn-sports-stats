@@ -71,7 +71,19 @@ async function fetchNCAAFScoreboard(opts = {}) {
         const status = comp.status;
         const stName = status?.type?.name || 'STATUS_SCHEDULED';
         const isFinal = stName.startsWith('STATUS_FINAL');
-        const isLive  = stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME';
+        // D-129: was `stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME'` --
+        // live-verified 2026-09-03 against a real in-progress game (UAPB @ MIZ,
+        // event 401856663) that ESPN uses other `type.name` values too during a
+        // still-live game (STATUS_END_PERIOD at every quarter break, confirmed;
+        // presumably STATUS_END_OF_HALF and similar too) that this enum silently
+        // missed -- meaning isLive went false, and the LIVE badge/hero-eligibility/
+        // situation line all dropped, for several minutes every single quarter
+        // break of every NCAAF game. ESPN's own `type.state` is the canonical
+        // pre/in/post classification built for exactly this and doesn't have that
+        // gap (confirmed against a live 'in', a real 'post'-final, and a 'pre'-
+        // scheduled game in the same check) -- strictly a superset of the old
+        // match, so this can only fix missed-live cases, not un-match real ones.
+        const isLive  = status?.type?.state === 'in';
         const mk = (t) => ({
             id:     t?.team?.id || '',
             abbr:   t?.team?.abbreviation || '?',
@@ -101,16 +113,56 @@ async function fetchNCAAFScoreboard(opts = {}) {
             // game), unlike NFL's, so there's no leaders row here — an honest
             // gap, not an oversight.
             linescores: { home: _ncaafLinescores(home), away: _ncaafLinescores(away) },
-            // Home-hero live-detail (2026-09-03) — mirrors NFL's comp.situation
-            // read (D-096/D-104), same field on the same /scoreboard endpoint.
-            // UNCONFIRMED for CFB specifically as of this write (no NCAAF game
-            // was live when this shipped) — degrades to null/absent exactly like
-            // every other "not yet live-verified" field in this file, never
-            // assumed populated. Live-check this the same way D-096 did for NFL
-            // before trusting isRedZone/downDistanceText beyond a plain text line.
-            situation: comp.situation || null,
+            // Home-hero live-detail. Live-verified 2026-09-03 (D-129) against a real
+            // in-progress game (UAPB @ MIZ, event 401856663): comp.situation carries
+            // the same down/yardLine/distance/possession/isRedZone/downDistanceText
+            // shape NFL's does, BUT there is no raw `.text` field on it the way the
+            // first-draft comment above assumed -- this line originally just passed
+            // comp.situation through untouched, so `g.situation.text` (read by
+            // js/app.js's _heroNCAAFLiveDetail) was always undefined and the
+            // live-detail line silently never rendered since it shipped. Fixed to
+            // synthesize `text` the same way NFL's fetchNFLScoreboard already does
+            // (js/nfl.js) -- team abbr + shortDownDistanceText -- rather than
+            // assuming ESPN provides a pre-built display string.
+            situation: (() => {
+                const sit = comp.situation;
+                if (!isLive || !sit || typeof sit.down !== 'number' || sit.down < 1 || !sit.shortDownDistanceText) return null;
+                const possAbbr = sit.possession && home?.team?.id === sit.possession ? (home?.team?.abbreviation || '')
+                    : sit.possession && away?.team?.id === sit.possession ? (away?.team?.abbreviation || '')
+                    : '';
+                return {
+                    text: possAbbr ? `${possAbbr} · ${sit.shortDownDistanceText}` : sit.shortDownDistanceText,
+                    isRedZone: !!sit.isRedZone,
+                };
+            })(),
         };
     }).filter(Boolean);
+}
+
+// D-130: raw situation + team-id pair for the live game viewer's field
+// graphic (js/ncaafLiveGame.js), mirroring js/nfl.js's fetchNFLLiveSituation
+// exactly — including bypassing espnNCAAFFetch's ApiCache layer with a plain
+// fetch(). This polls every 20s while a game is live; ApiCache.TTL.SHORT is
+// 5 minutes, so going through the cached helper would re-serve the same
+// stale situation for 5 minutes at a time instead of tracking the live play.
+// Deliberately separate from fetchNCAAFScoreboard's own `situation` field
+// above (D-129) — that one is a synthesized display string for the
+// home-hero's plain-text line; the field viewer needs the raw numeric
+// down/yardLine/distance/possession fields to draw the actual graphic.
+async function fetchNCAAFLiveSituation(eventId) {
+    const r = await fetch('/api/ncaaf?path=/scoreboard');
+    if (!r.ok) return null;
+    const data = await r.json();
+    const ev = (data.events || []).find(e => e.id === eventId);
+    const comp = ev?.competitions?.[0];
+    if (!comp) return null;
+    const home = comp.competitors?.find(c => c.homeAway === 'home');
+    const away = comp.competitors?.find(c => c.homeAway === 'away');
+    return {
+        situation:  comp.situation || null,
+        homeTeamId: home?.team?.id || null,
+        awayTeamId: away?.team?.id || null,
+    };
 }
 
 function _ncaafOffseasonState() {
