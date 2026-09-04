@@ -58,7 +58,19 @@ function _ncaafLinescores(competitor) {
 }
 
 async function fetchNCAAFScoreboard(opts = {}) {
-    const params = {};
+    // D-135: without groups=80 (ESPN's FBS classification group id), the CFB
+    // scoreboard endpoint silently caps at 25 events and skews toward ranked
+    // matchups -- live-confirmed (2026-09-03): the plain "Today" default AND
+    // every week-based query both returned exactly 25 events, EVERY one of
+    // them involving a ranked team, while the same query plus groups=80
+    // returned the real 99-event week with 74 unranked-only games. Isolated
+    // groups=80 from a separately-tried limit=400 (limit alone made zero
+    // difference; groups=80 alone was the whole fix) and confirmed it still
+    // includes an FBS-vs-FCS crossover game (UAPB @ MIZ), so this isn't an
+    // FBS-only filter that would drop real games -- just the one param that
+    // was missing this entire time, on both Scores and (with it) the home
+    // hero and news-adjacent surfaces that share this same fetch.
+    const params = { groups: 80 };
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
@@ -150,7 +162,15 @@ async function fetchNCAAFScoreboard(opts = {}) {
 // home-hero's plain-text line; the field viewer needs the raw numeric
 // down/yardLine/distance/possession fields to draw the actual graphic.
 async function fetchNCAAFLiveSituation(eventId) {
-    const r = await fetch('/api/ncaaf?path=/scoreboard');
+    // D-135: same groups=80 fix as fetchNCAAFScoreboard -- without it this call
+    // was subject to the same ~25-event ranked-leaning cap, meaning a live game
+    // between two unranked teams could fail to be found in `events` at all,
+    // silently returning null and leaving the field viewer with no situation
+    // data. UAPB@MIZ (this session's whole test game) happened to include a
+    // ranked team (#25 MIZ) so it always appeared regardless -- an unranked-
+    // vs-unranked live game would have been the one this bug actually broke,
+    // and wasn't available to test against tonight.
+    const r = await fetch('/api/ncaaf?path=/scoreboard&groups=80');
     if (!r.ok) return null;
     const data = await r.json();
     const ev = (data.events || []).find(e => e.id === eventId);
@@ -627,13 +647,30 @@ async function displayNCAAFTeams() {
         document.getElementById('ncaafTeamsBody').innerHTML = _ncaafErr('No teams returned for the ' + _ncaaf.season + ' season.', 'displayNCAAFTeams');
         return;
     }
-    document.getElementById('ncaafTeamsBody').innerHTML = confs.map(c => {
+    // D-135: 130+ FBS teams across ~10 conferences meant finding one specific
+    // team meant scrolling past every conference before it — no search, no
+    // jump nav. A quick-jump pill row (scroll to a conference) plus a live
+    // text filter (narrow straight to a team by name, the more direct ask)
+    // both address it; built both since they're cheap together and solve
+    // slightly different real usage patterns (knowing the conference vs. not).
+    const jumpPills = confs.map((c, i) =>
+        `<button type="button" class="ncaaf-conf-jump-pill" onclick="document.getElementById('ncaaf-conf-${i}').scrollIntoView({behavior:'smooth',block:'start'})">${_escHtml(c.name)}</button>`
+    ).join('');
+
+    document.getElementById('ncaafTeamsBody').innerHTML =
+        `<div class="search-input-wrap ncaaf-team-filter-wrap">
+            <span class="search-icon"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            <input type="text" id="ncaafTeamFilter" class="ncaaf-team-filter-input" placeholder="Find a team…" oninput="_ncaafFilterTeams(this.value)">
+        </div>
+        <div class="ncaaf-conf-jump-row">${jumpPills}</div>
+        <p id="ncaafTeamFilterEmpty" class="nfl-offseason-text" style="display:none;padding:var(--space-4) 0">No team matches "<span id="ncaafTeamFilterEmptyQuery"></span>".</p>` +
+        confs.map((c, i) => {
         // Alphabetical within each conference — the standings API returns teams
         // in whatever order ESPN's tree happened to list them, not sorted, which
         // made a 15-18 team conference tedious to scan for one specific team.
         const sorted = c.teams.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         return `
-        <section style="margin-bottom:var(--space-4)">
+        <section id="ncaaf-conf-${i}" class="ncaaf-conf-section" style="margin-bottom:var(--space-4)">
             <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${sorted.map(t => {
                 // Overall record is already parsed by _ncaafStandingRow for the Standings
@@ -641,7 +678,7 @@ async function displayNCAAFTeams() {
                 // real data before kickoff, so it's suppressed the same way the team-detail
                 // Team Record card already suppresses an all-zero preseason row.
                 const hasRecord = t.overall && t.overall !== '—' && !/^0-0$/.test(t.overall);
-                return `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
+                return `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}" data-team-name="${_escHtml((t.name || '').toLowerCase())}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaaf-team-${_escHtml(String(t.id))}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <div class="ncaaf-team-chip-info">
                     <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
@@ -652,6 +689,34 @@ async function displayNCAAFTeams() {
         </section>`;
     }).join('') +
         `<p class="standings-legend">FBS teams grouped by conference (${_escHtml(String(_ncaaf.season))}). Source: ESPN.</p>`;
+}
+
+// D-135: live filter for the Teams grid above — hides non-matching chips and
+// any conference section left with zero visible chips, rather than a full
+// re-render (this runs on every keystroke, so it stays a pure DOM show/hide
+// pass, no re-fetch or innerHTML rebuild).
+function _ncaafFilterTeams(query) {
+    const q = query.trim().toLowerCase();
+    const sections = document.querySelectorAll('.ncaaf-conf-section');
+    let anyVisible = false;
+    sections.forEach(section => {
+        let sectionHasMatch = false;
+        section.querySelectorAll('.ncaaf-team-chip').forEach(chip => {
+            const match = !q || (chip.dataset.teamName || '').includes(q);
+            chip.style.display = match ? '' : 'none';
+            if (match) sectionHasMatch = true;
+        });
+        section.style.display = sectionHasMatch ? '' : 'none';
+        if (sectionHasMatch) anyVisible = true;
+    });
+    const jumpRow = document.querySelector('.ncaaf-conf-jump-row');
+    if (jumpRow) jumpRow.style.display = q ? 'none' : '';
+    const emptyState = document.getElementById('ncaafTeamFilterEmpty');
+    if (emptyState) {
+        emptyState.style.display = (q && !anyVisible) ? '' : 'none';
+        const qEl = document.getElementById('ncaafTeamFilterEmptyQuery');
+        if (qEl) qEl.textContent = query.trim();
+    }
 }
 
 function _ncaafErr(msg, retryFn) {

@@ -4683,6 +4683,49 @@
     font-weight: 600;
 }
 
+/* D-135: Teams page find-a-team filter + conference jump nav — 130+ FBS
+   teams across ~10 conferences meant scrolling past every one before it to
+   find a specific team. .search-input-wrap/.search-icon are the existing
+   home search bar's classes (reused for visual consistency); #searchBox's
+   own styling is ID-scoped to that specific element, so this input gets its
+   own class with the same look rather than fighting for the same id. */
+.ncaaf-team-filter-wrap { margin: 0 0 var(--space-4); }
+.ncaaf-team-filter-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem;
+    font-size: var(--text-md);
+    font-family: var(--font-sans);
+    background: var(--bg-interactive);
+    border: 1.5px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.ncaaf-team-filter-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--bg-interactive-hov);
+}
+.ncaaf-conf-jump-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0 0 var(--space-4);
+}
+.ncaaf-conf-jump-pill {
+    padding: 0.32rem 0.78rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 0.74rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.ncaaf-conf-jump-pill:hover { border-color: var(--accent); color: var(--accent); }
+
 /* ── Shared detail-frame chrome (D-044 P1) — named classes replacing
    the per-sport inline styles on the player/team detail header. ── */
 .detail-header-bar {
