@@ -369,8 +369,100 @@ function _nstdSeedBracket(confs, confOrder, season) {
     </details>`;
 }
 
+// ── Power Rankings (Phase 2 competitor-feature pass) ───────────────────────
+// Own function, not a generalization of NBA's displayPowerRankings (js/standings.js)
+// -- that function's tab-switching/logo-helper are NBA-specific and shouldn't be
+// touched for an unrelated sport. Mirrors its _powerScore()'s weighting shape
+// (winPct/secondary-strength/streak, 50/35/15) but swaps NBA's last-10-games
+// factor for NFL's point-differential-per-game, since fetchNFLStandings() rows
+// carry `diff` but no l10 field. _parseStreak (js/standings.js) loads after this
+// file but that's fine -- it's only referenced inside a function body, called
+// well after every script has finished loading, not at this file's own load time.
+function _nflPowerScore(t) {
+    const gp = (t.wins || 0) + (t.losses || 0);
+    const winPct = gp > 0 ? (t.wins + (t.ties || 0) * 0.5) / gp : 0;
+    const diffPerGame = gp > 0 ? t.diff / gp : 0;
+    const diffFactor = Math.max(0, Math.min(1, (diffPerGame + 14) / 28)); // -14..+14 -> 0..1
+    const streak = (typeof _parseStreak === 'function') ? _parseStreak(t.streak) : 0;
+    const streakFactor = (streak + 10) / 20; // -10..+10 -> 0..1
+    return winPct * 0.50 + diffFactor * 0.35 + streakFactor * 0.15;
+}
+
+async function loadNFLPowerRankings() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    document.getElementById('searchBar')?.style.setProperty('display', 'none');
+    document.getElementById('viewHeader')?.style.setProperty('display', 'block');
+    if (window.setBreadcrumb) setBreadcrumb('nfl-powerrankings', null);
+    const season = _nstdSeasonDefault();
+    grid.innerHTML = `<div class="nstd-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Loading ${season} power rankings…</p></div>`;
+    try {
+        const rows = _nstd.bySeason[season] || (_nstd.bySeason[season] = await fetchNFLStandings(season));
+        displayNFLPowerRankings(rows, season);
+    } catch (err) {
+        if (window.ErrorHandler && ErrorHandler.handle) ErrorHandler.handle(grid, err, loadNFLPowerRankings, { tag: 'NFL', title: 'Failed to Load Power Rankings' });
+        else grid.innerHTML = `<div class="nstd-empty"><p>Couldn't load power rankings.</p><button class="md-btn" onclick="loadNFLPowerRankings()">Retry</button></div>`;
+        if (window.Logger) Logger.warn('nfl power rankings failed', err, 'NFL');
+    }
+}
+
+function displayNFLPowerRankings(rows, season) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = ''; grid.style.cssText = '';
+    if (!rows || !rows.length) {
+        grid.innerHTML = `<div class="nstd-empty"><p>No standings found for ${season}.</p></div>`;
+        return;
+    }
+    // Every team 0-0 (preseason/offseason) would rank as a meaningless tie --
+    // same honesty gate the Teams page already applies to records
+    // (js/nfl.js's stdHasPlayed / "Records show 0-0 until..." note).
+    const anyPlayed = rows.some(t => (t.wins || 0) > 0 || (t.losses || 0) > 0 || (t.pf || 0) > 0 || (t.pa || 0) > 0);
+    if (!anyPlayed) {
+        const days = (typeof _nflDaysToKickoff === 'function') ? _nflDaysToKickoff() : null;
+        grid.innerHTML = `<div class="nstd-wrap">
+            <div class="nstd-head"><div><h1 class="md-title" style="margin:0">NFL Power Rankings</h1></div></div>
+            <div class="nstd-empty">
+                <p>Power rankings need real results to mean anything — every team is still 0-0${days != null ? `, ${days === 0 ? 'kickoff is today' : `kickoff is in ${days} day${days === 1 ? '' : 's'}`}` : ''}.</p>
+                <button class="md-btn" onclick="navigateTo('nfl-mock')">Get ahead — Mock Draft</button>
+            </div>
+        </div>`;
+        return;
+    }
+    const scored = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr);
+    const maxScore = scored[0]._pwr || 1;
+    const rowsHtml = scored.map((t, i) => {
+        const strVal = (typeof _parseStreak === 'function') ? _parseStreak(t.streak) : 0;
+        const streakColor = strVal >= 2 ? 'var(--color-win)' : strVal <= -2 ? 'var(--color-loss)' : 'var(--text-muted)';
+        const pct = Math.max(4, Math.round((t._pwr / maxScore) * 100));
+        return `<div class="nstd-pwr-row" onclick="${_nstdNav(t.abbr)}">
+            <span class="nstd-pwr-rank">${i + 1}</span>
+            <img class="nstd-pwr-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
+            <span class="nstd-pwr-name">${_escHtml(t.shortName)}</span>
+            <span class="nstd-pwr-rec">${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''}</span>
+            <span class="nstd-pwr-streak" style="color:${streakColor}">${_escHtml(t.streak || '—')}</span>
+            <span class="nstd-pwr-bar"><span class="nstd-pwr-bar__fill" style="width:${pct}%"></span></span>
+        </div>`;
+    }).join('');
+    grid.innerHTML = `
+      <div class="nstd-wrap">
+        <div class="nstd-head">
+          <div>
+            <h1 class="md-title" style="margin:0">NFL Power Rankings</h1>
+            <p class="md-note">${season} · ranked by win rate, scoring margin per game, and recent form (50/35/15 blend) · computed, not editorial</p>
+          </div>
+        </div>
+        <div class="nstd-pwr-list">${rowsHtml}</div>
+        <p class="pct-caption">A blended power score from this season's actual results — not a prediction, not an editorial opinion. Click a team for its page.</p>
+      </div>`;
+}
+
 if (typeof window !== 'undefined') {
     window.loadNFLStandings = loadNFLStandings;
     window.displayNFLStandings = displayNFLStandings;
     window.fetchNFLStandings = fetchNFLStandings;
+    window.loadNFLPowerRankings = loadNFLPowerRankings;
+    window.displayNFLPowerRankings = displayNFLPowerRankings;
+    window._nflPowerScore = _nflPowerScore;
 }

@@ -2296,11 +2296,16 @@ function _renderSportLanding(sport) {
     // and a phase-aware Signature module (kickoff countdown pre-season, playoff
     // picture once real records exist) below them. NFL-scoped only for now —
     // other sports keep the plain D-045 hero+cards shape until their own pass.
-    const nflSpotlightSkel = sport === 'nfl'
-        ? `<div class="sl-spotlight" id="slSpotlight"><div class="skeleton-line" style="height:150px;width:100%;border-radius:var(--radius-lg)"></div></div>` : '';
-    const nflSignatureSkel = sport === 'nfl'
-        ? `<div class="sl-signature" id="slSignature"><div class="skeleton-line" style="height:90px;width:100%;border-radius:var(--radius-md)"></div></div>` : '';
+    // Phase 2: Breaking News banner (top), Fantasy Pulse (injuries+trending) and
+    // a signed-in-only Your Matchup module round out the competitor-feature set.
+    const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
+    const nflBreakingSkel   = sport === 'nfl' ? `<div class="sl-breaking" id="slBreaking"></div>` : '';
+    const nflSpotlightSkel  = sport === 'nfl' ? `<div class="sl-spotlight" id="slSpotlight">${skel(150, 'var(--radius-lg)')}</div>` : '';
+    const nflSignatureSkel  = sport === 'nfl' ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-md)')}</div>` : '';
+    const nflPulseSkel      = sport === 'nfl' ? `<div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, 'var(--radius-md)')}</div>` : '';
+    const nflMatchupSkel    = sport === 'nfl' ? `<div class="sl-matchup" id="slMatchup"></div>` : '';
     grid.innerHTML = `
+        ${nflBreakingSkel}
         <div class="sl-hero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
             <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
@@ -2317,13 +2322,18 @@ function _renderSportLanding(sport) {
                 </button>`).join('')}
         </div>
         ${nflSignatureSkel}
-        <div class="sl-data" id="slData"></div>`;
+        ${nflPulseSkel}
+        <div class="sl-data" id="slData"></div>
+        ${nflMatchupSkel}`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
     if (sport === 'mlb') { if (typeof _loadMLBLandingData === 'function') _loadMLBLandingData(); }
     else if ((sport === 'nfl' || sport === 'ncaaf') && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
     if (sport === 'nfl') {
+        if (typeof _loadNFLLandingBreakingNews === 'function') _loadNFLLandingBreakingNews();
         if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
         if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
+        if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
+        if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
     }
 }
 
@@ -2421,9 +2431,31 @@ async function _loadFootballLandingData(sport) {
         const favFirst = (sport === 'nfl' && typeof _nflGameHasFav === 'function') ? (g => _nflGameHasFav(g) ? 0 : 1) : (() => 1);
         const picked = games.slice().sort((a, b) => (favFirst(a) - favFirst(b)) || (liveFirst(a) - liveFirst(b))).slice(0, 6);
         const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g))).filter(Boolean).join('');
+        // Primetime This Week strip (Phase 2, NFL-scoped): nationally televised
+        // games out of the same already-fetched `games` array -- zero new fetch.
+        // g.broadcast is a single national-network string when present, '' when
+        // this game has no national feed (js/nfl.js fetchNFLScoreboard).
+        let primetimeHtml = '';
+        if (sport === 'nfl') {
+            const nat = games.filter(g => g.broadcast).slice(0, 5);
+            if (nat.length) {
+                const rows = nat.map(g => {
+                    const d = g.date ? new Date(g.date) : null;
+                    const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+                    return `<div class="sl-primetime-row" onclick="navigateTo('nfl-game-${_escHtml(String(g.id))}')">
+                        <span class="sl-primetime-matchup">${_escHtml(g.awayTeam?.abbr || '')} @ ${_escHtml(g.homeTeam?.abbr || '')}</span>
+                        <span class="sl-primetime-net">${_escHtml(g.broadcast)}</span>
+                        <span class="sl-primetime-time">${_escHtml(g.isLive ? 'LIVE' : time)}</span>
+                        <span class="game-weather" data-nfl-weather-team="${_escHtml(g.homeTeam?.abbr || '')}"></span>
+                    </div>`;
+                }).join('');
+                primetimeHtml = `<div class="sl-primetime">${rows}</div>`;
+            }
+        }
         if (cards) {
             gamesHtml = `<section class="sl-section">
                 <div class="sl-section-hdr"><span class="eyebrow">This Week's Games</span><button class="sl-section-link" onclick="navigateTo('${scoresView}')">All scores →</button></div>
+                ${primetimeHtml}
                 <div class="sl-games">${cards}</div></section>`;
         }
     }
@@ -2453,6 +2485,7 @@ async function _loadFootballLandingData(sport) {
     if (!host.isConnected) return;
     host.innerHTML = gamesHtml + leadersHtml;
     if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(host);
+    if (sport === 'nfl' && typeof _injectNFLGameWeather === 'function') _injectNFLGameWeather(host);
 }
 
 // ── NFL landing Game Spotlight (Phase 1 of 5, NFL landing redesign) ────────
@@ -2521,6 +2554,15 @@ async function _loadNFLLandingSignature() {
         const confs = {};
         (rows || []).forEach(t => { (confs[t.conference] || (confs[t.conference] = [])).push(t); });
         const cut = _nstdCut(season);
+        // Streak badge (Phase 2): _parseStreak (js/standings.js) already handles
+        // "W3"/"L2"/falsy safely; same win/loss/muted thresholds that file's own
+        // Power Rankings tab uses for NBA.
+        const streakBadge = (t) => {
+            const v = (typeof _parseStreak === 'function') ? _parseStreak(t.streak) : 0;
+            if (!t.streak) return '';
+            const c = v >= 2 ? 'var(--color-win)' : v <= -2 ? 'var(--color-loss)' : 'var(--text-muted)';
+            return `<span class="sl-playoff-streak" style="color:${c}">${_escHtml(t.streak)}</span>`;
+        };
         const confHtml = ['AFC', 'NFC'].filter(c => confs[c] && confs[c].length).map(conf => {
             const seeded = _nstdSeed(confs[conf]).slice(0, cut + 1);
             const rowsHtml = seeded.map(t => `
@@ -2528,15 +2570,175 @@ async function _loadNFLLandingSignature() {
                     <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
                     <span class="sl-playoff-name">${_nstdBadges(t, season)}${_escHtml(t.shortName)}</span>
                     <span class="sl-playoff-rec">${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''}</span>
+                    ${streakBadge(t)}
                 </div>`).join('');
             return `<div><h3 class="sl-playoff-conf-title">${conf}</h3>${rowsHtml}</div>`;
         }).join('');
-        if (!confHtml) { host.remove(); return; }
-        host.innerHTML = `<section class="sl-section">
+        // Power Rankings teaser (Phase 2): top-3 by _nflPowerScore (js/nflStandings.js),
+        // zero new fetch -- same `rows` this module already has in hand.
+        let powerHtml = '';
+        if (typeof _nflPowerScore === 'function' && rows && rows.length) {
+            const top3 = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr).slice(0, 3);
+            const chips = top3.map((t, i) => `
+                <button class="sl-power-chip" onclick="navigateTo('nfl-powerrankings')">
+                    <span class="sl-power-rank">${i + 1}</span>
+                    <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
+                    <span>${_escHtml(t.shortName)}</span>
+                </button>`).join('');
+            powerHtml = `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('nfl-powerrankings')">Full rankings →</button></div>
+                <div class="sl-power-chips">${chips}</div></section>`;
+        }
+        if (!confHtml && !powerHtml) { host.remove(); return; }
+        host.innerHTML = (confHtml ? `<section class="sl-section">
             <div class="sl-section-hdr"><span class="eyebrow">Playoff Picture</span><button class="sl-section-link" onclick="navigateTo('nfl-standings')">Full standings →</button></div>
-            <div class="sl-playoff-confs">${confHtml}</div></section>`;
+            <div class="sl-playoff-confs">${confHtml}</div></section>` : '') + powerHtml;
     } catch (err) {
         Logger.warn('NFL landing signature module failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NFL landing Breaking News banner (Phase 2 competitor-feature pass) ─────
+// Reuses the existing /api/news pipeline (js/news.js) and its recency-based
+// _isNewsBreaking() helper -- renders nothing when no headline qualifies, no
+// manufactured urgency.
+async function _loadNFLLandingBreakingNews() {
+    const host = document.getElementById('slBreaking');
+    if (!host) return;
+    try {
+        let data = (typeof _newsCache !== 'undefined') ? _newsCache.nfl : null;
+        if (!data) {
+            const res = await fetch('/api/news?sport=nfl');
+            if (!res.ok) throw new Error(`news ${res.status}`);
+            data = await res.json();
+            if (typeof _newsCache !== 'undefined') _newsCache.nfl = data;
+        }
+        const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
+        const breaking = articles
+            .filter(a => typeof _isNewsBreaking === 'function' && _isNewsBreaking(a))
+            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))[0];
+        if (!breaking || !host.isConnected) { host.remove(); return; }
+        host.innerHTML = `<a class="sl-breaking-banner" href="${_escHtml(breaking.links.web.href)}" target="_blank" rel="noopener">
+            <span class="sl-breaking-tag">BREAKING</span>
+            <span class="sl-breaking-headline">${_escHtml(breaking.headline)}</span>
+        </a>`;
+    } catch (err) {
+        Logger.warn('NFL landing breaking news failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NFL landing Fantasy Pulse strip (Phase 2) — Injuries + Trending ────────
+// Both halves reuse fully-built features (js/nfl.js's Injury Report and
+// Trending tabs) rather than re-deriving anything -- this is a compact
+// teaser into each, not a parallel implementation. Reuses the .nfl-lrow row
+// shape those pages already share with each other.
+async function _loadNFLLandingFantasyPulse() {
+    const host = document.getElementById('slFantasyPulse');
+    if (!host) return;
+    try {
+        const [, trendRes] = await Promise.all([
+            (typeof fetchNFLSleeperPool === 'function') ? fetchNFLSleeperPool() : Promise.resolve(null),
+            fetch('/api/sleeper?path=/v1/players/nfl/trending/add').then(r => r.ok ? r.json() : []).catch(() => []),
+        ]);
+        if (!host.isConnected) return;
+
+        const pool = Object.values((typeof _nflPoolMap !== 'undefined' && _nflPoolMap) || {})
+            .filter(p => p && p.active && p.team && p.injury_status);
+        const favFirst = p => (typeof _isFollowed === 'function' && _isFollowed('nfl', 'team', p.team)) ? 0 : 1;
+        const injuries = pool.slice().sort((a, b) => (favFirst(a) - favFirst(b)) || ((a.search_rank || 1e9) - (b.search_rank || 1e9))).slice(0, 4);
+
+        const trending = (Array.isArray(trendRes) ? trendRes : []).slice(0, 3).map(e => {
+            const p = (typeof _nflPoolMap !== 'undefined' && _nflPoolMap) ? _nflPoolMap[e.player_id] : null;
+            return { name: p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Unknown player', team: p?.team || '', count: e.count };
+        });
+
+        if (!injuries.length && !trending.length) { host.remove(); return; }
+
+        const injRows = injuries.map(p => `
+            <div class="nfl-lrow" onclick="navigateTo('nfl-injuries')">
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(`${p.first_name || ''} ${p.last_name || ''}`.trim())}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(p.team || '')} · ${_escHtml(p.position || '')}</div>
+                </div>
+                <span class="roster-il-badge">${_escHtml(p.injury_status)}</span>
+            </div>`).join('');
+        const trendRows = trending.map(t => `
+            <div class="nfl-lrow" onclick="navigateTo('nfl-trending')">
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(t.name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(t.team)}</div>
+                </div>
+                <span class="sl-leader-unit" style="color:var(--color-win)">+${_escHtml(String(t.count))}</span>
+            </div>`).join('');
+
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-pulse-cols">
+                ${injRows ? `<div><div class="sl-section-hdr"><span class="eyebrow">Injury Watch</span><button class="sl-section-link" onclick="navigateTo('nfl-injuries')">Full report →</button></div>${injRows}</div>` : ''}
+                ${trendRows ? `<div><div class="sl-section-hdr"><span class="eyebrow">Trending Adds</span><button class="sl-section-link" onclick="navigateTo('nfl-trending')">See more →</button></div>${trendRows}</div>` : ''}
+            </div></section>`;
+    } catch (err) {
+        Logger.warn('NFL landing fantasy pulse failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NFL landing Your Matchup module (Phase 2) — signed-in + linked league only.
+// No filler for anonymous visitors: the container is removed immediately for
+// anyone not signed in or without a linked Sleeper league, matching the
+// Signature module's "nothing renders when there's nothing real to show" rule.
+async function _loadNFLLandingMatchup() {
+    const host = document.getElementById('slMatchup');
+    if (!host) return;
+    try {
+        if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') { host.remove(); return; }
+        const linkRes = await fetch('/api/sleeperLink', { credentials: 'same-origin' });
+        if (!linkRes.ok) { host.remove(); return; }
+        const linkBody = await linkRes.json();
+        const link = linkBody && linkBody.link;
+        if (!link || !link.league_id || !link.sleeper_user_id) { host.remove(); return; }
+        if (!host.isConnected) return;
+
+        const [state, rosters, users] = await Promise.all([
+            fetch('/api/sleeper?path=/v1/state/nfl').then(r => r.ok ? r.json() : null),
+            fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/rosters')}`).then(r => r.ok ? r.json() : []),
+            fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/users')}`).then(r => r.ok ? r.json() : []),
+        ]);
+        const week = state && state.week;
+        if (!week) { host.remove(); return; }
+        const matchupList = await fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/matchups/' + week)}`).then(r => r.ok ? r.json() : []);
+        if (!host.isConnected) return;
+
+        const myRoster = (rosters || []).find(r => r.owner_id === link.sleeper_user_id);
+        if (!myRoster) { host.remove(); return; }
+        const myEntry = (matchupList || []).find(m => m.roster_id === myRoster.roster_id);
+        if (!myEntry || myEntry.matchup_id == null) { host.remove(); return; }
+        const oppEntry = (matchupList || []).find(m => m.matchup_id === myEntry.matchup_id && m.roster_id !== myRoster.roster_id);
+        const oppRoster = oppEntry ? (rosters || []).find(r => r.roster_id === oppEntry.roster_id) : null;
+
+        const userFor = rosterOwnerId => (users || []).find(u => u.user_id === rosterOwnerId);
+        const myUser = userFor(myRoster.owner_id);
+        const oppUser = oppRoster ? userFor(oppRoster.owner_id) : null;
+        const teamName = (u, fallback) => (u && u.metadata && u.metadata.team_name) || (u && u.display_name) || fallback;
+
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Your Matchup${link.league_name ? ' · ' + _escHtml(link.league_name) : ''}</span><button class="sl-section-link" onclick="navigateTo('nfl-myleague')">My League →</button></div>
+            <div class="sl-matchup-row">
+                <div class="sl-matchup-team">
+                    <span class="sl-matchup-name">${_escHtml(teamName(myUser, 'Your Team'))}</span>
+                    <span class="sl-matchup-pts">${myEntry.points != null ? myEntry.points.toFixed(2) : '—'}</span>
+                </div>
+                <span class="sl-matchup-vs">vs</span>
+                <div class="sl-matchup-team">
+                    <span class="sl-matchup-name">${oppEntry ? _escHtml(teamName(oppUser, 'Opponent')) : 'Bye week'}</span>
+                    <span class="sl-matchup-pts">${oppEntry && oppEntry.points != null ? oppEntry.points.toFixed(2) : (oppEntry ? '—' : '')}</span>
+                </div>
+            </div>
+            <p class="pct-caption">Week ${_escHtml(String(week))} · live scoring via Sleeper</p>
+        </section>`;
+    } catch (err) {
+        Logger.warn('NFL landing matchup failed', err && err.message, 'APP');
         host.remove();
     }
 }
@@ -2813,6 +3015,9 @@ if (typeof window !== 'undefined') {
     window._renderSportPicker = _renderSportPicker;
     window._loadNFLLandingSpotlight = _loadNFLLandingSpotlight;
     window._loadNFLLandingSignature = _loadNFLLandingSignature;
+    window._loadNFLLandingBreakingNews = _loadNFLLandingBreakingNews;
+    window._loadNFLLandingFantasyPulse = _loadNFLLandingFantasyPulse;
+    window._loadNFLLandingMatchup = _loadNFLLandingMatchup;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
     window.renderDashboardView = renderDashboardView;

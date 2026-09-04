@@ -763,6 +763,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'NFL Leaders';
             loadNFLStatLeaders();
             break;
+        case 'nfl-powerrankings':
+            if (viewCount) viewCount.textContent = 'NFL Power Rankings';
+            if (typeof loadNFLPowerRankings === 'function') loadNFLPowerRankings();
+            break;
         case 'nfl-trending':
             if (viewCount) viewCount.textContent = 'Draft HQ · Trending';
             loadNFLLeaderboards();
@@ -1091,7 +1095,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare', 'mlb-highlight-card'];
-        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
@@ -1164,7 +1168,7 @@ const SUB_NAV_TABS = {
         { v: 'nfl-teams', l: 'Teams' },
         { v: 'nfl-standings', l: 'Standings' },
         { l: 'Stats & Leaders', cols: [
-            { items: [{ v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
+            { items: [{ v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-powerrankings', l: 'Power Rankings' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
         ] },
         // Grouped into Draft Prep / In-Season (D-103) — mirrors what MENU_TABS.nfl's
         // mobile grouping already did; the desktop dropdown was the one place this
@@ -1296,7 +1300,8 @@ const MENU_TABS = {
         { group:'Stats & Leaders' },
         { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
-        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' }, { v:'news', l:'News', i:'extra' },
+        { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' },
+        { v:'nfl-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
         { group:'Draft Prep' },
         { v:'nfl-draftkit', l:'Draft HQ', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
         { v:'nfl-sos', l:'Schedule', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },

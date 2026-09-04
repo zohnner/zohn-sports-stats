@@ -755,6 +755,105 @@ function getNFLTeamColor(abbr) {
 const _NFL_POS_COLOR = { QB: 'var(--nfl-pos-qb)', RB: 'var(--nfl-pos-rb)', WR: 'var(--nfl-pos-wr)', TE: 'var(--nfl-pos-te)', K: 'var(--nfl-pos-k)' };
 const _nflAlpha = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
 
+// ── Stadium weather lookup (Phase 2 competitor-feature pass) — clone of MLB's
+// _MLB_STADIUMS/_fetchStadiumWeather/_injectGameWeather (js/mlb.js) against
+// Open-Meteo, already CSP-allowlisted for MLB so this needs zero CSP change.
+// Coordinates are city/stadium-level (a few tenths of a degree), sourced from
+// each team's current 2026 stadium — sufficient precision for a forecast call,
+// same precision class as MLB's own table. `dome: true` covers real domes,
+// fixed roofs, AND retractable roofs (matching _MLB_STADIUMS's own convention
+// of treating retractable as "skip weather" rather than assuming open) — 20 of
+// 32 teams play in a genuinely open-air stadium.
+const _NFL_STADIUMS = {
+    BUF: { lat: 42.7738, lon: -78.7870,  dome: false }, // Highmark Stadium
+    MIA: { lat: 25.9580, lon: -80.2389,  dome: false }, // Hard Rock Stadium
+    NE:  { lat: 42.0909, lon: -71.2643,  dome: false }, // Gillette Stadium
+    NYJ: { lat: 40.8135, lon: -74.0745,  dome: false }, // MetLife Stadium
+    BAL: { lat: 39.2780, lon: -76.6227,  dome: false }, // M&T Bank Stadium
+    CIN: { lat: 39.0955, lon: -84.5160,  dome: false }, // Paycor Stadium
+    CLE: { lat: 41.5061, lon: -81.6995,  dome: false }, // Huntington Bank Field
+    PIT: { lat: 40.4468, lon: -80.0158,  dome: false }, // Acrisure Stadium
+    HOU: { lat: 29.6847, lon: -95.4107,  dome: true  }, // NRG Stadium (retractable)
+    IND: { lat: 39.7601, lon: -86.1639,  dome: true  }, // Lucas Oil Stadium (retractable)
+    JAX: { lat: 30.3239, lon: -81.6373,  dome: false }, // EverBank Stadium
+    TEN: { lat: 36.1665, lon: -86.7713,  dome: false }, // Nissan Stadium
+    DEN: { lat: 39.7439, lon: -105.0201, dome: false }, // Empower Field at Mile High
+    KC:  { lat: 39.0489, lon: -94.4839,  dome: false }, // Arrowhead Stadium
+    LV:  { lat: 36.0909, lon: -115.1833, dome: true  }, // Allegiant Stadium (fixed roof)
+    LAC: { lat: 33.9535, lon: -118.3392, dome: true  }, // SoFi Stadium (fixed roof)
+    DAL: { lat: 32.7473, lon: -97.0945,  dome: true  }, // AT&T Stadium (retractable)
+    NYG: { lat: 40.8135, lon: -74.0745,  dome: false }, // MetLife Stadium
+    PHI: { lat: 39.9008, lon: -75.1675,  dome: false }, // Lincoln Financial Field
+    WAS: { lat: 38.9077, lon: -76.8645,  dome: false }, // Northwest Stadium
+    CHI: { lat: 41.8623, lon: -87.6167,  dome: false }, // Soldier Field
+    DET: { lat: 42.3400, lon: -83.0456,  dome: true  }, // Ford Field
+    GB:  { lat: 44.5013, lon: -88.0622,  dome: false }, // Lambeau Field
+    MIN: { lat: 44.9736, lon: -93.2575,  dome: true  }, // U.S. Bank Stadium (fixed roof)
+    ATL: { lat: 33.7554, lon: -84.4008,  dome: true  }, // Mercedes-Benz Stadium (retractable)
+    CAR: { lat: 35.2258, lon: -80.8528,  dome: false }, // Bank of America Stadium
+    NO:  { lat: 29.9511, lon: -90.0812,  dome: true  }, // Caesars Superdome
+    TB:  { lat: 27.9759, lon: -82.5033,  dome: false }, // Raymond James Stadium
+    ARI: { lat: 33.5276, lon: -112.2626, dome: true  }, // State Farm Stadium (retractable)
+    LAR: { lat: 33.9535, lon: -118.3392, dome: true  }, // SoFi Stadium (fixed roof)
+    SF:  { lat: 37.4033, lon: -121.9694, dome: false }, // Levi's Stadium
+    SEA: { lat: 47.5952, lon: -122.3316, dome: false }, // Lumen Field
+};
+
+// _windDegToCompass already defined in js/mlb.js (loads before this file) —
+// reused directly, not duplicated.
+async function _fetchNFLStadiumWeather(abbr) {
+    const canon = _NFL_TEAM_COLOR_ALIAS[(abbr || '').toUpperCase()] || (abbr || '').toUpperCase();
+    const stadium = _NFL_STADIUMS[canon];
+    if (!stadium) return null;
+    if (stadium.dome) return { dome: true };
+
+    const cacheKey = `ss_nflweather_${abbr}`;
+    try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            const { ts, data } = JSON.parse(cached);
+            if (Date.now() - ts < 30 * 60 * 1000) return data;
+        }
+    } catch (_) {}
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+        const resp = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const cur = json.current;
+        if (!cur) return null;
+        const data = {
+            temp: Math.round(cur.temperature_2m),
+            wind: Math.round(cur.wind_speed_10m),
+            dir: (typeof _windDegToCompass === 'function') ? _windDegToCompass(cur.wind_direction_10m) : '',
+        };
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function _injectNFLGameWeather(wrap) {
+    const slots = wrap.querySelectorAll('[data-nfl-weather-team]');
+    if (!slots.length) return;
+    const abbrs = [...new Set([...slots].map(s => s.dataset.nflWeatherTeam))];
+    const results = await Promise.all(abbrs.map(a => _fetchNFLStadiumWeather(a).then(w => [a, w])));
+    const map = Object.fromEntries(results);
+    slots.forEach(slot => {
+        const w = map[slot.dataset.nflWeatherTeam];
+        if (!w) { slot.style.display = 'none'; return; }
+        if (w.dome) {
+            slot.textContent = 'Dome';
+            slot.classList.add('game-weather--dome');
+        } else {
+            slot.innerHTML = `${w.temp}°F · ${w.wind} mph ${w.dir}`;
+            slot.classList.add('game-weather--outdoor');
+        }
+    });
+}
+
 async function fetchNFLSleeperPool() {
     if (_nflPool) return _nflPool;
     const res = await fetch('/api/sleeper?path=/v1/players/nfl');
@@ -1996,8 +2095,15 @@ function _renderTeamPage(m) {
         ).join('');
         return `<h3 class="detail-section-title" style="font-size:0.9rem;margin-top:1.1rem">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h3><div class="roster-list">${rows}</div>`;
     }).join('');
+    // Phase 2 competitor-feature pass ("depth chart quick-view"): this roster
+    // was already grouped by position and sorted by depth_chart_order with a
+    // starter star (see the sortFn/groups computation in _renderNFLTeamDetail)
+    // -- it's functionally a depth chart already, just never labeled or
+    // explained as one. Rather than build a near-duplicate second view, this
+    // relabels the existing section and adds a visible legend (the star
+    // previously only had a hover tooltip, invisible on touch devices).
     const rosterCard = groups
-        ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2>${groups}</div>`
+        ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
     return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}`;

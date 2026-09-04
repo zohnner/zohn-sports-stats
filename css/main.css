@@ -4562,7 +4562,55 @@ body.view-home .search-global-btn { display: none; }
 .sl-playoff-row img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
 .sl-playoff-name { font-size: 0.82rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 0.3rem; }
 .sl-playoff-rec { font-size: 0.74rem; font-family: var(--font-mono); color: var(--text-muted); flex-shrink: 0; }
+.sl-playoff-streak { font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); flex-shrink: 0; min-width: 1.6em; text-align: right; }
 @media (max-width: 560px) { .sl-playoff-confs { grid-template-columns: 1fr; gap: 0.75rem; } }
+
+/* NFL landing Phase 2 (competitor-feature pass): Breaking News banner, Power
+   Rankings teaser chips, Fantasy Pulse (Injuries+Trending) columns, Primetime
+   strip, and the signed-in Your Matchup module. All follow the existing
+   .sl-section/.sl-leader/bg-card+border-default conventions above -- no new
+   visual language introduced for this pass. */
+.sl-breaking-banner { display: flex; align-items: center; gap: 0.6rem; max-width: 940px; margin: 0 auto 0.5rem; padding: 0.55rem 0.9rem; background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-md); text-decoration: none; color: var(--text-primary); }
+.sl-breaking-banner:hover { border-color: var(--accent); }
+.sl-breaking-tag { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; color: var(--color-live); border: 1px solid var(--color-live); border-radius: var(--radius-full); padding: 0.1rem 0.5rem; }
+.sl-breaking-headline { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sl-power-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.sl-power-chip { display: flex; align-items: center; gap: 0.45rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-full); cursor: pointer; color: var(--text-primary); transition: border-color 0.12s ease; }
+.sl-power-chip:hover { border-color: var(--border-strong); }
+.sl-power-chip img { width: 18px; height: 18px; object-fit: contain; }
+.sl-power-rank { font-family: var(--font-mono); font-weight: 800; font-size: 0.72rem; color: var(--accent); }
+.sl-power-chip span:last-child { font-size: 0.8rem; font-weight: 600; }
+
+.sl-pulse-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+@media (max-width: 560px) { .sl-pulse-cols { grid-template-columns: 1fr; gap: 0.75rem; } }
+
+.sl-primetime { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.4rem; }
+.sl-primetime-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; font-size: 0.78rem; }
+.sl-primetime-row:hover { border-color: var(--border-strong); }
+.sl-primetime-matchup { font-weight: 700; flex: 1; min-width: 0; }
+.sl-primetime-net { color: var(--accent); font-weight: 700; font-size: 0.7rem; }
+.sl-primetime-time { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.7rem; flex-shrink: 0; }
+
+.sl-matchup-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.sl-matchup-team { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }
+.sl-matchup-team:last-child { align-items: flex-end; text-align: right; }
+.sl-matchup-name { font-size: 0.85rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl-matchup-pts { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sl-matchup-vs { color: var(--text-subtle); font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+
+/* NFL Power Rankings page (js/nflStandings.js displayNFLPowerRankings) */
+.nstd-pwr-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
+.nstd-pwr-row { display: grid; grid-template-columns: 2rem 28px 1fr auto auto 90px; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; }
+.nstd-pwr-row:hover { border-color: var(--border-strong); }
+.nstd-pwr-rank { font-family: var(--font-mono); font-weight: 800; color: var(--text-muted); }
+.nstd-pwr-logo { width: 26px; height: 26px; object-fit: contain; }
+.nstd-pwr-name { font-weight: 700; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nstd-pwr-rec { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
+.nstd-pwr-streak { font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; }
+.nstd-pwr-bar { display: block; height: 6px; border-radius: var(--radius-full); background: var(--border-default); overflow: hidden; }
+.nstd-pwr-bar__fill { display: block; height: 100%; background: var(--accent); border-radius: var(--radius-full); }
+@media (max-width: 640px) { .nstd-pwr-row { grid-template-columns: 1.6rem 24px 1fr auto; } .nstd-pwr-streak, .nstd-pwr-bar { display: none; } }
 
 /* Skip-to-content link (F7): visually hidden until focused, then a pill top-left.
    New utility — the codebase had no sr-only/visually-hidden class to reuse. */

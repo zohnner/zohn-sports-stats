@@ -23,6 +23,20 @@ function _isNewsInjuryRelated(a) {
     return NEWS_INJURY_RE.test(`${a.headline || ''} ${a.description || ''}`);
 }
 
+// NFL landing "Breaking News" banner (Phase 2 competitor-feature pass): a
+// headline counts as breaking if it's recent, same recency signal
+// _newsTimeAgo() already surfaces per-card -- no ESPN priority/breaking field
+// exists to read (checked; the payload carries only headline/description/
+// images/byline/published/lastModified), so a 6h recency window is the
+// honest proxy, not a guessed editorial signal.
+const NEWS_BREAKING_WINDOW_MS = 6 * 3600 * 1000;
+function _isNewsBreaking(a) {
+    const iso = a && (a.published || a.lastModified);
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return !isNaN(t) && (Date.now() - t) < NEWS_BREAKING_WINDOW_MS;
+}
+
 async function loadNews(sport) {
     sport = sport || (typeof AppState !== 'undefined' && AppState.currentSport) || 'nfl';
     if (!NEWS_SPORTS.includes(sport)) sport = 'mlb';
