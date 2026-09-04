@@ -974,6 +974,15 @@ function _loadFromHash() {
             AppState.currentSport = 'ncaaf';
             if (typeof _applySportUI === 'function') _applySportUI('ncaaf');
             navigateTo(_r); return;
+        } else if (/^ncaaf-game-(\d+)$/.test(_r)) {
+            // D-132: paired with functions/ncaaf/game/[id].js, which sets this
+            // __SS_ROUTE value -- without this branch the edge-rendered game page's
+            // own hydration hint fell through to the generic sport-view branch
+            // below, which doesn't know how to start a live poll for a specific
+            // game (same gap that made #ncaaf-game-{id} silently land on home).
+            AppState.currentSport = 'ncaaf';
+            if (typeof _applySportUI === 'function') _applySportUI('ncaaf');
+            navigateTo(_r); return;
         } else if (/^(mlb|nfl|nhl|ncaaf|ncaab|wnba)-[a-z]+$/.test(_r)) {
             const _sp = _r.split('-')[0];
             AppState.currentSport = _sp;
@@ -999,6 +1008,7 @@ function _loadFromHash() {
     const nflGameMatch       = hash.match(/^nfl-game-([A-Za-z0-9]+)$/);
     const ncaafPlayerMatch   = hash.match(/^ncaaf-player-(\d+)$/);
     const ncaafTeamMatch     = hash.match(/^ncaaf-team-(\d+)$/);
+    const ncaafGameMatch     = hash.match(/^ncaaf-game-(\d+)$/);
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
 
@@ -1050,6 +1060,13 @@ function _loadFromHash() {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');
         navigateTo('ncaaf-team-' + ncaafTeamMatch[1], false);
+    } else if (ncaafGameMatch) {
+        // D-132: mirrors nflGameMatch below -- was entirely missing, so a fresh
+        // load of #ncaaf-game-{id} (a typed URL, bookmark, or shared hash link)
+        // silently fell through to home instead of the game.
+        AppState.currentSport = 'ncaaf';
+        _applySportUI('ncaaf');
+        navigateTo('ncaaf-game-' + ncaafGameMatch[1], false);
     } else if (nflTeamMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');

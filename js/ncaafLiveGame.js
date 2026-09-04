@@ -220,7 +220,16 @@ function _nclgRenderHeader(comp, home, away) {
         const t = c.team || {};
         const logo = t.logos?.[0]?.href || '';
         const rec = c.records?.[0]?.summary || '';
-        const rank = c.curatedRank?.current && c.curatedRank.current <= 25 ? c.curatedRank.current : null;
+        // D-132: was `c.curatedRank?.current` -- that field name is /scoreboard's
+        // shape (correctly used in js/ncaaf.js's fetchNCAAFScoreboard, confirmed
+        // live), but this header renders from /summary's header.competitions[0]
+        // data, which carries a flat `rank` field instead. Live-confirmed against
+        // a real ranked team (MIZ, #25, event 401856663): curatedRank is simply
+        // absent from /summary, so this line has never shown a rank badge for any
+        // ranked team in the live viewer -- same silently-wrong-field-name shape
+        // as D-129's `.text`/`isLive` bugs, just not caught by that earlier check
+        // since it looked at /scoreboard, not /summary's competitor object.
+        const rank = typeof c.rank === 'number' && c.rank >= 1 && c.rank <= 25 ? c.rank : null;
         const won = state === 'post' && c.winner;
         return `<button class="nlg-team nlg-team--${align}" onclick="${_nclgNav(t.id)}" style="--tc:${_nclgTeamColor(t)}">
             <img src="${_escHtml(logo)}" alt="" data-hide-on-error>

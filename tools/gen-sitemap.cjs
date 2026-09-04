@@ -148,6 +148,28 @@ async function main() {
         } catch (e2) { console.error('NCAAF players:', e.message, '/', e2.message); }
     }
 
+    // 5b) NCAAF games — rolling discovery window (D-132), same rationale as 3b's
+    // MLB and 6b's NFL games sections: functions/ncaaf/game/[id].js (D-132) has
+    // no other lasting discovery path once a game rolls off any weekly scores
+    // view. Same dates=YYYYMMDD-YYYYMMDD range against site.api.espn.com NFL/MLB
+    // already use here — this script runs outside Cloudflare (GitHub Actions),
+    // so it isn't subject to the Cloudflare-egress block (D-062) that made the
+    // Pages Functions switch to site.web.api.espn.com; matching the working
+    // NFL/MLB pattern in this file, not the Functions convention. Live-checked
+    // (via the production /api/ncaaf proxy) that a plain dates= range already
+    // returns the full event set (91 events for a real week) — extra groups=/
+    // limit= params were tried and made no measurable difference, so left out
+    // rather than added speculatively.
+    try {
+        const end = now;
+        const start = new Date(now.getTime() - GAME_WINDOW_DAYS * 86400000);
+        const range = `${isoDate(start).replace(/-/g, '')}-${isoDate(end).replace(/-/g, '')}`;
+        const sb = await jget(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${range}`);
+        for (const ev of (sb.events || [])) {
+            if (ev.id) add(urlTag(`/ncaaf/game/${ev.id}`, 'never', '0.4'));
+        }
+    } catch (e) { console.error('NCAAF games:', e.message); }
+
     // 6) NFL teams
     try {
         const nt = await jget('https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams');
