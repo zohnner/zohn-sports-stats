@@ -2291,6 +2291,15 @@ function _renderSportLanding(sport) {
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
     grid.className = 'sport-landing';
     grid.style.cssText = '';
+    // Phase 1 of 5 (NFL landing redesign): a Game Spotlight (live/marquee game
+    // hero, reusing _heroFromNFLGame's exact .home-hero markup) above the cards
+    // and a phase-aware Signature module (kickoff countdown pre-season, playoff
+    // picture once real records exist) below them. NFL-scoped only for now —
+    // other sports keep the plain D-045 hero+cards shape until their own pass.
+    const nflSpotlightSkel = sport === 'nfl'
+        ? `<div class="sl-spotlight" id="slSpotlight"><div class="skeleton-line" style="height:150px;width:100%;border-radius:var(--radius-lg)"></div></div>` : '';
+    const nflSignatureSkel = sport === 'nfl'
+        ? `<div class="sl-signature" id="slSignature"><div class="skeleton-line" style="height:90px;width:100%;border-radius:var(--radius-md)"></div></div>` : '';
     grid.innerHTML = `
         <div class="sl-hero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
@@ -2298,6 +2307,7 @@ function _renderSportLanding(sport) {
             <p class="sl-hero-tag">${_escHtml(tag)}</p>
             <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
         </div>
+        ${nflSpotlightSkel}
         <div class="sl-cards">
             ${cfg.cards.map(([v, ic, t, d]) => `
                 <button class="sl-card" style="--sport-accent:${meta.accent}" onclick="navigateTo('${v}')" aria-label="${_escHtml(t)}: ${_escHtml(d)}">
@@ -2306,10 +2316,15 @@ function _renderSportLanding(sport) {
                     <span class="sl-card-go" aria-hidden="true">→</span>
                 </button>`).join('')}
         </div>
+        ${nflSignatureSkel}
         <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
     if (sport === 'mlb') { if (typeof _loadMLBLandingData === 'function') _loadMLBLandingData(); }
     else if ((sport === 'nfl' || sport === 'ncaaf') && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
+    if (sport === 'nfl') {
+        if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
+        if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
+    }
 }
 
 // Sport-landing enrichment (mini-dashboard) — reuses the shared Scorebug for
@@ -2400,7 +2415,11 @@ async function _loadFootballLandingData(sport) {
     let gamesHtml = '';
     if (normalize && games && games.length) {
         const liveFirst = g => g.isLive ? 0 : 1;
-        const picked = games.slice().sort((a, b) => liveFirst(a) - liveFirst(b)).slice(0, 6);
+        // NFL-scoped follow-aware sort (Phase 1 of 5, landing redesign) -- a
+        // followed team's game sorts ahead of the plain live/scheduled order.
+        // NCAAF keeps its pre-existing sort until its own pass.
+        const favFirst = (sport === 'nfl' && typeof _nflGameHasFav === 'function') ? (g => _nflGameHasFav(g) ? 0 : 1) : (() => 1);
+        const picked = games.slice().sort((a, b) => (favFirst(a) - favFirst(b)) || (liveFirst(a) - liveFirst(b))).slice(0, 6);
         const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g))).filter(Boolean).join('');
         if (cards) {
             gamesHtml = `<section class="sl-section">
@@ -2434,6 +2453,92 @@ async function _loadFootballLandingData(sport) {
     if (!host.isConnected) return;
     host.innerHTML = gamesHtml + leadersHtml;
     if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(host);
+}
+
+// ── NFL landing Game Spotlight (Phase 1 of 5, NFL landing redesign) ────────
+// The same leverage-scored live/marquee picker _renderHomeHero() already runs
+// cross-sport (D-100), scoped to NFL only and mounted on the landing page
+// instead of the cross-sport home. Reuses _heroFromNFLGame()'s exact
+// .home-hero markup/CSS (js/app.js ~1549) -- zero new hero visual language,
+// same click/keydown wiring _renderHomeHero() uses at its own hero mount
+// (js/app.js ~1821-1829).
+async function _loadNFLLandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = (AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames
+            : (typeof fetchNFLScoreboard === 'function' ? await fetchNFLScoreboard() : []);
+        AppState.nflGames = games;
+    } catch (err) {
+        Logger.warn('NFL landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const live = (games || []).filter(g => g.isLive);
+    const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+    let hero = null;
+    if (live.length) {
+        const g = live.slice().sort((a, b) => _nflLeverage(b) - _nflLeverage(a))[0];
+        hero = _heroFromNFLGame(g, 'live');
+    } else if (upcoming.length) {
+        const g = upcoming.slice().sort((a, b) => _nflMarquee(b) - _nflMarquee(a))[0];
+        hero = _heroFromNFLGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+}
+
+// ── NFL landing Signature module (Phase 1 of 5, NFL landing redesign) ──────
+// A kickoff countdown + fantasy push before real games exist -- showing
+// "seeds" against every team's 0-0 preseason record would be dishonest,
+// exactly the case _nflHasNoOfficialRecord() (js/nfl.js) already exists to
+// gate for the standings/teams empty-state notes. Once real records exist, a
+// compact playoff-picture teaser reusing nflStandings.js's own seed math
+// (_nstdSeed/_nstdCut/_nstdBadges/_nstdNav, and its _nstd.bySeason cache so a
+// standings-page visit this session means zero extra fetch here) instead of
+// re-deriving seeding logic in this file.
+async function _loadNFLLandingSignature() {
+    const host = document.getElementById('slSignature');
+    if (!host) return;
+    try {
+        if (_nflHasNoOfficialRecord()) {
+            const days = _nflDaysToKickoff();
+            if (days == null || isNaN(days)) { host.remove(); return; }
+            host.innerHTML = `
+                <div class="sl-countdown">
+                    <span class="sl-countdown-num">${days === 0 ? 'Today' : days}</span>
+                    <span class="sl-countdown-label">${days === 0 ? 'Kickoff is today' : (days === 1 ? 'day to kickoff' : 'days to kickoff')}</span>
+                    <button class="sl-countdown-cta" onclick="navigateTo('nfl-mock')">Get ahead — live Mock Draft →</button>
+                </div>`;
+            return;
+        }
+        const season = _nstdSeasonDefault();
+        const rows = _nstd.bySeason[season] || (_nstd.bySeason[season] = await fetchNFLStandings(season));
+        if (!host.isConnected) return;
+        const confs = {};
+        (rows || []).forEach(t => { (confs[t.conference] || (confs[t.conference] = [])).push(t); });
+        const cut = _nstdCut(season);
+        const confHtml = ['AFC', 'NFC'].filter(c => confs[c] && confs[c].length).map(conf => {
+            const seeded = _nstdSeed(confs[conf]).slice(0, cut + 1);
+            const rowsHtml = seeded.map(t => `
+                <div class="sl-playoff-row${t.seed > cut ? ' sl-playoff-row--out' : ''}" onclick="${_nstdNav(t.abbr)}">
+                    <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
+                    <span class="sl-playoff-name">${_nstdBadges(t, season)}${_escHtml(t.shortName)}</span>
+                    <span class="sl-playoff-rec">${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''}</span>
+                </div>`).join('');
+            return `<div><h3 class="sl-playoff-conf-title">${conf}</h3>${rowsHtml}</div>`;
+        }).join('');
+        if (!confHtml) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Playoff Picture</span><button class="sl-section-link" onclick="navigateTo('nfl-standings')">Full standings →</button></div>
+            <div class="sl-playoff-confs">${confHtml}</div></section>`;
+    } catch (err) {
+        Logger.warn('NFL landing signature module failed', err && err.message, 'APP');
+        host.remove();
+    }
 }
 
 // ── My Dashboard (D-069 cont'd) — cross-sport personalized view ────────────
@@ -2706,6 +2811,8 @@ function _dashSetDefaultSport(sport) {
 if (typeof window !== 'undefined') {
     window._renderSportLanding = _renderSportLanding;
     window._renderSportPicker = _renderSportPicker;
+    window._loadNFLLandingSpotlight = _loadNFLLandingSpotlight;
+    window._loadNFLLandingSignature = _loadNFLLandingSignature;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
     window.renderDashboardView = renderDashboardView;
