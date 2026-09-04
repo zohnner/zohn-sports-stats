@@ -16,6 +16,25 @@ function shell(env, url) {
     return env.ASSETS.fetch(new URL('/index.html', url));
 }
 
+function mlbSeason() {
+    const n = new Date(); const m = n.getUTCMonth();
+    return (m <= 1) ? n.getUTCFullYear() - 1 : n.getUTCFullYear(); // Jan/Feb → prior season
+}
+
+// D-127: a short, real stat line for this player's share-card image. Deliberately
+// simple (3 headline stats, not a full profile) -- the OG card is a hook, not the page.
+function statLine(stats, group) {
+    if (!stats) return '';
+    if (group === 'pitching') {
+        const era = stats.era, w = stats.wins, l = stats.losses, k = stats.strikeOuts;
+        if (era == null) return '';
+        return `${era} ERA · ${w ?? 0}-${l ?? 0} · ${k ?? 0} K`;
+    }
+    const avg = stats.avg, hr = stats.homeRuns, rbi = stats.rbi;
+    if (avg == null) return '';
+    return `${avg} AVG · ${hr ?? 0} HR · ${rbi ?? 0} RBI`;
+}
+
 // MLB full-name → abbreviation, live-verified against
 // https://statsapi.mlb.com/api/v1/teams?sportId=1&season=<current> (D-114).
 // Duplicated deliberately — see the same map's comment in functions/mlb/leaders.js.
@@ -37,8 +56,9 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
+        const season = mlbSeason();
         const pr = await fetch(
-            `https://statsapi.mlb.com/api/v1/people/${id}`,
+            `https://statsapi.mlb.com/api/v1/people/${id}?hydrate=${encodeURIComponent(`currentTeam,stats(group=[hitting,pitching],type=season,season=${season})`)}`,
             { cf: { cacheTtl: 3600, cacheEverything: true } }
         );
         if (!pr.ok) return shell(env, request.url);
@@ -53,6 +73,16 @@ export async function onRequest(context) {
         const canonical = `https://sportstrata.cc/mlb/player/${id}/${slug}`;
         const group   = (posAbbr === 'P') ? 'pitching' : 'hitting';
         const route   = 'mlb-player-' + id + (group === 'pitching' ? '-pitching' : '');
+
+        const statSplit = (person.stats || []).find(s => (s.group && s.group.displayName) === group);
+        const seasonStats = statSplit && statSplit.splits && statSplit.splits[0] && statSplit.splits[0].stat;
+        const stat = statLine(seasonStats, group);
+        const ogImage = `https://sportstrata.cc/api/og?` + new URLSearchParams({
+            eyebrow: `SportStrata · MLB`,
+            title: name,
+            subtitle: [pos, team].filter(Boolean).join(' · '),
+            ...(stat ? { stat } : {}),
+        }).toString();
 
         const title = `${name} — Stats, Splits & Game Logs | SportStrata`;
         const desc  = `${name}${pos ? ', ' + pos : ''}${team ? ' · ' + team : ''} — season stats, advanced metrics, splits and game logs. Free, no login.`;
@@ -82,6 +112,8 @@ export async function onRequest(context) {
             .replace(/(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, `$1${esc(desc)}$2`)
             .replace(/(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, `$1${esc(title)}$2`)
             .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
+            .replace(/(<meta id="ogImage"\s*property="og:image"\s*content=")[^"]*(">)/, `$1${esc(ogImage)}$2`)
+            .replace(/(<meta id="twImage" name="twitter:image" content=")[^"]*(">)/, `$1${esc(ogImage)}$2`)
             .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`)
             .replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');

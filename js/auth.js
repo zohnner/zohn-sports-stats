@@ -420,6 +420,8 @@ async function _onSignedIn() {
         // now that sign-in has completed. Deliberately re-renders rather than just
         // toggling a class, since the gated view's populated state needs a fetch.
         else if (intent.type === 'reload_view' && typeof renderCurrentView === 'function') renderCurrentView(intent.view || AppState.currentView);
+        // D-127: replays the game-alerts nudge's sign-in detour once auth completes.
+        else if (intent.type === 'push_alert') { try { await enablePushAlerts(); } catch (_) { /* permission denied or unsupported -- silent, same as the nudge button itself */ } }
     }
 }
 
@@ -647,6 +649,8 @@ async function toggleFollow(sport, entityType, entityId, forceOn) {
         detail: { sport, entityType, entityId, following: turningOn },
     }));
 
+    if (turningOn) _maybeNudgePushAlerts(sport, entityType, entityId);
+
     if (AuthState.status === 'signed-in') {
         try {
             const res = await fetch('/api/follows', {
@@ -837,6 +841,49 @@ async function disablePushAlerts() {
             body: JSON.stringify({ endpoint }),
         });
     } catch (_) { /* browser-side unsubscribe already succeeded; server-row cleanup is best-effort */ }
+}
+
+// D-127: game-start alerts (D-079) were real but undiscoverable -- the only entry
+// point was the Account page's toggle, which nobody visits until they already know
+// the feature exists. This surfaces it once, at the moment it's most relevant:
+// right after a visitor's very first follow (signed in or not). One-time (localStorage
+// flag) so it never nags a returning user who dismissed or ignored it.
+async function _maybeNudgePushAlerts(sport, entityType, entityId) {
+    if (!_pushSupported()) return;
+    try {
+        if (localStorage.getItem('zs_push_nudge_shown') === '1') return;
+    } catch (_) { return; }
+    if (AuthState.follows.size !== 1) return; // only the first-ever follow
+    if (AuthState.status === 'signed-in') {
+        const existing = await _currentPushSubscription();
+        if (existing) return; // already on -- nothing to nudge
+    }
+    try { localStorage.setItem('zs_push_nudge_shown', '1'); } catch (_) {}
+    _showPushNudge(sport, entityType, entityId);
+}
+
+function _showPushNudge(sport, entityType, entityId) {
+    if (typeof ErrorHandler === 'undefined' || typeof ErrorHandler.toast !== 'function') return;
+    ErrorHandler.toast(
+        'Get a heads-up before their games start.' +
+        ' <button class="md-btn md-btn--ghost" id="pushNudgeEnableBtn" style="padding:0.15rem 0.6rem;font-size:0.75rem;margin-left:0.4rem">Enable game alerts</button>',
+        'info',
+        { title: 'Following your first team', duration: 12000 },
+    );
+    const btn = document.getElementById('pushNudgeEnableBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        if (AuthState.status === 'signed-in') {
+            try {
+                await enablePushAlerts();
+                ErrorHandler.toast('Game alerts are on.', 'success', { duration: 3000 });
+            } catch (e) {
+                Logger.warn('Push enable from nudge failed', e, 'AUTH');
+            }
+        } else {
+            openAuthSheet({ type: 'push_alert', sport, entityType, entityId });
+        }
+    }, { once: true });
 }
 
 // ---------------------------------------------------------------------------

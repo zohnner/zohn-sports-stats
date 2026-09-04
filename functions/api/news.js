@@ -1,12 +1,12 @@
 /**
  * Pages Function: /api/news
- * Same-origin proxy for ESPN league news (NFL + MLB). No keys, no D1.
+ * Same-origin proxy for ESPN league news (NFL + MLB + NCAAF). No keys, no D1.
  * Headlines only — the client shows headline + blurb + attribution + link-out
- * (copyright-safe; never republishes full articles). D-024.
+ * (copyright-safe; never republishes full articles). D-024, NCAAF added D-125.
  *
- * Usage: /api/news?sport=nfl|mlb
+ * Usage: /api/news?sport=nfl|mlb|ncaaf
  */
-const LEAGUES = { nfl: 'football/nfl', mlb: 'baseball/mlb' };
+const LEAGUES = { nfl: 'football/nfl', mlb: 'baseball/mlb', ncaaf: 'football/college-football' };
 // site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js
 // for the full note. This host serves both leagues' news here, so the original
 // block was silently killing the MLB home headlines rail too, not just NFL --

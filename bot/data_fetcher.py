@@ -31,62 +31,80 @@ def get_player_stats(player_id: int, stat_type="season") -> dict:
     return statsapi.player_stat_data(player_id, type=stat_type)
 
 
+def _int(v, default=0) -> int:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+
 def extract_batting_lines(boxscore: dict) -> list[dict]:
     """
     Extracts individual batting stat lines from a boxscore.
     Returns a list of dicts with player_id, player_name, and stat fields.
+
+    statsapi.boxscore_data() has no "playerStats" key — real shape is a flat
+    per-team "{side}Batters" list of row dicts (header row has personId 0,
+    all stat values are strings), not a personId-keyed map. Verified live
+    2026-09-03 against a real completed game.
     """
     lines = []
     for side in ("away", "home"):
-        players = boxscore.get("teamStats", {})  # unused — pull from playerStats
-        for pid, pdata in boxscore.get("playerStats", {}).get(side, {}).items():
-            batting = pdata.get("batting", {})
-            if not batting:
-                continue
-            ab = batting.get("atBats", 0)
+        for row in boxscore.get(f"{side}Batters", []):
+            pid = row.get("personId", 0)
+            if not pid:
+                continue  # header/totals row
+            ab = _int(row.get("ab"))
             if ab == 0:
-                continue  # pitchers with 0 AB, courtesy appearances, etc.
+                continue  # pinch runners, courtesy appearances, etc.
 
+            hits, doubles, triples, hr = (
+                _int(row.get("h")), _int(row.get("doubles")),
+                _int(row.get("triples")), _int(row.get("hr")),
+            )
             lines.append({
                 "player_id":   int(pid),
-                "player_name": pdata.get("name", "Unknown"),
+                "player_name": row.get("name", "Unknown"),
                 "team_side":   side,
                 "ab":          ab,
-                "hits":        batting.get("hits", 0),
-                "home_runs":   batting.get("homeRuns", 0),
-                "rbi":         batting.get("rbi", 0),
-                "runs":        batting.get("runs", 0),
-                "total_bases": batting.get("totalBases", 0),
-                "doubles":     batting.get("doubles", 0),
-                "triples":     batting.get("triples", 0),
-                "bb":          batting.get("baseOnBalls", 0),
-                "k":           batting.get("strikeOuts", 0),
-                "sb":          batting.get("stolenBases", 0),
+                "hits":        hits,
+                "home_runs":   hr,
+                "rbi":         _int(row.get("rbi")),
+                "runs":        _int(row.get("r")),
+                "total_bases": (hits - doubles - triples - hr) + 2 * doubles + 3 * triples + 4 * hr,
+                "doubles":     doubles,
+                "triples":     triples,
+                "bb":          _int(row.get("bb")),
+                "k":           _int(row.get("k")),
+                "sb":          _int(row.get("sb")),
             })
     return lines
 
 
 def extract_pitching_lines(boxscore: dict) -> list[dict]:
-    """Extracts pitching stat lines — used for K-threshold detection."""
+    """Extracts pitching stat lines — used for K-threshold detection.
+
+    Same real shape as extract_batting_lines: "{side}Pitchers" row list.
+    """
     lines = []
     for side in ("away", "home"):
-        for pid, pdata in boxscore.get("playerStats", {}).get(side, {}).items():
-            pitching = pdata.get("pitching", {})
-            if not pitching:
-                continue
-            ip = pitching.get("inningsPitched", "0.0")
+        for row in boxscore.get(f"{side}Pitchers", []):
+            pid = row.get("personId", 0)
+            if not pid:
+                continue  # header/totals row
+            ip = row.get("ip", "0.0") or "0.0"
             if float(ip.replace(".1", ".33").replace(".2", ".67")) < 1.0:
                 continue
 
             lines.append({
                 "player_id":   int(pid),
-                "player_name": pdata.get("name", "Unknown"),
+                "player_name": row.get("name", "Unknown"),
                 "team_side":   side,
                 "ip":          ip,
-                "strikeouts":  pitching.get("strikeOuts", 0),
-                "hits":        pitching.get("hits", 0),
-                "er":          pitching.get("earnedRuns", 0),
-                "bb":          pitching.get("baseOnBalls", 0),
-                "hr":          pitching.get("homeRuns", 0),
+                "strikeouts":  _int(row.get("k")),
+                "hits":        _int(row.get("h")),
+                "er":          _int(row.get("er")),
+                "bb":          _int(row.get("bb")),
+                "hr":          _int(row.get("hr")),
             })
     return lines

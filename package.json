@@ -1,10 +1,15 @@
 {
   "dependencies": {
     "@balldontlie/sdk": "^1.2.2",
-    "better-auth": "^1.6.25",
     "@better-auth/passkey": "^1.6.25",
+    "@block65/webcrypto-web-push": "^1.0.2",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "better-auth": "^1.6.25",
     "kysely": "^0.29.4",
     "kysely-d1": "^0.4.0",
-    "@block65/webcrypto-web-push": "^1.0.2"
+    "satori": "^0.32.0"
+  },
+  "overrides": {
+    "fflate": "^0.8.3"
   }
 }
