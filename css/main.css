@@ -4643,15 +4643,12 @@ body.view-home .search-global-btn { display: none; }
 .sl-power-rank { font-family: var(--font-mono); font-weight: 800; font-size: 0.72rem; color: var(--text-muted); }
 .sl-power-chip span:last-child { font-size: 0.8rem; font-weight: 600; }
 
-/* Bug fix: grid items default to min-width:auto, so a column's un-breakable
-   content (the header row's label+link, or a wide "+123456" trending count)
-   forced it wider than its 1fr share instead of shrinking to fit -- the
-   column (and everything in it, "TRENDING ADDS" included) rendered past the
-   rail's actual right edge instead of truncating like .nfl-lrow-name already
-   knows how to. min-width:0 lets the grid track actually hold to 1fr. */
-.sl-pulse-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-.sl-pulse-cols > div { min-width: 0; }
-@media (max-width: 560px) { .sl-pulse-cols { grid-template-columns: 1fr; gap: 0.75rem; } }
+/* Was .sl-pulse-cols, a 1fr 1fr grid -- the rail is only ~360px wide, so a
+   2-up split left ~151px per row, forcing names to truncate to one or two
+   characters even after the min-width:0 overflow fix. Stacked instead,
+   matching every other rail module (Signature, Matchup), which are already
+   single-column at full rail width. */
+.sl-pulse-stack { display: flex; flex-direction: column; gap: 1.25rem; }
 
 .sl-matchup-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
 .sl-matchup-team { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }

@@ -2783,6 +2783,9 @@ async function _loadNFLLandingFantasyPulse() {
             const p = (typeof _nflPoolMap !== 'undefined' && _nflPoolMap) ? _nflPoolMap[e.player_id] : null;
             return { name: p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Unknown player', team: p?.team || '', count: e.count };
         });
+        // Raw add counts run 5-6 digits (e.g. 249098) -- abbreviated even at
+        // full rail width the number was still wider than it needed to be.
+        const fmtCount = n => n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
 
         if (!injuries.length && !trending.length) { host.remove(); return; }
 
@@ -2800,11 +2803,16 @@ async function _loadNFLLandingFantasyPulse() {
                     <div class="nfl-lrow-name">${_escHtml(t.name)}</div>
                     <div class="nfl-lrow-meta">${_escHtml(t.team)}</div>
                 </div>
-                <span class="sl-leader-unit" style="color:var(--color-win)">+${_escHtml(String(t.count))}</span>
+                <span class="sl-leader-unit" style="color:var(--color-win)">+${_escHtml(fmtCount(t.count))}</span>
             </div>`).join('');
 
+        // Stacked, not side-by-side (was .sl-pulse-cols, a 1fr 1fr grid): the
+        // rail is only ~360px wide, so splitting it in two left each row
+        // ~151px -- barely enough for a name before it truncated to two
+        // characters. Full rail width per list, matching how every other
+        // rail module (Signature, Matchup) is already a single column.
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-pulse-cols">
+            <div class="sl-pulse-stack">
                 ${injRows ? `<div><div class="sl-section-hdr"><span class="eyebrow">Injury Watch</span><button class="sl-section-link" onclick="navigateTo('nfl-injuries')">Full report →</button></div>${injRows}</div>` : ''}
                 ${trendRows ? `<div><div class="sl-section-hdr"><span class="eyebrow">Trending Adds</span><button class="sl-section-link" onclick="navigateTo('nfl-trending')">See more →</button></div>${trendRows}</div>` : ''}
             </div></section>`;
