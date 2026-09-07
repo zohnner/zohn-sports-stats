@@ -1520,6 +1520,45 @@ function _heroNFLBoard(g, showScore) {
     return `<div class="hero-board">${row(g.awayTeam, aw)}${row(g.homeTeam, hw)}</div>`;
 }
 
+// Editorial redesign (owner override of D-088 for this one surface, confirmed):
+// real photography in the landing hero, not generated graphics only. D-088's
+// actual concern was a *generic, uncaptioned* photo over live data reading as
+// filler -- not photography itself -- so this deliberately does NOT try to
+// match a news-article image to the specific matchup (fragile, frequently
+// wrong). Instead it uses each team's most notable rostered player's real
+// headshot (getNFLSleeperHeadshot, the same CDN source already used sitewide
+// for every player page and the Fantasy Pulse strip) -- reliably available for
+// essentially every real game, not a best-effort guess. _nflPool is already
+// sorted by search_rank/ADP, so .find() returns the best-ranked skill player.
+function _nflHeroNotablePlayer(abbr) {
+    if (typeof _nflPool === 'undefined' || !_nflPool || !_nflPool.length) return null;
+    const sAbbr = (typeof _nflSleeperAbbr === 'function') ? _nflSleeperAbbr(abbr) : abbr;
+    const p = _nflPool.find(pl => pl.team === sAbbr);
+    if (!p) return null;
+    return { name: p.full_name, headshot: (typeof getNFLSleeperHeadshot === 'function') ? getNFLSleeperHeadshot(p.player_id) : '' };
+}
+function _nflAttachHeroPhotos(g) {
+    if (g.homeTeam) g.homeTeam.notablePlayer = _nflHeroNotablePlayer(g.homeTeam.abbr);
+    if (g.awayTeam) g.awayTeam.notablePlayer = _nflHeroNotablePlayer(g.awayTeam.abbr);
+}
+function _heroNFLPhotos(g) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const tc = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
+    const side = (t, align) => {
+        const np = t.notablePlayer;
+        return `<div class="hero-photo hero-photo--${align}" style="--tc:${tc(t.abbr)}">
+            ${np && np.headshot
+                ? `<img class="hero-photo-img" src="${_esc(np.headshot)}" alt="${_esc(np.name)}" data-hide-on-error>`
+                : `<span class="hero-photo-img hero-photo-img--ph" aria-hidden="true"></span>`}
+            <div class="hero-photo-meta">
+                ${t.logo ? `<img class="hero-photo-logo" src="${_esc(t.logo)}" alt="" data-hide-on-error>` : ''}
+                <span class="hero-photo-abbr">${_esc(t.abbr)}</span>
+            </div>
+        </div>`;
+    };
+    return `<div class="hero-photos">${side(g.awayTeam, 'away')}<span class="hero-photos-at" aria-hidden="true">@</span>${side(g.homeTeam, 'home')}</div>`;
+}
+
 function _openNFLGameFromHero(eventId) {
     if (!eventId) return;
     if (AppState.currentSport !== 'nfl' && typeof switchSport === 'function') switchSport('nfl');
@@ -1576,7 +1615,11 @@ function _heroFromNFLGame(g, kind) {
             <p class="hero-hook">${hook}</p>
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
-        <div class="hero-visual">${board}${liveDetail}</div>`;
+        <div class="hero-visual">
+            ${_heroNFLPhotos(g)}
+            ${board}
+            ${liveDetail}
+        </div>`;
     return { kind, html, onClick: () => _openNFLGameFromHero(g.id) };
 }
 
@@ -2291,28 +2334,78 @@ function _renderSportLanding(sport) {
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
     grid.className = 'sport-landing';
     grid.style.cssText = '';
-    // Phase 1 of 5 (NFL landing redesign): a Game Spotlight (live/marquee game
-    // hero, reusing _heroFromNFLGame's exact .home-hero markup) above the cards
-    // and a phase-aware Signature module (kickoff countdown pre-season, playoff
-    // picture once real records exist) below them. NFL-scoped only for now —
-    // other sports keep the plain D-045 hero+cards shape until their own pass.
-    // Phase 2: Breaking News banner (top), Fantasy Pulse (injuries+trending) and
-    // a signed-in-only Your Matchup module round out the competitor-feature set.
+    // Phase 1-2 (NFL landing redesign): a Game Spotlight (live/marquee game hero,
+    // reusing _heroFromNFLGame's exact .home-hero markup), a phase-aware
+    // Signature module (kickoff countdown pre-season, playoff picture once real
+    // records exist), a Breaking News banner, Fantasy Pulse (injuries+trending),
+    // and a signed-in-only Your Matchup module.
+    // Phase 3: NCAAF gets the same Breaking/Spotlight/Signature slots (the
+    // Signature slot renders an AP-poll Rankings teaser for NCAAF instead of a
+    // playoff picture -- CFB has no seed-by-formula bracket the way NFL does,
+    // but a real poll already carries the same "who's in it" signal). Fantasy
+    // Pulse and Your Matchup are NFL-only, not extended to NCAAF -- confirmed
+    // impossible (no injury/depth data anywhere in ESPN's CFB payloads, D-125)
+    // and not-applicable (no college fantasy football feature exists) respectively.
+    const hasFootball = sport === 'nfl' || sport === 'ncaaf';
     const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
-    const nflBreakingSkel   = sport === 'nfl' ? `<div class="sl-breaking" id="slBreaking"></div>` : '';
-    const nflSpotlightSkel  = sport === 'nfl' ? `<div class="sl-spotlight" id="slSpotlight">${skel(150, 'var(--radius-lg)')}</div>` : '';
-    const nflSignatureSkel  = sport === 'nfl' ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-md)')}</div>` : '';
-    const nflPulseSkel      = sport === 'nfl' ? `<div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, 'var(--radius-md)')}</div>` : '';
-    const nflMatchupSkel    = sport === 'nfl' ? `<div class="sl-matchup" id="slMatchup"></div>` : '';
+
+    // Editorial redesign (NFL only this pass): a wide 2-column grid -- primary
+    // column (Spotlight hero w/ real player photos, scoreboard, Latest NFL
+    // editorial, Stat Leaders) + a right rail (quick links, Signature module,
+    // Fantasy Pulse, Your Matchup) -- replacing the narrow single-column
+    // hero+cards+stacked-sections shape every other sport still uses. NCAAF/MLB
+    // keep that original shape unchanged; the shared classes those sports still
+    // use (.sl-section, .nfl-lrow, etc.) are untouched by this branch.
+    if (sport === 'nfl') {
+        grid.className = 'sport-landing sport-landing--editorial';
+        grid.innerHTML = `
+            <div class="sl-hero-strip" id="slHero" style="--sport-accent:${meta.accent}">
+                <span class="sl-hero-strip-icon" aria-hidden="true">${meta.icon}</span>
+                <span class="sl-hero-strip-title">${_escHtml(meta.label)}</span>
+                <span class="sl-hero-strip-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</span>
+            </div>
+            <div class="sl-layout">
+                <div class="sl-primary">
+                    <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
+                    <div id="slNews"></div>
+                    <div id="slGames"></div>
+                    <div id="slLeaders"></div>
+                </div>
+                <div class="sl-rail">
+                    <nav class="sl-linklist" aria-label="${_escHtml(meta.label)} quick links">
+                        ${cfg.cards.map(([v, ic, t, d]) => `
+                            <a class="sl-link" href="#${v}" onclick="event.preventDefault();navigateTo('${v}')">
+                                <span class="sl-link-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${_SL_ICON[ic] || ''}</svg></span>
+                                <span class="sl-link-body"><span class="sl-link-title">${_escHtml(t)}</span><span class="sl-link-desc">${_escHtml(d)}</span></span>
+                            </a>`).join('')}
+                    </nav>
+                    <div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-sm)')}</div>
+                    <div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, '0px')}</div>
+                    <div class="sl-matchup" id="slMatchup"></div>
+                </div>
+            </div>`;
+        if (window.setBreadcrumb) setBreadcrumb('nfl-home', null);
+        if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('nfl');
+        if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
+        if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
+        if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
+        if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
+        if (typeof _loadNFLLandingNews === 'function') _loadNFLLandingNews();
+        return;
+    }
+
+    const breakingSkel  = hasFootball ? `<div class="sl-breaking" id="slBreaking"></div>` : '';
+    const spotlightSkel = hasFootball ? `<div class="sl-spotlight" id="slSpotlight">${skel(150, 'var(--radius-lg)')}</div>` : '';
+    const signatureSkel = hasFootball ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-md)')}</div>` : '';
     grid.innerHTML = `
-        ${nflBreakingSkel}
-        <div class="sl-hero" style="--sport-accent:${meta.accent}">
+        ${breakingSkel}
+        <div class="sl-hero" id="slHero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
             <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
             <p class="sl-hero-tag">${_escHtml(tag)}</p>
             <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
         </div>
-        ${nflSpotlightSkel}
+        ${spotlightSkel}
         <div class="sl-cards">
             ${cfg.cards.map(([v, ic, t, d]) => `
                 <button class="sl-card" style="--sport-accent:${meta.accent}" onclick="navigateTo('${v}')" aria-label="${_escHtml(t)}: ${_escHtml(d)}">
@@ -2321,19 +2414,15 @@ function _renderSportLanding(sport) {
                     <span class="sl-card-go" aria-hidden="true">→</span>
                 </button>`).join('')}
         </div>
-        ${nflSignatureSkel}
-        ${nflPulseSkel}
-        <div class="sl-data" id="slData"></div>
-        ${nflMatchupSkel}`;
+        ${signatureSkel}
+        <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
     if (sport === 'mlb') { if (typeof _loadMLBLandingData === 'function') _loadMLBLandingData(); }
-    else if ((sport === 'nfl' || sport === 'ncaaf') && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
-    if (sport === 'nfl') {
-        if (typeof _loadNFLLandingBreakingNews === 'function') _loadNFLLandingBreakingNews();
-        if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
-        if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
-        if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
-        if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
+    else if (hasFootball && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
+    if (sport === 'ncaaf') {
+        if (typeof _loadNCAAFLandingBreakingNews === 'function') _loadNCAAFLandingBreakingNews();
+        if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
+        if (typeof _loadNCAAFLandingRankings === 'function') _loadNCAAFLandingRankings();
     }
 }
 
@@ -2405,8 +2494,15 @@ function _mlbLandingLeaders() {
 // grid styling was already sitting in css/main.css, unused, for this exact
 // section.
 async function _loadFootballLandingData(sport) {
-    const host = document.getElementById('slData');
-    if (!host) return;
+    // Editorial redesign: NFL's landing splits games and leaders into two
+    // separate hosts (#slGames higher up in the primary column, #slLeaders
+    // lower, with the new Latest NFL module in between) instead of one
+    // combined #slData block -- NCAAF doesn't have this pass yet, so it keeps
+    // the original single-host behavior unchanged (graceful fallback below).
+    const slGames = document.getElementById('slGames');
+    const slLeaders = document.getElementById('slLeaders');
+    const slData = document.getElementById('slData');
+    if (!slGames && !slLeaders && !slData) return;
     const statsPath = sport === 'ncaaf' ? '/api/ncaafstats' : '/api/nflstats';
     const scoreFn = sport === 'ncaaf'
         ? (typeof fetchNCAAFScoreboard === 'function' ? fetchNCAAFScoreboard : null)
@@ -2420,7 +2516,6 @@ async function _loadFootballLandingData(sport) {
         fetch(statsPath).then(r => r.ok ? r.json() : null).catch(err => { Logger.warn(`Football landing stats fetch failed (${sport})`, err, 'APP'); return null; }),
         scoreFn ? scoreFn().catch(err => { Logger.warn(`Football landing scoreboard fetch failed (${sport})`, err, 'APP'); return []; }) : Promise.resolve([]),
     ]);
-    if (!host.isConnected) return;
 
     let gamesHtml = '';
     if (normalize && games && games.length) {
@@ -2430,32 +2525,19 @@ async function _loadFootballLandingData(sport) {
         // NCAAF keeps its pre-existing sort until its own pass.
         const favFirst = (sport === 'nfl' && typeof _nflGameHasFav === 'function') ? (g => _nflGameHasFav(g) ? 0 : 1) : (() => 1);
         const picked = games.slice().sort((a, b) => (favFirst(a) - favFirst(b)) || (liveFirst(a) - liveFirst(b))).slice(0, 6);
-        const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g))).filter(Boolean).join('');
-        // Primetime This Week strip (Phase 2, NFL-scoped): nationally televised
-        // games out of the same already-fetched `games` array -- zero new fetch.
-        // g.broadcast is a single national-network string when present, '' when
-        // this game has no national feed (js/nfl.js fetchNFLScoreboard).
-        let primetimeHtml = '';
-        if (sport === 'nfl') {
-            const nat = games.filter(g => g.broadcast).slice(0, 5);
-            if (nat.length) {
-                const rows = nat.map(g => {
-                    const d = g.date ? new Date(g.date) : null;
-                    const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
-                    return `<div class="sl-primetime-row" onclick="navigateTo('nfl-game-${_escHtml(String(g.id))}')">
-                        <span class="sl-primetime-matchup">${_escHtml(g.awayTeam?.abbr || '')} @ ${_escHtml(g.homeTeam?.abbr || '')}</span>
-                        <span class="sl-primetime-net">${_escHtml(g.broadcast)}</span>
-                        <span class="sl-primetime-time">${_escHtml(g.isLive ? 'LIVE' : time)}</span>
-                        <span class="game-weather" data-nfl-weather-team="${_escHtml(g.homeTeam?.abbr || '')}"></span>
-                    </div>`;
-                }).join('');
-                primetimeHtml = `<div class="sl-primetime">${rows}</div>`;
-            }
-        }
+        // Structural redesign pass: the separate Primetime strip this used to
+        // render here was a second, inconsistent render of the same data --
+        // Scorebug.renderScoreCard's matchHtml already shows g.broadcast and its
+        // pillLabel already formats kickoff time in ET (js/scorebug.js), so the
+        // strip's browser-local `toLocaleTimeString` was actively wrong (showed
+        // a different time than the card for the same game). One row of cards,
+        // each carrying matchup/time/network/weather, matches how CBS/Yahoo's
+        // NFL hubs actually show a game once, not three times in three formats.
+        const showWeather = sport === 'nfl' || sport === 'ncaaf';
+        const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g), { showWeather })).filter(Boolean).join('');
         if (cards) {
             gamesHtml = `<section class="sl-section">
                 <div class="sl-section-hdr"><span class="eyebrow">This Week's Games</span><button class="sl-section-link" onclick="navigateTo('${scoresView}')">All scores →</button></div>
-                ${primetimeHtml}
                 <div class="sl-games">${cards}</div></section>`;
         }
     }
@@ -2482,10 +2564,19 @@ async function _loadFootballLandingData(sport) {
     }
 
     if (!gamesHtml && !leadersHtml) return;
-    if (!host.isConnected) return;
-    host.innerHTML = gamesHtml + leadersHtml;
-    if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(host);
-    if (sport === 'nfl' && typeof _injectNFLGameWeather === 'function') _injectNFLGameWeather(host);
+    const wired = [];
+    if (slGames || slLeaders) {
+        if (slGames && slGames.isConnected) { slGames.innerHTML = gamesHtml; wired.push(slGames); }
+        if (slLeaders && slLeaders.isConnected) { slLeaders.innerHTML = leadersHtml; wired.push(slLeaders); }
+    } else if (slData && slData.isConnected) {
+        slData.innerHTML = gamesHtml + leadersHtml;
+        wired.push(slData);
+    }
+    wired.forEach(host => {
+        if (typeof _wireHomeGameCardClicks === 'function') _wireHomeGameCardClicks(host);
+        if (sport === 'nfl' && typeof _injectNFLGameWeather === 'function') _injectNFLGameWeather(host);
+        if (sport === 'ncaaf' && typeof _injectNCAAFGameWeather === 'function') _injectNCAAFGameWeather(host);
+    });
 }
 
 // ── NFL landing Game Spotlight (Phase 1 of 5, NFL landing redesign) ────────
@@ -2500,8 +2591,16 @@ async function _loadNFLLandingSpotlight() {
     if (!host) return;
     let games = [];
     try {
-        games = (AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames
-            : (typeof fetchNFLScoreboard === 'function' ? await fetchNFLScoreboard() : []);
+        // Editorial redesign: the hero now shows a real player headshot per
+        // side (_nflAttachHeroPhotos), so the Sleeper pool needs to be warm
+        // before building the hero, not just the scoreboard -- fetched in
+        // parallel with the scoreboard call, not sequentially.
+        const [gamesResult] = await Promise.all([
+            (AppState.nflGames && AppState.nflGames.length) ? Promise.resolve(AppState.nflGames)
+                : (typeof fetchNFLScoreboard === 'function' ? fetchNFLScoreboard() : Promise.resolve([])),
+            (typeof fetchNFLSleeperPool === 'function') ? fetchNFLSleeperPool().catch(() => {}) : Promise.resolve(),
+        ]);
+        games = gamesResult || [];
         AppState.nflGames = games;
     } catch (err) {
         Logger.warn('NFL landing spotlight fetch failed', err && err.message, 'APP');
@@ -2512,9 +2611,11 @@ async function _loadNFLLandingSpotlight() {
     let hero = null;
     if (live.length) {
         const g = live.slice().sort((a, b) => _nflLeverage(b) - _nflLeverage(a))[0];
+        _nflAttachHeroPhotos(g);
         hero = _heroFromNFLGame(g, 'live');
     } else if (upcoming.length) {
         const g = upcoming.slice().sort((a, b) => _nflMarquee(b) - _nflMarquee(a))[0];
+        _nflAttachHeroPhotos(g);
         hero = _heroFromNFLGame(g, 'upcoming');
     }
     if (!hero) { host.remove(); return; }
@@ -2522,6 +2623,65 @@ async function _loadNFLLandingSpotlight() {
     const card = host.querySelector('.home-hero');
     card.onclick = hero.onClick;
     card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+}
+
+// ── NFL landing "Latest NFL" editorial module (editorial redesign) ─────────
+// Real photography, licensing-safe: reuses the exact data contract the News
+// view's _newsCard() already ships (js/news.js) -- a.images[0].url, real ESPN
+// wire photos, attribution + link-out, decided copyright-safe under D-024 --
+// just composed differently (one large lead story + a supporting headline
+// list) since that's what an editorial module needs, not N identical cards.
+// Reuses _newsCache/_newsTimeAgo from news.js rather than a parallel cache.
+//
+// The standalone Breaking News banner (a separate module, separate fetch of
+// the exact same /api/news?sport=nfl data) has been folded in here rather
+// than kept alongside it: a recency-qualifying story (_isNewsBreaking,
+// js/news.js) is promoted to the lead slot with a BREAKING tag instead of
+// duplicating the fetch and the "here's what's urgent" job in two places on
+// one page. No breaking story -> the lead is just the newest article, same
+// as before, no manufactured urgency.
+async function _loadNFLLandingNews() {
+    const host = document.getElementById('slNews');
+    if (!host) return;
+    try {
+        let data = (typeof _newsCache !== 'undefined') ? _newsCache.nfl : null;
+        if (!data) {
+            const res = await fetch('/api/news?sport=nfl');
+            if (!res.ok) throw new Error(`news ${res.status}`);
+            data = await res.json();
+            if (typeof _newsCache !== 'undefined') _newsCache.nfl = data;
+        }
+        if (!host.isConnected) return;
+        const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
+        if (!articles.length) { host.remove(); return; }
+        const _ago = (typeof _newsTimeAgo === 'function') ? _newsTimeAgo : () => '';
+        const breaking = articles
+            .filter(a => typeof _isNewsBreaking === 'function' && _isNewsBreaking(a))
+            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))[0];
+        const lead = breaking || articles[0];
+        const rest = articles.filter(a => a !== lead).slice(0, 4);
+        const leadImg = (lead.images && lead.images[0] && lead.images[0].url) || '';
+        const breakingTag = lead === breaking ? `<span class="editorial-breaking-tag">BREAKING</span>` : '';
+        const leadHtml = `
+            <a class="editorial-lead" href="${_escHtml(lead.links.web.href)}" target="_blank" rel="noopener">
+                ${leadImg ? `<div class="editorial-lead__thumb"><img src="${_escHtml(leadImg)}" alt="" loading="lazy" data-hide-on-error></div>` : ''}
+                <h3 class="editorial-lead__headline">${breakingTag}${_escHtml(lead.headline)}</h3>
+                ${lead.description ? `<p class="editorial-lead__dek">${_escHtml(lead.description)}</p>` : ''}
+                <span class="editorial-meta">${lead.byline ? _escHtml(lead.byline) + ' · ' : ''}${_escHtml(_ago(lead.published || lead.lastModified))}</span>
+            </a>`;
+        const restHtml = rest.map(a => `
+            <a class="editorial-headline-row" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
+                <span class="editorial-headline-row__text">${_escHtml(a.headline)}</span>
+                <span class="editorial-meta">${_escHtml(_ago(a.published || a.lastModified))}</span>
+            </a>`).join('');
+        host.innerHTML = `<section class="sl-section sl-section--flush">
+            <div class="sl-section-hdr"><span class="eyebrow">Latest NFL</span><button class="sl-section-link" onclick="navigateTo('news')">More →</button></div>
+            <div class="editorial-grid">${leadHtml}<div class="editorial-list">${restHtml}</div></div>
+        </section>`;
+    } catch (err) {
+        Logger.warn('NFL landing news failed', err && err.message, 'APP');
+        host.remove();
+    }
 }
 
 // ── NFL landing Signature module (Phase 1 of 5, NFL landing redesign) ──────
@@ -2566,7 +2726,7 @@ async function _loadNFLLandingSignature() {
         const confHtml = ['AFC', 'NFC'].filter(c => confs[c] && confs[c].length).map(conf => {
             const seeded = _nstdSeed(confs[conf]).slice(0, cut + 1);
             const rowsHtml = seeded.map(t => `
-                <div class="sl-playoff-row${t.seed > cut ? ' sl-playoff-row--out' : ''}" onclick="${_nstdNav(t.abbr)}">
+                <div class="sl-playoff-row${t.seed > cut ? ' sl-playoff-row--out' : ''}" style="--tc:${(typeof getNFLTeamColor === 'function' && getNFLTeamColor(t.abbr)) || 'var(--border-default)'}" onclick="${_nstdNav(t.abbr)}">
                     <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
                     <span class="sl-playoff-name">${_nstdBadges(t, season)}${_escHtml(t.shortName)}</span>
                     <span class="sl-playoff-rec">${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''}</span>
@@ -2595,36 +2755,6 @@ async function _loadNFLLandingSignature() {
             <div class="sl-playoff-confs">${confHtml}</div></section>` : '') + powerHtml;
     } catch (err) {
         Logger.warn('NFL landing signature module failed', err && err.message, 'APP');
-        host.remove();
-    }
-}
-
-// ── NFL landing Breaking News banner (Phase 2 competitor-feature pass) ─────
-// Reuses the existing /api/news pipeline (js/news.js) and its recency-based
-// _isNewsBreaking() helper -- renders nothing when no headline qualifies, no
-// manufactured urgency.
-async function _loadNFLLandingBreakingNews() {
-    const host = document.getElementById('slBreaking');
-    if (!host) return;
-    try {
-        let data = (typeof _newsCache !== 'undefined') ? _newsCache.nfl : null;
-        if (!data) {
-            const res = await fetch('/api/news?sport=nfl');
-            if (!res.ok) throw new Error(`news ${res.status}`);
-            data = await res.json();
-            if (typeof _newsCache !== 'undefined') _newsCache.nfl = data;
-        }
-        const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
-        const breaking = articles
-            .filter(a => typeof _isNewsBreaking === 'function' && _isNewsBreaking(a))
-            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))[0];
-        if (!breaking || !host.isConnected) { host.remove(); return; }
-        host.innerHTML = `<a class="sl-breaking-banner" href="${_escHtml(breaking.links.web.href)}" target="_blank" rel="noopener">
-            <span class="sl-breaking-tag">BREAKING</span>
-            <span class="sl-breaking-headline">${_escHtml(breaking.headline)}</span>
-        </a>`;
-    } catch (err) {
-        Logger.warn('NFL landing breaking news failed', err && err.message, 'APP');
         host.remove();
     }
 }
@@ -2662,7 +2792,7 @@ async function _loadNFLLandingFantasyPulse() {
                     <div class="nfl-lrow-name">${_escHtml(`${p.first_name || ''} ${p.last_name || ''}`.trim())}</div>
                     <div class="nfl-lrow-meta">${_escHtml(p.team || '')} · ${_escHtml(p.position || '')}</div>
                 </div>
-                <span class="roster-il-badge">${_escHtml(p.injury_status)}</span>
+                <span class="roster-il-badge${typeof _nflInjurySeverityClass === 'function' ? _nflInjurySeverityClass(p.injury_status) : ''}">${_escHtml(p.injury_status)}</span>
             </div>`).join('');
         const trendRows = trending.map(t => `
             <div class="nfl-lrow" onclick="navigateTo('nfl-trending')">
@@ -2739,6 +2869,117 @@ async function _loadNFLLandingMatchup() {
         </section>`;
     } catch (err) {
         Logger.warn('NFL landing matchup failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NCAAF landing Breaking News banner (Phase 3) — clone of the NFL version,
+// sport param swapped. _isNewsBreaking (js/news.js) is already sport-agnostic.
+async function _loadNCAAFLandingBreakingNews() {
+    const host = document.getElementById('slBreaking');
+    if (!host) return;
+    try {
+        let data = (typeof _newsCache !== 'undefined') ? _newsCache.ncaaf : null;
+        if (!data) {
+            const res = await fetch('/api/news?sport=ncaaf');
+            if (!res.ok) throw new Error(`news ${res.status}`);
+            data = await res.json();
+            if (typeof _newsCache !== 'undefined') _newsCache.ncaaf = data;
+        }
+        const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
+        const breaking = articles
+            .filter(a => typeof _isNewsBreaking === 'function' && _isNewsBreaking(a))
+            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))[0];
+        if (!breaking || !host.isConnected) { host.remove(); return; }
+        host.innerHTML = `<a class="sl-breaking-banner" href="${_escHtml(breaking.links.web.href)}" target="_blank" rel="noopener">
+            <span class="sl-breaking-tag">BREAKING</span>
+            <span class="sl-breaking-headline">${_escHtml(breaking.headline)}</span>
+        </a>`;
+    } catch (err) {
+        Logger.warn('NCAAF landing breaking news failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NCAAF landing Game Spotlight (Phase 3) — clone of _loadNFLLandingSpotlight
+// swapping in the NCAAF-parallel hero picker functions (_heroFromNCAAFGame/
+// _ncaafLeverage/_ncaafMarquee, js/app.js), already proven for the cross-sport
+// home hero rotation (D-100) -- same {kind,html,onClick} shape, zero new logic.
+async function _loadNCAAFLandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = (AppState.ncaafGames && AppState.ncaafGames.length) ? AppState.ncaafGames
+            : (typeof fetchNCAAFScoreboard === 'function' ? await fetchNCAAFScoreboard() : []);
+        AppState.ncaafGames = games;
+    } catch (err) {
+        Logger.warn('NCAAF landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const live = (games || []).filter(g => g.isLive);
+    const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+    let hero = null;
+    if (live.length) {
+        const g = live.slice().sort((a, b) => _ncaafLeverage(b) - _ncaafLeverage(a))[0];
+        hero = _heroFromNCAAFGame(g, 'live');
+    } else if (upcoming.length) {
+        const g = upcoming.slice().sort((a, b) => _ncaafMarquee(b) - _ncaafMarquee(a))[0];
+        hero = _heroFromNCAAFGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+    // Structural redesign pass: a real game resolved into the Spotlight slot,
+    // so it IS the hero now -- collapse the identity block above it to a slim
+    // strip instead of leaving two full-weight hero-shaped blocks stacked with
+    // no shared visual grammar (exactly the "garbled" complaint this fixed).
+    document.getElementById('slHero')?.classList.add('sl-hero--slim');
+}
+
+// ── NCAAF landing Rankings teaser (Phase 3) — mounted into the same #slSignature
+// slot NFL's playoff-picture/Power-Rankings modules use, but replaces both of
+// them in one: NCAAF already has a real AP poll (fetchNCAAFRankings(),
+// js/ncaaf.js), no computed formula needed the way NFL's Power Rankings
+// required. The CFP has no clean seed-by-formula bracket the way NFL's
+// playoff line does (a committee picks 12 teams), so a literal playoff-picture
+// port doesn't make sense -- the poll itself already carries the "who's in
+// it, in what order" signal honestly. Reuses .sl-playoff-row/.sl-power-rank
+// (Phase 1/2 CSS) rather than inventing a third row variant.
+async function _loadNCAAFLandingRankings() {
+    const host = document.getElementById('slSignature');
+    if (!host) return;
+    try {
+        const polls = (typeof fetchNCAAFRankings === 'function') ? await fetchNCAAFRankings() : [];
+        if (!host.isConnected) return;
+        const ap = polls.find(p => /\bAP\b/i.test(p.name)) || polls[0];
+        if (!ap || !ap.ranks || !ap.ranks.length) { host.remove(); return; }
+        const top5 = ap.ranks.slice(0, 5);
+        // No --tc team-color border here (unlike the NFL playoff-picture rows
+        // reusing this same class) -- fetchNCAAFRankings()'s poll entries carry
+        // no per-team color field, and NCAAF has no NFL-style static color
+        // table (130+ teams). Falls back to .sl-playoff-row's neutral
+        // var(--border-default), an honest absence rather than a guessed color.
+        const rows = top5.map(t => {
+            const move = (t.previous && t.current) ? t.previous - t.current : 0;
+            const moveHtml = move > 0 ? `<span style="color:var(--color-win)">▲${move}</span>`
+                : move < 0 ? `<span style="color:var(--color-loss)">▼${-move}</span>`
+                : `<span style="color:var(--text-muted)">–</span>`;
+            return `<div class="sl-playoff-row" onclick="navigateTo('ncaaf-rankings')">
+                <span class="sl-power-rank">${_escHtml(String(t.current))}</span>
+                <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
+                <span class="sl-playoff-name">${_escHtml(t.name)}</span>
+                <span class="sl-playoff-rec">${_escHtml(t.record || '')}</span>
+                ${moveHtml}
+            </div>`;
+        }).join('');
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">${_escHtml(ap.name)}</span><button class="sl-section-link" onclick="navigateTo('ncaaf-rankings')">Full poll →</button></div>
+            <div>${rows}</div></section>`;
+    } catch (err) {
+        Logger.warn('NCAAF landing rankings failed', err && err.message, 'APP');
         host.remove();
     }
 }
@@ -3014,10 +3255,13 @@ if (typeof window !== 'undefined') {
     window._renderSportLanding = _renderSportLanding;
     window._renderSportPicker = _renderSportPicker;
     window._loadNFLLandingSpotlight = _loadNFLLandingSpotlight;
+    window._loadNFLLandingNews = _loadNFLLandingNews;
     window._loadNFLLandingSignature = _loadNFLLandingSignature;
-    window._loadNFLLandingBreakingNews = _loadNFLLandingBreakingNews;
     window._loadNFLLandingFantasyPulse = _loadNFLLandingFantasyPulse;
     window._loadNFLLandingMatchup = _loadNFLLandingMatchup;
+    window._loadNCAAFLandingBreakingNews = _loadNCAAFLandingBreakingNews;
+    window._loadNCAAFLandingSpotlight = _loadNCAAFLandingSpotlight;
+    window._loadNCAAFLandingRankings = _loadNCAAFLandingRankings;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
     window.renderDashboardView = renderDashboardView;

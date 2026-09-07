@@ -4229,6 +4229,17 @@
     white-space: nowrap;
     letter-spacing: 0.02em;
 }
+/* Mild severity tier (DESIGN.md fix) -- "Questionable"/"Probable" are routine
+   practice-report tags, not the same alarm as "Out"/"IR"/"Doubtful". Originally
+   built on --accent-light/--accent-subtle/--accent-border, which is a real
+   DESIGN.md violation (brand orange used for a state/severity job, not brand/
+   CTA/nav) -- --color-warn already existed for exactly this "mild caution, not
+   brand" case and was sitting unused. */
+.roster-il-badge--mild {
+    color: var(--color-warn);
+    background: var(--color-warn-subtle);
+    border-color: var(--color-warn-border);
+}
 .roster-il-count {
     color: var(--color-loss);
     font-weight: 700;

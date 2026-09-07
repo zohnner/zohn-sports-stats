@@ -13,8 +13,14 @@
     <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
-    <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.espncdn.com https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com https://i.ytimg.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer).
+         espnmedia-cdn.akamaized.net added alongside *.espncdn.com: ESPN's news-article
+         wire photos (a.images[0].url off /api/news) load from this separate Akamai host,
+         not the espncdn.com domain team logos/headshots use -- found live-broken (real
+         <img>, naturalWidth 0, silently hidden by data-hide-on-error) while building the
+         NFL landing's Latest NFL module; same gap likely existed on the News view (_newsCard,
+         js/news.js) unnoticed since a CSP-blocked image fails silent, not as a JS error. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.espncdn.com https://espnmedia-cdn.akamaized.net https://sleepercdn.com https://*.mlbstatic.com https://assets.nhle.com https://staticassets.mlb.com https://i.ytimg.com; connect-src 'self' https://sportsstrata-proxy.zohnwheeler.workers.dev https://sportsstrata-blurb.zohnwheeler.workers.dev https://api.balldontlie.io https://site.api.espn.com https://stats.nba.com https://statsapi.mlb.com https://baseballsavant.mlb.com https://api-web.nhle.com https://api.open-meteo.com https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
     <title>SportStrata — Serious Stats for Serious Fans</title>
     <!-- OG / SEO — updated dynamically by navigation.js on each route change -->
     <meta property="og:type" content="website">

@@ -436,7 +436,7 @@ function displayNFLPowerRankings(rows, season) {
         const strVal = (typeof _parseStreak === 'function') ? _parseStreak(t.streak) : 0;
         const streakColor = strVal >= 2 ? 'var(--color-win)' : strVal <= -2 ? 'var(--color-loss)' : 'var(--text-muted)';
         const pct = Math.max(4, Math.round((t._pwr / maxScore) * 100));
-        return `<div class="nstd-pwr-row" onclick="${_nstdNav(t.abbr)}">
+        return `<div class="nstd-pwr-row" style="--tc:${(typeof getNFLTeamColor === 'function' && getNFLTeamColor(t.abbr)) || 'var(--border-default)'}" onclick="${_nstdNav(t.abbr)}">
             <span class="nstd-pwr-rank">${i + 1}</span>
             <img class="nstd-pwr-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
             <span class="nstd-pwr-name">${_escHtml(t.shortName)}</span>

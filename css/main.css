@@ -1787,6 +1787,18 @@ main {
     filter: grayscale(1);
 }
 
+/* Structural redesign pass: .game-weather's base rule (css/components.css) is
+   a standalone block *below* a card (its own border-top/margin-top) -- here
+   it's a third sibling inside the already-bordered .hgc-card-footer flex row,
+   so the border/spacing meant to separate it from the card above would render
+   as a stray line mid-row. Strip those, let it join the footer's existing gap. */
+.hgc-card-footer .game-weather {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    font-size: 0.64rem;
+}
+
 .hgc-pill {
     font-size: 0.64rem;
     font-weight: 800;
@@ -4515,13 +4527,41 @@ body.view-home .search-global-btn { display: none; }
 .sl-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-disabled); }
 .sl-hero-status--active .sl-status-dot { background: var(--color-win); }
 .sl-hero-status--live .sl-status-dot { background: var(--color-live); }
+/* Slim identity strip (structural redesign pass) -- applied the moment a real
+   live/marquee game resolves into the Game Spotlight slot, so that card
+   becomes the page's one hero instead of two full-weight hero-shaped blocks
+   stacked with no shared visual grammar. Single inline row: icon, title,
+   status pill; tagline drops (redundant once a real headline exists below). */
+.sl-hero--slim { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.6rem; padding: 0.85rem 1rem; text-align: left; }
+.sl-hero--slim .sl-hero-icon { font-size: 1.4rem; }
+.sl-hero--slim .sl-hero-title { font-size: 1.05rem; margin: 0; }
+.sl-hero--slim .sl-hero-tag { display: none; }
+.sl-hero--slim .sl-hero-status { margin-top: 0; }
 .sl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.25rem; }
 /* Landing mini-dashboard (enriched sport landing) */
 .sl-data { width: 100%; max-width: 940px; margin: 1.75rem auto 0; display: flex; flex-direction: column; gap: 1.5rem; }
-.sl-section { display: flex; flex-direction: column; gap: 0.6rem; }
+/* Consistent card frame for every landing module (structural redesign pass) --
+   previously some modules (Fantasy Pulse, the Rankings/Playoff-Picture
+   teaser, the old Primetime strip) were bare, unbordered lists while others
+   (the games grid, stat-leader tiles) had item-level chrome only, with no
+   shared outer container -- three different visual languages competing on
+   one page. Every .sl-section now carries the same frame by default, the way
+   every module on a real competitor hub (CBS/Yahoo) reads as one card system,
+   not an assortment of one-off layouts. */
+.sl-section { display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1rem 1.1rem; }
 .sl-section-hdr { display: flex; align-items: baseline; justify-content: space-between; }
 .sl-section-link { background: none; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 700; color: var(--accent); padding: 0; }
 .sl-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.6rem; }
+/* DESIGN.md fix: at narrow widths the grid above wraps to a tall vertical
+   stack of full-width cards -- real competitor hubs (CBS/Yahoo, screenshotted
+   directly, not recalled) scroll a games strip sideways instead of stacking
+   it. Same renderScoreCard() cards, just a horizontal-scroll container below
+   the width where 2+ columns stop fitting -- not a ticker-item swap, that
+   format is too sparse (abbr+score only) for what this section needs. */
+@media (max-width: 720px) {
+    .sl-games { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.6rem; padding-bottom: 0.3rem; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+    .sl-games .home-game-card { flex: 0 0 220px; scroll-snap-align: start; }
+}
 .sl-leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; }
 .sl-leader { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; padding: 0.7rem 0.85rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); cursor: pointer; text-align: left; transition: border-color 0.12s ease; }
 .sl-leader:hover { border-color: var(--border-strong); }
@@ -4545,10 +4585,17 @@ body.view-home .search-global-btn { display: none; }
    .sl-spotlight injects _heroFromNFLGame()'s .home-hero markup verbatim -- that
    class already carries its own card chrome/hover/live-shadow treatment, so this
    wrapper only controls flow spacing, no visual rules of its own. */
+.sl-breaking { margin-bottom: 0.5rem; }
 .sl-spotlight { margin-top: 1.5rem; }
 .sl-signature { margin-top: 1.25rem; }
+.sl-fantasy-pulse { margin-top: 1.25rem; }
+.sl-matchup { margin-top: 1.5rem; }
 .sl-countdown { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1.2rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); text-align: center; }
-.sl-countdown-num { font-family: var(--font-display); font-size: 2.3rem; font-weight: 800; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
+/* DESIGN.md fix: this is a static display number, not a CTA -- the actual
+   clickable action (.sl-countdown-cta, below) already correctly carries the
+   brand orange; the digit doesn't also need to, and per "a number is never
+   colored to shout" (category-color discipline) it shouldn't. */
+.sl-countdown-num { font-family: var(--font-display); font-size: 2.3rem; font-weight: 800; color: var(--text-primary); line-height: 1; font-variant-numeric: tabular-nums; }
 .sl-countdown-label { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .sl-countdown-cta { margin-top: 0.5rem; background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--accent); padding: 0; }
 /* Playoff-picture teaser -- follows the existing .sl-leader card template
@@ -4556,8 +4603,12 @@ body.view-home .search-global-btn { display: none; }
    .nstd-badge classes from nflStandings.js rather than a new badge language. */
 .sl-playoff-confs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 .sl-playoff-conf-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 0 0 0.4rem; }
-.sl-playoff-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; border-radius: var(--radius-sm); cursor: pointer; }
-.sl-playoff-row:hover { background: var(--bg-card-hover); }
+/* DESIGN.md addition: each row is one team (unlike the section it sits in,
+   which is a real multi-team aggregate and correctly stays neutral) -- reuses
+   the same --tc custom-property idiom .home-game-card/.hero-row already use
+   for team-identity borders, not a new mechanism. Set inline per-row from JS. */
+.sl-playoff-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem 0.4rem 0.6rem; border-left: 3px solid var(--tc, transparent); border-radius: var(--radius-sm); cursor: pointer; }
+.sl-playoff-row:hover { background: var(--bg-card-hover); border-left-color: var(--tc, var(--border-strong)); }
 .sl-playoff-row--out { opacity: 0.55; }
 .sl-playoff-row img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
 .sl-playoff-name { font-size: 0.82rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 0.3rem; }
@@ -4570,27 +4621,30 @@ body.view-home .search-global-btn { display: none; }
    strip, and the signed-in Your Matchup module. All follow the existing
    .sl-section/.sl-leader/bg-card+border-default conventions above -- no new
    visual language introduced for this pass. */
-.sl-breaking-banner { display: flex; align-items: center; gap: 0.6rem; max-width: 940px; margin: 0 auto 0.5rem; padding: 0.55rem 0.9rem; background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-md); text-decoration: none; color: var(--text-primary); }
-.sl-breaking-banner:hover { border-color: var(--accent); }
-.sl-breaking-tag { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; color: var(--color-live); border: 1px solid var(--color-live); border-radius: var(--radius-full); padding: 0.1rem 0.5rem; }
+/* DESIGN.md fix: neither the banner nor the tag is a game-liveness state or
+   the page's primary CTA, so neither --color-live (reserved for live games)
+   nor accent-subtle/accent-border (brand-only) apply. A confident neutral
+   treatment -- bold uppercase tag, standard card chrome -- matches the "never
+   marketed to, not a gradient-soaked AI product" posture; the urgency comes
+   from the copy, not a borrowed color. */
+.sl-breaking-banner { display: flex; align-items: center; gap: 0.6rem; max-width: 940px; margin: 0 auto 0.5rem; padding: 0.55rem 0.9rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); text-decoration: none; color: var(--text-primary); }
+.sl-breaking-banner:hover { border-color: var(--border-strong); }
+.sl-breaking-tag { flex-shrink: 0; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: var(--radius-full); padding: 0.1rem 0.5rem; }
 .sl-breaking-headline { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .sl-power-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .sl-power-chip { display: flex; align-items: center; gap: 0.45rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-full); cursor: pointer; color: var(--text-primary); transition: border-color 0.12s ease; }
 .sl-power-chip:hover { border-color: var(--border-strong); }
 .sl-power-chip img { width: 18px; height: 18px; object-fit: contain; }
-.sl-power-rank { font-family: var(--font-mono); font-weight: 800; font-size: 0.72rem; color: var(--accent); }
+/* DESIGN.md fix: matches .nstd-pwr-rank's already-correct choice on the full
+   Power Rankings page (--text-muted) -- a rank digit isn't a CTA even inside
+   a clickable row, and coloring only the digit brand-orange is "a number
+   colored to shout," the exact anti-pattern category-color discipline bans. */
+.sl-power-rank { font-family: var(--font-mono); font-weight: 800; font-size: 0.72rem; color: var(--text-muted); }
 .sl-power-chip span:last-child { font-size: 0.8rem; font-weight: 600; }
 
 .sl-pulse-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 @media (max-width: 560px) { .sl-pulse-cols { grid-template-columns: 1fr; gap: 0.75rem; } }
-
-.sl-primetime { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.4rem; }
-.sl-primetime-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; font-size: 0.78rem; }
-.sl-primetime-row:hover { border-color: var(--border-strong); }
-.sl-primetime-matchup { font-weight: 700; flex: 1; min-width: 0; }
-.sl-primetime-net { color: var(--accent); font-weight: 700; font-size: 0.7rem; }
-.sl-primetime-time { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.7rem; flex-shrink: 0; }
 
 .sl-matchup-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
 .sl-matchup-team { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-width: 0; }
@@ -4601,16 +4655,152 @@ body.view-home .search-global-btn { display: none; }
 
 /* NFL Power Rankings page (js/nflStandings.js displayNFLPowerRankings) */
 .nstd-pwr-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
-.nstd-pwr-row { display: grid; grid-template-columns: 2rem 28px 1fr auto auto 90px; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; }
-.nstd-pwr-row:hover { border-color: var(--border-strong); }
+/* DESIGN.md addition: one team per row -- reuses the --tc idiom for a
+   team-identity left edge, same mechanism as .sl-playoff-row, rest of the
+   border stays neutral. Set inline per-row from JS via getNFLTeamColor(). */
+.nstd-pwr-row { display: grid; grid-template-columns: 2rem 28px 1fr auto auto 90px; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--tc, var(--border-default)); border-radius: var(--radius-sm); cursor: pointer; }
+.nstd-pwr-row:hover { border-color: var(--border-strong); border-left-color: var(--tc, var(--border-strong)); }
 .nstd-pwr-rank { font-family: var(--font-mono); font-weight: 800; color: var(--text-muted); }
 .nstd-pwr-logo { width: 26px; height: 26px; object-fit: contain; }
 .nstd-pwr-name { font-weight: 700; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nstd-pwr-rec { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
 .nstd-pwr-streak { font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; }
 .nstd-pwr-bar { display: block; height: 6px; border-radius: var(--radius-full); background: var(--border-default); overflow: hidden; }
-.nstd-pwr-bar__fill { display: block; height: 100%; background: var(--accent); border-radius: var(--radius-full); }
+/* DESIGN.md fix: a static progress-bar fill isn't the brand speaking -- the
+   adjacent .nstd-pwr-streak on the same row already gets this right with
+   win/loss/muted; bring the bar in line with its own row instead of leaving
+   it the one accent-colored element for no semantic reason. */
+.nstd-pwr-bar__fill { display: block; height: 100%; background: var(--text-muted); border-radius: var(--radius-full); }
 @media (max-width: 640px) { .nstd-pwr-row { grid-template-columns: 1.6rem 24px 1fr auto; } .nstd-pwr-streak, .nstd-pwr-bar { display: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NFL landing editorial redesign — "sports network, not sports dashboard."
+   Everything below is scoped under .sport-landing--editorial (NFL's landing
+   container only) so it cannot regress MLB/NCAAF/NCAAB/WNBA's landings, the
+   cross-sport home hero, the Scores page, or any other .home-hero/.sl-leader/
+   .sl-section consumer elsewhere on the site — same scoping discipline as the
+   .hgc-card-footer .game-weather override earlier this session.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1-2: width + editorial grid. Real competitor pages (screenshotted, not
+   recalled) aren't literal equal thirds -- a dominant primary column plus one
+   right rail, not three even columns. */
+.sport-landing--editorial { max-width: 1280px; padding: 1.25rem 1.5rem 3rem; }
+.sl-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start; margin-top: 1.25rem; }
+.sl-primary { display: flex; flex-direction: column; gap: 1.75rem; min-width: 0; }
+.sl-rail { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+@media (max-width: 960px) { .sl-layout { grid-template-columns: 1fr; gap: 1.5rem; } }
+
+/* Slim identity strip -- replaces the old centered icon/title/tagline/status
+   .sl-hero block. One hero (the Spotlight game or, pre-season, the Signature
+   module) does the work a big brand block used to try to share with it. */
+.sl-hero-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border-default); }
+.sl-hero-strip-icon { font-size: 1.15rem; line-height: 1; }
+.sl-hero-strip-title { font-family: var(--font-display); font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
+.sl-hero-strip-status { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: auto; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* 4: hero enlarged, de-carded, real player photography. */
+.sport-landing--editorial .sl-spotlight .home-hero { border-radius: var(--radius-sm); box-shadow: none; padding: 1.75rem; }
+.sport-landing--editorial .hero-headline { font-size: clamp(1.8rem, 1rem + 3vw, 2.6rem); }
+.hero-photos { display: flex; align-items: center; gap: 1rem; width: 100%; }
+.hero-photo { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; border-top: 3px solid var(--tc, var(--border-mid)); padding-top: 0.75rem; }
+.hero-photo-img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; background: var(--bg-raised); }
+.hero-photo-img--ph { display: block; }
+.hero-photo-meta { display: flex; align-items: center; gap: 0.4rem; }
+.hero-photo-logo { width: 20px; height: 20px; object-fit: contain; }
+.hero-photo-abbr { font-family: var(--font-mono); font-weight: 800; font-size: 0.78rem; color: var(--text-secondary); }
+.hero-photos-at { font-size: 0.8rem; color: var(--text-subtle); font-weight: 700; }
+
+/* 5: four nav tiles -> a compact editorial link list in the rail. Same data/
+   wiring (navigateTo), a link row instead of an independent bordered card. */
+.sl-linklist { display: flex; flex-direction: column; }
+.sl-link { display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.1rem; border-bottom: 1px solid var(--border-default); color: var(--text-primary); text-decoration: none; }
+.sl-link:last-child { border-bottom: none; }
+.sl-link:hover .sl-link-title { color: var(--accent); }
+.sl-link-icon { display: inline-flex; color: var(--text-muted); flex-shrink: 0; }
+.sl-link-body { display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.sl-link-title { font-weight: 700; font-size: 0.86rem; transition: color 0.12s ease; }
+.sl-link-desc { font-size: 0.7rem; color: var(--text-muted); }
+
+/* 12: one section-header recipe, everywhere in the editorial layout -- a rule
+   under the eyebrow+link row instead of a card boundary around the module. */
+.sl-layout .sl-section-hdr { padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-default); margin-bottom: 0.15rem; }
+.sl-layout .sl-section-hdr .eyebrow { font-size: 0.72rem; }
+
+/* 13-14: radius/shadow reduction. Editorial sections in the primary column go
+   flush (0 radius, no border/bg/shadow of their own -- the header rule is the
+   only separator); the rail's more "modular" pieces (countdown, matchup) stay
+   at a modest 6px cap, never the old 14px .sl-section radius. */
+.sl-primary > .sl-section, .sl-primary > div > .sl-section { background: transparent; border: none; border-radius: 0; padding: 0; }
+.sl-rail .sl-section { border-radius: var(--radius-sm); }
+.sport-landing--editorial .sl-countdown,
+.sport-landing--editorial .sl-matchup-row { border-radius: var(--radius-sm); }
+
+/* 3+10: scoreboard, not a grid of floating cards. Same .home-game-card markup
+   (data-game-key intact for _wireHomeGameCardClicks) -- de-carded and laid
+   out as a flush, divided row list instead of a bordered-tile grid. Follow-up
+   pass: brought back the team-color identity bar (--hgc-team-color is already
+   set inline per card by Scorebug, css/scorebug.js) and bigger logos -- the
+   first cut removed too much, reading as empty text rows instead of a real
+   scoreboard. .hgc-row+.hgc-row (not nth-of-type, which only counts by tag
+   name) targets the second (home) row specifically to grid-place it under
+   the first, since there's no wrapper element around the away/home pair to
+   select instead. */
+.sport-landing--editorial #slGames .sl-games { display: flex; flex-direction: column; gap: 0; }
+.sport-landing--editorial #slGames .home-game-card {
+    display: grid; grid-template-columns: minmax(150px, auto) 1fr; column-gap: 1.25rem; align-items: center;
+    background: transparent; border: none; border-left: 3px solid var(--hgc-team-color);
+    border-bottom: 1px solid var(--border-default);
+    border-radius: 0; box-shadow: none; padding: 0.75rem 0 0.75rem 1rem;
+}
+.sport-landing--editorial #slGames .home-game-card:last-child { border-bottom: none; }
+.sport-landing--editorial #slGames .hgc-row { grid-column: 1; grid-row: 1; padding: 0.15rem 0; background: none; }
+.sport-landing--editorial #slGames .hgc-row + .hgc-row { grid-row: 2; }
+.sport-landing--editorial #slGames .hgc-team-logo { width: 34px; height: 34px; }
+.sport-landing--editorial #slGames .hgc-abbr { font-size: 0.98rem; }
+.sport-landing--editorial #slGames .hgc-score { font-size: 0.98rem; }
+.sport-landing--editorial #slGames .hgc-pitchers { grid-column: 2; grid-row: 1; align-self: end; margin: 0; padding: 0; border: none; background: none; font-size: 0.76rem; color: var(--text-muted); }
+.sport-landing--editorial #slGames .hgc-card-footer {
+    grid-column: 2; grid-row: 2; align-self: start; justify-content: flex-end;
+    border-top: none; margin: 0; padding: 0;
+}
+
+/* 11: Stat Leaders -> an editorial data row, not four KPI tiles. */
+.sport-landing--editorial #slLeaders .sl-leaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0; }
+.sport-landing--editorial #slLeaders .sl-leader {
+    background: transparent; border: none; border-left: 1px solid var(--border-default);
+    border-radius: 0; padding: 0.2rem 1rem;
+}
+.sport-landing--editorial #slLeaders .sl-leader:first-child { border-left: none; padding-left: 0.1rem; }
+.sport-landing--editorial #slLeaders .sl-leader:hover { border-color: var(--border-default); background: transparent; }
+@media (max-width: 640px) {
+    .sport-landing--editorial #slLeaders .sl-leaders { grid-template-columns: 1fr 1fr; gap: 0.75rem 0; }
+    .sport-landing--editorial #slLeaders .sl-leader { border-left: none; border-top: 1px solid var(--border-default); padding: 0.6rem 0.5rem 0; }
+    .sport-landing--editorial #slLeaders .sl-leader:nth-child(-n+2) { border-top: none; }
+}
+
+/* 15-16: Latest NFL editorial module -- real ESPN wire photography (same
+   licensing-safe attribution+link-out pattern as the News view's _newsCard,
+   js/news.js), one large lead story + a supporting headline list. */
+.editorial-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; align-items: start; }
+.editorial-lead { display: block; color: var(--text-primary); text-decoration: none; }
+.editorial-lead__thumb { border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 16/9; background: var(--bg-raised); margin-bottom: 0.75rem; }
+.editorial-lead__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.editorial-lead__headline { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; line-height: 1.18; margin: 0 0 0.4rem; }
+.editorial-lead:hover .editorial-lead__headline { color: var(--accent); }
+/* Breaking News, folded into the lead story instead of a separate banner
+   module duplicating the same /api/news fetch above it -- same neutral,
+   no-color-coding treatment the standalone banner used (nothing about a
+   breaking headline is a live-game state, so no semantic token applies). */
+.editorial-breaking-tag { display: inline-block; vertical-align: middle; font-family: var(--font-sans, inherit); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: var(--radius-full); padding: 0.1rem 0.5rem; margin-right: 0.5rem; }
+.editorial-lead__dek { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.45; margin: 0 0 0.5rem; }
+.editorial-list { display: flex; flex-direction: column; }
+.editorial-headline-row { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.65rem 0; border-bottom: 1px solid var(--border-default); color: var(--text-primary); text-decoration: none; }
+.editorial-headline-row:last-child { border-bottom: none; }
+.editorial-headline-row:hover .editorial-headline-row__text { color: var(--accent); }
+.editorial-headline-row__text { font-size: 0.86rem; font-weight: 700; line-height: 1.3; transition: color 0.12s ease; }
+.editorial-meta { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+@media (max-width: 640px) { .editorial-grid { grid-template-columns: 1fr; } }
 
 /* Skip-to-content link (F7): visually hidden until focused, then a pill top-left.
    New utility — the codebase had no sr-only/visually-hidden class to reuse. */

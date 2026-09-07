@@ -1066,6 +1066,24 @@ function displayNFLTrending(adds, drops) {
 // browsable league-wide before this. Reuses .nfl-lrow (Trending's row shape)
 // and _NFL_POS_FILTERS (Players' filter pills) rather than inventing either.
 const _NFL_INJ_STATUS_ORDER = ['Questionable', 'IR', 'PUP', 'DNR', 'Sus'];
+
+// Injury status severity (DESIGN.md fix): "Questionable" is the routine,
+// extremely common practice-report tag -- every one of these status strings
+// was rendering in the same alarm-red as "Out"/"IR", which overstates a
+// normal week's injury report as a crisis. Real sports coverage reserves red
+// for genuinely out/doubtful, a neutral amber for day-to-day/questionable --
+// --color-warn (css/variables.css), not --accent-light (a first pass reached
+// for the brand-orange variant, which DESIGN.md's "brand orange = brand only"
+// rule explicitly rules out for a state/severity job). Shared across the full
+// Injury Report page, team roster/depth chart, and the NFL landing's Fantasy
+// Pulse strip -- one severity model, not three.
+const _NFL_INJ_MILD = new Set(['Questionable', 'Probable']);
+function _nflInjurySeverityColor(status) {
+    return _NFL_INJ_MILD.has(status) ? 'var(--color-warn)' : 'var(--color-loss)';
+}
+function _nflInjurySeverityClass(status) {
+    return _NFL_INJ_MILD.has(status) ? ' roster-il-badge--mild' : '';
+}
 let _nflInjPosFilter = 'ALL';
 
 async function loadNFLInjuries() {
@@ -1133,7 +1151,7 @@ function displayNFLInjuries() {
         const rows = grouped[status];
         if (!rows || !rows.length) return;
         rows.sort((a, b) => (a.search_rank || 1e9) - (b.search_rank || 1e9) || (a.full_name || '').localeCompare(b.full_name || ''));
-        const color = 'var(--color-loss)';
+        const color = _nflInjurySeverityColor(status);
         const rowsHtml = rows.map(p => {
             const hs = getNFLSleeperHeadshot(p.player_id);
             const detail = [p.injury_body_part, p.injury_notes].filter(Boolean).join(' · ');
@@ -2088,7 +2106,7 @@ function _renderTeamPage(m) {
                     <span style="position:relative">${esc(initials(p.name))}</span>
                 </div>
                 <div class="roster-info">
-                    <span class="roster-name">${esc(p.name)}${p.starter ? ` <span style="color:${color}" title="Projected starter">★</span>` : ''}${p.injury ? ` <span class="roster-il-badge">${esc(p.injury)}</span>` : ''}</span>
+                    <span class="roster-name">${esc(p.name)}${p.starter ? ` <span style="color:${color}" title="Projected starter">★</span>` : ''}${p.injury ? ` <span class="roster-il-badge${_nflInjurySeverityClass(p.injury)}">${esc(p.injury)}</span>` : ''}</span>
                     <span class="roster-meta">${esc(p.pos)}${p.number ? ' · #' + esc(String(p.number)) : ''}</span>
                 </div>
             </div>`

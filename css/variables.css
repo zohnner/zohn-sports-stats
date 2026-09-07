@@ -97,6 +97,12 @@
     --color-win-border:       rgba(22,199,132,0.25);
     --color-loss-subtle:      rgba(229,72,77,0.08);
     --color-loss-border:      rgba(229,72,77,0.25);
+    /* DESIGN.md fix: --color-warn existed but had no subtle/border pair, so the
+       one real "mild caution, not brand, not alarm" use case (injury severity)
+       reached for --accent-light instead -- a brand-orange misuse. Same rgba
+       derivation as the win/loss pairs above, from --color-warn's #f5b301. */
+    --color-warn-subtle:      rgba(245,179,1,0.08);
+    --color-warn-border:      rgba(245,179,1,0.25);
     --color-error-subtle:     rgba(229,72,77,0.05);
     --color-error-border:     rgba(229,72,77,0.20);
     --color-live-subtle:      rgba(255,0,110,0.12);
@@ -410,6 +416,8 @@
     --color-win-border:       rgba(10,124,78,0.30);
     --color-loss-subtle:      rgba(196,39,43,0.08);
     --color-loss-border:      rgba(196,39,43,0.25);
+    --color-warn-subtle:      rgba(138,94,0,0.10);
+    --color-warn-border:      rgba(138,94,0,0.28);
     --color-error-subtle:     rgba(196,39,43,0.06);
     --color-error-border:     rgba(196,39,43,0.20);
     --color-live-subtle:      rgba(199,0,91,0.10);

@@ -146,6 +146,14 @@
                     <span class="hgc-score${s.winner ? ' hgc-score--win' : ''}">${fmt(s.score)}</span>
                     ${star(s.abbr)}
                 </div>`;
+        // Opt-in weather slot (off by default -- every existing call site, Scores
+        // page/cross-sport home/Dashboard included, is unaffected unless it
+        // explicitly asks for this). NFL/NCAAF-only: those are the two sports
+        // with a _fetch{NFL,NCAAF}StadiumWeather table to populate it; the caller
+        // is expected to invoke that sport's _inject*GameWeather() against the
+        // rendered grid afterward, same wiring the landing pages already use.
+        const weatherHtml = (opts.showWeather && (m.sport === 'nfl' || m.sport === 'ncaaf') && m.home.abbr)
+            ? `<span class="game-weather" data-${m.sport}-weather-team="${esc(m.home.abbr)}"></span>` : '';
         return `
             <div class="home-game-card${m.status === 'live' ? ' home-game-card--live' : ''}" data-game-key="${m.key}" data-game-status="${m.pillCls}" role="button" tabindex="0"
                  aria-label="${esc(m.away.name)} ${fmt(m.away.score)} at ${esc(m.home.name)} ${fmt(m.home.score)}, ${esc(m.pillLabel)}${esc(m.ariaExtra)}"
@@ -157,6 +165,7 @@
                 <div class="hgc-card-footer">
                     ${glyph ? `<span class="hgc-glyph" aria-hidden="true">${glyph}</span>` : ''}
                     <span class="hgc-pill hgc-pill--${m.pillCls}">${esc(m.pillLabel)}</span>
+                    ${weatherHtml}
                 </div>
             </div>`;
     }

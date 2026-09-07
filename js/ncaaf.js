@@ -57,6 +57,128 @@ function _ncaafLinescores(competitor) {
     return competitor.linescores.map(l => Number(l.value ?? l.displayValue ?? 0) || 0);
 }
 
+// ── Stadium weather lookup (Phase 3, NCAAF landing competitor-feature pass) —
+// clone of NFL's _NFL_STADIUMS/_fetchNFLStadiumWeather/_injectNFLGameWeather
+// (js/nfl.js), itself cloned from MLB's original (js/mlb.js). Open-Meteo is
+// already CSP-allowlisted (used by MLB), so this needs zero CSP change.
+//
+// Scope: Power-4 conference membership (SEC/Big Ten/Big 12/ACC, 2024+
+// realignment) + Notre Dame — ~68 teams — deliberately NOT all 130+ FBS
+// programs. NCAAF has no per-team static color/data table anywhere else in
+// this file the way NFL's _NFL_TEAM_COLOR does (130+ teams makes that
+// impractical), so a full hand-built 130-team stadium table would carry real
+// accuracy risk for a lot of very-rarely-relevant programs. Power-4 covers
+// essentially every game that ends up in the Primetime strip or the AP Top
+// 25 in a given week. An unlisted team's weather badge silently doesn't
+// render (same `if (!stadium) return null` fallback as NFL's table) rather
+// than showing a wrong one -- a Group of 5 team cracking the rankings some
+// week is a real, accepted gap, not a bug.
+//
+// Coordinates are city-level (not exact stadium address), same precision
+// class as both NFL's and MLB's tables -- sufficient for a forecast call.
+// City/state sourced against a current Power-4 stadium listing; exact
+// lat/lon are general geographic knowledge for these (mostly well-known
+// college towns), not independently verified per-entry the way NFL's 32-team
+// table was cross-checked against Wikipedia one by one -- worth a spot check
+// if a specific team's weather ever looks wrong rather than trusting this
+// table as precisely as the NFL one.
+const _NCAAF_STADIUMS = {
+    // SEC
+    ALA:  { lat: 33.2098, lon: -87.5692,  dome: false }, AR:   { lat: 36.0822, lon: -94.1719, dome: false },
+    AUB:  { lat: 32.6099, lon: -85.4808,  dome: false }, FLA:  { lat: 29.6516, lon: -82.3248, dome: false },
+    UGA:  { lat: 33.9519, lon: -83.3576,  dome: false }, UK:   { lat: 38.0406, lon: -84.5037, dome: false },
+    LSU:  { lat: 30.4515, lon: -91.1871,  dome: false }, MSST: { lat: 33.4504, lon: -88.8184, dome: false },
+    MIZ:  { lat: 38.9517, lon: -92.3341,  dome: false }, OU:   { lat: 35.2226, lon: -97.4395, dome: false },
+    MISS: { lat: 34.3665, lon: -89.5192,  dome: false }, SC:   { lat: 34.0007, lon: -81.0348, dome: false },
+    TENN: { lat: 35.9606, lon: -83.9207,  dome: false }, TEX:  { lat: 30.2672, lon: -97.7431, dome: false },
+    TA_M: { lat: 30.6280, lon: -96.3344,  dome: false }, VAN:  { lat: 36.1627, lon: -86.7816, dome: false },
+    // Big Ten
+    ILL:  { lat: 40.1164, lon: -88.2434,  dome: false }, IND:  { lat: 39.1653, lon: -86.5264, dome: false },
+    IOWA: { lat: 41.6611, lon: -91.5302,  dome: false }, MD:   { lat: 38.9897, lon: -76.9378, dome: false },
+    MICH: { lat: 42.2808, lon: -83.7430,  dome: false }, MSU:  { lat: 42.7325, lon: -84.4838, dome: false },
+    MINN: { lat: 44.9778, lon: -93.2650,  dome: false }, NEB:  { lat: 40.8136, lon: -96.7026, dome: false },
+    NW:   { lat: 42.0451, lon: -87.6877,  dome: false }, OSU:  { lat: 39.9612, lon: -82.9988, dome: false },
+    ORE:  { lat: 44.0521, lon: -123.0868, dome: false }, PSU:  { lat: 40.7982, lon: -77.8599, dome: false },
+    PUR:  { lat: 40.4259, lon: -86.9081,  dome: false }, RUTG: { lat: 40.5001, lon: -74.4474, dome: false },
+    UCLA: { lat: 34.0522, lon: -118.2437, dome: false }, USC:  { lat: 34.0141, lon: -118.2879, dome: false },
+    WASH: { lat: 47.6062, lon: -122.3321, dome: false }, WIS:  { lat: 43.0731, lon: -89.4012, dome: false },
+    // Big 12
+    ARIZ: { lat: 32.2226, lon: -110.9747, dome: false }, ASU:  { lat: 33.4255, lon: -111.9400, dome: false },
+    BAY:  { lat: 31.5493, lon: -97.1467,  dome: false }, BYU:  { lat: 40.2338, lon: -111.6585, dome: false },
+    CIN:  { lat: 39.1031, lon: -84.5120,  dome: false }, COLO: { lat: 40.0150, lon: -105.2705, dome: false },
+    HOU:  { lat: 29.7604, lon: -95.3698,  dome: false }, ISU:  { lat: 42.0308, lon: -93.6319, dome: false },
+    KU:   { lat: 38.9717, lon: -95.2353,  dome: false }, KSU:  { lat: 39.1836, lon: -96.5717, dome: false },
+    OKST: { lat: 36.1156, lon: -97.0584,  dome: false }, TCU:  { lat: 32.7555, lon: -97.3308, dome: false },
+    TTU:  { lat: 33.5779, lon: -101.8552, dome: false }, UCF:  { lat: 28.5383, lon: -81.3792, dome: false },
+    UTAH: { lat: 40.7608, lon: -111.8910, dome: false }, WVU:  { lat: 39.6295, lon: -79.9559, dome: false },
+    // ACC
+    BC:   { lat: 42.3601, lon: -71.0589,  dome: false }, CAL:  { lat: 37.8715, lon: -122.2730, dome: false },
+    CLEM: { lat: 34.6834, lon: -82.8374,  dome: false }, DUKE: { lat: 35.9940, lon: -78.8986, dome: false },
+    FSU:  { lat: 30.4383, lon: -84.2807,  dome: false }, GT:   { lat: 33.7756, lon: -84.3963, dome: false },
+    LOU:  { lat: 38.2527, lon: -85.7585,  dome: false }, MIA:  { lat: 25.9580, lon: -80.2389, dome: false },
+    NCST: { lat: 35.7796, lon: -78.6382,  dome: false }, UNC:  { lat: 35.9132, lon: -79.0558, dome: false },
+    PITT: { lat: 40.4406, lon: -79.9959,  dome: false }, SMU:  { lat: 32.8410, lon: -96.7840, dome: false },
+    STAN: { lat: 37.4275, lon: -122.1697, dome: false }, SYR:  { lat: 43.0481, lon: -76.1474, dome: true }, // JMA Wireless Dome
+    UVA:  { lat: 38.0293, lon: -78.4767,  dome: false }, VT:   { lat: 37.2296, lon: -80.4139, dome: false },
+    WAKE: { lat: 36.0999, lon: -80.2442,  dome: false },
+    // Independent
+    ND:   { lat: 41.6764, lon: -86.2520,  dome: false },
+};
+
+// _windDegToCompass already defined in js/mlb.js (loads before this file) —
+// reused directly, not duplicated (same reuse ncaaf.js's NFL sibling makes).
+async function _fetchNCAAFStadiumWeather(abbr) {
+    const stadium = _NCAAF_STADIUMS[(abbr || '').toUpperCase()];
+    if (!stadium) return null;
+    if (stadium.dome) return { dome: true };
+
+    const cacheKey = `ss_ncaafweather_${abbr}`;
+    try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            const { ts, data } = JSON.parse(cached);
+            if (Date.now() - ts < 30 * 60 * 1000) return data;
+        }
+    } catch (_) {}
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${stadium.lat}&longitude=${stadium.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
+        const resp = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const cur = json.current;
+        if (!cur) return null;
+        const data = {
+            temp: Math.round(cur.temperature_2m),
+            wind: Math.round(cur.wind_speed_10m),
+            dir: (typeof _windDegToCompass === 'function') ? _windDegToCompass(cur.wind_direction_10m) : '',
+        };
+        sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function _injectNCAAFGameWeather(wrap) {
+    const slots = wrap.querySelectorAll('[data-ncaaf-weather-team]');
+    if (!slots.length) return;
+    const abbrs = [...new Set([...slots].map(s => s.dataset.ncaafWeatherTeam))];
+    const results = await Promise.all(abbrs.map(a => _fetchNCAAFStadiumWeather(a).then(w => [a, w])));
+    const map = Object.fromEntries(results);
+    slots.forEach(slot => {
+        const w = map[slot.dataset.ncaafWeatherTeam];
+        if (!w) { slot.style.display = 'none'; return; }
+        if (w.dome) {
+            slot.textContent = 'Dome';
+            slot.classList.add('game-weather--dome');
+        } else {
+            slot.innerHTML = `${w.temp}°F · ${w.wind} mph ${w.dir}`;
+            slot.classList.add('game-weather--outdoor');
+        }
+    });
+}
+
 async function fetchNCAAFScoreboard(opts = {}) {
     // D-135: without groups=80 (ESPN's FBS classification group id), the CFB
     // scoreboard endpoint silently caps at 25 events and skews toward ranked
