@@ -3026,6 +3026,7 @@ main {
     color: var(--text-secondary);
     border-color: var(--border-default);
 }
+.search-global-btn svg { flex-shrink: 0; }
 
 /* ── Global Search Overlay ────────────────────────────────────── */
 
@@ -3472,10 +3473,19 @@ a:focus:not(:focus-visible),
     min-height: 102px;
 }
 
-/* ── Search button expands between brand and icons on desktop ── */
-@media (min-width: 769px) {
+/* ── Search button expands between brand and icons on desktop ──
+   Threshold moved from 769px to 900px (2026-09-07, found auditing the NFL
+   landing page at tablet widths): the ::after label is white-space:nowrap,
+   so this button has a real minimum content width once expanded, and
+   .header-inner overflowed at ~769-834px once the sport switcher grew from
+   2 pills to 5 -- there just isn't room for a labeled search box until
+   ~850px+. Below 900px it now keeps the plain icon-only treatment (the same
+   base .search-global-btn rule mobile already uses) instead of trying to
+   fit a shrinking label. */
+@media (min-width: 900px) {
     .search-global-btn {
-        flex: 1;
+        flex: 1 1 auto;
+        min-width: 56px;
         max-width: 380px;
         height: 36px;
         border-radius: var(--radius-md);
@@ -3487,10 +3497,14 @@ a:focus:not(:focus-visible),
         font-family: var(--font-sans);
         font-size: var(--text-sm);
         font-weight: 500;
+        overflow: hidden;
     }
     .search-global-btn::after {
         content: attr(data-label);
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
         color: var(--text-subtle);
         font-weight: 400;
     }
