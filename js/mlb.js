@@ -5851,6 +5851,45 @@ function displayMLBWildCard(divisions) {
 
 // ── MLB Power Rankings ────────────────────────────────────────
 
+// Hoisted out of displayMLBPowerRankings (2026-09-07, sport-landing port) so
+// the MLB landing page's Signature module can reuse the exact same power
+// score for a top-3 chips teaser, mirroring how NFL's Signature module
+// already reuses the top-level, window-exported _nflPowerScore
+// (js/nflStandings.js). Unlike NFL's version, MLB's run-differential factor
+// is normalized against the *current team set's* min/max rather than a fixed
+// clamp range, so it can't be a single-team-in, score-out pure function the
+// way NFL's is -- _mlbComputePowerRankings does the two-pass (derive
+// rdiffMin/rdiffMax, then score) and is what callers should use; the exported
+// _mlbPowerScore(t, rdiffMin, rdiffMax) is the per-team half of that, kept
+// separate only so this stays a literal relocation of the original inline
+// logic (byte-identical scores/order), not a reformulation.
+function _mlbPowerScore(t, rdiffMin, rdiffMax) {
+    const gp      = t.wins + t.losses;
+    const winPct  = gp > 0 ? t.wins / gp : 0;
+    const rd      = parseFloat(t.rdiff);
+    const rdFact  = isNaN(rd) ? winPct
+        : rdiffMax !== rdiffMin ? (rd - rdiffMin) / (rdiffMax - rdiffMin) : 0.5;
+    const strNum  = typeof _parseStreak === 'function' ? _parseStreak(t.streak) : 0;
+    const strFact = (strNum + 10) / 20;
+    // L10 form factor: parse "W-L" string → recent win rate
+    const l10Parts = (t.l10 || '').split('-').map(Number);
+    const l10Fact  = l10Parts.length === 2 && !isNaN(l10Parts[0]) && (l10Parts[0] + l10Parts[1]) > 0
+        ? l10Parts[0] / (l10Parts[0] + l10Parts[1])
+        : winPct;
+    return winPct * 0.50 + rdFact * 0.20 + strFact * 0.10 + l10Fact * 0.20;
+}
+function _mlbComputePowerRankings(allTeams) {
+    // Normalise RDIFF: parse "+12" / "-5" / "—" → number, then scale to 0..1
+    const rdiffs = allTeams
+        .map(t => parseFloat(t.rdiff))
+        .filter(n => !isNaN(n));
+    const rdiffMin = Math.min(...rdiffs, 0);
+    const rdiffMax = Math.max(...rdiffs, 1);
+    return allTeams
+        .map(t => ({ ...t, _score: _mlbPowerScore(t, rdiffMin, rdiffMax) }))
+        .sort((a, b) => b._score - a._score);
+}
+
 function displayMLBPowerRankings(divisions) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'standings-container';
@@ -5863,32 +5902,7 @@ function displayMLBPowerRankings(divisions) {
     // Flatten all teams from all divisions
     const allTeams = divisions.flatMap(d => d.teams.map(t => ({ ...t, division: d.division })));
 
-    // Normalise RDIFF: parse "+12" / "-5" / "—" → number, then scale to 0..1
-    const rdiffs = allTeams
-        .map(t => parseFloat(t.rdiff))
-        .filter(n => !isNaN(n));
-    const rdiffMin = Math.min(...rdiffs, 0);
-    const rdiffMax = Math.max(...rdiffs, 1);
-
-    const _mlbPowerScore = t => {
-        const gp      = t.wins + t.losses;
-        const winPct  = gp > 0 ? t.wins / gp : 0;
-        const rd      = parseFloat(t.rdiff);
-        const rdFact  = isNaN(rd) ? winPct
-            : rdiffMax !== rdiffMin ? (rd - rdiffMin) / (rdiffMax - rdiffMin) : 0.5;
-        const strNum  = typeof _parseStreak === 'function' ? _parseStreak(t.streak) : 0;
-        const strFact = (strNum + 10) / 20;
-        // L10 form factor: parse "W-L" string → recent win rate
-        const l10Parts = (t.l10 || '').split('-').map(Number);
-        const l10Fact  = l10Parts.length === 2 && !isNaN(l10Parts[0]) && (l10Parts[0] + l10Parts[1]) > 0
-            ? l10Parts[0] / (l10Parts[0] + l10Parts[1])
-            : winPct;
-        return winPct * 0.50 + rdFact * 0.20 + strFact * 0.10 + l10Fact * 0.20;
-    };
-
-    const scored = allTeams
-        .map(t => ({ ...t, _score: _mlbPowerScore(t) }))
-        .sort((a, b) => b._score - a._score);
+    const scored = _mlbComputePowerRankings(allTeams);
 
     const maxScore = scored[0]._score || 1;
 
@@ -7400,6 +7414,8 @@ if (typeof window !== 'undefined') {
     window.displayMLBStandings       = displayMLBStandings;
     window.displayMLBWildCard        = displayMLBWildCard;
     window.displayMLBPowerRankings   = displayMLBPowerRankings;
+    window._mlbPowerScore            = _mlbPowerScore;
+    window._mlbComputePowerRankings  = _mlbComputePowerRankings;
     window.displayMLBTransactions    = displayMLBTransactions;
     window.getMLBTeamColors        = getMLBTeamColors;
     window._renderMLBGroupToggle   = _renderMLBGroupToggle;

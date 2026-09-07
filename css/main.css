@@ -2250,6 +2250,19 @@ main {
     .pr-bar { grid-column: 1 / -1; order: 5; }
     .pr-stat { grid-column: 1 / -1; align-items: flex-start; order: 6; }
 }
+/* Same stacked treatment, applied unconditionally rather than by viewport
+   width (2026-09-07, MLB sport-landing port): .sl-rail is a narrow column
+   (~340px) regardless of how wide the overall page is, so the 4-column grid
+   above -- built for the full-width home-page moment strip -- squeezed the
+   `1fr` bar segment down to ~20-25px there. The percentages/fills were
+   computed correctly (verified against real Monte Carlo odds data) but at
+   that width the bar couldn't visually communicate a 72% vs 87% difference
+   at a glance, defeating the point of a bar viz. This is a container-width
+   problem, not a viewport-width one, so it's scoped to .sl-rail rather than
+   a media query. */
+.sl-rail .pennant-race { grid-template-columns: 1fr auto; row-gap: 0.3rem; }
+.sl-rail .pr-bar { grid-column: 1 / -1; order: 5; }
+.sl-rail .pr-stat { grid-column: 1 / -1; align-items: flex-start; order: 6; }
 
 /* ChatGPT-brief quick win 3: more visual weight (size/contrast), not a redesign
    — no accent color added (D-047 invariant #3, brand orange stays brand-only). */

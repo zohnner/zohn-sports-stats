@@ -146,6 +146,11 @@ const _EDITORIAL_SLOTS = {
     // fantasy feature, no injury/depth data anywhere (D-125) -- rail is just
     // quick links + the existing AP/Coaches rankings Signature module.
     ncaaf: { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
+    // MLB (Phase 3): no fantasy feature, so rail is quick links + Signature
+    // only, same as NCAAF. Signature carries two sections (Pennant Races +
+    // Power Rankings) instead of one, mirroring NFL's own two-section
+    // Signature module -- see _loadMLBLandingSignature.
+    mlb:   { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
 };
 const _EDITORIAL_LOADERS = {
     nfl: () => {
@@ -161,6 +166,13 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
         if (typeof _loadNCAAFLandingRankings === 'function') _loadNCAAFLandingRankings();
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaaf', 'Latest NCAAF');
+    },
+    mlb: () => {
+        if (typeof _loadMLBLandingSpotlight === 'function') _loadMLBLandingSpotlight();
+        if (typeof _loadMLBLandingGames === 'function') _loadMLBLandingGames();
+        if (typeof _loadMLBLandingLeaders === 'function') _loadMLBLandingLeaders();
+        if (typeof _loadMLBLandingSignature === 'function') _loadMLBLandingSignature();
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('mlb', 'Latest MLB');
     },
 };
 function _renderEditorialLanding(sport, meta, cfg, st) {
@@ -1515,6 +1527,25 @@ async function _heroFromStandings() {
         </div>`;
     return { kind: 'race', html, onClick: () => navigateTo('mlb-standings') };
 }
+// Hoisted out of _renderHomeHero (2026-09-07, sport-landing port) so the MLB
+// landing page's own Spotlight module can reuse the exact same live/marquee
+// picker instead of re-deriving it -- same "shared top-level function" move
+// already made for _nflLeverage/_ncaafLeverage (used by both the home hero
+// and each sport's own landing Spotlight) and for _mlbPowerScore above.
+// _renderHomeHero below now calls these instead of its own local closures.
+function _mlbHeroLeverage(g) {
+    const inn  = g.linescore?.currentInning || 1;
+    const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
+    const combinedPct = (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
+    return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct * 4
+        + (_gameHasFav(g) ? 100 : 0);
+}
+function _mlbHeroMarquee(g) {
+    const combinedPct = (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
+    return combinedPct * 4
+        + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
+        + (_gameHasFav(g) ? 100 : 0);
+}
 function _heroFromGame(g, kind) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const a = _heroTeamInfo('away', g), h = _heroTeamInfo('home', g);
@@ -1859,16 +1890,8 @@ async function _renderHomeHero(games) {
 
     const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
     const isUpcoming = g => g.status?.abstractGameState === 'Preview';
-    const combinedPct = g => (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
-    const mlbLeverage = g => {
-        const inn  = g.linescore?.currentInning || 1;
-        const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
-        return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct(g) * 4
-            + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
-    };
-    const mlbMarquee = g => combinedPct(g) * 4
-        + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
-        + (_gameHasFav(g) ? 100 : 0);   // P5: favorite team wins ties
+    const mlbLeverage = _mlbHeroLeverage;
+    const mlbMarquee = _mlbHeroMarquee;
 
     let nflGames = [];
     try {
@@ -2424,9 +2447,10 @@ function _renderSportLanding(sport) {
     }
 
     // Older, narrower shape: single-column hero + card grid, for sports not
-    // yet ported to the editorial layout above (MLB/NCAAB/WNBA, until their
-    // own port phases land). No football-shaped modules here any more --
-    // both NFL and NCAAF now always take the editorial branch above.
+    // yet ported to the editorial layout above (NCAAB/WNBA, until their own
+    // port phases land). No football-shaped modules here any more, and no
+    // MLB branch either -- NFL, NCAAF, and MLB all always take the
+    // editorial branch above now.
     grid.innerHTML = `
         <div class="sl-hero" id="slHero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
@@ -2444,13 +2468,17 @@ function _renderSportLanding(sport) {
         </div>
         <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
-    if (sport === 'mlb' && typeof _loadMLBLandingData === 'function') _loadMLBLandingData();
 }
 
-// Sport-landing enrichment (mini-dashboard) — reuses the shared Scorebug for
-// today's games + a compact league-leaders teaser from mlbLeaderSplits.
-async function _loadMLBLandingData() {
-    const host = document.getElementById('slData');
+// MLB landing Games module (Phase 3 of the sport-landing port) -- split from
+// the old combined-host _loadMLBLandingData when MLB moved to the editorial
+// layout's separate #slGames/#slLeaders hosts (mirroring the split
+// _loadFootballLandingData already does for NFL/NCAAF). Keeps MLB's own
+// Scorebug card rendering (live inning/base-state, already richer than
+// NFL/NCAAF's plain list) rather than downgrading it to match -- a
+// deliberate per-sport variation, not an inconsistency.
+async function _loadMLBLandingGames() {
+    const host = document.getElementById('slGames');
     if (!host || typeof Scorebug === 'undefined') return;
     try {
         const games = await fetchMLBSchedule(1).catch(() => []);
@@ -2459,26 +2487,141 @@ async function _loadMLBLandingData() {
         const liveFirst = g => (g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '')) ? 0 : 1;
         const pick = (todays.length ? todays : (games || [])).slice().sort((a, b) => liveFirst(a) - liveFirst(b)).slice(0, 6);
         const gamesHtml = pick.map(g => Scorebug.renderScoreCard(Scorebug.normalizeMLBGame(g))).join('');
-
-        if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
-            await _fetchMLBLeaderSplits(MLB_SEASON).catch(() => {});
-        }
-        const leadersHtml = _mlbLandingLeaders();
         if (!host.isConnected) return;
-        host.innerHTML = `
-            ${gamesHtml ? `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">Today's Games</span><button class="sl-section-link" onclick="navigateTo('mlb-games')">All scores →</button></div>
-                <div class="sl-games">${gamesHtml}</div></section>` : ''}
-            ${leadersHtml ? `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">League Leaders</span><button class="sl-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button></div>
-                <div class="sl-leaders">${leadersHtml}</div></section>` : ''}`;
+        if (!gamesHtml) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Today's Games</span><button class="sl-section-link" onclick="navigateTo('mlb-games')">All scores →</button></div>
+            <div class="sl-games">${gamesHtml}</div></section>`;
         host.querySelectorAll('.home-game-card').forEach(card => {
             card.addEventListener('click', () => {
                 const id = parseInt((card.dataset.gameKey || '').replace('mlb-', ''), 10);
                 if (id && typeof openMLBGame === 'function') openMLBGame(id, card.classList.contains('home-game-card--live'));
             });
         });
-    } catch (_) {}
+    } catch (_) { host.remove(); }
+}
+// MLB landing Leaders module (Phase 3) -- same split as above, targeting
+// #slLeaders. _mlbLandingLeaders() itself (the tile-string builder) is
+// unchanged.
+async function _loadMLBLandingLeaders() {
+    const host = document.getElementById('slLeaders');
+    if (!host) return;
+    try {
+        if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
+            await _fetchMLBLeaderSplits(MLB_SEASON).catch(() => {});
+        }
+        if (!host.isConnected) return;
+        const leadersHtml = _mlbLandingLeaders();
+        if (!leadersHtml) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">League Leaders</span><button class="sl-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button></div>
+            <div class="sl-leaders">${leadersHtml}</div></section>`;
+    } catch (_) { host.remove(); }
+}
+// MLB landing Game Spotlight (Phase 3) -- reuses the exact live/marquee
+// picker + hero renderer _renderHomeHero() already uses for MLB
+// (_mlbHeroLeverage/_mlbHeroMarquee/_heroFromGame, hoisted above for this
+// reuse), scoped to MLB only and mounted on the landing page instead of the
+// cross-sport home. Same {kind,html,onClick} contract as NFL/NCAAF's own
+// landing Spotlight loaders -- live beats upcoming, remove if neither.
+async function _loadMLBLandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = await fetchMLBSchedule(1).catch(() => []);
+    } catch (err) {
+        Logger.warn('MLB landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const isLive = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
+    const isUpcoming = g => g.status?.abstractGameState === 'Preview';
+    const live = (games || []).filter(isLive);
+    const upcoming = (games || []).filter(isUpcoming);
+    let hero = null;
+    if (live.length) {
+        const g = live.slice().sort((a, b) => _mlbHeroLeverage(b) - _mlbHeroLeverage(a))[0];
+        hero = _heroFromGame(g, 'live');
+    } else if (upcoming.length) {
+        const g = upcoming.slice().sort((a, b) => _mlbHeroMarquee(b) - _mlbHeroMarquee(a))[0];
+        hero = _heroFromGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+}
+// MLB landing Signature module (Phase 3) -- surfaces two pieces of MLB infra
+// that already existed elsewhere but were never shown on the landing page:
+// the Pennant Races viz (lifted from _renderHomeMoment's #homeMoment widget
+// on the home page -- identical computation, just relocated so the landing
+// page doesn't depend on the home page's own moment-rail machinery) and a
+// top-3 Power Rankings teaser (via _mlbComputePowerRankings, hoisted in
+// js/mlb.js for this exact reuse), matching NFL's own two-section Signature
+// module (Playoff Picture + Power Rankings chips). Both CTAs link to
+// mlb-standings rather than a dedicated Power Rankings route -- unlike NFL,
+// MLB's Power tab is a tab inside the Standings page, not its own routed
+// view (no `mlb-powerrankings` case exists in _renderMLBView), so linking
+// there and letting the visitor click the tab is the honest destination
+// rather than inventing a new route for this port.
+async function _loadMLBLandingSignature() {
+    const host = document.getElementById('slSignature');
+    if (!host) return;
+    try {
+        if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
+        if (typeof _mlbOddsEnsure === 'function') await _mlbOddsEnsure(AppState.mlbStandings);
+        if (!host.isConnected) return;
+
+        const races = [];
+        (AppState.mlbStandings || []).forEach(d => {
+            const [lead, second] = d.teams || [];
+            if (!lead || !second) return;
+            const gb = parseFloat(second.gb);
+            if (isNaN(gb)) return;
+            races.push({ div: d.division, lead, second, gb, divOdds: AppState.mlbOdds?.byTeam?.[lead.teamId]?.div });
+        });
+        races.sort((a, b) => a.gb - b.gb);
+        const pennantRows = races.slice(0, 3).map(r => {
+            const color = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr).primary : 'var(--accent)';
+            const logo  = (typeof getMLBTeamLogoUrl === 'function' && r.lead.teamId) ? getMLBTeamLogoUrl(r.lead.teamId) : '';
+            const odds  = r.divOdds;
+            const pctW  = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
+            const gapLbl = r.gb === 0 ? 'tied atop' : `+${r.gb} on ${_escHtml(r.second.teamAbbr)}`;
+            const oddsBlock = (odds != null && typeof _oddsFmtPct === 'function')
+                ? `<span class="pr-odds-pct">${_oddsFmtPct(odds)}%</span><span class="pr-odds-lbl">div odds</span>` : '';
+            return `
+                <button class="pennant-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
+                    <span class="pr-div">${_escHtml(r.div)}</span>
+                    <span class="pr-lead">${logo ? `<img class="pr-logo" src="${logo}" alt="" data-hide-on-error>` : ''}<strong>${_escHtml(r.lead.teamAbbr)}</strong></span>
+                    <span class="pr-bar" style="--tc:${color}"><span class="pr-bar-fill" style="width:${pctW}%"></span></span>
+                    <span class="pr-stat">${oddsBlock}<span class="pr-gap">${gapLbl}</span></span>
+                </button>`;
+        }).join('');
+
+        let powerHtml = '';
+        if (typeof _mlbComputePowerRankings === 'function') {
+            const allTeams = (AppState.mlbStandings || []).flatMap(d => d.teams.map(t => ({ ...t, division: d.division })));
+            const top3 = _mlbComputePowerRankings(allTeams).slice(0, 3);
+            const chips = top3.map((t, i) => `
+                <button class="sl-power-chip" onclick="navigateTo('mlb-standings')">
+                    <span class="sl-power-rank">${i + 1}</span>
+                    <img src="${_escHtml(getMLBTeamLogoUrl(t.teamId))}" alt="" loading="lazy" data-hide-on-error>
+                    <span>${_escHtml(t.teamAbbr)}</span>
+                </button>`).join('');
+            powerHtml = `<section class="sl-section">
+                <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('mlb-standings')">Full rankings →</button></div>
+                <div class="sl-power-chips">${chips}</div></section>`;
+        }
+
+        if (!pennantRows && !powerHtml) { host.remove(); return; }
+        host.innerHTML = (pennantRows ? `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Pennant Races</span><button class="sl-section-link" onclick="navigateTo('mlb-standings')">All odds →</button></div>
+            <div class="pennant-viz">${pennantRows}</div></section>` : '') + powerHtml;
+    } catch (err) {
+        Logger.warn('MLB landing signature module failed', err && err.message, 'APP');
+        host.remove();
+    }
 }
 function _mlbLandingLeaders() {
     const hitting = AppState.mlbLeaderSplits?.hitting || [];
