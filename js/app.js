@@ -116,6 +116,79 @@ const _SL_ICON = {
     trophy:    '<path d="M4.5 3h7v2.5a3.5 3.5 0 0 1-7 0V3z"/><path d="M4.5 4H2.6v.8A2.2 2.2 0 0 0 4.8 7M11.5 4h1.9v.8A2.2 2.2 0 0 1 11.2 7M6.5 11h3M5.5 13.5h5"/>',
 };
 
+// Editorial landing architecture (NFL-originated, generalized when ported to
+// NCAAF/MLB/NCAAB/WNBA): a wide 2-column grid -- primary column (Spotlight
+// hero, optional Latest-news editorial, scoreboard, stat leaders) + a right
+// rail (quick links, a "Signature" module, and NFL-only Fantasy Pulse/Your
+// Matchup) -- replacing the narrow single-column hero+cards shape every sport
+// not yet ported still uses. `_EDITORIAL_SLOTS` says which optional slots a
+// sport's markup includes (only the sports listed here use this branch at
+// all -- everything else still falls through to the generic shape below);
+// `_EDITORIAL_LOADERS` says which functions populate them. Adding a sport
+// here is a data change, not a copy-pasted markup block.
+// Must sit above the "Boot renders..." block below (like _SPORT_LANDING/
+// _SL_ICON already do): setupNavigation() -> _loadFromHash() ->
+// renderCurrentView() -> _renderSportLanding() runs synchronously at that
+// call, and a `const` defined after it is still in the temporal dead zone at
+// that point even though the *function* referencing it is hoisted -- this
+// TDZ bug hit exactly that path on first load until moved here.
+const _EDITORIAL_SLOTS = {
+    // photoHero: real per-side player headshots in the Spotlight hero
+    // (Sleeper for NFL; nothing else has an equivalent player-photo pipeline,
+    // so every other sport's hero is logo-only -- see each sport's own
+    // Spotlight loader for the specific reasoning).
+    // fantasyPulse/matchup are fantasy-football concepts with no equivalent
+    // data anywhere else (D-125 ruled out NCAAF injury data; no other sport
+    // has a fantasy feature at all) -- correctly false everywhere but NFL,
+    // not a gap to fill.
+    nfl:   { photoHero: true,  news: true, games: true, leaders: true,  signature: true, fantasyPulse: true,  matchup: true },
+};
+const _EDITORIAL_LOADERS = {
+    nfl: () => {
+        if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('nfl');
+        if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
+        if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
+        if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
+        if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
+        if (typeof _loadNFLLandingNews === 'function') _loadNFLLandingNews();
+    },
+};
+function _renderEditorialLanding(sport, meta, cfg, st) {
+    const grid = document.getElementById('playersGrid');
+    const slots = _EDITORIAL_SLOTS[sport];
+    const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
+    grid.className = 'sport-landing sport-landing--editorial';
+    grid.innerHTML = `
+        <div class="sl-hero-strip" id="slHero" style="--sport-accent:${meta.accent}">
+            <span class="sl-hero-strip-icon" aria-hidden="true">${meta.icon}</span>
+            <span class="sl-hero-strip-title">${_escHtml(meta.label)}</span>
+            <span class="sl-hero-strip-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</span>
+        </div>
+        <div class="sl-layout">
+            <div class="sl-primary">
+                <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
+                ${slots.news ? `<div id="slNews"></div>` : ''}
+                ${slots.games ? `<div id="slGames"></div>` : ''}
+                ${slots.leaders ? `<div id="slLeaders"></div>` : ''}
+            </div>
+            <div class="sl-rail">
+                <nav class="sl-linklist" aria-label="${_escHtml(meta.label)} quick links">
+                    ${cfg.cards.map(([v, ic, t, d]) => `
+                        <a class="sl-link" href="#${v}" onclick="event.preventDefault();navigateTo('${v}')">
+                            <span class="sl-link-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${_SL_ICON[ic] || ''}</svg></span>
+                            <span class="sl-link-body"><span class="sl-link-title">${_escHtml(t)}</span><span class="sl-link-desc">${_escHtml(d)}</span></span>
+                        </a>`).join('')}
+                </nav>
+                ${slots.signature ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-sm)')}</div>` : ''}
+                ${slots.fantasyPulse ? `<div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, '0px')}</div>` : ''}
+                ${slots.matchup ? `<div class="sl-matchup" id="slMatchup"></div>` : ''}
+            </div>
+        </div>`;
+    if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
+    const loader = _EDITORIAL_LOADERS[sport];
+    if (typeof loader === 'function') loader();
+}
+
 // Boot renders the home view synchronously (setupNavigation -> _loadFromHash -> loadHome), so
 // any module state loadHome touches must be initialized before this call, or it hits the
 // const/let temporal dead zone. _homeNewsCache is read by _renderHomeHeadlines on first paint (F1).
@@ -2334,66 +2407,19 @@ function _renderSportLanding(sport) {
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
     grid.className = 'sport-landing';
     grid.style.cssText = '';
-    // Phase 1-2 (NFL landing redesign): a Game Spotlight (live/marquee game hero,
-    // reusing _heroFromNFLGame's exact .home-hero markup), a phase-aware
-    // Signature module (kickoff countdown pre-season, playoff picture once real
-    // records exist), a Breaking News banner, Fantasy Pulse (injuries+trending),
-    // and a signed-in-only Your Matchup module.
-    // Phase 3: NCAAF gets the same Breaking/Spotlight/Signature slots (the
-    // Signature slot renders an AP-poll Rankings teaser for NCAAF instead of a
-    // playoff picture -- CFB has no seed-by-formula bracket the way NFL does,
-    // but a real poll already carries the same "who's in it" signal). Fantasy
-    // Pulse and Your Matchup are NFL-only, not extended to NCAAF -- confirmed
-    // impossible (no injury/depth data anywhere in ESPN's CFB payloads, D-125)
-    // and not-applicable (no college fantasy football feature exists) respectively.
-    const hasFootball = sport === 'nfl' || sport === 'ncaaf';
-    const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
 
-    // Editorial redesign (NFL only this pass): a wide 2-column grid -- primary
-    // column (Spotlight hero w/ real player photos, scoreboard, Latest NFL
-    // editorial, Stat Leaders) + a right rail (quick links, Signature module,
-    // Fantasy Pulse, Your Matchup) -- replacing the narrow single-column
-    // hero+cards+stacked-sections shape every other sport still uses. NCAAF/MLB
-    // keep that original shape unchanged; the shared classes those sports still
-    // use (.sl-section, .nfl-lrow, etc.) are untouched by this branch.
-    if (sport === 'nfl') {
-        grid.className = 'sport-landing sport-landing--editorial';
-        grid.innerHTML = `
-            <div class="sl-hero-strip" id="slHero" style="--sport-accent:${meta.accent}">
-                <span class="sl-hero-strip-icon" aria-hidden="true">${meta.icon}</span>
-                <span class="sl-hero-strip-title">${_escHtml(meta.label)}</span>
-                <span class="sl-hero-strip-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</span>
-            </div>
-            <div class="sl-layout">
-                <div class="sl-primary">
-                    <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
-                    <div id="slNews"></div>
-                    <div id="slGames"></div>
-                    <div id="slLeaders"></div>
-                </div>
-                <div class="sl-rail">
-                    <nav class="sl-linklist" aria-label="${_escHtml(meta.label)} quick links">
-                        ${cfg.cards.map(([v, ic, t, d]) => `
-                            <a class="sl-link" href="#${v}" onclick="event.preventDefault();navigateTo('${v}')">
-                                <span class="sl-link-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${_SL_ICON[ic] || ''}</svg></span>
-                                <span class="sl-link-body"><span class="sl-link-title">${_escHtml(t)}</span><span class="sl-link-desc">${_escHtml(d)}</span></span>
-                            </a>`).join('')}
-                    </nav>
-                    <div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-sm)')}</div>
-                    <div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, '0px')}</div>
-                    <div class="sl-matchup" id="slMatchup"></div>
-                </div>
-            </div>`;
-        if (window.setBreadcrumb) setBreadcrumb('nfl-home', null);
-        if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('nfl');
-        if (typeof _loadNFLLandingSpotlight === 'function') _loadNFLLandingSpotlight();
-        if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
-        if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
-        if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
-        if (typeof _loadNFLLandingNews === 'function') _loadNFLLandingNews();
+    if (_EDITORIAL_SLOTS[sport]) {
+        _renderEditorialLanding(sport, meta, cfg, st);
         return;
     }
 
+    // Older, narrower shape: single-column hero + card grid + optional
+    // Breaking/Spotlight/Signature modules for sports not yet ported to the
+    // editorial layout above (NFL always takes the editorial branch now, so
+    // this is effectively NCAAF-only, but keeps the football-shaped-module
+    // gate generic in case another football-shaped sport lands here first).
+    const hasFootball = sport === 'ncaaf';
+    const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
     const breakingSkel  = hasFootball ? `<div class="sl-breaking" id="slBreaking"></div>` : '';
     const spotlightSkel = hasFootball ? `<div class="sl-spotlight" id="slSpotlight">${skel(150, 'var(--radius-lg)')}</div>` : '';
     const signatureSkel = hasFootball ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-md)')}</div>` : '';
