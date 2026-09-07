@@ -151,6 +151,11 @@ const _EDITORIAL_SLOTS = {
     // Power Rankings) instead of one, mirroring NFL's own two-section
     // Signature module -- see _loadMLBLandingSignature.
     mlb:   { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
+    // NCAAB (Phase 4): no player-leaders data anywhere (a real gap, not
+    // deferred-but-present -- confirmed by this session's audit), so
+    // `leaders: true` here points #slLeaders at a Conference Leaders teaser
+    // (team standings, honestly labeled) rather than an invented stat.
+    ncaab: { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
 };
 const _EDITORIAL_LOADERS = {
     nfl: () => {
@@ -164,7 +169,7 @@ const _EDITORIAL_LOADERS = {
     ncaaf: () => {
         if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('ncaaf');
         if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
-        if (typeof _loadNCAAFLandingRankings === 'function') _loadNCAAFLandingRankings();
+        if (typeof _loadPollRankingsSignature === 'function') _loadPollRankingsSignature(fetchNCAAFRankings, 'ncaaf-rankings', 'NCAAF');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaaf', 'Latest NCAAF');
     },
     mlb: () => {
@@ -173,6 +178,13 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadMLBLandingLeaders === 'function') _loadMLBLandingLeaders();
         if (typeof _loadMLBLandingSignature === 'function') _loadMLBLandingSignature();
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('mlb', 'Latest MLB');
+    },
+    ncaab: () => {
+        if (typeof _loadNCAABLandingSpotlight === 'function') _loadNCAABLandingSpotlight();
+        if (typeof _loadNCAABLandingGames === 'function') _loadNCAABLandingGames();
+        if (typeof _loadNCAABLandingConferenceLeaders === 'function') _loadNCAABLandingConferenceLeaders();
+        if (typeof _loadPollRankingsSignature === 'function') _loadPollRankingsSignature(fetchNCAABRankings, 'ncaab-rankings', 'NCAAB');
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaab', 'Latest NCAAB');
     },
 };
 function _renderEditorialLanding(sport, meta, cfg, st) {
@@ -1741,8 +1753,12 @@ function _heroFromNFLGame(g, kind) {
 // _openNFLGameFromHero/_heroFromNFLGame — same shell markup (.hero-board/
 // .hero-row/.hero-kicker/.hero-headline/etc.), so no new CSS is needed, only
 // a #rank badge added next to a ranked team's abbreviation (a real CFB-
-// specific signal NFL's board has no equivalent of).
-function _heroNCAAFBoard(g, showScore) {
+// specific signal NFL's board has no equivalent of). Renamed from
+// _heroNCAAFBoard (2026-09-07, sport-landing port): the body reads
+// g.awayTeam/g.homeTeam's generic {abbr,logo,score,rank,color} shape with
+// nothing NCAAF-specific in it, and NCAAB's landing Spotlight (Phase 4)
+// reuses it as-is rather than cloning a fourth copy of the same board markup.
+function _heroCollegeBoard(g, showScore) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const tc = t => t.color ? `#${String(t.color).replace('#', '')}` : 'var(--accent)';
     const row = (t, winner) => `
@@ -1786,7 +1802,7 @@ function _heroFromNCAAFGame(g, kind) {
         hook = leadTeam
             ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
             : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
-        board = _heroNCAAFBoard(g, true);
+        board = _heroCollegeBoard(g, true);
         cta = 'Watch live →';
         liveDetail = _heroNCAAFLiveDetail(g);
     } else {
@@ -1794,7 +1810,7 @@ function _heroFromNCAAFGame(g, kind) {
         const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
         kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
         hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Kickoff soon';
-        board = _heroNCAAFBoard(g, false);
+        board = _heroCollegeBoard(g, false);
         cta = 'Game preview →';
     }
     const html = `
@@ -1806,6 +1822,45 @@ function _heroFromNCAAFGame(g, kind) {
         </div>
         <div class="hero-visual">${board}${liveDetail}</div>`;
     return { kind, html, onClick: () => _openNCAAFGameFromHero(g.id) };
+}
+
+// NCAAB landing Game hero (Phase 4 of the sport-landing port) -- simpler than
+// NFL/NCAAF's Spotlight picker (no leverage/marquee scoring model): NCAAB
+// has no live-game-viewer page at all (Scores/Standings/Teams/Rankings only,
+// per CLAUDE.md's scope), so this is deliberately the plainer of the two
+// college-sport heroes, and its CTA goes to the Scores grid rather than a
+// per-game detail view that doesn't exist. Reuses _heroCollegeBoard (the
+// generic board renderer originally written for NCAAF).
+function _heroFromNCAABGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
+    let kicker, hook, cta;
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
+        const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
+            : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
+        hook = leadTeam
+            ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
+            : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
+        cta = 'Watch on the scoreboard →';
+    } else {
+        const d = g.date ? new Date(g.date) : null;
+        const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+        kicker = `<span class="hero-kicker">${g.statusText && g.statusText !== 'TBD' ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
+        hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Tip-off soon';
+        cta = 'Full scoreboard →';
+    }
+    const board = _heroCollegeBoard(g, kind === 'live');
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}</div>`;
+    return { kind, html, onClick: () => navigateTo('ncaab-scores') };
 }
 
 // _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was
@@ -3088,35 +3143,38 @@ async function _loadNCAAFLandingSpotlight() {
     document.getElementById('slHero')?.classList.add('sl-hero--slim');
 }
 
-// ── NCAAF landing Rankings teaser (Phase 3) — mounted into the same #slSignature
-// slot NFL's playoff-picture/Power-Rankings modules use, but replaces both of
-// them in one: NCAAF already has a real AP poll (fetchNCAAFRankings(),
-// js/ncaaf.js), no computed formula needed the way NFL's Power Rankings
-// required. The CFP has no clean seed-by-formula bracket the way NFL's
-// playoff line does (a committee picks 12 teams), so a literal playoff-picture
-// port doesn't make sense -- the poll itself already carries the "who's in
-// it, in what order" signal honestly. Reuses .sl-playoff-row/.sl-power-rank
-// (Phase 1/2 CSS) rather than inventing a third row variant.
-async function _loadNCAAFLandingRankings() {
+// ── Sport-landing Poll Rankings Signature module — mounted into #slSignature
+// for any sport with a real AP-style poll instead of a computed formula.
+// Originated as an NCAAF-only "_loadNCAAFLandingRankings" (Phase 3) and
+// generalized here for NCAAB (Phase 4), which has the identical
+// fetchNCAABRankings() shape -- same "shared function over cloned markup"
+// move already made for news. Replaces both a playoff-picture AND a Power
+// Rankings module in one: neither college sport has a clean seed-by-formula
+// bracket or a committee-free path to computed rankings, so the poll itself
+// already carries the "who's in it, in what order" signal honestly. Reuses
+// .sl-playoff-row/.sl-power-rank (Phase 1/2 CSS) rather than inventing a
+// third row variant.
+async function _loadPollRankingsSignature(fetchFn, view, logTag) {
     const host = document.getElementById('slSignature');
     if (!host) return;
     try {
-        const polls = (typeof fetchNCAAFRankings === 'function') ? await fetchNCAAFRankings() : [];
+        const polls = (typeof fetchFn === 'function') ? await fetchFn() : [];
         if (!host.isConnected) return;
         const ap = polls.find(p => /\bAP\b/i.test(p.name)) || polls[0];
         if (!ap || !ap.ranks || !ap.ranks.length) { host.remove(); return; }
         const top5 = ap.ranks.slice(0, 5);
-        // No --tc team-color border here (unlike the NFL playoff-picture rows
-        // reusing this same class) -- fetchNCAAFRankings()'s poll entries carry
-        // no per-team color field, and NCAAF has no NFL-style static color
-        // table (130+ teams). Falls back to .sl-playoff-row's neutral
-        // var(--border-default), an honest absence rather than a guessed color.
+        // No --tc team-color border here (unlike NFL's playoff-picture rows
+        // reusing this same class) -- these poll entries carry no per-team
+        // color field, and neither college sport has an NFL-style static
+        // color table (100+ teams each). Falls back to .sl-playoff-row's
+        // neutral var(--border-default), an honest absence rather than a
+        // guessed color.
         const rows = top5.map(t => {
             const move = (t.previous && t.current) ? t.previous - t.current : 0;
             const moveHtml = move > 0 ? `<span style="color:var(--color-win)">▲${move}</span>`
                 : move < 0 ? `<span style="color:var(--color-loss)">▼${-move}</span>`
                 : `<span style="color:var(--text-muted)">–</span>`;
-            return `<div class="sl-playoff-row" onclick="navigateTo('ncaaf-rankings')">
+            return `<div class="sl-playoff-row" onclick="navigateTo('${view}')">
                 <span class="sl-power-rank">${_escHtml(String(t.current))}</span>
                 <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
                 <span class="sl-playoff-name">${_escHtml(t.name)}</span>
@@ -3125,10 +3183,108 @@ async function _loadNCAAFLandingRankings() {
             </div>`;
         }).join('');
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-section-hdr"><span class="eyebrow">${_escHtml(ap.name)}</span><button class="sl-section-link" onclick="navigateTo('ncaaf-rankings')">Full poll →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">${_escHtml(ap.name)}</span><button class="sl-section-link" onclick="navigateTo('${view}')">Full poll →</button></div>
             <div>${rows}</div></section>`;
     } catch (err) {
-        Logger.warn('NCAAF landing rankings failed', err && err.message, 'APP');
+        Logger.warn(`${logTag} landing rankings failed`, err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NCAAB landing Game Spotlight (Phase 4) — no leverage/marquee scoring
+// model, unlike NFL/NCAAF: live game first (preferring one with a ranked
+// team if more than one is live), else the soonest upcoming game (preferring
+// a ranked matchup), else nothing. Reuses _heroFromNCAABGame above.
+async function _loadNCAABLandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = (AppState.ncaabGames && AppState.ncaabGames.length) ? AppState.ncaabGames
+            : (typeof fetchNCAABScoreboard === 'function' ? await fetchNCAABScoreboard() : []);
+        AppState.ncaabGames = games;
+    } catch (err) {
+        Logger.warn('NCAAB landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const live = (games || []).filter(g => g.isLive);
+    const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+    let hero = null;
+    if (live.length) {
+        const rankedLive = live.filter(g => g.homeTeam.rank || g.awayTeam.rank);
+        hero = _heroFromNCAABGame((rankedLive.length ? rankedLive : live)[0], 'live');
+    } else if (upcoming.length) {
+        const ranked = upcoming.filter(g => g.homeTeam.rank || g.awayTeam.rank);
+        const g = (ranked.length ? ranked : upcoming).slice().sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+        hero = _heroFromNCAABGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+    document.getElementById('slHero')?.classList.add('sl-hero--slim');
+}
+// ── NCAAB landing Games module (Phase 4) — reuses _ncaabGameCard (js/ncaab.js),
+// the same compact card displayNCAABScores() already renders, instead of a
+// new card shape. Not routed through Scorebug -- NCAAB has no Scorebug
+// normalizer (a separate, pre-existing gap noted in CLAUDE.md for the
+// ticker; fixing that architecture is out of scope here). Labeled "Upcoming
+// Games" rather than NFL/NCAAF's "This Week's Games": NCAAB's schedule can
+// be genuinely weeks away from the landing page's own default view (e.g.
+// the whole offseason, when every game on the board is opening week), and
+// "this week" would misdescribe that gap.
+async function _loadNCAABLandingGames() {
+    const host = document.getElementById('slGames');
+    if (!host) return;
+    try {
+        const games = (AppState.ncaabGames && AppState.ncaabGames.length) ? AppState.ncaabGames
+            : (typeof fetchNCAABScoreboard === 'function' ? await fetchNCAABScoreboard() : []);
+        AppState.ncaabGames = games;
+        if (!host.isConnected) return;
+        const liveFirst = g => g.isLive ? 0 : 1;
+        const picked = (games || []).slice().sort((a, b) => (liveFirst(a) - liveFirst(b)) || (new Date(a.date) - new Date(b.date))).slice(0, 6);
+        const cards = picked.map(g => (typeof _ncaabGameCard === 'function') ? _ncaabGameCard(g) : '').filter(Boolean).join('');
+        if (!cards) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('ncaab-scores')">All scores →</button></div>
+            <div class="sl-games">${cards}</div></section>`;
+    } catch (err) {
+        Logger.warn('NCAAB landing games failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+// ── NCAAB landing Conference Leaders module (Phase 4) — fills #slLeaders'
+// slot with a real, honest substitute for the player-level stat leaders
+// NCAAB doesn't have (zero code anywhere for it, confirmed by this session's
+// audit -- not a hidden/deferred feature, a genuine gap). fetchNCAABStandings
+// already returns each team's winPct, already fetched for the Standings page
+// but never surfaced anywhere else (displayNCAABTeams discards everything but
+// logo+name) -- top-winPct team per conference, same 4-tile rhythm as a
+// player-leaders row, labeled as team standings rather than invented stats.
+async function _loadNCAABLandingConferenceLeaders() {
+    const host = document.getElementById('slLeaders');
+    if (!host) return;
+    try {
+        const season = (typeof NCAAB_LAST_SEASON !== 'undefined') ? NCAAB_LAST_SEASON : new Date().getFullYear();
+        const confs = (typeof fetchNCAABStandings === 'function') ? await fetchNCAABStandings(season) : [];
+        if (!host.isConnected) return;
+        const leaders = confs.map(c => {
+            const top = (c.teams || []).filter(t => t.winPct != null).sort((a, b) => b.winPct - a.winPct)[0];
+            return top ? { conf: c.name, team: top } : null;
+        }).filter(Boolean).sort((a, b) => b.team.winPct - a.team.winPct).slice(0, 4);
+        if (!leaders.length) { host.remove(); return; }
+        const tiles = leaders.map(({ conf, team }) => `
+            <button class="sl-leader" onclick="navigateTo('ncaab-standings')">
+                <span class="sl-leader-val">${_escHtml(team.overall || '')}<span class="sl-leader-unit">W-L</span></span>
+                <span class="sl-leader-name">${_escHtml(team.name)}</span>
+                <span class="sl-leader-team">${_escHtml(conf.replace(/\s*Conference$/i, ''))}</span>
+            </button>`).join('');
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Conference Leaders</span><button class="sl-section-link" onclick="navigateTo('ncaab-standings')">Full standings →</button></div>
+            <div class="sl-leaders">${tiles}</div></section>`;
+    } catch (err) {
+        Logger.warn('NCAAB landing conference leaders failed', err && err.message, 'APP');
         host.remove();
     }
 }
@@ -3409,7 +3565,7 @@ if (typeof window !== 'undefined') {
     window._loadNFLLandingFantasyPulse = _loadNFLLandingFantasyPulse;
     window._loadNFLLandingMatchup = _loadNFLLandingMatchup;
     window._loadNCAAFLandingSpotlight = _loadNCAAFLandingSpotlight;
-    window._loadNCAAFLandingRankings = _loadNCAAFLandingRankings;
+    window._loadPollRankingsSignature = _loadPollRankingsSignature;
     window.loadHome   = loadHome;
     window.enterSport = enterSport;
     window.renderDashboardView = renderDashboardView;
