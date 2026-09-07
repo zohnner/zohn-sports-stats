@@ -142,6 +142,10 @@ const _EDITORIAL_SLOTS = {
     // has a fantasy feature at all) -- correctly false everywhere but NFL,
     // not a gap to fill.
     nfl:   { photoHero: true,  news: true, games: true, leaders: true,  signature: true, fantasyPulse: true,  matchup: true },
+    // NCAAF (Phase 2 of the port): no Sleeper-backed player photos, no
+    // fantasy feature, no injury/depth data anywhere (D-125) -- rail is just
+    // quick links + the existing AP/Coaches rankings Signature module.
+    ncaaf: { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
 };
 const _EDITORIAL_LOADERS = {
     nfl: () => {
@@ -150,7 +154,13 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
         if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
         if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
-        if (typeof _loadNFLLandingNews === 'function') _loadNFLLandingNews();
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('nfl', 'Latest NFL');
+    },
+    ncaaf: () => {
+        if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('ncaaf');
+        if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
+        if (typeof _loadNCAAFLandingRankings === 'function') _loadNCAAFLandingRankings();
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaaf', 'Latest NCAAF');
     },
 };
 function _renderEditorialLanding(sport, meta, cfg, st) {
@@ -2413,25 +2423,17 @@ function _renderSportLanding(sport) {
         return;
     }
 
-    // Older, narrower shape: single-column hero + card grid + optional
-    // Breaking/Spotlight/Signature modules for sports not yet ported to the
-    // editorial layout above (NFL always takes the editorial branch now, so
-    // this is effectively NCAAF-only, but keeps the football-shaped-module
-    // gate generic in case another football-shaped sport lands here first).
-    const hasFootball = sport === 'ncaaf';
-    const skel = (h, r) => `<div class="skeleton-line" style="height:${h}px;width:100%;border-radius:${r}"></div>`;
-    const breakingSkel  = hasFootball ? `<div class="sl-breaking" id="slBreaking"></div>` : '';
-    const spotlightSkel = hasFootball ? `<div class="sl-spotlight" id="slSpotlight">${skel(150, 'var(--radius-lg)')}</div>` : '';
-    const signatureSkel = hasFootball ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-md)')}</div>` : '';
+    // Older, narrower shape: single-column hero + card grid, for sports not
+    // yet ported to the editorial layout above (MLB/NCAAB/WNBA, until their
+    // own port phases land). No football-shaped modules here any more --
+    // both NFL and NCAAF now always take the editorial branch above.
     grid.innerHTML = `
-        ${breakingSkel}
         <div class="sl-hero" id="slHero" style="--sport-accent:${meta.accent}">
             <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
             <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
             <p class="sl-hero-tag">${_escHtml(tag)}</p>
             <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
         </div>
-        ${spotlightSkel}
         <div class="sl-cards">
             ${cfg.cards.map(([v, ic, t, d]) => `
                 <button class="sl-card" style="--sport-accent:${meta.accent}" onclick="navigateTo('${v}')" aria-label="${_escHtml(t)}: ${_escHtml(d)}">
@@ -2440,16 +2442,9 @@ function _renderSportLanding(sport) {
                     <span class="sl-card-go" aria-hidden="true">→</span>
                 </button>`).join('')}
         </div>
-        ${signatureSkel}
         <div class="sl-data" id="slData"></div>`;
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
-    if (sport === 'mlb') { if (typeof _loadMLBLandingData === 'function') _loadMLBLandingData(); }
-    else if (hasFootball && typeof _loadFootballLandingData === 'function') _loadFootballLandingData(sport);
-    if (sport === 'ncaaf') {
-        if (typeof _loadNCAAFLandingBreakingNews === 'function') _loadNCAAFLandingBreakingNews();
-        if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
-        if (typeof _loadNCAAFLandingRankings === 'function') _loadNCAAFLandingRankings();
-    }
+    if (sport === 'mlb' && typeof _loadMLBLandingData === 'function') _loadMLBLandingData();
 }
 
 // Sport-landing enrichment (mini-dashboard) — reuses the shared Scorebug for
@@ -2666,16 +2661,21 @@ async function _loadNFLLandingSpotlight() {
 // duplicating the fetch and the "here's what's urgent" job in two places on
 // one page. No breaking story -> the lead is just the newest article, same
 // as before, no manufactured urgency.
-async function _loadNFLLandingNews() {
+// Generalized when ported to NCAAF (Phase 2): identical logic across every
+// editorial-landing sport with a real /api/news feed, parameterized by
+// `sport` (cache key + fetch param) and `label` (the eyebrow text) instead of
+// re-cloned per sport -- same "shared function over copy-pasted markup"
+// approach as _renderEditorialLanding above.
+async function _loadSportLandingNews(sport, label) {
     const host = document.getElementById('slNews');
     if (!host) return;
     try {
-        let data = (typeof _newsCache !== 'undefined') ? _newsCache.nfl : null;
+        let data = (typeof _newsCache !== 'undefined') ? _newsCache[sport] : null;
         if (!data) {
-            const res = await fetch('/api/news?sport=nfl');
+            const res = await fetch(`/api/news?sport=${sport}`);
             if (!res.ok) throw new Error(`news ${res.status}`);
             data = await res.json();
-            if (typeof _newsCache !== 'undefined') _newsCache.nfl = data;
+            if (typeof _newsCache !== 'undefined') _newsCache[sport] = data;
         }
         if (!host.isConnected) return;
         const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
@@ -2701,11 +2701,11 @@ async function _loadNFLLandingNews() {
                 <span class="editorial-meta">${_escHtml(_ago(a.published || a.lastModified))}</span>
             </a>`).join('');
         host.innerHTML = `<section class="sl-section sl-section--flush">
-            <div class="sl-section-hdr"><span class="eyebrow">Latest NFL</span><button class="sl-section-link" onclick="navigateTo('news')">More →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">${_escHtml(label)}</span><button class="sl-section-link" onclick="navigateTo('news')">More →</button></div>
             <div class="editorial-grid">${leadHtml}<div class="editorial-list">${restHtml}</div></div>
         </section>`;
     } catch (err) {
-        Logger.warn('NFL landing news failed', err && err.message, 'APP');
+        Logger.warn(`${sport.toUpperCase()} landing news failed`, err && err.message, 'APP');
         host.remove();
     }
 }
@@ -2903,34 +2903,6 @@ async function _loadNFLLandingMatchup() {
         </section>`;
     } catch (err) {
         Logger.warn('NFL landing matchup failed', err && err.message, 'APP');
-        host.remove();
-    }
-}
-
-// ── NCAAF landing Breaking News banner (Phase 3) — clone of the NFL version,
-// sport param swapped. _isNewsBreaking (js/news.js) is already sport-agnostic.
-async function _loadNCAAFLandingBreakingNews() {
-    const host = document.getElementById('slBreaking');
-    if (!host) return;
-    try {
-        let data = (typeof _newsCache !== 'undefined') ? _newsCache.ncaaf : null;
-        if (!data) {
-            const res = await fetch('/api/news?sport=ncaaf');
-            if (!res.ok) throw new Error(`news ${res.status}`);
-            data = await res.json();
-            if (typeof _newsCache !== 'undefined') _newsCache.ncaaf = data;
-        }
-        const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href);
-        const breaking = articles
-            .filter(a => typeof _isNewsBreaking === 'function' && _isNewsBreaking(a))
-            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))[0];
-        if (!breaking || !host.isConnected) { host.remove(); return; }
-        host.innerHTML = `<a class="sl-breaking-banner" href="${_escHtml(breaking.links.web.href)}" target="_blank" rel="noopener">
-            <span class="sl-breaking-tag">BREAKING</span>
-            <span class="sl-breaking-headline">${_escHtml(breaking.headline)}</span>
-        </a>`;
-    } catch (err) {
-        Logger.warn('NCAAF landing breaking news failed', err && err.message, 'APP');
         host.remove();
     }
 }
@@ -3289,11 +3261,10 @@ if (typeof window !== 'undefined') {
     window._renderSportLanding = _renderSportLanding;
     window._renderSportPicker = _renderSportPicker;
     window._loadNFLLandingSpotlight = _loadNFLLandingSpotlight;
-    window._loadNFLLandingNews = _loadNFLLandingNews;
+    window._loadSportLandingNews = _loadSportLandingNews;
     window._loadNFLLandingSignature = _loadNFLLandingSignature;
     window._loadNFLLandingFantasyPulse = _loadNFLLandingFantasyPulse;
     window._loadNFLLandingMatchup = _loadNFLLandingMatchup;
-    window._loadNCAAFLandingBreakingNews = _loadNCAAFLandingBreakingNews;
     window._loadNCAAFLandingSpotlight = _loadNCAAFLandingSpotlight;
     window._loadNCAAFLandingRankings = _loadNCAAFLandingRankings;
     window.loadHome   = loadHome;
