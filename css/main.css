@@ -1416,8 +1416,19 @@ main {
     border-radius: 10px;
     letter-spacing: 0.04em;
 }
-.home-recent-badge--nba { background: color-mix(in srgb, var(--color-pct) 18%, transparent); color: var(--color-pct); }
-.home-recent-badge--mlb { background: var(--accent-subtle); color: var(--accent); }
+.home-recent-badge--nba   { background: color-mix(in srgb, var(--color-pct) 18%, transparent); color: var(--color-pct); }
+.home-recent-badge--mlb   { background: var(--accent-subtle); color: var(--accent); }
+.home-recent-badge--nfl   { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+.home-recent-badge--ncaaf { background: color-mix(in srgb, var(--color-stl) 15%, transparent); color: var(--color-stl); }
+.home-recent-badge--ncaab { background: color-mix(in srgb, var(--color-blk) 18%, transparent); color: var(--color-blk); }
+.home-recent-badge--wnba  { background: color-mix(in srgb, var(--color-ast) 18%, transparent); color: var(--color-ast); }
+
+.home-follow-logo {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
 
 .home-recent-name {
     font-weight: 600;

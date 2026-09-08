@@ -761,7 +761,7 @@ function loadHome() {
     _renderHomeMoment();
     _renderSportPicker();
     _renderHomeRecents();
-    _renderHomeStarred();
+    _renderHomeFollowing();
     _syncHomeSportTabUI();
     _loadHomeTodayGames();
     _wireHomeSportTabs();
@@ -825,47 +825,189 @@ function _renderHomeRecents() {
     });
 }
 
-function _renderHomeStarred() {
+// Home redesign Phase 2 (2026-09-08) — cross-sport "Following" module. Was MLB-player-only
+// ("Starred Players"); every non-MLB follow, and every followed TEAM in any sport, used to
+// be silently dropped. Neither the site-wide #favRail (D-103, teams only) nor the sign-in-
+// gated /dashboard (D-069) cover this: this is the home page's own quick-glance surface.
+// Sync pass renders whatever's already resolvable (MLB, NFL/NCAAF/NCAAB/WNBA teams); async
+// pass lazy-warms the NFL Sleeper pool and fetches NCAAF/WNBA followed players individually
+// (no bulk pool exists for either), then repaints -- mirrors _renderHomeInsights' own
+// background-then-rerender pattern below.
+function _renderHomeFollowing() {
     const el = document.getElementById('homeStarred');
     if (!el) return;
-    // AuthState.follows keys are "sport:entityType:entityId" (see js/auth.js); pull out
-    // the numeric id for every followed MLB player. Was AppState.mlbFavorites before the
-    // 2026-08-05 merge into the unified follow-star system.
-    const favIds = AuthState.follows
-        ? [...AuthState.follows].filter(k => k.startsWith('mlb:player:')).map(k => Number(k.split(':')[2]))
-        : [];
-    if (!favIds.length) { el.innerHTML = ''; return; }
+    if (typeof AuthState === 'undefined' || !AuthState.follows || !AuthState.follows.size ||
+        typeof _dashGroupFollows !== 'function') {
+        el.innerHTML = '';
+        return;
+    }
+    const bySport = _dashGroupFollows();
+    const resolved = {
+        mlb:   { teams: [], players: [] }, nfl:   { teams: [], players: [] },
+        ncaaf: { teams: [], players: [] }, ncaab: { teams: [], players: [] },
+        wnba:  { teams: [], players: [] },
+    };
+    _renderHomeFollowingResolveSync(bySport, resolved);
+    _renderHomeFollowingPaint(resolved);
+    _renderHomeFollowingHydrate(bySport, resolved);
+}
 
-    const chips = favIds.map(id => {
+// Functions, not top-level `const`s -- loadHome() runs synchronously during script
+// bootstrap (setupNavigation -> _loadFromHash -> navigateTo, all called near the top of
+// this file), before the JS engine reaches a `const` declared further down (see
+// _promoMoments' own note above for the exact TDZ bug this already caused once, live,
+// 2026-08-02). Function declarations are fully hoisted, so these read identically with
+// no ordering hazard.
+function _hfSportOrder() { return ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba']; }
+function _hfPlayerDetailFn(sport) {
+    return { mlb: 'showMLBPlayerDetail', nfl: 'showNFLPlayerDetail', ncaaf: 'showNCAAFPlayer', wnba: 'showWNBAPlayer' }[sport];
+}
+
+function _hfTeamChip(sport, abbr) {
+    const logo = typeof _dashTeamLogo === 'function' ? _dashTeamLogo(sport, abbr) : null;
+    const badge = logo
+        ? `<img class="home-follow-logo" src="${_escHtml(logo)}" alt="" data-hide-on-error>`
+        : `<span class="home-recent-badge home-recent-badge--${sport}">${_escHtml(abbr.slice(0, 2))}</span>`;
+    return `
+        <button class="home-recent-chip" data-follow-kind="team" data-follow-sport="${sport}" data-follow-abbr="${_escHtml(abbr)}">
+            ${badge}
+            <span class="home-recent-name">${_escHtml(abbr)}</span>
+            <span class="home-recent-sub" data-follow-state hidden></span>
+        </button>`;
+}
+
+function _hfPlayerChip(sport, id, name, teamAbbr, sub) {
+    return `
+        <button class="home-recent-chip" data-follow-kind="player" data-follow-sport="${sport}" data-follow-id="${id}">
+            <span class="home-recent-badge home-recent-badge--${sport}">♥</span>
+            <span class="home-recent-name">${_escHtml(name)}</span>
+            <span class="home-recent-sub">${_escHtml(teamAbbr || '')}${sub ? ' · ' + _escHtml(sub) : ''}</span>
+        </button>`;
+}
+
+// Shared by the sync pass (pool already warm from a prior NFL page visit) and the async
+// hydrate pass (pool just warmed via fetchNFLSleeperPool()) -- factored out so warming the
+// pool actually gets used to resolve the follow, rather than only warming it and never
+// re-reading it.
+function _hfResolveNflPlayers(bySport, resolved) {
+    if (typeof _nflPoolMap === 'undefined' || !_nflPoolMap) return;
+    (bySport.nfl?.players || []).forEach(id => {
+        const p = _nflPoolMap[id];
+        if (!p) return;
+        const name = typeof _nflPlayerName === 'function' ? _nflPlayerName(p) : (p.full_name || '');
+        resolved.nfl.players.push(_hfPlayerChip('nfl', id, name, p.team, p.position));
+    });
+}
+
+// MLB + team chips for every sport resolve synchronously (already-warm AppState data, or a
+// pure abbr->logo lookup with no fetch) -- populate them directly into `resolved` so a repeat
+// call (from the async hydrate pass) doesn't need to redo this work.
+function _renderHomeFollowingResolveSync(bySport, resolved) {
+    (bySport.mlb?.players || []).forEach(idStr => {
+        const id = Number(idStr);
         const player = [...(AppState.mlbPlayers?.hitting || []), ...(AppState.mlbPlayers?.pitching || [])]
             .find(p => p.id === id);
-        if (!player) return null;
+        if (!player) return;
         const hitSt = AppState.mlbPlayerStats?.hitting?.[id];
         const pitSt = AppState.mlbPlayerStats?.pitching?.[id];
         const stat  = hitSt?.avg ? `AVG ${hitSt.avg}` : pitSt?.era ? `ERA ${pitSt.era}` : '';
-        return `
-            <button class="home-recent-chip" data-id="${id}">
-                <span class="home-recent-badge home-recent-badge--mlb">♥</span>
-                <span class="home-recent-name">${_escHtml(player.fullName)}</span>
-                <span class="home-recent-sub">${_escHtml(player.teamAbbr || '')}${stat ? ' · ' + stat : ''}</span>
-            </button>`;
-    }).filter(Boolean);
+        resolved.mlb.players.push(_hfPlayerChip('mlb', id, player.fullName, player.teamAbbr, stat));
+    });
+
+    _hfResolveNflPlayers(bySport, resolved);
+
+    _hfSportOrder().forEach(sport => {
+        (bySport[sport]?.teams || []).forEach(abbr => {
+            resolved[sport].teams.push(_hfTeamChip(sport, abbr));
+        });
+    });
+}
+
+function _renderHomeFollowingPaint(resolved) {
+    const el = document.getElementById('homeStarred');
+    if (!el) return;
+
+    const chips = [
+        ..._hfSportOrder().flatMap(sport => resolved[sport].teams),
+        ..._hfSportOrder().flatMap(sport => resolved[sport].players),
+    ].slice(0, 8);
 
     if (!chips.length) { el.innerHTML = ''; return; }
 
     el.innerHTML = `
         <div class="home-section-hdr">
-            <span class="home-section-title">Starred Players</span>
+            <span class="home-section-title">Following</span>
         </div>
         <div class="home-recents-grid">${chips.join('')}</div>
     `;
 
     el.querySelectorAll('.home-recent-chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            const id = parseInt(chip.dataset.id, 10);
-            if (typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(id);
+            const sport = chip.dataset.followSport;
+            if (chip.dataset.followKind === 'team') {
+                if (typeof _favRailGoToTeam === 'function') _favRailGoToTeam(sport, chip.dataset.followAbbr, `${sport}-teams`);
+                return;
+            }
+            const id = chip.dataset.followId;
+            const fnName = _hfPlayerDetailFn(sport);
+            const fn = fnName && window[fnName];
+            if (typeof fn === 'function') fn(sport === 'mlb' ? parseInt(id, 10) : id);
         });
     });
+}
+
+// Followed NFL players need the Sleeper pool warm (lazy -- mirrors js/search.js's own
+// on-demand warm, never fetched unconditionally on every home load); NCAAF/WNBA have no
+// bulk pool at all, so each followed player is resolved by its own athlete fetch, capped
+// at 10 and per-id try/catch so one bad id can't drop its siblings.
+async function _renderHomeFollowingHydrate(bySport, resolved) {
+    const nflIds = bySport.nfl?.players || [];
+    if (nflIds.length && typeof _nflPoolMap !== 'undefined' && !_nflPoolMap && typeof fetchNFLSleeperPool === 'function') {
+        try {
+            await fetchNFLSleeperPool();
+            _hfResolveNflPlayers(bySport, resolved);
+        } catch (err) { Logger.warn('Home Following: NFL pool warm failed', err, 'APP'); }
+    }
+
+    const ncaafIds = (bySport.ncaaf?.players || []).slice(0, 10);
+    const ncaafFetches = ncaafIds.map(async id => {
+        try {
+            const season = (typeof _ncaaf !== 'undefined' && _ncaaf.season) || undefined;
+            const cacheKey = `ncaaf:athlete:${id}:${season}`;
+            let data = ApiCache.get(cacheKey);
+            if (!data) {
+                const res = await fetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                if (!res.ok) return;
+                data = await res.json();
+                ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            }
+            const bio = data?.bio;
+            if (bio?.name) resolved.ncaaf.players.push(_hfPlayerChip('ncaaf', id, bio.name, bio.team, bio.pos));
+        } catch (err) { Logger.warn('Home Following: NCAAF athlete fetch failed', err, 'APP'); }
+    });
+
+    const wnbaIds = (bySport.wnba?.players || []).slice(0, 10);
+    const wnbaFetches = wnbaIds.map(async id => {
+        try {
+            const season = (typeof _wnba !== 'undefined' && _wnba.season) || undefined;
+            const cacheKey = `wnba:athlete:${id}:${season}`;
+            let data = ApiCache.get(cacheKey);
+            if (!data) {
+                const res = await fetch(`/api/wnbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                if (!res.ok) return;
+                data = await res.json();
+                ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            }
+            const bio = data?.bio;
+            if (bio?.name) resolved.wnba.players.push(_hfPlayerChip('wnba', id, bio.name, bio.team, bio.pos));
+        } catch (err) { Logger.warn('Home Following: WNBA athlete fetch failed', err, 'APP'); }
+    });
+
+    // NCAAB: no follow-star and no athlete endpoint exist yet (resolved.ncaab.players stays
+    // empty by construction) -- nothing to await here, kept out of the Promise.all on purpose.
+    await Promise.all([...ncaafFetches, ...wnbaFetches]);
+
+    if (AppState.currentView === 'home') _renderHomeFollowingPaint(resolved);
 }
 
 function _renderHotStrip() {
@@ -1142,8 +1284,7 @@ function _gameHasFav(g) {
 // auth.js's toggleFollow() dispatches this event after every follow/unfollow;
 // the generic per-star repaint already happened by the time this fires.
 window.addEventListener('ss:follow-changed', (e) => {
-    if (!e.detail || e.detail.sport !== 'mlb') return;
-    if (e.detail.entityType === 'team') {
+    if (e.detail && e.detail.sport === 'mlb' && e.detail.entityType === 'team') {
         if (typeof _loadHomeTodayGames === 'function' && document.getElementById('homeTodayGrid')) {
             _loadHomeTodayGames();
         }
@@ -1153,9 +1294,11 @@ window.addEventListener('ss:follow-changed', (e) => {
             updateMLBTicker(AppState.mlbGames);
         }
     }
-    // Home "Starred Players" chips (mlb:player follows) and the team-follow surfaces
-    // above both live on the same home render -- refresh on either kind of change.
-    if (typeof _renderHomeStarred === 'function') _renderHomeStarred();
+    // _renderHomeFollowing covers every sport's team/player follows, unlike the MLB-only
+    // block above, so it must always re-run here regardless of which sport toggled (fixed
+    // 2026-09-08: this whole listener used to return early for any non-mlb `e.detail.sport`,
+    // so a follow toggled anywhere outside MLB silently never updated this section).
+    if (typeof _renderHomeFollowing === 'function') _renderHomeFollowing();
 });
 
 // Settings' Manage Follows list can also be the trigger (its own unfollow button), or a
