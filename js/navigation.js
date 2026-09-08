@@ -376,69 +376,72 @@ function switchSport(sport) {
 
 // ── Breadcrumb ───────────────────────────────────────────────
 
+// `.icon` fields lived here until the 2026-09-07 emoji-removal audit found
+// setBreadcrumb() below only ever reads `.label` -- dead code, removed
+// rather than converted to SVG (nothing renders it).
 const _NAV_META = {
-    home:            { label: 'Home',          icon: '🏠' },
-    'nfl-home':      { label: 'NFL Home',      icon: '🏈' },
-    players:         { label: 'Players',       icon: '👤' },
-    leaders:         { label: 'Leaders',       icon: '🏆' },
-    teams:           { label: 'Teams',         icon: '🏟' },
-    games:           { label: 'Scores',        icon: '📅' },
-    standings:       { label: 'Standings',     icon: '📊' },
-    builder:         { label: 'Builder',       icon: '🧮' },
-    'mlb-players':   { label: 'MLB Players',   icon: '⚾' },
-    'mlb-leaders':   { label: 'MLB Leaders',   icon: '🏆' },
-    'mlb-teams':     { label: 'MLB Teams',     icon: '🏟' },
-    'mlb-games':     { label: 'MLB Scores',    icon: '📅' },
-    'mlb-standings': { label: 'MLB Standings', icon: '📊' },
-    'mlb-builder':   { label: 'Stat Builder',  icon: '🧮' },
-    'mlb-prep':      { label: 'Game Prep',     icon: '📋' },
-    'mlb-highlight-card': { label: 'Highlight Card', icon: '🎬' },
-    'mlb-compare':   { label: 'Compare',       icon: '⚡' },
-    'mlb-scorecard': { label: 'Scorecard',     icon: '📋' },
-    'nfl-players':   { label: 'NFL Players',   icon: '🏈' },
-    'nfl-rankings':  { label: 'Draft HQ · ADP Rankings', icon: '📊' },
-    'nfl-draftkit':  { label: 'Draft HQ', icon: '📋' },
-    'nfl-mock':      { label: 'Draft HQ · Mock Draft', icon: '🏈' },
-    'nfl-mydrafts':  { label: 'Draft HQ · My Drafts', icon: '💾' },
+    home:            { label: 'Home' },
+    'nfl-home':      { label: 'NFL Home' },
+    players:         { label: 'Players' },
+    leaders:         { label: 'Leaders' },
+    teams:           { label: 'Teams' },
+    games:           { label: 'Scores' },
+    standings:       { label: 'Standings' },
+    builder:         { label: 'Builder' },
+    'mlb-players':   { label: 'MLB Players' },
+    'mlb-leaders':   { label: 'MLB Leaders' },
+    'mlb-teams':     { label: 'MLB Teams' },
+    'mlb-games':     { label: 'MLB Scores' },
+    'mlb-standings': { label: 'MLB Standings' },
+    'mlb-builder':   { label: 'Stat Builder' },
+    'mlb-prep':      { label: 'Game Prep' },
+    'mlb-highlight-card': { label: 'Highlight Card' },
+    'mlb-compare':   { label: 'Compare' },
+    'mlb-scorecard': { label: 'Scorecard' },
+    'nfl-players':   { label: 'NFL Players' },
+    'nfl-rankings':  { label: 'Draft HQ · ADP Rankings' },
+    'nfl-draftkit':  { label: 'Draft HQ' },
+    'nfl-mock':      { label: 'Draft HQ · Mock Draft' },
+    'nfl-mydrafts':  { label: 'Draft HQ · My Drafts' },
     // In-Season tools sit outside Draft HQ (D-111) — 'Draft HQ' now names the
     // specific hub page (nfl-draftkit) instead of standing in for the whole
     // Fantasy area, so "Draft HQ · Waiver Wire" would misdescribe a page
     // that isn't reachable through Draft HQ's own nav strip anymore.
-    'nfl-myleague':  { label: 'Fantasy · My League', icon: '🔗' },
-    'nfl-compare':   { label: 'Player Compare', icon: '⚡' },
-    'nfl-leaders':   { label: 'NFL Leaders',   icon: '🏈' },
-    'nfl-trending':  { label: 'Fantasy · Trending', icon: '🔥' },
-    'nfl-injuries':  { label: 'Fantasy · Injury Report', icon: '🩺' },
-    'nfl-waivers':   { label: 'Fantasy · Waiver Wire', icon: '📈' },
-    'nfl-teams':     { label: 'NFL Teams',     icon: '🏈' },
-    'nfl-games':     { label: 'NFL Scores',    icon: '📅' },
-    'nfl-standings': { label: 'NFL Standings', icon: '📊' },
-    'nfl-highlight-card': { label: 'Highlight Card', icon: '🎬' },
-    'nfl-sos':       { label: 'Draft HQ · Schedule', icon: '🗓️' },
-    'nhl-players':   { label: 'NHL Leaders',   icon: '🏒' },
-    'nhl-leaders':   { label: 'NHL Leaders',   icon: '🏒' },
-    'nhl-teams':     { label: 'NHL Teams',     icon: '🏒' },
-    'nhl-games':     { label: 'NHL Scores',    icon: '📅' },
-    'nhl-standings': { label: 'NHL Standings', icon: '📊' },
-    'ncaaf-scores':    { label: 'College Scores',    icon: '🏈' },
-    'ncaaf-standings': { label: 'College Standings', icon: '📊' },
-    'ncaaf-teams':     { label: 'College Teams',     icon: '🏈' },
-    'ncaaf-rankings':  { label: 'CFB Rankings',      icon: '🏆' },
-    'ncaaf-leaders':   { label: 'CFB Leaders',       icon: '🏈' },
-    'mlb-home':        { label: 'MLB',               icon: '⚾' },
-    'ncaaf-home':      { label: 'College Football',  icon: '🏈' },
-    'ncaab-scores':    { label: 'College Scores',    icon: '🏀' },
-    'ncaab-standings': { label: 'College Standings', icon: '📊' },
-    'ncaab-teams':     { label: 'College Teams',     icon: '🏀' },
-    'ncaab-rankings':  { label: 'CBB Rankings',      icon: '🏆' },
-    'ncaab-home':      { label: 'College Basketball', icon: '🏀' },
-    'wnba-scores':     { label: 'WNBA Scores',       icon: '🏀' },
-    'wnba-standings':  { label: 'WNBA Standings',    icon: '📊' },
-    'wnba-teams':      { label: 'WNBA Teams',        icon: '🏀' },
-    'wnba-leaders':    { label: 'WNBA Leaders',      icon: '🏆' },
-    'wnba-playoffs':   { label: 'WNBA Playoff Picture', icon: '🏆' },
-    'wnba-home':       { label: 'WNBA',              icon: '🏀' },
-    'arcade':        { label: 'Arcade',        icon: '🎮' },
+    'nfl-myleague':  { label: 'Fantasy · My League' },
+    'nfl-compare':   { label: 'Player Compare' },
+    'nfl-leaders':   { label: 'NFL Leaders' },
+    'nfl-trending':  { label: 'Fantasy · Trending' },
+    'nfl-injuries':  { label: 'Fantasy · Injury Report' },
+    'nfl-waivers':   { label: 'Fantasy · Waiver Wire' },
+    'nfl-teams':     { label: 'NFL Teams' },
+    'nfl-games':     { label: 'NFL Scores' },
+    'nfl-standings': { label: 'NFL Standings' },
+    'nfl-highlight-card': { label: 'Highlight Card' },
+    'nfl-sos':       { label: 'Draft HQ · Schedule' },
+    'nhl-players':   { label: 'NHL Leaders' },
+    'nhl-leaders':   { label: 'NHL Leaders' },
+    'nhl-teams':     { label: 'NHL Teams' },
+    'nhl-games':     { label: 'NHL Scores' },
+    'nhl-standings': { label: 'NHL Standings' },
+    'ncaaf-scores':    { label: 'College Scores' },
+    'ncaaf-standings': { label: 'College Standings' },
+    'ncaaf-teams':     { label: 'College Teams' },
+    'ncaaf-rankings':  { label: 'CFB Rankings' },
+    'ncaaf-leaders':   { label: 'CFB Leaders' },
+    'mlb-home':        { label: 'MLB' },
+    'ncaaf-home':      { label: 'College Football' },
+    'ncaab-scores':    { label: 'College Scores' },
+    'ncaab-standings': { label: 'College Standings' },
+    'ncaab-teams':     { label: 'College Teams' },
+    'ncaab-rankings':  { label: 'CBB Rankings' },
+    'ncaab-home':      { label: 'College Basketball' },
+    'wnba-scores':     { label: 'WNBA Scores' },
+    'wnba-standings':  { label: 'WNBA Standings' },
+    'wnba-teams':      { label: 'WNBA Teams' },
+    'wnba-leaders':    { label: 'WNBA Leaders' },
+    'wnba-playoffs':   { label: 'WNBA Playoff Picture' },
+    'wnba-home':       { label: 'WNBA' },
+    'arcade':        { label: 'Arcade' },
 };
 
 function setBreadcrumb(root, current) {
@@ -1392,14 +1395,17 @@ function _renderBottomNav(sport) {
 // deliberately NOT yet in the ordered SPORTS list below, so it stays invisible in
 // the switcher/picker band until its data layer (functions/api/ncaab.js, js/ncaab.js,
 // Scores view) ships in P2. Same phasing discipline D-042 used for NCAAF.
+// `icon` values are _ICON keys (js/config.js), not emoji, since 2026-09-07's
+// site-wide emoji-removal pass -- render sites must use _iconSvg(meta.icon)
+// into .innerHTML, not .textContent (see _renderSportSwitch/_applySportUI below).
 const SPORTS_META = {
-    nba:   { id: 'nba',   label: 'NBA',   icon: '🏀', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
-    mlb:   { id: 'mlb',   label: 'MLB',   icon: '⚾', sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
-    nfl:   { id: 'nfl',   label: 'NFL',   icon: '🏈', sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
-    nhl:   { id: 'nhl',   label: 'NHL',   icon: '🏒', sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
-    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: '🏈', sub: 'College Football', defaultView: 'ncaaf-home',   accent: '#c8452b' },
-    ncaab: { id: 'ncaab', label: 'NCAAB', icon: '🏀', sub: 'College Basketball', defaultView: 'ncaab-home', accent: '#d97706' },
-    wnba:  { id: 'wnba',  label: 'WNBA',  icon: '🏀', sub: 'WNBA',              defaultView: 'wnba-home',  accent: '#f5580a' },
+    nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
+    mlb:   { id: 'mlb',   label: 'MLB',   icon: 'baseball',   sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
+    nfl:   { id: 'nfl',   label: 'NFL',   icon: 'football',   sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
+    nhl:   { id: 'nhl',   label: 'NHL',   icon: 'puck',       sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
+    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: 'football',   sub: 'College Football', defaultView: 'ncaaf-home',   accent: '#c8452b' },
+    ncaab: { id: 'ncaab', label: 'NCAAB', icon: 'basketball', sub: 'College Basketball', defaultView: 'ncaab-home', accent: '#d97706' },
+    wnba:  { id: 'wnba',  label: 'WNBA',  icon: 'basketball', sub: 'WNBA',              defaultView: 'wnba-home',  accent: '#f5580a' },
 };
 // Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
 // ncaab added here in P2 (D-052) — its data layer (functions/api/ncaab.js, js/ncaab.js) and
@@ -1423,7 +1429,9 @@ function _renderSportSwitch(sport) {
     const meta = SPORTS_META[sport];
     const triggerIcon = document.getElementById('sportSwitchTriggerIcon');
     const triggerLabel = document.getElementById('sportSwitchTriggerLabel');
-    if (triggerIcon) triggerIcon.textContent = meta ? meta.icon : '🏟';
+    // .innerHTML, not .textContent (2026-09-07 emoji removal) -- meta.icon is
+    // now an _ICON key rendered as SVG, not a raw emoji character.
+    if (triggerIcon) triggerIcon.innerHTML = _iconSvg(meta ? meta.icon : 'house', 14);
     if (triggerLabel) triggerLabel.textContent = meta ? meta.label : 'Sports';
 }
 
@@ -1624,7 +1632,9 @@ function _applySportUI(sport) {
     // defaults to mlb so the sub-nav is never empty. Amends the old CLAUDE.md rule
     // that loadHome must call _applySportUI('mlb').
     if (sport === 'home') {
-        if (brandIcon) brandIcon.textContent = '🏟';
+        // .innerHTML, not .textContent (2026-09-07 emoji removal) -- 'house'
+        // is an _ICON key rendered as SVG, not a raw emoji character.
+        if (brandIcon) brandIcon.innerHTML = _iconSvg('house', 20);
         if (brandSub)  brandSub.textContent  = 'Multi-Sport Analytics';
         document.getElementById('nflOffseasonStrip')?.remove();
         _renderSubNav('mlb');
@@ -1635,7 +1645,9 @@ function _applySportUI(sport) {
         return;
     }
     const meta = SPORTS_META[sport] || SPORTS_META.mlb;
-    if (brandIcon) brandIcon.textContent = meta.icon;
+    // .innerHTML, not .textContent (2026-09-07 emoji removal) -- meta.icon is
+    // now an _ICON key rendered as SVG, not a raw emoji character.
+    if (brandIcon) brandIcon.innerHTML = _iconSvg(meta.icon, 20);
     if (brandSub)  brandSub.textContent  = meta.sub;
     if (sport !== 'nfl') document.getElementById('nflOffseasonStrip')?.remove();
     const tickerScoresBtn = document.getElementById('tickerScoresBtn');

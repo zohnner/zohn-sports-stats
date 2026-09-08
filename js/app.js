@@ -225,7 +225,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
     grid.className = 'sport-landing sport-landing--editorial';
     grid.innerHTML = `
         <div class="sl-hero-strip" id="slHero" style="--sport-accent:${meta.accent}">
-            <span class="sl-hero-strip-icon" aria-hidden="true">${meta.icon}</span>
+            <span class="sl-hero-strip-icon" aria-hidden="true">${_iconSvg(meta.icon)}</span>
             <span class="sl-hero-strip-title">${_escHtml(meta.label)}</span>
             <span class="sl-hero-strip-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</span>
         </div>
@@ -2647,7 +2647,7 @@ function _renderSportPicker() {
             ? `<span class="sport-card-stats">${c.today} today${hasLive ? ` \u00b7 ${c.live} live` : ''}</span>` : '';
         const extraAria = (c && c.today > 0) ? `, ${c.today} game${c.today === 1 ? '' : 's'} today` : '';
         return `<button class="sport-card sport-card--${cls}" data-sport="${s.id}" style="--sport-accent:${s.accent}" aria-label="${_escHtml(s.label)} \u2014 ${_escHtml(st.label)}${extraAria}">
-            <span class="sport-card-icon" aria-hidden="true">${s.icon}</span>
+            <span class="sport-card-icon" aria-hidden="true">${_iconSvg(s.icon)}</span>
             <span class="sport-card-body">
                 <span class="sport-card-name">${_escHtml(s.label)}</span>
                 <span class="sport-card-status"><span class="sport-card-dot"></span>${_escHtml(st.label)}</span>
@@ -2676,7 +2676,7 @@ function _renderSportLanding(sport) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     if (typeof _applySportUI === 'function') _applySportUI(sport);
-    const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: '🏟️', label: sport.toUpperCase(), accent: 'var(--accent)' };
+    const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport]) || { icon: 'house', label: sport.toUpperCase(), accent: 'var(--accent)' };
     const cfg = _SPORT_LANDING[sport] || { tag: '', cards: [] };
     const tag = (typeof cfg.tag === 'function') ? cfg.tag() : cfg.tag;
     const st = (typeof _sportPickerStatus === 'function') ? _sportPickerStatus(sport) : { cls: 'idle', label: '' };
@@ -2695,7 +2695,7 @@ function _renderSportLanding(sport) {
     // editorial branch above now.
     grid.innerHTML = `
         <div class="sl-hero" id="slHero" style="--sport-accent:${meta.accent}">
-            <div class="sl-hero-icon" aria-hidden="true">${meta.icon}</div>
+            <div class="sl-hero-icon" aria-hidden="true">${_iconSvg(meta.icon)}</div>
             <h1 class="sl-hero-title">${_escHtml(meta.label)}</h1>
             <p class="sl-hero-tag">${_escHtml(tag)}</p>
             <div class="sl-hero-status sl-hero-status--${st.cls}"><span class="sl-status-dot"></span>${_escHtml(st.label)}</div>
@@ -4293,7 +4293,7 @@ function _renderHomeMoment() {
     const promoSport = promo.primary.view.split('-')[0];
     const promoMeta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[promoSport]) || {};
     const promoAccent = promoMeta.accent || 'var(--accent)';
-    const promoIcon = promoMeta.icon ? `${promoMeta.icon} ` : '';
+    const promoIcon = promoMeta.icon ? `<span class="hm-kicker-icon">${_iconSvg(promoMeta.icon, 12)}</span>` : '';
 
     host.hidden = false;
     host.innerHTML = `
