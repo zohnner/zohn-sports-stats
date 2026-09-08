@@ -16,10 +16,11 @@
 // ============================================================
 
 let _newsCache = {};
-// NCAAB added during the sport-landing port (2026-09-07) -- functions/api/news.js's
-// LEAGUES map already covers it, same site.web.api.espn.com host ncaab.js
-// already proxies for scoreboard/standings/rankings.
-const NEWS_SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab'];
+// NCAAB + WNBA added during the sport-landing port (2026-09-07) --
+// functions/api/news.js's LEAGUES map already covers both, same
+// site.web.api.espn.com host ncaab.js/wnba.js already proxy for
+// scoreboard/standings/rankings.
+const NEWS_SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba'];
 const NEWS_INJURY_RE = /\b(injur(?:y|ed|ies)|questionable|doubtful|day-to-day|out for the (?:season|year)|ruled out|will miss|placed on (?:ir|injured reserve)|sidelined|concussion|torn (?:acl|mcl|achilles)|surgery|fracture(?:d)?|sprain(?:ed)?)\b/i;
 
 function _isNewsInjuryRelated(a) {

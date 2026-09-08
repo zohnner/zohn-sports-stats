@@ -364,6 +364,20 @@ function _wnbaPlayoffRow(t, rank, gbFrom8) {
     </tr>`;
 }
 
+// Extracted from displayWNBAPlayoffPicture's own body (2026-09-07,
+// sport-landing port) so the WNBA landing page's Signature module can reuse
+// the identical overall-record sort instead of re-deriving it -- same
+// "hoist for reuse" move already made for _mlbPowerScore/_mlbHeroLeverage.
+function _wnbaComputePlayoffField(confs) {
+    const all = confs.flatMap(c => c.teams.map(t => ({ ...t, conf: c.name })));
+    all.sort((a, b) => {
+        if (a.pct != null && b.pct != null && a.pct !== b.pct) return b.pct - a.pct;
+        if (a.w != null && b.w != null && a.w !== b.w) return b.w - a.w;
+        return 0;
+    });
+    return all;
+}
+
 async function displayWNBAPlayoffPicture() {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
@@ -382,16 +396,11 @@ async function displayWNBAPlayoffPicture() {
         document.getElementById('wnbaPlayoffBody').innerHTML = _wnbaErr('Playoff picture is unavailable right now.', 'displayWNBAPlayoffPicture');
         return;
     }
-    const all = confs.flatMap(c => c.teams.map(t => ({ ...t, conf: c.name })));
+    const all = _wnbaComputePlayoffField(confs);
     if (!all.length) {
         document.getElementById('wnbaPlayoffBody').innerHTML = _wnbaErr('No standings returned for the ' + _wnba.season + ' season.', 'displayWNBAPlayoffPicture');
         return;
     }
-    all.sort((a, b) => {
-        if (a.pct != null && b.pct != null && a.pct !== b.pct) return b.pct - a.pct;
-        if (a.w != null && b.w != null && a.w !== b.w) return b.w - a.w;
-        return 0;
-    });
     const eighth = all[7] || null;
     const rows = all.map((t, i) => {
         const rank = i + 1;
@@ -416,6 +425,7 @@ async function displayWNBAPlayoffPicture() {
 }
 
 window.displayWNBAPlayoffPicture = displayWNBAPlayoffPicture;
+window._wnbaComputePlayoffField = _wnbaComputePlayoffField;
 window._renderWNBAView      = _renderWNBAView;
 window.updateWNBATicker     = updateWNBATicker;
 

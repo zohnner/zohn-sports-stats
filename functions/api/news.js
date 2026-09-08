@@ -1,15 +1,16 @@
 /**
  * Pages Function: /api/news
- * Same-origin proxy for ESPN league news (NFL + MLB + NCAAF + NCAAB). No keys,
- * no D1. Headlines only — the client shows headline + blurb + attribution +
- * link-out (copyright-safe; never republishes full articles). D-024, NCAAF
- * added D-125, NCAAB added during the sport-landing port (2026-09-07) --
- * same site.web.api.espn.com host functions/api/ncaab.js already proxies for
- * scoreboard/standings/rankings, so no CSP change is needed.
+ * Same-origin proxy for ESPN league news (NFL + MLB + NCAAF + NCAAB + WNBA).
+ * No keys, no D1. Headlines only — the client shows headline + blurb +
+ * attribution + link-out (copyright-safe; never republishes full articles).
+ * D-024, NCAAF added D-125, NCAAB + WNBA added during the sport-landing port
+ * (2026-09-07) -- same site.web.api.espn.com host functions/api/ncaab.js and
+ * functions/api/wnba.js already proxy for scoreboard/standings/rankings, so
+ * no CSP change is needed.
  *
- * Usage: /api/news?sport=nfl|mlb|ncaaf|ncaab
+ * Usage: /api/news?sport=nfl|mlb|ncaaf|ncaab|wnba
  */
-const LEAGUES = { nfl: 'football/nfl', mlb: 'baseball/mlb', ncaaf: 'football/college-football', ncaab: 'basketball/mens-college-basketball' };
+const LEAGUES = { nfl: 'football/nfl', mlb: 'baseball/mlb', ncaaf: 'football/college-football', ncaab: 'basketball/mens-college-basketball', wnba: 'basketball/wnba' };
 // site.api.espn.com -> site.web.api.espn.com host swap -- see functions/api/nfl.js
 // for the full note. This host serves both leagues' news here, so the original
 // block was silently killing the MLB home headlines rail too, not just NFL --

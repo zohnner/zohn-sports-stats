@@ -156,6 +156,10 @@ const _EDITORIAL_SLOTS = {
     // `leaders: true` here points #slLeaders at a Conference Leaders teaser
     // (team standings, honestly labeled) rather than an invented stat.
     ncaab: { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
+    // WNBA (Phase 5): unlike NCAAB, real player leaders exist (D-092
+    // Resolution 5), so #slLeaders is a genuine stat-leaders module here, not
+    // a team-standings substitute.
+    wnba:  { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
 };
 const _EDITORIAL_LOADERS = {
     nfl: () => {
@@ -185,6 +189,13 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNCAABLandingConferenceLeaders === 'function') _loadNCAABLandingConferenceLeaders();
         if (typeof _loadPollRankingsSignature === 'function') _loadPollRankingsSignature(fetchNCAABRankings, 'ncaab-rankings', 'NCAAB');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaab', 'Latest NCAAB');
+    },
+    wnba: () => {
+        if (typeof _loadWNBALandingSpotlight === 'function') _loadWNBALandingSpotlight();
+        if (typeof _loadWNBALandingGames === 'function') _loadWNBALandingGames();
+        if (typeof _loadWNBALandingLeaders === 'function') _loadWNBALandingLeaders();
+        if (typeof _loadWNBALandingSignature === 'function') _loadWNBALandingSignature();
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('wnba', 'Latest WNBA');
     },
 };
 function _renderEditorialLanding(sport, meta, cfg, st) {
@@ -1753,12 +1764,14 @@ function _heroFromNFLGame(g, kind) {
 // _openNFLGameFromHero/_heroFromNFLGame — same shell markup (.hero-board/
 // .hero-row/.hero-kicker/.hero-headline/etc.), so no new CSS is needed, only
 // a #rank badge added next to a ranked team's abbreviation (a real CFB-
-// specific signal NFL's board has no equivalent of). Renamed from
-// _heroNCAAFBoard (2026-09-07, sport-landing port): the body reads
-// g.awayTeam/g.homeTeam's generic {abbr,logo,score,rank,color} shape with
-// nothing NCAAF-specific in it, and NCAAB's landing Spotlight (Phase 4)
-// reuses it as-is rather than cloning a fourth copy of the same board markup.
-function _heroCollegeBoard(g, showScore) {
+// specific signal NFL's board has no equivalent of). Renamed twice during
+// the sport-landing port (2026-09-07): _heroNCAAFBoard -> _heroCollegeBoard
+// (NCAAB's landing Spotlight reused it) -> _heroLogoBoard (WNBA's landing
+// Spotlight reuses it too, and WNBA isn't college -- the body only ever read
+// g.awayTeam/g.homeTeam's generic {abbr,logo,score,rank,color} shape, never
+// anything sport-specific, so the name should describe what it draws: a
+// logo-based board, as opposed to MLB/NFL's real-photo hero visual).
+function _heroLogoBoard(g, showScore) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const tc = t => t.color ? `#${String(t.color).replace('#', '')}` : 'var(--accent)';
     const row = (t, winner) => `
@@ -1802,7 +1815,7 @@ function _heroFromNCAAFGame(g, kind) {
         hook = leadTeam
             ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
             : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
-        board = _heroCollegeBoard(g, true);
+        board = _heroLogoBoard(g, true);
         cta = 'Watch live →';
         liveDetail = _heroNCAAFLiveDetail(g);
     } else {
@@ -1810,7 +1823,7 @@ function _heroFromNCAAFGame(g, kind) {
         const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
         kicker = `<span class="hero-kicker">${g.statusText ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}${g.broadcast ? ' · ' + _esc(g.broadcast) : ''}</span>`;
         hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Kickoff soon';
-        board = _heroCollegeBoard(g, false);
+        board = _heroLogoBoard(g, false);
         cta = 'Game preview →';
     }
     const html = `
@@ -1829,7 +1842,7 @@ function _heroFromNCAAFGame(g, kind) {
 // has no live-game-viewer page at all (Scores/Standings/Teams/Rankings only,
 // per CLAUDE.md's scope), so this is deliberately the plainer of the two
 // college-sport heroes, and its CTA goes to the Scores grid rather than a
-// per-game detail view that doesn't exist. Reuses _heroCollegeBoard (the
+// per-game detail view that doesn't exist. Reuses _heroLogoBoard (the
 // generic board renderer originally written for NCAAF).
 function _heroFromNCAABGame(g, kind) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
@@ -1851,7 +1864,7 @@ function _heroFromNCAABGame(g, kind) {
         hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Tip-off soon';
         cta = 'Full scoreboard →';
     }
-    const board = _heroCollegeBoard(g, kind === 'live');
+    const board = _heroLogoBoard(g, kind === 'live');
     const html = `
         <div class="hero-main">
             ${kicker}
@@ -1861,6 +1874,45 @@ function _heroFromNCAABGame(g, kind) {
         </div>
         <div class="hero-visual">${board}</div>`;
     return { kind, html, onClick: () => navigateTo('ncaab-scores') };
+}
+
+// WNBA landing Game hero (Phase 5 of the sport-landing port) -- same simple
+// live-else-soonest-upcoming picker as NCAAB's (no leverage/marquee scoring
+// model), but the CTA opens the real WNBA game panel (showWNBAGame) rather
+// than just linking to the Scores grid -- WNBA has a real Live/Final Game
+// panel (D-092 Resolution 6), unlike NCAAB. No `rank` field exists on WNBA's
+// team shape (no poll for a pro league), so _heroLogoBoard's rank badge
+// never renders here -- expected, not a missing-data bug.
+function _heroFromWNBAGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
+    let kicker, hook, cta;
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
+        const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
+            : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
+        hook = leadTeam
+            ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
+            : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
+        cta = 'Watch live →';
+    } else {
+        const d = g.date ? new Date(g.date) : null;
+        const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+        kicker = `<span class="hero-kicker">${g.statusText && g.statusText !== 'TBD' ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
+        hook = 'Tip-off soon';
+        cta = 'Game preview →';
+    }
+    const board = _heroLogoBoard(g, kind === 'live');
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}</div>`;
+    return { kind, html, onClick: () => { if (typeof showWNBAGame === 'function') showWNBAGame(g.id); } };
 }
 
 // _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was
@@ -3285,6 +3337,126 @@ async function _loadNCAABLandingConferenceLeaders() {
             <div class="sl-leaders">${tiles}</div></section>`;
     } catch (err) {
         Logger.warn('NCAAB landing conference leaders failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── WNBA landing Game Spotlight (Phase 5) — same simple live-else-soonest
+// picker as NCAAB's (no leverage/marquee model). Reuses _heroFromWNBAGame.
+async function _loadWNBALandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = (AppState.wnbaGames && AppState.wnbaGames.length) ? AppState.wnbaGames
+            : (typeof fetchWNBAScoreboard === 'function' ? await fetchWNBAScoreboard() : []);
+        AppState.wnbaGames = games;
+    } catch (err) {
+        Logger.warn('WNBA landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const live = (games || []).filter(g => g.isLive);
+    const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+    let hero = null;
+    if (live.length) {
+        hero = _heroFromWNBAGame(live[0], 'live');
+    } else if (upcoming.length) {
+        const g = upcoming.slice().sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+        hero = _heroFromWNBAGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+    document.getElementById('slHero')?.classList.add('sl-hero--slim');
+}
+// ── WNBA landing Games module (Phase 5) — reuses _wnbaGameCard (js/wnba.js),
+// which already wires each card to the real showWNBAGame() panel (D-092
+// Resolution 6), unlike NCAAB's Scores-grid-only cards.
+async function _loadWNBALandingGames() {
+    const host = document.getElementById('slGames');
+    if (!host) return;
+    try {
+        const games = (AppState.wnbaGames && AppState.wnbaGames.length) ? AppState.wnbaGames
+            : (typeof fetchWNBAScoreboard === 'function' ? await fetchWNBAScoreboard() : []);
+        AppState.wnbaGames = games;
+        if (!host.isConnected) return;
+        const liveFirst = g => g.isLive ? 0 : 1;
+        const picked = (games || []).slice().sort((a, b) => (liveFirst(a) - liveFirst(b)) || (new Date(a.date) - new Date(b.date))).slice(0, 6);
+        const cards = picked.map(g => (typeof _wnbaGameCard === 'function') ? _wnbaGameCard(g) : '').filter(Boolean).join('');
+        if (!cards) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('wnba-scores')">All scores →</button></div>
+            <div class="sl-games">${cards}</div></section>`;
+    } catch (err) {
+        Logger.warn('WNBA landing games failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+// ── WNBA landing Signature module (Phase 5) — a compact top-4 Playoff
+// Picture snapshot, reusing _wnbaComputePlayoffField (js/wnba.js, hoisted
+// out of displayWNBAPlayoffPicture for this exact reuse) rather than
+// re-deriving the overall-record sort. WNBA's real format has no per-
+// conference bracket (top 8 of 15 by overall record, D-092 Resolution 6),
+// so this shows a single ranked list, not NFL's AFC/NFC split.
+async function _loadWNBALandingSignature() {
+    const host = document.getElementById('slSignature');
+    if (!host) return;
+    try {
+        const season = (typeof _wnba !== 'undefined') ? _wnba.season : (typeof WNBA_LAST_SEASON !== 'undefined' ? WNBA_LAST_SEASON : new Date().getFullYear());
+        const confs = (typeof fetchWNBAStandings === 'function') ? await fetchWNBAStandings(season) : [];
+        if (!host.isConnected) return;
+        const all = (typeof _wnbaComputePlayoffField === 'function') ? _wnbaComputePlayoffField(confs) : [];
+        if (!all.length) { host.remove(); return; }
+        const top4 = all.slice(0, 4);
+        const rows = top4.map((t, i) => `
+            <div class="sl-playoff-row" onclick="navigateTo('wnba-playoffs')">
+                <span class="sl-power-rank">${i + 1}</span>
+                <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
+                <span class="sl-playoff-name">${_escHtml(t.name)}</span>
+                <span class="sl-playoff-rec">${_escHtml(t.overall || '')}</span>
+            </div>`).join('');
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Playoff Picture</span><button class="sl-section-link" onclick="navigateTo('wnba-playoffs')">Full picture →</button></div>
+            <div>${rows}</div></section>`;
+    } catch (err) {
+        Logger.warn('WNBA landing signature module failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+// ── WNBA landing Leaders module (Phase 5) — reuses the same /api/wnbastats
+// category fetch displayWNBALeaders() already calls (that function keeps it
+// inline rather than as a standalone helper, so this fetches it directly
+// rather than adding a factoring pass to a page this port doesn't otherwise
+// touch); picks 3 headline categories for single-leader tiles, same shape as
+// NCAAF's stat-leader tiles.
+async function _loadWNBALandingLeaders() {
+    const host = document.getElementById('slLeaders');
+    if (!host) return;
+    try {
+        const season = (typeof _wnba !== 'undefined') ? _wnba.season : (typeof WNBA_LAST_SEASON !== 'undefined' ? WNBA_LAST_SEASON : new Date().getFullYear());
+        const res = await fetch(`/api/wnbastats?season=${season}`);
+        if (!res.ok) throw new Error(`wnbastats ${res.status}`);
+        const data = await res.json();
+        if (!host.isConnected) return;
+        const cats = (data && data.categories) || [];
+        const wanted = ['PPG', 'RPG', 'APG'];
+        const picked = wanted.map(u => cats.find(c => (c.unit || '').toUpperCase() === u)).filter(Boolean);
+        const tiles = (picked.length ? picked : cats.slice(0, 3)).map(cat => {
+            const l = (cat.leaders || [])[0];
+            if (!l || l.value == null) return '';
+            return `<button class="sl-leader" onclick="navigateTo('wnba-player-${_escHtml(String(l.id))}')">
+                <span class="sl-leader-val">${_escHtml(String(l.value))}<span class="sl-leader-unit">${_escHtml(cat.unit || '')}</span></span>
+                <span class="sl-leader-name">${_escHtml(l.name || '')}</span>
+                <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
+        }).filter(Boolean).join('');
+        if (!tiles) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">League Leaders</span><button class="sl-section-link" onclick="navigateTo('wnba-leaders')">Full leaderboards →</button></div>
+            <div class="sl-leaders">${tiles}</div></section>`;
+    } catch (err) {
+        Logger.warn('WNBA landing leaders failed', err && err.message, 'APP');
         host.remove();
     }
 }
