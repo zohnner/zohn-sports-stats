@@ -48,6 +48,7 @@
     font-size: 1.3rem;
     line-height: 1;
 }
+.arcade-sport-icon svg { width: 1em; height: 1em; }
 
 .arcade-sport-name {
     font-size: 1rem;
@@ -266,6 +267,7 @@
     font-weight: 700;
     color: var(--text-primary);
 }
+.arcade-game-title-inline svg { width: 0.95em; height: 0.95em; vertical-align: -2px; margin-right: 0.15rem; }
 
 .arcade-date-badge {
     font-size: 0.7rem;
@@ -339,6 +341,7 @@
     flex-shrink: 0;
 }
 .arcade-streak-fire { line-height: 1; }
+.arcade-streak-fire svg { width: 1em; height: 1em; vertical-align: -2px; }
 .arcade-streak-num  { color: var(--text-secondary); }
 
 /* ── Daily progress row ─────────────────────────────────── */
@@ -535,6 +538,7 @@
     letter-spacing: 0.2px;
     flex: 1;
 }
+.shuffle-slot-type svg { width: 1em; height: 1em; vertical-align: -2px; }
 
 .shuffle-statline {
     font-size: 1.05rem;
@@ -683,6 +687,10 @@
     font-size: 1.2rem;
     letter-spacing: 2px;
 }
+
+.shuffle-sq { display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 3px; margin: 0 2px; vertical-align: middle; background: currentColor; }
+.shuffle-sq--hit  { opacity: 0.9; }
+.shuffle-sq--miss { opacity: 0.22; }
 
 .shuffle-result--perfect {
     background: rgba(52, 211, 153, 0.1);
@@ -1066,6 +1074,7 @@
     width: 1.6rem;
     text-align: center;
 }
+.bp-clue-icon svg { width: 1em; height: 1em; }
 
 .bp-clue-label {
     font-size: 0.68rem;
@@ -1129,6 +1138,7 @@
     margin: 0.3rem 0;
     color: #fbbf24;
 }
+.bp-star--lit svg { width: 0.85em; height: 0.85em; vertical-align: -1px; fill: currentColor; }
 
 /* Reveal logo */
 
@@ -1274,6 +1284,7 @@
 }
 
 .wam-clue-icon { font-size: 1.1rem; flex-shrink: 0; }
+.wam-clue-icon svg { width: 1em; height: 1em; }
 
 .wam-clue-body {
     display: flex;
@@ -1373,6 +1384,7 @@
     transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 .wam-reveal-btn:hover { background: rgba(6,182,212,0.07); border-color: rgba(6,182,212,0.55); }
+.wam-reveal-btn svg { width: 0.9em; height: 0.9em; }
 .wam-cost { font-size: 0.72rem; color: #f87171; font-weight: 800; }
 
 .wam-submit-btn {
@@ -1420,7 +1432,8 @@
     border-color: rgba(242,107,107,0.25);
 }
 
-.wam-result-icon { font-size: 2rem; line-height: 1; }
+.wam-result-icon { font-size: 2rem; line-height: 1; display: flex; justify-content: center; }
+.wam-result-icon svg { width: 1em; height: 1em; }
 .wam-result-headline { font-size: var(--text-xl); font-weight: 900; color: var(--text-primary); }
 .wam-result-name { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); }
 .wam-result-meta { font-size: var(--text-sm); color: var(--text-muted); font-weight: 500; }
@@ -1532,6 +1545,7 @@
     border-radius: 7px;
     border: 1px solid var(--border-default);
 }
+.statdle-guess svg { width: 1em; height: 1em; flex-shrink: 0; }
 
 .statdle-guess--ok {
     background: rgba(52, 211, 153, 0.08);
@@ -1647,6 +1661,7 @@
     font-weight: 800;
     margin: 0;
 }
+.statdle-result-title svg { width: 0.95em; height: 0.95em; vertical-align: -2px; }
 
 .statdle-result-title--win  { color: #34d399; }
 .statdle-result-title--loss { color: #f87171; }
@@ -1684,6 +1699,11 @@
     letter-spacing: 2px;
 }
 
+.statdle-sq { display: inline-block; width: 0.85rem; height: 0.85rem; border-radius: 3px; margin: 0 2px; vertical-align: middle; }
+.statdle-sq--hit  { background: #34d399; }
+.statdle-sq--miss { background: #f87171; }
+.statdle-sq--skip { background: var(--border-mid); }
+
 .statdle-share-btn {
     padding: 0.5rem 1.4rem;
     border-radius: 8px;
@@ -1695,7 +1715,11 @@
     font-family: inherit;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
+.statdle-share-btn svg { width: 1em; height: 1em; }
 
 .statdle-share-btn:hover {
     background: rgba(249, 115, 22, 0.08);
@@ -1727,6 +1751,7 @@
     letter-spacing: 0.08em;
     color: var(--text-muted);
 }
+.quest-label svg { width: 1em; height: 1em; vertical-align: -1px; }
 .quest-streak {
     font-size: 0.75rem;
     font-weight: 700;
@@ -1736,6 +1761,7 @@
     border-radius: 20px;
     padding: 0.15rem 0.6rem;
 }
+.quest-streak svg { width: 1em; height: 1em; vertical-align: -2px; }
 .quest-text {
     font-size: 1.05rem;
     font-weight: 700;
@@ -1749,6 +1775,7 @@
     font-style: italic;
     margin: 0 0 1.1rem;
 }
+.quest-hint svg { width: 1em; height: 1em; vertical-align: -2px; }
 .quest-search-row {
     display: flex;
     gap: 0.5rem;
@@ -1762,6 +1789,7 @@
     font-size: 0.85rem;
     font-weight: 600;
 }
+.quest-feedback svg { width: 1em; height: 1em; vertical-align: -2px; }
 .quest-feedback--win  { background: #14532d22; color: #4ade80; border: 1px solid #4ade8040; }
 .quest-feedback--miss { background: #450a0a22; color: #f87171; border: 1px solid #f8717140; }
 
@@ -1777,6 +1805,7 @@
 .quest-result--win  { background: #14532d22; color: #4ade80; border: 1px solid #4ade8040; }
 .quest-result--miss { background: #450a0a22; color: #f87171; border: 1px solid #f8717140; }
 .quest-result-icon  { font-size: 1.1rem; flex-shrink: 0; }
+.quest-result-icon svg { width: 1em; height: 1em; }
 
 /* Qualifying players */
 .quest-qualifiers-card {

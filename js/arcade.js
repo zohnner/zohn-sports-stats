@@ -57,7 +57,7 @@ function loadArcade() {
     // Streak display
     const streak = questStreak.count;
     const streakHtml = streak > 0
-        ? `<div class="arcade-streak"><span class="arcade-streak-fire">🔥</span><span class="arcade-streak-num">${streak}-day streak</span></div>`
+        ? `<div class="arcade-streak"><span class="arcade-streak-fire">${_iconSvg('fire', 14)}</span><span class="arcade-streak-num">${streak}-day streak</span></div>`
         : '';
 
     // Progress pips
@@ -99,7 +99,7 @@ function loadArcade() {
 
             <div class="arcade-sport-section">
                 <div class="arcade-sport-header">
-                    <span class="arcade-sport-icon">⚾</span>
+                    <span class="arcade-sport-icon">${_iconSvg('baseball', 16)}</span>
                     <span class="arcade-sport-name">MLB Daily</span>
                 </div>
                 <div class="arcade-game-grid">
@@ -161,7 +161,7 @@ async function startOnThisDay() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">📅 On This Day</span>
+                <span class="arcade-game-title-inline">${_iconSvg('calendar', 15)} On This Day</span>
             </div>
             ${content}
         </div>`;
@@ -368,7 +368,7 @@ async function startStatlineShuffle() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">📊 Statline Shuffle</span>
+                <span class="arcade-game-title-inline">${_iconSvg('bars', 15)} Statline Shuffle</span>
                 <span class="arcade-date-badge">${_arcToday()}</span>
             </div>
             <div class="arcade-loading">
@@ -407,7 +407,7 @@ async function startStatlineShuffle() {
                     <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
                 </div>
                 <div class="arcade-error">
-                    <p style="font-size:1.5rem;margin:0 0 0.5rem">⚾</p>
+                    <p style="margin:0 0 0.5rem;display:flex;justify-content:center">${_iconSvg('baseball', 32)}</p>
                     <p>Could not load today's puzzle.</p>
                     <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">${err.message}</p>
                     <button class="arcade-play-btn" onclick="startStatlineShuffle()" style="margin-top:1rem">Retry</button>
@@ -543,7 +543,7 @@ function _renderShuffleGame() {
             <div class="${slotClass}" data-slot="${i}">
                 <div class="shuffle-slot-header">
                     <span class="shuffle-slot-num">${i + 1}</span>
-                    <span class="shuffle-slot-type">${perf.type === 'hitting' ? '🏏 Hitter' : '⚾ Pitcher'} · <strong>${perf.team}</strong>${perf.opponent ? ` vs ${perf.opponent}` : ''}</span>
+                    <span class="shuffle-slot-type">${_iconSvg('baseball', 12)} ${perf.type === 'hitting' ? 'Hitter' : 'Pitcher'} · <strong>${perf.team}</strong>${perf.opponent ? ` vs ${perf.opponent}` : ''}</span>
                     ${!submitted && assigned ? `<button class="shuffle-clear-btn" data-slot="${i}">×</button>` : ''}
                 </div>
                 <div class="shuffle-statline">${perf.line}</div>
@@ -563,14 +563,16 @@ function _renderShuffleGame() {
 
     const allAssigned = puzzle.every((_, i) => assignments[i] != null);
 
-    // Score display with emoji boxes (Wordle-style)
+    // Score display with colored result squares (Wordle-style) -- the
+    // in-page render, decoupled from _shareShuffleResult()'s own literal
+    // emoji string built separately for clipboard text.
     const emojiResult = submitted
-        ? puzzle.map((perf, i) => assignments[i] === perf.id ? '🟩' : '🟥').join('')
+        ? puzzle.map((perf, i) => `<span class="shuffle-sq ${assignments[i] === perf.id ? 'shuffle-sq--hit' : 'shuffle-sq--miss'}"></span>`).join('')
         : '';
 
     const resultHtml = submitted ? `
         <div class="shuffle-result ${score === 3 ? 'shuffle-result--perfect' : score >= 2 ? 'shuffle-result--good' : 'shuffle-result--miss'}">
-            <div class="shuffle-result-score">${score === 3 ? '🎉 Perfect!' : score === 2 ? '👍 Nice!' : score === 1 ? '😅 1/3' : '😬 0/3'}</div>
+            <div class="shuffle-result-score">${score === 3 ? 'Perfect!' : score === 2 ? 'Nice!' : `${score}/3`}</div>
             <div class="shuffle-result-emoji">${emojiResult} ${score}/3</div>
         </div>
         <button class="shuffle-share-btn" onclick="_shareShuffleResult()">Share Result</button>
@@ -586,7 +588,7 @@ function _renderShuffleGame() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">📊 Statline Shuffle</span>
+                <span class="arcade-game-title-inline">${_iconSvg('bars', 15)} Statline Shuffle</span>
                 <span class="arcade-date-badge">${_arcToday()}</span>
             </div>
             <p class="shuffle-instructions">
@@ -717,7 +719,7 @@ async function startTradeTree(sessionOffset = 0) {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">🔀 Trade Tree Tracker</span>
+                <span class="arcade-game-title-inline">${_iconSvg('swap', 15)} Trade Tree Tracker</span>
             </div>
             <div class="arcade-loading">
                 <div class="skeleton-card" style="height:240px;max-width:640px;margin:0 auto;border-radius:12px"></div>
@@ -809,7 +811,7 @@ function _renderTradeGame() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">🔀 Trade Tree Tracker</span>
+                <span class="arcade-game-title-inline">${_iconSvg('swap', 15)} Trade Tree Tracker</span>
                 <span class="arcade-date-badge">${sessionOffset === 0 ? 'Daily' : `Round ${sessionOffset + 1}`}</span>
             </div>
 
@@ -900,22 +902,22 @@ function _getBlueprintClues(stadium) {
         {
             label: 'Outfield Dimensions',
             value: `LF ${stadium.lf} ft · CF ${stadium.cf} ft · RF ${stadium.rf} ft`,
-            icon:  '📐',
+            icon:  'ruler',
         },
         {
             label: 'Capacity & Era',
             value: `${stadium.capacity.toLocaleString()} seats · Opened ${stadium.opened}`,
-            icon:  '📅',
+            icon:  'calendar',
         },
         {
             label: 'City',
             value: stadium.city,
-            icon:  '📍',
+            icon:  'pin',
         },
         {
             label: 'Surface',
             value: `${stadium.surface}${stadium.lfWall > 10 ? ` · LF wall ${stadium.lfWall} ft` : ''}`,
-            icon:  '🌿',
+            icon:  'leaf',
         },
     ];
 }
@@ -926,7 +928,7 @@ async function startBallparkBlueprint(sessionOffset = 0) {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">🏟 Ballpark Blueprint</span>
+                <span class="arcade-game-title-inline">${_iconSvg('house', 15)} Ballpark Blueprint</span>
             </div>
             <div class="arcade-loading">
                 <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:12px"></div>
@@ -981,7 +983,7 @@ function _renderBlueprintGame() {
         if (isRevealed) {
             return `
                 <div class="bp-clue bp-clue--revealed">
-                    <span class="bp-clue-icon">${c.icon}</span>
+                    <span class="bp-clue-icon">${_iconSvg(c.icon, 15)}</span>
                     <div>
                         <div class="bp-clue-label">${c.label}</div>
                         <div class="bp-clue-value">${c.value}</div>
@@ -991,7 +993,7 @@ function _renderBlueprintGame() {
         }
         return `
             <div class="bp-clue bp-clue--hidden">
-                <span class="bp-clue-icon">🔒</span>
+                <span class="bp-clue-icon">${_iconSvg('lock', 15)}</span>
                 <div class="bp-clue-label">Clue ${i + 1} — hidden</div>
             </div>
         `;
@@ -1020,7 +1022,7 @@ function _renderBlueprintGame() {
             ${isCorrect ? `✓ Correct! <strong>${stadium.name}</strong>` : `✗ It was <strong>${stadium.name}</strong>`}
         </div>
         <div class="bp-score-row">
-            ${'⭐'.repeat(score)}${'☆'.repeat(3 - score)} &nbsp; ${score}/3 clues
+            ${`<span class="bp-star bp-star--lit">${_iconSvg('star', 14)}</span>`.repeat(score)}${'☆'.repeat(3 - score)} &nbsp; ${score}/3 clues
         </div>
         ${logoUrl ? `<img src="${logoUrl}" class="bp-reveal-logo" alt="${stadium.teamAbbr}" data-hide-on-error>` : ''}
         <div class="trade-context">${stadium.knownFor}</div>
@@ -1048,7 +1050,7 @@ function _renderBlueprintGame() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">🏟 Ballpark Blueprint</span>
+                <span class="arcade-game-title-inline">${_iconSvg('house', 15)} Ballpark Blueprint</span>
                 ${clueCount}
             </div>
 
@@ -1177,11 +1179,11 @@ function _wamPickDecoys(target, ts, pool, count, rng) {
 function _wamGetClues(player, stats) {
     const t = player.team || {};
     return [
-        { icon: '🏙️', label: 'City',       value: t.city || t.name?.split(' ')[0] || '?' },
-        { icon: '🌎',  label: 'Conference', value: t.conference || '?' },
-        { icon: '📍',  label: 'Position',   value: player.position || '?' },
-        { icon: '🏀',  label: 'Rebounds',   value: `${stats?.reb?.toFixed(1) ?? '?'} RPG` },
-        { icon: '🎯',  label: 'Points',     value: `${stats?.pts?.toFixed(1) ?? '?'} PPG` },
+        { icon: 'building',   label: 'City',       value: t.city || t.name?.split(' ')[0] || '?' },
+        { icon: 'globe',      label: 'Conference', value: t.conference || '?' },
+        { icon: 'pin',        label: 'Position',   value: player.position || '?' },
+        { icon: 'basketball', label: 'Rebounds',   value: `${stats?.reb?.toFixed(1) ?? '?'} RPG` },
+        { icon: 'target',     label: 'Points',     value: `${stats?.pts?.toFixed(1) ?? '?'} PPG` },
     ];
 }
 
@@ -1207,7 +1209,7 @@ function _renderWhoAmI() {
         const revealed = i < st.cluesRevealed;
         return `
             <div class="wam-clue${revealed ? ' wam-clue--revealed' : ' wam-clue--hidden'}">
-                <span class="wam-clue-icon">${revealed ? c.icon : '🔒'}</span>
+                <span class="wam-clue-icon">${_iconSvg(revealed ? c.icon : 'lock', 15)}</span>
                 <span class="wam-clue-body">
                     ${revealed
                         ? `<span class="wam-clue-label">${c.label}</span>
@@ -1241,7 +1243,7 @@ function _renderWhoAmI() {
         const logoUrl = getNBATeamLogoUrl(abbr);
         resultHTML = `
             <div class="wam-result ${correct ? 'wam-result--correct' : 'wam-result--wrong'}">
-                <div class="wam-result-icon">${correct ? '🎉' : '❌'}</div>
+                <div class="wam-result-icon">${_iconSvg(correct ? 'trophy' : 'xCircle', 26)}</div>
                 <div class="wam-result-headline">${correct ? 'Correct!' : 'Missed it'}</div>
                 <div class="wam-result-name">${st.target.first_name} ${st.target.last_name}</div>
                 <div class="wam-result-meta">${st.target.team?.full_name || ''} · ${st.target.position || ''}</div>
@@ -1276,7 +1278,7 @@ function _renderWhoAmI() {
                 <div class="wam-actions">
                     ${canReveal ? `
                     <button class="wam-reveal-btn" onclick="_wamReveal()">
-                        🔒 Reveal Next Clue <span class="wam-cost">−1★</span>
+                        ${_iconSvg('lock', 13)} Reveal Next Clue <span class="wam-cost">−1★</span>
                     </button>` : ''}
                     <button class="wam-submit-btn${canSubmit ? '' : ' wam-submit-btn--disabled'}"
                             onclick="_wamSubmit()" ${canSubmit ? '' : 'disabled'}>
@@ -1384,22 +1386,29 @@ function _renderStatdle() {
 
     const guessRows = st.guesses.map(g => {
         const ok = g === '(skip)' ? null : g.toLowerCase() === st.target.fullName.toLowerCase();
-        const icon = g === '(skip)' ? '⬛' : ok ? '✅' : '❌';
+        const icon = g === '(skip)' ? '' : _iconSvg(ok ? 'checkCircle' : 'xCircle', 13);
         return `<div class="statdle-guess ${g === '(skip)' ? 'statdle-guess--skip' : ok ? 'statdle-guess--ok' : 'statdle-guess--bad'}">${icon} ${_escHtml(g === '(skip)' ? 'Skipped' : g)}</div>`;
     }).join('');
 
     let resultHtml = '';
     if (st.answered) {
         const hs     = typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(st.target.id) : '';
+        // `emojis`/`emojiStr` feed the clipboard share text only (Wordle-style,
+        // pasted outside the app -- must stay literal emoji, no SVG
+        // equivalent works there). `emojiRowHtml` is a separate, decoupled
+        // render of the same guess sequence for in-page display.
         const emojis = st.guesses.map(g => g === '(skip)' ? '⬛' : g.toLowerCase() === st.target.fullName.toLowerCase() ? '✅' : '❌');
         while (emojis.length < st.clues.length) emojis.push('⬛');
         const emojiStr  = emojis.slice(0, st.clues.length).join('');
+        const emojiRowHtml = emojis.slice(0, st.clues.length)
+            .map(e => `<span class="statdle-sq ${e === '✅' ? 'statdle-sq--hit' : e === '❌' ? 'statdle-sq--miss' : 'statdle-sq--skip'}"></span>`)
+            .join('');
         const dateStr   = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const scoreStr  = st.won ? `${st.guesses.findIndex(g => g.toLowerCase() === st.target.fullName.toLowerCase()) + 1}/${st.clues.length}` : `X/${st.clues.length}`;
         const shareText = `Statdle ${dateStr} ${scoreStr}\n${emojiStr}\nsportstrata.gg`;
         resultHtml = `
             <div class="statdle-result">
-                <p class="statdle-result-title ${st.won ? 'statdle-result-title--win' : 'statdle-result-title--loss'}">${st.won ? '🎉 Got it!' : '💔 Better luck tomorrow!'}</p>
+                <p class="statdle-result-title ${st.won ? 'statdle-result-title--win' : 'statdle-result-title--loss'}">${st.won ? `${_iconSvg('trophy', 15)} Got it!` : 'Better luck tomorrow!'}</p>
                 <div class="statdle-result-player">
                     ${hs ? `<img src="${hs}" class="statdle-hs" alt="" loading="lazy" data-hide-on-error>` : ''}
                     <div>
@@ -1407,8 +1416,8 @@ function _renderStatdle() {
                         <div class="statdle-result-meta">${_escHtml(st.target.teamAbbr || '')} · ${_escHtml(st.target.position || '')}</div>
                     </div>
                 </div>
-                <div class="statdle-emoji-row">${emojiStr}</div>
-                <button class="statdle-share-btn" onclick="navigator.clipboard?.writeText(${JSON.stringify(shareText)}).then(()=>{this.textContent='Copied!✓';setTimeout(()=>this.textContent='📋 Copy Result',1600)})">📋 Copy Result</button>
+                <div class="statdle-emoji-row">${emojiRowHtml}</div>
+                <button class="statdle-share-btn" onclick="navigator.clipboard?.writeText(${_escHtml(JSON.stringify(shareText))}).then(()=>{this.querySelector('.statdle-share-label').textContent='Copied!✓';setTimeout(()=>{this.querySelector('.statdle-share-label').textContent='Copy Result'},1600)})">${_iconSvg('clipboard', 12)}<span class="statdle-share-label">Copy Result</span></button>
             </div>`;
     }
 
@@ -1429,7 +1438,7 @@ function _renderStatdle() {
         <div class="arcade-game-wrap">
             <div class="arcade-back-row">
                 <button class="arcade-back-btn" onclick="loadArcade()">← Arcade</button>
-                <span class="arcade-game-title-inline">⚾ Statdle</span>
+                <span class="arcade-game-title-inline">${_iconSvg('baseball', 15)} Statdle</span>
             </div>
             <div class="statdle-wrap">
                 <p class="statdle-sub">Guess the mystery MLB hitter from their per-game statlines</p>
@@ -1629,7 +1638,7 @@ function startDailyQuest() {
     ).join('');
 
     const streakBadge = streak.count >= 2
-        ? `<span class="quest-streak">🔥 ${streak.count}-day streak</span>`
+        ? `<span class="quest-streak">${_iconSvg('fire', 13)} ${streak.count}-day streak</span>`
         : '';
 
     const completedHtml = save?.completed ? _renderQuestResult(quest, save) : '';
@@ -1640,12 +1649,12 @@ function startDailyQuest() {
 
             <div class="quest-card">
                 <div class="quest-hdr">
-                    <span class="quest-label">⚡ Daily Quest · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span class="quest-label">${_iconSvg('lightning', 13)} Daily Quest · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     ${streakBadge}
                 </div>
 
                 <p class="quest-text">${_escHtml(quest.text)}</p>
-                <p class="quest-hint">💡 ${_escHtml(quest.hint)}</p>
+                <p class="quest-hint">${_iconSvg('lightbulb', 13)} ${_escHtml(quest.hint)}</p>
 
                 ${completedHtml || `
                 <div class="quest-search-row">
@@ -1726,7 +1735,7 @@ function _renderQuestResult(quest, save) {
     const won = save?.won;
     return `
         <div class="quest-result quest-result--${won ? 'win' : 'miss'}">
-            <span class="quest-result-icon">${won ? '✅' : '❌'}</span>
+            <span class="quest-result-icon">${_iconSvg(won ? 'checkCircle' : 'xCircle', 16)}</span>
             <span>${won ? 'Correct! That player qualifies.' : `${_escHtml(save.guessName || 'That player')} doesn't meet all the criteria.`}</span>
         </div>`;
 }
@@ -1759,17 +1768,17 @@ window._submitQuestAnswer = function(questId) {
     fb.style.display  = 'block';
     fb.className      = `quest-feedback quest-feedback--${won ? 'win' : 'miss'}`;
     fb.innerHTML      = won
-        ? `✅ <strong>${_escHtml(player.fullName)}</strong> qualifies! Quest complete.`
-        : `❌ <strong>${_escHtml(player.fullName)}</strong> doesn't meet all criteria. Check the qualifying players list below.`;
+        ? `${_iconSvg('checkCircle', 14)} <strong>${_escHtml(player.fullName)}</strong> qualifies! Quest complete.`
+        : `${_iconSvg('xCircle', 14)} <strong>${_escHtml(player.fullName)}</strong> doesn't meet all criteria. Check the qualifying players list below.`;
 
     // Reveal streak update
     if (won) {
         const streak = _questStreak();
         const streakEl = document.querySelector('.quest-streak');
-        if (streakEl) streakEl.textContent = `🔥 ${streak.count}-day streak`;
+        if (streakEl) streakEl.innerHTML = `${_iconSvg('fire', 13)} ${streak.count}-day streak`;
         else {
             const hdr = document.querySelector('.quest-hdr');
-            if (hdr) hdr.insertAdjacentHTML('beforeend', `<span class="quest-streak">🔥 ${streak.count}-day streak</span>`);
+            if (hdr) hdr.insertAdjacentHTML('beforeend', `<span class="quest-streak">${_iconSvg('fire', 13)} ${streak.count}-day streak</span>`);
         }
     }
 };

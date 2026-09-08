@@ -160,6 +160,15 @@ const _ICON = {
     snowflake:     '<path d="M8 1.5v13M8 1.5 6.3 3.2M8 1.5l1.7 1.7M8 14.5l-1.7-1.7M8 14.5l1.7-1.7M2 4.75l12 6.5M2 4.75l2.3.4M2 4.75l1.2-2M14 11.25l-2.3-.4M14 11.25l-1.2 2M14 4.75 2 11.25M14 4.75l-2.3.4M14 4.75l-1.2-2M2 11.25l2.3.4M2 11.25l1.2 2"/>',
     mountain:      '<path d="M1.5 13.5 6 6l2.3 3.1L9.8 7l4.7 6.5z"/><path d="M6.6 8.4 5.4 10h2.4"/>',
     burst:         '<path d="M8 1.5 9.3 5.8 13 3.3 11 7.3 15 8 11 8.7 13 12.7 9.3 10.2 8 14.5 6.7 10.2 3 12.7 5 8.7 1 8 5 7.3 3 3.3 6.7 5.8 8 1.5z"/>',
+    swap:          '<path d="M2 5h9M8 2l3 3-3 3"/><path d="M14 11H5M8 8l-3 3 3 3"/>',
+    ruler:         '<path d="M2 11 11 2"/><path d="M4 9l1.5 1.5M6.5 6.5 8 8M9 4l1.5 1.5"/>',
+    pin:           '<path d="M8 14s5-4.5 5-8a5 5 0 0 0-10 0c0 3.5 5 8 5 8z"/><circle cx="8" cy="6" r="1.7"/>',
+    leaf:          '<path d="M4 12c0-5 3-8.5 8-9-0.5 5-4 8-8 9z"/><path d="M4.5 11.5 9 7"/>',
+    globe:         '<circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.5" ry="6"/><path d="M2 8h12"/>',
+    building:      '<rect x="3" y="5" width="4" height="9"/><rect x="9" y="2" width="4" height="12"/><path d="M4.5 7.5h1M4.5 10h1M10.5 4.5h1M10.5 7h1M10.5 9.5h1"/>',
+    target:        '<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r="0.6" fill="currentColor" stroke="none"/>',
+    xCircle:       '<circle cx="8" cy="8" r="6"/><path d="M6 6l4 4M10 6l-4 4"/>',
+    lightbulb:     '<path d="M5.5 11.5h5M6 13.5h4"/><path d="M8 2a4.5 4.5 0 0 0-2.5 8.2c.3.2.5.6.5 1h4c0-.4.2-.8.5-1A4.5 4.5 0 0 0 8 2z"/>',
 };
 // Full <svg> wrapper for an _ICON key — the ~85 call sites this replaces
 // used to each interpolate a bare emoji character, so most need the whole
