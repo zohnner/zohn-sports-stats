@@ -100,6 +100,64 @@ function _pctColor(p) {
     return `rgb(${lerp(54,138,t)},${lerp(97,141,t)},${lerp(173,147,t)})`;
 }
 
+// ============================================================
+// Shared icon system (site-wide emoji removal, 2026-09-07)
+// ============================================================
+// Every icon in this map is a bare SVG shape (no wrapper) drawn to the SAME
+// convention already established by _SL_ICON (js/app.js) and _NAV_ICONS
+// (js/navigation.js) — viewBox 0 0 16 16, stroke=currentColor, stroke-width
+// 1.5, round caps/joins. This is not a new house style being invented, it's
+// the existing dominant pattern (documented in DESIGN.md's Iconography
+// section) finally given one shared home so the ~85 call sites that used to
+// interpolate a raw emoji character don't each hand-roll their own shape.
+// Lives in config.js specifically because it's the first file in the script
+// chain (see CLAUDE.md's load order) — every other file, however early it
+// loads, can reference _ICON/_iconSvg.
+//
+// Deliberately does NOT consolidate _SL_ICON/_NAV_ICONS's existing shapes —
+// those are already SVG, already correct, and migrating their working call
+// sites would be pure risk for zero visible benefit. "trophy" here is a
+// separate, self-contained copy of _SL_ICON's trophy shape rather than a
+// cross-file reference: app.js loads LAST, so an early file that needs a
+// trophy can't safely depend on _SL_ICON existing yet at its own top-level
+// scope, only inside a function body that happens to run after boot. A few
+// bytes of duplicated path data is a fine trade for not having a hidden,
+// load-order-dependent coupling.
+const _ICON = {
+    baseball:      '<circle cx="8" cy="8" r="6"/><path d="M4.2 4.2c1.5 1.5 1.5 6.1 0 7.6M11.8 4.2c-1.5 1.5-1.5 6.1 0 7.6"/>',
+    football:      '<path d="M2 8Q4 2.5 8 2.5Q12 2.5 14 8Q12 13.5 8 13.5Q4 13.5 2 8Z"/><path d="M6.3 7v2M8 6.6v2.8M9.7 7v2"/>',
+    basketball:    '<circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12M3.5 3.8c2.4 2.4 6.6 2.4 9 0M3.5 12.2c2.4-2.4 6.6-2.4 9 0"/>',
+    puck:          '<rect x="2" y="6" width="12" height="4" rx="2"/>',
+    house:         '<path d="M3 8.5 8 3l5 5.5"/><path d="M4.5 7.5V13h7V7.5"/>',
+    calendar:      '<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>',
+    schedule:      '<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/><path d="M5 9h.01M8 9h.01M11 9h.01M5 11.5h.01M8 11.5h.01"/>',
+    calculator:    '<rect x="3.5" y="2" width="9" height="12" rx="1.5"/><path d="M5.5 4.5h5"/><path d="M5.5 7.5h.01M8 7.5h.01M10.5 7.5h.01M5.5 10h.01M8 10h.01M10.5 10h.01M5.5 12.3h.01M8 12.3h.01M10.5 12.3h.01"/>',
+    film:          '<rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M5.5 3.5v9M10.5 3.5v9M2 6.5h3M2 9.5h3M11 6.5h3M11 9.5h3"/>',
+    lightning:     '<path d="M9 2 4 9h3.5L7 14l5-7H8.5L9 2z"/>',
+    save:          '<path d="M3 2.5h8l2.5 2.5v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/><path d="M5 2.5v3.5h5V2.5M5 14v-4.5h6V14"/>',
+    link:          '<path d="M6.5 9.5a3 3 0 0 0 4 0l1.5-1.5a3 3 0 0 0-4-4l-1 1"/><path d="M9.5 6.5a3 3 0 0 0-4 0L4 8a3 3 0 0 0 4 4l1-1"/>',
+    fire:          '<path d="M8 14c-2.5 0-4.2-1.7-4.2-4 0-1.8 1-2.8 1.5-4 .3 1 1 1.3 1.5.8-.3-2 .5-4 2-4.8-.5 1.5 0 2.5 1 3.3 1.2 1 1.9 2.2 1.9 3.7 0 2.3-1.2 5-3.7 5z"/>',
+    stethoscope:   '<path d="M4 2.5v4a3 3 0 0 0 6 0v-4"/><path d="M4 2.5h-1M10 2.5h1"/><path d="M10 8.5v1.5a3.5 3.5 0 0 1-7 0"/><circle cx="12.5" cy="9.5" r="1.5"/>',
+    trendUp:       '<path d="M2 12 6.5 7.5 9 10l4.5-5"/><path d="M10 5h3.5v3.5"/>',
+    trendDown:     '<path d="M2 5l4.5 4.5L9 7l4.5 4.5"/><path d="M13.5 8.5V12H10"/>',
+    trophy:        '<path d="M4.5 3h7v2.5a3.5 3.5 0 0 1-7 0V3z"/><path d="M4.5 4H2.6v.8A2.2 2.2 0 0 0 4.8 7M11.5 4h1.9v.8A2.2 2.2 0 0 1 11.2 7M6.5 11h3M5.5 13.5h5"/>',
+    medal:         '<circle cx="8" cy="10" r="3.5"/><path d="M6 6.5 4.5 2h2L8 5.5 9.5 2h2L10 6.5"/>',
+    gamepad:       '<rect x="1.5" y="4.5" width="13" height="7" rx="2.5"/><path d="M5 8h2M6 7v2"/><circle cx="11" cy="7.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="13" cy="7.5" r="0.75" fill="currentColor" stroke="none"/>',
+    warning:       '<path d="M8 2 1.5 13.5h13L8 2z"/><path d="M8 6.5v3.5M8 12h.01"/>',
+    checkCircle:   '<circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10 10.8 6"/>',
+    info:          '<circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5.2h.01"/>',
+    bell:          '<path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8L4 11z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/>',
+};
+// Full <svg> wrapper for an _ICON key — the ~85 call sites this replaces
+// used to each interpolate a bare emoji character, so most need the whole
+// element, not just the inner shape (unlike _SL_ICON's two call sites,
+// which already had their own local wrapper markup written out).
+function _iconSvg(key, size = 16) {
+    const shape = _ICON[key];
+    if (!shape) { Logger.debug(`Unknown icon key: "${key}"`, undefined, 'CONFIG'); return ''; }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shape}</svg>`;
+}
+
 // Single capture-phase listener replaces all inline onerror="this.style.display='none'" handlers.
 // Mark any <img> with data-hide-on-error to opt in.
 if (typeof window !== 'undefined') {
@@ -137,6 +195,8 @@ if (typeof window !== 'undefined') {
     window._pctColor          = _pctColor;
     window._normName          = _normName;
     window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
+    window._ICON              = _ICON;
+    window._iconSvg           = _iconSvg;
 }
 
 // Canonical public domain — printed on share cards and share text.

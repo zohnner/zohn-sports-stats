@@ -47,6 +47,15 @@ All color through `css/variables.css` tokens — a hex literal in a style attrib
 - **JetBrains Mono** — tabular receipts: aligned columns of values (odds, VORP), where digit alignment is meaning.
 - Rate stats drop the leading zero (`.338`, never `0.338`). IP strings honor thirds. These are craft signals our audience notices.
 
+## Iconography (added 2026-09-07, site-wide emoji removal)
+
+No pictographic/colorful emoji anywhere in the product — icons are hand-drawn SVG, monochrome, functional. Emoji read as a shortcut; they also can't be recolored, sized, or aligned the way the rest of the visual system demands, and they undercut the "broadcast graphics package meets a trading terminal" posture this page opens with. This codifies a convention that already existed in practice (`_SL_ICON` in js/app.js, `_NAV_ICONS` in js/navigation.js) before it had anywhere written down.
+
+- **One grid, one stroke.** `viewBox="0 0 16 16"`, `stroke="currentColor"`, `stroke-width="1.5"`, `stroke-linecap="round"`, `stroke-linejoin="round"`, `fill="none"` (a filled dot is fine for a small functional mark, e.g. a gamepad button, never for the icon's main shape). Outer `width`/`height` scales per context (14–20px is the current range) — the drawing itself never changes.
+- **`currentColor` only, never a hex literal** — same rule as every other color in the system (D-038 K3). An icon inherits its container's color; it does not carry its own.
+- **Shared home:** `js/config.js`'s `_ICON` map (bare shape data) + `_iconSvg(key, size)` (the full wrapper) is the one place new icons get added, since config.js loads first in the script chain and everything else can reference it. `_SL_ICON`/`_NAV_ICONS` predate this and stay where they are — not a second standard, just two call sites that already drew to the same spec before it was named.
+- **Exactly one documented exception:** clipboard/share text that leaves the app as plain text (e.g. a Wordle-style result grid copied to a text message) has no SVG equivalent that survives the paste — those specific strings keep literal emoji/Unicode characters, called out inline with a comment explaining why. Plain monochrome symbols that were never pictographic to begin with (✕ close, ♥ favorite) were never in scope for this rule and don't need one.
+
 ## The four house patterns
 
 1. **Receipts.** Every computed number carries its provenance, visibly: the `est` chip, the `†` dagger, "Understood as:" echo chips, "4,000 simulated seasons · simulated 12:15 AM." If we computed it, we show the receipt. This is the trust brand made visible — apply to every new computed surface, no exceptions.
