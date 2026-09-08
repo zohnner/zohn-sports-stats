@@ -15,6 +15,7 @@ function load() {
     const ctx = {
         console, Date, Math, JSON, String, Number,
         _escHtml: v => String(v == null ? '' : v),
+        _iconSvg: (key, size) => `<svg data-icon="${key}" width="${size || 16}"></svg>`,
         getMLBTeamColors: ab => ({ primary: '#123456', name: ab + ' Club' }),
         getMLBTeamLogoById: id => id ? `logo/${id}.svg` : '',
     };
