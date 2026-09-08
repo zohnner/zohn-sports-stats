@@ -89,7 +89,7 @@ async function fetchWNBAScoreboard() {
 
 function _wnbaOffseasonState() {
     return `<div class="nfl-offseason">
-        <div class="nfl-offseason-glyph" aria-hidden="true">🏀</div>
+        <div class="nfl-offseason-glyph" aria-hidden="true">${_iconSvg('basketball', 44)}</div>
         <h2 class="nfl-offseason-title">The WNBA is in the offseason</h2>
         <p class="nfl-offseason-text">Live scores, conference standings, and teams populate here when the ${WNBA_SEASON} season starts in April.</p>
         <div class="nfl-offseason-actions">
@@ -168,7 +168,7 @@ function updateWNBATicker(games) {
         const pillCls = g.isLive ? 'live' : g.isFinal ? 'final' : 'sched';
         const pillLbl = g.isLive ? 'LIVE' : g.isFinal ? 'F' : 'SCH';
         return `<div class="ticker__item${g.isLive ? ' ticker__item--live' : g.isFinal ? ' ticker__item--final' : ''}" data-game-id="${_escHtml(g.id)}" data-sport="wnba" style="cursor:pointer">
-            <span class="ticker-glyph" aria-hidden="true">🏀</span>
+            <span class="ticker-glyph" aria-hidden="true">${_iconSvg('basketball')}</span>
             ${g.homeTeam.logo ? `<img class="ticker-logo" src="${_escHtml(g.homeTeam.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
             ${row(g.homeTeam, g.isFinal && g.homeTeam.winner ? ' ticker-score--win' : '')}
             <span class="ticker-divider">–</span>

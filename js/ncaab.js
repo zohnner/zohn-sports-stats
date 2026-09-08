@@ -81,7 +81,7 @@ async function fetchNCAABScoreboard() {
 
 function _ncaabOffseasonState() {
     return `<div class="nfl-offseason">
-        <div class="nfl-offseason-glyph" aria-hidden="true">🏀</div>
+        <div class="nfl-offseason-glyph" aria-hidden="true">${_iconSvg('basketball', 44)}</div>
         <h2 class="nfl-offseason-title">College basketball is in the offseason</h2>
         <p class="nfl-offseason-text">Live scores, conference standings, teams and the AP/Coaches polls populate here when the ${NCAAB_SEASON} season tips off in November.</p>
         <div class="nfl-offseason-actions">

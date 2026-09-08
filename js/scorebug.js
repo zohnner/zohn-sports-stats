@@ -127,9 +127,13 @@
     // (border=identity/badge=state discipline stays); lets a mixed "All" tab
     // scan by sport at a glance. Shown on every card, not just the mixed tab —
     // one rendering path, no tab-aware branching in the builder itself.
+    // Returns an _ICON key (js/config.js), not a raw emoji character, since
+    // the 2026-09-07 emoji-removal pass -- both call sites below already
+    // guard with `glyph ? ... : ''`, so returning '' for an unmapped sport
+    // is unchanged behavior.
     function _leagueGlyph(sport) {
-        if (sport === 'mlb') return '⚾';
-        if (sport === 'nfl' || sport === 'ncaaf') return '🏈';
+        if (sport === 'mlb') return 'baseball';
+        if (sport === 'nfl' || sport === 'ncaaf') return 'football';
         return '';
     }
 
@@ -163,7 +167,7 @@
                 ${m.liveHtml}
                 ${m.matchHtml}
                 <div class="hgc-card-footer">
-                    ${glyph ? `<span class="hgc-glyph" aria-hidden="true">${glyph}</span>` : ''}
+                    ${glyph ? `<span class="hgc-glyph" aria-hidden="true">${_iconSvg(glyph)}</span>` : ''}
                     <span class="hgc-pill hgc-pill--${m.pillCls}">${esc(m.pillLabel)}</span>
                     ${weatherHtml}
                 </div>
@@ -199,7 +203,7 @@
                 </span>`;
         return `
             <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
-                ${glyph ? `<span class="ticker-glyph" aria-hidden="true">${glyph}</span>` : ''}
+                ${glyph ? `<span class="ticker-glyph" aria-hidden="true">${_iconSvg(glyph)}</span>` : ''}
                 ${side(m.away, 'away')}
                 <span class="ticker-status-pill ticker-status-pill--${m.pillCls}">${esc(pillLbl)}</span>
                 ${side(m.home, 'home')}

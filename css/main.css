@@ -1795,6 +1795,14 @@ main {
     opacity: 0.55;
     filter: grayscale(1);
 }
+/* 2026-09-07 emoji removal: .hgc-glyph/.ticker-glyph (css/ticker.css) used to
+   hold a raw emoji character sized via font-size alone (grayscale() filter
+   desaturated the emoji's own color so it read as a muted mark, not a
+   colored badge, per this rule's own comment above). Now they hold an <svg
+   stroke="currentColor">, already monochrome by construction -- 1em keeps it
+   tracking font-size exactly like the emoji it replaced; the filter is now
+   a no-op but harmless to leave (nothing left to desaturate). */
+.hgc-glyph svg, .ticker-glyph svg { width: 1em; height: 1em; }
 
 /* Structural redesign pass: .game-weather's base rule (css/components.css) is
    a standalone block *below* a card (its own border-top/margin-top) -- here

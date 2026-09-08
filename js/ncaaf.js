@@ -308,8 +308,12 @@ async function fetchNCAAFLiveSituation(eventId) {
 }
 
 function _ncaafOffseasonState() {
+    // 2026-09-07 emoji removal: the fallback below is effectively unreachable
+    // (nfl.js, which defines _NFL_OFFSEASON_GLYPH, always loads before this
+    // file per the script chain) but was still real emoji-containing code --
+    // fixed to the shared icon system rather than left as dead-but-present.
     const glyph = (typeof _NFL_OFFSEASON_GLYPH === 'string') ? _NFL_OFFSEASON_GLYPH
-        : '<div class="nfl-offseason-glyph" aria-hidden="true">🏈</div>';
+        : `<div class="nfl-offseason-glyph" aria-hidden="true">${_iconSvg('football', 44)}</div>`;
     return `<div class="nfl-offseason">
         ${glyph}
         <h2 class="nfl-offseason-title">College football is in the offseason</h2>
