@@ -56,7 +56,7 @@ function displayStandings(rows, conf) {
             <button class="standings-tab ${conf === 'West' && _standingsView === 'standings' ? 'active' : ''}"
                 onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'West')">Western</button>
             <button class="standings-tab ${_standingsView === 'power' ? 'active' : ''}"
-                onclick="displayPowerRankings(AppState.nbaStandings)">⚡ Power</button>
+                onclick="displayPowerRankings(AppState.nbaStandings)"><span style="display:inline-flex;vertical-align:-2px;margin-right:0.25rem">${_iconSvg('lightning', 12)}</span>Power</button>
         </div>
     `;
 
@@ -184,7 +184,7 @@ function displayPowerRankings(rows) {
         <div class="standings-tabs">
             <button class="standings-tab" onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'East')">Eastern</button>
             <button class="standings-tab" onclick="_standingsView='standings';displayStandings(AppState.nbaStandings,'West')">Western</button>
-            <button class="standings-tab active">⚡ Power</button>
+            <button class="standings-tab active"><span style="display:inline-flex;vertical-align:-2px;margin-right:0.25rem">${_iconSvg('lightning', 12)}</span>Power</button>
         </div>
     `;
 
@@ -209,10 +209,10 @@ function displayPowerRankings(rows) {
             : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
 
         // Heat label
-        const heat = team._score >= 0.65 ? { icon: '🔥', label: 'HOT',   cls: 'power-heat--hot'  }
-                   : team._score >= 0.50 ? { icon: '📈', label: 'SOLID', cls: 'power-heat--solid' }
-                   : team._score >= 0.38 ? { icon: '➡️',  label: 'MID',   cls: 'power-heat--mid'  }
-                   :                       { icon: '❄️',  label: 'COLD',  cls: 'power-heat--cold'  };
+        const heat = team._score >= 0.65 ? { icon: 'fire',       label: 'HOT',   cls: 'power-heat--hot'  }
+                   : team._score >= 0.50 ? { icon: 'trendUp',    label: 'SOLID', cls: 'power-heat--solid' }
+                   : team._score >= 0.38 ? { icon: 'arrowRight', label: 'MID',   cls: 'power-heat--mid'  }
+                   :                       { icon: 'snowflake',  label: 'COLD',  cls: 'power-heat--cold'  };
 
         const confBadge = team.conference === 'East'
             ? '<span class="power-conf power-conf--east">E</span>'
@@ -231,7 +231,7 @@ function displayPowerRankings(rows) {
                 <div class="power-record">${team.wins}–${team.losses}<span class="power-pct">${winPct}</span></div>
                 <div class="power-l10">${l10Pips}</div>
                 <div class="power-streak" style="color:${streakColor}">${streak}</div>
-                <div class="power-heat ${heat.cls}">${heat.icon} ${heat.label}</div>
+                <div class="power-heat ${heat.cls}">${_iconSvg(heat.icon, 12)} ${heat.label}</div>
             </div>
         `;
     }).join('');

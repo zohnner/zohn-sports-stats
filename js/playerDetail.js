@@ -76,7 +76,7 @@ async function showPlayerDetail(playerId, push = true) {
             grid.innerHTML = `
                 ${_playerHero(player, teamName, null)}
                 <div class="detail-no-stats">
-                    <div style="font-size:2.5rem;margin-bottom:1rem">📊</div>
+                    <div style="width:40px;height:40px;margin:0 auto 1rem;opacity:0.6">${_iconSvg('bars', 40)}</div>
                     <h3 style="color:var(--color-error-light);margin-bottom:0.5rem">No ${season} Stats Available</h3>
                     <p style="color:var(--color-text-muted)">This player does not have recorded stats for the current season.</p>
                 </div>
@@ -141,7 +141,7 @@ async function showPlayerDetail(playerId, push = true) {
         Logger.error('Error loading player details', error, 'DETAIL');
         grid.innerHTML = `
             <div class="error-state">
-                <div class="error-state-icon">⚠️</div>
+                <div class="error-state-icon">${_iconSvg('warning', 36)}</div>
                 <h3 class="error-state-title">Failed to Load Player</h3>
                 <p class="error-state-message">${error.message}</p>
                 <button class="retry-btn" onclick="backToPlayers()">← Back to Players</button>

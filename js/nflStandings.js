@@ -168,8 +168,8 @@ function _nstdBadges(t, season) {
     const champ = sb && _nstdCanon(t.abbr) === _nstdCanon(sb[0]);
     const runner = sb && _nstdCanon(t.abbr) === _nstdCanon(sb[1]);
     let b = '';
-    if (champ) b += `<span class="nstd-badge nstd-badge--champ" title="Super Bowl champion">🏆</span>`;
-    else if (runner) b += `<span class="nstd-badge nstd-badge--runner" title="Super Bowl runner-up">🥈</span>`;
+    if (champ) b += `<span class="nstd-badge nstd-badge--champ" title="Super Bowl champion">${_iconSvg('trophy', 12)}</span>`;
+    else if (runner) b += `<span class="nstd-badge nstd-badge--runner" title="Super Bowl runner-up">${_iconSvg('medal', 12)}</span>`;
     if (t.seed <= 4) b += `<span class="nstd-badge nstd-badge--div" title="Division winner — seed ${t.seed}">${t.seed}</span>`;
     else if (t.seed <= cut) b += `<span class="nstd-badge nstd-badge--wc" title="Wild card — seed ${t.seed}">${t.seed}</span>`;
     return b;
@@ -205,7 +205,7 @@ function displayNFLStandings(rows, season) {
         <div class="nstd-head">
           <div>
             <h1 class="md-title" style="margin:0">NFL Standings</h1>
-            <p class="md-note">${season} regular season${_NSTD_SB[season] ? ` · champion tagged 🏆` : ''} · seeds & playoff cut shown</p>
+            <p class="md-note">${season} regular season${_NSTD_SB[season] ? ` · champion tagged ${_iconSvg('trophy', 11)}` : ''} · seeds & playoff cut shown</p>
           </div>
           <label class="nstd-season">Season
             <select id="nstdSeason">${seasonOpts}</select>
@@ -316,7 +316,7 @@ function _nstdRealBracket(confs, confOrder, season, post) {
     const sbG = post.sb[0];
     const sbWinner = sbG && sbG.teams.find(t => t.win);
     const sbCol = `<div class="nstd-bkr-col nstd-bkr-col--sb">
-        <div class="nstd-bkr-rnd nstd-bkr-rnd--sb">🏆 Super Bowl</div>
+        <div class="nstd-bkr-rnd nstd-bkr-rnd--sb">${_iconSvg('trophy', 13)} Super Bowl</div>
         ${sbG ? `<div class="nstd-bkr-game nstd-bkr-game--sb">${sbG.teams.map(teamRow).join('')}</div>
             ${sbWinner ? `<div class="nstd-bkr-champtag">${_escHtml(sbWinner.abbr)} champions</div>` : ''}`
             : `<div class="nstd-bkr-empty">${season >= _nstdSeasonDefault() ? 'TBD' : '—'}</div>`}
@@ -359,7 +359,7 @@ function _nstdSeedBracket(confs, confOrder, season) {
     const center = sb && champTeam
         ? `<div class="nstd-bk-sb">
              <div class="nstd-bk-sb-title">Super Bowl</div>
-             <div class="nstd-bk-champ"><span class="nstd-bk-trophy">🏆</span><img src="${_escHtml(champTeam.logo)}" alt="" data-hide-on-error><span>${_escHtml(champTeam.shortName)}</span></div>
+             <div class="nstd-bk-champ"><span class="nstd-bk-trophy">${_iconSvg('trophy', 14)}</span><img src="${_escHtml(champTeam.logo)}" alt="" data-hide-on-error><span>${_escHtml(champTeam.shortName)}</span></div>
              ${runnerTeam ? `<div class="nstd-bk-runner">def. ${_escHtml(runnerTeam.shortName)}</div>` : ''}
            </div>`
         : `<div class="nstd-bk-sb"><div class="nstd-bk-sb-title">Super Bowl</div><div class="nstd-bk-runner">${season >= _nstdSeasonDefault() ? 'TBD' : '—'}</div></div>`;

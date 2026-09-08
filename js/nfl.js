@@ -345,7 +345,7 @@ function displayNFLTeams(teams) {
     grid.style.cssText = '';
 
     if (!teams?.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL team data available', '🏈');
+        ErrorHandler.renderEmptyState(grid, 'No NFL team data available'); // icon arg removed 2026-09-07 -- was already dead
         return;
     }
 
@@ -551,7 +551,7 @@ function displayNFLGames(games) {
         grid.innerHTML = _nflIsOffseason()
             ? _nflOffseasonState('scores')
             : '';
-        if (!_nflIsOffseason()) ErrorHandler.renderEmptyState(grid, 'No NFL games scheduled right now.', '🏈');
+        if (!_nflIsOffseason()) ErrorHandler.renderEmptyState(grid, 'No NFL games scheduled right now.'); // icon arg removed 2026-09-07 -- was already dead
         return;
     }
 
@@ -909,7 +909,7 @@ function displayNFLPlayers() {
 
     const pool = _nflPool || [];
     if (!pool.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL player data available', '🏈');
+        ErrorHandler.renderEmptyState(grid, 'No NFL player data available'); // icon arg removed 2026-09-07 -- was already dead
         return;
     }
 
@@ -1045,7 +1045,7 @@ function displayNFLTrending(adds, drops) {
         }).join('');
         card.innerHTML = `
             <div class="nfl-card-head" style="gap:0.4rem">
-                <span>${icon}</span> ${title}
+                <span style="display:inline-flex">${icon}</span> ${title}
             </div>
             ${rows || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.82rem">No trending data</div>'}`;
         return card;
@@ -1056,8 +1056,8 @@ function displayNFLTrending(adds, drops) {
     note.textContent = 'Most-added and most-dropped players across fantasy leagues in the last 24 hours. Source: Sleeper.';
 
     grid.appendChild(note);
-    grid.appendChild(panel('Trending Adds', '📈', adds, 'var(--color-win)'));
-    grid.appendChild(panel('Trending Drops', '📉', drops, 'var(--color-loss)'));
+    grid.appendChild(panel('Trending Adds', _iconSvg('trendUp', 13), adds, 'var(--color-win)'));
+    grid.appendChild(panel('Trending Drops', _iconSvg('trendDown', 13), drops, 'var(--color-loss)'));
 }
 
 // ── Display: Injury Report (N-17) — cross-team, grouped by status ──
@@ -1134,7 +1134,7 @@ function displayNFLInjuries() {
     if (!filtered.length) {
         const empty = document.createElement('div');
         empty.style.cssText = 'grid-column:1/-1';
-        ErrorHandler.renderEmptyState(empty, 'No injuries currently reported league-wide.', '🩺');
+        ErrorHandler.renderEmptyState(empty, 'No injuries currently reported league-wide.'); // icon arg removed 2026-09-07 -- was already dead
         grid.innerHTML = html;
         grid.appendChild(empty);
         grid.querySelectorAll('[data-nfl-inj-pos]').forEach(btn => {
@@ -1244,7 +1244,7 @@ function displayNFLWaivers(adds) {
     if (!shown.length) {
         const empty = document.createElement('div');
         empty.style.cssText = 'grid-column:1/-1';
-        ErrorHandler.renderEmptyState(empty, 'No trending waiver adds right now.', '📈');
+        ErrorHandler.renderEmptyState(empty, 'No trending waiver adds right now.'); // icon arg removed 2026-09-07 -- was already dead
         grid.innerHTML = html;
         grid.appendChild(empty);
         grid.querySelectorAll('[data-nfl-wv-pos]').forEach(btn => {
@@ -1339,7 +1339,7 @@ async function loadNFLStatLeaders() {
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (!data.categories || !data.categories.length) {
-            ErrorHandler.renderEmptyState(grid, 'Stat leaders are unavailable right now.', '🏈');
+            ErrorHandler.renderEmptyState(grid, 'Stat leaders are unavailable right now.'); // icon arg removed 2026-09-07 -- was already dead
             return;
         }
         try { await fetchNFLSleeperPool(); } catch (err) { Logger.warn('Sleeper pool fetch failed on leaders load', err, 'NFL'); }
@@ -1418,7 +1418,7 @@ async function showNFLPlayerDetail(id) {
         return;
     }
     const p = _nflPoolMap && _nflPoolMap[id];
-    if (!p) { ErrorHandler.renderEmptyState(grid, 'Player not found', '🏈'); return; }
+    if (!p) { ErrorHandler.renderEmptyState(grid, 'Player not found'); return; } // icon arg removed 2026-09-07 -- was already dead
     _renderNFLPlayerDetail(p);
 }
 
@@ -2256,7 +2256,7 @@ function displayNFLRankings() {
     grid.className = '';
     grid.style.cssText = '';
     const pool = _nflPool || [];
-    if (!pool.length) { ErrorHandler.renderEmptyState(grid, 'No NFL ranking data available', '🏈'); return; }
+    if (!pool.length) { ErrorHandler.renderEmptyState(grid, 'No NFL ranking data available'); return; } // icon arg removed 2026-09-07 -- was already dead
 
     const posCount = {};
     const ranked = pool.map((p, i) => {
@@ -2442,7 +2442,7 @@ async function showNFLEspnPlayer(espnId) {
         ]);
         prof = pr || {}; career = cr;
     } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }
-    if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found', '🏈'); return; }
+    if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found'); return; } // icon arg removed 2026-09-07 -- was already dead
     if (window.setBreadcrumb) setBreadcrumb('nfl-players', prof.name);
 
     const years = [];

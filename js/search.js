@@ -388,8 +388,8 @@ function _itemHtml(item, idx) {
             <span class="search-avatar-fallback">${_esc(initials)}</span>
         </span>`;
     } else if (isTeam) {
-        const icon = item.sport === 'nba' ? '🏀' : (item.sport === 'nfl' || item.sport === 'ncaaf') ? '🏈' : '⚾';
-        avatar = `<span class="search-result-avatar search-result-avatar--team">${icon}</span>`;
+        const iconKey = item.sport === 'nba' ? 'basketball' : (item.sport === 'nfl' || item.sport === 'ncaaf') ? 'football' : 'baseball';
+        avatar = `<span class="search-result-avatar search-result-avatar--team">${_iconSvg(iconKey, 18)}</span>`;
     } else {
         avatar = `<span class="search-result-avatar" style="${bgStyle}">${_esc(initials)}</span>`;
     }

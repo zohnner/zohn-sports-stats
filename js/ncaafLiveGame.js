@@ -252,7 +252,7 @@ function _nclgRenderHeader(comp, home, away) {
         : null;
     const sitLine = sit
         ? `<div class="nlg-situation">
-             ${sitPossTeamName ? `<span class="nlg-poss">🏈 ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : '')}
+             ${sitPossTeamName ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sit.possessionText)}</span>` : '')}
              ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
              ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
            </div>`

@@ -37,7 +37,11 @@ function displayTeams(teams) {
     grid.className = 'players-grid';
 
     if (!teams || teams.length === 0) {
-        ErrorHandler.renderEmptyState(grid, 'No teams found', '🏟');
+        // 2026-09-07 emoji removal: the icon arg here was already dead --
+        // renderEmptyState only accepts an SVG string (must start with '<'),
+        // so this silently fell back to EMPTY_GLYPH every time. Removed
+        // rather than converted, since the fallback is already correct.
+        ErrorHandler.renderEmptyState(grid, 'No teams found');
         return;
     }
 
@@ -177,7 +181,7 @@ async function showTeamDetail(teamId, push = true) {
         Logger.error('Error loading team detail', error, 'TEAMS');
         grid.innerHTML = `
             <div class="error-state">
-                <div class="error-state-icon">⚠️</div>
+                <div class="error-state-icon">${_iconSvg('warning', 36)}</div>
                 <h3 class="error-state-title">Failed to Load Team</h3>
                 <p class="error-state-message">${error.message}</p>
                 <button class="retry-btn" onclick="backToTeams()">← Back to Teams</button>
@@ -395,7 +399,7 @@ async function showTeamGameDetail(gameId, teamId) {
         Logger.error('Failed to load box score', err, 'TEAMS');
         grid.innerHTML = `
             <div class="error-state">
-                <div class="error-state-icon">⚠️</div>
+                <div class="error-state-icon">${_iconSvg('warning', 36)}</div>
                 <h3 class="error-state-title">Failed to Load Box Score</h3>
                 <p class="error-state-message">${err.message}</p>
                 <button class="retry-btn" onclick="showTeamDetail(${teamId})">← Back to Team</button>

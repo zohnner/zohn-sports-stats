@@ -124,6 +124,10 @@ function _pctColor(p) {
 // bytes of duplicated path data is a fine trade for not having a hidden,
 // load-order-dependent coupling.
 const _ICON = {
+    // Self-contained copies of _SL_ICON's clipboard/bars shapes (same
+    // reasoning as trophy above) — needed by files that load before app.js.
+    clipboard:     '<rect x="3.5" y="3" width="9" height="11" rx="1.5"/><path d="M6 3V2.2a2 2 0 0 1 4 0V3"/><path d="M6 8h4M6 11h2.5"/>',
+    bars:          '<path d="M2 14V9M7 14V6M12 14V2"/><path d="M1 14h14" opacity=".5"/>',
     baseball:      '<circle cx="8" cy="8" r="6"/><path d="M4.2 4.2c1.5 1.5 1.5 6.1 0 7.6M11.8 4.2c-1.5 1.5-1.5 6.1 0 7.6"/>',
     football:      '<path d="M2 8Q4 2.5 8 2.5Q12 2.5 14 8Q12 13.5 8 13.5Q4 13.5 2 8Z"/><path d="M6.3 7v2M8 6.6v2.8M9.7 7v2"/>',
     basketball:    '<circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12M3.5 3.8c2.4 2.4 6.6 2.4 9 0M3.5 12.2c2.4-2.4 6.6-2.4 9 0"/>',
@@ -147,6 +151,15 @@ const _ICON = {
     checkCircle:   '<circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10 10.8 6"/>',
     info:          '<circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5.2h.01"/>',
     bell:          '<path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8L4 11z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/>',
+    net:           '<path d="M2 3h12v10l-4-2v-8M2 3l4 2v8M6 5h4M4 8h8M4 11h8"/>',
+    star:          '<path d="M8 2 9.9 6.2 14.5 6.7 11 9.7 12 14.3 8 11.9 4 14.3 5 9.7 1.5 6.7 6.1 6.2 8 2z"/>',
+    shield:        '<path d="M8 2 13.5 4v4.3c0 3.4-2.3 5.9-5.5 7.2-3.2-1.3-5.5-3.8-5.5-7.2V4L8 2z"/>',
+    lock:          '<rect x="3" y="7.5" width="10" height="6.5" rx="1.5"/><path d="M5 7.5V5a3 3 0 0 1 6 0v2.5"/>',
+    clock:         '<circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.5 1.5"/>',
+    arrowRight:    '<path d="M2.5 8h11M9.5 4l4 4-4 4"/>',
+    snowflake:     '<path d="M8 1.5v13M8 1.5 6.3 3.2M8 1.5l1.7 1.7M8 14.5l-1.7-1.7M8 14.5l1.7-1.7M2 4.75l12 6.5M2 4.75l2.3.4M2 4.75l1.2-2M14 11.25l-2.3-.4M14 11.25l-1.2 2M14 4.75 2 11.25M14 4.75l-2.3.4M14 4.75l-1.2-2M2 11.25l2.3.4M2 11.25l1.2 2"/>',
+    mountain:      '<path d="M1.5 13.5 6 6l2.3 3.1L9.8 7l4.7 6.5z"/><path d="M6.6 8.4 5.4 10h2.4"/>',
+    burst:         '<path d="M8 1.5 9.3 5.8 13 3.3 11 7.3 15 8 11 8.7 13 12.7 9.3 10.2 8 14.5 6.7 10.2 3 12.7 5 8.7 1 8 5 7.3 3 3.3 6.7 5.8 8 1.5z"/>',
 };
 // Full <svg> wrapper for an _ICON key — the ~85 call sites this replaces
 // used to each interpolate a bare emoji character, so most need the whole

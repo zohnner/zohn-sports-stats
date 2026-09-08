@@ -4347,6 +4347,7 @@ body.a2hs-open { padding-bottom: 4.5rem; }
 .dk-tool-card:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
 .dk-tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dk-tool-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.dk-tool-icon svg { width: 1em; height: 1em; }
 .dk-tool-body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
 .dk-tool-name { font-weight: 700; font-size: 0.88rem; }
 .dk-tool-desc { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

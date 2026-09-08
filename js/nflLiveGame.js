@@ -132,7 +132,7 @@ function _nlgRender(data) {
           <div class="nlg-wrap">
             <div class="nlg-topbar">
               <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
-              <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">🎬 Create Highlight Card</button>
+              <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">${_iconSvg('film', 13)} Create Highlight Card</button>
             </div>
             <div class="nlg-header"></div>
             <div class="nlg-layout">
@@ -229,7 +229,7 @@ function _nlgRenderHeader(comp, home, away) {
         : null;
     const sitLine = sit
         ? `<div class="nlg-situation">
-             ${sitPossTeamName ? `<span class="nlg-poss">🏈 ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">🏈 ${_escHtml(sit.possessionText)}</span>` : '')}
+             ${sitPossTeamName ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sit.possessionText)}</span>` : '')}
              ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
              ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
            </div>`

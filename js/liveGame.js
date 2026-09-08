@@ -2136,7 +2136,7 @@ function _buildLastPlay(feed) {
     return `<div class="lg-lastplay${isScore ? ' lg-lastplay--scoring' : ''}">
         <div class="lg-lastplay-label">Last Play</div>
         <div class="lg-lastplay-body">
-            ${term ? `<span class="lg-lastplay-term">${_escHtml(term)}${isHR ? ' 💥' : ''}</span>` : ''}
+            ${term ? `<span class="lg-lastplay-term">${_escHtml(term)}${isHR ? ` <span style="display:inline-flex;vertical-align:-2px">${_iconSvg('burst', 13)}</span>` : ''}</span>` : ''}
             <span class="lg-lastplay-desc">${desc}</span>
             ${scoreHtml}
         </div>

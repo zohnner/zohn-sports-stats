@@ -110,7 +110,7 @@ function _newsFilterBar(sport, injuryCount, total) {
         font-weight:700;font-size:0.72rem;cursor:pointer">${label}</button>`;
     return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;margin-bottom:0.85rem">
         ${chip(!_newsInjuryOnly, `All (${total})`, 'newsFilterAll')}
-        ${chip(_newsInjuryOnly, `🩹 Injury-Related (${injuryCount})`, 'newsFilterInjury')}
+        ${chip(_newsInjuryOnly, `<span style="display:inline-flex;vertical-align:-2px;margin-right:0.2rem">${_iconSvg('stethoscope', 12)}</span>Injury-Related (${injuryCount})`, 'newsFilterInjury')}
     </div>`;
 }
 
@@ -121,7 +121,8 @@ function displayNews(data, sport) {
     grid.style.cssText = '';
     const articles = ((data && data.articles) || []).filter(a => a && a.headline && a.links && a.links.web);
     if (!articles.length) {
-        if (window.ErrorHandler && ErrorHandler.renderEmptyState) ErrorHandler.renderEmptyState(grid, 'No recent news right now.', '📰');
+        // icon arg removed 2026-09-07 -- was already dead (renderEmptyState only accepts an SVG string)
+        if (window.ErrorHandler && ErrorHandler.renderEmptyState) ErrorHandler.renderEmptyState(grid, 'No recent news right now.');
         else grid.innerHTML = `<div class="news-empty">No recent news right now.</div>`;
         return;
     }

@@ -141,7 +141,7 @@ function displayNHLTeams(teams) {
     grid.className = 'games-grid';
 
     if (!teams?.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NHL team data available', '🏒');
+        ErrorHandler.renderEmptyState(grid, 'No NHL team data available'); // icon arg removed 2026-09-07 -- was already dead
         return;
     }
 
@@ -328,7 +328,7 @@ function displayNHLStandings(rows) {
     grid.innerHTML = '';
 
     if (!rows?.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NHL standings available', '📊');
+        ErrorHandler.renderEmptyState(grid, 'No NHL standings available'); // icon arg removed 2026-09-07 -- was already dead
         return;
     }
 
@@ -398,18 +398,18 @@ function displayNHLStandings(rows) {
 // ── Display: Leaders ──────────────────────────────────────────
 
 const _NHL_SKATER_CATS = [
-    { key: 'goals',           label: 'Goals',     icon: '🥅' },
-    { key: 'assists',         label: 'Assists',   icon: '🏒' },
-    { key: 'points',          label: 'Points',    icon: '⭐' },
-    { key: 'plusMinus',       label: '+/-',       icon: '📊' },
-    { key: 'powerPlayGoals',  label: 'PP Goals',  icon: '🔋' },
-    { key: 'penaltyMinutes',  label: 'PIM',       icon: '⏱️' },
+    { key: 'goals',           label: 'Goals',     icon: 'net' },
+    { key: 'assists',         label: 'Assists',   icon: 'puck' },
+    { key: 'points',          label: 'Points',    icon: 'star' },
+    { key: 'plusMinus',       label: '+/-',       icon: 'bars' },
+    { key: 'powerPlayGoals',  label: 'PP Goals',  icon: 'lightning' },
+    { key: 'penaltyMinutes',  label: 'PIM',       icon: 'clock' },
 ];
 const _NHL_GOALIE_CATS = [
-    { key: 'wins',            label: 'Wins',      icon: '🥅' },
-    { key: 'savePctg',        label: 'SV%',       icon: '🛡️' },
-    { key: 'goalsAgainstAvg', label: 'GAA',       icon: '📉' },
-    { key: 'shutouts',        label: 'Shutouts',  icon: '🔒' },
+    { key: 'wins',            label: 'Wins',      icon: 'net' },
+    { key: 'savePctg',        label: 'SV%',       icon: 'shield' },
+    { key: 'goalsAgainstAvg', label: 'GAA',       icon: 'trendDown' },
+    { key: 'shutouts',        label: 'Shutouts',  icon: 'lock' },
 ];
 
 async function loadNHLLeaderboards() {
@@ -479,7 +479,7 @@ function displayNHLLeaderboards({ skaters, goalies }) {
                 <div style="padding:0.55rem 0.7rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
                     font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
                     display:flex;align-items:center;gap:0.35rem;color:var(--text-secondary)">
-                    <span>${cat.icon}</span> ${_escHtml(cat.label)}
+                    <span style="display:inline-flex">${_iconSvg(cat.icon, 13)}</span> ${_escHtml(cat.label)}
                 </div>
                 ${rowsHtml || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.8rem">No data</div>'}
             `;

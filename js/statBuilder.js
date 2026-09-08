@@ -209,7 +209,7 @@ async function displayStatBuilder(mlbGroup) {
             grid.innerHTML = `
                 <div class="builder-panel">
                     <div class="error-state">
-                        <div class="error-state-icon">⚠️</div>
+                        <div class="error-state-icon">${_iconSvg('warning', 36)}</div>
                         <h3 class="error-state-title">Failed to Load MLB Stats</h3>
                         <button class="retry-btn" onclick="displayStatBuilder()">Retry</button>
                     </div>
@@ -312,7 +312,7 @@ async function displayStatBuilder(mlbGroup) {
 
         <div class="saved-stats-panel" id="builderResultsPanel">
             <div id="builderResultsEmpty" class="builder-empty">
-                <div class="builder-empty-icon">🧮</div>
+                <div class="builder-empty-icon">${_iconSvg('calculator')}</div>
                 <p>Enter a formula and hit <strong>Run</strong> to rank all players.</p>
             </div>
             <div id="builderResultsTable" style="display:none"></div>
@@ -684,7 +684,7 @@ function _renderSavedStats() {
     if (!AppState.savedStats?.length) {
         list.innerHTML = `
             <div class="builder-empty">
-                <div class="builder-empty-icon">📋</div>
+                <div class="builder-empty-icon">${_iconSvg('clipboard')}</div>
                 <p>No saved stats yet.</p>
             </div>
         `;

@@ -36,7 +36,7 @@ function displayGames(games) {
     grid.className = 'games-grid';
 
     if (!games || games.length === 0) {
-        ErrorHandler.renderEmptyState(grid, 'No recent games found', '📅');
+        ErrorHandler.renderEmptyState(grid, 'No recent games found'); // icon arg removed 2026-09-07 -- was already dead (renderEmptyState only accepts an SVG string)
         return;
     }
 

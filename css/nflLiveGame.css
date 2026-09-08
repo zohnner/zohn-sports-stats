@@ -16,6 +16,7 @@
 .nlg-vs { font-size: 0.7rem; color: var(--text-subtle); margin-top: 0.2rem; }
 .nlg-situation { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; background: color-mix(in srgb, var(--color-live) 8%, transparent); border: 1px solid color-mix(in srgb, var(--color-live) 30%, transparent); border-radius: var(--radius-md); padding: 0.5rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem; }
 .nlg-poss { font-weight: 800; color: var(--text-primary); }
+.nlg-poss svg { vertical-align: -2px; }
 .nlg-dd { font-weight: 700; color: var(--text-primary); }
 /* Last play text was the same low-contrast/small treatment as everything
    around it and got lost -- now a distinct full-width row with a label and

@@ -49,7 +49,7 @@ function _parkFactorBadge(teamAbbr, style = 'inline') {
     }
     // Full badge for player detail hero
     const cls = tf.tier >= 2 ? 'park-badge--hit' : tf.tier === 1 ? 'park-badge--hit-light' : tf.tier <= -2 ? 'park-badge--pit' : 'park-badge--pit-light';
-    return `<span class="park-badge ${cls}" title="${tf.label}">${tf.tier === 3 ? '⛰️ ' : ''}${tf.label}</span>`;
+    return `<span class="park-badge ${cls}" title="${tf.label}">${tf.tier === 3 ? `<span style="display:inline-flex;margin-right:0.15rem">${_iconSvg('mountain', 11)}</span>` : ''}${tf.label}</span>`;
 }
 
 // ── MLB Favorites (starred players) ── merged 2026-08-05 into the unified
@@ -3569,7 +3569,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
         <div class="mlb-game-detail-wrap">
             <div class="arcade-back-row" style="margin-bottom:1.5rem">
                 <button class="arcade-back-btn" onclick="loadMLBGames()">← Back to Scores</button>
-                ${gamePk ? `<button type="button" class="hcs-pill" onclick="openHighlightCardForGame(${gamePk})">🎬 Create Highlight Card</button>` : ''}
+                ${gamePk ? `<button type="button" class="hcs-pill" onclick="openHighlightCardForGame(${gamePk})">${_iconSvg('film', 13)} Create Highlight Card</button>` : ''}
             </div>
             ${linescoreHtml}
             <div class="mlb-box-grid">

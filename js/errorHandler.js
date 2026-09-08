@@ -92,13 +92,14 @@ class ErrorHandler {
      * @returns {Function} dismiss function
      */
     static toast(message, type = 'error', { title, duration = 5000 } = {}) {
-        const icons    = { error: '⚠️', warn: '🔔', success: '✅', info: 'ℹ️' };
+        // _iconSvg keys, not emoji, since 2026-09-07's emoji-removal pass.
+        const icons    = { error: 'warning', warn: 'bell', success: 'checkCircle', info: 'info' };
         const defaults = { error: 'Error', warn: 'Warning', success: 'Success', info: 'Info' };
 
         const el = document.createElement('div');
         el.className = `toast toast-${type}`;
         el.innerHTML = `
-            <span class="toast-icon">${icons[type]}</span>
+            <span class="toast-icon">${_iconSvg(icons[type])}</span>
             <div class="toast-body">
                 <div class="toast-title">${title ?? defaults[type]}</div>
                 <div class="toast-message">${message}</div>
@@ -130,7 +131,7 @@ class ErrorHandler {
 
         container.innerHTML = `
             <div class="error-state">
-                <div class="error-state-icon">⚠️</div>
+                <div class="error-state-icon">${_iconSvg('warning', 36)}</div>
                 <h3 class="error-state-title">Something went wrong</h3>
                 <p class="error-state-message">${message}</p>
                 ${retryFn ? '<button class="retry-btn">↺ Try Again</button>' : ''}

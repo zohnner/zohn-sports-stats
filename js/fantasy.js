@@ -1401,16 +1401,16 @@ async function _dkLoadByeWatch(rows) {
 // above; D-103 already decided it lives in Stats & Leaders, not Draft HQ.
 function _dkQuickTools() {
     const tools = [
-        { v: 'nfl-mock',     icon: '🏈', l: 'Mock Draft',   d: 'Full snake draft vs. AI, live grade at the end' },
-        { v: 'nfl-rankings', icon: '📊', l: 'ADP Rankings', d: 'Tiered board sorted by market ADP' },
-        { v: 'nfl-sos',      icon: '🗓️', l: 'Schedule',     d: 'Bye weeks + matchup difficulty by position' },
-        { v: 'nfl-mydrafts', icon: '💾', l: 'My Drafts',    d: 'Revisit your saved mock results' },
+        { v: 'nfl-mock',     icon: 'football',   l: 'Mock Draft',   d: 'Full snake draft vs. AI, live grade at the end' },
+        { v: 'nfl-rankings', icon: 'bars',       l: 'ADP Rankings', d: 'Tiered board sorted by market ADP' },
+        { v: 'nfl-sos',      icon: 'schedule',   l: 'Schedule',     d: 'Bye weeks + matchup difficulty by position' },
+        { v: 'nfl-mydrafts', icon: 'save',       l: 'My Drafts',    d: 'Revisit your saved mock results' },
     ];
     return `<section class="dk-tools">
         <h3 class="team-section__title">More Draft HQ tools</h3>
         <div class="dk-tools-grid">
             ${tools.map(t => `<button class="dk-tool-card" onclick="navigateTo('${t.v}')">
-                <span class="dk-tool-icon">${t.icon}</span>
+                <span class="dk-tool-icon">${_iconSvg(t.icon)}</span>
                 <span class="dk-tool-body"><span class="dk-tool-name">${t.l}</span><span class="dk-tool-desc">${t.d}</span></span>
                 <span class="dk-tool-go" aria-hidden="true">→</span>
             </button>`).join('')}
