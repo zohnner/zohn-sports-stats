@@ -4551,6 +4551,15 @@ body.view-home .search-global-btn { display: none; }
 @media (max-width: 640px) {
     .home-sport-picker { grid-template-columns: 1fr; }
 }
+/* Pre-existing overflow, found and fixed alongside Phase 3's snippet line
+   (2026-09-08): same root cause and same fix as .sl-rail .pennant-race above
+   -- .home-sport-picker has lived inside the narrow .sl-rail sidebar column
+   (~340px) since the Phase 0 shell move, but its 3-column grid was still
+   sized for the old full-width layout. Confirmed live on production before
+   this fix: real horizontal page overflow and "Regular season" wrapping mid-
+   word inside a ~157px column, present even without the new snippet content
+   -- this container-width problem, not a viewport-width one. */
+.sl-rail .home-sport-picker { grid-template-columns: 1fr; }
 .sport-card {
     display: flex;
     align-items: center;
@@ -4587,6 +4596,19 @@ body.view-home .search-global-btn { display: none; }
     animation: pulseDot 1.6s ease-in-out infinite;
 }
 .sport-card--live .sport-card-status { color: var(--color-live); }
+/* Phase 3 home redesign (2026-09-08) — one-line matchup/score preview, only
+   rendered when a representative game exists for today. Card width is fixed
+   in the sidebar, so a long team/status combo must truncate, never wrap or
+   overflow. */
+.sport-card-snippet {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
 /* Live/today counts (ChatGPT-brief quick win 1) — a second line under the
    season-phase status, only rendered when there's a real count to show. */
 .sport-card-stats {

@@ -2162,6 +2162,17 @@ async function _renderHomeHero(games) {
         }
     }));
 
+    // Phase 3 (2026-09-08): the sport-picker cards' preview snippets read
+    // AppState.nflGames/ncaafGames/ncaabGames/wnbaGames, which just got
+    // populated above -- on a cold load, _renderSportPicker()'s own earlier
+    // synchronous call (from loadHome()'s main sequence) ran before this
+    // resolved and saw empty arrays for every non-MLB sport, same async gap
+    // Phase 2's Following module solved with its own sync-then-hydrate
+    // repaint. Cheapest fix here: just call it again now that the data
+    // guest-sport fetch this function already runs has landed -- no new
+    // fetch, no new hydrate machinery.
+    if (typeof _renderSportPicker === 'function') _renderSportPicker();
+
     let hero = null;
     const mlbLive = list.filter(isLive);
     const guestLive = {};
@@ -2748,8 +2759,12 @@ function _sportPickerStatus(id) {
 
 // Sport-picker live/today counts (ChatGPT-brief quick win 1) \u2014 reads whatever's
 // already in AppState from _updateHomeTicker's fetches, no new network calls.
-// NCAAB excluded on purpose: same reason it's absent from the merged ticker
-// (D-087) \u2014 no fresh per-day game data reliably in AppState for it yet.
+// NCAAB/WNBA were excluded on purpose when this was written (D-087, no fresh
+// per-day game data reliably in AppState for either yet) -- stopped being
+// true once the home redesign's Phase 0 (cfd8e11, 2026-09-07) added
+// _ncaabLeverage/_wnbaLeverage and the cross-sport hero fetch that now
+// populates AppState.ncaabGames/wnbaGames on every home load. Comment just
+// never got updated until Phase 3 (2026-09-08) actually needed the data.
 function _sportPickerCounts() {
     const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
     const counts = {};
@@ -2762,16 +2777,103 @@ function _sportPickerCounts() {
             && !/final/i.test(g.status?.detailedState || '')).length,
     };
 
-    const _footballToday = games => (games || []).filter(g => {
+    const _gamesToday = games => (games || []).filter(g => {
         if (!g.date) return false;
         return new Date(new Date(g.date).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 10) === todayET;
     });
-    const nflToday = _footballToday(AppState.nflGames);
+    const nflToday = _gamesToday(AppState.nflGames);
     counts.nfl = { today: nflToday.length, live: nflToday.filter(g => g.isLive).length };
-    const ncaafToday = _footballToday(AppState.ncaafGames);
+    const ncaafToday = _gamesToday(AppState.ncaafGames);
     counts.ncaaf = { today: ncaafToday.length, live: ncaafToday.filter(g => g.isLive).length };
+    const ncaabToday = _gamesToday(AppState.ncaabGames);
+    counts.ncaab = { today: ncaabToday.length, live: ncaabToday.filter(g => g.isLive).length };
+    const wnbaToday = _gamesToday(AppState.wnbaGames);
+    counts.wnba = { today: wnbaToday.length, live: wnbaToday.filter(g => g.isLive).length };
 
     return counts;
+}
+
+// Phase 3 (2026-09-08) -- one representative game per sport for the sport-
+// picker card's preview snippet, reusing each sport's own live-then-marquee
+// picker (identical pattern to _loadNFLLandingSpotlight's, js/app.js~3158)
+// rather than a new selection function per sport.
+function _sportPickerGame(sport) {
+    const pick = (games, leverage, marquee) => {
+        const live = (games || []).filter(g => g.isLive);
+        if (live.length) return live.slice().sort((a, b) => leverage(b) - leverage(a))[0];
+        const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+        if (upcoming.length) return upcoming.slice().sort((a, b) => marquee(b) - marquee(a))[0];
+        return null;
+    };
+    if (sport === 'mlb') {
+        const games = AppState._homeGames || [];
+        const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
+        const isUpcoming = g => g.status?.abstractGameState === 'Preview';
+        const live = games.filter(isLive);
+        if (live.length) return live.slice().sort((a, b) => _mlbHeroLeverage(b) - _mlbHeroLeverage(a))[0];
+        const upcoming = games.filter(isUpcoming);
+        if (upcoming.length) return upcoming.slice().sort((a, b) => _mlbHeroMarquee(b) - _mlbHeroMarquee(a))[0];
+        return null;
+    }
+    if (sport === 'nfl')   return pick(AppState.nflGames,   _nflLeverage,   _nflMarquee);
+    if (sport === 'ncaaf') return pick(AppState.ncaafGames, _ncaafLeverage, _ncaafMarquee);
+    if (sport === 'ncaab') return pick(AppState.ncaabGames, _ncaabLeverage, _ncaabMarquee);
+    if (sport === 'wnba')  return pick(AppState.wnbaGames,  _wnbaLeverage,  _wnbaMarquee);
+    return null;
+}
+
+// Scorebug's MLB pillLabel (mlbInningTag) renders a compact "\u25b21"/"\u25bc3"/"MID 5"
+// glyph meant to sit inside a colored .hgc-pill badge, where the pill's own
+// color/shape carries the "this is live" meaning. This snippet is plain
+// inline text with no pill styling, so the bare glyph reads as a stray
+// character rather than a status -- expand it to words here rather than
+// pulling the pill visual language into a context it wasn't designed for.
+function _mlbPillLabelReadable(label) {
+    const ordinal = n => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`;
+    const arrow = /^([\u25b2\u25bc])(\d+)$/.exec(label || '');
+    if (arrow) return `${arrow[1] === '\u25b2' ? 'Top' : 'Bot'} ${ordinal(parseInt(arrow[2], 10))}`;
+    const midEnd = /^(MID|END) (\d+)$/.exec(label || '');
+    if (midEnd) return `${midEnd[1] === 'MID' ? 'Mid' : 'End'} ${ordinal(parseInt(midEnd[2], 10))}`;
+    return label;
+}
+
+// Renders _sportPickerGame()'s pick as a one-line snippet. MLB/NFL/NCAAF run
+// through Scorebug's own normalizers for a ready-made pillLabel (live clock/
+// period or upcoming tip/kickoff time) instead of hand-rolling status text a
+// second time. NCAAB/WNBA have no Scorebug normalizer (only MLB has its own;
+// NFL/NCAAF share one internal one) -- not adding one just for a one-line
+// snippet, so they get a plainer score-only/matchup-only line, same
+// deliberate "less enriched, not broken" precedent the fav-rail already set
+// for these two sports (js/navigation.js's own _renderFavRail comment).
+function _sportPickerSnippet(sport) {
+    const g = _sportPickerGame(sport);
+    if (!g) return '';
+    try {
+        if (sport === 'mlb' && typeof Scorebug !== 'undefined') {
+            const m = Scorebug.normalizeMLBGame(g);
+            const label = _mlbPillLabelReadable(m.pillLabel);
+            return m.hasScore
+                ? `${m.away.abbr} ${m.away.score} \u2013 ${m.home.abbr} ${m.home.score} \u00b7 ${label}`
+                : `${m.away.abbr} @ ${m.home.abbr} \u00b7 ${label}`;
+        }
+        if ((sport === 'nfl' || sport === 'ncaaf') && typeof Scorebug !== 'undefined') {
+            const m = sport === 'nfl' ? Scorebug.normalizeNFLGame(g) : Scorebug.normalizeNCAAFGame(g);
+            return m.hasScore
+                ? `${m.away.abbr} ${m.away.score} \u2013 ${m.home.abbr} ${m.home.score} \u00b7 ${m.pillLabel}`
+                : `${m.away.abbr} @ ${m.home.abbr} \u00b7 ${m.pillLabel}`;
+        }
+        if (sport === 'ncaab' || sport === 'wnba') {
+            const away = g.awayTeam, home = g.homeTeam;
+            if (!away || !home) return '';
+            if (g.isLive || g.isFinal) {
+                return `${away.abbr} ${away.score} \u2013 ${home.abbr} ${home.score}${g.isFinal ? ' Final' : ''}`;
+            }
+            return `${away.abbr} @ ${home.abbr}`;
+        }
+    } catch (err) {
+        Logger.warn(`Sport-picker snippet failed for ${sport}`, err, 'APP');
+    }
+    return '';
 }
 
 function _renderSportPicker() {
@@ -2789,11 +2891,14 @@ function _renderSportPicker() {
         const statsLine = (c && c.today > 0)
             ? `<span class="sport-card-stats">${c.today} today${hasLive ? ` \u00b7 ${c.live} live` : ''}</span>` : '';
         const extraAria = (c && c.today > 0) ? `, ${c.today} game${c.today === 1 ? '' : 's'} today` : '';
+        const snippet = (typeof _sportPickerSnippet === 'function') ? _sportPickerSnippet(s.id) : '';
+        const snippetLine = snippet ? `<span class="sport-card-snippet">${_escHtml(snippet)}</span>` : '';
         return `<button class="sport-card sport-card--${cls}" data-sport="${s.id}" style="--sport-accent:${s.accent}" aria-label="${_escHtml(s.label)} \u2014 ${_escHtml(st.label)}${extraAria}">
             <span class="sport-card-icon" aria-hidden="true">${_iconSvg(s.icon)}</span>
             <span class="sport-card-body">
                 <span class="sport-card-name">${_escHtml(s.label)}</span>
                 <span class="sport-card-status"><span class="sport-card-dot"></span>${_escHtml(st.label)}</span>
+                ${snippetLine}
                 ${statsLine}
             </span>
             <span class="sport-card-go" aria-hidden="true">\u2192</span>
