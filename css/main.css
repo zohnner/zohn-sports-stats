@@ -2138,14 +2138,26 @@ main {
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
+/* Home redesign Phase 1 (2026-09-07): sport tag on each cross-sourced
+   headline, since the rail no longer implies "this is all MLB" the way it
+   did when the feed had one source. */
+.rail-hl-sport {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
 .rail-insight {
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
     padding: 0.6rem 0.75rem;
     border-bottom: 1px solid var(--border-default);
+    cursor: pointer;
+    transition: background 0.12s ease;
 }
 .rail-insight:last-of-type { border-bottom: none; }
+.rail-insight:hover, .rail-insight:focus-visible { background: var(--bg-interactive); }
 .rail-insight-dot {
     flex-shrink: 0;
     width: 8px;

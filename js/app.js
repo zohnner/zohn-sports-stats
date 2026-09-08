@@ -695,8 +695,10 @@ function loadHome() {
                     <kbd class="home-search-kbd">⌘K</kbd>
                 </button>
 
-                <!-- Seasonal moment band (D-040 1a) — Pennant Races today; folds into
-                     the cross-sport stat-moment Insights engine in a later phase -->
+                <!-- Seasonal promo band (D-040 1a / D-043 3b) — one calendar-driven
+                     marketing CTA (e.g. NFL season live, draft season). Pennant Races
+                     used to share this host; its tightest-gap signal now competes as
+                     an MLB candidate in the Insights engine below instead (Phase 1). -->
                 <div class="home-moment" id="homeMoment" hidden></div>
 
                 <!-- Today's Games — still MLB/NFL/NCAAF only; the sport-preview hub
@@ -718,22 +720,24 @@ function loadHome() {
                     <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
                 </div>
 
-                <!-- Headlines + Insights rail (D-046 P3) — still MLB-only; becomes the
-                     cross-sport stat-moment engine (Insights promoted ahead of
-                     Headlines) in a later phase -->
+                <!-- Insights + Headlines rail (D-046 P3, home redesign Phase 1) —
+                     Insights leads: real computed cross-sport stat depth ESPN/CBS/
+                     Yahoo's wire-copy headlines can't show, the actual differentiation
+                     play. Headlines (also now cross-sourced across all 5 sports) is
+                     the secondary tab, not the default. -->
                 <div class="home-rail home-zone" id="homeRail">
                     <div class="home-section-hdr">
                         <span class="home-section-title">The Latest</span>
-                        <div class="rail-tabs" role="tablist" aria-label="Latest news and insights">
-                            <button class="rail-tab active" data-tab="headlines" role="tab" aria-selected="true">Headlines</button>
-                            <button class="rail-tab" data-tab="insights" role="tab" aria-selected="false">Insights</button>
+                        <div class="rail-tabs" role="tablist" aria-label="Insights and news">
+                            <button class="rail-tab active" data-tab="insights" role="tab" aria-selected="true">Insights</button>
+                            <button class="rail-tab" data-tab="headlines" role="tab" aria-selected="false">Headlines</button>
                         </div>
                     </div>
-                    <div class="rail-panel" id="railHeadlines" role="tabpanel">
-                        ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
-                    </div>
-                    <div class="rail-panel" id="railInsights" role="tabpanel" hidden>
+                    <div class="rail-panel" id="railInsights" role="tabpanel">
                         ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+                    </div>
+                    <div class="rail-panel" id="railHeadlines" role="tabpanel" hidden>
+                        ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
                     </div>
                 </div>
             </div>
@@ -2091,53 +2095,91 @@ function _wireRailTabs() {
     });
 }
 
+// Home redesign Phase 1 (2026-09-07): cross-sourced across all 5 sports
+// instead of MLB's /api/news feed alone -- each of NFL/NCAAF/NCAAB/WNBA
+// already has a real /api/news?sport= feed (NCAAB/WNBA added during the
+// sport-landing port), so there's no reason Headlines stayed MLB-only.
+// Merged and sorted by recency rather than kept in 5 separate lists, since
+// the point is "what's new right now," not "what's new per sport."
 async function _renderHomeHeadlines() {
     const host = document.getElementById('railHeadlines');
     if (!host) return;
     const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
+    const sports = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba'];
     try {
         let data = _homeNewsCache;
         if (!data) {
-            const res = await fetch('/api/news?sport=mlb');
-            if (!res.ok) throw new Error('news ' + res.status);
-            data = await res.json();
+            const results = await Promise.all(sports.map(async sport => {
+                try {
+                    const res = await fetch(`/api/news?sport=${sport}`);
+                    if (!res.ok) return [];
+                    const json = await res.json();
+                    return ((json && json.articles) || []).map(a => ({ ...a, _sport: sport }));
+                } catch (_) { return []; }
+            }));
+            data = { articles: results.flat() };
             _homeNewsCache = data;
         }
         const articles = ((data && data.articles) || [])
             .filter(a => a && a.headline && a.links?.web?.href)
+            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
             .slice(0, 8);
+        if (!host.isConnected) return;
         if (!articles.length) { host.innerHTML = `<p class="pct-caption">No headlines right now.</p>`; return; }
         host.innerHTML = articles.map(a => {
             const when = _ago(a.published || a.lastModified);
+            const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[a._sport]) || {};
             return `<a class="rail-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
+                <span class="rail-hl-sport" style="color:${meta.accent || 'var(--text-muted)'}">${_escHtml((a._sport || '').toUpperCase())}</span>
                 <span class="rail-hl-text">${_escHtml(a.headline)}</span>
                 ${when ? `<span class="rail-hl-time">${_escHtml(when)}</span>` : ''}
             </a>`;
-        }).join('') + `<p class="pct-caption">Headlines via ESPN · tap to read the full story</p>`;
+        }).join('') + `<p class="pct-caption">Headlines via ESPN &amp; MLB Stats API · tap to read the full story</p>`;
     } catch (err) {
         if (window.Logger) Logger.warn('home headlines failed', err, 'APP');
-        host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
+        if (host.isConnected) host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
     }
 }
 
-function _renderHomeInsights() {
-    const host = document.getElementById('railInsights');
-    if (!host) return;
+// ── Cross-sport stat-moment Insights engine (home redesign Phase 1) ────────
+// Replaces the old MLB-only _renderHomeInsights with a candidate-gathering
+// pass across all 5 sports, each candidate hand-scored on a common ~0-100
+// "notability" scale using the same pragmatic hand-calibration approach the
+// cross-sport hero already uses for its leverage/marquee scoring (D-100) --
+// not a statistical/percentile model, since there's no real distribution to
+// build one from, and it's not how this codebase solves cross-sport
+// comparison anywhere else. This is the page's actual differentiation play
+// (real computed depth ESPN/CBS/Yahoo's wire-copy headlines can't show),
+// so it's promoted ahead of Headlines rather than living as its secondary tab.
+function _notabilityFromMargin(gap, weight, base = 30, cap = 95) {
+    if (gap == null || isNaN(gap) || gap <= 0) return base;
+    return Math.min(cap, base + gap * weight);
+}
+function _notabilityFromTightness(gamesBack, cap = 90, floor = 20, decay = 15) {
+    if (gamesBack == null || isNaN(gamesBack)) return floor;
+    return Math.max(floor, cap - gamesBack * decay);
+}
+function _notabilityFromRankJump(jump, base = 20, weight = 8, cap = 95) {
+    if (jump == null || isNaN(jump)) return base;
+    return Math.min(cap, base + Math.abs(jump) * weight);
+}
+
+// MLB season-leader margin bullets -- same computation _renderHomeInsights
+// used to do inline, now one candidate source among several sports'.
+function _mlbLeaderStatMoments() {
+    const out = [];
     const hitting  = AppState.mlbLeaderSplits?.hitting  || [];
     const pitching = AppState.mlbLeaderSplits?.pitching || [];
-    if (!hitting.length && !pitching.length) return; // keep skeleton until splits load
-
-    const _teamColor = ab => (typeof getMLBTeamColors === 'function' ? getMLBTeamColors(ab).primary : '#7c8df0');
+    if (!hitting.length && !pitching.length) return out;
     const _top2 = (arr, key, desc = true) => {
         const s = arr.filter(x => x.stat?.[key] != null && !isNaN(parseFloat(x.stat[key])))
             .sort((a, b) => { const av = parseFloat(a.stat[key]), bv = parseFloat(b.stat[key]); return desc ? bv - av : av - bv; });
         return [s[0], s[1]];
     };
-    const teamG  = Math.max(0, ...hitting.map(s => parseInt(s.stat?.gamesPlayed, 10) || 0));
-    const qPit   = (() => { const q = pitching.filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= teamG); return q.length ? q : pitching; })();
+    const teamG = Math.max(0, ...hitting.map(s => parseInt(s.stat?.gamesPlayed, 10) || 0));
+    const qPit  = (() => { const q = pitching.filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= teamG); return q.length ? q : pitching; })();
 
-    const insights = [];
-    const counting = (arr, key, word) => {
+    const counting = (arr, key, word, weight) => {
         const [a, b] = _top2(arr, key);
         if (!a) return;
         const lv = parseInt(a.stat[key], 10);
@@ -2145,38 +2187,53 @@ function _renderHomeInsights() {
         const nm = a.player?.fullName || '—', tm = a.team?.abbreviation || '';
         const gap = b ? lv - parseInt(b.stat[key], 10) : 0;
         const tail = gap > 0 ? ` — ${gap} clear of the field` : '';
-        insights.push({ c: _teamColor(tm), t: `${nm} (${tm}) leads MLB with ${lv} ${word}${tail}` });
+        out.push({ sport: 'mlb', score: _notabilityFromMargin(gap, weight), view: 'mlb-leaders',
+            text: `${nm} (${tm}) leads MLB with ${lv} ${word}${tail}` });
     };
-    counting(pitching, 'strikeOuts', 'strikeouts');
-    counting(hitting, 'rbi', 'RBI');
-    counting(hitting, 'stolenBases', 'steals');
+    counting(pitching, 'strikeOuts', 'strikeouts', 2);
+    counting(hitting, 'rbi', 'RBI', 1.5);
+    counting(hitting, 'stolenBases', 'steals', 3);
     const [wa] = _top2(qPit, 'whip', false);
     if (wa && parseFloat(wa.stat.whip) > 0) {
-        insights.push({ c: _teamColor(wa.team?.abbreviation || ''),
-            t: `${wa.player?.fullName || '—'} (${wa.team?.abbreviation || ''}) owns the lowest WHIP among qualified starters at ${parseFloat(wa.stat.whip).toFixed(2)}` });
+        out.push({ sport: 'mlb', score: 45, view: 'mlb-leaders',
+            text: `${wa.player?.fullName || '—'} (${wa.team?.abbreviation || ''}) owns the lowest WHIP among qualified starters at ${parseFloat(wa.stat.whip).toFixed(2)}` });
     }
-    if (!insights.length) return;
-    host.innerHTML = insights.slice(0, 4).map(i =>
-        `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`
-    ).join('') + `<p class="pct-caption">Season leaders through today · computed from MLB Stats API</p>`;
-
-    // Trending, last 7 days (ISSUES.md item 6, "Home — Remaining ChatGPT-brief
-    // ideas"). Appended once ready rather than blocking the season bullets
-    // above on a second fetch — this function stays synchronous, the trend
-    // block below is its own async follow-on.
-    _renderHomeTrending(host);
+    return out;
 }
 
-// AppState.mlbHotStats is the exact last7Days split the Leaderboards page's
-// Hot tab already fetches (mlb.js) — this is a second consumer of data that
-// already exists, not a new pipeline. Qualification floors (15 AB / 5 IP)
-// mirror the same-spirit qPit filter above: a 7-day window is short enough
-// that an unfiltered top is mostly 1-for-1 or 1-inning noise, not a trend.
-async function _renderHomeTrending(host) {
-    if (!host || !host.isConnected) return;
+// Pennant Races' tightest-gap signal, folded in as an MLB candidate instead
+// of a standalone always-shown widget (the old #homeMoment card). Same
+// AppState.mlbStandings/mlbOdds this used to compute inline in
+// _renderHomeMoment -- lifted, not re-derived.
+async function _mlbPennantStatMoment() {
+    try {
+        if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
+    } catch (_) { return null; }
+    const races = [];
+    (AppState.mlbStandings || []).forEach(d => {
+        const [lead, second] = d.teams || [];
+        if (!lead || !second) return;
+        const gb = parseFloat(second.gb);
+        if (isNaN(gb)) return;
+        races.push({ div: d.division, lead, second, gb });
+    });
+    if (!races.length) return null;
+    races.sort((a, b) => a.gb - b.gb);
+    const r = races[0];
+    const tail = r.gb === 0
+        ? `are tied atop the ${r.div}`
+        : `lead the ${r.div} by ${r.gb === 1 ? '1 game' : r.gb + ' games'} over ${r.second.teamName}`;
+    return { sport: 'mlb', score: _notabilityFromTightness(r.gb), view: 'mlb-standings',
+        text: `${r.lead.teamName} ${tail}` };
+}
+
+// Last-7-days hot bat, folded in as an MLB candidate (was a separate always-
+// appended _renderHomeTrending block). AppState.mlbHotStats is the exact
+// last7Days split the Leaderboards page's Hot tab already fetches (mlb.js).
+async function _mlbTrendingStatMoment() {
     const season = AppState.mlbLeaderSeason || MLB_SEASON;
     if (!AppState.mlbHotStats || AppState._mlbHotStatsSeason !== season) {
-        if (typeof fetchMLBLeagueStats !== 'function') return;
+        if (typeof fetchMLBLeagueStats !== 'function') return null;
         try {
             const [hotHit, hotPit] = await Promise.all([
                 fetchMLBLeagueStats('hitting',  season, 600, 'last7Days'),
@@ -2187,40 +2244,135 @@ async function _renderHomeTrending(host) {
             if (typeof _enrichMLBTeamAbbr === 'function') await Promise.all([_enrichMLBTeamAbbr(hotHit, season), _enrichMLBTeamAbbr(hotPit, season)]);
             AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
             AppState._mlbHotStatsSeason = season;
-        } catch (_) { return; }
+        } catch (_) { return null; }
     }
-    // The view (or this exact rail render) may have moved on while the fetch
-    // was in flight — same discipline as _updateHomeTicker's own late-arrival guard.
-    if (AppState.currentView !== 'home' || !host.isConnected) return;
-
-    const _teamColor = ab => (typeof getMLBTeamColors === 'function' ? getMLBTeamColors(ab).primary : '#7c8df0');
+    const hot = AppState.mlbHotStats || {};
+    const hitPool = (hot.hitting || []).filter(s => (parseInt(s.stat?.atBats, 10) || 0) >= 15);
     const _top1 = (arr, key, desc = true) => {
         const s = (arr || []).filter(x => x.stat?.[key] != null && !isNaN(parseFloat(x.stat[key])))
             .sort((a, b) => { const av = parseFloat(a.stat[key]), bv = parseFloat(b.stat[key]); return desc ? bv - av : av - bv; });
         return s[0];
     };
-    const hot = AppState.mlbHotStats || {};
-    const hitPool = (hot.hitting  || []).filter(s => (parseInt(s.stat?.atBats, 10) || 0) >= 15);
-    const pitPool = (hot.pitching || []).filter(s => (parseFloat(s.stat?.inningsPitched) || 0) >= 5);
-
-    const bullets = [];
     const avgTop = _top1(hitPool, 'avg');
-    if (avgTop) {
-        const avgStr = parseFloat(avgTop.stat.avg).toFixed(3).replace(/^0\./, '.');
-        bullets.push({ c: _teamColor(avgTop.team?.abbreviation || ''),
-            t: `${avgTop.player?.fullName || '—'} (${avgTop.team?.abbreviation || ''}) is hitting ${avgStr} over the last 7 days` });
-    }
-    const eraTop = _top1(pitPool, 'era', false);
-    if (eraTop) {
-        bullets.push({ c: _teamColor(eraTop.team?.abbreviation || ''),
-            t: `${eraTop.player?.fullName || '—'} (${eraTop.team?.abbreviation || ''}) has a ${parseFloat(eraTop.stat.era).toFixed(2)} ERA over the last 7 days` });
-    }
-    if (!bullets.length) return;
+    if (!avgTop) return null;
+    const avgVal = parseFloat(avgTop.stat.avg);
+    const avgStr = avgVal.toFixed(3).replace(/^0\./, '.');
+    // .400+ over a week is a real hot streak; .260 barely clears the qualifying floor.
+    const score = Math.min(85, 20 + Math.max(0, avgVal - 0.25) * 300);
+    return { sport: 'mlb', score, view: 'mlb-leaders',
+        text: `${avgTop.player?.fullName || '—'} (${avgTop.team?.abbreviation || ''}) is hitting ${avgStr} over the last 7 days` };
+}
 
-    host.insertAdjacentHTML('beforeend', `<div class="rail-trending">
-        ${bullets.map(i => `<div class="rail-insight"><span class="rail-insight-dot" style="--c:${i.c}"></span><span class="rail-insight-text">${_escHtml(i.t)}</span></div>`).join('')}
-        <p class="pct-caption">Trending, last 7 days · computed from MLB Stats API</p>
-    </div>`);
+// NFL: _nflPowerScore (js/nflStandings.js) margin between #1 and #2.
+async function _nflStatMoment() {
+    if (typeof fetchNFLStandings !== 'function' || typeof _nflPowerScore !== 'function') return null;
+    try {
+        const season = (typeof _nstdSeasonDefault === 'function') ? _nstdSeasonDefault() : undefined;
+        const rows = (typeof _nstd !== 'undefined' && _nstd.bySeason[season]) || await fetchNFLStandings(season);
+        if (typeof _nstd !== 'undefined') _nstd.bySeason[season] = rows;
+        if (!rows || !rows.length) return null;
+        const scored = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr);
+        const [top, second] = scored;
+        if (!top) return null;
+        const margin = second ? top._pwr - second._pwr : 0;
+        return { sport: 'nfl', score: _notabilityFromMargin(margin * 100, 3, 35, 90), view: 'nfl-powerrankings',
+            text: `${top.shortName || top.name} lead the NFL Power Rankings at ${top.wins}-${top.losses}` };
+    } catch (_) { return null; }
+}
+
+// NCAAF/NCAAB: shared, since fetchNCAAFRankings/fetchNCAABRankings return the
+// identical poll shape ({name, ranks:[{current, previous, ...}]}) -- one
+// function parameterized by which fetch/view to use rather than two clones.
+async function _pollJumpStatMoment(fetchFn, sport, view) {
+    if (typeof fetchFn !== 'function') return null;
+    try {
+        const polls = await fetchFn();
+        const ap = (polls || []).find(p => /\bAP\b/i.test(p.name)) || (polls || [])[0];
+        if (!ap || !ap.ranks || !ap.ranks.length) return null;
+        let best = null;
+        ap.ranks.forEach(t => {
+            if (t.previous == null || t.current == null) return;
+            const jump = t.previous === 0 ? 5 : t.previous - t.current; // NEW entries count as a moderate jump
+            if (!best || jump > best.jump) best = { ...t, jump };
+        });
+        if (!best || best.jump <= 0) return null;
+        const label = best.previous === 0 ? `enters the poll at #${best.current}` : `jumped ${best.jump} spot${best.jump === 1 ? '' : 's'} to #${best.current}`;
+        return { sport, score: _notabilityFromRankJump(best.jump), view,
+            text: `${best.name} ${label} in the ${ap.name}` };
+    } catch (_) { return null; }
+}
+
+// WNBA: player leader margin (mirrors MLB's leader-plus-margin bullets --
+// same shape, different endpoint) and playoff-cutline tightness (mirrors
+// MLB's pennant-gap candidate via the shared _notabilityFromTightness scale).
+async function _wnbaStatMoments() {
+    const out = [];
+    const season = (typeof _wnba !== 'undefined') ? _wnba.season : undefined;
+    try {
+        const res = await fetch(`/api/wnbastats?season=${season}`);
+        if (res.ok) {
+            const data = await res.json();
+            const cats = (data && data.categories) || [];
+            const cat = cats.find(c => (c.unit || '').toUpperCase() === 'PPG') || cats[0];
+            const [a, b] = (cat && cat.leaders) || [];
+            if (a && a.value != null) {
+                const gap = b && b.value != null ? a.value - b.value : 0;
+                out.push({ sport: 'wnba', score: _notabilityFromMargin(gap, 8), view: 'wnba-leaders',
+                    text: `${a.name} (${a.team}) leads the WNBA with ${a.value} ${cat.unit}${gap > 0 ? ` — ${gap.toFixed(1)} clear of the field` : ''}` });
+            }
+        }
+    } catch (_) { /* honest absence, not a retry loop */ }
+    try {
+        if (typeof fetchWNBAStandings === 'function' && typeof _wnbaComputePlayoffField === 'function') {
+            const confs = await fetchWNBAStandings(season);
+            const all = _wnbaComputePlayoffField(confs);
+            if (all.length > 8) {
+                const eighth = all[7], ninth = all[8];
+                if (eighth?.w != null && ninth?.w != null) {
+                    const gb = ((eighth.w - eighth.l) - (ninth.w - ninth.l)) / 2;
+                    out.push({ sport: 'wnba', score: _notabilityFromTightness(gb), view: 'wnba-playoffs',
+                        text: `${ninth.name} trails the 8th playoff seed by ${gb.toFixed(1)} game${gb === 1 ? '' : 's'}` });
+                }
+            }
+        }
+    } catch (_) { /* honest absence */ }
+    return out;
+}
+
+async function _statMomentCandidates() {
+    const results = await Promise.all([
+        Promise.resolve(_mlbLeaderStatMoments()),
+        _mlbPennantStatMoment(),
+        _mlbTrendingStatMoment(),
+        _nflStatMoment(),
+        _pollJumpStatMoment(typeof fetchNCAAFRankings === 'function' ? fetchNCAAFRankings : null, 'ncaaf', 'ncaaf-rankings'),
+        _pollJumpStatMoment(typeof fetchNCAABRankings === 'function' ? fetchNCAABRankings : null, 'ncaab', 'ncaab-rankings'),
+        _wnbaStatMoments(),
+    ]);
+    return results.flat().filter(Boolean);
+}
+
+async function _renderHomeInsights() {
+    const host = document.getElementById('railInsights');
+    if (!host) return;
+    let candidates = [];
+    try {
+        candidates = await _statMomentCandidates();
+    } catch (err) {
+        Logger.warn('stat-moment engine failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    if (!candidates.length) return; // keep skeleton until at least one sport has data
+    candidates.sort((a, b) => b.score - a.score);
+    const top = candidates.slice(0, 4);
+    host.innerHTML = top.map(c => {
+        const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[c.sport]) || {};
+        const color = meta.accent || 'var(--accent)';
+        return `<div class="rail-insight" role="button" tabindex="0" onclick="navigateTo('${c.view}')" onkeydown="if(event.key==='Enter')navigateTo('${c.view}')">
+            <span class="rail-insight-dot" style="--c:${color}"></span>
+            <span class="rail-insight-text">${_escHtml(c.text)}</span>
+        </div>`;
+    }).join('') + `<p class="pct-caption">Today's sharpest numbers across MLB, NFL, NCAAF, NCAAB, and WNBA</p>`;
 }
 
 // ── Freshness signals (D-046 P4) — "Updated Nm ago" from real fetch time ──
@@ -4055,17 +4207,6 @@ if (typeof window !== 'undefined') {
     });
 })();
 
-// ── Seasonal home moment (D-040 1a) — the front door knows the calendar ──
-// Add a season window here and a renderer branch below; nothing else changes.
-// Draft/football promo moved out to PROMO_MOMENTS below (D-043 3b) — this now
-// only tracks 'pennant', a separate always-shipped widget in the same host.
-function _homeMomentFor(d = new Date()) {
-    const m = d.getMonth(); // 0-based
-    const moments = [];
-    if (m >= 6 && m <= 9) moments.push('pennant');   // Jul–Oct: the race is the story
-    return moments;
-}
-
 // ── Seasonal promo band (D-043 3b) — exactly one promo CTA, chosen by the
 // calendar. Priority order matters: first active entry wins. Replaces the old
 // single hardcoded "NFL Draft Season" row, which just went empty once its
@@ -4131,83 +4272,37 @@ function _hmGo(view) {
     navigateTo(view);
 }
 
-async function _renderHomeMoment() {
+// Home redesign Phase 1 (2026-09-07): the Pennant Races viz that used to
+// live here is retired -- its tightest-gap signal is now one candidate in
+// the cross-sport stat-moment Insights engine above (_mlbPennantStatMoment),
+// competing honestly against NFL/NCAAF/NCAAB/WNBA's own signals instead of
+// always occupying its own MLB-only card regardless of what else is
+// happening that day. This function now only renders the seasonal promo row
+// (_activePromoMoment), left functionally untouched -- it's a marketing CTA,
+// not a stat, so it doesn't belong in the notability competition.
+function _renderHomeMoment() {
     const host = document.getElementById('homeMoment');
     if (!host) return;
-    const moments = _homeMomentFor();
     const promo = _activePromoMoment();
-    if (!moments.length && !promo) { host.hidden = true; return; }
+    if (!promo) { host.hidden = true; return; }
 
-    // 2026-08-19 (mock-draft-visibility fix): this row rendered correctly all
-    // along, but sat directly under the Pennant Races card with the same bare
-    // .hm-row treatment as its own header row -- no visual seam, so it read as
-    // a trailing caption on an MLB widget instead of its own promo. Giving it
-    // the sport's own accent as a left border + icon (same "border = identity"
-    // pattern .sport-card already uses) makes it legible as distinct, NFL-owned
-    // content at a glance, without inventing any new class or color.
-    const promoRow = promo ? (() => {
-        const promoSport = promo.primary.view.split('-')[0];
-        const promoMeta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[promoSport]) || {};
-        const promoAccent = promoMeta.accent || 'var(--accent)';
-        const promoIcon = promoMeta.icon ? `${promoMeta.icon} ` : '';
-        return `
+    // 2026-08-19 (mock-draft-visibility fix): giving the promo row the
+    // sport's own accent as a left border + icon (same "border = identity"
+    // pattern .sport-card already uses) makes it legible as distinct,
+    // sport-owned content at a glance, without inventing any new class or color.
+    const promoSport = promo.primary.view.split('-')[0];
+    const promoMeta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[promoSport]) || {};
+    const promoAccent = promoMeta.accent || 'var(--accent)';
+    const promoIcon = promoMeta.icon ? `${promoMeta.icon} ` : '';
+
+    host.hidden = false;
+    host.innerHTML = `
         <div class="hm-row hm-row--promo" style="--sport-accent:${promoAccent}">
             <span class="hm-kicker">${promoIcon}${_escHtml(promo.kicker())}</span>
             <span class="hm-text">${_escHtml(promo.text())}</span>
             <button class="hm-chip hm-chip--primary" onclick="_hmGo('${promo.primary.view}')">${_escHtml(promo.primary.label)}</button>
             <button class="hm-chip" onclick="_hmGo('${promo.secondary().view}')">${_escHtml(promo.secondary().label)}</button>
         </div>`;
-    })() : '';
-
-    host.hidden = false;
-    host.innerHTML = `<div id="hmPennant">${moments.includes('pennant') ? `
-        <div class="hm-row"><span class="hm-kicker">Pennant Races</span><span class="skeleton-line" style="height:14px;flex:1;max-width:380px"></span></div>` : ''}</div>${promoRow}`;
-
-    if (!moments.includes('pennant')) return;
-    try {
-        if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
-        if (typeof _mlbOddsEnsure === 'function') await _mlbOddsEnsure(AppState.mlbStandings);
-        const races = [];
-        (AppState.mlbStandings || []).forEach(d => {
-            const [lead, second] = d.teams || [];
-            if (!lead || !second) return;
-            const gb = parseFloat(second.gb);
-            if (isNaN(gb)) return;
-            races.push({ div: d.division, lead, second, gb, divOdds: AppState.mlbOdds?.byTeam?.[lead.teamId]?.div });
-        });
-        races.sort((a, b) => a.gb - b.gb);
-        // Viz (D-046 P4): each race a division-win% bar (Monte Carlo divOdds),
-        // leader logo + gap label. Bar falls back to a neutral width if odds absent.
-        const viz = races.slice(0, 3).map(r => {
-            const color   = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr).primary : 'var(--accent)';
-            const logo    = (typeof getMLBTeamLogoUrl === 'function' && r.lead.teamId) ? getMLBTeamLogoUrl(r.lead.teamId) : '';
-            const odds    = r.divOdds;
-            const pctW    = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
-            const gapLbl  = r.gb === 0 ? 'tied atop' : `+${r.gb} on ${_escHtml(r.second.teamAbbr)}`;
-            // ChatGPT-brief quick win 2: the division-odds % was previously trailing
-            // text tacked onto .pr-gap at the same tiny size as the games-back
-            // caption — this is exactly the "receipts" pattern (DESIGN.md) applied
-            // backwards: the computed number should be the visual star, the gap
-            // distance its supporting caption, not the other way around.
-            const oddsBlock = (odds != null && typeof _oddsFmtPct === 'function')
-                ? `<span class="pr-odds-pct">${_oddsFmtPct(odds)}%</span><span class="pr-odds-lbl">div odds</span>` : '';
-            return `
-                <button class="pennant-race" onclick="navigateTo('mlb-standings')" title="${_escHtml(r.div)}: ${_escHtml(r.second.teamName)} ${r.gb} back — full odds on the standings page">
-                    <span class="pr-div">${_escHtml(r.div)}</span>
-                    <span class="pr-lead">${logo ? `<img class="pr-logo" src="${logo}" alt="" data-hide-on-error>` : ''}<strong>${_escHtml(r.lead.teamAbbr)}</strong></span>
-                    <span class="pr-bar" style="--tc:${color}"><span class="pr-bar-fill" style="width:${pctW}%"></span></span>
-                    <span class="pr-stat">${oddsBlock}<span class="pr-gap">${gapLbl}</span></span>
-                </button>`;
-        }).join('');
-        const p = document.getElementById('hmPennant');
-        if (p) p.innerHTML = viz
-            ? `<div class="hm-row hm-row--pennant"><span class="hm-kicker">Pennant Races</span><button class="hm-chip" onclick="navigateTo('mlb-standings')">All odds →</button></div><div class="pennant-viz">${viz}</div>`
-            : '';
-    } catch (_) {
-        const p = document.getElementById('hmPennant');
-        if (p) p.innerHTML = '';
-        if (!promoRow) host.hidden = true;   // absent beats broken on the front door
-    }
 }
 
 
