@@ -198,6 +198,26 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('wnba', 'Latest WNBA');
     },
 };
+
+// Cross-sport home-hero "guest" config (home redesign, 2026-09-07) — every
+// sport except MLB, which stays a bespoke flow below (it's handed `games`
+// directly instead of fetching, uses _heroFromGame/_heroFromStandings
+// instead of a per-sport hero function, and has no candidate-array entry of
+// its own). Config-driven rather than a 4th/5th copy-pasted candidate block:
+// _renderHomeHero was already repeating near-identical NFL/NCAAF blocks, and
+// adding NCAAB/WNBA the same additive way would have left 5 nearly-identical
+// live/upcoming blocks. Must sit above the "Boot renders..." block (like
+// _SPORT_LANDING/_EDITORIAL_SLOTS above it) for the same reason those do —
+// setupNavigation() reaches loadHome() -> _loadHomeTodayGames() ->
+// _renderHomeHero() synchronously on first boot, before a `const` placed
+// near its own call site would have executed.
+const _HOME_HERO_GUEST_SPORTS = {
+    nfl:   { fetch: () => fetchNFLScoreboard(),   cache: 'nflGames',   leverage: _nflLeverage,   marquee: _nflMarquee,   heroFn: _heroFromNFLGame },
+    ncaaf: { fetch: () => fetchNCAAFScoreboard(), cache: 'ncaafGames', leverage: _ncaafLeverage, marquee: _ncaafMarquee, heroFn: _heroFromNCAAFGame },
+    ncaab: { fetch: () => fetchNCAABScoreboard(), cache: 'ncaabGames', leverage: _ncaabLeverage, marquee: _ncaabMarquee, heroFn: _heroFromNCAABGame },
+    wnba:  { fetch: () => fetchWNBAScoreboard(),  cache: 'wnbaGames',  leverage: _wnbaLeverage,  marquee: _wnbaMarquee,  heroFn: _heroFromWNBAGame },
+};
+
 function _renderEditorialLanding(sport, meta, cfg, st) {
     const grid = document.getElementById('playersGrid');
     const slots = _EDITORIAL_SLOTS[sport];
@@ -639,166 +659,96 @@ function loadHome() {
     const isFirstVisit = !localStorage.getItem('zs_seen_welcome');
     if (isFirstVisit) localStorage.setItem('zs_seen_welcome', '1');
 
+    // Home redesign Phase 0 (2026-09-07): the flat single-column stack this
+    // used to be is now a 2-column sl-layout/sl-primary/sl-rail shell -- the
+    // same visual system the 5 sport-landing pages already use
+    // (_renderEditorialLanding above) -- rather than a home-only one-off.
+    // Tonight's Starting Pitchers, Hot Right Now, On This Day, and the
+    // feature strip are retired outright in this same phase, not carried
+    // into the new shell and cut later: all four are MLB-only with no
+    // cross-sport equivalent, and wrapping them in a shell whose whole
+    // premise is "neutral across 5 sports" would be a more visible
+    // contradiction than today's plain inconsistency. They're real
+    // candidates for mlb-home's own future signature module, not deleted
+    // forever -- just not part of the neutral cross-sport home page.
     grid.innerHTML = `
         ${isFirstVisit ? `
         <div class="home-welcome">
             <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
-            <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NCAAF, and NCAAB — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
+            <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NCAAF, NCAAB, and WNBA — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
         </div>` : ''}
-        <!-- Data-Story hero (D-046 P2) — the day's focal narrative; hidden until populated -->
-        <div class="home-hero" id="homeHero" hidden></div>
+        <div class="sl-layout home-hub-layout">
+            <div class="sl-primary">
+                <!-- Data-Story hero (D-046 P2, cross-sport across all 5 since the
+                     home redesign) — the day's focal narrative; hidden until populated -->
+                <div class="home-hero" id="homeHero" hidden></div>
 
-        <!-- Search prompt bar (P2-004) — pre-existing bug, unrelated to D-103,
-             caught live 2026-08-15: this referenced a #searchBtn id that has
-             never existed (the real open-search-modal trigger has always been
-             #globalSearchBtn — see index.html/js/search.js). getElementById
-             silently returned null so ?.click() no-op'd — clicking this bar
-             visually focused nothing and the search modal never opened. -->
-        <button class="home-search-bar" onclick="document.getElementById('globalSearchBtn')?.click()" aria-label="Search players">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span class="home-search-bar-text">Search 900+ MLB players, teams…</span>
-            <kbd class="home-search-kbd">⌘K</kbd>
-        </button>
+                <!-- Search prompt bar (P2-004) — pre-existing bug, unrelated to D-103,
+                     caught live 2026-08-15: this referenced a #searchBtn id that has
+                     never existed (the real open-search-modal trigger has always been
+                     #globalSearchBtn — see index.html/js/search.js). getElementById
+                     silently returned null so ?.click() no-op'd — clicking this bar
+                     visually focused nothing and the search modal never opened. -->
+                <button class="home-search-bar" onclick="document.getElementById('globalSearchBtn')?.click()" aria-label="Search players">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span class="home-search-bar-text">Search players, teams, stats…</span>
+                    <kbd class="home-search-kbd">⌘K</kbd>
+                </button>
 
-        <!-- Sport-picker band (D-042) — the sport-agnostic launchpad -->
-        <div class="home-sport-picker" id="homeSportPicker" role="group" aria-label="Choose a sport"></div>
+                <!-- Seasonal moment band (D-040 1a) — Pennant Races today; folds into
+                     the cross-sport stat-moment Insights engine in a later phase -->
+                <div class="home-moment" id="homeMoment" hidden></div>
 
-        <!-- Seasonal moment band (D-040 1a) — knows the calendar -->
-        <div class="home-moment" id="homeMoment" hidden></div>
-
-        <!-- Today's Games — dominant first module -->
-        <div class="home-today home-zone" id="homeTodayGames">
-            <div class="home-section-hdr">
-                <span class="home-section-title">Today's Games</span>
-                <span class="home-section-date">${dateStr}</span>
-                <span class="home-updated" id="homeUpdatedAt"></span>
-                <button class="home-section-link" onclick="navigateTo('mlb-games')">All scores →</button>
-            </div>
-            <!-- D-043 3a: sport tabs, .standings-tabs vocabulary (Kael) -->
-            <div class="standings-tabs" id="homeSportTabs" role="tablist" aria-label="Filter today's games by sport">
-                <button class="standings-tab" data-sporttab="all" role="tab" aria-selected="false">All</button>
-                <button class="standings-tab" data-sporttab="mlb" role="tab" aria-selected="false">MLB</button>
-                <button class="standings-tab" data-sporttab="nfl" role="tab" aria-selected="false">NFL</button>
-                <button class="standings-tab" data-sporttab="ncaaf" role="tab" aria-selected="false">NCAAF</button>
-            </div>
-            <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
-        </div>
-
-        <!-- Headlines + Insights rail (D-046 P3) — news pipeline + templated data bullets -->
-        <div class="home-rail home-zone" id="homeRail">
-            <div class="home-section-hdr">
-                <span class="home-section-title">The Latest</span>
-                <div class="rail-tabs" role="tablist" aria-label="Latest news and insights">
-                    <button class="rail-tab active" data-tab="headlines" role="tab" aria-selected="true">Headlines</button>
-                    <button class="rail-tab" data-tab="insights" role="tab" aria-selected="false">Insights</button>
+                <!-- Today's Games — still MLB/NFL/NCAAF only; the sport-preview hub
+                     (a later phase) subsumes this with one card per sport instead -->
+                <div class="home-today home-zone" id="homeTodayGames">
+                    <div class="home-section-hdr">
+                        <span class="home-section-title">Today's Games</span>
+                        <span class="home-section-date">${dateStr}</span>
+                        <span class="home-updated" id="homeUpdatedAt"></span>
+                        <button class="home-section-link" onclick="navigateTo('mlb-games')">All scores →</button>
+                    </div>
+                    <!-- D-043 3a: sport tabs, .standings-tabs vocabulary (Kael) -->
+                    <div class="standings-tabs" id="homeSportTabs" role="tablist" aria-label="Filter today's games by sport">
+                        <button class="standings-tab" data-sporttab="all" role="tab" aria-selected="false">All</button>
+                        <button class="standings-tab" data-sporttab="mlb" role="tab" aria-selected="false">MLB</button>
+                        <button class="standings-tab" data-sporttab="nfl" role="tab" aria-selected="false">NFL</button>
+                        <button class="standings-tab" data-sporttab="ncaaf" role="tab" aria-selected="false">NCAAF</button>
+                    </div>
+                    <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
                 </div>
-            </div>
-            <div class="rail-panel" id="railHeadlines" role="tabpanel">
-                ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
-            </div>
-            <div class="rail-panel" id="railInsights" role="tabpanel" hidden>
-                ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
-            </div>
-        </div>
 
-        <!-- Tonight's Starting Pitchers — populated by _renderTonightSPSection() -->
-        <div id="homeTonightSP" class="home-zone">
-            <div class="home-section-hdr">
-                <span class="home-section-title">Tonight's Starters</span>
-                <button class="home-section-link" onclick="navigateTo('mlb-prep')">Game Prep →</button>
-            </div>
-            <div class="sp-grid">
-                ${[0,1,2].map(() => `
-                <div class="sp-card">
-                    <div class="sp-pitcher sp-pitcher--away" style="cursor:default">
-                        <div class="skeleton-line" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
-                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.35rem">
-                            <div class="skeleton-line" style="height:11px;width:75%"></div>
-                            <div class="skeleton-line" style="height:9px;width:50%"></div>
+                <!-- Headlines + Insights rail (D-046 P3) — still MLB-only; becomes the
+                     cross-sport stat-moment engine (Insights promoted ahead of
+                     Headlines) in a later phase -->
+                <div class="home-rail home-zone" id="homeRail">
+                    <div class="home-section-hdr">
+                        <span class="home-section-title">The Latest</span>
+                        <div class="rail-tabs" role="tablist" aria-label="Latest news and insights">
+                            <button class="rail-tab active" data-tab="headlines" role="tab" aria-selected="true">Headlines</button>
+                            <button class="rail-tab" data-tab="insights" role="tab" aria-selected="false">Insights</button>
                         </div>
                     </div>
-                    <div class="sp-vs"><div class="skeleton-line" style="height:9px;width:20px"></div></div>
-                    <div class="sp-pitcher sp-pitcher--home" style="cursor:default">
-                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0.35rem;align-items:flex-end">
-                            <div class="skeleton-line" style="height:11px;width:75%"></div>
-                            <div class="skeleton-line" style="height:9px;width:50%"></div>
-                        </div>
-                        <div class="skeleton-line" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+                    <div class="rail-panel" id="railHeadlines" role="tabpanel">
+                        ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
                     </div>
-                </div>`).join('')}
+                    <div class="rail-panel" id="railInsights" role="tabpanel" hidden>
+                        ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+                    </div>
+                </div>
             </div>
-        </div>
+            <div class="sl-rail">
+                <!-- Sport-picker band (D-042) — interim; retired once the
+                     sport-preview hub ships in a later phase -->
+                <div class="home-sport-picker home-zone" id="homeSportPicker" role="group" aria-label="Choose a sport"></div>
 
-        <!-- Hot Right Now (P2-002) — populated by _renderHotStrip() -->
-        <div id="homeHotStrip" class="home-zone">
-            <div class="home-section-hdr">
-                <span class="home-section-title">Hot Right Now</span>
-                <button class="home-section-link" onclick="navigateTo('mlb-leaders')">Full leaderboards →</button>
+                <div class="home-starred home-zone" id="homeStarred"></div>
+                <div class="home-recents home-zone" id="homeRecents"></div>
             </div>
-            <div class="home-hot-grid" id="homeHotGrid">
-                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:56px;border-radius:var(--radius-md)"></div>
-            </div>
-        </div>
-
-        <div class="home-recents" id="homeRecents"></div>
-        <div class="home-starred" id="homeStarred"></div>
-
-        <!-- On This Day (P2-003) — moved above feature strip -->
-        <div class="home-on-this-day" id="homeOnThisDay" style="display:none"></div>
-
-        <!-- Feature strip (P2-005) -->
-        <div class="home-features">
-            <button class="home-feature-item" onclick="navigateTo('mlb-leaders')">
-                <div class="home-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <path d="M2 14V9M7 14V6M12 14V2"/><path d="M1 14h14" stroke-width="1" opacity=".5"/>
-                    </svg>
-                </div>
-                <div class="home-feature-text">
-                    <div class="home-feature-title">Leaderboards</div>
-                    <div class="home-feature-desc">AVG · OPS · ERA · FIP · EV · xBA</div>
-                </div>
-            </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-prep')">
-                <div class="home-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="3" width="12" height="12" rx="1.5"/><path d="M5 3V2a2 2 0 0 1 6 0v1"/><path d="M5 8h6M5 11h4"/>
-                    </svg>
-                </div>
-                <div class="home-feature-text">
-                    <div class="home-feature-title">Game Prep</div>
-                    <div class="home-feature-desc">Matchups · lineups · print-ready</div>
-                </div>
-            </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-players')">
-                <div class="home-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                        <circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none"/><path d="M8 2V1M8 15v-1M2 8H1M15 8h-1"/>
-                    </svg>
-                </div>
-                <div class="home-feature-text">
-                    <div class="home-feature-title">Statcast</div>
-                    <div class="home-feature-desc">Exit velo · barrel% · xBA per player</div>
-                </div>
-            </button>
-            <button class="home-feature-item" onclick="navigateTo('mlb-builder')">
-                <div class="home-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2H4l4 6-4 6h8"/>
-                    </svg>
-                </div>
-                <div class="home-feature-text">
-                    <div class="home-feature-title">Stat Builder</div>
-                    <div class="home-feature-desc">Custom formulas · rank any metric</div>
-                </div>
-            </button>
         </div>
 
         <footer class="home-footer">
-            <span>Stats: MLB Stats API &amp; Baseball Savant. This site is not endorsed by or affiliated with Major League Baseball.</span>
+            <span>Scores &amp; stats: MLB Stats API &amp; Baseball Savant (MLB), ESPN (NFL, NCAAF, NCAAB, WNBA). This site is not endorsed by or affiliated with any league or team.</span>
             <span>Press &amp; partnerships: <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a></span>
             <span>&copy; ${new Date().getFullYear()} SportStrata</span>
         </footer>
@@ -808,8 +758,6 @@ function loadHome() {
     _renderSportPicker();
     _renderHomeRecents();
     _renderHomeStarred();
-    _renderHotStrip();
-    _loadOnThisDay();
     _syncHomeSportTabUI();
     _loadHomeTodayGames();
     _wireHomeSportTabs();
@@ -817,32 +765,35 @@ function loadHome() {
     _renderHomeHeadlines();
     _renderHomeInsights();
 
-    // Background-load leaderboard data for Hot Strip if not yet cached
+    // Background-load leaderboard data for the Insights rail if not yet cached
     if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
         _fetchMLBLeaderSplits(MLB_SEASON)
             .then(() => {
-                _renderHotStrip();
-                _renderTonightSPSection();
                 _renderHomeInsights();
             }).catch(err => {
-                Logger.warn('Leader splits failed — removing home async sections', err, 'APP');
-                document.getElementById('homeHotStrip')?.remove();
-                document.getElementById('homeTonightSP')?.remove();
+                Logger.warn('Leader splits failed', err, 'APP');
             });
     }
 }
 
+// Home redesign Phase 0 (2026-09-07): dropped the `r.sport === 'mlb'` filter
+// -- verified via addRecent() (js/search.js) that recents already carry a
+// real `sport` field and are already written for NFL views too (not just
+// MLB), so this was a wrong filter, not a missing-infra gap. The click
+// handler below is now sport-aware for the same reason: it was safe to
+// always call showMLBPlayerDetail/showMLBTeamDetail before only because
+// every recent WAS an MLB one; that stops being true the moment the filter
+// comes off.
 function _renderHomeRecents() {
     const el = document.getElementById('homeRecents');
     if (!el) return;
     let recents = [];
     try { recents = JSON.parse(localStorage.getItem('zs_recents') || '[]'); } catch (_) {}
-    recents = recents.filter(r => r.sport === 'mlb');
     if (!recents.length) { el.innerHTML = ''; return; }
 
     const chips = recents.slice(0, 8).map(r => `
             <button class="home-recent-chip" data-id="${r.id}" data-sport="${r.sport}" data-type="${r.type || 'player'}">
-                <span class="home-recent-badge home-recent-badge--mlb">${_escHtml(r.badge || 'MLB')}</span>
+                <span class="home-recent-badge home-recent-badge--${_escHtml(r.sport)}">${_escHtml(r.badge || r.sport.toUpperCase())}</span>
                 <span class="home-recent-name">${_escHtml(r.name)}</span>
                 <span class="home-recent-sub">${_escHtml(r.sub || '')}</span>
             </button>
@@ -855,12 +806,17 @@ function _renderHomeRecents() {
         <div class="home-recents-grid">${chips}</div>
     `;
 
+    const _RECENT_DETAIL_FN = {
+        mlb: { player: 'showMLBPlayerDetail', team: 'showMLBTeamDetail' },
+        nfl: { player: 'showNFLPlayerDetail' },
+    };
     el.querySelectorAll('.home-recent-chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            const id   = parseInt(chip.dataset.id);
-            const type = chip.dataset.type;
-            if (type === 'player' && typeof showMLBPlayerDetail === 'function') showMLBPlayerDetail(id);
-            else if (type === 'team' && typeof showMLBTeamDetail === 'function') showMLBTeamDetail(id);
+            const id     = parseInt(chip.dataset.id, 10);
+            const type   = chip.dataset.type;
+            const sport  = chip.dataset.sport;
+            const fnName = _RECENT_DETAIL_FN[sport]?.[type];
+            if (fnName && typeof window[fnName] === 'function') window[fnName](id);
         });
     });
 }
@@ -1445,7 +1401,6 @@ async function _loadHomeTodayGames() {
 
         _wireHomeGameCardClicks(gridEl);
 
-        _renderTonightSPSection();
         _renderHomeHero(mlbResult);
         _updateHomeFreshness();
 
@@ -1935,6 +1890,17 @@ function _ncaafGameHasFav(g) {
     if (typeof _isFollowed !== 'function') return false;
     return _isFollowed('ncaaf', 'team', g.homeTeam?.abbr) || _isFollowed('ncaaf', 'team', g.awayTeam?.abbr);
 }
+// Home redesign (2026-09-07): same one-line mirror, for NCAAB/WNBA -- added
+// so the cross-sport home hero (_renderHomeHero below) can go fully neutral
+// across all 5 sports instead of stopping at MLB/NFL/NCAAF.
+function _ncaabGameHasFav(g) {
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('ncaab', 'team', g.homeTeam?.abbr) || _isFollowed('ncaab', 'team', g.awayTeam?.abbr);
+}
+function _wnbaGameHasFav(g) {
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('wnba', 'team', g.homeTeam?.abbr) || _isFollowed('wnba', 'team', g.awayTeam?.abbr);
+}
 // NFL-side leverage/marquee scores, calibrated to land in roughly the same
 // numeric range as MLB's leverage()/marquee() in _renderHomeHero() below
 // (both ~1-27 pre-favorite-bonus, both +100 once a followed team is
@@ -1981,6 +1947,38 @@ function _ncaafMarquee(g) {
     const rankedBonus = (g.homeTeam?.rank ? 3 : 0) + (g.awayTeam?.rank ? 3 : 0);
     return (g.broadcast ? 4 : 0) + rankedBonus + (_ncaafGameHasFav(g) ? 100 : 0);
 }
+
+// Home redesign (2026-09-07): NCAAB/WNBA leverage/marquee, completing cross-
+// sport hero neutrality across all 5 sports. Deliberately simpler than NFL/
+// NCAAF's -- fetchNCAABScoreboard/fetchWNBAScoreboard's mapped game shape
+// carries no `period` or `broadcast` field (their consuming pages never
+// needed them, so the fetchers never extracted them from the raw ESPN
+// payload), so there's no quarter/national-broadcast signal to add here.
+// Score closeness alone is still the real, honest signal a tied late game
+// naturally outscores a blowout regardless of period data -- not a fake
+// baseline invented to make these sports "compete" with NFL/NCAAF's richer
+// scoring, just what's actually available (same "only score what's really
+// there" discipline the NFL/NCAAF functions above already follow). NCAAB
+// keeps a ranked-matchup bonus (Top 25 exists); WNBA has no poll, so it has
+// none -- an honest absence, not a gap.
+function _ncaabLeverage(g) {
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    const rankedBonus = (g.homeTeam?.rank ? 2 : 0) + (g.awayTeam?.rank ? 2 : 0);
+    return closeness + rankedBonus + (_ncaabGameHasFav(g) ? 100 : 0);
+}
+function _ncaabMarquee(g) {
+    const rankedBonus = (g.homeTeam?.rank ? 3 : 0) + (g.awayTeam?.rank ? 3 : 0);
+    return rankedBonus + (_ncaabGameHasFav(g) ? 100 : 0);
+}
+function _wnbaLeverage(g) {
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    return closeness + (_wnbaGameHasFav(g) ? 100 : 0);
+}
+function _wnbaMarquee(g) {
+    return (_wnbaGameHasFav(g) ? 100 : 0);
+}
 // D-100 (supersedes the _homeHeroSport() calendar gate above): whichever
 // sport has the more compelling live game wins the hero slot, any day of the
 // year, scored on a shared currency instead of gated by a fixed window. This
@@ -2000,75 +1998,60 @@ async function _renderHomeHero(games) {
     const mlbLeverage = _mlbHeroLeverage;
     const mlbMarquee = _mlbHeroMarquee;
 
-    let nflGames = [];
-    try {
-        nflGames = (typeof fetchNFLScoreboard === 'function')
-            ? ((AppState.nflGames && AppState.nflGames.length) ? AppState.nflGames : await fetchNFLScoreboard())
-            : [];
-        AppState.nflGames = nflGames;
-    } catch (err) {
-        Logger.warn('NFL hero candidate fetch failed -- MLB-only hero this load', err && err.message, 'APP');
-    }
-
-    // 2026-09-03: same cross-sport scoring extended to NCAAF -- a third
-    // scoreboard fetch alongside MLB/NFL's, same ApiCache.TTL.SHORT cost
-    // already accepted for NFL under D-100. AppState.ncaafGames may already
-    // be warm from setupNCAAFLivePolling's own 60s refresh (js/app.js), same
-    // reuse-before-refetch pattern as nflGames above.
-    let ncaafGames = [];
-    try {
-        ncaafGames = (typeof fetchNCAAFScoreboard === 'function')
-            ? ((AppState.ncaafGames && AppState.ncaafGames.length) ? AppState.ncaafGames : await fetchNCAAFScoreboard())
-            : [];
-        AppState.ncaafGames = ncaafGames;
-    } catch (err) {
-        Logger.warn('NCAAF hero candidate fetch failed -- MLB/NFL-only hero this load', err && err.message, 'APP');
-    }
+    // Fetch every guest sport's scoreboard in parallel (was sequential
+    // awaits per sport before NCAAB/WNBA were added -- fine at 2 extra
+    // fetches, but sequential awaits for 4 would needlessly slow first
+    // paint). Each entry reuses an already-warm AppState cache before
+    // re-fetching, same pattern the original NFL/NCAAF blocks used.
+    const guestGames = {};
+    await Promise.all(Object.entries(_HOME_HERO_GUEST_SPORTS).map(async ([sport, cfg]) => {
+        try {
+            const cached = AppState[cfg.cache];
+            guestGames[sport] = (cached && cached.length) ? cached : await cfg.fetch();
+            AppState[cfg.cache] = guestGames[sport];
+        } catch (err) {
+            guestGames[sport] = [];
+            Logger.warn(`${sport.toUpperCase()} hero candidate fetch failed`, err && err.message, 'APP');
+        }
+    }));
 
     let hero = null;
     const mlbLive = list.filter(isLive);
-    const nflLive = (nflGames || []).filter(g => g.isLive);
-    const ncaafLive = (ncaafGames || []).filter(g => g.isLive);
-    if (mlbLive.length || nflLive.length || ncaafLive.length) {
+    const guestLive = {};
+    Object.keys(_HOME_HERO_GUEST_SPORTS).forEach(sport => {
+        guestLive[sport] = (guestGames[sport] || []).filter(g => g.isLive);
+    });
+    const anyLive = mlbLive.length || Object.values(guestLive).some(arr => arr.length);
+    if (anyLive) {
         const candidates = [];
         if (mlbLive.length) {
             const g = mlbLive.slice().sort((x, y) => mlbLeverage(y) - mlbLeverage(x))[0];
-            candidates.push({ sport: 'mlb', g, score: mlbLeverage(g) });
+            candidates.push({ sport: 'mlb', g, score: mlbLeverage(g), heroFn: _heroFromGame });
         }
-        if (nflLive.length) {
-            const g = nflLive.slice().sort((x, y) => _nflLeverage(y) - _nflLeverage(x))[0];
-            candidates.push({ sport: 'nfl', g, score: _nflLeverage(g) });
-        }
-        if (ncaafLive.length) {
-            const g = ncaafLive.slice().sort((x, y) => _ncaafLeverage(y) - _ncaafLeverage(x))[0];
-            candidates.push({ sport: 'ncaaf', g, score: _ncaafLeverage(g) });
-        }
+        Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
+            const arr = guestLive[sport];
+            if (!arr.length) return;
+            const g = arr.slice().sort((x, y) => cfg.leverage(y) - cfg.leverage(x))[0];
+            candidates.push({ sport, g, score: cfg.leverage(g), heroFn: cfg.heroFn });
+        });
         const winner = candidates.sort((a, b) => b.score - a.score)[0];
-        hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'live')
-            : winner.sport === 'nfl' ? _heroFromNFLGame(winner.g, 'live')
-            : _heroFromNCAAFGame(winner.g, 'live');
+        hero = winner.heroFn(winner.g, 'live');
     } else {
         const mlbUp = list.filter(isUpcoming);
-        const nflUp = (nflGames || []).filter(g => !g.isLive && !g.isFinal);
-        const ncaafUp = (ncaafGames || []).filter(g => !g.isLive && !g.isFinal);
         const candidates = [];
         if (mlbUp.length) {
             const g = mlbUp.slice().sort((x, y) => mlbMarquee(y) - mlbMarquee(x))[0];
-            candidates.push({ sport: 'mlb', g, score: mlbMarquee(g) });
+            candidates.push({ sport: 'mlb', g, score: mlbMarquee(g), heroFn: _heroFromGame });
         }
-        if (nflUp.length) {
-            const g = nflUp.slice().sort((x, y) => _nflMarquee(y) - _nflMarquee(x))[0];
-            candidates.push({ sport: 'nfl', g, score: _nflMarquee(g) });
-        }
-        if (ncaafUp.length) {
-            const g = ncaafUp.slice().sort((x, y) => _ncaafMarquee(y) - _ncaafMarquee(x))[0];
-            candidates.push({ sport: 'ncaaf', g, score: _ncaafMarquee(g) });
-        }
+        Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
+            const arr = (guestGames[sport] || []).filter(g => !g.isLive && !g.isFinal);
+            if (!arr.length) return;
+            const g = arr.slice().sort((x, y) => cfg.marquee(y) - cfg.marquee(x))[0];
+            candidates.push({ sport, g, score: cfg.marquee(g), heroFn: cfg.heroFn });
+        });
         if (candidates.length) {
             const winner = candidates.sort((a, b) => b.score - a.score)[0];
-            hero = winner.sport === 'mlb' ? _heroFromGame(winner.g, 'upcoming')
-                : winner.sport === 'nfl' ? _heroFromNFLGame(winner.g, 'upcoming')
-                : _heroFromNCAAFGame(winner.g, 'upcoming');
+            hero = winner.heroFn(winner.g, 'upcoming');
         }
     }
     if (!hero) hero = await _heroFromStandings().catch(() => null);

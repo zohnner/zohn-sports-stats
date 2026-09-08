@@ -1608,6 +1608,15 @@ main {
     border-radius: var(--radius-lg);
     padding: 1.1rem 1.1rem 1.25rem;
 }
+/* Home redesign Phase 0 (2026-09-07): #homeStarred/#homeRecents now carry
+   .home-zone directly (previously bare divs their own renderer filled with
+   card-less chips), so an empty follows/recents list -- the common case for
+   most visitors -- would otherwise show a padded, bordered, empty card in
+   the rail. _renderHomeStarred()/_renderHomeRecents() already set
+   `el.innerHTML = ''` when there's nothing to show, so :empty reliably
+   matches; skeleton-populated .home-zone sections (Today's Games, the
+   Latest rail) are never actually empty, so this can't hide real content. */
+.home-zone:empty { display: none; }
 
 .home-section-hdr {
     display: flex;
