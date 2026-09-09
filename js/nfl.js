@@ -1278,11 +1278,28 @@ function displayNFLWaivers(adds) {
 
 // ── Ticker ────────────────────────────────────────────────────
 
+// Same fixed ET-offset convention _kickoffLabel (scorebug.js) already uses for
+// display -- reused here for a calendar-date comparison, not just an hour.
+function _nflIsGameToday(g) {
+    if (!g.date) return false;
+    const etKey = d => { const t = new Date(new Date(d).getTime() - 4 * 3600 * 1000); return `${t.getUTCFullYear()}-${t.getUTCMonth()}-${t.getUTCDate()}`; };
+    return etKey(g.date) === etKey(new Date());
+}
+
 function updateNFLTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
 
-    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0);
+    // The default "Today" fetch actually returns ESPN's whole current-week
+    // slate (NFL has no real daily schedule the way MLB does -- see
+    // fetchNFLScoreboard's no-params call). Filtering that down to only
+    // live/final/scored games meant a real game later today (e.g. tonight's
+    // 8:20pm opener, still 0-0 pregame) got dropped entirely, so the ticker
+    // fell through to "No NFL games today" while a game sat hours away --
+    // found live on 2026 Week 1's opening night. A pregame game still counts
+    // if its kickoff is actually today (ET); tomorrow's/Sunday's games in the
+    // same week-wide fetch correctly stay excluded so they don't flood in early.
+    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0 || _nflIsGameToday(g));
 
     if (!scored.length) {
         ticker.classList.add('ticker--idle');
