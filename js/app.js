@@ -1786,15 +1786,32 @@ function _homeHeroSport() {
     return (m === 11 || m === 12 || m === 1 || m === 2) ? 'nfl' : 'mlb';
 }
 
+// Owner-reported redundancy (2026-09-09): the hero used to show each team's
+// identity three separate times -- the headline ("New England Patriots at
+// Seattle Seahawks"), a standalone player-headshots-with-"@" block
+// (_heroNFLPhotos, now folded in below), and this board's own logo+abbr
+// rows -- with the board carrying zero unique information of its own on an
+// upcoming game (no score yet, so its rows were pure repeats of what the
+// photos block had just shown one flex-item above them). Consolidated to
+// one row per team: team-color identity bar + player headshot (kept, not
+// dropped -- the real-photography choice was a deliberate owner override of
+// D-088, see _nflHeroNotablePlayer's own comment below) + team logo + abbr
+// + score. The headline still carries the one thing neither row-level
+// element does (full team names); every other team-identity fact now
+// appears exactly once.
 function _heroNFLBoard(g, showScore) {
     const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
     const tc = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
-    const row = (t, winner) => `
+    const row = (t, winner) => {
+        const np = t.notablePlayer;
+        return `
         <div class="hero-row${winner ? ' hero-row--win' : ''}" style="--tc:${tc(t.abbr)}">
+            ${np && np.headshot ? `<img class="hero-row-photo" src="${_esc(np.headshot)}" alt="${_esc(np.name || '')}" data-hide-on-error>` : ''}
             ${t.logo ? `<img class="hero-row-logo" src="${_esc(t.logo)}" alt="${_esc(t.abbr)}" data-hide-on-error>` : `<span class="hero-row-logo"></span>`}
             <span class="hero-row-abbr">${_esc(t.abbr)}</span>
             <span class="hero-row-score">${showScore ? (t.score ?? 0) : ''}</span>
         </div>`;
+    };
     const aw = showScore && (g.awayTeam.score ?? 0) > (g.homeTeam.score ?? 0);
     const hw = showScore && (g.homeTeam.score ?? 0) > (g.awayTeam.score ?? 0);
     return `<div class="hero-board">${row(g.awayTeam, aw)}${row(g.homeTeam, hw)}</div>`;
@@ -1821,24 +1838,6 @@ function _nflAttachHeroPhotos(g) {
     if (g.homeTeam) g.homeTeam.notablePlayer = _nflHeroNotablePlayer(g.homeTeam.abbr);
     if (g.awayTeam) g.awayTeam.notablePlayer = _nflHeroNotablePlayer(g.awayTeam.abbr);
 }
-function _heroNFLPhotos(g) {
-    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
-    const tc = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
-    const side = (t, align) => {
-        const np = t.notablePlayer;
-        return `<div class="hero-photo hero-photo--${align}" style="--tc:${tc(t.abbr)}">
-            ${np && np.headshot
-                ? `<img class="hero-photo-img" src="${_esc(np.headshot)}" alt="${_esc(np.name)}" data-hide-on-error>`
-                : `<span class="hero-photo-img hero-photo-img--ph" aria-hidden="true"></span>`}
-            <div class="hero-photo-meta">
-                ${t.logo ? `<img class="hero-photo-logo" src="${_esc(t.logo)}" alt="" data-hide-on-error>` : ''}
-                <span class="hero-photo-abbr">${_esc(t.abbr)}</span>
-            </div>
-        </div>`;
-    };
-    return `<div class="hero-photos">${side(g.awayTeam, 'away')}<span class="hero-photos-at" aria-hidden="true">@</span>${side(g.homeTeam, 'home')}</div>`;
-}
-
 function _openNFLGameFromHero(eventId) {
     if (!eventId) return;
     if (AppState.currentSport !== 'nfl' && typeof switchSport === 'function') switchSport('nfl');
@@ -1896,7 +1895,6 @@ function _heroFromNFLGame(g, kind) {
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
         <div class="hero-visual">
-            ${_heroNFLPhotos(g)}
             ${board}
             ${liveDetail}
         </div>`;

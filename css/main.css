@@ -2112,6 +2112,16 @@ main {
     .hero-row { flex: 1; }
     .hero-row-logo { width: 36px; height: 36px; padding: 4px; }
     .hero-row-score { font-size: 1.3rem; }
+    /* NFL's row-with-photo variant (see .hero-row-photo, added 2026-09-09)
+       has one more element than MLB/NCAAF/NCAAB/WNBA's plain logo+abbr+score
+       row -- confirmed live at 390px that forcing it into the same side-by-
+       side layout clipped the second team's abbr off the edge of the
+       viewport. Only the photo-carrying variant falls back to stacked
+       (:has() scopes this to NFL's board without touching every other
+       sport's hero, which still wants the side-by-side mobile layout). */
+    .hero-board:has(.hero-row-photo) { flex-direction: column; }
+    .hero-board:has(.hero-row-photo) .hero-row { flex: none; }
+    .hero-row-photo { width: 32px; height: 32px; }
 }
 
 /* Headlines + Insights rail (D-046 P3) — news + templated data bullets */
@@ -4568,6 +4578,15 @@ body.view-home .search-global-btn { display: none; }
    word inside a ~157px column, present even without the new snippet content
    -- this container-width problem, not a viewport-width one. */
 .sl-rail .home-sport-picker { grid-template-columns: 1fr; }
+/* Same root cause, third occurrence (found 2026-09-09): .sl-playoff-confs's
+   grid-template-columns: 1fr 1fr (css/main.css, NFL landing's Playoff Picture
+   module) sits inside the same narrow .sl-rail column as the two overrides
+   above, but each column needs room for a logo + team name + record + streak
+   badge on one row -- two of those side by side never fit ~340px, so the NFC
+   column (rendered second) ran past the card's right edge. Live-reported by
+   the owner via screenshot; stacks AFC above NFC instead, same fix shape as
+   .pennant-race/.home-sport-picker. */
+.sl-rail .sl-playoff-confs { grid-template-columns: 1fr; }
 .sport-card {
     display: flex;
     align-items: center;
@@ -4817,14 +4836,14 @@ body.view-home .search-global-btn { display: none; }
 /* 4: hero enlarged, de-carded, real player photography. */
 .sport-landing--editorial .sl-spotlight .home-hero { border-radius: var(--radius-sm); box-shadow: none; padding: 1.75rem; }
 .sport-landing--editorial .hero-headline { font-size: clamp(1.8rem, 1rem + 3vw, 2.6rem); }
-.hero-photos { display: flex; align-items: center; gap: 1rem; width: 100%; }
-.hero-photo { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; border-top: 3px solid var(--tc, var(--border-mid)); padding-top: 0.75rem; }
-.hero-photo-img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; background: var(--bg-raised); }
-.hero-photo-img--ph { display: block; }
-.hero-photo-meta { display: flex; align-items: center; gap: 0.4rem; }
-.hero-photo-logo { width: 20px; height: 20px; object-fit: contain; }
-.hero-photo-abbr { font-family: var(--font-mono); font-weight: 800; font-size: 0.78rem; color: var(--text-secondary); }
-.hero-photos-at { font-size: 0.8rem; color: var(--text-subtle); font-weight: 700; }
+/* Owner-reported redundancy fix (2026-09-09): the standalone player-photos
+   block (.hero-photos/.hero-photo/...) that used to sit above .hero-board,
+   showing each team's logo+abbr a second time right next to a score row
+   that showed the exact same logo+abbr a third time, is gone -- the player
+   headshot now lives inline in .hero-row itself (see .hero-row-photo below
+   and _heroNFLBoard, js/app.js), one row per team instead of two stacked
+   components repeating the same identity. */
+.hero-row-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--bg-raised); flex-shrink: 0; }
 
 /* 5: four nav tiles -> a compact editorial link list in the rail. Same data/
    wiring (navigateTo), a link row instead of an independent bordered card. */
