@@ -281,3 +281,32 @@
 .nlg-st-team { font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-st-rec { color: var(--text-secondary); text-align: right; }
 .nlg-st-pct { color: var(--text-subtle); text-align: right; }
+
+/* -- Pregame Preview (D-1xx) -- .nlg-main replaces the 6-tab dashboard with
+   this one flowing view while state === 'pre'; see _nlgRenderMain/
+   _nlgBuildPregamePreview in js/nflLiveGame.js. Odds card reuses .nlg-ts/
+   .nlg-ts-row/.nlg-an-val from the Team Stats/Analytics tabs above rather
+   than inventing new row chrome. */
+.nlg-winproj-body { padding: 0 0.6rem 0.2rem; }
+.nlg-winproj-bar { display: flex; height: 10px; border-radius: var(--radius-full); overflow: hidden; margin: 0.5rem 0 0.35rem; background: var(--bg-interactive); }
+.nlg-winproj-seg { height: 100%; }
+.nlg-winproj-labels { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 800; padding: 0 0 0.5rem; }
+
+.nlg-form-body { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.nlg-form-row { display: flex; align-items: center; gap: 0.6rem; }
+.nlg-form-abbr { font-weight: 800; font-size: 0.78rem; min-width: 34px; color: var(--text-primary); }
+.nlg-form-chips { display: flex; gap: 0.25rem; }
+.nlg-form-chip { width: 22px; height: 22px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 800; color: #fff; }
+.nlg-form-chip--w { background: var(--color-win); }
+.nlg-form-chip--l { background: var(--color-loss); }
+.nlg-form-chip--t { background: var(--text-muted); }
+
+.nlg-fantasywatch-body { padding: 0 0.6rem 0.6rem; }
+.nlg-fw-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
+.nlg-fw-row:last-child { border-bottom: none; }
+.nlg-fw-info { display: flex; flex-direction: column; overflow: hidden; }
+.nlg-fw-name { font-weight: 600; color: var(--text-primary); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nlg-fw-meta { font-size: 0.66rem; color: var(--text-subtle); }
+.nlg-fw-bars { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+.nlg-fw-bar { width: 6px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: 0.85; }
+.nlg-fw-avg { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }

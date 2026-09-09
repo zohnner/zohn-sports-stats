@@ -25,7 +25,17 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null } };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null };
+
+const NLG_POLL_MS = 20000;
+// Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
+// (_nlgMaybePoll only armed for state === 'in'), so a fan sitting on the
+// preview page through kickoff never saw it flip live without a manual
+// reload. 60s mirrors MLB's own pregame cadence (js/liveGame.js
+// LG_PREGAME_MS) -- frequent enough to catch kickoff promptly, far slower
+// than the 20s live cadence since nothing else about a scheduled game
+// changes between polls.
+const NLG_PREGAME_POLL_MS = 60000;
 
 const _NLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -50,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -86,23 +96,34 @@ async function showNFLGame(eventId) {
     }
 }
 
+// Polls at a cadence that depends on the state THIS invocation was armed
+// for -- 'pre' games poll slowly just to catch kickoff (see
+// NLG_PREGAME_POLL_MS above), 'in' games poll at the real live cadence.
+// When a poll observes the state has actually changed (pre -> in, or
+// in/pre -> post), it re-arms via a fresh call to this function rather than
+// keep ticking at the wrong cadence forever -- each fresh call captures the
+// new state in its own closure, so this naturally terminates once state
+// reaches 'post' (no further re-arm) rather than recursing indefinitely.
 function _nlgMaybePoll(data) {
     const state = _nlgState(data);
     _nlgStop();
-    if (state !== 'in') return;
+    if (state === 'post') return;
+    const ms = state === 'pre' ? NLG_PREGAME_POLL_MS : NLG_POLL_MS;
     _nlg.timer = setInterval(async () => {
         if (AppState.currentView !== 'nfl-game-' + _nlg.eventId) { _nlgStop(); return; }
         try {
             const d = await fetchNFLSummary(_nlg.eventId);
-            if (_nlgState(d) === 'in') {
+            const newState = _nlgState(d);
+            if (newState === 'in') {
                 try { _nlg.situation = await fetchNFLLiveSituation(_nlg.eventId); } catch (_) { /* keep last situation */ }
             } else {
                 _nlg.situation = null;
             }
             _nlgRender(d);
-            if (_nlgState(d) !== 'in') _nlgStop();
+            if (newState === 'post') { _nlgStop(); return; }
+            if (newState !== state) _nlgMaybePoll(d);
         } catch (_) { /* keep last render */ }
-    }, 20000);
+    }, ms);
 }
 
 function _nlgState(data) {
@@ -125,6 +146,7 @@ function _nlgRender(data) {
     const awayAbbr = (away.team && away.team.abbreviation) || '';
     if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb('nfl-games', `${awayAbbr} @ ${homeAbbr}`);
 
+    const state = _nlgState(data);
     const isFirstRender = grid.className !== 'nlg-shell-mounted';
     if (isFirstRender) {
         grid.className = 'nlg-shell-mounted'; grid.style.cssText = '';
@@ -136,10 +158,7 @@ function _nlgRender(data) {
             </div>
             <div class="nlg-header"></div>
             <div class="nlg-layout">
-              <div class="nlg-main">
-                ${_nlgTabsHtml()}
-                <div class="gv-tabpanel"></div>
-              </div>
+              <div class="nlg-main"></div>
               ${_nlgSidebarHtml(data, comp, home, away)}
             </div>
             <p class="pct-caption nlg-venue-caption"></p>
@@ -150,10 +169,10 @@ function _nlgRender(data) {
     }
 
     _nlgRenderHeader(comp, home, away);
-    _nlgRenderActiveTabBody();
+    _nlgRenderMain(data, comp, home, away, state);
 
     const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
-    const oddsLine = _nlgBroadcastOddsLine(data);
+    const oddsLine = _nlgBroadcastOddsLine(data, state);
     const capParts = [venue, oddsLine].filter(Boolean);
     const capEl = grid.querySelector('.nlg-venue-caption');
     if (capEl) capEl.textContent = capParts.length ? `${capParts.join(' · ')} · data via ESPN` : 'Data via ESPN';
@@ -168,17 +187,24 @@ function _nlgRender(data) {
 // for a populated broadcasts[] and fails silently (omits, never throws) if
 // the real shape differs. pickcenter[0].details/overUnder ARE verified
 // (DraftKings, "CAR -1.5", 34.5).
-function _nlgBroadcastOddsLine(data) {
+// `state` skips the spread/total portion pregame -- _nlgOddsCard now shows
+// the same numbers (plus moneyline) as a real card in the pregame preview,
+// so repeating them in this tiny footnote right below it would just be
+// noise. Live/final games have no such card, so the footnote keeps doing
+// its original job there.
+function _nlgBroadcastOddsLine(data, state) {
     const parts = [];
     const b = (data.broadcasts && data.broadcasts[0]) || null;
     const bname = b && ((b.media && (b.media.shortName || b.media.callLetters)) || (b.names && b.names[0]) || (b.type && b.type.shortName) || b.name);
     if (bname) parts.push(String(bname));
-    const pc = (data.pickcenter && data.pickcenter[0]) || null;
-    if (pc) {
-        const line = [];
-        if (pc.details) line.push(pc.details);
-        if (pc.overUnder != null) line.push(`O/U ${pc.overUnder}`);
-        if (line.length) parts.push(line.join(', '));
+    if (state !== 'pre') {
+        const pc = (data.pickcenter && data.pickcenter[0]) || null;
+        if (pc) {
+            const line = [];
+            if (pc.details) line.push(pc.details);
+            if (pc.overUnder != null) line.push(`O/U ${pc.overUnder}`);
+            if (line.length) parts.push(line.join(', '));
+        }
     }
     return parts.join(' · ');
 }
@@ -464,6 +490,277 @@ function _nlgPlayArrowHtml(sit, disp) {
     </svg>`;
 }
 
+// -- Main region: tabbed dashboard (live/final) vs. one flowing preview -----
+// (pregame). This is the actual fix for the "6 empty tabs" bug: the choice
+// used to be baked into the isFirstRender-only shell template in _nlgRender,
+// so it was made once, at mount, and never revisited -- a game that went
+// from Preview to Live while a fan sat on the page kept showing the preview
+// forever. Now it's evaluated on every render (every poll), mirroring how
+// MLB's js/liveGame.js _renderPanel re-checks isPreview on every poll tick,
+// not just at panel creation. `.nlg-main`'s contents are only torn down and
+// rebuilt when the pre/live/post state has actually changed since the last
+// render (_nlg.lastState) -- an unconditional rebuild every poll would wipe
+// tab selection and scroll position for a live game the same way the old
+// bug this file's own header comment describes (D-080) already fixed once.
+function _nlgRenderMain(data, comp, home, away, state) {
+    const mainEl = document.querySelector('.nlg-main');
+    if (!mainEl) return;
+    const wasPre = _nlg.lastState === 'pre';
+    _nlg.lastState = state;
+
+    if (state === 'pre') {
+        if (!wasPre || !mainEl.querySelector('.nlg-pregame-wrap')) {
+            mainEl.innerHTML = `<div class="nlg-pregame-wrap"></div>`;
+        }
+        const wrap = mainEl.querySelector('.nlg-pregame-wrap');
+        if (wrap) wrap.innerHTML = _nlgBuildPregamePreview(data, comp, home, away);
+        return;
+    }
+
+    if (wasPre || !mainEl.querySelector('.gv-tabs')) {
+        mainEl.innerHTML = `${_nlgTabsHtml()}<div class="gv-tabpanel"></div>`;
+    }
+    _nlgRenderActiveTabBody();
+}
+
+// -- Pregame Preview (state === 'pre') -----------------------------------
+// Replaces the entire tab region rather than showing a "Preview" tab or
+// slimmed-down versions of the other 6 -- Play-by-Play/Box Score/Team
+// Stats/Analytics have zero real per-game data pregame (data.plays absent,
+// boxscore.players/boxscore.teams[].statistics both empty, drives={} --
+// live-verified 2026-09-08 against event 401872657, SF @ LAR) so a "pregame
+// version" of any of them would just be the same empty-state message in a
+// different costume. Fantasy is the one tab with real pregame-relevant
+// data (recent-game trend), but it answers a different question than the
+// live Fantasy tab does ("who's been hot lately" vs. "who's doing well in
+// THIS game"), so it lives here as its own section (Fantasy Watch) instead
+// of a tab that would behave unlike every other tab.
+function _nlgBuildPregamePreview(data, comp, home, away) {
+    return `${_nlgWinProjectionCard(data, home, away)}${_nlgOddsCard(data)}${_nlgRecentFormCard(data, home, away)}${_nlgInjuriesCard(data)}${_nlgNewsCard(data, true)}${_nlgFantasyWatchSection(data, home, away)}`;
+}
+
+// data.predictor (ESPN's pregame win-projection model) -- confirmed live
+// 2026-09-08, zero existing references anywhere in this codebase before
+// this. The two team projections don't reliably sum to exactly 100 (60.5 +
+// 39.2 = 99.7 in the verified sample -- ESPN-side rounding, not a bug here)
+// so they're normalized against their own sum before rendering as a split
+// bar, rather than drawn raw and visibly not adding up.
+function _nlgWinProjectionCard(data, home, away) {
+    const p = data.predictor;
+    if (!p || !p.homeTeam || !p.awayTeam) return '';
+    const hRaw = parseFloat(p.homeTeam.gameProjection), aRaw = parseFloat(p.awayTeam.gameProjection);
+    if (!(hRaw >= 0) || !(aRaw >= 0) || (hRaw + aRaw) <= 0) return '';
+    const total = hRaw + aRaw;
+    const hPct = Math.round((hRaw / total) * 100);
+    const aPct = 100 - hPct;
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
+    const hColor = tc(homeAbbr), aColor = tc(awayAbbr);
+    return `<div class="nlg-card nlg-winproj">
+        <div class="nlg-sum">Win Projection <span class="nlg-sum-teams">ESPN Matchup Predictor</span></div>
+        <div class="nlg-winproj-body">
+            <div class="nlg-winproj-bar">
+                <div class="nlg-winproj-seg" style="width:${aPct}%;background:${_escHtml(aColor)}"></div>
+                <div class="nlg-winproj-seg" style="width:${hPct}%;background:${_escHtml(hColor)}"></div>
+            </div>
+            <div class="nlg-winproj-labels">
+                <span style="color:${_escHtml(aColor)}">${_escHtml(awayAbbr)} ${aPct}%</span>
+                <span style="color:${_escHtml(hColor)}">${_escHtml(homeAbbr)} ${hPct}%</span>
+            </div>
+        </div>
+    </div>`;
+}
+
+// Promotes the spread/total/moneyline _nlgBroadcastOddsLine used to bury in
+// a one-line footnote into a real pregame card (moneyline was never shown
+// anywhere on this page before). data.pickcenter[0], same field the
+// footnote already read for details/overUnder -- homeTeamOdds/awayTeamOdds
+// are new here. No outbound sportsbook links: this site doesn't broker
+// bets anywhere else, and pickcenter's own link objects are built for that,
+// not for us.
+function _nlgOddsCard(data) {
+    const pc = (data.pickcenter && data.pickcenter[0]) || null;
+    if (!pc) return '';
+    const provider = (pc.provider && pc.provider.name) || '';
+    const ml = (side) => {
+        const o = pc[side + 'TeamOdds'];
+        if (!o || o.moneyLine == null) return '—';
+        return o.moneyLine > 0 ? `+${o.moneyLine}` : String(o.moneyLine);
+    };
+    const rows = [];
+    if (pc.details) rows.push(['Spread', pc.details]);
+    if (pc.overUnder != null) rows.push(['Total', `O/U ${pc.overUnder}`]);
+    rows.push(['Moneyline', `${ml('away')} / ${ml('home')}`]);
+    if (!rows.length) return '';
+    return `<div class="nlg-card nlg-odds">
+        <div class="nlg-sum">Odds ${provider ? `<span class="nlg-sum-teams">${_escHtml(provider)}</span>` : ''}</div>
+        <div class="nlg-ts">${rows.map(([l, v]) => `<div class="nlg-ts-row"><span class="nlg-ts-l">${_escHtml(l)}</span><span class="nlg-an-val">${_escHtml(v)}</span></div>`).join('')}</div>
+    </div>`;
+}
+
+// data.lastFiveGames[] -- one entry per team, each carrying up to 5 real
+// past results. Live-verified 2026-09-08 (event 401872657, a Week 1
+// pregame matchup with zero current-season games played): it reaches back
+// across the season boundary into January playoff games rather than
+// returning nothing, which is the right behavior for a "recent form" read,
+// not a bug to guard against.
+function _nlgRecentFormCard(data, home, away) {
+    const teams = data.lastFiveGames || [];
+    if (!teams.length) return '';
+    const row = (abbr) => {
+        const entry = teams.find(t => (t.team || {}).abbreviation === abbr);
+        const events = (entry && entry.events) || [];
+        if (!events.length) return '';
+        const chips = events.map(e => {
+            const w = e.gameResult === 'W', l = e.gameResult === 'L';
+            const cls = w ? 'nlg-form-chip--w' : l ? 'nlg-form-chip--l' : 'nlg-form-chip--t';
+            const opp = (e.opponent && e.opponent.abbreviation) || '';
+            const title = `${e.atVs || ''}${opp} ${e.score || ''}`.trim();
+            return `<span class="${cls} nlg-form-chip" title="${_escHtml(title)}">${_escHtml(e.gameResult || '-')}</span>`;
+        }).join('');
+        return `<div class="nlg-form-row"><span class="nlg-form-abbr">${_escHtml(abbr)}</span><div class="nlg-form-chips">${chips}</div></div>`;
+    };
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const rows = [row(awayAbbr), row(homeAbbr)].filter(Boolean).join('');
+    if (!rows) return '';
+    return `<div class="nlg-card nlg-form"><div class="nlg-sum">Recent Form <span class="nlg-sum-teams">Last 5</span></div><div class="nlg-form-body">${rows}</div></div>`;
+}
+
+// -- Fantasy Watch (pregame only): recent fantasy-point trend for each
+// team's projected starters. Genuinely new data -- /summary has nothing
+// pregame-fantasy-relevant of its own (no box score exists yet). Bridges
+// Sleeper depth chart (fetchNFLSleeperPool/_nflPoolMap/_nflSleeperAbbr,
+// already defined in js/nfl.js, which loads before this file) -> ESPN
+// athlete id (/api/nflplayer, the same bridge the player-detail page
+// already uses) -> last-5-game log (/api/nflgamelog) -> fantasy points via
+// _nlgGamelogFantasyPoints, keyed by each column's stable ESPN `name`
+// (passingYards, rushingTouchdowns, ...) rather than label text -- live-
+// verified 2026-09-08 that names are stable across a QB's and a WR/RB's
+// gamelog alike, unlike the box-score fantasy formula's label-text match.
+// Progressive-enhanced the same shape as MLB's js/liveGame.js
+// _lgFetchPregameExtras: render a skeleton immediately, fetch once per
+// game, swap in real content when it resolves, guarded against having
+// navigated away or the game having gone live by the time it does.
+const _NLG_FANTASY_WATCH_POS = ['QB', 'RB', 'WR', 'TE'];
+
+function _nlgGamelogFantasyPoints(columns, stats, scoring) {
+    const idx = {};
+    (columns || []).forEach((c, i) => { if (c && c.name) idx[c.name] = i; });
+    const num = (name) => {
+        const i = idx[name];
+        if (i == null || i >= (stats || []).length) return 0;
+        const v = parseFloat(String(stats[i]).replace(/,/g, ''));
+        return isNaN(v) ? 0 : v;
+    };
+    let pts = 0;
+    pts += num('passingYards') / 25;
+    pts += num('passingTouchdowns') * 4;
+    pts -= num('interceptions') * 2;
+    pts += num('rushingYards') / 10;
+    pts += num('rushingTouchdowns') * 6;
+    pts += num('receivingYards') / 10;
+    pts += num('receivingTouchdowns') * 6;
+    const recPts = scoring === 'PPR' ? 1 : scoring === 'Half-PPR' ? 0.5 : 0;
+    pts += num('receptions') * recPts;
+    pts -= num('fumblesLost') * 2;
+    return pts;
+}
+
+// One starter per skill position (QB/RB/WR/TE) by Sleeper's own
+// depth_chart_order === 1 -- not data.leaders[], which is confirmed empty
+// (0 categories populated) for a season-opener pregame game and unverified
+// whether it's populated even mid-season; depth chart works regardless of
+// how much of the season has been played.
+function _nlgFantasyWatchStarters(homeAbbr, awayAbbr) {
+    if (typeof _nflPoolMap !== 'object' || !_nflPoolMap) return [];
+    const sAbbr = (typeof _nflSleeperAbbr === 'function') ? _nflSleeperAbbr : (a) => a;
+    const pick = (abbr) => {
+        const roster = Object.values(_nflPoolMap).filter(p =>
+            p && p.active && p.status !== 'Inactive' && p.team === sAbbr(abbr) &&
+            p.depth_chart_order === 1 && _NLG_FANTASY_WATCH_POS.includes(p.position));
+        return _NLG_FANTASY_WATCH_POS
+            .map(pos => roster.find(p => p.position === pos))
+            .filter(Boolean)
+            .map(p => ({ id: p.player_id, name: p.full_name, pos: p.position, team: abbr }));
+    };
+    return [...pick(awayAbbr), ...pick(homeAbbr)];
+}
+
+function _nlgFantasyWatchSkeletonHtml() {
+    return `<div class="nlg-card nlg-fantasywatch"><div class="nlg-sum">Fantasy Watch <span class="nlg-sum-teams">Last 5 games</span></div>
+        <div class="nlg-fantasywatch-body">${Array.from({ length: 4 }).map(() => `<div class="skeleton-line" style="height:38px;border-radius:8px;margin-bottom:0.4rem"></div>`).join('')}</div></div>`;
+}
+
+function _nlgFantasyWatchSection(data, home, away) {
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const gamePk = String(_nlg.eventId);
+    if (_nlg.fantasyWatchGamePk === gamePk && _nlg.fantasyWatchHtml) return _nlg.fantasyWatchHtml;
+    if (_nlg.fantasyWatchGamePk !== gamePk) {
+        _nlg.fantasyWatchGamePk = gamePk;
+        _nlg.fantasyWatchHtml = '';
+        _nlg.fantasyWatchPlayers = null;
+        _nlgFetchFantasyWatch(gamePk, homeAbbr, awayAbbr);
+    }
+    return _nlgFantasyWatchSkeletonHtml();
+}
+
+async function _nlgFetchFantasyWatch(gamePk, homeAbbr, awayAbbr) {
+    try { await fetchNFLSleeperPool(); } catch (_) { /* section just stays empty below */ }
+    const starters = _nlgFantasyWatchStarters(homeAbbr, awayAbbr);
+    if (!starters.length) { _nlgFantasyWatchDone(gamePk, [], ''); return; }
+
+    const results = await Promise.allSettled(starters.map(async (s) => {
+        const pRes = await fetch(`/api/nflplayer?name=${encodeURIComponent(s.name)}&team=${encodeURIComponent(s.team)}`);
+        if (!pRes.ok) return null;
+        const pData = await pRes.json();
+        if (!pData.espnId) return null;
+        const glRes = await fetch(`/api/nflgamelog?id=${encodeURIComponent(pData.espnId)}&season=${encodeURIComponent(pData.season)}`);
+        if (!glRes.ok) return null;
+        const glData = await glRes.json();
+        if (!glData.found || !glData.games || !glData.games.length) return null;
+        return { ...s, columns: glData.columns, games: glData.games.slice(-5) };
+    }));
+
+    const players = results.map(r => (r.status === 'fulfilled' ? r.value : null)).filter(Boolean);
+    _nlgFantasyWatchDone(gamePk, players, _nlgRenderFantasyWatch(players, _nlg.fantasyScoring));
+}
+
+function _nlgFantasyWatchDone(gamePk, players, html) {
+    _nlg.fantasyWatchPlayers = players;
+    _nlg.fantasyWatchHtml = html;
+    // Mirrors MLB's _lgFetchPregameExtras guard: this is several sequential
+    // round trips per player, so only touch the DOM if still on this same
+    // game and still pregame by the time it resolves.
+    if (String(_nlg.eventId) !== gamePk || _nlgState(_nlg.lastData || {}) !== 'pre') return;
+    const host = document.querySelector('.nlg-fantasywatch');
+    if (host) host.outerHTML = html || '';
+}
+
+function _nlgRenderFantasyWatch(players, scoring) {
+    if (!players.length) return '';
+    const rows = players.map(p => {
+        const pts = p.games.map(g => _nlgGamelogFantasyPoints(p.columns, g.stats, scoring));
+        const bars = pts.map(v => `<div class="nlg-fw-bar" style="height:${Math.max(4, Math.min(32, v * 1.1))}px" title="${v.toFixed(1)} pts"></div>`).join('');
+        const avg = pts.length ? pts.reduce((a, b) => a + b, 0) / pts.length : 0;
+        return `<div class="nlg-fw-row">
+            <div class="nlg-fw-info"><span class="nlg-fw-name">${_escHtml(p.name)}</span><span class="nlg-fw-meta">${_escHtml(p.team)} · ${_escHtml(p.pos)}</span></div>
+            <div class="nlg-fw-bars">${bars}</div>
+            <span class="nlg-fw-avg">${avg.toFixed(1)} <span class="pct-caption">avg</span></span>
+        </div>`;
+    }).join('');
+    const chip = (s) => `<button type="button" class="nlg-fantasy-chip ${scoring === s ? 'nlg-fantasy-chip--active' : ''}" onclick="_nlgSetFantasyScoring('${s}')">${s}</button>`;
+    return `<div class="nlg-card nlg-fantasywatch">
+        <div class="nlg-sum">Fantasy Watch <span class="nlg-sum-teams">Last 5 games</span></div>
+        <div class="nlg-fantasywatch-body">
+            <div class="nlg-fantasy-chips" style="padding:0 0.6rem 0.5rem">${chip('Standard')}${chip('Half-PPR')}${chip('PPR')}</div>
+            ${rows}
+        </div>
+    </div>`;
+}
+
 // -- Tabs ---------------------------------------------------------------
 
 function _nlgTabsHtml() {
@@ -578,7 +875,11 @@ function _nlgInjuriesCard(data) {
         <div class="nlg-inj">${teams.map(teamBlock).join('')}</div></details>`;
 }
 
-function _nlgNewsCard(data) {
+// `forceOpen` (pregame only): collapsed-by-default reads as empty at a
+// glance, which is exactly wrong pregame -- this is some of the most
+// substantive real content available before kickoff, not a footnote.
+// Live/final games keep the original collapsed default.
+function _nlgNewsCard(data, forceOpen) {
     const ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
     const articles = ((data.news && data.news.articles) || []).filter(a => a && a.headline && a.links && a.links.web && a.links.web.href).slice(0, 5);
     if (!articles.length) return '';
@@ -586,7 +887,7 @@ function _nlgNewsCard(data) {
         <span class="nlg-news-headline">${_escHtml(a.headline)}</span>
         <span class="nlg-news-meta">${_escHtml(a.byline || '')}${a.byline ? ' · ' : ''}${_escHtml(ago(a.published || a.lastModified))}</span>
     </a>`).join('');
-    return `<details class="nlg-card"><summary class="nlg-sum">NFL News</summary><div class="nlg-news">${rows}</div></details>`;
+    return `<details class="nlg-card" ${forceOpen ? 'open' : ''}><summary class="nlg-sum">NFL News</summary><div class="nlg-news">${rows}</div></details>`;
 }
 
 // -- Play-by-Play tab (drives.current + drives.previous, live-verified shape) --
@@ -839,6 +1140,18 @@ function _nlgComputeFantasy(data, scoring) {
 
 function _nlgSetFantasyScoring(scoring) {
     _nlg.fantasyScoring = scoring;
+    // Pregame: Fantasy Watch recomputes from the already-fetched gamelog data
+    // cached in _nlg.fantasyWatchPlayers -- no refetch, same as flipping the
+    // scoring toggle on the live Fantasy tab below doesn't refetch box score.
+    if (_nlgState(_nlg.lastData || {}) === 'pre') {
+        const host = document.querySelector('.nlg-fantasywatch');
+        if (host && _nlg.fantasyWatchPlayers) {
+            const html = _nlgRenderFantasyWatch(_nlg.fantasyWatchPlayers, scoring);
+            _nlg.fantasyWatchHtml = html;
+            host.outerHTML = html;
+        }
+        return;
+    }
     _nlgRenderActiveTabBody();
     const sideEl = document.querySelector('.nlg-side');
     if (sideEl && _nlg.lastData) {
