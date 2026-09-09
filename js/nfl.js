@@ -570,20 +570,34 @@ function displayNFLGames(games) {
         return;
     }
 
-    const rank = (g) => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
     const liveCount = games.filter(g => g.isLive).length;
     // Only worth sub-sorting/badging once there's an actual choice between
     // live games (a lone Thursday-night game has nothing to be "closest"
     // relative to) -- this is exactly the Sunday-afternoon-slate case where
     // it adds real value and does nothing on a one-game night.
     const showLeverage = liveCount > 1;
+    // The default "Today" tab's fetch actually returns the whole current
+    // week (see updateNFLTicker's own comment on fetchNFLScoreboard's
+    // no-params call) -- a visitor lands on "Today" wanting today's game(s)
+    // and instead saw them flattened into the same list as five days of
+    // upcoming games, no visual distinction. Only promotes today's games
+    // when actually on the default tab; an explicit week pick (Wk 5, say)
+    // stays a plain chronological list even if today happens to fall in it
+    // -- browsing a specific week on purpose shouldn't get reshuffled.
+    const isTodayTab = !_nflScoresFilter;
+    const primaryRank = (g) => (isTodayTab && _nflIsGameToday(g)) ? 0 : 1;
+    const secondaryRank = (g) => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
     const ordered = games.slice().sort((a, b) => {
-        const r = rank(a) - rank(b);
+        const p = primaryRank(a) - primaryRank(b);
+        if (p !== 0) return p;
+        const r = secondaryRank(a) - secondaryRank(b);
         if (r !== 0) return r;
         if (showLeverage && a.isLive && b.isLive) return _nflScoresLeverage(b) - _nflScoresLeverage(a);
         return 0; // stable sort preserves ESPN's own order otherwise
     });
     const topLeverageId = showLeverage ? ordered.find(g => g.isLive)?.id : null;
+    const hasToday = isTodayTab && ordered.some(g => primaryRank(g) === 0);
+    const hasRest = ordered.some(g => primaryRank(g) === 1);
     const fragment = document.createDocumentFragment();
     if (liveCount) {
         const h = document.createElement('div');
@@ -591,7 +605,23 @@ function displayNFLGames(games) {
         h.innerHTML = `<span class="nlg-livebadge">● LIVE NOW</span> ${liveCount} game${liveCount > 1 ? 's' : ''} in progress`;
         fragment.appendChild(h);
     }
-    ordered.forEach(game => fragment.appendChild(_createNFLGameCard(game, game.id === topLeverageId)));
+    if (hasToday && hasRest) {
+        const th = document.createElement('div');
+        th.className = 'nfl-gameday-head nfl-gameday-head--sub';
+        th.textContent = 'Today';
+        fragment.appendChild(th);
+    }
+    let restHeaderInserted = !(hasToday && hasRest);
+    ordered.forEach(game => {
+        if (!restHeaderInserted && primaryRank(game) === 1) {
+            const rh = document.createElement('div');
+            rh.className = 'nfl-gameday-head nfl-gameday-head--sub';
+            rh.textContent = 'This Week';
+            fragment.appendChild(rh);
+            restHeaderInserted = true;
+        }
+        fragment.appendChild(_createNFLGameCard(game, game.id === topLeverageId));
+    });
     grid.innerHTML = '';
     grid.appendChild(fragment);
 }

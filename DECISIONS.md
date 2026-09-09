@@ -2784,3 +2784,12 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 
 **Not built (flagged in the brainstorm, not requested here):** shipping the already-built-but-undeployed Broadcast Blurb worker, and promoting today's specific game above the rest of the week on the Scores grid with a featured card. Both remain open suggestions, not follow-up work assumed to happen.
 
+## D-141 — NFL Scores grid: today's game(s) promoted above a "This Week" divider on the default Today tab
+
+**Status:** shipped | **Contributors:** Claude (from D-140's own brainstorm's lower-priority item) | **Date:** 2026-09-09
+
+**Why:** D-140's brainstorm flagged this as a cheap follow-up but explicitly left it undone. Root cause it addresses: the default "Today" tab's fetch actually returns ESPN's whole current week (`fetchNFLScoreboard`'s no-params call — NFL has no real daily schedule the way MLB does, documented in `updateNFLTicker`'s own comment), so a visitor landing on "Today" wanting today's specific game saw it flattened into a plain chronological list alongside five days of games that haven't happened yet — no visual distinction for "this is tonight" versus "this is Sunday."
+
+**Fix:** `displayNFLGames` (`js/nfl.js`) now sorts by a primary "is this game today" rank ahead of the existing live/upcoming/final rank, and — only when both a today-game and a rest-of-week game exist in the current set — inserts a "Today" header before the day's game(s) and a "This Week" header before the rest, reusing `.nfl-gameday-head--sub` (already-existing CSS, no new styles needed) and the `_nflIsGameToday` helper added earlier this session for the ticker fix. Deliberately scoped to the default tab only (`isTodayTab = !_nflScoresFilter`): clicking an explicit week pill (Wk 5, say) still renders a plain chronological list even if today happens to fall inside that week — browsing a specific week on purpose shouldn't get silently reshuffled.
+
+**Verified:** live-screenshotted via `wrangler pages dev` against the real Week 1 schedule — the default Today tab correctly features tonight's SEA @ NE opener under a "TODAY" header with the rest of the week's 12 games below a "THIS WEEK" divider; clicking Wk 5 (via a direct DOM click, not just a fresh load) correctly falls back to a flat chronological list with neither header, confirming the guard holds on an in-page filter change, not just initial render. `node --check` clean. `sw.js` CACHE_NAME bumped v261 → v262.
