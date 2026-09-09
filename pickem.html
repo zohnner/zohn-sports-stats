@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Pick'em Confidence Helper — personal</title>
+<!--
+  Unlinked personal-use page — not in index.html, sw.js, sitemap.xml, or
+  _routes.json (needs none of them: plain static asset Cloudflare Pages
+  serves directly, doesn't touch the SPA's AppState/script chain at all).
+  Reached only via a bookmarked /pickem.html URL. Same pattern as
+  youtube-insights.html.
+
+  Personal confidence-pool helper: for each of the week's NFL games, blends
+  two free signals already available through the existing /api/nfl proxy --
+  DraftKings' own line (moneyline, vig removed) and ESPN's independent
+  "Matchup Predictor" model (data.predictor on /summary, unrelated to any
+  sportsbook) -- into one probability per team, defaults the confidence
+  ranking to that, and flags games where the two signals disagree by a lot
+  as the ones worth a manual second look. Not a full multi-sportsbook
+  cross-reference (ESPN's pickcenter/odds array carries exactly one
+  provider, DraftKings, confirmed live 2026-09-09) -- market-vs-model is
+  the free substitute for that; a paid odds API would be the real upgrade
+  if this proves useful. Confidence order is fully drag/click reorderable
+  and each pick can be flipped to the other team -- this is a second
+  opinion to argue with, not an oracle to defer to.
+-->
+<link rel="stylesheet" href="/css/variables.css">
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        padding: 28px 16px 80px;
+    }
+    .pk-wrap { max-width: 900px; margin: 0 auto; }
+    .pk-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+    h1 { font-size: 1.35rem; margin: 0; }
+    .pk-hint { color: var(--text-muted); font-size: 0.8rem; margin: 4px 0 20px; max-width: 74ch; line-height: 1.5; }
+    .pk-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .pk-controls label { font-size: 0.78rem; color: var(--text-secondary); }
+    .pk-controls select, .pk-controls input {
+        background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary);
+        border-radius: var(--radius-md); padding: 6px 10px; font-family: var(--font-sans); font-size: 0.85rem;
+    }
+    .pk-controls input[type="number"] { width: 72px; }
+    .pk-controls button {
+        background: var(--accent); color: #14181d; border: none; border-radius: var(--radius-md);
+        padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); font-size: 0.85rem;
+    }
+    .pk-controls button.pk-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
+    .pk-controls button:disabled { opacity: 0.5; cursor: default; }
+    .pk-status { color: var(--text-muted); font-size: 0.9rem; padding: 30px 0; text-align: center; }
+    .pk-status.err { color: var(--color-loss, #ff5a5a); }
+    .pk-summary {
+        display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline;
+        background: var(--bg-surface); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 16px;
+        font-size: 0.82rem; color: var(--text-secondary); box-shadow: var(--shadow-card);
+    }
+    .pk-summary b { color: var(--text-primary); }
+    .pk-summary .pk-record-win { color: var(--color-win, #2ecc71); }
+    .pk-summary .pk-record-loss { color: var(--color-loss, #ff5a5a); }
+    .pk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .pk-row {
+        display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px;
+        background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+        padding: 10px 12px; box-shadow: var(--shadow-card); cursor: grab;
+    }
+    .pk-row.pk-dragging { opacity: 0.4; }
+    .pk-row.pk-flagged { border-color: var(--accent-border, var(--accent)); }
+    .pk-conf {
+        display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px;
+        font-family: var(--font-mono, monospace); font-weight: 700; font-size: 1.05rem; color: var(--accent);
+    }
+    .pk-conf-arrows { display: flex; flex-direction: column; gap: 1px; }
+    .pk-conf-arrows button {
+        background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.6rem;
+        line-height: 1; padding: 1px 4px;
+    }
+    .pk-conf-arrows button:hover { color: var(--accent); }
+    .pk-matchup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pk-team {
+        display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: var(--radius-md);
+        border: 2px solid transparent; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .pk-team img { width: 22px; height: 22px; object-fit: contain; }
+    .pk-team.pk-picked { border-color: var(--accent); background: var(--accent-subtle, rgba(255,129,0,0.12)); }
+    .pk-at { color: var(--text-muted); font-size: 0.75rem; }
+    .pk-line { color: var(--text-muted); font-size: 0.72rem; margin-top: 2px; }
+    .pk-probs { display: flex; gap: 10px; align-items: center; font-size: 0.72rem; color: var(--text-secondary); flex-wrap: wrap; margin-top: 3px; }
+    .pk-probs .pk-gap { color: var(--accent); font-weight: 700; }
+    .pk-meta { text-align: right; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+    .pk-pill {
+        display: inline-block; padding: 2px 7px; border-radius: var(--radius-full, 999px); font-size: 0.65rem;
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px;
+    }
+    .pk-pill.pk-pre { background: var(--bg-raised); color: var(--text-muted); }
+    .pk-pill.pk-live { background: var(--color-live, #ff006e); color: #fff; }
+    .pk-pill.pk-final { background: var(--bg-raised); color: var(--text-secondary); }
+    .pk-result-correct { color: var(--color-win, #2ecc71); font-weight: 700; }
+    .pk-result-wrong { color: var(--color-loss, #ff5a5a); font-weight: 700; }
+    @media (max-width: 640px) {
+        .pk-row { grid-template-columns: 32px 1fr; }
+        .pk-meta { grid-column: 1 / -1; text-align: left; }
+    }
+</style>
+</head>
+<body>
+<div class="pk-wrap">
+    <div class="pk-head">
+        <h1>Pick'em Confidence Helper</h1>
+    </div>
+    <p class="pk-hint">
+        Default order blends DraftKings' line (moneyline, vig removed) with ESPN's own Matchup Predictor model —
+        two independent signals, not multiple sportsbooks (ESPN only carries DraftKings' number). Games where the
+        two disagree by a lot are flagged with an orange border — those are the ones worth your own judgment, not
+        the safe chalk. Drag rows (or use the arrows) to reorder confidence points, click a team to flip the pick.
+        Everything is saved locally per week in this browser only.
+    </p>
+    <div class="pk-controls">
+        <label>Season <input id="pkYear" type="number" step="1"></label>
+        <label>Type
+            <select id="pkSeasonType">
+                <option value="1">Preseason</option>
+                <option value="2" selected>Regular</option>
+                <option value="3">Postseason</option>
+            </select>
+        </label>
+        <label>Week <input id="pkWeek" type="number" min="1" max="22"></label>
+        <button id="pkLoadBtn">Load</button>
+        <button id="pkResetBtn" class="pk-secondary" title="Snap the ranking back to the blended-model order">Reset order to model</button>
+    </div>
+    <div id="pkStatus" class="pk-status">Loading current week…</div>
+    <div id="pkSummary" class="pk-summary" hidden></div>
+    <ol id="pkList" class="pk-list"></ol>
+</div>
+<script>
+(function () {
+    'use strict';
+
+    var els = {
+        year: document.getElementById('pkYear'),
+        seasonType: document.getElementById('pkSeasonType'),
+        week: document.getElementById('pkWeek'),
+        loadBtn: document.getElementById('pkLoadBtn'),
+        resetBtn: document.getElementById('pkResetBtn'),
+        status: document.getElementById('pkStatus'),
+        summary: document.getElementById('pkSummary'),
+        list: document.getElementById('pkList'),
+    };
+
+    var state = { games: [], storageKey: null };
+
+    function setStatus(msg, isErr) {
+        els.status.textContent = msg;
+        els.status.hidden = !msg;
+        els.status.classList.toggle('err', !!isErr);
+    }
+
+    // -- Probability math -------------------------------------------------
+    function mlToProb(ml) {
+        var n = Number(ml);
+        if (!isFinite(n) || n === 0) return null;
+        return n < 0 ? (-n) / (-n + 100) : 100 / (n + 100);
+    }
+    function devig(pA, pB) {
+        if (pA == null || pB == null) return [pA, pB];
+        var sum = pA + pB;
+        if (!sum) return [pA, pB];
+        return [pA / sum, pB / sum];
+    }
+    function normalizePair(a, b) {
+        var x = Number(a), y = Number(b);
+        if (!isFinite(x) || !isFinite(y)) return [null, null];
+        var sum = x + y;
+        if (!sum) return [null, null];
+        return [x / sum, y / sum];
+    }
+    function blend(a, b) {
+        var vals = [a, b].filter(function (v) { return v != null; });
+        if (!vals.length) return null;
+        return vals.reduce(function (s, v) { return s + v; }, 0) / vals.length;
+    }
+
+    // -- Fetch --------------------------------------------------------------
+    function fetchScoreboard(params) {
+        var qs = new URLSearchParams({ path: '/scoreboard' });
+        Object.keys(params || {}).forEach(function (k) { if (params[k] != null && params[k] !== '') qs.set(k, params[k]); });
+        return fetch('/api/nfl?' + qs.toString()).then(function (r) {
+            if (!r.ok) throw new Error('scoreboard ' + r.status);
+            return r.json();
+        });
+    }
+    function fetchSummary(eventId) {
+        return fetch('/api/nfl?' + new URLSearchParams({ path: '/summary', event: eventId }).toString())
+            .then(function (r) { if (!r.ok) throw new Error('summary ' + r.status); return r.json(); })
+            .catch(function () { return null; });
+    }
+
+    function parseEvent(ev) {
+        var comp = (ev.competitions && ev.competitions[0]) || {};
+        var competitors = comp.competitors || [];
+        var home = competitors.find(function (c) { return c.homeAway === 'home'; }) || {};
+        var away = competitors.find(function (c) { return c.homeAway === 'away'; }) || {};
+        var odds = (comp.odds && comp.odds[0]) || null;
+        var ml = odds && odds.moneyline;
+        var dkHomeRaw = ml ? mlToProb(ml.home && ml.home.close && ml.home.close.odds) : null;
+        var dkAwayRaw = ml ? mlToProb(ml.away && ml.away.close && ml.away.close.odds) : null;
+        var dkPair = devig(dkHomeRaw, dkAwayRaw);
+
+        function side(c) {
+            var t = c.team || {};
+            var rec = (c.records || []).find(function (r) { return r.type === 'total'; });
+            return {
+                id: t.id, abbr: t.abbreviation, name: t.displayName, logo: t.logo,
+                color: t.color ? ('#' + t.color) : null,
+                record: rec ? rec.summary : null,
+                score: c.score, winner: c.winner === true,
+            };
+        }
+
+        return {
+            id: ev.id,
+            date: ev.date,
+            status: (comp.status && comp.status.type) || (ev.status && ev.status.type) || {},
+            statusDetail: (comp.status && comp.status.type && comp.status.type.shortDetail) || '',
+            home: side(home), away: side(away),
+            spreadDetails: odds ? odds.details : null,
+            overUnder: odds ? odds.overUnder : null,
+            dkHomeProb: dkPair[0], dkAwayProb: dkPair[1],
+            espnHomeProb: null, espnAwayProb: null,
+        };
+    }
+
+    function attachEspnModel(games) {
+        return Promise.all(games.map(function (g) {
+            return fetchSummary(g.id).then(function (data) {
+                var pr = data && data.predictor;
+                if (pr && pr.homeTeam && pr.awayTeam) {
+                    var pair = normalizePair(pr.homeTeam.gameProjection, pr.awayTeam.gameProjection);
+                    g.espnHomeProb = pair[0];
+                    g.espnAwayProb = pair[1];
+                }
+                return g;
+            });
+        }));
+    }
+
+    function computeBlend(g) {
+        g.blendHomeProb = blend(g.dkHomeProb, g.espnHomeProb);
+        g.blendAwayProb = blend(g.dkAwayProb, g.espnAwayProb);
+        if (g.blendHomeProb == null && g.blendAwayProb == null) { g.modelPick = null; g.modelProb = null; }
+        else {
+            var homeHigher = (g.blendHomeProb || 0) >= (g.blendAwayProb || 0);
+            g.modelPick = homeHigher ? 'home' : 'away';
+            g.modelProb = homeHigher ? g.blendHomeProb : g.blendAwayProb;
+        }
+        g.gapPts = (g.dkHomeProb != null && g.espnHomeProb != null)
+            ? Math.abs(g.dkHomeProb - g.espnHomeProb) * 100
+            : null;
+        g.flagged = g.gapPts != null && g.gapPts >= 10;
+    }
+
+    // -- Persistence ----------------------------------------------------
+    function storageKeyFor(year, seasonType, week) { return 'pk_picks_v1_' + year + '_' + seasonType + '_' + week; }
+    function loadSaved(key) {
+        try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    }
+    function persist() {
+        if (!state.storageKey) return;
+        try {
+            var payload = state.games.map(function (g) { return { id: g.id, pick: g.pick }; });
+            localStorage.setItem(state.storageKey, JSON.stringify(payload));
+        } catch (e) { /* localStorage unavailable/full -- picks just won't survive reload */ }
+    }
+
+    // -- Render -----------------------------------------------------------
+    function teamImg(side) {
+        return side.logo ? '<img src="' + side.logo + '" alt="" data-hide-on-error>' : '';
+    }
+    function pctStr(p) { return p == null ? '—' : Math.round(p * 100) + '%'; }
+
+    function render() {
+        var n = state.games.length;
+        els.summary.hidden = n === 0;
+        if (n) {
+            var final = state.games.filter(function (g) { return g.status.completed; });
+            var correct = final.filter(function (g) { return g[g.pick] && g[g.pick].winner; }).length;
+            var points = final.reduce(function (s, g) {
+                return s + (g[g.pick] && g[g.pick].winner ? g.confidence : 0);
+            }, 0);
+            var maxPoints = final.reduce(function (s, g) { return s + g.confidence; }, 0);
+            els.summary.innerHTML =
+                '<span><b>' + n + '</b> games, confidence 1&ndash;' + n + '</span>' +
+                (final.length ? '<span>Final: <span class="' + (correct >= final.length - correct ? 'pk-record-win' : 'pk-record-loss') + '">' + correct + '-' + (final.length - correct) + '</span></span>' +
+                    '<span>Points: <b>' + points + '</b> / ' + maxPoints + ' possible so far</span>' : '<span>No final games yet this week</span>');
+        }
+
+        els.list.innerHTML = '';
+        state.games.forEach(function (g, idx) {
+            g.confidence = n - idx;
+            var li = document.createElement('li');
+            li.className = 'pk-row' + (g.flagged ? ' pk-flagged' : '');
+            li.draggable = true;
+            li.dataset.gameId = g.id;
+
+            var isFinal = g.status.completed;
+            var isLive = g.status.state === 'in';
+            var pillCls = isFinal ? 'pk-final' : isLive ? 'pk-live' : 'pk-pre';
+            var pillTxt = isFinal ? 'Final' : isLive ? 'Live' : 'Scheduled';
+            var resultBadge = '';
+            if (isFinal) {
+                var won = g[g.pick] && g[g.pick].winner;
+                resultBadge = '<div class="' + (won ? 'pk-result-correct' : 'pk-result-wrong') + '">' + (won ? '✓ +' + g.confidence : '✗ 0') + '</div>';
+            }
+
+            var gapHtml = g.gapPts != null ? '<span class="pk-gap">Δ' + Math.round(g.gapPts) + 'pt gap</span>' : '';
+            var pickedDk = g.pick === 'home' ? g.dkHomeProb : g.dkAwayProb;
+            var pickedEspn = g.pick === 'home' ? g.espnHomeProb : g.espnAwayProb;
+            var pickedBlend = g.pick === 'home' ? g.blendHomeProb : g.blendAwayProb;
+
+            li.innerHTML =
+                '<div class="pk-conf">' +
+                    '<span>' + g.confidence + '</span>' +
+                    '<div class="pk-conf-arrows">' +
+                        '<button type="button" data-act="up" title="More confident">&#9650;</button>' +
+                        '<button type="button" data-act="down" title="Less confident">&#9660;</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<span class="pk-pill ' + pillCls + '">' + pillTxt + (g.statusDetail && !isFinal ? ' · ' + g.statusDetail : '') + '</span>' +
+                    '<div class="pk-matchup">' +
+                        '<span class="pk-team' + (g.pick === 'away' ? ' pk-picked' : '') + '" data-side="away">' + teamImg(g.away) + g.away.abbr + (g.away.record ? ' (' + g.away.record + ')' : '') + (g.away.score != null ? ' ' + g.away.score : '') + '</span>' +
+                        '<span class="pk-at">@</span>' +
+                        '<span class="pk-team' + (g.pick === 'home' ? ' pk-picked' : '') + '" data-side="home">' + teamImg(g.home) + g.home.abbr + (g.home.record ? ' (' + g.home.record + ')' : '') + (g.home.score != null ? ' ' + g.home.score : '') + '</span>' +
+                    '</div>' +
+                    '<div class="pk-line">' + (g.spreadDetails || 'No line') + (g.overUnder ? ' · O/U ' + g.overUnder : '') + '</div>' +
+                    '<div class="pk-probs">' +
+                        '<span>DK for your pick: ' + pctStr(pickedDk) + '</span>' +
+                        '<span>ESPN model for your pick: ' + pctStr(pickedEspn) + '</span>' +
+                        '<span>Blended: <b>' + pctStr(pickedBlend) + '</b></span>' +
+                        gapHtml +
+                    '</div>' +
+                '</div>' +
+                '<div class="pk-meta">' + resultBadge + '</div>';
+
+            li.querySelectorAll('.pk-team').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    g.pick = el.dataset.side;
+                    persist();
+                    render();
+                });
+            });
+            li.querySelector('[data-act="up"]').addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (idx > 0) { moveGame(idx, idx - 1); }
+            });
+            li.querySelector('[data-act="down"]').addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (idx < n - 1) { moveGame(idx, idx + 1); }
+            });
+            li.addEventListener('dragstart', function () { li.classList.add('pk-dragging'); li.dataset.dragIdx = idx; });
+            li.addEventListener('dragend', function () { li.classList.remove('pk-dragging'); });
+            li.addEventListener('dragover', function (e) { e.preventDefault(); });
+            li.addEventListener('drop', function (e) {
+                e.preventDefault();
+                var from = Number(document.querySelector('.pk-dragging') && document.querySelector('.pk-dragging').dataset.dragIdx);
+                if (isFinite(from)) moveGame(from, idx);
+            });
+
+            els.list.appendChild(li);
+        });
+    }
+
+    function moveGame(from, to) {
+        if (from === to) return;
+        var arr = state.games;
+        var item = arr.splice(from, 1)[0];
+        arr.splice(to, 0, item);
+        persist();
+        render();
+    }
+
+    // -- Boot ---------------------------------------------------------------
+    function loadWeek(params) {
+        setStatus('Loading…');
+        els.list.innerHTML = '';
+        els.summary.hidden = true;
+        fetchScoreboard(params).then(function (data) {
+            if (!data.events || !data.events.length) { setStatus('No games found for that week.', true); return null; }
+
+            var year = data.season ? data.season.year : (params && params.year) || new Date().getFullYear();
+            var seasonType = data.season && data.season.type ? data.season.type.type : (params && params.seasontype) || 2;
+            var week = data.week ? data.week.number : (params && params.week) || '';
+            els.year.value = year; els.seasonType.value = String(seasonType); els.week.value = week;
+
+            var games = data.events.map(parseEvent);
+            setStatus('Cross-referencing DraftKings vs. ESPN model for ' + games.length + ' games…');
+            return attachEspnModel(games).then(function () {
+                games.forEach(computeBlend);
+
+                var key = storageKeyFor(year, seasonType, week);
+                var saved = loadSaved(key);
+                var byId = {}; games.forEach(function (g) { byId[g.id] = g; });
+
+                if (saved && saved.length === games.length) {
+                    state.games = saved.map(function (s) { var g = byId[s.id]; if (g) g.pick = s.pick; return g; }).filter(Boolean);
+                } else {
+                    games.sort(function (a, b) { return (b.modelProb || 0) - (a.modelProb || 0); });
+                    games.forEach(function (g) { g.pick = g.modelPick || 'home'; });
+                    state.games = games;
+                }
+                state.storageKey = key;
+                setStatus('');
+                persist();
+                render();
+            });
+        }).catch(function (err) {
+            setStatus('Failed to load: ' + err.message, true);
+        });
+    }
+
+    els.loadBtn.addEventListener('click', function () {
+        loadWeek({ year: els.year.value, seasontype: els.seasonType.value, week: els.week.value });
+    });
+    els.resetBtn.addEventListener('click', function () {
+        if (!state.games.length) return;
+        state.games.sort(function (a, b) { return (b.modelProb || 0) - (a.modelProb || 0); });
+        state.games.forEach(function (g) { g.pick = g.modelPick || g.pick; });
+        persist();
+        render();
+    });
+
+    loadWeek({});
+})();
+</script>
+</body>
+</html>
