@@ -2065,6 +2065,14 @@ main {
     height: 52px;
     object-fit: contain;
     flex-shrink: 0;
+    /* Fixed white chip, not a theme token -- team logos (esp. NCAAF's, many
+       with black linework/lettering) are drawn for a white card and vanish
+       against --bg-card's near-black dark-mode value otherwise. No-op in
+       light mode, where --bg-card is already white. */
+    background: #fff;
+    border-radius: 50%;
+    padding: 5px;
+    box-sizing: border-box;
 }
 .hero-row-abbr {
     flex: 1;
@@ -2092,7 +2100,7 @@ main {
     border-left: 3px solid var(--tc, var(--accent));
     border-radius: var(--radius-md);
 }
-.hero-standings-logo { width: 64px; height: 64px; object-fit: contain; }
+.hero-standings-logo { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 50%; padding: 6px; box-sizing: border-box; }
 .hero-standings-rec { display: flex; flex-direction: column; }
 .hero-standings-rank { font-size: 0.75rem; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
 .hero-standings-wl { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
@@ -2102,7 +2110,7 @@ main {
     .hero-visual { min-width: 0; }
     .hero-board { flex-direction: row; }
     .hero-row { flex: 1; }
-    .hero-row-logo { width: 36px; height: 36px; }
+    .hero-row-logo { width: 36px; height: 36px; padding: 4px; }
     .hero-row-score { font-size: 1.3rem; }
 }
 

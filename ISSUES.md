@@ -1914,3 +1914,21 @@ Relay's Phase 6 data-sourcing audit (DECISIONS.md D-117) confirms a real, cited,
 **Not touched:** `js/scorebug.js`'s own `teamColor()` (feeds `border-left` team-color edges on score cards/tickers, the "border=identity" house pattern) uses the same raw `.primary` value with the same underlying contrast problem, but a thin border blending slightly into a dark card is a materially smaller legibility issue than an entire percentage-bar reading as empty — left alone as a separate, lower-severity item, not expanded into this fix's scope.
 
 **Escalation:** none — investigated and fixed same session as reported.
+
+---
+
+## Home hero: dark-lettered team logos (Ohio State's block "O") vanished into the dark-mode card background — found, fixed 2026-09-09
+
+**Contributor:** (owner report, screenshot of the NCAAF game-preview hero) | **Date:** 2026-09-09
+
+**Reported:** the owner's screenshot showed the home hero's Ohio State vs. Texas matchup card in dark mode with the Ohio State logo effectively invisible — its black block-"O" lettering sitting on a transparent background, painted directly over `.hero-row`'s `--bg-card` (a near-black dark-mode value), so the dark linework had almost no contrast against the dark card. Texas's Longhorn logo, which has real color/orange linework, was unaffected — this is a logo-content problem, not a broken image.
+
+**Root cause:** `.hero-row-logo`/`.hero-standings-logo` (`css/main.css`) rendered team logo `<img>`s with no background at all — unlike `.game-team-logo` (`css/components.css`, used by NCAAF's own Scores-grid cards), which already paints a team-color gradient chip behind each logo for exactly this reason. The hero's logo board (`_heroLogoBoard`/`_heroBoard`, `js/app.js` — shared by MLB/NCAAF/NCAAB/WNBA hero variants) never got the same treatment, so any team whose logo relies on dark/black elements against a transparent background was silently unreadable in dark mode, not just Ohio State.
+
+**Fix:** gave `.hero-row-logo` and `.hero-standings-logo` a fixed white circular chip (`background:#fff; border-radius:50%; padding`, `box-sizing:border-box` so the outer box size is unchanged) instead of a team-color gradient — team logos are drawn assuming a white card in the first place, so a white chip guarantees contrast regardless of any given team's brand colors (a team-color gradient, `.game-team-logo`'s approach, wouldn't fully solve it for a team whose *own* color is also dark). No JS change needed — this is pure CSS on the existing `<img>` elements, so it covers every sport that reuses `_heroLogoBoard`/`_heroBoard` (MLB, NCAAF, NCAAB, WNBA) in one pass. No-op in light mode, where `--bg-card` is already white.
+
+**Verified:** live screenshot via `wrangler pages dev` against the real home hero (real live NCAAF matchup, Ohio State vs. Texas) shows the Ohio State "OHIO STATE" block-letter mark now clearly legible on its white chip, exactly like Texas's already-visible Longhorn mark. `sw.js` CACHE_NAME bumped v258 → v259.
+
+**Not touched:** `.game-team-logo`'s existing team-color-gradient chip (Scores-grid cards) was left as-is — different component, not reported as broken, and changing its established visual language wasn't in scope for this fix.
+
+**Escalation:** none — root-caused and fixed same session as reported.
