@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -60,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -1182,12 +1182,122 @@ function _nlgRenderFantasyTab(data) {
 
 function _nlgSidebarHtml(data, comp, home, away) {
     return `<aside class="nlg-side">
+        ${_nlgYourRosterSection(data, home, away)}
         ${_nlgWinProbability(data, home, away)}
         ${_nlgSidebarLeaders(data)}
         ${_nlgFantasyLeadersCard(data)}
         ${_nlgGameFlow(comp, home, away)}
         ${_nlgStandingsCard(data, home, away)}
     </aside>`;
+}
+
+// -- Your Roster in This Game — live fantasy points for the signed-in
+// user's own Sleeper starters, cross-referenced against whichever two teams
+// are actually playing (D-1xx, 2026-09-09). Deliberately separate from the
+// Fantasy tab/Fantasy Watch above: those answer "who's doing well in this
+// game" / "who's been hot lately" for anyone; this answers "do I need to
+// check on my guy" for a specific signed-in user, so it has to actually
+// filter down to their real roster rather than showing every player. Fails
+// silently at every step (not signed in, no linked league, no roster match)
+// -- this is a bonus for the minority of visitors who've linked a league via
+// My League (js/fantasy.js), never a broken-looking empty box for anyone
+// else. Same memoized-fetch-then-patch-in pattern as _nlgFantasyWatchSection
+// below, minus the loading skeleton -- unlike Fantasy Watch (useful to
+// basically every visitor), this is likely empty for most, so it stays
+// invisible while loading and only appears once there's something real to
+// show, rather than flashing a skeleton box that then vanishes.
+function _nlgYourRosterSection(data, home, away) {
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const gamePk = String(_nlg.eventId);
+    if (_nlg.yourRosterGameId !== gamePk) {
+        _nlg.yourRosterGameId = gamePk;
+        _nlg.yourRosterPlayers = null;
+        _nlgFetchYourRoster(gamePk, homeAbbr, awayAbbr);
+    }
+    if (!_nlg.yourRosterPlayers || !_nlg.yourRosterPlayers.length) return '';
+    return _nlgRenderYourRoster(data);
+}
+
+async function _nlgFetchYourRoster(gamePk, homeAbbr, awayAbbr) {
+    try {
+        if (typeof AuthState === 'undefined' || AuthState.status !== 'signed-in') { _nlgYourRosterDone(gamePk, []); return; }
+        // Reuse js/fantasy.js's own cached link if My League has already been
+        // visited this session; otherwise fetch it independently -- a fresh
+        // load of a game page has no reason to depend on which order the
+        // user visited pages in.
+        let link = (typeof _mlLink !== 'undefined') ? _mlLink : null;
+        if (!link) {
+            const res = await fetch('/api/sleeperLink', { credentials: 'same-origin' });
+            if (!res.ok) { _nlgYourRosterDone(gamePk, []); return; }
+            link = (await res.json()).link;
+            if (typeof _mlLink !== 'undefined') _mlLink = link; // share the cache forward with My League
+        }
+        if (!link) { _nlgYourRosterDone(gamePk, []); return; }
+        await fetchNFLSleeperPool();
+        const rRes = await fetch(`/api/sleeper?path=${encodeURIComponent('/v1/league/' + link.league_id + '/rosters')}`, { credentials: 'same-origin' });
+        if (!rRes.ok) { _nlgYourRosterDone(gamePk, []); return; }
+        const rosters = await rRes.json();
+        const myRoster = (rosters || []).find(r => String(r.owner_id) === String(link.sleeper_user_id));
+        if (!myRoster || !Array.isArray(myRoster.starters)) { _nlgYourRosterDone(gamePk, []); return; }
+        const sAbbr = (typeof _nflSleeperAbbr === 'function') ? _nflSleeperAbbr : (a) => a;
+        const homeS = sAbbr(homeAbbr), awayS = sAbbr(awayAbbr);
+        const players = myRoster.starters
+            .map(id => _nflPoolMap && _nflPoolMap[id])
+            .filter(p => p && p.full_name && (p.team === homeS || p.team === awayS))
+            .map(p => ({ name: p.full_name, pos: p.position, team: p.team === homeS ? homeAbbr : awayAbbr, nameKey: _nlgNameKey(p.full_name) }));
+        _nlgYourRosterDone(gamePk, players);
+    } catch (_) {
+        _nlgYourRosterDone(gamePk, []);
+    }
+}
+
+function _nlgYourRosterDone(gamePk, players) {
+    _nlg.yourRosterPlayers = players;
+    if (String(_nlg.eventId) !== gamePk || !players.length) return; // navigated away, or nothing to patch in
+    const sideEl = document.querySelector('.nlg-side');
+    if (sideEl && _nlg.lastData) {
+        const comp = _nlgComp(_nlg.lastData);
+        sideEl.outerHTML = _nlgSidebarHtml(_nlg.lastData, comp, _nlgSide(comp, 'home'), _nlgSide(comp, 'away'));
+    }
+}
+
+// Same first-initial + last-name key on both sides of the match -- ESPN's
+// live box score identifies players by athlete.shortName ("P. Mahomes",
+// confirmed live elsewhere in this file), not the full "Patrick Mahomes"
+// Sleeper's pool carries, so a plain normalized-full-name equality check
+// would silently never match. Collision risk (two same-initial same-last-
+// name players) is real in the abstract but negligible here: both sides are
+// already filtered down to just the two teams actually playing.
+function _nlgNameKey(name) {
+    const n = String(name || '').toLowerCase().replace(/\./g, '').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').trim();
+    const parts = n.split(/\s+/).filter(Boolean);
+    if (!parts.length) return '';
+    return `${parts[0][0]}|${parts[parts.length - 1]}`;
+}
+
+// Sidebar-card pattern (.nlg-side-card/.nlg-side-title/.nlg-leader-row),
+// matching Fantasy Leaders right below it -- not the heavier .nlg-card used
+// by main-panel content (Fantasy tab, Fantasy Watch). No scoring-format
+// toggle of its own, same call Fantasy Leaders already made: one shared
+// _nlg.fantasyScoring toggle for the whole page (Fantasy tab), read-only
+// everywhere else via a caption, rather than three separate live-updating
+// controls for the same setting.
+function _nlgRenderYourRoster(data) {
+    const scoring = _nlg.fantasyScoring;
+    const live = _nlgComputeFantasy(data, scoring);
+    const liveByKey = {};
+    live.forEach(p => { const k = _nlgNameKey(p.name); if (k && !(k in liveByKey)) liveByKey[k] = p.pts; });
+    const withPts = _nlg.yourRosterPlayers
+        .map(p => ({ ...p, pts: liveByKey[p.nameKey] || 0 }))
+        .sort((a, b) => b.pts - a.pts);
+    const rows = withPts.map(p => `<div class="nlg-leader-row">
+            <div class="nlg-leader-row-top">
+                <span class="nlg-leader-name">${_escHtml(p.name)} <span class="pct-caption">${_escHtml(p.team)} · ${_escHtml(p.pos)}</span></span>
+                <span class="nlg-leader-val">${p.pts.toFixed(1)}</span>
+            </div>
+        </div>`).join('');
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Your Roster in This Game <span class="pct-caption">(${_escHtml(scoring)})</span></h3>${rows}</div>`;
 }
 
 // D-106: live win probability chart. data.winprobability[] (ESPN /summary

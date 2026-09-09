@@ -745,6 +745,26 @@
 .game-status--live  { background: var(--color-live-subtle); color: var(--color-live); }
 .game-status--sched { background: var(--bg-subtle);       color: var(--text-muted); }
 
+/* Objective "closest live game" call-out (NFL Scores grid) -- accent, not
+   the live/final/sched status colors, since this is a separate algorithmic
+   signal (leverage-ranked across all live games), not a game-state pill. */
+.game-badge--leverage {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-subtle);
+    border: 1px solid var(--accent-border);
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-full);
+    width: fit-content;
+    margin: -0.15rem 0 0.6rem;
+}
+
 .game-card-pitchers {
     font-size: 0.7rem;
     color: var(--text-muted);

@@ -542,6 +542,21 @@ async function loadNFLGames() {
     }
 }
 
+// Objective "how close/consequential is this game right now" score for the
+// Scores grid -- deliberately NOT the same function as app.js's _nflLeverage
+// (the home hero's picker), which adds a +100 followed-team bonus on top of
+// the same base formula. That bonus is right for picking ONE personalized
+// hero game; it would be wrong here, where the whole point is an honest
+// "closest game on the board" signal across every live game at once -- a
+// badge that just points at your own team regardless of score margin isn't
+// a real signal, it's decoration.
+function _nflScoresLeverage(g) {
+    const period = g.period || 1;
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    return (period * 2) + closeness + (g.broadcast ? 4 : 0) + (g.situation?.isRedZone ? 2 : 0);
+}
+
 function displayNFLGames(games) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'games-grid';
@@ -556,8 +571,19 @@ function displayNFLGames(games) {
     }
 
     const rank = (g) => g.isLive ? 0 : (!g.isFinal ? 1 : 2);
-    const ordered = games.slice().sort((a, b) => rank(a) - rank(b));
     const liveCount = games.filter(g => g.isLive).length;
+    // Only worth sub-sorting/badging once there's an actual choice between
+    // live games (a lone Thursday-night game has nothing to be "closest"
+    // relative to) -- this is exactly the Sunday-afternoon-slate case where
+    // it adds real value and does nothing on a one-game night.
+    const showLeverage = liveCount > 1;
+    const ordered = games.slice().sort((a, b) => {
+        const r = rank(a) - rank(b);
+        if (r !== 0) return r;
+        if (showLeverage && a.isLive && b.isLive) return _nflScoresLeverage(b) - _nflScoresLeverage(a);
+        return 0; // stable sort preserves ESPN's own order otherwise
+    });
+    const topLeverageId = showLeverage ? ordered.find(g => g.isLive)?.id : null;
     const fragment = document.createDocumentFragment();
     if (liveCount) {
         const h = document.createElement('div');
@@ -565,7 +591,7 @@ function displayNFLGames(games) {
         h.innerHTML = `<span class="nlg-livebadge">● LIVE NOW</span> ${liveCount} game${liveCount > 1 ? 's' : ''} in progress`;
         fragment.appendChild(h);
     }
-    ordered.forEach(game => fragment.appendChild(_createNFLGameCard(game)));
+    ordered.forEach(game => fragment.appendChild(_createNFLGameCard(game, game.id === topLeverageId)));
     grid.innerHTML = '';
     grid.appendChild(fragment);
 }
@@ -586,7 +612,7 @@ function displayNFLGames(games) {
 // Team order matches MLB's card exactly (home left, away right, no literal
 // "@" — the grid layout alone conveys the matchup) for one visual recipe
 // across sports, not a bespoke NFL treatment.
-function _createNFLGameCard(game) {
+function _createNFLGameCard(game, isTopLeverage) {
     const card = document.createElement('div');
     card.className = 'game-card' + (game.isLive ? ' game-card--live' : '');
     card.dataset.gameId = game.id;
@@ -689,6 +715,7 @@ function _createNFLGameCard(game) {
             <span class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</span>
             <span class="game-status ${statusCls}">${game.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}</span>
         </div>
+        ${isTopLeverage ? `<div class="game-badge game-badge--leverage">Closest game right now</div>` : ''}
         <div class="game-matchup">
             ${teamBlock(game.homeTeam, game.homeTeam.winner)}
             <div class="game-scores">
