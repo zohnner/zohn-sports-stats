@@ -91,6 +91,66 @@ function _escHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+// WCAG contrast helpers (2026-09-08) — ported from tools/check-themes.cjs's own
+// parseColor/lum/ratio (same formula, ~15 lines, not worth requiring a Node
+// tool into the browser for). Added to pick a bar-fill-safe team color: the
+// White Sox/Pirates/Padres all have a near-black primary hex (#27251F/
+// #27251F/#2F241D) that's nearly indistinguishable from its own progress-bar
+// track once composited over the dark theme's card surface — a real,
+// reproducible bug (the pennant-race division-odds bar for a team like that
+// reads as blank), distinct from the S5 darkSafe flag, which only covers
+// LOGO artwork contrast, not solid-color fills. Resolving live via
+// getComputedStyle rather than a hardcoded per-team list (like darkSafe) so
+// this works correctly across every theme (dark/light/nl-monarchs) without
+// needing to hand-verify each one.
+function _parseCssColor(v) {
+    if (!v) return null;
+    v = v.trim();
+    let m = v.match(/^#([0-9a-f]{3})$/i);
+    if (m) return [...m[1]].map(c => parseInt(c + c, 16)).concat(1);
+    m = v.match(/^#([0-9a-f]{6})$/i);
+    if (m) return [0, 2, 4].map(o => parseInt(m[1].slice(o, o + 2), 16)).concat(1);
+    m = v.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/);
+    if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
+    return null;
+}
+function _compositeOverBg(fg, bg) {
+    if (fg[3] >= 1) return fg;
+    return [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3])).concat(1);
+}
+function _relLuminance([r, g, b]) {
+    const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function _contrastRatio(hexOrRgb1, hexOrRgb2) {
+    const c1 = Array.isArray(hexOrRgb1) ? hexOrRgb1 : _parseCssColor(hexOrRgb1);
+    const c2 = Array.isArray(hexOrRgb2) ? hexOrRgb2 : _parseCssColor(hexOrRgb2);
+    if (!c1 || !c2) return null;
+    const [l1, l2] = [_relLuminance(c1), _relLuminance(c2)].sort((a, b) => b - a);
+    return (l1 + 0.05) / (l2 + 0.05);
+}
+// Picks whichever of a team's primary/secondary colors reads clearly as a
+// solid-fill bar against the page's real card surface (composited live from
+// --bg-card over --bg-base, since --bg-card is itself a translucent rgba
+// layer in every theme, not a flat hex) — falls back to primary on any
+// parse failure or if neither color's contrast can be improved.
+function _barSafeTeamColor(colors) {
+    const primary = colors?.primary;
+    if (!primary) return primary;
+    try {
+        const bgBase = _parseCssColor(getComputedStyle(document.documentElement).getPropertyValue('--bg-base'));
+        const bgCard = _parseCssColor(getComputedStyle(document.documentElement).getPropertyValue('--bg-card'));
+        if (!bgBase || !bgCard) return primary;
+        const effectiveBg = _compositeOverBg(bgCard, bgBase);
+        const primaryRatio = _contrastRatio(primary, effectiveBg);
+        if (primaryRatio == null || primaryRatio >= 1.6) return primary;
+        const secondary = colors?.secondary;
+        if (!secondary) return primary;
+        const secondaryRatio = _contrastRatio(secondary, effectiveBg);
+        return (secondaryRatio != null && secondaryRatio > primaryRatio) ? secondary : primary;
+    } catch (_) { return primary; }
+}
+
 // Shared Savant-style percentile color: diverging blue → gray → red (red = elite).
 // Fixed hex by design — a data-encoding scale, not a themed surface. Used by MLB + NFL.
 function _pctColor(p) {
@@ -219,6 +279,8 @@ if (typeof window !== 'undefined') {
     window.getNBATeamLogoUrl  = getNBATeamLogoUrl;
     window._ICON              = _ICON;
     window._iconSvg           = _iconSvg;
+    window._contrastRatio     = _contrastRatio;
+    window._barSafeTeamColor  = _barSafeTeamColor;
 }
 
 // Canonical public domain — printed on share cards and share text.

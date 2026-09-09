@@ -3150,7 +3150,17 @@ async function _loadMLBLandingSignature() {
         });
         races.sort((a, b) => a.gb - b.gb);
         const pennantRows = races.slice(0, 3).map(r => {
-            const color = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr).primary : 'var(--accent)';
+            // 2026-09-08: raw .primary as a solid bar-fill nearly disappears into
+            // the card surface for any team with a dark primary hex -- not just
+            // the White Sox's near-black #27251F (contrast ratio ~1.18 against
+            // the real composited card background), but roughly half the league's
+            // navy/purple primaries too (measured: TB/MIN/SEA/DET/MIL/COL/HOU/
+            // TEX/NYM/CHC/NYY all under 1.6). _barSafeTeamColor swaps to the
+            // team's own secondary color when the primary fails a real WCAG
+            // contrast check, computed live against the current theme rather
+            // than a hardcoded per-team list.
+            const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(r.lead.teamAbbr) : null;
+            const color  = colors ? (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(colors) : colors.primary) : 'var(--accent)';
             const logo  = (typeof getMLBTeamLogoUrl === 'function' && r.lead.teamId) ? getMLBTeamLogoUrl(r.lead.teamId) : '';
             const odds  = r.divOdds;
             const pctW  = (odds != null) ? Math.max(4, Math.min(100, odds)) : 50;
