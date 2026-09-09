@@ -218,6 +218,31 @@ const _HOME_HERO_GUEST_SPORTS = {
     wnba:  { fetch: () => fetchWNBAScoreboard(),  cache: 'wnbaGames',  leverage: _wnbaLeverage,  marquee: _wnbaMarquee,  heroFn: _heroFromWNBAGame },
 };
 
+// Home redesign Phase 4 perf pass (2026-09-08) — a real network trace of a
+// cold home load showed /api/nfl?path=/scoreboard, /api/ncaaf?path=/scoreboard,
+// /api/wnbastats, and /api/wnbastandings each fired twice (ncaaf's scoreboard
+// three times) in a single page load. Root cause: several home-load paths
+// (the ticker's _updateHomeTicker, the hero's _HOME_HERO_GUEST_SPORTS fetch,
+// and the Insights engine's two _renderHomeInsights() calls) each check
+// AppState/ApiCache and fetch independently — individually correct, but two
+// checks that both land before either's fetch has resolved and cached both
+// see a miss and both hit the network. This lazily-initialized in-flight
+// registry lets a second caller await the first caller's already-started
+// promise instead of starting a duplicate request. A function property, not
+// a top-level object literal, for the same reason _HOME_HERO_GUEST_SPORTS
+// above has to sit this early in the file — loadHome() runs synchronously
+// during script bootstrap, before a `const` declared nearer its own use
+// would have executed yet; a function's own property is only ever touched
+// when the function actually runs, so it has no such ordering hazard.
+function _homeInflightFetch(key, fetchFn) {
+    if (!_homeInflightFetch._pending) _homeInflightFetch._pending = {};
+    const pending = _homeInflightFetch._pending;
+    if (pending[key]) return pending[key];
+    const p = Promise.resolve().then(fetchFn).finally(() => { delete pending[key]; });
+    pending[key] = p;
+    return p;
+}
+
 function _renderEditorialLanding(sport, meta, cfg, st) {
     const grid = document.getElementById('playersGrid');
     const slots = _EDITORIAL_SLOTS[sport];
@@ -553,7 +578,13 @@ async function _updateHomeTicker() {
     const [mlbGames, nflGames, ncaafGames] = await Promise.all([
         (async () => {
             try {
-                const g = await fetchMLBSchedule(7);
+                // Phase 4 perf pass (2026-09-08): _updateHomeTicker itself is
+                // invoked from two independent places on a fresh home load
+                // (the boot ticker-seed IIFE and loadHome()'s own call) --
+                // _homeInflightFetch dedups the underlying network call
+                // between those two concurrent invocations, same as the
+                // nfl/ncaaf fetches just below already do.
+                const g = await _homeInflightFetch('mlbGames7', () => fetchMLBSchedule(7));
                 if (AppState.mlbGames && AppState.mlbGames.length === 0) AppState.mlbGames = g;
                 return g;
             } catch (_) { return AppState.mlbGames || []; }
@@ -561,7 +592,12 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchNFLScoreboard !== 'function') return AppState.nflGames || [];
             try {
-                const g = await fetchNFLScoreboard();
+                // Phase 4 perf pass: _homeInflightFetch dedups only against a
+                // concurrent in-flight call (e.g. the hero's own guest-sport
+                // fetch racing this at page-load time) -- it does NOT skip
+                // fetching when a value is already cached, so this ticker
+                // keeps refreshing on every poll tick exactly as before.
+                const g = await _homeInflightFetch('nflGames', fetchNFLScoreboard);
                 AppState.nflGames = g;
                 return g;
             } catch (_) { return AppState.nflGames || []; }
@@ -569,7 +605,7 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchNCAAFScoreboard !== 'function') return AppState.ncaafGames || [];
             try {
-                const g = await fetchNCAAFScoreboard();
+                const g = await _homeInflightFetch('ncaafGames', fetchNCAAFScoreboard);
                 AppState.ncaafGames = g;
                 return g;
             } catch (_) { return AppState.ncaafGames || []; }
@@ -811,8 +847,13 @@ function _renderHomeRecents() {
     `;
 
     const _RECENT_DETAIL_FN = {
-        mlb: { player: 'showMLBPlayerDetail', team: 'showMLBTeamDetail' },
-        nfl: { player: 'showNFLPlayerDetail' },
+        mlb:   { player: 'showMLBPlayerDetail', team: 'showMLBTeamDetail' },
+        nfl:   { player: 'showNFLPlayerDetail' },
+        // Home redesign Phase 4 (2026-09-08): added alongside the new
+        // addRecent() calls in js/ncaaf.js/js/wnba.js -- without both sides,
+        // an ncaaf/wnba chip would render but silently no-op on click.
+        ncaaf: { player: 'showNCAAFPlayer' },
+        wnba:  { player: 'showWNBAPlayer' },
     };
     el.querySelectorAll('.home-recent-chip').forEach(chip => {
         chip.addEventListener('click', () => {
@@ -2154,7 +2195,7 @@ async function _renderHomeHero(games) {
     await Promise.all(Object.entries(_HOME_HERO_GUEST_SPORTS).map(async ([sport, cfg]) => {
         try {
             const cached = AppState[cfg.cache];
-            guestGames[sport] = (cached && cached.length) ? cached : await cfg.fetch();
+            guestGames[sport] = (cached && cached.length) ? cached : await _homeInflightFetch(cfg.cache, cfg.fetch);
             AppState[cfg.cache] = guestGames[sport];
         } catch (err) {
             guestGames[sport] = [];
@@ -2361,7 +2402,11 @@ function _mlbLeaderStatMoments() {
 // _renderHomeMoment -- lifted, not re-derived.
 async function _mlbPennantStatMoment() {
     try {
-        if (!AppState.mlbStandings) AppState.mlbStandings = await fetchMLBStandingsFull();
+        // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
+        // as _mlbTrendingStatMoment above -- the AppState.mlbStandings check
+        // alone doesn't stop two concurrent _statMomentCandidates() calls
+        // from both missing it before either's fetch resolves.
+        if (!AppState.mlbStandings) AppState.mlbStandings = await _homeInflightFetch('mlbStandingsFull', fetchMLBStandingsFull);
     } catch (_) { return null; }
     const races = [];
     (AppState.mlbStandings || []).forEach(d => {
@@ -2389,15 +2434,24 @@ async function _mlbTrendingStatMoment() {
     if (!AppState.mlbHotStats || AppState._mlbHotStatsSeason !== season) {
         if (typeof fetchMLBLeagueStats !== 'function') return null;
         try {
-            const [hotHit, hotPit] = await Promise.all([
-                fetchMLBLeagueStats('hitting',  season, 600, 'last7Days'),
-                fetchMLBLeagueStats('pitching', season, 400, 'last7Days'),
-            ]);
-            hotHit.forEach(s => { if (s.stat && typeof _computeBattingRates === 'function') Object.assign(s.stat, _computeBattingRates(s.stat)); });
-            hotPit.forEach(s => { if (s.stat && typeof _computePitchingRates === 'function') Object.assign(s.stat, _computePitchingRates(s.stat)); });
-            if (typeof _enrichMLBTeamAbbr === 'function') await Promise.all([_enrichMLBTeamAbbr(hotHit, season), _enrichMLBTeamAbbr(hotPit, season)]);
-            AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
-            AppState._mlbHotStatsSeason = season;
+            // Phase 4 perf pass (2026-09-08): the AppState.mlbHotStats check
+            // above guards against re-fetching once it's set, but not against
+            // two _statMomentCandidates() calls (loadHome() runs this fn
+            // twice) both landing before either's fetch has set it --
+            // _homeInflightFetch makes the second call await the first's
+            // already-started work instead of starting a duplicate pair of
+            // byDateRange requests.
+            await _homeInflightFetch(`mlbHotStats:${season}`, async () => {
+                const [hotHit, hotPit] = await Promise.all([
+                    fetchMLBLeagueStats('hitting',  season, 600, 'last7Days'),
+                    fetchMLBLeagueStats('pitching', season, 400, 'last7Days'),
+                ]);
+                hotHit.forEach(s => { if (s.stat && typeof _computeBattingRates === 'function') Object.assign(s.stat, _computeBattingRates(s.stat)); });
+                hotPit.forEach(s => { if (s.stat && typeof _computePitchingRates === 'function') Object.assign(s.stat, _computePitchingRates(s.stat)); });
+                if (typeof _enrichMLBTeamAbbr === 'function') await Promise.all([_enrichMLBTeamAbbr(hotHit, season), _enrichMLBTeamAbbr(hotPit, season)]);
+                AppState.mlbHotStats = { hitting: hotHit, pitching: hotPit };
+                AppState._mlbHotStatsSeason = season;
+            });
         } catch (_) { return null; }
     }
     const hot = AppState.mlbHotStats || {};
@@ -2422,7 +2476,10 @@ async function _nflStatMoment() {
     if (typeof fetchNFLStandings !== 'function' || typeof _nflPowerScore !== 'function') return null;
     try {
         const season = (typeof _nstdSeasonDefault === 'function') ? _nstdSeasonDefault() : undefined;
-        const rows = (typeof _nstd !== 'undefined' && _nstd.bySeason[season]) || await fetchNFLStandings(season);
+        // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
+        // as the other _statMomentCandidates() sub-fetchers -- observed this
+        // one duplicate in a live network trace too.
+        const rows = (typeof _nstd !== 'undefined' && _nstd.bySeason[season]) || await _homeInflightFetch(`nflStandings:${season}`, () => fetchNFLStandings(season));
         if (typeof _nstd !== 'undefined') _nstd.bySeason[season] = rows;
         if (!rows || !rows.length) return null;
         const scored = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr);
@@ -2440,7 +2497,13 @@ async function _nflStatMoment() {
 async function _pollJumpStatMoment(fetchFn, sport, view) {
     if (typeof fetchFn !== 'function') return null;
     try {
-        const polls = await fetchFn();
+        // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment as
+        // _wnbaStatMoments just below -- _statMomentCandidates() (the caller
+        // of this function) runs twice per home load, and a live network
+        // trace showed this exact race hit the rankings endpoints too (just
+        // less consistently than WNBA's, since it depends on how fast the
+        // upstream poll response lands relative to the second call).
+        const polls = await _homeInflightFetch(`${sport}:rankings`, fetchFn);
         const ap = (polls || []).find(p => /\bAP\b/i.test(p.name)) || (polls || [])[0];
         if (!ap || !ap.ranks || !ap.ranks.length) return null;
         let best = null;
@@ -2463,22 +2526,36 @@ async function _wnbaStatMoments() {
     const out = [];
     const season = (typeof _wnba !== 'undefined') ? _wnba.season : undefined;
     try {
-        const res = await fetch(`/api/wnbastats?season=${season}`);
-        if (res.ok) {
-            const data = await res.json();
-            const cats = (data && data.categories) || [];
-            const cat = cats.find(c => (c.unit || '').toUpperCase() === 'PPG') || cats[0];
-            const [a, b] = (cat && cat.leaders) || [];
-            if (a && a.value != null) {
-                const gap = b && b.value != null ? a.value - b.value : 0;
-                out.push({ sport: 'wnba', score: _notabilityFromMargin(gap, 8), view: 'wnba-leaders',
-                    text: `${a.name} (${a.team}) leads the WNBA with ${a.value} ${cat.unit}${gap > 0 ? ` — ${gap.toFixed(1)} clear of the field` : ''}` });
-            }
+        // Phase 4 perf pass (2026-09-08): this used to be a bare, uncached
+        // fetch -- unlike every other per-sport stats call in the codebase,
+        // it never went through ApiCache at all, so it re-fetched on every
+        // single call, not just loadHome()'s own two _renderHomeInsights()
+        // passes. Added the same ApiCache.get/set pattern fetchWNBAStandings
+        // already uses just below, plus _homeInflightFetch so two calls
+        // landing before either resolves don't both hit the network.
+        const cacheKey = `wnba:stats:${season}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            data = await _homeInflightFetch(cacheKey, async () => {
+                const res = await fetch(`/api/wnbastats?season=${season}`);
+                if (!res.ok) throw new Error(`wnbastats ${res.status}`);
+                const d = await res.json();
+                ApiCache.set(cacheKey, d, ApiCache.TTL.SHORT);
+                return d;
+            });
+        }
+        const cats = (data && data.categories) || [];
+        const cat = cats.find(c => (c.unit || '').toUpperCase() === 'PPG') || cats[0];
+        const [a, b] = (cat && cat.leaders) || [];
+        if (a && a.value != null) {
+            const gap = b && b.value != null ? a.value - b.value : 0;
+            out.push({ sport: 'wnba', score: _notabilityFromMargin(gap, 8), view: 'wnba-leaders',
+                text: `${a.name} (${a.team}) leads the WNBA with ${a.value} ${cat.unit}${gap > 0 ? ` — ${gap.toFixed(1)} clear of the field` : ''}` });
         }
     } catch (_) { /* honest absence, not a retry loop */ }
     try {
         if (typeof fetchWNBAStandings === 'function' && typeof _wnbaComputePlayoffField === 'function') {
-            const confs = await fetchWNBAStandings(season);
+            const confs = await _homeInflightFetch(`wnbaStandings:${season}`, () => fetchWNBAStandings(season));
             const all = _wnbaComputePlayoffField(confs);
             if (all.length > 8) {
                 const eighth = all[7], ninth = all[8];
@@ -4511,9 +4588,11 @@ function _activePromoMoment() {
 // navigateTo from MLB home to an nfl-* view recreates the D-038 V2 chimera.
 // 'ncaaf' was missing here (D-043 3b fix) — a promo CTA routing to any
 // ncaaf-* view would silently fail to switch AppState.currentSport.
+// 'ncaab'/'wnba' were missing too (home redesign Phase 4, 2026-09-08) — same
+// bug, just never hit yet since no promo moment has pointed at either sport.
 function _hmGo(view) {
     const sport = view.split('-')[0];
-    if (['mlb', 'nfl', 'nhl', 'ncaaf'].includes(sport) && AppState.currentSport !== sport) {
+    if (['mlb', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'wnba'].includes(sport) && AppState.currentSport !== sport) {
         AppState.currentSport = sport;
         if (typeof _applySportUI === 'function') _applySportUI(sport);
     }

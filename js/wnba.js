@@ -510,6 +510,14 @@ function displayWNBAPlayerDetail(data) {
     if (!bio.name) { grid.innerHTML = _wnbaErr('Player not found.', 'displayWNBALeaders'); return; }
     if (window.setBreadcrumb) setBreadcrumb('wnba-leaders', _escHtml(bio.name));
 
+    // Home redesign Phase 4 (2026-09-08) -- see the matching NCAAF comment
+    // (js/ncaaf.js, displayNCAAFPlayerDetail): NCAAF/WNBA player views never
+    // fed Recently Viewed, unlike MLB/NFL/NBA.
+    if (data.id && typeof addRecent === 'function') addRecent({
+        id: data.id, sport: 'wnba', type: 'player', name: bio.name,
+        sub: `${bio.team || '—'} · ${bio.pos || '—'}`, badge: 'WNBA', action: null,
+    });
+
     const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.wnba && SPORTS_META.wnba.accent) || '#f5580a';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';

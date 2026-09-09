@@ -930,6 +930,16 @@ function displayNCAAFPlayerDetail(data) {
     if (!bio.name) { grid.innerHTML = _ncaafErr('Player not found.', 'displayNCAAFLeaders'); return; }
     if (window.setBreadcrumb) setBreadcrumb('ncaaf-leaders', _escHtml(bio.name));
 
+    // Home redesign Phase 4 (2026-09-08) -- NCAAF/WNBA player views never fed
+    // Recently Viewed, unlike MLB/NFL/NBA (js/mlb.js, js/search.js,
+    // js/playerDetail.js all call addRecent from their own player-detail
+    // render, not just from search) -- a real, silent gap, not a deliberate
+    // scope decision.
+    if (data.id && typeof addRecent === 'function') addRecent({
+        id: data.id, sport: 'ncaaf', type: 'player', name: bio.name,
+        sub: `${bio.team || '—'} · ${bio.pos || '—'}`, badge: 'NCAAF', action: null,
+    });
+
     const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';
