@@ -34,11 +34,31 @@ const NFL_NGS_MIN_SEASON     = 2016;  // Next Gen Stats depth
 // the Super Bowl has been held in February every year since the league
 // last moved off a January date — day<=14 clears every actual Super Bowl
 // Sunday in the modern era without needing a lookup table.
+//
+// 2026-09-09: that "Thursday after Labor Day" premise turned out wrong for
+// the real 2026 schedule -- the actual opener landed on Wednesday, a day
+// before the heuristic's own day<=8 cutoff assumed. The boundary still
+// happened to compute the right phase that particular day (luck, not
+// correctness), but it's proof the calendar can't be fully trusted: the
+// league can and does shift the exact opener, and a hardcoded day-of-month
+// has no way to know. _nflRealSeasonType (below) is filled in by
+// fetchNFLScoreboard from ESPN's own `season.type` on the FIRST real fetch
+// of the current in-season window, and takes priority over the calendar
+// guess for the Aug-Dec range once available. The calendar still owns
+// Jan/Feb/offseason detection outright -- season.type isn't a reliable
+// signal for "no games exist at all" during the true Mar-Jul gap (the
+// default no-date scoreboard query may just describe next season's
+// preseason rather than "nothing"), so real data is deliberately not
+// consulted there.
+let _nflRealSeasonType = null; // 1=preseason, 2=regular, 3=postseason; null until a real fetch has told us
 function _nflSeasonPhase() {
     const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
     if (m === 1) return 'postseason';
     if (m === 2 && day <= 14) return 'postseason';
     if ((m === 2 && day > 14) || (m >= 3 && m <= 7)) return 'offseason';
+    if (_nflRealSeasonType === 1) return 'preseason';
+    if (_nflRealSeasonType === 2) return 'regular';
+    if (_nflRealSeasonType === 3) return 'postseason';
     if (m === 8 || (m === 9 && day <= 8)) return 'preseason';
     return 'regular';
 }
@@ -166,6 +186,15 @@ async function fetchNFLScoreboard(opts = {}) {
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
     const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT);
+    // Only trust this response for _nflRealSeasonType when it's genuinely
+    // "whatever ESPN considers current right now" -- an explicit historical
+    // week/seasontype browse (opts.seasontype/opts.week set) describes
+    // whatever season that specific query asked for, not necessarily the
+    // real current phase, and caching it would risk overriding a correct
+    // value with a stale one from browsing a past or future week.
+    if (!opts.seasontype && !opts.week && [1, 2, 3].includes(data.season?.type)) {
+        _nflRealSeasonType = data.season.type;
+    }
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;

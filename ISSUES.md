@@ -10,7 +10,9 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 | ID | File | Description |
 |---|---|---|
-| P2-007 | js/highlightCard.js (data) | NFL Highlight Card Studio player picker for at least one game (Aug 21 NYJ@PIT) lists college-football names (Cade Klubnik, Drew Allar, Will Howard, Jack Sawyer) instead of NFL rosters — found 2026-08-22 during the layout-bug repro below, not yet root-caused. |
+| — | — | (none currently open) |
+
+Historical detail (P2-007, NFL Highlight Card Studio showed college-football names for one Aug 21 preseason game): investigated 2026-09-09, not fixed because no code-level cause could be found or reproduced — see the full writeup below (retained rather than deleted, since "investigated, no bug found here" is a real, useful finding, not a resolved fix). Row removed from the active table per this file's own house rule; full detail below.
 
 Historical detail (P2-006, Highlight Card Studio "completely bugged"): closed and live-verified 2026-08-16 — root cause was NOT Highlight Card Studio itself but a shared `js/shareCard.js` bug (`navigator.share()` failures other than user-cancel discarded an already-rendered PNG instead of falling back to download), affecting all 5 card-export call sites site-wide. Row deleted per this file's own house rule; full detail kept in DECISIONS.md D-101.
 
@@ -1950,3 +1952,40 @@ Relay's Phase 6 data-sourcing audit (DECISIONS.md D-117) confirms a real, cited,
 **Not touched:** `updateMLBTicker`'s identical pregame-exclusion pattern was deliberately left alone — MLB's daily game volume makes the exclusion the right call there, unlike NFL.
 
 **Escalation:** none — found and fixed same session, ahead of tonight's real kickoff.
+
+---
+
+## NFL season-phase model hardened against calendar drift: now prefers ESPN's real `season.type` over the hardcoded day-of-month guess
+
+**Contributor:** (owner follow-up from the same-day NFL workflow audit) | **Date:** 2026-09-09
+
+**Background:** the earlier audit this session (see the NFL ticker fix above) flagged `_nflSeasonPhase()`'s preseason→regular boundary (`js/nfl.js`) as fragile: it's a hardcoded `m === 9 && day <= 8` calendar cutoff, justified by a comment asserting the season opener is "always the Thursday after Labor Day." Live ESPN data pulled this session showed the real 2026 opener is Wednesday Sept 9 — a day earlier than that assumption. At the time this was flagged, the calendar heuristic still happened to compute the correct phase for today by coincidence (confirmed against ESPN's real `season.type` field, which also reported "regular" for today) — so there was no active, currently-wrong output, just a latent correctness-by-luck risk for any future year where the league shifts the opener enough to actually cross the hardcoded boundary.
+
+**Fix:** `js/nfl.js` gained `_nflRealSeasonType` (module-level, starts `null`), populated by `fetchNFLScoreboard()` from ESPN's own `data.season.type` (1=preseason, 2=regular, 3=postseason) — but only on a genuinely-default call (`!opts.seasontype && !opts.week`), so browsing an explicit past/future week never overwrites the real current value with a historical one. `_nflSeasonPhase()` now checks `_nflRealSeasonType` first for the Aug–Dec range (where the calendar guess is fragile) before falling back to the day-of-month heuristic, which now only matters before any scoreboard fetch has resolved (first paint) or during a session where NFL data was never fetched at all. January/February/offseason detection is untouched and still purely calendar-based — `season.type` isn't a reliable "no games exist at all" signal during the true March–July gap (a default no-date scoreboard query there may just describe the *next* season's preseason rather than nothing), so real data is deliberately never consulted for that range.
+
+**Verified:** `node --check` clean. Not independently re-verified against a live scoreboard fetch this session beyond the earlier audit's own confirmation that ESPN's `season.type` is `2` (regular) right now, matching the code's output both before and after this change — this fix doesn't alter today's behavior, it changes what happens in a future year where the calendar guess and reality diverge. `sw.js` CACHE_NAME bumped v262 → v263.
+
+**Escalation:** none — a durability hardening pass on a currently-correct heuristic, not an active-bug fix.
+
+---
+
+## Investigated: NFL Highlight Card Studio's college-football-names bug (P2-007) — no code-level cause found, could not reproduce
+
+**Contributor:** (owner follow-up request) | **Date:** 2026-09-09
+
+**What was investigated:** ISSUES.md's P2-007 row (open since 2026-08-22, never root-caused): the NFL Highlight Card Studio's player picker showed college-football names (Cade Klubnik, Drew Allar, Will Howard, Jack Sawyer) for at least one real NFL preseason game (Aug 21, NYJ@PIT) instead of that game's actual NFL rosters.
+
+**Why it can't be reproduced now:** that specific game is long final; re-fetching its box score today would return its real, correct, final data, not whatever state existed when the bug was observed on 8/22. No screenshot, raw API response, or fuller session log from the original discovery survived in this repo — the P2-007 row's own text references "the layout-bug repro below," but whatever fuller writeup that pointed to has since been deleted (most likely once its own, separate bug was fixed and the row removed per this file's house rule), leaving a dangling reference with no recoverable detail.
+
+**What was ruled out, tracing every path a wrong-sport name could enter:**
+- `functions/api/nfl.js` (the one Pages Function both Highlight Card Studio data paths go through) has `ESPN_NFL` hardcoded to the NFL host (`site.web.api.espn.com/.../football/nfl`) — architecturally incapable of returning NCAAF data regardless of any query parameter, including a malformed or wrong `event` id.
+- Both entry paths into the Studio's player picker were traced to their source: the "recent games" list (`fetchNFLScoreboard()`, no preset) reads `ev.id` straight from the same NFL-host `/scoreboard` response; the preset path (`openNFLHighlightCardForGame`, the "Create Highlight Card" button inside the live game viewer) has exactly one call site, passing `_nlg.eventId`, which is only ever set by `showNFLGame(eventId)` from real NFL route dispatch. Neither path has a point where an NCAAF id could substitute for an NFL one.
+- `_hcNflPickGame` fully resets `_hcNflState` (side/group/athleteIdx/player/selectedStats) on every new game selection — no stale-player carryover from a previously viewed game.
+- `espnNFLFetch`'s client-side cache key is sport-prefixed (`nfl:${path}:${params}`) — no plausible collision with an NCAAF-prefixed cache entry.
+- A full-repo grep for the four reported player names (Klubnik/Allar/Howard/Sawyer) returned zero matches anywhere — ruling out a leftover hardcoded test fixture or mock data path.
+
+**Most likely explanation, unconfirmed:** a one-off ESPN-side data anomaly specific to that one game on that one date. Aug 21 sits in the middle of NFL preseason roster-cut week, when ESPN's own athlete-id mapping is known to have real, if uncommon, glitches (wrong names/headshots attached to a box score stat line) driven by the volume of roster transactions in a short window — not something any client-side code here could detect or correct without a hardcoded "here's what a real NFL player name looks like" validator, which doesn't exist and isn't practical to build reliably.
+
+**Not fixed — nothing found to fix.** If this recurs, the fastest path to a real root cause is capturing the raw response from `/api/nfl?path=/summary&event={id}` for the affected game while the bug is actively reproducible (browser Network tab, or a temporary `Logger.debug` of the raw payload) — a live sample is the one thing this investigation couldn't get.
+
+**Escalation:** none — investigated and reported honestly as inconclusive, not silently closed.
