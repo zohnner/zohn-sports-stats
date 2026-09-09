@@ -209,12 +209,40 @@ function _nlgBroadcastOddsLine(data, state) {
     return parts.join(' · ');
 }
 
+// "Kicks off in 1h 12m" -- see _nlgRenderHeader's call site for why this is
+// computed fresh per-render rather than a live-ticking interval. Rounds down
+// to the minute (a countdown that's off by up to 60s reads fine; a separate
+// seconds-precision timer would not be worth the added complexity here).
+function _nlgKickoffCountdown(dateStr) {
+    if (!dateStr) return '';
+    const diffMs = new Date(dateStr).getTime() - Date.now();
+    if (diffMs <= 0) return '';
+    const totalMin = Math.floor(diffMs / 60000);
+    const h = Math.floor(totalMin / 60), m = totalMin % 60;
+    if (h === 0 && m === 0) return 'Kicks off any moment';
+    const parts = [];
+    if (h > 0) parts.push(`${h}h`);
+    parts.push(`${m}m`);
+    return `Kicks off in ${parts.join(' ')}`;
+}
+
 function _nlgRenderHeader(comp, home, away) {
     const headerEl = document.querySelector('.nlg-header');
     if (!headerEl) return;
     const st = (comp.status && comp.status.type) || {};
     const state = st.state || 'post';
     const live = state === 'in';
+    // Kickoff countdown (2026-09-09): pregame previously showed only a
+    // static date/time string with no sense of "how soon" -- for a fan
+    // sitting on the page in the final stretch before a marquee opener,
+    // that's the one number that actually matters. Computed fresh on each
+    // render rather than a separate ticking interval: the pregame poll
+    // already re-renders this header every 60s (NLG_PREGAME_POLL_MS), so
+    // the countdown self-refreshes on that same cadence with zero new
+    // timers to create or clean up. Omits itself once kickoff has actually
+    // passed (ESPN's own state flip lags a live poll by up to 60s, and a
+    // negative countdown reads as broken, not exciting).
+    const countdown = state === 'pre' ? _nlgKickoffCountdown(comp.date) : '';
     const statusText = st.shortDetail || st.detail || (state === 'pre' ? 'Scheduled' : 'Final');
     const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
 
@@ -283,6 +311,7 @@ function _nlgRenderHeader(comp, home, away) {
           ${teamBlock(away, 'away')}
           <div class="nlg-center">
             <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
+            ${countdown ? `<div class="nlg-countdown">${_escHtml(countdown)}</div>` : ''}
             <div class="nlg-vs">@</div>
           </div>
           ${teamBlock(home, 'home')}

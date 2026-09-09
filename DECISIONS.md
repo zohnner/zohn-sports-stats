@@ -2845,3 +2845,18 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean on all three changed files. Stat Leaders season note live-verified on both NFL (shows "(2025 season)") and NCAAF (shows nothing, correctly). NCAAF ticker fix live-verified end to end against the real production data flow. NCAAB's fix is code-reviewed and syntax-checked but not live-triggerable today (no NCAAB games exist to test against until November) — flagged honestly, not claimed as live-verified. `sw.js` CACHE_NAME bumped v265 → v266.
 
 **Escalation:** none — found and fixed same session, continuing the pre-kickoff audit.
+
+## D-145 — Pre-kickoff audit round 2: Injury Report and Highlight Card Studio checked clean against real data; live game viewer gains a kickoff countdown
+
+**Status:** shipped | **Contributors:** Claude (continued pre-kickoff audit, owner direction to keep verifying/improving) | **Date:** 2026-09-09, ~1h15m before real kickoff
+
+**Checked clean, no code changes:**
+- **NFL Injury Report** (`js/nfl.js`, `loadNFLInjuries`/`displayNFLInjuries`) — live-screenshotted against the real 366-entry league-wide report. One entry looked wrong at a glance (Patrick Mahomes, "Knee - ACL / Surgery," listed only "Questionable" rather than Out/IR) — checked directly against Sleeper's live API rather than assumed: confirmed `injury_status: "Questionable"` is exactly what Sleeper's own data currently says for that player, byte for byte. Not a code bug — the site correctly passes through whatever the upstream source reports, however implausible-looking; same conclusion as this session's earlier P2-007 investigation (verify against real data before assuming a display bug).
+- **Highlight Card Studio** (`js/highlightCard.js`) — re-verified end to end against tonight's real game; correctly shows "No completed games this week yet" since no 2026 games have finished.
+- **Pregame preview at true mobile width (390px)** — DOM-measured (`scrollWidth`/`clientWidth`, not just screenshotted) zero overflow anywhere in `.nlg-wrap` across all six pregame cards (Win Projection, Odds, Recent Form, Injury Report, News, Fantasy Watch). Visually clean and legible in the screenshot too.
+
+**Shipped: kickoff countdown.** The pregame header showed only a static date/time string ("9/9 - 8:20 PM EDT") with no sense of how soon kickoff actually is — for a fan sitting on the page in the final stretch before a season opener, that's the one number that matters most. New `_nlgKickoffCountdown(dateStr)` (`js/nflLiveGame.js`) renders "Kicks off in 1h 18m" (or "Kicks off any moment" in the final minute) below the status line, in accent color, and disappears once kickoff has actually passed rather than showing a negative countdown (ESPN's own state flip can lag a live poll by up to 60s). Deliberately computed fresh on every render rather than a new ticking interval: the pregame view already re-renders every 60s (`NLG_PREGAME_POLL_MS`, the existing pregame poll cadence), so the countdown self-refreshes on that same cycle with no new timer to create or clean up.
+
+**Verified:** `node --check` clean. Live-screenshotted against the real SEA@NE pregame page — countdown read "Kicks off in 1h 18m," matching real elapsed time to the real 8:20 PM ET kickoff. `sw.js` CACHE_NAME bumped v266 → v267.
+
+**Escalation:** none — continuing the pre-kickoff audit/improvement pass ahead of tonight's real game.
