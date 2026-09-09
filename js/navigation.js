@@ -1018,6 +1018,7 @@ function _loadFromHash() {
     const ncaafGameMatch     = hash.match(/^ncaaf-game-(\d+)$/);
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
+    const ncaabGameMatch     = hash.match(/^ncaab-game-([A-Za-z0-9]+)$/);
 
     if (playerMatch) {
         _restorePlayerDetail(parseInt(playerMatch[1]));
@@ -1063,6 +1064,10 @@ function _loadFromHash() {
         AppState.currentSport = 'wnba';
         _applySportUI('wnba');
         navigateTo('wnba-game-' + wnbaGameMatch[1], false);
+    } else if (ncaabGameMatch) {
+        AppState.currentSport = 'ncaab';
+        _applySportUI('ncaab');
+        navigateTo('ncaab-game-' + ncaabGameMatch[1], false);
     } else if (ncaafTeamMatch) {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');

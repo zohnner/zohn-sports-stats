@@ -559,140 +559,31 @@ window.displayWNBALeaders     = displayWNBALeaders;
 window.showWNBAPlayer         = showWNBAPlayer;
 window.displayWNBAPlayerDetail = displayWNBAPlayerDetail;
 
-// ── Live/Final Game panel (D-092 follow-up #2) ────────────────
-// Field-shape note (live-verified 2026-08-10, event 401857134; RE-VERIFIED
-// and CORRECTED 2026-08-12 against real live/final events 401857138 and
-// 401857137 in production): unlike NFL's /summary, WNBA's summary response
-// has NO top-level header/competitions block with score/period/clock — it
-// starts straight at boxscore. Score/live state must come from the
-// scoreboard event object instead (already fetched by fetchWNBAScoreboard,
-// cached in AppState.wnbaGames).
-//
-// CORRECTION: the original build assumed boxscore.teams[].statistics and
-// boxscore.leaders[] were season averages reused inside the summary
-// endpoint. Live-verifying against real in-progress and final games proved
-// that wrong — boxscore.teams[].statistics is genuine THIS-GAME team box
-// score data (fieldGoalPct, threePointFieldGoalPct, totalRebounds, assists,
-// steals, blocks, turnovers, fouls — real per-game totals, e.g. a live
-// 26-57 FG / 46% line that matched the live score on screen). There is no
-// "avgPoints"/"avgRebounds"/etc field in this response at all — that was
-// an unverified assumption from the original data-depth check, never
-// confirmed against the real field names before the first build shipped.
-// boxscore.leaders[] IS empty on every real event checked (both a live and
-// a final game) — not season data, just genuinely absent — so the
-// Season/Team Leaders section was removed rather than kept as dead code
-// that can never render.
-const _wnbaGame = { id: null, timer: null };
-
+// ── Live/Final Game panel (D-092 follow-up #2; rebuilt onto the shared
+// ── basketball live-game viewer 2026-09-08 — see js/bballLiveGame.js) ──
+// Field-shape note SUPERSEDED 2026-09-08: this comment previously claimed
+// WNBA's /summary has "NO top-level header/competitions block" and that
+// boxscore.leaders[] is "empty on every real event checked" — a fresh
+// live fetch against a real completed game (event 401857180) found BOTH
+// claims wrong. header.competitions[0] carries a full score/status/
+// linescore/record block per competitor, and leaders[] is populated with
+// real points/assists/rebounds categories, same shape NFL's /summary
+// uses. See js/bballLiveGame.js's header comment for the full re-check.
+// boxscore.teams[].statistics being genuine this-game data (not season
+// averages) is the one part of the original finding that still holds.
 async function fetchWNBAGameSummary(eventId) {
     const res = await fetch(`/api/wnba?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!res.ok) throw new Error('summary ' + res.status);
     return res.json();
 }
 
-function _wnbaGameStop() { if (_wnbaGame.timer) { clearInterval(_wnbaGame.timer); _wnbaGame.timer = null; } }
-
-async function _wnbaFindGame(id) {
-    const cached = (AppState.wnbaGames || []).find(g => String(g.id) === String(id));
-    if (cached) return cached;
-    const games = await fetchWNBAScoreboard();
-    AppState.wnbaGames = games;
-    return games.find(g => String(g.id) === String(id)) || null;
-}
-
-async function showWNBAGame(id) {
-    _wnbaGameStop();
-    _wnbaGame.id = id;
-    AppState.currentView = 'wnba-game-' + id;
-    const grid = document.getElementById('playersGrid');
-    if (!grid) return;
-    grid.className = 'player-detail-container';
-    grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('wnba-scores', 'Game');
-    let game, summary;
-    try {
-        [game, summary] = await Promise.all([_wnbaFindGame(id), fetchWNBAGameSummary(id)]);
-    } catch (err) {
-        Logger.warn('WNBA game load failed', err, 'WNBA');
-        grid.innerHTML = `<div class="nfl-offseason"><p class="nfl-offseason-text">Couldn't load this game.</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="showWNBAGame('${_escHtml(id)}')">Retry</button></div></div>`;
-        return;
-    }
-    if (!game) {
-        grid.innerHTML = `<div class="nfl-offseason"><p class="nfl-offseason-text">Game not found.</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('wnba-scores')">Back to scores</button></div></div>`;
-        return;
-    }
-    _wnbaRenderGamePanel(game, summary);
-    if (game.isLive) {
-        _wnbaGame.timer = setInterval(async () => {
-            if (AppState.currentView !== 'wnba-game-' + id) { _wnbaGameStop(); return; }
-            try {
-                const freshGame = await _wnbaFindGame(id);
-                const freshSummary = await fetchWNBAGameSummary(id);
-                if (freshGame) _wnbaRenderGamePanel(freshGame, freshSummary);
-                if (freshGame && !freshGame.isLive) _wnbaGameStop();
-            } catch { /* keep last good render on a transient poll failure */ }
-        }, 30_000);
-    }
-}
-
-function _wnbaSeasonStatRow(label, homeStat, awayStat) {
-    return `<div class="detail-row"><span class="detail-value">${_escHtml(awayStat)}</span><span class="detail-label">${_escHtml(label)}</span><span class="detail-value">${_escHtml(homeStat)}</span></div>`;
-}
-
-function _wnbaRenderGamePanel(game, summary) {
-    const grid = document.getElementById('playersGrid');
-    if (!grid) return;
-    const pillLbl = game.isLive ? 'LIVE' : game.isFinal ? 'FINAL' : (game.statusText || 'Scheduled');
-    const pillCls = game.isLive ? 'live' : game.isFinal ? 'final' : 'sched';
-
-    const teamCol = (t, side) => `
-        <div class="hgc-row" style="justify-content:${side === 'away' ? 'flex-start' : 'flex-end'};gap:0.6rem">
-            ${side === 'home' ? `<span class="hgc-score${game.isFinal && t.winner ? ' hgc-score--win' : ''}" style="font-size:2rem">${(game.isFinal || game.isLive) ? t.score : ''}</span>` : ''}
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:44px;height:44px">` : ''}
-            <span class="hgc-team" style="font-size:1.05rem">${_escHtml(t.name || t.abbr)}</span>
-            ${side === 'away' ? `<span class="hgc-score${game.isFinal && t.winner ? ' hgc-score--win' : ''}" style="font-size:2rem">${(game.isFinal || game.isLive) ? t.score : ''}</span>` : ''}
-        </div>`;
-
-    const header = `<div class="player-detail-header">
-        <div class="detail-header-bar">
-            <button onclick="navigateTo('wnba-scores')" class="back-button">← Scores</button>
-            <span></span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.5rem 0">
-            ${teamCol(game.awayTeam, 'away')}
-            <div style="text-align:center">
-                <span class="ticker-status-pill ticker-status-pill--${pillCls}">${_escHtml(pillLbl)}</span>
-            </div>
-            ${teamCol(game.homeTeam, 'home')}
-        </div>
-    </div>`;
-
-    // Team Box Score — boxscore.teams[].statistics is real this-game data
-    // (confirmed live 2026-08-12 against real events — see the correction
-    // note above). No "points" line: team scores are already in the header.
-    let comparison = '';
-    const bxTeams = (summary && summary.boxscore && summary.boxscore.teams) || [];
-    if (bxTeams.length === 2) {
-        const away = bxTeams.find(t => t.homeAway === 'away') || bxTeams[0];
-        const home = bxTeams.find(t => t.homeAway === 'home') || bxTeams[1];
-        const wantStats = [
-            ['fieldGoalPct', 'FG%'], ['threePointFieldGoalPct', '3P%'], ['freeThrowPct', 'FT%'],
-            ['totalRebounds', 'REB'], ['assists', 'AST'], ['steals', 'STL'], ['blocks', 'BLK'], ['turnovers', 'TO'],
-        ];
-        const statVal = (team, name) => { const s = (team.statistics || []).find(x => x.name === name); return s ? s.displayValue : '—'; };
-        const rows = wantStats.map(([n, l]) => _wnbaSeasonStatRow(l, statVal(home, n), statVal(away, n))).join('');
-        comparison = detailSection({ title: 'Team Box Score', body: `<div class="player-details detail-bio-wide">${rows}</div>` });
-    }
-
-    const venue = (summary && summary.gameInfo && summary.gameInfo.venue) || null;
-    const broadcasts = (summary && summary.gameInfo && summary.gameInfo.broadcasts) || [];
-    const infoParts = [];
-    if (venue) infoParts.push(`${_escHtml(venue.fullName || '')}${venue.address ? ` · ${_escHtml(venue.address.city || '')}, ${_escHtml(venue.address.state || '')}` : ''}`);
-    if (broadcasts.length) infoParts.push(broadcasts.map(b => b.media && b.media.shortName).filter(Boolean).map(_escHtml).join(', '));
-    const infoNote = infoParts.length ? `<p class="detail-note" style="margin-top:0.75rem">${infoParts.join(' · ')}</p>` : '';
-
-    grid.innerHTML = header + comparison + infoNote;
-}
+// Full tabbed live-game dashboard now lives in js/bballLiveGame.js, shared
+// with NCAAB — see that file's header comment for the live-data findings
+// (score/status header, leaders[], plays[], winprobability[] all present
+// and populated on WNBA's /summary, contradicting D-092 Resolution 6's
+// original "no header block, empty leaders" finding) that replaced the old
+// flat Team-Box-Score-only panel this function used to render directly.
+async function showWNBAGame(id) { return _blgShow('wnba', id); }
 
 window.fetchWNBAGameSummary = fetchWNBAGameSummary;
 window.showWNBAGame         = showWNBAGame;

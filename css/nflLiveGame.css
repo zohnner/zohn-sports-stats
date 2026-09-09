@@ -45,6 +45,12 @@
 .nlg-ts-h { text-align: left; font-weight: 700; color: var(--text-primary); }
 .nlg-ts-l { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
 .nlg-bx { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; padding: 0.4rem 0.8rem 0.8rem; }
+/* Grid items default to min-width:auto (not 0), so a child that's wider than
+   its track — .blg-bx-scroll's min-width:max-content, added for basketball's
+   14-column box score above — blows out past the 1fr track into whatever
+   sits next to it instead of scrolling internally. min-width:0 here is what
+   lets that child's own overflow-x:auto actually take effect. */
+.nlg-bx > * { min-width: 0; }
 .nlg-bx-team-title { font-weight: 800; font-size: 0.78rem; color: var(--accent); margin-bottom: 0.3rem; }
 .nlg-bx-head { display: flex; gap: 0.25rem; font-size: 0.58rem; text-transform: uppercase; color: var(--text-subtle); padding: 0.3rem 0 0.15rem; border-bottom: 1px solid var(--border-subtle); margin-top: 0.4rem; }
 .nlg-bx-row { display: flex; gap: 0.25rem; font-size: 0.72rem; padding: 0.2rem 0; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
@@ -57,6 +63,17 @@
 .nlg-bx-name { color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 @media (min-width: 640px) { .nlg-bx-head span:first-child, .nlg-bx-name { flex-basis: 112px; } }
 .nlg-loading, .nlg-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+
+/* Basketball box score (js/bballLiveGame.js) has ~14 flat stat columns in one
+   table, wider than any single NFL stat group (passing/rushing/receiving max
+   out around 6-9) — the shared .nlg-bx-row's flex:1 1 0/min-width:0 columns
+   above shrink to nothing at that count and wrap mid-value instead of
+   overflowing. Scoped to .blg-bx-scroll so NFL/NCAAF's own box score (which
+   fits fine at the shared flex sizing) is untouched: gives every stat column
+   a fixed floor and scrolls the row horizontally instead of wrapping it. */
+.blg-bx-scroll { overflow-x: auto; }
+.blg-bx-scroll .nlg-bx-head, .blg-bx-scroll .nlg-bx-row { min-width: max-content; }
+.blg-bx-scroll .nlg-bx-head span:not(:first-child), .blg-bx-scroll .nlg-bx-row span:not(.nlg-bx-name) { flex: 0 0 34px; min-width: 34px; white-space: nowrap; }
 
 /* ── D-105: Live Field Viewer (Gamecast-style field position graphic) ──
    Team-color end zones, first-down marker, ball spot, red-zone shading,

@@ -101,12 +101,26 @@ function _ncaabGameCard(g) {
     const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
         : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
         : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}">
+    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="showNCAABGame('${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')showNCAABGame('${_escHtml(String(g.id))}')">
         ${row(g.awayTeam)}
         ${row(g.homeTeam)}
         <div class="hgc-card-footer">${pill}</div>
     </div>`;
 }
+
+// Live-game dashboard lives in js/bballLiveGame.js, shared with WNBA — see
+// that file's header comment for the live-verified /summary shape both
+// sports share (score/status header, leaders[], flat plays[],
+// winprobability[], standings). NCAAB had no game-detail route at all
+// before this — score cards above were previously not clickable.
+async function fetchNCAABGameSummary(eventId) {
+    const res = await fetch(`/api/ncaab?path=/summary&event=${encodeURIComponent(eventId)}`);
+    if (!res.ok) throw new Error('summary ' + res.status);
+    return res.json();
+}
+async function showNCAABGame(id) { return _blgShow('ncaab', id); }
+window.fetchNCAABGameSummary = fetchNCAABGameSummary;
+window.showNCAABGame         = showNCAABGame;
 
 async function displayNCAABScores() {
     const grid = document.getElementById('playersGrid');
@@ -176,6 +190,7 @@ function updateNCAABTicker(games) {
 
 function _renderNCAABView(view) {
     if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
+    if (view.startsWith('ncaab-game-')) { showNCAABGame(view.slice('ncaab-game-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'ncaab-standings': displayNCAABStandings(); break;
