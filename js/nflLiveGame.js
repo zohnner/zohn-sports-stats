@@ -253,15 +253,29 @@ function _nlgRenderHeader(comp, home, away) {
     const sitPossTeamName = possResolves
         ? (String(sit.possession) === String(homeTeamId) ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name))
         : null;
-    const sitLine = sit
-        ? `<div class="nlg-situation">
-             ${sitPossTeamName ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sit.possessionText)}</span>` : '')}
-             ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
-             ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
-           </div>`
-        : '';
     const fieldHtml = sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
         ? _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc)
+        : '';
+    // D-1xx (2026-09-09): live-verified with a synthetic-but-real live
+    // situation that this bar was rendering directly under the field
+    // viewer showing the exact same possession + down/distance the field
+    // viewer's own .fv-topline had just shown a few pixels above it --
+    // pure duplication, no new information, just wasted vertical space.
+    // When the field viewer is present, this bar now carries only what it
+    // doesn't already show (Last Play), and disappears entirely if there's
+    // no last-play text either. Without a field viewer (missing yardLine/
+    // down data -- the only place this info appears at all), it keeps its
+    // original full content.
+    const sitLine = sit
+        ? (fieldHtml
+            ? (sit.lastPlay && sit.lastPlay.text
+                ? `<div class="nlg-situation"><span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span></div>`
+                : '')
+            : `<div class="nlg-situation">
+                 ${sitPossTeamName ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sit.possessionText)}</span>` : '')}
+                 ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
+                 ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
+               </div>`)
         : '';
 
     headerEl.innerHTML = `

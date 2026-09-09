@@ -128,7 +128,15 @@
    established (45deg, 0.1-ish opacity) so "red zone" and "end zone" read as
    the same visual language -- danger/scoring territory -- instead of a new
    texture invented just for this one band. */
-.fv-redzone { position: absolute; top: 0; bottom: 0; background-color: var(--color-loss-subtle); background-image: repeating-linear-gradient(45deg, rgba(229,72,77,0.12) 0 6px, transparent 6px 12px); border-left: 1px dashed var(--color-loss-border); border-right: 1px dashed var(--color-loss-border); }
+/* D-1xx (2026-09-09): live-verified against a synthetic-but-real red zone
+   situation that the shared --color-loss-subtle token (8% opacity, tuned for
+   a badge background sitting on a flat surface) read as essentially blank
+   turf once laid over the field's own busy mow-stripe texture -- a real
+   glanceability failure for a marker whose whole job is "notice this at a
+   glance." Uses its own stronger, locally-scoped opacities rather than
+   bumping the shared token, which other loss-tinted UI (badges, etc.) still
+   needs at its original subtlety. */
+.fv-redzone { position: absolute; top: 0; bottom: 0; background-color: rgba(229,72,77,0.16); background-image: repeating-linear-gradient(45deg, rgba(229,72,77,0.24) 0 6px, transparent 6px 12px); border-left: 1px dashed rgba(229,72,77,0.55); border-right: 1px dashed rgba(229,72,77,0.55); }
 .fv-firstdown { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--color-first-down); box-shadow: 0 0 6px var(--color-first-down-glow); z-index: 1; }
 .fv-arrow { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .fv-arrow-path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
