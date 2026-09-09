@@ -1987,6 +1987,13 @@ main {
     text-transform: uppercase;
 }
 .eyebrow { color: var(--text-muted); }
+/* De-emphasized parenthetical inside an .eyebrow -- e.g. "(2025 season)" on
+   Stat Leaders when the module's self-healing season fallback (found
+   2026-09-09) is showing last season's real numbers because the new
+   season has no accumulated stats yet. Overrides the eyebrow's own
+   uppercase/bold/letter-spacing so it reads as a quiet caveat, not a
+   second shouted label. */
+.sl-eyebrow-note { text-transform: none; font-weight: 500; letter-spacing: normal; }
 .hero-kicker {
     align-self: flex-start;
     color: var(--text-muted);

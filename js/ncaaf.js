@@ -534,13 +534,38 @@ async function displayNCAAFScores() {
     }
 }
 
+// Same fixed ET-offset convention _kickoffLabel (scorebug.js) and NFL's own
+// _nflIsGameToday (js/nfl.js) already use -- reused here for the identical
+// bug this fixes (see below), just for CFB's own scoreboard shape.
+function _ncaafIsGameToday(g) {
+    if (!g.date) return false;
+    const etKey = d => { const t = new Date(new Date(d).getTime() - 4 * 3600 * 1000); return `${t.getUTCFullYear()}-${t.getUTCMonth()}-${t.getUTCDate()}`; };
+    return etKey(g.date) === etKey(new Date());
+}
+
 function updateNCAAFTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
-    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0);
+    // Found live 2026-09-09, same bug class as NFL's identical fix earlier
+    // this session (js/nfl.js's updateNFLTicker): this only ever counted
+    // already-live/final/scored games, so ANY day without a game already
+    // under way -- which for CFB (Thu-Sat games, not daily) is most of every
+    // week, all season -- fell through to a single hardcoded "season runs
+    // late Aug-Jan" message. That's not just misleading on a random
+    // Wednesday mid-season, it's flatly wrong: confirmed live against the
+    // real NCAAF landing page, showing "SEASON UNDERWAY" and a real week of
+    // upcoming games in the very same page load. A pregame game now counts
+    // once its kickoff is actually today; unlike NFL, this file already had
+    // _ncaafIsOffseason() sitting unused for exactly this distinction, so
+    // the idle message now also tells a true offseason gap (no CFB games of
+    // any kind) apart from a genuine in-season day with nothing live yet.
+    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0 || _ncaafIsGameToday(g));
     if (!scored.length) {
         ticker.classList.add('ticker--idle');
-        ticker.innerHTML = `<div class="ticker__item">No college scores — season runs late Aug–Jan</div>`;
+        const idleMsg = (typeof _ncaafIsOffseason === 'function' && _ncaafIsOffseason())
+            ? 'No college scores — season runs late Aug–Jan'
+            : 'No college football games today — check back soon';
+        ticker.innerHTML = `<div class="ticker__item">${idleMsg}</div>`;
         return;
     }
     const items = [...scored, ...scored]

@@ -3296,8 +3296,25 @@ async function _loadFootballLandingData(sport) {
                 <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
         }).filter(Boolean).join('');
         if (tiles) {
+            // Found live 2026-09-09: /api/nflstats and /api/ncaafstats both
+            // self-healingly fall back to the last completed season when the
+            // just-flipped current season has no accumulated leader data yet
+            // (functions/api/nflstats.js's own documented D-056 pattern) --
+            // exactly the state on a season's actual opening day, when this
+            // module still showed real, substantial full-season numbers
+            // (e.g. "4707 YDS, Matthew Stafford") under a plain "Stat
+            // Leaders" label with nothing marking them as last season's,
+            // not this one. The fallback response already reports which
+            // season it actually used (statsData.season); just wasn't being
+            // read here. Only appends a year when it's genuinely not the
+            // sport's current season, so this changes nothing once real
+            // current-season data exists.
+            const curSeason = sport === 'ncaaf' ? (typeof NCAAF_SEASON !== 'undefined' ? NCAAF_SEASON : null) : (typeof NFL_STATS_SEASON !== 'undefined' ? NFL_STATS_SEASON : null);
+            const statsSeason = statsData && statsData.season;
+            const seasonNote = (curSeason && statsSeason && Number(statsSeason) !== Number(curSeason))
+                ? ` <span class="sl-eyebrow-note">(${_escHtml(String(statsSeason))} season)</span>` : '';
             leadersHtml = `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">Stat Leaders</span><button class="sl-section-link" onclick="navigateTo('${sport}-leaders')">Full leaderboards →</button></div>
+                <div class="sl-section-hdr"><span class="eyebrow">Stat Leaders${seasonNote}</span><button class="sl-section-link" onclick="navigateTo('${sport}-leaders')">Full leaderboards →</button></div>
                 <div class="sl-leaders">${tiles}</div></section>`;
         }
     }

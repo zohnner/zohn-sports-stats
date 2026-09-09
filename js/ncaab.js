@@ -162,10 +162,24 @@ async function displayNCAABScores() {
     }
 }
 
+// Same fixed ET-offset convention as NFL/NCAAF's own *IsGameToday helpers.
+function _ncaabIsGameToday(g) {
+    if (!g.date) return false;
+    const etKey = d => { const t = new Date(new Date(d).getTime() - 4 * 3600 * 1000); return `${t.getUTCFullYear()}-${t.getUTCMonth()}-${t.getUTCDate()}`; };
+    return etKey(g.date) === etKey(new Date());
+}
+
 function updateNCAABTicker(games) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker) return;
-    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0);
+    // Dormant today (NCAAB genuinely has no games until November, so this
+    // filter's gap doesn't currently misfire), but same bug class found and
+    // fixed live in NFL's and NCAAF's tickers this session: counting only
+    // already-live/final/scored games means once the real season starts,
+    // any day with a game still pregame would wrongly fall through to "No
+    // college hoops scores — season starts in November" while a real game
+    // sits hours away. Fixed the same way ahead of ever hitting it live.
+    const scored = (games || []).filter(g => g.isFinal || g.isLive || g.homeTeam.score > 0 || g.awayTeam.score > 0 || _ncaabIsGameToday(g));
     if (!scored.length) {
         // Match the sibling pattern in ncaaf.js/nfl.js/mlb.js: show NCAAB's own
         // idle message. Previously this bailed silently, which left whatever
@@ -173,7 +187,10 @@ function updateNCAABTicker(games) {
         // "season runs late Aug-Jan") sitting in the shared ticker while the
         // user was actually looking at NCAAB — wrong sport, wrong calendar.
         ticker.classList.add('ticker--idle');
-        ticker.innerHTML = '<div class="ticker__item">No college hoops scores — season starts in November</div>';
+        const idleMsg = (typeof _ncaabIsOffseason === 'function' && _ncaabIsOffseason())
+            ? 'No college hoops scores — season starts in November'
+            : 'No college hoops games today — check back soon';
+        ticker.innerHTML = `<div class="ticker__item">${idleMsg}</div>`;
         return;
     }
     const items = [...scored, ...scored]
