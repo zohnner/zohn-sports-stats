@@ -1965,9 +1965,11 @@ The SportStrata YouTube account was deleted for a community-guidelines violation
 
 ---
 
-## `index.html`'s Cloudflare Web Analytics beacon token has never recorded a single event — real traffic is landing under a different, undocumented tag
+## `index.html`'s Cloudflare Web Analytics beacon token has never recorded a single event — real traffic is landing under a different, undocumented tag — ✅ FIXED 2026-09-10 (D-149)
 
-**Contributor:** Claude (found while pulling real traffic numbers) | **Date opened:** 2026-09-09
+**Contributor:** Claude (found while pulling real traffic numbers) | **Date opened:** 2026-09-09 | **Resolved:** 2026-09-10
+
+**Resolution:** owner confirmed the Cloudflare Pages dashboard's Web Analytics toggle is ON — that's the real, independent collection mechanism, confirming D-139's hypothesis. The dead manual snippet in `index.html` is removed (not corrected to the real token — running both at once would double-count every pageview). Separately, and more consequentially: Web Analytics was never going to answer "which sport/page gets traffic" regardless of its token, since it has no custom dimensions and unconfirmed hash-routing SPA support. D-149 built a first-party `page_views` D1 table + `functions/api/track.js` for that instead. Full writeup in `DECISIONS.md` D-149.
 
 Full investigation and numbers in `DECISIONS.md` D-139. Short version: the beacon token in `index.html` (`60aa9975...`, installed 2026-08-08, confirmed via `git log -L` to be the only value that line has ever held) has zero recorded events across its entire history. All of the site's real traffic (1,790 pageviews / 700 sessions over the last 28 days) is attributed to a different site tag (`430aba67...`) that doesn't appear anywhere in this repo. Most likely cause: Cloudflare Pages' own project-level Web Analytics auto-toggle has been silently doing the real collecting this whole time, independent of the manual snippet D-069/D-070 deliberately chose instead.
 

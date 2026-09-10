@@ -462,15 +462,16 @@
         }
     </script>
 
-    <!-- Cloudflare Web Analytics (2026-08-09, live token added 2026-08-09) -- cookieless,
-         no consent banner required (no client-side storage, no cross-site tracking, no
-         fingerprinting). Manually embedded (not the dashboard's auto-injection toggle) so
-         this HTML stays the one source of truth for what loads, same posture as every other
-         script tag in this file. Real site token from the owner's Cloudflare dashboard
-         (Analytics & Logs -> Web Analytics), exact snippet Cloudflare generated -- kept as
-         type="module" rather than switched to defer, matching what Cloudflare actually
-         serves. Already allowlisted in CSP (script-src static.cloudflareinsights.com,
-         connect-src cloudflareinsights.com) in both this file and _headers. -->
-    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "60aa9975c0da47048c59647b1d674718"}'></script>
+    <!-- Cloudflare Web Analytics -- D-139 (2026-09-09) found the manual snippet that used
+         to live here held a dead token with zero recorded events; real collection has been
+         running this whole time via the Cloudflare Pages project's own dashboard-level Web
+         Analytics auto-toggle (confirmed ON 2026-09-10), independent of this file. Removed
+         rather than corrected to the real token -- a manual tag AND the auto-toggle both
+         live would double-count every pageview. The CSP allowance for
+         static.cloudflareinsights.com / cloudflareinsights.com stays in both this file and
+         _headers: the auto-injected script still needs it even though it's no longer visible
+         here as a script tag. See D-149 for the first-party sport/page breakdown this
+         product-level tool can't provide on its own (no custom dimensions, hash-routing
+         support unconfirmed). -->
 </body>
 </html>

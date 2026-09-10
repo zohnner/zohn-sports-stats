@@ -248,6 +248,26 @@ function _closeSportSwitchMenu() {
 
 // ── Core navigation function ─────────────────────────────────
 
+// D-149 — first-party page-view log (functions/api/track.js), the answer to "which
+// sport/page actually gets traffic" that Cloudflare Web Analytics can't give this site
+// (no custom dimensions, and unconfirmed support for the hash-based routing every
+// in-app nav uses). Fire-and-forget via sendBeacon so it never delays rendering (G1).
+// sendBeacon can't set a custom header, so a Blob with an explicit type is what makes
+// the request arrive as JSON on the Function side.
+function _trackPageView(view) {
+    if (typeof navigator === 'undefined' || !navigator.sendBeacon) return;
+    const sport = view === 'home' ? 'home'
+        : view.startsWith('mlb-') ? 'mlb'
+        : view.startsWith('nfl-') ? 'nfl'
+        : view.startsWith('ncaaf-') ? 'ncaaf'
+        : view.startsWith('ncaab-') ? 'ncaab'
+        : view.startsWith('wnba-') ? 'wnba'
+        : view.startsWith('nhl-') ? 'nhl'
+        : 'nba';
+    const blob = new Blob([JSON.stringify({ sport, view })], { type: 'application/json' });
+    navigator.sendBeacon('/api/track', blob);
+}
+
 function navigateTo(view, push = true) {
     if (window.StatsCharts) StatsCharts.destroyAll();
     if (typeof stopLiveGamePolling === 'function') stopLiveGamePolling();
@@ -262,6 +282,7 @@ function navigateTo(view, push = true) {
     document.querySelectorAll(`.nav-tab[data-view="${view}"]`).forEach(t => t.classList.add('active'));
     if (typeof _syncSubNavParents === 'function') _syncSubNavParents(view);
     AppState.currentView = view;
+    _trackPageView(view);
 
     // Restore playersGrid class for non-home views
     const grid = document.getElementById('playersGrid');
