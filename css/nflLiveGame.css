@@ -86,14 +86,29 @@
    only while a real numeric situation is available (see _nlgFieldViewerHtml,
    js/nflLiveGame.js) -- absent for scheduled/final games or if the merged
    /scoreboard fetch fails, never a placeholder/guessed state. */
-.field-viewer { margin: 0 0 0.9rem; perspective: 450px; }
+.field-viewer { margin: 0 0 0.9rem; }
 .fv-topline { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; gap: 0.75rem; }
 .fv-dd { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--text-primary); }
 .fv-poss { font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
 .fv-poss-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; animation: fvPossPulse 1.6s ease-in-out infinite; }
 .fv-poss-logo { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
 @keyframes fvPossPulse { 50% { opacity: 0.4; } }
-.fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; transform: rotateX(22deg); transform-origin: 50% 100%; box-shadow: 0 16px 26px -12px rgba(0,0,0,0.55); }
+/* Deliberately flat, not a rotateX/perspective tilt -- tried and measured
+   (2026-09-09): a real rotateX(22deg) DOES produce a genuine, measurable
+   trapezoid on .fv-field's own box (getBoundingClientRect confirmed the top
+   edge ~7.7% narrower than the bottom, matching the perspective math exactly),
+   but the painted content inside -- the .fv-track mow-stripe background-image,
+   text, ball -- does not get the same perspective-correct warp; only vector
+   box/border edges do. Screenshotted at 22deg and, to rule out "just needs a
+   bigger angle," at an exaggerated 55deg too: the mismatch only got more
+   visible, never resolved -- the yard stripes stayed perfectly parallel while
+   the endzone edges alone kept slanting harder, reading as broken/misaligned
+   rather than 3D. A single ~90px-tall plane also has no room for the
+   row-by-row convergence that actually reads as "receding into depth" --
+   real broadcast field graphics get that from camera perspective on video,
+   not from tilting a flat compact UI bar. Flat matches what ESPN/CBS/NFL.com
+   all actually ship for this exact inline widget. */
+.fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; box-shadow: var(--shadow-md); }
 /* Stadium light: soft overhead glow + top/bottom vignette, layered above every
    child (endzones, turf, ball, arrow -- z-index:3 beats the ball's 2) so the
    whole field reads as lit from above rather than flat-printed. Pure CSS,
@@ -175,7 +190,7 @@
 .fv-key { display: flex; align-items: center; gap: 0.9rem; font-size: 0.6rem; color: var(--text-muted); font-weight: 700; }
 .fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-@media (max-width: 640px) { .field-viewer { perspective: 350px; } .fv-field { height: 76px; transform: rotateX(18deg); } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
+@media (max-width: 640px) { .fv-field { height: 76px; } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }
