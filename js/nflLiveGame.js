@@ -336,7 +336,7 @@ function _nlgRenderHeader(comp, home, away) {
 // only mirroring the DISPLAY position via disp(v) = 100 - v, since
 // yardLine 100 (away's goal) now sits at the visual left edge and
 // yardLine 0 (home's goal) at the visual right edge.
-// Shared perspective-projection constants/helpers (D-1xx, 2026-09-09) --
+// Shared perspective-projection constants/helpers (D-148) --
 // hoisted to module scope, not a per-call closure inside
 // _nlgFieldViewerHtml, so _nlgAnimateFieldMotion (below) can compute the
 // SAME screen coordinates for a "previous" situation without duplicating
@@ -479,7 +479,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
             `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === usedIdx ? ' fv-to-dot--used' : ''}"></div>`).join('');
     };
 
-    // ---- Real perspective, not a CSS rotateX guess (D-1xx, 2026-09-09) ----
+    // ---- Real perspective, not a CSS rotateX guess (D-148) ----
     // A prior attempt tilted the whole .fv-field box with rotateX+perspective
     // and left the turf/lines as a flat painted background. Live-measured
     // (getBoundingClientRect on real screenshots, at both 22deg and an
@@ -595,7 +595,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // drawing them as SVG <image> inside .fv-field3d-svg meant they inherited
     // the SAME non-uniform stretch every yard line/stripe deliberately gets
     // from preserveAspectRatio="none" (that's WHY the trapezoid converges).
-    // A logo genuinely warped into an oval is a real, reported bug (D-1xx,
+    // A logo genuinely warped into an oval is a real, reported bug (D-148,
     // 2026-09-09), and nesting another <svg> does NOT fix it -- SVG
     // transforms compose down the tree, so a nested viewport's own
     // preserveAspectRatio decision is made against ITS OWN local width/height
@@ -655,7 +655,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // same as every other on-field marker below. disp() reverses order (it's
     // a straight 100-minus flip), so the raw [rzLeft,rzRight] interval maps
     // to display-space [disp(rzRight), disp(rzLeft)], not [rzLeft,rzRight]
-    // unconverted -- that was a real bug (D-1xx, 2026-09-09, reported live):
+    // unconverted -- that was a real bug (D-148, reported live):
     // the shading rendered on the mirrored side of the field because this
     // line skipped the same disp() conversion scrimA/fdA below correctly
     // apply, silently reusing raw yardline numbers as if they were already
@@ -774,7 +774,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // matches this file's existing "motion marks a real change the user
 // didn't see happen yet, never a first paint or same-state re-render"
 // convention (see the live badge / tab switch code elsewhere in this file).
-// Reworked (D-1xx, 2026-09-09) from a standalone viewBox="0 0 100 40" nested
+// Reworked (D-148) from a standalone viewBox="0 0 100 40" nested
 // <svg> into a <g> fragment sharing the main field SVG's projected coordinate
 // space -- it now takes proj/disp so the arrow's start/end points land in the
 // exact same perspective grid as the yard lines around it, instead of a flat

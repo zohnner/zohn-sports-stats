@@ -94,7 +94,7 @@
 .fv-poss-logo { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
 @keyframes fvPossPulse { 50% { opacity: 0.4; } }
 /* .fv-field is the OLD flat/div-based field (endzone+track+endzone flex
-   row) -- NFL moved off it to .fv-field3d below (D-1xx, 2026-09-09), but
+   row) -- NFL moved off it to .fv-field3d below (D-148), but
    js/ncaafLiveGame.js's _nclgFieldViewerHtml still emits this exact markup
    and has NOT been ported yet, so this rule (and .fv-endzone/.fv-track/
    .fv-centerlogo/.fv-scrimmage/.fv-redzone/.fv-firstdown/.fv-ball/
@@ -210,7 +210,7 @@
 .fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 @media (max-width: 640px) { .fv-field { height: 76px; } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
-/* NFL's real perspective field (D-1xx, 2026-09-09) -- everything drawn inside
+/* NFL's real perspective field (D-148) -- everything drawn inside
    .fv-field3d-svg is genuine projected geometry computed in JS
    (_nlgFieldViewerHtml, js/nflLiveGame.js), not a texture the browser is
    asked to warp, so the convergence toward the far edge is a fact about the
@@ -223,12 +223,12 @@
 .fv-field3d-svg { display: block; width: 100%; height: 100%; }
 /* Stadium light: same overhead-glow/vignette treatment the old flat .fv-field
    had (see its own ::after above) -- never ported when the field was rebuilt
-   as an SVG (D-1xx, 2026-09-09), so the new field read as flat-printed
+   as an SVG (D-148), so the new field read as flat-printed
    despite everything else about it looking more real. Painted as this
    element's OWN ::after so it sits above the svg AND the endzone/midfield
    <img> logos (all earlier in DOM order) without needing z-index bookkeeping. */
 .fv-field3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 90% at 50% 15%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.28) 100%); }
-/* Team logos live OUTSIDE .fv-field3d-svg on purpose (D-1xx, 2026-09-09) --
+/* Team logos live OUTSIDE .fv-field3d-svg on purpose (D-148) --
    real bug, not a style choice: that SVG's preserveAspectRatio="none" is
    what makes the trapezoid converge, but the SAME non-uniform stretch also
    warped every embedded raster <image> into a visibly distorted oval.
