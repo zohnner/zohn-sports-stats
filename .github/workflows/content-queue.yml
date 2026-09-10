@@ -1,0 +1,40 @@
+name: SportStrata Content Queue
+
+on:
+  # Cron intentionally disabled: the packaged output targets YouTube Shorts,
+  # and that channel was terminated (DECISIONS.md D-137, cause unknown).
+  # Re-add a schedule once the channel-replacement question resolves.
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Target date (YYYY-MM-DD); defaults to yesterday UTC
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-content-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: target-date
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          target_date="$INPUT_DATE"
+          if [ -z "$target_date" ]; then target_date="$(date -u -d 'yesterday' +%F)"; fi
+          echo "value=$target_date" >> "$GITHUB_OUTPUT"
+      - name: Build NFL queue
+        run: python bot/content_engine.py --league nfl --date "${{ steps.target-date.outputs.value }}"
+      - name: Build NCAA Football queue
+        run: python bot/content_engine.py --league ncaaf --date "${{ steps.target-date.outputs.value }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sportstrata-content-queue-${{ steps.target-date.outputs.value }}
+          path: bot/content-queue/
+          if-no-files-found: error
