@@ -635,7 +635,11 @@ function _renderPanel(panel, feed, gamePk) {
         }
         if (_lgSidebarExtrasGamePk !== String(gamePk)) {
             _lgSidebarExtrasGamePk = String(gamePk);
-            _lgFetchSidebarExtras(gamePk, away.id, home.id, away.abbreviation, home.abbreviation);
+            _lgFetchSidebarExtras(gamePk, away.id, home.id, away.abbreviation, home.abbreviation)
+                .catch(err => {
+                    Logger.warn('Sidebar extras fetch failed', err, 'LIVE');
+                    if (_lgSidebarExtrasGamePk === String(gamePk)) _lgSidebarExtrasGamePk = null;
+                });
         }
     }
 }
@@ -1660,8 +1664,15 @@ function _buildWinProb(feed) {
 
     const home = feed.gameData?.teams?.home || {};
     const away = feed.gameData?.teams?.away || {};
-    const homeClr = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
-    const awayClr = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
+    // _barSafeTeamColor swaps to a team's secondary color when the primary
+    // is too low-contrast against the card surface to read as a solid fill
+    // (e.g. PIT/CWS/SD's near-black primaries) — same fix already applied
+    // to the pennant-race bar (js/app.js, 2026-09-08); this bar shares the
+    // identical solid-fill-plus-white-text recipe and had the identical bug.
+    const homeColors = getMLBTeamColors(home.abbreviation);
+    const awayColors = getMLBTeamColors(away.abbreviation);
+    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
+    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--accent)';
     const homePct = Math.round(homeProb * 100);
     const awayPct = 100 - homePct;
 
@@ -2151,65 +2162,105 @@ function _buildLastPlay(feed) {
 // AppState not yet warm, not an edge case (Axiom, D-117 Phase 1 feasibility).
 // Fetched once per game open (gated by _lgSidebarExtrasGamePk), not per poll.
 
+// Each of these three builders now wraps its ENTIRE body (fetch + post-fetch
+// shaping) in one try/catch, not just the fetch — the shaping code (.find/
+// .slice/.map below) used to sit outside the guard, so an unexpected shape
+// (a null AppState.mlbStandings, a divisions array that isn't actually an
+// array) threw past the catch and rejected the async function. That
+// rejection used to reach _lgFetchSidebarExtras's Promise.all below, which
+// fails the WHOLE batch on any single rejection — so one bad team-color
+// lookup or shape mismatch in the standings widget silently wiped out the
+// season series bar and OPS leaders too, permanently (the "already fetched"
+// gate is set before the fetch starts, so it never retried). Fixed here
+// (self-contained failure) and at the batching layer below (Promise.allSettled).
 async function _lgBuildMiniStandings(homeAbbr, awayAbbr) {
     try {
         if (!AppState.mlbStandings) {
             AppState.mlbStandings = await fetchMLBStandingsFull();
         }
+        const divisions = AppState.mlbStandings || [];
+        // Field names confirmed against the real deployed AppState.mlbStandings
+        // shape (live-verified 2026-08-23, gamePk 824799) — teamAbbr/gb, not the
+        // abbreviation/gamesBack names Axiom's feasibility pass assumed by
+        // analogy with the team-object shape used elsewhere in the codebase.
+        const div = divisions.find(d =>
+            (d.teams || []).some(t => t.teamAbbr === homeAbbr || t.teamAbbr === awayAbbr)
+        );
+        if (!div || !(div.teams || []).length) return '';
+
+        const rows = div.teams.slice(0, 5).map(t => {
+            // A borderless solid dot has the identical failure mode as the
+            // win-prob/season-series bars: a near-black primary (PIT/CWS/SD)
+            // just vanishes into the dark card surface.
+            const dotColors = getMLBTeamColors(t.teamAbbr);
+            const clr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(dotColors) : dotColors?.primary) || 'var(--text-muted)';
+            const gb  = t.gb === '-' ? '—' : (t.gb ?? '—');
+            return `<div class="lg-side-row">
+                <span><span class="lg-mini-dot" style="background:${clr}"></span>${_escHtml(t.teamAbbr || '')}</span>
+                <span class="lg-side-val">${t.wins ?? '—'}-${t.losses ?? '—'} · ${gb}</span>
+            </div>`;
+        }).join('');
+
+        return `<div class="lg-side-card">
+            <div class="lg-box-section-title">${_escHtml(div.division || 'Standings')}</div>
+            ${rows}
+        </div>`;
     } catch (err) {
-        Logger.warn('Mini standings fetch failed', err, 'LIVE');
+        Logger.warn('Mini standings failed', err, 'LIVE');
         return '';
     }
-    const divisions = AppState.mlbStandings || [];
-    // Field names confirmed against the real deployed AppState.mlbStandings
-    // shape (live-verified 2026-08-23, gamePk 824799) — teamAbbr/gb, not the
-    // abbreviation/gamesBack names Axiom's feasibility pass assumed by
-    // analogy with the team-object shape used elsewhere in the codebase.
-    const div = divisions.find(d =>
-        (d.teams || []).some(t => t.teamAbbr === homeAbbr || t.teamAbbr === awayAbbr)
-    );
-    if (!div || !(div.teams || []).length) return '';
-
-    const rows = div.teams.slice(0, 5).map(t => {
-        const clr = getMLBTeamColors(t.teamAbbr)?.primary || 'var(--text-muted)';
-        const gb  = t.gb === '-' ? '—' : (t.gb ?? '—');
-        return `<div class="lg-side-row">
-            <span><span class="lg-mini-dot" style="background:${clr}"></span>${_escHtml(t.teamAbbr || '')}</span>
-            <span class="lg-side-val">${t.wins ?? '—'}-${t.losses ?? '—'} · ${gb}</span>
-        </div>`;
-    }).join('');
-
-    return `<div class="lg-side-card">
-        <div class="lg-box-section-title">${_escHtml(div.division || 'Standings')}</div>
-        ${rows}
-    </div>`;
 }
 
-async function _lgBuildMiniLeaders() {
+// Team Leaders (replaces a league-wide OPS Leaders box, 2026-09-10) — the
+// old widget showed the top 5 OPS hitters IN THE ENTIRE LEAGUE, which has
+// no relationship to the two teams actually playing and was frequently the
+// same 5 names on every single game page. This reuses the identical
+// already-fetched AppState.mlbLeaderSplits (zero new fetch), just filtered
+// to each roster instead of taken league-wide — top 2 per team by OPS,
+// same >=100 PA qualifier the league leaderboard itself uses so a small
+// September-callup sample can't outrank a real regular. Reuses
+// _barSafeTeamColor (see _buildWinProb) so a team like PIT/CWS with a
+// near-black primary still reads clearly as a section-title accent color,
+// and .lg-bullpen-team's existing spacing (Bullpen tab) for the two
+// per-team sub-groups.
+async function _lgBuildMiniLeaders(awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
     try {
         if (!AppState.mlbLeaderSplits && typeof _fetchMLBLeaderSplits === 'function') {
             await _fetchMLBLeaderSplits(MLB_SEASON);
         }
+        const hitting = AppState.mlbLeaderSplits?.hitting || [];
+
+        const teamSection = (teamId, abbr) => {
+            const top = hitting
+                .filter(s => s.team?.id === teamId && s.stat?.ops != null && (s.stat.plateAppearances || 0) >= 100)
+                .sort((a, b) => (parseFloat(b.stat.ops) || 0) - (parseFloat(a.stat.ops) || 0))
+                .slice(0, 2);
+            if (!top.length) return '';
+
+            const colors = getMLBTeamColors(abbr);
+            const clr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(colors) : colors?.primary) || 'var(--text-muted)';
+            const rows = top.map(s => `<div class="lg-side-row">
+                <span>${_escHtml(s.player?.fullName || '')}</span>
+                <span class="lg-side-val">${_escHtml(String(s.stat.ops))}</span>
+            </div>`).join('');
+
+            return `<div class="lg-bullpen-team">
+                <div class="lg-box-section-title" style="color:${clr}">${_escHtml(abbr || '')}</div>
+                ${rows}
+            </div>`;
+        };
+
+        const body = teamSection(awayTeamId, awayAbbr) + teamSection(homeTeamId, homeAbbr);
+        if (!body) return '';
+
+        return `<div class="lg-side-card">
+            <div class="lg-box-section-title">Team Leaders — OPS</div>
+            ${body}
+        </div>`;
     } catch (err) {
-        Logger.warn('Mini leaders fetch failed', err, 'LIVE');
+        Logger.warn('Team leaders failed', err, 'LIVE');
         return '';
     }
-    const hitting = AppState.mlbLeaderSplits?.hitting || [];
-    const top = hitting
-        .filter(s => s.stat?.ops != null && (s.stat.plateAppearances || 0) >= 100)
-        .sort((a, b) => (parseFloat(b.stat.ops) || 0) - (parseFloat(a.stat.ops) || 0))
-        .slice(0, 5);
-    if (!top.length) return '';
-
-    const rows = top.map(s => `<div class="lg-side-row">
-        <span>${_escHtml(s.player?.fullName || '')}</span>
-        <span class="lg-side-val">${_escHtml(String(s.stat.ops))}</span>
-    </div>`).join('');
-
-    return `<div class="lg-side-card">
-        <div class="lg-box-section-title">OPS Leaders</div>
-        ${rows}
-    </div>`;
 }
 
 let _lgMiniStandingsHtml   = '';
@@ -2218,12 +2269,29 @@ let _lgSeasonSeriesHtml    = '';
 let _lgSidebarExtrasGamePk = null;
 
 async function _lgFetchSidebarExtras(gamePk, awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
-    const [standingsHtml, leadersHtml, seriesHtml] = await Promise.all([
+    // allSettled, not all — each builder already fails safe to '' internally,
+    // but allSettled means a bug in one (or a genuinely uncaught throw) still
+    // can't blank out the other two just because they were batched together.
+    const results = await Promise.allSettled([
         _lgBuildMiniStandings(homeAbbr, awayAbbr),
-        _lgBuildMiniLeaders(),
+        _lgBuildMiniLeaders(awayTeamId, homeTeamId, awayAbbr, homeAbbr),
         _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr),
     ]);
+    const [standingsHtml, leadersHtml, seriesHtml] = results.map(r => {
+        if (r.status === 'rejected') Logger.warn('Sidebar extra rejected', r.reason, 'LIVE');
+        return r.status === 'fulfilled' ? r.value : '';
+    });
     if (_lgSidebarExtrasGamePk !== String(gamePk)) return; // superseded by a different game
+    // If every widget came back empty, this was very likely a transient
+    // failure (a network blip, a cold-AppState race) rather than "this game
+    // legitimately has nothing to show" — that's implausible for all three
+    // at once. Clear the gate so the next poll tick retries instead of
+    // leaving the sidebar permanently missing these three cards for the
+    // rest of the game.
+    if (!standingsHtml && !leadersHtml && !seriesHtml) {
+        _lgSidebarExtrasGamePk = null;
+        return;
+    }
     _lgMiniStandingsHtml = standingsHtml;
     _lgMiniLeadersHtml   = leadersHtml;
     _lgSeasonSeriesHtml  = seriesHtml;
@@ -2260,8 +2328,12 @@ async function _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr) 
         const total = awayWins + homeWins;
         if (!total) return '';
 
-        const awayClr = getMLBTeamColors(awayAbbr)?.primary || 'var(--text-muted)';
-        const homeClr = getMLBTeamColors(homeAbbr)?.primary || 'var(--text-muted)';
+        // Same low-contrast-primary fix as _buildWinProb above — this bar
+        // uses the identical solid-fill-plus-white-text recipe.
+        const awayColors = getMLBTeamColors(awayAbbr);
+        const homeColors = getMLBTeamColors(homeAbbr);
+        const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--text-muted)';
+        const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--text-muted)';
 
         // Floored, not a straight percentage split — a shutout series (e.g.
         // 1-0) otherwise renders as one full-bleed segment with no visible
@@ -2336,8 +2408,15 @@ function _buildBullpenTab(feed, gamePk) {
     const boxscore = feed.liveData?.boxscore || {};
     const away     = feed.gameData?.teams?.away || {};
     const home     = feed.gameData?.teams?.home || {};
-    const awayClr  = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
-    const homeClr  = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
+    // _barSafeTeamColor here too — this color renders as literal TEXT color
+    // on the dark card surface (the section title itself), not just a fill
+    // behind white text, so a near-black team primary (PIT/CWS/SD) is worse
+    // here than in the bars above: the text would be nearly unreadable, not
+    // just the shape hard to perceive.
+    const awayColors = getMLBTeamColors(away.abbreviation);
+    const homeColors = getMLBTeamColors(home.abbreviation);
+    const awayClr  = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--accent)';
+    const homeClr  = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
     const isFinal  = feed.gameData?.status?.abstractGameState === 'Final';
 
     const usageHtml = _buildBullpenUsageRows(boxscore.teams?.away?.players, away.abbreviation, awayClr)
@@ -2359,7 +2438,15 @@ function _buildBullpenTab(feed, gamePk) {
     return usageHtml + availableHtml;
 }
 
+// Wrapped in one try/catch, same reasoning as _lgFetchSidebarExtras: this
+// runs fire-and-forget from the tab-switch handler with no .catch there, and
+// the "already fetched" gate (_lgBullpenRestGamePk) is set before this call
+// starts — an uncaught throw here would silently leave the rest-availability
+// section permanently blank for the rest of the game. _fetchBullpenRest
+// itself already fails safe internally (always resolves, never rejects), so
+// this guards the post-fetch shaping code below instead.
 async function _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr) {
+  try {
     const [awayRest, homeRest] = await Promise.all([
         _fetchBullpenRest(awayId),
         _fetchBullpenRest(homeId),
@@ -2386,7 +2473,8 @@ async function _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr) {
     );
 
     const renderSide = (restMap, abbr) => {
-        const color  = getMLBTeamColors(abbr)?.primary || 'var(--text-muted)';
+        const colors = getMLBTeamColors(abbr);
+        const color  = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(colors) : colors?.primary) || 'var(--text-muted)';
         const rested = Object.entries(restMap || {})
             .filter(([pid, p]) => p.gs === 0 && p.daysAgo <= 3 && !usedTodayIds.has(Number(pid)))
             .sort((a, b) => a[1].daysAgo - b[1].daysAgo);
@@ -2405,6 +2493,10 @@ async function _lgFetchBullpenRest(gamePk, awayId, homeId, awayAbbr, homeAbbr) {
     if (tabpanel && _lgTabMap.get(String(gamePk)) === 'bullpen' && _lgFeedCache) {
         tabpanel.innerHTML = _buildBullpenTab(_lgFeedCache, gamePk);
     }
+  } catch (err) {
+    Logger.warn('Bullpen rest fetch failed', err, 'LIVE');
+    if (String(_lgBullpenRestGamePk) === String(gamePk)) _lgBullpenRestGamePk = null;
+  }
 }
 
 // ── Phase 2: H2H data + Matchup tab ──────────────────────────

@@ -213,9 +213,15 @@
 }
 .lg-linescore-wrap::-webkit-scrollbar { display: none; }
 
+/* Grid tracks are rem, not px — a fixed-px column (was 24px for R/H/E)
+   can't grow to fit a two-digit stat like "10" once large-text/accessibility
+   font scaling grows the digits themselves, since px doesn't scale with rem.
+   The old fixed-px track let a real hit total ("10") visually collide with
+   its neighboring column at scaled font sizes (found live, 2026-09-10).
+   rem tracks a keep pace with .lg-linescore's own rem font-size. */
 .lg-linescore {
     display: grid;
-    grid-template-columns: 48px repeat(var(--lg-innings, 9), minmax(28px, 1fr)) 24px 24px 24px;
+    grid-template-columns: 3rem repeat(var(--lg-innings, 9), minmax(1.75rem, 1fr)) minmax(1.5rem, auto) minmax(1.5rem, auto) minmax(1.5rem, auto);
     min-width: max-content;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
@@ -267,9 +273,16 @@
    flat fill in a light team color with white text can be unreadable,
    while gradient-over-dark keeps every team's color legible regardless
    of its own luminance (Kael, D-117 Phase 6). */
+/* min-height, not height — a fixed px height with a centered-flex,
+   overflow:hidden label meant that OS/browser text-size scaling (large-
+   font accessibility settings, not page zoom, which scales everything
+   uniformly) could grow the label's line-height past 32px and get the top
+   and bottom of the text silently clipped, since the box itself couldn't
+   grow. min-height lets the row grow to fit real content while still
+   guaranteeing the 32px floor for normal text sizes. */
 .lg-winprob {
     display: flex;
-    height: 32px;
+    min-height: 32px;
     border-radius: var(--radius-md);
     overflow: hidden;
     margin: var(--space-3) 0;
@@ -281,6 +294,7 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
+    padding: 0.2rem 0;
     overflow: hidden;
     white-space: nowrap;
     transition: width 0.6s ease;
@@ -312,9 +326,11 @@
    probability does). Deliberately not a text line ("NYM lead 5-2") per
    owner direction (2026-09-02): the split width communicates who's
    dominating the matchup before you've read a single number. */
+/* min-height, not height — same large-text clipping fix as .lg-winprob
+   above (this bar shares its exact recipe). */
 .lg-series-bar {
     display: flex;
-    height: 26px;
+    min-height: 26px;
     border-radius: var(--radius-sm);
     overflow: hidden;
     border: 1px solid var(--border-default);
@@ -325,6 +341,7 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
+    padding: 0.15rem 0;
     overflow: hidden;
     white-space: nowrap;
 }
