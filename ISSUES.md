@@ -1955,6 +1955,26 @@ Relay's Phase 6 data-sourcing audit (DECISIONS.md D-117) confirms a real, cited,
 
 ---
 
+## SportStrata's YouTube channel was terminated — D-083 dashboard and `bot/` Shorts distribution are both dead until the cause is known
+
+**Contributor:** owner (report) | **Date opened:** 2026-09-09
+
+The SportStrata YouTube account was deleted for a community-guidelines violation; the owner does not have a confirmed reason from YouTube. Full impact trace and decision framing in `DECISIONS.md` D-137. In short: `functions/api/youtube.js`/`youtube-insights.html` (D-083) and `bot/youtube_stats.py` are permanently non-functional against the deleted channel's credentials — not a bug to debug, a dead dependency. `GOALS.md`'s D-086 entry records this channel's one manual video as this project's best growth result ever (50k views/day), which raises the stakes of not knowing why it was terminated: if it was a game-footage rights issue, the same content pattern would risk the same result on any replacement platform (YouTube, TikTok, Reels).
+
+**Fix:** not a code fix. Three gates before this can move: (1) owner finds and reads the actual termination notice, (2) owner decides whether to stand up a replacement channel (new credentials needed in `bot/config.py` + the D-083 Functions), retire D-083 formally, or leave it dormant, (3) if a replacement channel happens, confirm the new content approach avoids whatever caused the original termination. `CLAUDE.md`'s `functions/api/youtube.js`/`youtube-insights.html` rows were updated in the same pass this was logged to flag the dead-credentials state directly at the file description, so a future session doesn't spend time debugging it as a live bug.
+
+---
+
+## `index.html`'s Cloudflare Web Analytics beacon token has never recorded a single event — real traffic is landing under a different, undocumented tag
+
+**Contributor:** Claude (found while pulling real traffic numbers) | **Date opened:** 2026-09-09
+
+Full investigation and numbers in `DECISIONS.md` D-139. Short version: the beacon token in `index.html` (`60aa9975...`, installed 2026-08-08, confirmed via `git log -L` to be the only value that line has ever held) has zero recorded events across its entire history. All of the site's real traffic (1,790 pageviews / 700 sessions over the last 28 days) is attributed to a different site tag (`430aba67...`) that doesn't appear anywhere in this repo. Most likely cause: Cloudflare Pages' own project-level Web Analytics auto-toggle has been silently doing the real collecting this whole time, independent of the manual snippet D-069/D-070 deliberately chose instead.
+
+**Fix:** owner checks the Pages project's Settings for a Web Analytics toggle (not the domain's Analytics & Logs page) — confirm before disabling anything, or collection stops. Then update `index.html`'s token to the real one (`430aba67b4024634909cc77be183190f`) so the documented, visible script tag is the one actually working. Also touches `CLAUDE.md`'s Deployment section and `GOALS.md`'s Monetization section, both of which describe this as "live and collecting" without the caveat that the specific named mechanism never worked.
+
+---
+
 ## NFL season-phase model hardened against calendar drift: now prefers ESPN's real `season.type` over the hardcoded day-of-month guess
 
 **Contributor:** (owner follow-up from the same-day NFL workflow audit) | **Date:** 2026-09-09

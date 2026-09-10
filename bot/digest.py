@@ -31,12 +31,19 @@ def _scores_link() -> str:
     return f"{SPORTSTRATA_URL}/#mlb-games"
 
 
+def _game_link(g: dict) -> str:
+    game_id = g.get("game_id")
+    if game_id:
+        return f"{SPORTSTRATA_URL}/mlb/game/{game_id}"
+    return _scores_link()
+
+
 def game_recap(g: dict) -> str:
     aw, hm = g.get("away_name", "?"), g.get("home_name", "?")
     asc, hsc = g.get("away_score", "?"), g.get("home_score", "?")
     wp, lp = g.get("winning_pitcher", ""), g.get("losing_pitcher", "")
     arm = f"\nW: {wp}   L: {lp}" if wp else ""
-    return f"FINAL\n{aw} {asc}, {hm} {hsc}{arm}\n\nBox score & matchup stats: {_scores_link()}"
+    return f"FINAL\n{aw} {asc}, {hm} {hsc}{arm}\n\nBox score & matchup stats: {_game_link(g)}"
 
 
 def game_of_the_day(games: list[dict]) -> dict | None:
