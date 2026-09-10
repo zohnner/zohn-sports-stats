@@ -2861,6 +2861,64 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 
 **Escalation:** none — continuing the pre-kickoff audit/improvement pass ahead of tonight's real game.
 
+## D-137 — SportStrata's YouTube channel was terminated for a community-guidelines violation; cause unconfirmed. `bot/`'s Shorts pipeline and the D-083 owner insight dashboard are both blocked on it
+
+**Status:** open
+**Contributors:** owner (report), Claude (impact trace)
+**Date:** 2026-09-09
+
+**Trigger:** during execution of the growth/distribution plan drafted this session (see the full-team audit, `docs/full-audit-2026-09-09.md`, and the follow-up growth diagnostic in the same conversation), the owner reported the SportStrata YouTube account was deleted by YouTube for a community-guidelines violation. The specific policy cited is not known — asked directly, the owner does not have a clear reason from YouTube.
+
+**Why this is bigger than "one channel is stalled":** `GOALS.md`'s own D-086 entry records that a manual YouTube workflow (game clips + SEO-optimized title/description, no pipeline) drew **50,000 views in a day** — the single best growth result found anywhere in this project's history, well ahead of anything else in the current distribution plan. `youtube-insights.html`/`functions/api/youtube.js` (D-083) and the paused `sportstrata-video` "Draft Instincts" pipeline (D-054/D-086) were both built specifically to feed off that channel. Its loss is not "cross one underused channel off a list of five" — it's the loss of the only channel with a proven, outsized result.
+
+**Real risk given the unconfirmed cause:** sports-content channels are most commonly terminated over rights to broadcast/game footage, and the channel's one proven success used real game clips. If that's what happened here (not confirmed either way), then recreating the same content pattern on a new YouTube channel, TikTok, or Instagram Reels risks the identical outcome — the fix in that scenario is a content-approach change, not a platform change. `bot/content_engine.py`'s own README already frames its output as requiring "clips you have permission to use," which is the right posture if adopted in practice; whether the terminated channel's workflow actually followed that constraint is unknown.
+
+**Immediate, confirmed-safe impact:**
+- `functions/api/youtube.js` + `youtube-insights.html` (D-083) — permanently non-functional. `YOUTUBE_CLIENT_ID/SECRET/REFRESH_TOKEN/CHANNEL_ID` all point at a channel that no longer exists; no amount of debugging fixes this without new credentials against a replacement channel. Flagged in `CLAUDE.md`'s Key Files table in this same pass.
+- `bot/youtube_stats.py` — same dead-credentials problem, same fix path (or none, if YouTube is retired).
+- The growth plan's Shorts/video track is paused, not replaced. `content_engine.py`'s content-queue generation still runs and still produces usable drafts (verified this session for NCAAF Sep 5–7 and NFL Sep 9), but nothing should be posted anywhere from that queue until the termination cause is understood.
+
+**Decision needed (owner):**
+1. Track down the actual termination notice/email and read the specific policy cited, before any replacement channel is created anywhere.
+2. Decide whether to create a new YouTube channel (starts subscriber count at zero, and needs new `YOUTUBE_*` credentials wired into both `bot/config.py` and the D-083 Functions), retire D-083/`youtube-insights.html` formally, or leave the dashboard dormant indefinitely with the dead-credentials note in place.
+3. Either way, decide whether `sportstrata-video`'s paused "Draft Instincts" pipeline (D-086) is still worth resuming once a channel exists, given it was already paused pending performance data the terminated channel was supposed to provide.
+
+**Not decided in this entry** — this audit/session does not have standing to pick a replacement platform or content approach; that depends entirely on facts (the actual termination reason) not yet known.
+
+**Update, same day:** owner confirmed via direct back-and-forth with YouTube Support that the channel is not recoverable — decision-needed item 1 (find the termination notice) is effectively closed as "unrecoverable, specific policy still not confirmed by YouTube." Item 2 is therefore live: no existing channel to fall back to, so the growth plan proceeds on Reddit/direct-outreach/share-card channels (none of which carry the unconfirmed content-rights risk) while video stays parked pending a deliberate decision on a replacement channel and content approach.
+
+## D-138 — First real Search Console numbers pulled for sportstrata.cc: SEO is visible but not yet converting (5 clicks / 824 impressions, last 28 days)
+
+**Status:** informational — closes the growth plan's Phase 0 Search Console check
+**Contributors:** owner (screenshot), Claude (read)
+**Date:** 2026-09-09
+
+**Numbers, last 28 days, from Search Console's Insights view:** 5 clicks (down 17% vs. prior period), 824 impressions (up 2,475% vs. prior period — from a near-zero base). Top content: the homepage (3 clicks, +200%) and `/mock-draft` (2 clicks, +100%) — `mock-draft.html`, verified live in source, is a real dedicated SEO landing page with a proper title/description/OG/canonical, not an SPA hash-route artifact. **Queries leading to the site: exactly one, "sportstrata" itself, 1 click (previously 0).** Top countries US 80%/Canada 20%, but that's 4 and 1 clicks respectively — not a meaningful sample.
+
+**Read:** overall CTR is ~0.6%, and the only converting query is the brand name itself — zero confirmed clicks yet from anyone searching descriptively for what the product does. This is neither "no traffic" (real impressions exist) nor a conversion problem (nobody's reaching the site to fail to convert) — it's earlier than both: the SEO investment (path URLs, sitemap, JSON-LD, per `CLAUDE.md`'s Deployment section) is generating impressions but hasn't started earning descriptive-search clicks yet. Consistent with a young site with thin backlink authority; not alarming at this sample size, but confirms SEO is correctly sequenced as a slow-burn channel in the growth plan (`docs/full-audit-2026-09-09.md`'s follow-up conversation) rather than a near-term volume source.
+
+**Not yet pulled:** the full Performance → Search results report (query-level breakdown with average position), which would distinguish "not ranked yet" from "ranked but the snippet doesn't earn clicks." Left for the owner to check directly since it doesn't change anything actionable in the current plan either way.
+
+**Cloudflare Web Analytics — pulled same day, see D-139.**
+
+## D-139 — Cloudflare Web Analytics pulled for the first time: real traffic exists (1,790 views / 700 sessions, 28d), but the documented beacon token has never recorded a single event
+
+**Status:** open — real numbers obtained, root-cause bug identified, fix pending owner confirmation
+**Contributors:** owner (API token), Claude (query + investigation)
+**Date:** 2026-09-09
+
+**Setup:** owner created a Cloudflare API token (Zone Analytics Read + Account Analytics Read) and added it to the repo-root `.env` (gitignored). Queried the GraphQL Analytics API's `rumPageloadEventsAdaptiveGroups` directly. Note found in passing, unrelated to this decision: that same `.env` also contained an unrelated project's live Kalshi trading API key and full RSA private key — flagged directly to the owner, not touched or transmitted, owner's to move to the correct project's own `.env`.
+
+**Real numbers, last 28 days, sportstrata.cc only:** 1,790 pageviews, 700 sessions (~25 sessions/day average, day-to-day range 10–230 views, no clear trend). Referrers: 1,090 internal navigation, 680 direct/no-referrer, 20 from google.com. Paths: 1,710 of 1,790 are `/` (expected — hash-routed SPA views don't produce distinct server-side paths), but real hits landed on crawlable path pages: `/nfl`, `/mlb/player/665742`, `/nfl/player/4046`. Device: 1,620 desktop / 170 mobile. Zero referrer traffic from any social platform (Reddit, X, etc.) — consistent with the growth plan's Phase 1 outreach not having started yet.
+
+**Read, combined with D-138's Search Console numbers:** this is neither a zero-traffic site nor a conversion problem — it's a real but thin ~25 sessions/day, almost entirely direct/already-know-the-URL traffic. Confirms the growth plan's sequencing (lean on Reddit/outreach now, SEO is a slow burn) was correct rather than requiring a change.
+
+**Bug found investigating the query:** the beacon token in `index.html` (`60aa9975c0da47048c59647b1d674718`, installed 2026-08-08 per the commit history — `git log -L` confirms it is the only value that line has ever held) has recorded **zero events** across the entire queryable history. All 1,790 real pageviews are attributed to a different site tag (`430aba67b4024634909cc77be183190f`) that does not appear anywhere in this repo (confirmed via full-codebase grep) and also carries traffic from the `.pages.dev` preview domain. Most likely explanation: Cloudflare Pages' own project-level Web Analytics auto-toggle (separate from the manual-snippet approach D-069/D-070 deliberately chose specifically to avoid invisible auto-injection) has been enabled this whole time, doing the real collecting while the documented, visible script tag in `index.html` has done nothing. Could not confirm via API — `accounts/{id}/rum/site_info/list` exists (real endpoint, per its own returned `documentation_url`) but the token lacks permission for it, and getting a third permission grant wasn't worth blocking on given the evidence already collected.
+
+**Fix, pending owner confirmation:** check the sportstrata.cc Pages project's own Settings for a Web Analytics toggle (not the domain-level Analytics & Logs section). If found: do not disable it before the code is fixed, or collection stops entirely. Once confirmed, update `index.html`'s beacon token from `60aa9975...` to `430aba67...` so the one visible, documented script tag is the one actually doing the work — restores D-069/D-070's original "index.html is the one source of truth for what loads" intent, which has been silently false since the token was installed.
+
+**Also stale as a result:** `CLAUDE.md`'s Deployment section and `GOALS.md`'s Monetization section both describe this analytics setup as "live and collecting" without qualification — true in effect (data does exist) but the specific mechanism named (the manual snippet) has never worked. Worth a follow-up doc correction once the token fix lands.
+
 ## D-146 — NFL Pick'em Confidence Helper: built as a personal tool first, then promoted to a real nav-linked feature (single-player, no multi-book odds, no cross-device sync)
 
 **Status:** shipped (Phase 1: standalone page; Phase 2: nav integration) | **Contributors:** owner (request, direction, Fork A decision), Claude (design, build, verification) | **Date:** 2026-09-09
