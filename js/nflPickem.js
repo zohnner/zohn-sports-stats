@@ -1,5 +1,5 @@
 // ============================================================
-// NFL Pick'em Confidence Helper (D-1xx) — promoted from an unlinked personal
+// NFL Pick'em Confidence Helper (D-146) — promoted from an unlinked personal
 // page (pickem.html) into a real nav-linked NFL feature. For each of the
 // week's games, blends two free signals already reachable through the
 // existing /api/nfl proxy -- DraftKings' own line (moneyline, vig removed)
