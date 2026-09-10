@@ -319,6 +319,19 @@
     .lg-winprob-seg { transition: none; }
 }
 
+.lg-leverage {
+    text-align: center;
+    font-size: var(--text-xs);
+    color: var(--text-subtle);
+    margin-top: 0.35rem;
+    cursor: help;
+}
+.lg-leverage-value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
 /* ── Season series (sidebar) ──────────────────────────────────
    Same recipe as .lg-winprob above — one bar, two team-color gradient
    segments sized by win share — just sidebar-scaled (shorter, no
@@ -1498,6 +1511,54 @@
    LIVE tab (progressive disclosure: live first, traditional stats in
    Box Score/Matchup/Bullpen, advanced analytics here, last). */
 .lg-statcast-wrap { display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* Spray chart — a stylized (not yardage-accurate) foul-line/outfield-wall
+   wedge in the same raw coordX/coordY units the dots use, so nothing needs
+   a feet conversion at render time (see js/liveGame.js's
+   _buildSprayChartSvg for the calibration note). Height is capped, not the
+   viewBox's own 250x215 ratio, so the field reads as a wide, shallow fan
+   rather than a tall wedge on desktop. */
+.lg-spray-wrap { margin: 0.4rem 0 0.6rem; }
+.lg-spray-field {
+    width: 100%;
+    height: 190px;
+    display: block;
+}
+.lg-spray-wedge {
+    fill: var(--bg-surface);
+    stroke: var(--border-mid);
+    stroke-width: 1.5;
+}
+.lg-spray-home {
+    fill: var(--text-subtle);
+}
+.lg-spray-dot {
+    stroke: var(--bg-card);
+    stroke-width: 0.75;
+    cursor: default;
+}
+/* Shared by both the SVG <circle> dots (fill applies, background-color is
+   ignored) and the plain HTML <span> legend keys below (the reverse) — one
+   class per outcome works in both contexts without duplicating the color. */
+.lg-spray-dot--hr   { fill: var(--color-pts); background-color: var(--color-pts); }
+.lg-spray-dot--hit  { fill: var(--color-win); background-color: var(--color-win); }
+.lg-spray-dot--out  { fill: var(--text-subtle); background-color: var(--text-subtle); opacity: 0.7; }
+
+.lg-spray-legend {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+}
+.lg-spray-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.lg-spray-key {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
 
 /* Capped + scrollable, same idea as .lg-pbp — a 12-inning game can have 40+
    batted balls, and this should read as a reference list, not push the

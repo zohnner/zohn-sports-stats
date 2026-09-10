@@ -1640,21 +1640,17 @@ function _lgBaseStateIndex(offense) {
 // state, or null outside Live (Vera, D-117 Phase 6) — recomputed fresh
 // every call from data _renderPanel already has, no module state, no new
 // fetch (Axiom, D-117 Phase 6).
-function _lgWinProbability(feed) {
-    const status = feed.gameData?.status || {};
-    if (status.abstractGameState !== 'Live') return null;
+// Raw-state lookup, split out from _lgWinProbability (2026-09-10) so the
+// leverage-index estimate below can reuse the exact same table against
+// HYPOTHETICAL states (this play's possible outcomes), not just the feed's
+// live one. half/inning/outs/baseState/diff use the identical encoding
+// LG_WE_TABLE itself does; inning/outs/diff are clamped the same way the
+// original inline version always did.
+function _lgWinProbFromRawState(half, inning, outs, baseState, diff) {
+    inning = Math.min(inning, LG_WE_MAX_INNING);
+    outs   = Math.min(outs, 2);
+    diff   = Math.max(-LG_WE_MAX_DIFF, Math.min(LG_WE_MAX_DIFF, diff));
 
-    const ls = feed.liveData?.linescore || {};
-    if (ls.currentInning == null || ls.outs == null) return null;
-
-    const half        = ls.isTopInning ? 0 : 1;
-    const inning      = Math.min(ls.currentInning, LG_WE_MAX_INNING);
-    const outs         = Math.min(ls.outs, 2);
-    const baseState    = _lgBaseStateIndex(ls.offense);
-    const homeScore    = ls.teams?.home?.runs ?? 0;
-    const awayScore    = ls.teams?.away?.runs ?? 0;
-
-    let diff = Math.max(-LG_WE_MAX_DIFF, Math.min(LG_WE_MAX_DIFF, homeScore - awayScore));
     let permille = LG_WE_MAP.get(`${half}_${inning}_${outs}_${baseState}_${diff}`);
     while (permille === undefined && diff !== 0) {
         diff += diff > 0 ? -1 : 1;
@@ -1663,6 +1659,21 @@ function _lgWinProbability(feed) {
     if (permille === undefined) return null;
 
     return permille / 1000;
+}
+
+function _lgWinProbability(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') return null;
+
+    const ls = feed.liveData?.linescore || {};
+    if (ls.currentInning == null || ls.outs == null) return null;
+
+    const half        = ls.isTopInning ? 0 : 1;
+    const baseState    = _lgBaseStateIndex(ls.offense);
+    const homeScore    = ls.teams?.home?.runs ?? 0;
+    const awayScore    = ls.teams?.away?.runs ?? 0;
+
+    return _lgWinProbFromRawState(half, ls.currentInning, ls.outs, baseState, homeScore - awayScore);
 }
 
 // Win-probability HISTORY — the graph competitive research (2026-09-10)
@@ -1707,6 +1718,136 @@ function _lgRecordWinProbHistory(feed, gamePk) {
     _lgWinProbRecordedCount.set(key, count);
 }
 
+// Leverage estimate (competitive-audit item #3, 2026-09-10) — "how much
+// could THIS plate appearance swing the win probability," reusing the
+// exact same LG_WE_TABLE the graph above is built on, not a new stat
+// source. Deliberately labeled "Leverage" rather than the sabermetric term
+// "Leverage Index": a real LI weights every possible PA outcome by its
+// TRUE frequency for this specific count/matchup; this instead uses
+// fixed, rough MLB-average per-PA outcome rates (not situational, not
+// pitcher/batter-specific) and a simplified one-base-per-hit-class
+// baserunning model (real advancement is a judgment call — e.g. a fast
+// runner scoring from first on a double). That's a real, honest
+// simplification in the same spirit as the site's own wRC+ dagger for
+// derived constants, not a claim to match FanGraphs' own number exactly.
+const LG_LEVERAGE_OUTCOMES = [
+    { type: 'out',    prob: 0.680 },
+    { type: 'walk',   prob: 0.090 },
+    { type: 'single', prob: 0.140 },
+    { type: 'double', prob: 0.045 },
+    { type: 'triple', prob: 0.005 },
+    { type: 'hr',     prob: 0.040 },
+];
+
+// Applies one hypothetical PA outcome to a base/out/score state and
+// returns the resulting raw state (same shape _lgWinProbFromRawState
+// takes). occupied is a Set of '1B'/'2B'/'3B' (mirrors _lgOccupiedBases).
+function _lgApplyOutcome(type, half, inning, outs, occupied, diff, battingIsHome) {
+    const has = b => occupied.has(b);
+    let newOuts = outs, newOccupied = new Set(occupied), newHalf = half, newInning = inning, runs = 0;
+
+    if (type === 'out') {
+        newOuts = outs + 1;
+        if (newOuts >= 3) {
+            // Half-inning ends: flip sides, bases clear. Inning only
+            // advances when the TOP half just ended (bottom ending starts
+            // the next full inning) — mirrors how currentInning/isTopInning
+            // already behave on the live feed itself.
+            if (half === 0) { newHalf = 1; }
+            else { newHalf = 0; newInning = inning + 1; }
+            newOuts = 0;
+            newOccupied = new Set();
+        }
+    } else if (type === 'walk') {
+        if (!has('1B')) { newOccupied.add('1B'); }
+        else if (!has('2B')) { newOccupied.add('1B'); newOccupied.add('2B'); }
+        else if (!has('3B')) { newOccupied.add('1B'); newOccupied.add('2B'); newOccupied.add('3B'); }
+        else { runs = 1; /* bases loaded walk forces in the run from 3B; 1B/2B/3B stay occupied */ }
+    } else if (type === 'single') {
+        if (has('3B')) runs++;
+        const next = new Set();
+        next.add('1B');
+        if (has('1B')) next.add('2B');
+        if (has('2B')) next.add('3B');
+        newOccupied = next;
+    } else if (type === 'double') {
+        if (has('2B')) runs++;
+        if (has('3B')) runs++;
+        const next = new Set();
+        next.add('2B');
+        if (has('1B')) next.add('3B');
+        newOccupied = next;
+    } else if (type === 'triple') {
+        runs = occupied.size;
+        newOccupied = new Set(['3B']);
+    } else if (type === 'hr') {
+        runs = occupied.size + 1;
+        newOccupied = new Set();
+    }
+
+    const newDiff = diff + (battingIsHome ? runs : -runs);
+    const baseState = (newOccupied.has('1B') ? 1 : 0) + (newOccupied.has('2B') ? 2 : 0) + (newOccupied.has('3B') ? 4 : 0);
+    return { half: newHalf, inning: newInning, outs: newOuts, baseState, diff: newDiff };
+}
+
+// Probability-weighted mean absolute swing in HOME win% across
+// LG_LEVERAGE_OUTCOMES's outcome mix, from a given raw state. Outcomes
+// that fall outside the table's range (e.g. an out ending the game in
+// extra innings) are dropped and the remaining weights renormalized,
+// rather than guessing — omission over invented precision, same rule the
+// win-expectancy table itself already documents for sparse cells.
+function _lgLeverageSwing(half, inning, outs, occupied, diff, battingIsHome) {
+    const current = _lgWinProbFromRawState(half, inning, outs,
+        (occupied.has('1B') ? 1 : 0) + (occupied.has('2B') ? 2 : 0) + (occupied.has('3B') ? 4 : 0), diff);
+    if (current == null) return null;
+
+    let weighted = 0, totalProb = 0;
+    for (const { type, prob } of LG_LEVERAGE_OUTCOMES) {
+        const s = _lgApplyOutcome(type, half, inning, outs, occupied, diff, battingIsHome);
+        const wp = _lgWinProbFromRawState(s.half, s.inning, s.outs, s.baseState, s.diff);
+        if (wp == null) continue;
+        weighted += prob * Math.abs(wp - current);
+        totalProb += prob;
+    }
+    if (!totalProb) return null;
+    return weighted / totalProb;
+}
+
+// Baseline "average" situation — bottom 5th, 0 outs, bases empty, tied —
+// computed once and cached, not per-poll (LG_WE_TABLE never changes at
+// runtime). Bottom half because more win-expectancy states exist for the
+// batting-team's-last-chance framing the table was built from.
+let _lgLeverageBaselineSwing = null;
+function _lgLeverageBaseline() {
+    if (_lgLeverageBaselineSwing == null) {
+        _lgLeverageBaselineSwing = _lgLeverageSwing(1, 5, 0, new Set(), 0, true);
+    }
+    return _lgLeverageBaselineSwing;
+}
+
+// Returns a leverage multiple (e.g. 2.4) or null if not Live / not
+// computable. 1.0x reads as "an average plate appearance's worth of
+// swing"; higher means this PA's possible outcomes could move the needle
+// more than that.
+function _lgLeverageIndex(feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') return null;
+    const ls = feed.liveData?.linescore || {};
+    if (ls.currentInning == null || ls.outs == null) return null;
+
+    const half = ls.isTopInning ? 0 : 1;
+    const battingIsHome = !ls.isTopInning;
+    const occupied = _lgOccupiedBases(ls.offense);
+    const homeScore = ls.teams?.home?.runs ?? 0;
+    const awayScore = ls.teams?.away?.runs ?? 0;
+
+    const swingNow = _lgLeverageSwing(half, ls.currentInning, ls.outs, occupied, homeScore - awayScore, battingIsHome);
+    const baseline = _lgLeverageBaseline();
+    if (swingNow == null || !baseline) return null;
+
+    return swingNow / baseline;
+}
+
 // D-117 Phase 6: split win-probability bar — primary content, sits between
 // the linescore and the hero (Vera, D-117 Phase 6, same "not a sidebar
 // fact" reasoning Phase 1 gave the hero). Reuses the hero avatar's own
@@ -1733,6 +1874,16 @@ function _buildWinProb(feed) {
     const homePct = Math.round(homeProb * 100);
     const awayPct = 100 - homePct;
 
+    const leverage = _lgLeverageIndex(feed);
+    // >=1.05 / <=0.95 thresholds so an exactly-average moment doesn't render
+    // as "1.0x" looking like a meaningful reading — only show it once it's
+    // actually notably above or below average either direction.
+    const leverageHtml = (leverage != null && (leverage >= 1.05 || leverage <= 0.95))
+        ? `<div class="lg-leverage" title="Roughly how much this plate appearance's possible outcomes could swing the win probability, vs. an average one (1.0x) — estimated from league-average outcome rates, not this matchup specifically.">
+            <span class="lg-leverage-value">${leverage.toFixed(1)}×</span> leverage
+        </div>`
+        : '';
+
     return `<div class="lg-winprob" role="group" aria-label="Win probability">
         <div class="lg-winprob-seg lg-winprob-seg--away" style="width:${awayPct}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
             <span class="lg-winprob-label">${_escHtml(away.abbreviation || '')} ${awayPct}%</span>
@@ -1740,7 +1891,8 @@ function _buildWinProb(feed) {
         <div class="lg-winprob-seg lg-winprob-seg--home" style="width:${homePct}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
             <span class="lg-winprob-label">${_escHtml(home.abbreviation || '')} ${homePct}%</span>
         </div>
-    </div>`;
+    </div>
+    ${leverageHtml}`;
 }
 
 // Win-probability GRAPH host — sits above the current-state bar (the graph
@@ -2709,6 +2861,56 @@ async function _buildMatchupContent(feed) {
     </div>`;
 }
 
+const LG_HIT_EVENT_TYPES = new Set(['single', 'double', 'triple', 'home_run']);
+
+// Spray chart (2026-09-10 competitive-audit follow-up, item #2) — plots
+// each batted ball's hitData.coordinates directly in MLB's own raw
+// coordX/coordY units as the SVG viewBox, rather than converting to feet
+// first. Cross-checked the conversion math against this game's own
+// totalDistance values before deciding this: home plate sits at roughly
+// (125, 203.5) in this coordinate space with an isotropic ~2.42 ft/unit
+// scale (verified against ~25 real batted balls across several games —
+// fly balls tracked the known totalDistance to within ~1%; grounders/
+// liners fielded early diverge, which is expected since totalDistance
+// there reflects where the ball was FIELDED, not a hypothetical unimpeded
+// flight). That calibration would only matter for drawing real yardage
+// markers — since this is deliberately "a simple field diagram" (not a
+// yardage-accurate one), plotting the raw units directly is both simpler
+// and removes any dependency on getting that scale exactly right; the
+// numbers shown in the table below (and each dot's title tooltip) still
+// come straight from the feed's own precise values, untouched.
+function _buildSprayChartSvg(battedBalls) {
+    const plotted = battedBalls.filter(b => b.x != null && b.y != null);
+    if (!plotted.length) return '<div class="lg-matchup-empty">No batted-ball location data yet this game.</div>';
+
+    // Home plate + foul-line/outfield-wall wedge, hand-tuned against the
+    // same raw coordinate space as the dots (see calibration note above) —
+    // not derived from a real stadium's dimensions, a stylized fan shape.
+    const HOME = { x: 125, y: 203.5 };
+    const FOUL_L = { x: 29, y: 108 };
+    const FOUL_R = { x: 221, y: 108 };
+    const wedge = `M ${HOME.x},${HOME.y} L ${FOUL_L.x},${FOUL_L.y} Q 125,20 ${FOUL_R.x},${FOUL_R.y} Z`;
+
+    const dots = plotted.map(b => {
+        const cls = b.resultType === 'hr' ? 'lg-spray-dot--hr' : b.resultType === 'hit' ? 'lg-spray-dot--hit' : 'lg-spray-dot--out';
+        const title = `${_escHtml(b.batter)} — ${_escHtml(b.result)} · ${b.exitVelo} mph${b.launchAngle != null ? ` · ${b.launchAngle}°` : ''}${b.distance != null ? ` · ${b.distance} ft` : ''}`;
+        return `<circle class="lg-spray-dot ${cls}" cx="${b.x}" cy="${b.y}" r="4"><title>${title}</title></circle>`;
+    }).join('');
+
+    return `<div class="lg-spray-wrap">
+        <svg class="lg-spray-field" viewBox="0 0 250 215" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Spray chart of this game's batted balls">
+            <path d="${wedge}" class="lg-spray-wedge"/>
+            <circle cx="${HOME.x}" cy="${HOME.y}" r="3" class="lg-spray-home"/>
+            ${dots}
+        </svg>
+        <div class="lg-spray-legend">
+            <span><span class="lg-spray-key lg-spray-dot--hr"></span>Home run</span>
+            <span><span class="lg-spray-key lg-spray-dot--hit"></span>Hit</span>
+            <span><span class="lg-spray-key lg-spray-dot--out"></span>Out</span>
+        </div>
+    </div>`;
+}
+
 // ── STATCAST tab — advanced pitch/batted-ball metrics, strictly separate
 // from LIVE per the redesign's live-vs-analytics split. Two kinds of
 // content: (1) this-game aggregates computed client-side from data this
@@ -2750,22 +2952,29 @@ function _buildStatcastTab(feed) {
 
     // Batted balls this game — every play with hitData, chronological,
     // across both teams. Only launchSpeed/totalDistance were read anywhere
-    // in this file before now (the PBP hard-hit callout); launchAngle is
-    // genuinely new.
+    // in this file before now (the PBP hard-hit callout); launchAngle and
+    // coordinates (for the spray chart below) are genuinely new — both
+    // confirmed present on the raw feed (hitData.coordinates.{coordX,coordY})
+    // before building on them, not assumed from memory of the API.
     const battedBalls = [];
     for (const play of allPlays) {
         for (const e of (play.playEvents || [])) {
             if (e.hitData?.launchSpeed == null) continue;
+            const evtType = play.result?.eventType || '';
             battedBalls.push({
                 batter:      play.matchup?.batter?.fullName || '—',
                 exitVelo:    e.hitData.launchSpeed,
                 launchAngle: e.hitData.launchAngle,
                 distance:    e.hitData.totalDistance,
-                result:      _lgEventTerm(play.result?.eventType) || (play.result?.event || '').toUpperCase(),
+                result:      _lgEventTerm(evtType) || (play.result?.event || '').toUpperCase(),
+                x:           e.hitData.coordinates?.coordX,
+                y:           e.hitData.coordinates?.coordY,
+                resultType:  evtType === 'home_run' ? 'hr' : (LG_HIT_EVENT_TYPES.has(evtType) ? 'hit' : 'out'),
             });
         }
     }
     battedBalls.reverse(); // most recent first — matches _buildPbp's convention
+    const sprayChartHtml = _buildSprayChartSvg(battedBalls);
     const battedRows = battedBalls.length ? battedBalls.map(b => `<div class="lg-statcast-bb-row">
         <span class="lg-statcast-bb-batter">${_escHtml(b.batter)}</span>
         <span class="lg-statcast-bb-stat">${b.exitVelo} mph</span>
@@ -2778,6 +2987,10 @@ function _buildStatcastTab(feed) {
         <div class="lg-matchup-block">
             <div class="lg-box-section-title">This Game — Pitch Velocity &amp; Spin</div>
             <div class="lg-mix-rows">${pitchRows}</div>
+        </div>
+        <div class="lg-matchup-block">
+            <div class="lg-box-section-title">This Game — Spray Chart</div>
+            ${sprayChartHtml}
         </div>
         <div class="lg-matchup-block">
             <div class="lg-box-section-title">This Game — Batted Balls</div>
