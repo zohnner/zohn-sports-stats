@@ -43,6 +43,13 @@ X Post/
 # it or track it — no build step lives in this repo, ever.
 videocreation/
 _git_stale_locks_to_delete/
+_to_delete/
+
+# Session scratch/debug artifacts (broken heredocs, redirected diffs, ad-hoc
+# test fixtures) — found cluttering every git status in the 2026-09-09 sweep
+PYEOF_MARKER
+diff_out.txt
+*-test.json
 
 # Python bytecode cache (bot/) — never commit compiled artifacts
 __pycache__/
