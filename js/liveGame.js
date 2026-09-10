@@ -51,6 +51,8 @@ let _lgLastHeroBatterId = null; // batter id from previous poll — hero entranc
 let _lgSeasonStatCache  = {};   // { playerId: seasonHittingStatObj | null } — hero batter AVG/OPS cache (D-117 Phase 1)
 let _lgPregameHtml    = '';     // cached rendered pregame-preview HTML (page mode only)
 let _lgPregameGamePk  = null;   // gamePk _lgPregameHtml belongs to / is being fetched for
+let _lgWinProbHistory       = new Map(); // gamePk → [{playCount, label, homePct}] — win-prob graph series, built forward from whenever this game was first polled (not reconstructed from before that — see _lgRecordWinProbHistory)
+let _lgWinProbRecordedCount = new Map(); // gamePk → count of completed plays already recorded, so a poll that re-fetches the same state doesn't duplicate a point
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -203,6 +205,8 @@ function stopLiveGamePolling() {
     _lgZoneLastPitchCount.clear();
     _lgPregameHtml    = '';
     _lgPregameGamePk  = null;
+    _lgWinProbHistory.clear();
+    _lgWinProbRecordedCount.clear();
 }
 
 function _updatePollTimestamp(state) {
@@ -329,6 +333,7 @@ async function _doPoll(gamePk) {
         if (!feedRes.ok) throw new Error(`Feed ${feedRes.status}`);
         const feed = await feedRes.json();
         _lgFeedCache = feed;
+        _lgRecordWinProbHistory(feed, gamePk);
 
         const prevPbpCount = panel.querySelectorAll('.lg-pbp-entry').length;
         const curAway      = ls.teams?.away?.runs ?? 0;
@@ -1660,6 +1665,48 @@ function _lgWinProbability(feed) {
     return permille / 1000;
 }
 
+// Win-probability HISTORY — the graph competitive research (2026-09-10)
+// flagged as the single most-checked feature SportStrata's live viewer was
+// missing next to FanGraphs' and MLB.com's own live win-expectancy graphs.
+// Deliberately built FORWARD from whenever this game was first polled, not
+// reconstructed backward to first pitch: MLB's live feed has no per-play
+// win-probability field of its own (confirmed — searched the raw feed JSON
+// for one), and reconstructing historical base-occupancy for every earlier
+// play would mean replaying each play's runners[] movements play-by-play, a
+// real state machine with real edge cases (caught stealing, wild pitches,
+// pickoffs) — a correctness risk not worth taking for a first version.
+// Omission (a graph that starts where you opened it) over an invented
+// "full game" history that might silently be wrong for early innings.
+const LG_WINPROB_HISTORY_CAP = 500; // generous ceiling — real safety cap, not an expected size
+
+function _lgRecordWinProbHistory(feed, gamePk) {
+    const homeProb = _lgWinProbability(feed);
+    if (homeProb == null) return; // not Live, or state outside the WE table's range
+
+    const key = String(gamePk);
+    const allPlays = feed.liveData?.plays?.allPlays || [];
+    const completed = allPlays.filter(p => p.about?.isComplete);
+    if (!completed.length) return; // nothing has happened yet this game
+
+    // One point per completed PLAY (matches FanGraphs' own granularity), not
+    // per poll — _doPoll's stateKey already changes on every ball/strike, so
+    // without this count-based gate a single at-bat would spam several
+    // near-duplicate points before it resolves.
+    const count = completed.length;
+    const lastRecorded = _lgWinProbRecordedCount.get(key) ?? -1;
+    if (count <= lastRecorded) return;
+
+    const lastPlay = completed[completed.length - 1];
+    const half  = lastPlay.about?.isTopInning ? '▲' : '▼';
+    const label = `${half}${lastPlay.about?.inning ?? '?'}`;
+
+    if (!_lgWinProbHistory.has(key)) _lgWinProbHistory.set(key, []);
+    const hist = _lgWinProbHistory.get(key);
+    hist.push({ playCount: count, label, homePct: Math.round(homeProb * 100) });
+    if (hist.length > LG_WINPROB_HISTORY_CAP) hist.shift();
+    _lgWinProbRecordedCount.set(key, count);
+}
+
 // D-117 Phase 6: split win-probability bar — primary content, sits between
 // the linescore and the hero (Vera, D-117 Phase 6, same "not a sidebar
 // fact" reasoning Phase 1 gave the hero). Reuses the hero avatar's own
@@ -1694,6 +1741,61 @@ function _buildWinProb(feed) {
             <span class="lg-winprob-label">${_escHtml(home.abbreviation || '')} ${homePct}%</span>
         </div>
     </div>`;
+}
+
+// Win-probability GRAPH host — sits above the current-state bar (the graph
+// is the primary content per the competitive audit; the bar underneath is
+// still useful as a compact "right now" readout for anyone who doesn't care
+// about the history). Same placeholder-then-populate split as _renderZone:
+// this returns the shell + a canvas id, StatsCharts.winProbability actually
+// draws into it once the shell is in the DOM (chart JS needs a real
+// <canvas> element to attach to, not a string).
+function _buildWinProbChartHost(feed, gamePk) {
+    // Unlike the current-state bar (and everything else in this tab that
+    // goes blank on Final), the graph is a look-BACK, so it deliberately
+    // survives a game finishing — if this session recorded any history
+    // while the game was live, viewing the complete swing after the final
+    // out is exactly the FanGraphs-style use case, not something to hide.
+    // A game that was never polled live this session (opened cold, already
+    // Final) has no history to show, which is the correct "we don't
+    // reconstruct the past" behavior documented above.
+    const isLive = feed.gameData?.status?.abstractGameState === 'Live';
+    const hist = _lgWinProbHistory.get(String(gamePk)) || [];
+    if (!isLive && hist.length < 2) return '';
+    if (hist.length < 2) {
+        return `<div class="lg-side-card" style="margin:var(--space-3) 0">
+            <div class="lg-box-section-title">Win Probability</div>
+            <div class="lg-matchup-empty">Building win-probability history — check back after the next few plays.</div>
+        </div>`;
+    }
+    return `<div class="lg-side-card" style="margin:var(--space-3) 0">
+        <div class="lg-box-section-title">Win Probability</div>
+        <div class="chart-wrap" style="height:150px">
+            <canvas id="lg-wp-chart-${_escHtml(String(gamePk))}"></canvas>
+        </div>
+    </div>`;
+}
+
+function _lgRenderWinProbChart(feed, gamePk) {
+    if (typeof StatsCharts?.winProbability !== 'function') return;
+    const hist = _lgWinProbHistory.get(String(gamePk)) || [];
+    if (hist.length < 2) return;
+    const canvas = document.getElementById(`lg-wp-chart-${gamePk}`);
+    if (!canvas) return;
+
+    const home = feed.gameData?.teams?.home || {};
+    const away = feed.gameData?.teams?.away || {};
+    const homeColors = getMLBTeamColors(home.abbreviation);
+    const awayColors = getMLBTeamColors(away.abbreviation);
+    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
+    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--text-muted)';
+
+    StatsCharts.winProbability(`lg-wp-chart-${gamePk}`, hist, {
+        homeAbbr: home.abbreviation || 'HOME',
+        awayAbbr: away.abbreviation || 'AWAY',
+        homeColor: homeClr,
+        awayColor: awayClr,
+    });
 }
 
 // ── Phase 2: Tooltip ──────────────────────────────────────────
@@ -2728,7 +2830,7 @@ async function _lgFetchStatcastSeasonContext(feed, gamePk) {
 // then pitch detail (#8, zone/mix — placeholder host filled by _renderZone
 // after insertion since it does its own DOM query + event wiring), then Due
 // Up (#10), then win probability last as a secondary/computed estimate.
-function _buildLiveTabContent(feed) {
+function _buildLiveTabContent(feed, gamePk) {
     const status = feed.gameData?.status || {};
     const isFinal = status.abstractGameState === 'Final';
 
@@ -2738,8 +2840,11 @@ function _buildLiveTabContent(feed) {
     const matchupHtml   = _buildMatchupWithCount(feed);
     const dueUpHtml     = _buildDueUp(feed);
     const winProbHtml   = _buildWinProb(feed);
+    const winProbChartHtml = _buildWinProbChartHost(feed, gamePk);
 
-    const hasLiveContent = lastPlayHtml || situationHtml || diamondHtml || matchupHtml || dueUpHtml;
+    // winProbChartHtml counts toward "live content" too, deliberately — see
+    // _buildWinProbChartHost's own comment on why the graph survives Final.
+    const hasLiveContent = lastPlayHtml || situationHtml || diamondHtml || matchupHtml || dueUpHtml || winProbChartHtml;
 
     // Final games: hero/situation/diamond/dueUp are all intentionally empty
     // (nothing "current" about a finished game), but the pitch-zone content
@@ -2757,6 +2862,7 @@ function _buildLiveTabContent(feed) {
         ${matchupHtml}
         <div class="lg-zone-col" hidden></div>
         ${dueUpHtml}
+        ${winProbChartHtml}
         ${winProbHtml}
     `;
 }
@@ -2779,11 +2885,14 @@ function _renderActiveLgTab(panel, feed, gamePk) {
     const home = feed.gameData?.teams?.home?.abbreviation || '';
 
     if (activeTab === 'live') {
-        tabpanel.innerHTML = _buildLiveTabContent(feed);
+        tabpanel.innerHTML = _buildLiveTabContent(feed, gamePk);
         // The zone host needs to exist in the DOM before _renderZone can
         // query/populate it — same reason _lgMaybeFetchHeroBatterLine runs
-        // after the matchup card markup is inserted, not before.
+        // after the matchup card markup is inserted, not before. Same
+        // reasoning for the win-prob chart: Chart.js needs a real <canvas>
+        // already in the DOM to attach to.
         _renderZone(panel, feed, gamePk);
+        _lgRenderWinProbChart(feed, gamePk);
         _lgMaybeFetchHeroBatterLine(feed, panel);
     } else if (activeTab === 'pbp') {
         tabpanel.innerHTML = _buildPbp(feed.liveData?.plays?.allPlays || []);

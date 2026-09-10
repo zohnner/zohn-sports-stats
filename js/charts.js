@@ -928,6 +928,87 @@ class StatsCharts {
         });
     }
 
+    /**
+     * MLB live win-probability graph (D-117 competitive-audit follow-up,
+     * 2026-09-10) — home team's win % across the game so far, one point per
+     * completed play (js/liveGame.js's _lgRecordWinProbHistory builds the
+     * series; this only draws it). Two-toned above/below the 50% line, same
+     * visual grammar FanGraphs' own live win-expectancy graph uses: color
+     * itself tells you who's favored at a glance, not just the number.
+     *
+     * @param {string} canvasId
+     * @param {Array<{label:string, homePct:number}>} history  chronological
+     * @param {{homeAbbr, awayAbbr, homeColor, awayColor}} teams
+     * @returns {Chart|null}
+     */
+    static winProbability(canvasId, history, { homeAbbr, awayAbbr, homeColor, awayColor }) {
+        if (!history || history.length < 2) return null;
+        const t = this.#getTheme();
+
+        const toFill = c => c.startsWith('#') ? c + '33' : c.replace(/[\d.]+\)$/, '0.2)');
+        const segColor = ctx => {
+            const y0 = ctx.p0?.parsed?.y ?? 50, y1 = ctx.p1?.parsed?.y ?? 50;
+            return (y0 + y1) / 2 >= 50 ? homeColor : awayColor;
+        };
+
+        return this.#create(canvasId, {
+            type: 'line',
+            data: {
+                labels: history.map(h => h.label),
+                datasets: [{
+                    data: history.map(h => h.homePct),
+                    borderColor: homeColor,
+                    segment: { borderColor: segColor },
+                    backgroundColor: 'transparent',
+                    fill: { target: { value: 50 }, above: toFill(homeColor), below: toFill(awayColor) },
+                    tension: 0.25,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHitRadius: 10,
+                    pointHoverBackgroundColor: ctx => (ctx.parsed.y >= 50 ? homeColor : awayColor),
+                    pointHoverBorderColor: 'transparent',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        ticks: { color: t.tick, font: { family: t.font, size: 9 }, maxTicksLimit: 8, autoSkip: true },
+                        grid: { display: false },
+                    },
+                    y: {
+                        min: 0, max: 100,
+                        ticks: {
+                            color: t.tick, font: { family: t.font, size: 10 }, stepSize: 25,
+                            callback: v => v + '%',
+                        },
+                        grid: { color: t.grid },
+                    },
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: t.tooltipBg,
+                        borderColor: t.tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#94a3b8',
+                        padding: 10,
+                        callbacks: {
+                            label: ctx => {
+                                const h = ctx.parsed.y;
+                                return ` ${homeAbbr} ${h}% · ${awayAbbr} ${100 - h}%`;
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     // ── Share Card (ANN-002) ─────────────────────────────────────
     // Draws a 720×400 stat card on a canvas element.
     // stats: [{label, value, color}] — up to 6 shown (2 rows × 3 cols)
