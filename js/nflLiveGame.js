@@ -503,6 +503,16 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 
     const fieldOutline = [proj(-10, 0), proj(110, 0), proj(110, 1), proj(-10, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
+    // Sideline boundary -- a real field has a solid painted white line at
+    // each sideline; ours just faded into the surrounding dark background
+    // with nothing marking where the turf actually ends (reported live,
+    // same pass as the midfield-arrow fix). Runs the full endzone-to-endzone
+    // length at yField 0 and 1, same style weight as the goal lines.
+    const sidelinesHtml = [0, 1].map((yF) => {
+        const a = proj(-10, yF), b = proj(110, yF);
+        return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>`;
+    }).join('');
+
     // Mow stripes every 5 yards across the 100-yard playing field -- each
     // band is its own quad projected through the SAME function as everything
     // else, so the alternating stripes genuinely narrow toward the horizon
@@ -536,17 +546,20 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // Yard number labels, mirrored near-edge (big) and far-edge (small) --
     // the standard "distance from nearest goal" display, replacing the old
     // flat .fv-yardnums row below the field (removed, not shown twice). Each
-    // number also gets a small direction chevron pointing at the NEARER goal
-    // line (real broadcast/field-paint convention -- e.g. a real "◄ 20"),
-    // which also happens to be a free, correct way to show which way a team
-    // is driving without adding new text anywhere.
+    // number except midfield gets a small direction chevron pointing at the
+    // NEARER goal line (real broadcast/field-paint convention -- e.g. a real
+    // "◄ 20"). The 50 has no "nearer" goal -- it's equidistant from both --
+    // so real fields show a bare "50" with no arrow; dir was `x < 50 ? -1 :
+    // 1`, which fails open to +1 at exactly x===50 instead of "neither",
+    // giving midfield a phantom arrow toward the home goal (reported live).
     let numsHtml = '';
     for (let x = 10; x <= 90; x += 10) {
         const num = x <= 50 ? x : 100 - x;
-        const dir = x < 50 ? -1 : 1;
+        const dir = x === 50 ? 0 : (x < 50 ? -1 : 1);
         [{ yF: 0.1, size: 34 }, { yF: 0.9, size: 18 }].forEach(({ yF, size }) => {
             const p = proj(x, yF);
             numsHtml += `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${size}" fill="rgba(255,255,255,0.78)" text-anchor="middle" dominant-baseline="middle">${num}</text>`;
+            if (dir === 0) return;
             const scale = size / 34, cx = p.x + dir * 24 * scale, chevW = 6 * scale, chevH = 8 * scale;
             numsHtml += `<polygon points="${(cx + dir * chevW).toFixed(1)},${p.y.toFixed(1)} ${(cx - dir * chevW).toFixed(1)},${(p.y - chevH).toFixed(1)} ${(cx - dir * chevW).toFixed(1)},${(p.y + chevH).toFixed(1)}" fill="rgba(255,255,255,0.55)"/>`;
         });
@@ -709,6 +722,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 ${ezContent(-10, 0, awayEZPts, awayColor, awayAbbr, 'fvAwayEZClip')}
                 ${ezContent(100, 110, homeEZPts, homeColor, homeAbbr, 'fvHomeEZClip')}
                 ${redZoneHtml}
+                ${sidelinesHtml}
                 ${yardLinesHtml}
                 ${ticksHtml}
                 ${numsHtml}
