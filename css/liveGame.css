@@ -65,6 +65,25 @@
     .lg-panel { animation: none; }
 }
 
+/* High-leverage ambient state (tension-cue pass, 2026-09-10) — driven by
+   the same leverage estimate the win-prob bar shows a number for, applied
+   to the whole panel so it reads regardless of which tab is open. Sustained
+   for as long as leverage stays elevated (a bases-loaded jam that runs
+   several pitches), not a one-shot flash — a slow pulse, not a fast one,
+   so it reads as "this matters" rather than as an alert/error. --color-warn
+   (amber), not --accent or a team color: a distinct semantic channel, same
+   discipline as --color-live/--color-win/--color-loss elsewhere in this file. */
+.lg-panel--high-leverage {
+    animation: lgPanelOpen 180ms ease-out forwards, lgLeveragePulse 2.2s ease-in-out infinite;
+}
+@keyframes lgLeveragePulse {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50%      { box-shadow: 0 0 0 3px var(--color-warn-border); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-panel--high-leverage { animation: none; box-shadow: 0 0 0 2px var(--color-warn-border); }
+}
+
 /* ── Header ───────────────────────────────────────────────── */
 
 .lg-header {
@@ -179,6 +198,22 @@
 
 @media (max-width: 480px) {
     .lg-situation { gap: var(--space-2); font-size: var(--text-xs); }
+}
+
+/* Tension cue: fires once per genuine outs/count/bases change (never on a
+   poll that re-fetches the same state) — border-radius + background so a
+   mid-at-bat battle (2-2 to 3-2, bases untouched) has SOMETHING visible on
+   screen besides "Last Play" staying frozen on the previous batter. */
+.lg-situation--flash {
+    border-radius: var(--radius-md);
+    animation: lgSituationFlash 700ms ease-out;
+}
+@keyframes lgSituationFlash {
+    0%   { background: var(--color-warn-subtle); }
+    100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-situation--flash { animation: none; }
 }
 
 .lg-status-badge {
@@ -1248,6 +1283,28 @@
     margin-top: 0.3rem;
 }
 .lg-hero-count-sep { color: var(--text-subtle); font-weight: 400; }
+
+/* Tension cue: sustained (not one-shot) — for as long as the count sits at
+   2 strikes, a warm accent marks "protecting the plate" as an ongoing
+   state, distinct from --accent (brand) and any team color, per DESIGN.md's
+   own semantic-color-separate-from-accent rule. */
+.lg-hero--battle {
+    border-color: var(--color-warn-border);
+    background: linear-gradient(180deg, var(--color-warn-subtle), var(--bg-surface) 70%);
+}
+.lg-hero--battle .lg-hero-count { color: var(--color-warn); }
+
+.lg-hero-count--pop {
+    animation: lgCountPop 420ms ease-out;
+}
+@keyframes lgCountPop {
+    0%   { transform: scale(1);    color: var(--color-warn); }
+    35%  { transform: scale(1.22); color: var(--color-warn); }
+    100% { transform: scale(1);    color: var(--text-primary); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lg-hero-count--pop { animation: none; }
+}
 
 .lg-hero-delay {
     position: absolute;

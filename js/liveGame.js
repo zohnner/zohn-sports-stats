@@ -53,6 +53,8 @@ let _lgPregameHtml    = '';     // cached rendered pregame-preview HTML (page mo
 let _lgPregameGamePk  = null;   // gamePk _lgPregameHtml belongs to / is being fetched for
 let _lgWinProbHistory       = new Map(); // gamePk → [{playCount, label, homePct}] — win-prob graph series, built forward from whenever this game was first polled (not reconstructed from before that — see _lgRecordWinProbHistory)
 let _lgWinProbRecordedCount = new Map(); // gamePk → count of completed plays already recorded, so a poll that re-fetches the same state doesn't duplicate a point
+let _lgLastSituationKey = null; // `${outs}_${balls}_${strikes}_${baseState}` from previous render — situation-flash gate (2026-09-10 tension-cue pass)
+let _lgLastCountKey     = null; // `${balls}-${strikes}-${outs}` from previous render, same batter — hero count-pop gate
 
 const LG_POLL_MS        = 9000;
 const LG_BETWEEN_INN_MS = 20000;
@@ -207,6 +209,8 @@ function stopLiveGamePolling() {
     _lgPregameGamePk  = null;
     _lgWinProbHistory.clear();
     _lgWinProbRecordedCount.clear();
+    _lgLastSituationKey = null;
+    _lgLastCountKey     = null;
 }
 
 function _updatePollTimestamp(state) {
@@ -511,6 +515,17 @@ function _renderPanel(panel, feed, gamePk) {
 
     const hc = getMLBTeamColors(home.abbreviation);
     panel.style.setProperty('--lg-team-color', hc?.primary || 'var(--accent)');
+
+    // Tension cue #1 (2026-09-10, "watching a real game feels static" follow-
+    // up): the leverage estimate already computed for the win-prob bar
+    // drives an ambient state on the WHOLE panel, not just that one widget —
+    // a fan browsing Box Score during a bases-loaded 9th should still feel
+    // it. Applied every render regardless of active tab (unlike the
+    // situation-flash/battle-state cues below, which only make sense on the
+    // Live tab itself). Threshold matches the "notably above average"
+    // framing already used for the leverage line's own display gate.
+    const leverageNow = isLive ? _lgLeverageIndex(feed) : null;
+    panel.classList.toggle('lg-panel--high-leverage', leverageNow != null && leverageNow >= 2.5);
 
     // Page-mode breadcrumb refinement — see the best-effort set in
     // showMLBLiveGame; this corrects it once real abbreviations are in.
@@ -2291,11 +2306,29 @@ function _buildMatchupWithCount(feed) {
     const outs    = isBetweenInn ? 0 : (ls.outs    ?? 0);
     const balls   = isBetweenInn ? 0 : (ls.balls   ?? 0);
     const strikes = isBetweenInn ? 0 : (ls.strikes ?? 0);
+
+    // Tension cue #3 — a two-strike count is an ongoing "protect the plate"
+    // state, not a one-off event, so it's a sustained class for as long as
+    // strikes stay at 2 (CSS pulse), not a fire-once animation. Suppressed
+    // on a genuine batter change (changed===true) since that already gets
+    // its own big entrance treatment — no need to double up on the very
+    // first pixel a new batter's card appears at 0-0.
+    const isBattle = !isBetweenInn && strikes === 2;
+
+    // Count "pop" — separate from the battle state above: fires once, only
+    // when the count itself moved since the last poll for THIS SAME batter
+    // (not on a batter change, not on a poll that re-fetched the same
+    // count). Same "no reduced-motion regression" expectation as every
+    // other entrance animation in this file — handled in CSS.
+    const countKey = `${balls}-${strikes}-${outs}`;
+    const countPopped = !isBetweenInn && !changed && _lgLastCountKey !== null && _lgLastCountKey !== countKey;
+    _lgLastCountKey = (!isBetweenInn && !changed) ? countKey : null;
+
     const countHtml = !isBetweenInn
-        ? `<div class="lg-hero-count">${balls}-${strikes} <span class="lg-hero-count-sep">·</span> ${outs} OUT${outs !== 1 ? 'S' : ''}</div>`
+        ? `<div class="lg-hero-count${countPopped ? ' lg-hero-count--pop' : ''}">${balls}-${strikes} <span class="lg-hero-count-sep">·</span> ${outs} OUT${outs !== 1 ? 'S' : ''}</div>`
         : '';
 
-    return `<div class="lg-hero${changed ? ' lg-hero--new' : ''}" data-batter-id="${batterId}">
+    return `<div class="lg-hero${changed ? ' lg-hero--new' : ''}${isBattle ? ' lg-hero--battle' : ''}" data-batter-id="${batterId}">
         <div class="lg-hero-side">
             <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${batClr}cc,${batClr}55)">${_lgInitial(batterName)}</div>
             <div class="lg-hero-body">
@@ -3106,6 +3139,7 @@ function _renderActiveLgTab(panel, feed, gamePk) {
         // already in the DOM to attach to.
         _renderZone(panel, feed, gamePk);
         _lgRenderWinProbChart(feed, gamePk);
+        _lgFlashSituation(panel, feed);
         _lgMaybeFetchHeroBatterLine(feed, panel);
     } else if (activeTab === 'pbp') {
         tabpanel.innerHTML = _buildPbp(feed.liveData?.plays?.allPlays || []);
@@ -3186,6 +3220,32 @@ function _flashScore(panel, side) {
     if (!el) return;
     el.classList.add('lg-score--flash');
     setTimeout(() => el.classList.remove('lg-score--flash'), 800);
+}
+
+// Tension cue #2 — _flashScore's own pattern, but for the SITUATION itself
+// (outs/count/bases) rather than just the score. Before this, a full-count
+// battle with runners on and no score change had literally nothing on
+// screen that moved — _flashScore only fires on a run, _animateNewPlays
+// only fires when a play COMPLETES, so the single highest-tension moment
+// in an at-bat (2-2 to 3-2, bases still loaded) was the exact moment the
+// page had nothing to say. Same gate discipline as every other "new"
+// treatment in this file: only flashes on a genuine change from the
+// PREVIOUS poll, never replays on a re-render of the same state.
+function _lgFlashSituation(panel, feed) {
+    const status = feed.gameData?.status || {};
+    if (status.abstractGameState !== 'Live') { _lgLastSituationKey = null; return; }
+    const ls = feed.liveData?.linescore || {};
+    if (ls.inningState === 'Middle' || ls.inningState === 'End') { _lgLastSituationKey = null; return; }
+
+    const key = `${ls.outs}_${ls.balls}_${ls.strikes}_${_lgBaseStateIndex(ls.offense)}`;
+    const changed = _lgLastSituationKey !== null && _lgLastSituationKey !== key;
+    _lgLastSituationKey = key;
+    if (!changed) return;
+
+    const el = panel.querySelector('.lg-situation');
+    if (!el) return;
+    el.classList.add('lg-situation--flash');
+    setTimeout(() => el.classList.remove('lg-situation--flash'), 700);
 }
 
 function _showRetryBtn(panel) {
