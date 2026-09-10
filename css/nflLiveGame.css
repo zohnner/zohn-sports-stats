@@ -221,7 +221,28 @@
    --shadow-md (theme-aware) rather than a hardcoded dark-only shadow. */
 .fv-field3d { position: relative; height: 240px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); box-shadow: var(--shadow-md); }
 .fv-field3d-svg { display: block; width: 100%; height: 100%; }
-@media (max-width: 640px) { .fv-field3d { height: 190px; } }
+/* Team logos live OUTSIDE .fv-field3d-svg on purpose (D-1xx, 2026-09-09) --
+   real bug, not a style choice: that SVG's preserveAspectRatio="none" is
+   what makes the trapezoid converge, but the SAME non-uniform stretch also
+   warped every embedded raster <image> into a visibly distorted oval.
+   Nesting another <svg> does not fix this (SVG transforms compose down the
+   tree -- a nested viewport's own preserveAspectRatio is resolved against
+   its own local width/height numbers, not the final on-screen aspect
+   ratio, so it does not shield content from an ancestor's distortion). The
+   only fix that actually holds: keep logos out of the distorted coordinate
+   space entirely -- plain <img> positioned by percentage (left/top set
+   inline per-logo in js/nflLiveGame.js's logoPct()) over this real,
+   undistorted box, sized in true CSS px so they stay circular/square
+   regardless of the field's own aspect ratio. */
+.fv-ez-logo { position: absolute; width: 42px; height: 42px; transform: translate(-50%, -50%); object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)); z-index: 2; }
+/* Midfield watermark -- real team colors at partial opacity (a genuine
+   painted stadium logo, not the flat white silhouette this used to be
+   inside the SVG, which read as "just an opaque outline" -- reported bug).
+   Sits UNDER .fv-field3d-svg in DOM order (see js/nflLiveGame.js) so the
+   yard lines/ball/etc. still draw over it, matching how a real broadcast
+   shot shows the yard markings crossing over turf art, not floating above it. */
+.fv-mid-logo { position: absolute; width: 26%; max-width: 130px; aspect-ratio: 1; transform: translate(-50%, -50%); object-fit: contain; opacity: 0.5; pointer-events: none; }
+@media (max-width: 640px) { .fv-field3d { height: 190px; } .fv-ez-logo { width: 28px; height: 28px; } .fv-mid-logo { width: 22%; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }

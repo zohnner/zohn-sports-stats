@@ -543,17 +543,37 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 
     // Endzones: solid team-color quad + the same diagonal hazard hatch the
     // red-zone shading below reuses (established visual language for
-    // "scoring territory") + logo + abbreviation, all at the endzone's own
-    // projected midpoint so they sit correctly on the tilted plane.
+    // "scoring territory") + abbreviation, all at the endzone's own
+    // projected midpoint so they sit correctly on the tilted plane. Logos
+    // are NOT drawn here -- see logoPct()/the HTML <img> overlays below.
     const awayEZPts = [proj(-10, 0), proj(0, 0), proj(0, 1), proj(-10, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
     const homeEZPts = [proj(100, 0), proj(110, 0), proj(110, 1), proj(100, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    const ezContent = (x0, x1, ptsStr, color, logo, abbr, clipId) => {
-        const c = proj((x0 + x1) / 2, 0.5), s = scaleAt(0.5), logoSize = 46 * s;
+    const ezContent = (x0, x1, ptsStr, color, abbr, clipId) => {
+        const c = proj((x0 + x1) / 2, 0.5), s = scaleAt(0.5);
         return `
         <polygon points="${ptsStr}" fill="${color}"/>
         <rect x="0" y="0" width="${VB_W}" height="${VB_H}" fill="url(#fvHatch)" clip-path="url(#${clipId})"/>
-        ${logo ? `<image href="${_escHtml(logo)}" x="${(c.x - logoSize / 2).toFixed(1)}" y="${(c.y - logoSize / 2 - 10 * s).toFixed(1)}" width="${logoSize.toFixed(1)}" height="${logoSize.toFixed(1)}" opacity="0.95"/>` : ''}
-        <text x="${c.x.toFixed(1)}" y="${(c.y + logoSize / 2 + 6 * s).toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${(15 * s).toFixed(1)}" fill="rgba(255,255,255,0.9)" text-anchor="middle">${_escHtml(abbr)}</text>`;
+        <text x="${c.x.toFixed(1)}" y="${(c.y + 34 * s).toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${(15 * s).toFixed(1)}" fill="rgba(255,255,255,0.9)" text-anchor="middle">${_escHtml(abbr)}</text>`;
+    };
+    // Team logos are real photographic/vector artwork, not simple geometry --
+    // drawing them as SVG <image> inside .fv-field3d-svg meant they inherited
+    // the SAME non-uniform stretch every yard line/stripe deliberately gets
+    // from preserveAspectRatio="none" (that's WHY the trapezoid converges).
+    // A logo genuinely warped into an oval is a real, reported bug (D-1xx,
+    // 2026-09-09), and nesting another <svg> does NOT fix it -- SVG
+    // transforms compose down the tree, so a nested viewport's own
+    // preserveAspectRatio decision is made against ITS OWN local width/height
+    // numbers, not the final on-screen pixel aspect ratio; it does not
+    // shield content from an ancestor's distortion. The only fix that
+    // actually holds is keeping logos out of the distorted coordinate space
+    // entirely: plain HTML <img> elements positioned by PERCENTAGE over
+    // .fv-field3d (a real, undistorted box), sized in real CSS px so they
+    // stay circular/square regardless of the field's own aspect ratio.
+    const logoPct = (xF, yF) => { const p = proj(xF, yF); return { left: (p.x / VB_W * 100).toFixed(2), top: (p.y / VB_H * 100).toFixed(2) }; };
+    const logoImgHtml = (logo, xF, yF, cls) => {
+        if (!logo) return '';
+        const { left, top } = logoPct(xF, yF);
+        return `<img class="${cls}" style="left:${left}%;top:${top}%" src="${_escHtml(logo)}" alt="" data-hide-on-error>`;
     };
 
     // Goalposts -- the single strongest "this is a real football field" cue,
@@ -602,7 +622,6 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const fdA = proj(disp(firstDownPct), 0), fdB = proj(disp(firstDownPct), 1);
     const ballPt = proj(disp(ballPct), 0.5), ballScale = scaleAt(0.5);
     const arrowSvg = _nlgPlayArrowSvg(sit, proj, disp, 0.5);
-    const midPt = proj(50, 0.5), midScale = scaleAt(0.5);
 
     // 4th down: real broadcasts have long recolored the down-marker line on
     // 4th down (yellow -> red) as a plain-sight urgency cue -- researched
@@ -633,6 +652,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
             <span class="fv-poss">${possLogo ? `<img class="fv-poss-logo" src="${_escHtml(possLogo)}" alt="" data-hide-on-error>` : (possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : '')}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
         </div>
         <div class="fv-field3d">
+            ${logoImgHtml(homeLogo, 50, 0.5, 'fv-mid-logo')}
             <svg class="fv-field3d-svg" viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <pattern id="fvHatch" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
@@ -652,13 +672,12 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 </defs>
                 <polygon points="${fieldOutline}" fill="#1a5c2c"/>
                 ${stripesHtml}
-                ${ezContent(-10, 0, awayEZPts, awayColor, awayLogo, awayAbbr, 'fvAwayEZClip')}
-                ${ezContent(100, 110, homeEZPts, homeColor, homeLogo, homeAbbr, 'fvHomeEZClip')}
+                ${ezContent(-10, 0, awayEZPts, awayColor, awayAbbr, 'fvAwayEZClip')}
+                ${ezContent(100, 110, homeEZPts, homeColor, homeAbbr, 'fvHomeEZClip')}
                 ${redZoneHtml}
                 ${yardLinesHtml}
                 ${ticksHtml}
                 ${numsHtml}
-                ${homeLogo ? `<image href="${_escHtml(homeLogo)}" x="${(midPt.x - 55 * midScale).toFixed(1)}" y="${(midPt.y - 55 * midScale).toFixed(1)}" width="${(110 * midScale).toFixed(1)}" height="${(110 * midScale).toFixed(1)}" opacity="0.14" style="filter:brightness(0) invert(1)"/>` : ''}
                 <g id="fvFirstDownLine" class="${firstDownEarned ? 'fv-fd-earned' : ''}">
                     <line x1="${fdA.x.toFixed(1)}" y1="${fdA.y.toFixed(1)}" x2="${fdB.x.toFixed(1)}" y2="${fdB.y.toFixed(1)}" stroke="${isDown4 ? 'var(--color-loss)' : 'var(--color-first-down)'}" stroke-width="3.5" class="${isDown4 ? 'fv-down4-line' : ''}"/>
                 </g>
@@ -679,6 +698,8 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 </g>
                 </g>
             </svg>
+            ${logoImgHtml(awayLogo, -5, 0.5, 'fv-ez-logo')}
+            ${logoImgHtml(homeLogo, 105, 0.5, 'fv-ez-logo')}
         </div>
         <div class="fv-legend">
             <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts, 'away')}</div></div>
