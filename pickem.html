@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free NFL Pick'em Confidence Pool Helper — No Login | SportStrata</title>
+    <meta name="description" content="Rank your NFL confidence pool picks 1-16 for free. Blends DraftKings' line with ESPN's own model, flags games where they disagree, and lets you drag-reorder and flip any pick. No login, no ads.">
+    <link rel="canonical" href="https://sportstrata.cc/pickem">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SportStrata">
+    <meta property="og:title" content="Free NFL Pick'em Confidence Pool Helper — No Login | SportStrata">
+    <meta property="og:description" content="Rank your confidence pool picks 1-16. Blends DraftKings' line with ESPN's own model, flags disagreements, lets you drag-reorder and flip any pick. Free, no login.">
+    <meta property="og:url" content="https://sportstrata.cc/pickem">
+    <meta property="og:image" content="https://sportstrata.cc/api/og?eyebrow=SportStrata%20-%20Free%20Tool&amp;title=NFL%20Pick%27em%20Confidence%20Helper&amp;subtitle=Blends%20DraftKings%20odds%20with%20ESPN%27s%20model&amp;accent=3b7dd8">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Free NFL Pick'em Confidence Pool Helper — No Login | SportStrata">
+    <meta name="twitter:description" content="Rank your confidence pool picks 1-16. DraftKings + ESPN's model, blended. Drag-reorder, flip any pick. Free, no login.">
+    <meta name="twitter:image" content="https://sportstrata.cc/api/og?eyebrow=SportStrata%20-%20Free%20Tool&amp;title=NFL%20Pick%27em%20Confidence%20Helper&amp;subtitle=Blends%20DraftKings%20odds%20with%20ESPN%27s%20model&amp;accent=3b7dd8">
+    <meta name="theme-color" content="#0d1014">
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0d1014; color: #f5f7fa; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+        main { max-width: 660px; margin: 0 auto; padding: 3.5rem 1.5rem 3rem; flex: 1; }
+        .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2.75rem; text-decoration: none; }
+        .brand img { width: 34px; height: 34px; }
+        .brand span { font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 700; font-size: 1.15rem; color: #f5f7fa; }
+        .brand span b { color: #ff7a00; font-weight: 700; }
+        .kicker { color: #ff7a00; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        h1 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.12; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.01em; }
+        h2 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.25rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+        .tagline { color: #c5cbd3; font-size: 1.08rem; margin-bottom: 2rem; }
+        ul.feat { list-style: none; margin-bottom: 2rem; }
+        ul.feat li { padding: 0.55rem 0 0.55rem 1.4rem; position: relative; color: #c5cbd3; font-size: 0.96rem; }
+        ul.feat li::before { content: ''; position: absolute; left: 0; top: 1.05rem; width: 7px; height: 7px; border-radius: 2px; background: #ff7a00; }
+        ul.feat li strong { color: #f5f7fa; }
+        ol.steps { list-style: none; counter-reset: s; display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+        ol.steps li { counter-increment: s; padding: 0.85rem 1rem 0.85rem 3rem; position: relative; background: #14181d; border: 1px solid rgba(255,255,255,0.11); border-radius: 10px; color: #c5cbd3; font-size: 0.95rem; }
+        ol.steps li::before { content: counter(s); position: absolute; left: 0.85rem; top: 0.8rem; width: 1.5rem; height: 1.5rem; border-radius: 6px; background: #ff7a00; color: #0d1014; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+        .cta { display: inline-block; background: #ff7a00; color: #0d1014; font-weight: 800; font-size: 1rem; padding: 0.85rem 1.9rem; border-radius: 10px; text-decoration: none; margin-top: 0.5rem; }
+        .cta:hover { background: #ffb347; }
+        .receipt { margin-top: 1.1rem; color: #8a93a3; font-size: 0.82rem; }
+        .faq { margin-top: 1rem; }
+        .faq div { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.09); }
+        .faq h3 { font-size: 1rem; font-weight: 700; color: #f5f7fa; margin-bottom: 0.35rem; }
+        .faq p { color: #c5cbd3; font-size: 0.94rem; }
+        .also { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); color: #8a93a3; font-size: 0.85rem; }
+        .also a { color: #c5cbd3; text-decoration: none; margin-right: 1rem; }
+        .also a:hover { color: #ff7a00; }
+        footer { text-align: center; padding: 1.5rem; color: #5e6978; font-size: 0.78rem; }
+        footer a { color: #8a93a3; }
+    </style>
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"SportStrata NFL Pick'em Confidence Pool Helper","url":"https://sportstrata.cc/pickem","applicationCategory":"SportsApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free NFL confidence pool ranking tool. Blends DraftKings' line with ESPN's own model, flags games where they disagree, and lets you drag-reorder and flip any pick. No login.","featureList":"DraftKings + ESPN model blend, disagreement flagging, drag-to-reorder confidence ranking, click to flip any pick, local season tracking, no login","publisher":{"@type":"Organization","name":"SportStrata","url":"https://sportstrata.cc/"}}
+    </script>
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is an NFL confidence pool?","acceptedAnswer":{"@type":"Answer","text":"A confidence pool (or pick'em) has you pick a winner for every NFL game each week, then rank your picks by confidence -- your most confident pick gets the most points (1 through however many games are on the slate), your least confident gets the fewest. A correct pick at high confidence is worth far more than a correct pick at low confidence, so the ranking matters as much as who you pick."}},{"@type":"Question","name":"Is this tool free?","acceptedAnswer":{"@type":"Answer","text":"Yes, completely free, no login, no ads."}},{"@type":"Question","name":"Does it use odds from multiple sportsbooks?","acceptedAnswer":{"@type":"Answer","text":"No -- it blends DraftKings' line with ESPN's own independent Matchup Predictor model, which is built separately from any sportsbook. That gives you two real, independent opinions rather than one, and it flags games where they disagree so you know exactly where to apply your own judgment instead of trusting the default order."}},{"@type":"Question","name":"Can I change the picks or the order?","acceptedAnswer":{"@type":"Answer","text":"Yes. Drag any game up or down to change its confidence rank, or click either team in a matchup to flip your pick. The default order is just a starting point."}},{"@type":"Question","name":"Do I need an account?","acceptedAnswer":{"@type":"Answer","text":"No. Your picks and weekly results save locally in your own browser. There's no login and nothing is tied to an account."}}]}
+    </script>
+</head>
+<body>
+    <main>
+        <a class="brand" href="/"><img src="/assets/icon-64.png" alt=""><span>Sport<b>Strata</b></span></a>
+        <div class="kicker">Free · No login · No ads</div>
+        <h1>Rank your confidence picks in seconds.</h1>
+        <p class="tagline">A free helper for your NFL confidence pool or pick'em league. It blends DraftKings' own line with ESPN's independent model into one default ranking, then flags the games where the two disagree the most -- exactly where your own judgment is worth the most.</p>
+        <ul class="feat">
+        <li><strong>Two independent signals, blended</strong> — DraftKings' moneyline (vig removed) plus ESPN's own Matchup Predictor, not just one source dressed up as two</li>
+        <li><strong>Disagreement flagged</strong> — games where the market and the model don't agree get a visible flag, the real signal for where to override the default</li>
+        <li><strong>Fully yours to change</strong> — drag any game to re-rank it, click either team to flip your pick</li>
+        <li><strong>Season tracking</strong> — your record and points won build up week over week, right in your browser</li>
+        <li><strong>No account, no catch</strong> — nothing to sign up for, nothing saved anywhere but your own device</li>
+        </ul>
+        <a class="cta" href="/nfl/pickem">Open the Pick'em Helper →</a>
+        <p class="receipt">Odds from DraftKings via ESPN, model probability from ESPN's own Matchup Predictor. Nothing saved to an account.</p>
+
+        <h2>How it works</h2>
+        <ol class="steps">
+            <li>Open the tool -- it loads this week's games ranked by a blended DraftKings/ESPN probability</li>
+            <li>Drag to reorder confidence, or click a team to flip any pick you disagree with</li>
+            <li>Submit your own order to your real pool, then come back to track your record as games finish</li>
+        </ol>
+
+        <h2>Confidence pool FAQ</h2>
+        <div class="faq">
+            <div><h3>What is a confidence pool?</h3><p>You pick a winner for every game each week, then rank all your picks by confidence -- the highest-confidence pick is worth the most points, the lowest the fewest. Getting a high-confidence pick right matters more than getting a low-confidence one right.</p></div>
+            <div><h3>Is it free?</h3><p>Yes, completely free, no login, no ads.</p></div>
+            <div><h3>Does it check multiple sportsbooks?</h3><p>No -- it blends DraftKings' line with ESPN's own independent model instead, which gives you a real second opinion and flags exactly where the two disagree.</p></div>
+            <div><h3>Can I change the ranking?</h3><p>Yes -- drag any game to re-rank it or click a team to flip the pick. The default order is a starting point, not the final answer.</p></div>
+            <div><h3>Do I need an account?</h3><p>No. Everything saves locally in your own browser.</p></div>
+        </div>
+
+        <nav class="also" aria-label="More SportStrata tools">More free tools:
+            <a href="/mock-draft">Mock Draft</a><a href="/draft-kit">Draft Kit</a><a href="/nfl">NFL Analytics</a>
+        </nav>
+    </main>
+    <footer>SportStrata — serious stats for serious fans · <a href="/">sportstrata.cc</a></footer>
+</body>
+</html>

@@ -9,8 +9,9 @@
  *   node tools/gen-sitemap.cjs --dry      # prints the url count, writes nothing
  *
  * Only lists paths that have a real edge-render template today:
- *   landings /mlb /nfl /ncaaf /ncaab /wnba · the 4 static stubs · /mlb/standings
- *   /mlb/leaders · /nfl/leaders · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
+ *   landings /mlb /nfl /ncaaf /ncaab /wnba · the 5 static stubs (mock-draft/
+ *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
+ *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
  *   /ncaab/standings · /wnba/standings · /wnba/leaders · /glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
@@ -68,10 +69,11 @@ async function main() {
     // 1) static / landings / stubs
     add(urlTag('/', 'daily', '1.0'));
     for (const s of ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba']) add(urlTag('/' + s, 'daily', '0.9'));
-    for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask']) add(urlTag('/' + s, 'weekly', '0.7'));
+    for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask', 'pickem']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
     add(urlTag('/mlb/leaders', 'daily', '0.7'));
     add(urlTag('/nfl/leaders', 'daily', '0.7'));
+    add(urlTag('/nfl/pickem', 'daily', '0.7'));
     add(urlTag('/nfl/standings', 'daily', '0.7'));
     add(urlTag('/ncaaf/standings', 'daily', '0.7'));
     add(urlTag('/ncaaf/rankings', 'weekly', '0.7'));
