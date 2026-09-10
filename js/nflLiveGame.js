@@ -523,23 +523,46 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     }
     // 5-yard hash ticks near both sidelines.
     let ticksHtml = '';
+    // Real NFL hash marks sit 70'9" apart on a 160'-wide field -- 44.625ft
+    // (27.9%) in from each sideline, nowhere near the sideline itself. Was
+    // 0.06/0.94 (basically ON the sideline) -- a made-up placeholder value,
+    // not a measured one; 0.28/0.72 is the actual number.
     for (let x = 5; x < 100; x += 10) {
-        [0.06, 0.94].forEach((yF) => {
+        [0.28, 0.72].forEach((yF) => {
             const c = proj(x, yF), s = scaleAt(yF);
             ticksHtml += `<line x1="${(c.x - 5 * s).toFixed(1)}" y1="${c.y.toFixed(1)}" x2="${(c.x + 5 * s).toFixed(1)}" y2="${c.y.toFixed(1)}" stroke="rgba(255,255,255,0.4)" stroke-width="${(2 * s).toFixed(1)}"/>`;
         });
     }
     // Yard number labels, mirrored near-edge (big) and far-edge (small) --
     // the standard "distance from nearest goal" display, replacing the old
-    // flat .fv-yardnums row below the field (removed, not shown twice).
+    // flat .fv-yardnums row below the field (removed, not shown twice). Each
+    // number also gets a small direction chevron pointing at the NEARER goal
+    // line (real broadcast/field-paint convention -- e.g. a real "◄ 20"),
+    // which also happens to be a free, correct way to show which way a team
+    // is driving without adding new text anywhere.
     let numsHtml = '';
     for (let x = 10; x <= 90; x += 10) {
         const num = x <= 50 ? x : 100 - x;
+        const dir = x < 50 ? -1 : 1;
         [{ yF: 0.1, size: 34 }, { yF: 0.9, size: 18 }].forEach(({ yF, size }) => {
             const p = proj(x, yF);
             numsHtml += `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${size}" fill="rgba(255,255,255,0.78)" text-anchor="middle" dominant-baseline="middle">${num}</text>`;
+            const scale = size / 34, cx = p.x + dir * 24 * scale, chevW = 6 * scale, chevH = 8 * scale;
+            numsHtml += `<polygon points="${(cx + dir * chevW).toFixed(1)},${p.y.toFixed(1)} ${(cx - dir * chevW).toFixed(1)},${(p.y - chevH).toFixed(1)} ${(cx - dir * chevW).toFixed(1)},${(p.y + chevH).toFixed(1)}" fill="rgba(255,255,255,0.55)"/>`;
         });
     }
+    // End zone pylons -- small, bright, and one of the most immediately
+    // recognizable "this is a real NFL field" details for very little
+    // drawing effort. Real pylons sit at all 4 corners of each end zone
+    // (goal line x back line, both sidelines); drawn as a simple upward
+    // triangle in the site's own accent orange, which happens to already
+    // match real pylon color. Height is real-world vertical (scales with
+    // depth the same way goalposts do), not a ground-plane coordinate.
+    const pylon = (xF, yF) => {
+        const base = proj(xF, yF), s = scaleAt(yF), h = 14 * s, w = 5 * s;
+        return `<polygon points="${(base.x - w).toFixed(1)},${base.y.toFixed(1)} ${(base.x + w).toFixed(1)},${base.y.toFixed(1)} ${base.x.toFixed(1)},${(base.y - h).toFixed(1)}" fill="var(--accent)" stroke="rgba(0,0,0,0.35)" stroke-width="0.6"/>`;
+    };
+    const pylonsHtml = [0, -10, 100, 110].map((xF) => [0, 1].map((yF) => pylon(xF, yF)).join('')).join('');
 
     // Endzones: solid team-color quad + the same diagonal hazard hatch the
     // red-zone shading below reuses (established visual language for
@@ -694,6 +717,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 </g>
                 <g id="fvScrimLine"><line x1="${scrimA.x.toFixed(1)}" y1="${scrimA.y.toFixed(1)}" x2="${scrimB.x.toFixed(1)}" y2="${scrimB.y.toFixed(1)}" stroke="var(--color-scrimmage)" stroke-width="3"/></g>
                 ${arrowSvg}
+                ${pylonsHtml}
                 ${goalpost(-10)}
                 ${goalpost(110)}
                 <g id="fvBallG">

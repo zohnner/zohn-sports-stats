@@ -221,6 +221,13 @@
    --shadow-md (theme-aware) rather than a hardcoded dark-only shadow. */
 .fv-field3d { position: relative; height: 240px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); box-shadow: var(--shadow-md); }
 .fv-field3d-svg { display: block; width: 100%; height: 100%; }
+/* Stadium light: same overhead-glow/vignette treatment the old flat .fv-field
+   had (see its own ::after above) -- never ported when the field was rebuilt
+   as an SVG (D-1xx, 2026-09-09), so the new field read as flat-printed
+   despite everything else about it looking more real. Painted as this
+   element's OWN ::after so it sits above the svg AND the endzone/midfield
+   <img> logos (all earlier in DOM order) without needing z-index bookkeeping. */
+.fv-field3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 90% at 50% 15%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.28) 100%); }
 /* Team logos live OUTSIDE .fv-field3d-svg on purpose (D-1xx, 2026-09-09) --
    real bug, not a style choice: that SVG's preserveAspectRatio="none" is
    what makes the trapezoid converge, but the SAME non-uniform stretch also
