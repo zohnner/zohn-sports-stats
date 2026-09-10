@@ -418,6 +418,7 @@ const _NAV_META = {
     'nfl-standings': { label: 'NFL Standings' },
     'nfl-highlight-card': { label: 'Highlight Card' },
     'nfl-sos':       { label: 'Draft HQ · Schedule' },
+    'nfl-pickem':    { label: "Pick'em Confidence Helper" },
     'nhl-players':   { label: 'NHL Leaders' },
     'nhl-leaders':   { label: 'NHL Leaders' },
     'nhl-teams':     { label: 'NHL Teams' },
@@ -782,6 +783,10 @@ function _renderNFLView(view) {
             if (viewCount) viewCount.textContent = 'Draft HQ · Waiver Wire';
             if (typeof loadNFLWaivers === 'function') loadNFLWaivers();
             break;
+        case 'nfl-pickem':
+            if (viewCount) viewCount.textContent = "Pick'em Confidence Helper";
+            if (typeof loadNFLPickem === 'function') loadNFLPickem();
+            break;
         case 'nfl-teams':
             if (viewCount) viewCount.textContent = 'NFL Teams';
             if (AppState.nflTeams.length) displayNFLTeams(AppState.nflTeams);
@@ -1103,7 +1108,7 @@ function _loadFromHash() {
         }
 
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare', 'mlb-highlight-card'];
-        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
+        const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-pickem', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
@@ -1191,6 +1196,7 @@ const SUB_NAV_TABS = {
             { t: 'In-Season', items: [
                 { v: 'nfl-myleague', l: 'My League' }, { v: 'nfl-trending', l: 'Trending' },
                 { v: 'nfl-injuries', l: 'Injury Report' }, { v: 'nfl-waivers', l: 'Waiver Wire' },
+                { v: 'nfl-pickem', l: "Pick'em" },
             ] },
         ] },
         { v: 'news', l: 'News' },
@@ -1317,7 +1323,7 @@ const MENU_TABS = {
         { group:'In-Season' },
         { v:'nfl-myleague', l:'My League', i:'extra' },
         { v:'nfl-trending', l:'Trending', i:'extra' }, { v:'nfl-injuries', l:'Injury Report', i:'extra' },
-        { v:'nfl-waivers', l:'Waiver Wire', i:'extra' },
+        { v:'nfl-waivers', l:'Waiver Wire', i:'extra' }, { v:'nfl-pickem', l:"Pick'em", i:'extra' },
         { group:'Tools' },
         { v:'nfl-highlight-card', l:'Highlight', i:'extra' },
     ],
@@ -1683,6 +1689,7 @@ const _PAGE_META = {
     'arcade':        { title: 'SportStrata — Arcade',         desc: 'Baseball trivia and mini-games powered by real MLB data.' },
     'news':          { title: 'SportStrata — News',           desc: 'Latest NFL, MLB, and NCAAF headlines, injuries, and storylines.' },
     'nfl-sos':       { title: 'SportStrata — NFL Strength of Schedule', desc: 'Fantasy strength of schedule by position, weighted for the fantasy playoffs.' },
+    'nfl-pickem':    { title: "SportStrata — NFL Pick'em Confidence Helper", desc: "Rank each week's NFL games by confidence, blending DraftKings' line with ESPN's own model." },
     'nfl-highlight-card': { title: 'SportStrata — NFL Highlight Card Studio', desc: 'Build an animated, shareable highlight card for any player from a recent NFL game.' },
     'ncaab-scores':    { title: 'SportStrata — College Basketball Scores',    desc: 'Live NCAA men\'s basketball scores and today\'s scoreboard.' },
     'ncaab-standings': { title: 'SportStrata — College Basketball Standings', desc: 'NCAA men\'s basketball standings by conference.' },

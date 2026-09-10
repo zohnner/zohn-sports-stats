@@ -1,0 +1,76 @@
+/* NFL Pick'em Confidence Helper (D-1xx) -- `.pk-*` selectors only. Promoted
+   from the standalone pickem.html page into a real nav-linked view; these
+   are the same component styles, namespaced the same way liveGame.css/
+   nflLiveGame.css already do for their own features. */
+.pk-wrap { max-width: 900px; margin: 0 auto; }
+.pk-hint { color: var(--text-muted); font-size: 0.8rem; margin: 4px 0 20px; max-width: 74ch; line-height: 1.5; }
+.pk-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.pk-controls label { font-size: 0.78rem; color: var(--text-secondary); }
+.pk-controls select, .pk-controls input {
+    background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary);
+    border-radius: var(--radius-md); padding: 6px 10px; font-family: var(--font-sans); font-size: 0.85rem;
+}
+.pk-controls input[type="number"] { width: 72px; }
+.pk-controls button {
+    background: var(--accent); color: #14181d; border: none; border-radius: var(--radius-md);
+    padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); font-size: 0.85rem;
+}
+.pk-controls button.pk-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
+.pk-controls button:disabled { opacity: 0.5; cursor: default; }
+.pk-status { color: var(--text-muted); font-size: 0.9rem; padding: 30px 0; text-align: center; }
+.pk-status.err { color: var(--color-error, #ff5a5a); }
+.pk-summary {
+    display: block; background: var(--bg-surface); border-radius: var(--radius-md); padding: 10px 14px;
+    margin-bottom: 16px; font-size: 0.82rem; color: var(--text-secondary); box-shadow: var(--shadow-card);
+}
+.pk-summary b { color: var(--text-primary); }
+.pk-summary .pk-record-win { color: var(--color-win); }
+.pk-summary .pk-record-loss { color: var(--color-loss); }
+.pk-summary-top { display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline; }
+.pk-season-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.78rem; }
+.pk-season-table th, .pk-season-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border-default); }
+.pk-season-table th { color: var(--text-secondary); font-weight: 600; }
+.pk-season-table td.num { font-family: monospace; }
+.pk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pk-row {
+    display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px;
+    background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+    padding: 10px 12px; box-shadow: var(--shadow-card); cursor: grab;
+}
+.pk-row.pk-dragging { opacity: 0.4; }
+.pk-row.pk-flagged { border-color: var(--accent-border, var(--accent)); }
+.pk-conf {
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px;
+    font-family: monospace; font-weight: 700; font-size: 1.05rem; color: var(--accent);
+}
+.pk-conf-arrows { display: flex; flex-direction: column; gap: 1px; }
+.pk-conf-arrows button {
+    background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.6rem;
+    line-height: 1; padding: 1px 4px;
+}
+.pk-conf-arrows button:hover { color: var(--accent); }
+.pk-matchup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pk-team {
+    display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: var(--radius-md);
+    border: 2px solid transparent; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+}
+.pk-team img { width: 22px; height: 22px; object-fit: contain; }
+.pk-team.pk-picked { border-color: var(--accent); background: var(--accent-subtle); }
+.pk-at { color: var(--text-muted); font-size: 0.75rem; }
+.pk-line { color: var(--text-muted); font-size: 0.72rem; margin-top: 2px; }
+.pk-probs { display: flex; gap: 10px; align-items: center; font-size: 0.72rem; color: var(--text-secondary); flex-wrap: wrap; margin-top: 3px; }
+.pk-probs .pk-gap { color: var(--accent); font-weight: 700; }
+.pk-meta { text-align: right; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+.pk-pill {
+    display: inline-block; padding: 2px 7px; border-radius: var(--radius-full); font-size: 0.65rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px;
+}
+.pk-pill.pk-pre { background: var(--bg-raised); color: var(--text-muted); }
+.pk-pill.pk-live { background: var(--color-live); color: #fff; }
+.pk-pill.pk-final { background: var(--bg-raised); color: var(--text-secondary); }
+.pk-result-correct { color: var(--color-win); font-weight: 700; }
+.pk-result-wrong { color: var(--color-loss); font-weight: 700; }
+@media (max-width: 640px) {
+    .pk-row { grid-template-columns: 32px 1fr; }
+    .pk-meta { grid-column: 1 / -1; text-align: left; }
+}
