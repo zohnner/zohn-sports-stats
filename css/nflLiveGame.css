@@ -173,7 +173,24 @@
 .fv-arrow-badge-x { stroke: var(--color-loss); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
 .fv-arrow--entering { animation: fvArrowIn 480ms ease-out; }
 @keyframes fvArrowIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .fv-arrow--entering, .fv-poss-dot, .fv-to-dot--used { animation: none; } }
+/* 4th down: real broadcasts have long recolored the down-marker line for
+   this exact reason -- a plain-sight "this drive could end right here" cue
+   researched from broadcast-graphics history, not invented for this site.
+   The line itself already switches to --color-loss (js/nflLiveGame.js); the
+   slow pulse on top of that red is the only new motion, restrained (1.8s,
+   opacity only, well under WCAG's 3-flashes-per-second ceiling) so it reads
+   as "pay attention" rather than "something is broken" -- a fast/flashy
+   pulse on the one line that means "your team may be about to lose the
+   ball" would be exactly the wrong tone. */
+.fv-down4-line { animation: fvDown4Pulse 1.8s ease-in-out infinite; }
+@keyframes fvDown4Pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+/* First-down-earned: a genuinely new set of downs is a real, discrete event
+   (see firstDownEarned in _nlgFieldViewerHtml) -- one quick, celebratory
+   flash on the line itself, not a new element, so it doesn't compete with
+   the down/distance text already saying the same thing in words. */
+.fv-fd-earned line { animation: fvFdEarned 900ms ease-out; }
+@keyframes fvFdEarned { 0% { stroke-width: 3.5; filter: drop-shadow(0 0 0 var(--color-first-down-glow)); } 30% { stroke-width: 7; filter: drop-shadow(0 0 10px var(--color-first-down-glow)); } 100% { stroke-width: 3.5; filter: drop-shadow(0 0 0 transparent); } }
+@media (prefers-reduced-motion: reduce) { .fv-arrow--entering, .fv-poss-dot, .fv-to-dot--used, .fv-down4-line, .fv-fd-earned line { animation: none; } }
 /* Ball is an inline SVG (not a flat div) so it can carry a real sheen
    gradient + seam/lace detail instead of a solid tinted ellipse -- the same
    "reads as a real object, not a colored blob" bar the field/endzones/arrows

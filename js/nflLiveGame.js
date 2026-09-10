@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -60,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -318,6 +318,7 @@ function _nlgRenderHeader(comp, home, away) {
         </div>
         ${fieldHtml}
         ${sitLine}`;
+    if (fieldHtml) _nlgAnimateFieldMotion();
 }
 
 // D-105/Phase-1 field redesign: ESPN Gamecast-style live field position
@@ -335,6 +336,83 @@ function _nlgRenderHeader(comp, home, away) {
 // only mirroring the DISPLAY position via disp(v) = 100 - v, since
 // yardLine 100 (away's goal) now sits at the visual left edge and
 // yardLine 0 (home's goal) at the visual right edge.
+// Shared perspective-projection constants/helpers (D-1xx, 2026-09-09) --
+// hoisted to module scope, not a per-call closure inside
+// _nlgFieldViewerHtml, so _nlgAnimateFieldMotion (below) can compute the
+// SAME screen coordinates for a "previous" situation without duplicating
+// the math or re-running the whole HTML builder just to get a point.
+const _FV = (() => {
+    const VB_W = 1000, VB_H = 400;
+    const BOTTOM_Y = 378, TOP_Y = 150;
+    const BOTTOM_HALF_W = 486, TOP_HALF_W = 284;
+    const CENTER_X = VB_W / 2;
+    const halfWAt = (yF) => BOTTOM_HALF_W + (TOP_HALF_W - BOTTOM_HALF_W) * yF;
+    const yAt = (yF) => BOTTOM_Y + (TOP_Y - BOTTOM_Y) * yF;
+    const proj = (xF, yF) => {
+        const xNorm = (xF + 10) / 120;
+        const hw = halfWAt(yF);
+        return { x: CENTER_X - hw + xNorm * hw * 2, y: yAt(yF) };
+    };
+    const scaleAt = (yF) => halfWAt(yF) / BOTTOM_HALF_W;
+    return { VB_W, VB_H, BOTTOM_Y, TOP_Y, BOTTOM_HALF_W, TOP_HALF_W, CENTER_X, halfWAt, yAt, proj, scaleAt };
+})();
+
+// Glides the ball marker and the scrimmage/first-down lines from wherever
+// they were on the LAST render to wherever they are now, instead of the
+// silent teleport an innerHTML replace produces by default (this file
+// rebuilds the whole header markup fresh on every poll -- see
+// _nlgRenderHeader -- so a plain CSS transition never fires: there is no
+// persisted element carrying an old value into the new one). Matches the
+// broadcast convention researched for this feature (the yellow line and
+// ball spot visibly slide into place, they never just cut) and this file's
+// own established "motion marks a real change, never a first paint" rule
+// (see the play-arrow entrance and timeout-dot flash elsewhere in this
+// file). Skips entirely under prefers-reduced-motion or when there is no
+// remembered previous value (first paint / game switch) to animate from.
+// Called once, right after headerEl.innerHTML mounts the fresh SVG.
+//
+// Animates a <g> wrapper's `transform` rather than a <line>'s raw x1/y1/x2/
+// y2 attributes -- `transform` is universally WAAPI-animatable on SVG
+// elements, while cross-browser support for animating SVG geometry
+// attributes as CSS/WAAPI properties is inconsistent. The scrimmage/first-
+// down lines are wrapped in a <g id="..."> at their FINAL (correct) position
+// in the static markup; the "from" keyframe offsets that group back to
+// where the near-sideline (bottom) end of the line used to sit via
+// translateX, and animates to translateX(0) -- a good-enough approximation
+// (the true perspective delta differs slightly between the near and far
+// endpoint) that looks like a clean slide without needing per-attribute
+// animation support.
+function _nlgAnimateFieldMotion() {
+    const from = _nlg.fvLastPositions;
+    const to = _nlg.fvPendingPositions;
+    _nlg.fvLastPositions = to || null;
+    if (!from || !to) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const svg = document.querySelector('.fv-field3d-svg');
+    if (!svg) return;
+    try {
+        const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'; // ease-out, matches this file's other entrance motion
+        const DUR = 420;
+        const slideGroup = (id, fromX, toX) => {
+            const el = svg.querySelector('#' + id);
+            if (!el || fromX === toX) return;
+            el.animate([
+                { transform: `translateX(${(fromX - toX).toFixed(1)}px)` },
+                { transform: 'translateX(0px)' },
+            ], { duration: DUR, easing: EASE, fill: 'both' });
+        };
+        slideGroup('fvScrimLine', from.scrimBottomX, to.scrimBottomX);
+        slideGroup('fvFirstDownLine', from.fdBottomX, to.fdBottomX);
+        const ballEl = svg.querySelector('#fvBallG');
+        if (ballEl && (from.ball.x !== to.ball.x || from.ball.y !== to.ball.y)) {
+            ballEl.animate([
+                { transform: `translate(${(from.ball.x - to.ball.x).toFixed(1)}px,${(from.ball.y - to.ball.y).toFixed(1)}px) scale(${to.ballScale})` },
+                { transform: `translate(0px,0px) scale(${to.ballScale})` },
+            ], { duration: DUR, easing: EASE, fill: 'both' });
+        }
+    } catch (e) { if (window.Logger) Logger.warn('field motion animate failed', e, 'NFL'); }
+}
+
 function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const homeAbbr = home?.team?.abbreviation || '';
     const awayAbbr = away?.team?.abbreviation || '';
@@ -420,18 +498,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // smallest) -- this is NOT a real lateral ball position (ESPN's feed
     // carries no hash-mark data), so every on-field marker sits at yField 0.5
     // rather than claiming a position we don't actually have.
-    const VB_W = 1000, VB_H = 400;
-    const BOTTOM_Y = 378, TOP_Y = 150;
-    const BOTTOM_HALF_W = 486, TOP_HALF_W = 284;
-    const CENTER_X = VB_W / 2;
-    const halfWAt = (yF) => BOTTOM_HALF_W + (TOP_HALF_W - BOTTOM_HALF_W) * yF;
-    const yAt = (yF) => BOTTOM_Y + (TOP_Y - BOTTOM_Y) * yF;
-    const proj = (xF, yF) => {
-        const xNorm = (xF + 10) / 120;
-        const hw = halfWAt(yF);
-        return { x: CENTER_X - hw + xNorm * hw * 2, y: yAt(yF) };
-    };
-    const scaleAt = (yF) => halfWAt(yF) / BOTTOM_HALF_W;
+    const { VB_W, VB_H, proj, scaleAt } = _FV;
     const pt = (xF, yF) => { const p = proj(xF, yF); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; };
 
     const fieldOutline = [proj(-10, 0), proj(110, 0), proj(110, 1), proj(-10, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
@@ -495,15 +562,33 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // each back line -- goalpost height isn't a depth coordinate, it's
     // literally vertical, so it scales with the base's yField=0.5 depth but
     // otherwise draws independent of the ground projection above it.
+    // Crossbar must be parallel to the back-of-endzone line in the SAME way
+    // it is in real life -- both run along the field's width axis at the
+    // same length-wise position. Under this linear-trapezoid projection that
+    // back line is NOT vertical in screen space (it slants toward center as
+    // it recedes, same as every other yard line), so the crossbar has to
+    // follow that measured slope rather than assume horizontal -- the
+    // previous version drew it dead level, which looked wrong against the
+    // visibly slanted endzone edge right next to it. Uprights still rise
+    // straight up (real-world vertical), only the crossbar's own angle
+    // changes; the support post stays vertical too, same as a real post.
     const goalpost = (xF) => {
+        const p0 = proj(xF, 0), p1 = proj(xF, 1);
+        const dx = p1.x - p0.x, dy = p1.y - p0.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
         const base = proj(xF, 0.5), s = scaleAt(0.5);
         const postH = 105 * s, crossW = 62 * s, uprightH = 70 * s;
-        const topY = base.y - postH;
+        const crossC = { x: base.x, y: base.y - postH };
+        const crossL = { x: crossC.x - ux * crossW / 2, y: crossC.y - uy * crossW / 2 };
+        const crossR = { x: crossC.x + ux * crossW / 2, y: crossC.y + uy * crossW / 2 };
+        const upL = { x: crossL.x, y: crossL.y - uprightH };
+        const upR = { x: crossR.x, y: crossR.y - uprightH };
         return `<g stroke="#ffd21f" stroke-width="${(4 * s).toFixed(1)}" fill="none" stroke-linecap="round">
-            <line x1="${base.x.toFixed(1)}" y1="${base.y.toFixed(1)}" x2="${base.x.toFixed(1)}" y2="${topY.toFixed(1)}"/>
-            <line x1="${(base.x - crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x + crossW / 2).toFixed(1)}" y2="${topY.toFixed(1)}"/>
-            <line x1="${(base.x - crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x - crossW / 2).toFixed(1)}" y2="${(topY - uprightH).toFixed(1)}"/>
-            <line x1="${(base.x + crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x + crossW / 2).toFixed(1)}" y2="${(topY - uprightH).toFixed(1)}"/>
+            <line x1="${base.x.toFixed(1)}" y1="${base.y.toFixed(1)}" x2="${crossC.x.toFixed(1)}" y2="${crossC.y.toFixed(1)}"/>
+            <line x1="${crossL.x.toFixed(1)}" y1="${crossL.y.toFixed(1)}" x2="${crossR.x.toFixed(1)}" y2="${crossR.y.toFixed(1)}"/>
+            <line x1="${crossL.x.toFixed(1)}" y1="${crossL.y.toFixed(1)}" x2="${upL.x.toFixed(1)}" y2="${upL.y.toFixed(1)}"/>
+            <line x1="${crossR.x.toFixed(1)}" y1="${crossR.y.toFixed(1)}" x2="${upR.x.toFixed(1)}" y2="${upR.y.toFixed(1)}"/>
         </g>`;
     };
 
@@ -518,6 +603,28 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     const ballPt = proj(disp(ballPct), 0.5), ballScale = scaleAt(0.5);
     const arrowSvg = _nlgPlayArrowSvg(sit, proj, disp, 0.5);
     const midPt = proj(50, 0.5), midScale = scaleAt(0.5);
+
+    // 4th down: real broadcasts have long recolored the down-marker line on
+    // 4th down (yellow -> red) as a plain-sight urgency cue -- researched
+    // convention (broadcast graphics history), not invented here. Reuses
+    // --color-loss the same way red-zone shading and the arrow's turnover/
+    // sack tint already do, so "red on this field" means one consistent
+    // thing everywhere rather than a new meaning per element.
+    const isDown4 = sit.down === 4;
+    // First-down-earned pulse: a NEW set of downs (down resets to 1 from
+    // something else) is a real, discrete event worth a one-shot flash --
+    // same "motion marks a change the user didn't see happen yet" rule as
+    // the timeout-dot flash and play-arrow entrance elsewhere in this file.
+    // A CSS animation (not a WAAPI from/to transition) is enough here since
+    // it just needs to play once on mount, which fires naturally even
+    // though this whole SVG is torn down and rebuilt fresh every poll.
+    const firstDownEarned = sit.down === 1 && _nlg.lastDown != null && _nlg.lastDown !== 1;
+    _nlg.lastDown = typeof sit.down === 'number' ? sit.down : _nlg.lastDown;
+
+    // Stash this render's positions for _nlgAnimateFieldMotion (called by
+    // _nlgRenderHeader right after this HTML is mounted) to compare against
+    // next poll's positions and glide the difference instead of teleporting.
+    _nlg.fvPendingPositions = { scrimBottomX: scrimA.x, fdBottomX: fdA.x, ball: { x: ballPt.x, y: ballPt.y }, ballScale };
 
     return `
     <div class="field-viewer">
@@ -552,11 +659,14 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                 ${ticksHtml}
                 ${numsHtml}
                 ${homeLogo ? `<image href="${_escHtml(homeLogo)}" x="${(midPt.x - 55 * midScale).toFixed(1)}" y="${(midPt.y - 55 * midScale).toFixed(1)}" width="${(110 * midScale).toFixed(1)}" height="${(110 * midScale).toFixed(1)}" opacity="0.14" style="filter:brightness(0) invert(1)"/>` : ''}
-                <line x1="${fdA.x.toFixed(1)}" y1="${fdA.y.toFixed(1)}" x2="${fdB.x.toFixed(1)}" y2="${fdB.y.toFixed(1)}" stroke="var(--color-first-down)" stroke-width="3.5"/>
-                <line x1="${scrimA.x.toFixed(1)}" y1="${scrimA.y.toFixed(1)}" x2="${scrimB.x.toFixed(1)}" y2="${scrimB.y.toFixed(1)}" stroke="var(--color-scrimmage)" stroke-width="3"/>
+                <g id="fvFirstDownLine" class="${firstDownEarned ? 'fv-fd-earned' : ''}">
+                    <line x1="${fdA.x.toFixed(1)}" y1="${fdA.y.toFixed(1)}" x2="${fdB.x.toFixed(1)}" y2="${fdB.y.toFixed(1)}" stroke="${isDown4 ? 'var(--color-loss)' : 'var(--color-first-down)'}" stroke-width="3.5" class="${isDown4 ? 'fv-down4-line' : ''}"/>
+                </g>
+                <g id="fvScrimLine"><line x1="${scrimA.x.toFixed(1)}" y1="${scrimA.y.toFixed(1)}" x2="${scrimB.x.toFixed(1)}" y2="${scrimB.y.toFixed(1)}" stroke="var(--color-scrimmage)" stroke-width="3"/></g>
                 ${arrowSvg}
                 ${goalpost(-10)}
                 ${goalpost(110)}
+                <g id="fvBallG">
                 <g transform="translate(${ballPt.x.toFixed(1)},${ballPt.y.toFixed(1)}) scale(${ballScale.toFixed(2)})">
                     <ellipse cx="0" cy="0" rx="17" ry="10.5" fill="${possColor}" stroke="var(--bg-card)" stroke-width="2"/>
                     <ellipse cx="0" cy="0" rx="17" ry="10.5" fill="url(#fvBallSheen)"/>
@@ -566,6 +676,7 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                     <line x1="-1.5" y1="-2" x2="-1.5" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
                     <line x1="0" y1="-2" x2="0" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
                     <line x1="1.5" y1="-2" x2="1.5" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
+                </g>
                 </g>
             </svg>
         </div>
