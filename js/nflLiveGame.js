@@ -614,7 +614,18 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 
     // Red zone + first-down + scrimmage all drawn as projected geometry too,
     // so they converge with the grid instead of floating over it un-warped.
-    const rzClipPts = sit.isRedZone ? [proj(rzLeft, 0), proj(rzRight, 0), proj(rzRight, 1), proj(rzLeft, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') : '';
+    // rzLeft/rzRight are in RAW yardLine space (0=home goal, 100=away goal);
+    // proj()/disp() work in DISPLAY space (0=away/left, 100=home/right),
+    // same as every other on-field marker below. disp() reverses order (it's
+    // a straight 100-minus flip), so the raw [rzLeft,rzRight] interval maps
+    // to display-space [disp(rzRight), disp(rzLeft)], not [rzLeft,rzRight]
+    // unconverted -- that was a real bug (D-1xx, 2026-09-09, reported live):
+    // the shading rendered on the mirrored side of the field because this
+    // line skipped the same disp() conversion scrimA/fdA below correctly
+    // apply, silently reusing raw yardline numbers as if they were already
+    // display-space coordinates.
+    const rzDispLeft = disp(rzRight), rzDispRight = disp(rzLeft);
+    const rzClipPts = sit.isRedZone ? [proj(rzDispLeft, 0), proj(rzDispRight, 0), proj(rzDispRight, 1), proj(rzDispLeft, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') : '';
     const redZoneHtml = sit.isRedZone
         ? `<polygon points="${rzClipPts}" fill="rgba(229,72,77,0.22)"/><rect x="0" y="0" width="${VB_W}" height="${VB_H}" fill="url(#fvHatch)" clip-path="url(#fvRzClip)"/><polygon points="${rzClipPts}" fill="none" stroke="rgba(229,72,77,0.6)" stroke-width="2" stroke-dasharray="6 5"/>`
         : '';
