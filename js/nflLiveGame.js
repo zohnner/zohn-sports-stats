@@ -384,13 +384,9 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // Red zone = offense within the DEFENSE's own 20 -- yardLine 80-100
     // when home has the ball (driving toward away's goal), 0-20 when away
     // does (driving toward home's goal). Still expressed in yardLine space
-    // here; disp() converts the [rzLeft,rzRight] pair to a display
-    // left%/width% span below.
+    // here; disp() converts the [rzLeft,rzRight] pair into display-space.
     const rzLeft = possHome ? 80 : 0;
     const rzRight = possHome ? 100 : 20;
-    const redZoneHtml = sit.isRedZone
-        ? `<div class="fv-redzone" style="left:${disp(rzRight)}%; width:${(rzRight - rzLeft)}%"></div>`
-        : '';
 
     // Timeout dots flash red-then-fade when a team's count drops from what
     // the previous render showed, so a burned timeout reads as an event the
@@ -404,16 +400,124 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
         return Array.from({ length: 3 }, (_, i) =>
             `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === usedIdx ? ' fv-to-dot--used' : ''}"></div>`).join('');
     };
-    const arrowHtml = _nlgPlayArrowHtml(sit, disp);
-    // Line of scrimmage — broadcast blue, separate from the first-down yellow.
-    // Sits at the SAME spot as the ball marker (yardLine is the pre-snap line
-    // of scrimmage), drawn behind the ball so the ball icon still reads as the
-    // focal point sitting ON the line, not floating independent of it.
-    const scrimmageHtml = `<div class="fv-scrimmage" style="left:${disp(ballPct)}%"></div>`;
-    // Center-field mark — the HOME team's logo painted at midfield, the way a
-    // real stadium's turf is branded. Purely decorative/identity, so it sits
-    // low in the stack (behind redzone/firstdown/ball) and never intercepts.
-    const centerLogoHtml = homeLogo ? `<div class="fv-centerlogo"><img src="${_escHtml(homeLogo)}" alt="" data-hide-on-error></div>` : '';
+
+    // ---- Real perspective, not a CSS rotateX guess (D-1xx, 2026-09-09) ----
+    // A prior attempt tilted the whole .fv-field box with rotateX+perspective
+    // and left the turf/lines as a flat painted background. Live-measured
+    // (getBoundingClientRect on real screenshots, at both 22deg and an
+    // exaggerated 55deg): the browser DOES perspective-warp the box's own
+    // vector edges, but never the background-image content inside it -- the
+    // yard stripes stayed perfectly parallel at any angle while only the
+    // endzone edges kept slanting, reading as broken rather than 3D. Instead
+    // of relying on the browser to warp painted content, every element below
+    // is drawn as real SVG geometry at coordinates WE project by hand, so
+    // convergence is a fact about the coordinates, not a hope about how some
+    // browser's compositor treats a texture.
+    //
+    // xField is the same 0-100 "display space" disp() already produces (away
+    // goal = 0, home goal = 100, endzones extend to -10/110). yField is 0
+    // (near sideline, bottom of frame, largest) to 1 (far sideline, top,
+    // smallest) -- this is NOT a real lateral ball position (ESPN's feed
+    // carries no hash-mark data), so every on-field marker sits at yField 0.5
+    // rather than claiming a position we don't actually have.
+    const VB_W = 1000, VB_H = 400;
+    const BOTTOM_Y = 378, TOP_Y = 150;
+    const BOTTOM_HALF_W = 486, TOP_HALF_W = 284;
+    const CENTER_X = VB_W / 2;
+    const halfWAt = (yF) => BOTTOM_HALF_W + (TOP_HALF_W - BOTTOM_HALF_W) * yF;
+    const yAt = (yF) => BOTTOM_Y + (TOP_Y - BOTTOM_Y) * yF;
+    const proj = (xF, yF) => {
+        const xNorm = (xF + 10) / 120;
+        const hw = halfWAt(yF);
+        return { x: CENTER_X - hw + xNorm * hw * 2, y: yAt(yF) };
+    };
+    const scaleAt = (yF) => halfWAt(yF) / BOTTOM_HALF_W;
+    const pt = (xF, yF) => { const p = proj(xF, yF); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; };
+
+    const fieldOutline = [proj(-10, 0), proj(110, 0), proj(110, 1), proj(-10, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+    // Mow stripes every 5 yards across the 100-yard playing field -- each
+    // band is its own quad projected through the SAME function as everything
+    // else, so the alternating stripes genuinely narrow toward the horizon
+    // instead of just being a flat texture stretched under a tilted box.
+    let stripesHtml = '';
+    for (let x0 = 0; x0 < 100; x0 += 5) {
+        const dark = (x0 / 5) % 2 === 0;
+        stripesHtml += `<polygon points="${pt(x0,0)} ${pt(x0+5,0)} ${pt(x0+5,1)} ${pt(x0,1)}" fill="${dark ? '#184f26' : '#1f6f37'}"/>`;
+    }
+
+    // Yard lines every 10 yards, full depth -- the lines that actually
+    // converge toward the far edge, the entire point of this rebuild.
+    let yardLinesHtml = '';
+    for (let x = 0; x <= 100; x += 10) {
+        const isGoal = x === 0 || x === 100;
+        const a = proj(x, 0), b = proj(x, 1);
+        yardLinesHtml += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="rgba(255,255,255,${isGoal ? 0.85 : 0.45})" stroke-width="${isGoal ? 3 : 1.6}"/>`;
+    }
+    // 5-yard hash ticks near both sidelines.
+    let ticksHtml = '';
+    for (let x = 5; x < 100; x += 10) {
+        [0.06, 0.94].forEach((yF) => {
+            const c = proj(x, yF), s = scaleAt(yF);
+            ticksHtml += `<line x1="${(c.x - 5 * s).toFixed(1)}" y1="${c.y.toFixed(1)}" x2="${(c.x + 5 * s).toFixed(1)}" y2="${c.y.toFixed(1)}" stroke="rgba(255,255,255,0.4)" stroke-width="${(2 * s).toFixed(1)}"/>`;
+        });
+    }
+    // Yard number labels, mirrored near-edge (big) and far-edge (small) --
+    // the standard "distance from nearest goal" display, replacing the old
+    // flat .fv-yardnums row below the field (removed, not shown twice).
+    let numsHtml = '';
+    for (let x = 10; x <= 90; x += 10) {
+        const num = x <= 50 ? x : 100 - x;
+        [{ yF: 0.1, size: 34 }, { yF: 0.9, size: 18 }].forEach(({ yF, size }) => {
+            const p = proj(x, yF);
+            numsHtml += `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${size}" fill="rgba(255,255,255,0.78)" text-anchor="middle" dominant-baseline="middle">${num}</text>`;
+        });
+    }
+
+    // Endzones: solid team-color quad + the same diagonal hazard hatch the
+    // red-zone shading below reuses (established visual language for
+    // "scoring territory") + logo + abbreviation, all at the endzone's own
+    // projected midpoint so they sit correctly on the tilted plane.
+    const awayEZPts = [proj(-10, 0), proj(0, 0), proj(0, 1), proj(-10, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const homeEZPts = [proj(100, 0), proj(110, 0), proj(110, 1), proj(100, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const ezContent = (x0, x1, ptsStr, color, logo, abbr, clipId) => {
+        const c = proj((x0 + x1) / 2, 0.5), s = scaleAt(0.5), logoSize = 46 * s;
+        return `
+        <polygon points="${ptsStr}" fill="${color}"/>
+        <rect x="0" y="0" width="${VB_W}" height="${VB_H}" fill="url(#fvHatch)" clip-path="url(#${clipId})"/>
+        ${logo ? `<image href="${_escHtml(logo)}" x="${(c.x - logoSize / 2).toFixed(1)}" y="${(c.y - logoSize / 2 - 10 * s).toFixed(1)}" width="${logoSize.toFixed(1)}" height="${logoSize.toFixed(1)}" opacity="0.95"/>` : ''}
+        <text x="${c.x.toFixed(1)}" y="${(c.y + logoSize / 2 + 6 * s).toFixed(1)}" font-family="var(--font-display)" font-weight="800" font-size="${(15 * s).toFixed(1)}" fill="rgba(255,255,255,0.9)" text-anchor="middle">${_escHtml(abbr)}</text>`;
+    };
+
+    // Goalposts -- the single strongest "this is a real football field" cue,
+    // and the reason the flat rebuild never looked like a broadcast graphic.
+    // Height is drawn straight UP from a base anchored on the field plane at
+    // each back line -- goalpost height isn't a depth coordinate, it's
+    // literally vertical, so it scales with the base's yField=0.5 depth but
+    // otherwise draws independent of the ground projection above it.
+    const goalpost = (xF) => {
+        const base = proj(xF, 0.5), s = scaleAt(0.5);
+        const postH = 105 * s, crossW = 62 * s, uprightH = 70 * s;
+        const topY = base.y - postH;
+        return `<g stroke="#ffd21f" stroke-width="${(4 * s).toFixed(1)}" fill="none" stroke-linecap="round">
+            <line x1="${base.x.toFixed(1)}" y1="${base.y.toFixed(1)}" x2="${base.x.toFixed(1)}" y2="${topY.toFixed(1)}"/>
+            <line x1="${(base.x - crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x + crossW / 2).toFixed(1)}" y2="${topY.toFixed(1)}"/>
+            <line x1="${(base.x - crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x - crossW / 2).toFixed(1)}" y2="${(topY - uprightH).toFixed(1)}"/>
+            <line x1="${(base.x + crossW / 2).toFixed(1)}" y1="${topY.toFixed(1)}" x2="${(base.x + crossW / 2).toFixed(1)}" y2="${(topY - uprightH).toFixed(1)}"/>
+        </g>`;
+    };
+
+    // Red zone + first-down + scrimmage all drawn as projected geometry too,
+    // so they converge with the grid instead of floating over it un-warped.
+    const rzClipPts = sit.isRedZone ? [proj(rzLeft, 0), proj(rzRight, 0), proj(rzRight, 1), proj(rzLeft, 1)].map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') : '';
+    const redZoneHtml = sit.isRedZone
+        ? `<polygon points="${rzClipPts}" fill="rgba(229,72,77,0.22)"/><rect x="0" y="0" width="${VB_W}" height="${VB_H}" fill="url(#fvHatch)" clip-path="url(#fvRzClip)"/><polygon points="${rzClipPts}" fill="none" stroke="rgba(229,72,77,0.6)" stroke-width="2" stroke-dasharray="6 5"/>`
+        : '';
+    const scrimA = proj(disp(ballPct), 0), scrimB = proj(disp(ballPct), 1);
+    const fdA = proj(disp(firstDownPct), 0), fdB = proj(disp(firstDownPct), 1);
+    const ballPt = proj(disp(ballPct), 0.5), ballScale = scaleAt(0.5);
+    const arrowSvg = _nlgPlayArrowSvg(sit, proj, disp, 0.5);
+    const midPt = proj(50, 0.5), midScale = scaleAt(0.5);
 
     return `
     <div class="field-viewer">
@@ -421,41 +525,50 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
             <span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span>
             <span class="fv-poss">${possLogo ? `<img class="fv-poss-logo" src="${_escHtml(possLogo)}" alt="" data-hide-on-error>` : (possColor ? `<span class="fv-poss-dot" style="background:${possColor}"></span>` : '')}${possTeamName ? _escHtml(possTeamName) + ' ball' : _escHtml(sit.possessionText || '')}</span>
         </div>
-        <div class="fv-field">
-            <div class="fv-endzone" style="background-color:${awayColor}">
-                ${awayLogo ? `<img class="fv-endzone-logo" src="${_escHtml(awayLogo)}" alt="" data-hide-on-error>` : ''}
-                <span class="fv-endzone-abbr">${_escHtml(awayAbbr)}</span>
-            </div>
-            <div class="fv-track">
-                ${centerLogoHtml}
-                ${arrowHtml}
+        <div class="fv-field3d">
+            <svg class="fv-field3d-svg" viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="fvHatch" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                        <rect width="7" height="14" fill="rgba(255,255,255,0.09)"/>
+                    </pattern>
+                    <clipPath id="fvAwayEZClip"><polygon points="${awayEZPts}"/></clipPath>
+                    <clipPath id="fvHomeEZClip"><polygon points="${homeEZPts}"/></clipPath>
+                    ${sit.isRedZone ? `<clipPath id="fvRzClip"><polygon points="${rzClipPts}"/></clipPath>` : ''}
+                    <linearGradient id="fvBallSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
+                        <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
+                        <stop offset="100%" stop-color="#000" stop-opacity="0.28"/>
+                    </linearGradient>
+                    <marker id="fvArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                        <path d="M0,0 L8,4 L0,8 Z" class="fv-arrow-head"/>
+                    </marker>
+                </defs>
+                <polygon points="${fieldOutline}" fill="#1a5c2c"/>
+                ${stripesHtml}
+                ${ezContent(-10, 0, awayEZPts, awayColor, awayLogo, awayAbbr, 'fvAwayEZClip')}
+                ${ezContent(100, 110, homeEZPts, homeColor, homeLogo, homeAbbr, 'fvHomeEZClip')}
                 ${redZoneHtml}
-                <div class="fv-firstdown" style="left:${disp(firstDownPct)}%"></div>
-                ${scrimmageHtml}
-                <svg class="fv-ball" style="left:${disp(ballPct)}%" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="fvBallSheen" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
-                            <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
-                            <stop offset="100%" stop-color="#000" stop-opacity="0.28"/>
-                        </linearGradient>
-                    </defs>
-                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="${possColor}" stroke="var(--bg-card)" stroke-width="2"/>
-                    <ellipse cx="16" cy="10" rx="15" ry="9" fill="url(#fvBallSheen)"/>
-                    <path d="M5,10 Q16,3 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
-                    <path d="M5,10 Q16,17 27,10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
-                    <line x1="12.5" y1="10" x2="19.5" y2="10" stroke="#fff" stroke-width="1" stroke-opacity="0.9"/>
-                    <line x1="14" y1="8.2" x2="14" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
-                    <line x1="16" y1="8.2" x2="16" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
-                    <line x1="18" y1="8.2" x2="18" y2="11.8" stroke="#fff" stroke-width="0.7" stroke-opacity="0.9"/>
-                </svg>
-            </div>
-            <div class="fv-endzone" style="background-color:${homeColor}">
-                ${homeLogo ? `<img class="fv-endzone-logo" src="${_escHtml(homeLogo)}" alt="" data-hide-on-error>` : ''}
-                <span class="fv-endzone-abbr">${_escHtml(homeAbbr)}</span>
-            </div>
+                ${yardLinesHtml}
+                ${ticksHtml}
+                ${numsHtml}
+                ${homeLogo ? `<image href="${_escHtml(homeLogo)}" x="${(midPt.x - 55 * midScale).toFixed(1)}" y="${(midPt.y - 55 * midScale).toFixed(1)}" width="${(110 * midScale).toFixed(1)}" height="${(110 * midScale).toFixed(1)}" opacity="0.14" style="filter:brightness(0) invert(1)"/>` : ''}
+                <line x1="${fdA.x.toFixed(1)}" y1="${fdA.y.toFixed(1)}" x2="${fdB.x.toFixed(1)}" y2="${fdB.y.toFixed(1)}" stroke="var(--color-first-down)" stroke-width="3.5"/>
+                <line x1="${scrimA.x.toFixed(1)}" y1="${scrimA.y.toFixed(1)}" x2="${scrimB.x.toFixed(1)}" y2="${scrimB.y.toFixed(1)}" stroke="var(--color-scrimmage)" stroke-width="3"/>
+                ${arrowSvg}
+                ${goalpost(-10)}
+                ${goalpost(110)}
+                <g transform="translate(${ballPt.x.toFixed(1)},${ballPt.y.toFixed(1)}) scale(${ballScale.toFixed(2)})">
+                    <ellipse cx="0" cy="0" rx="17" ry="10.5" fill="${possColor}" stroke="var(--bg-card)" stroke-width="2"/>
+                    <ellipse cx="0" cy="0" rx="17" ry="10.5" fill="url(#fvBallSheen)"/>
+                    <path d="M-11,0 Q0,-8 11,0" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.9"/>
+                    <path d="M-11,0 Q0,8 11,0" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.9"/>
+                    <line x1="-3.5" y1="0" x2="3.5" y2="0" stroke="#fff" stroke-width="1.1" stroke-opacity="0.9"/>
+                    <line x1="-1.5" y1="-2" x2="-1.5" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
+                    <line x1="0" y1="-2" x2="0" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
+                    <line x1="1.5" y1="-2" x2="1.5" y2="2" stroke="#fff" stroke-width="0.8" stroke-opacity="0.9"/>
+                </g>
+            </svg>
         </div>
-        <div class="fv-yardnums"><span>${_escHtml(awayAbbr)}</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span><span>40</span><span>30</span><span>20</span><span>10</span><span>${_escHtml(homeAbbr)}</span></div>
         <div class="fv-legend">
             <div class="fv-timeouts"><span class="fv-to-label">${_escHtml(awayAbbr)} TO</span><div class="fv-to-dots">${toDots(sit.awayTimeouts, 'away')}</div></div>
             <div class="fv-key">
@@ -480,7 +593,12 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // matches this file's existing "motion marks a real change the user
 // didn't see happen yet, never a first paint or same-state re-render"
 // convention (see the live badge / tab switch code elsewhere in this file).
-function _nlgPlayArrowHtml(sit, disp) {
+// Reworked (D-1xx, 2026-09-09) from a standalone viewBox="0 0 100 40" nested
+// <svg> into a <g> fragment sharing the main field SVG's projected coordinate
+// space -- it now takes proj/disp so the arrow's start/end points land in the
+// exact same perspective grid as the yard lines around it, instead of a flat
+// 0-100 strip that no longer matches the field's own geometry.
+function _nlgPlayArrowSvg(sit, proj, disp, yF) {
     const lp = sit.lastPlay;
     if (!lp || !lp.type || typeof lp.start?.yardLine !== 'number' || typeof lp.end?.yardLine !== 'number') return '';
     const label = (lp.type.text || '').toLowerCase();
@@ -493,44 +611,36 @@ function _nlgPlayArrowHtml(sit, disp) {
     const isNew = !!lp.id && lp.id !== _nlg.lastPlayArrowId;
     if (lp.id) _nlg.lastPlayArrowId = lp.id;
     const cls = 'fv-arrow' + (isNew ? ' fv-arrow--entering' : '');
-    const x1 = disp(lp.start.yardLine), x2 = disp(lp.end.yardLine);
+    const p1 = proj(disp(lp.start.yardLine), yF), p2 = proj(disp(lp.end.yardLine), yF);
 
     // Incomplete pass: start and end yardLine are the same spot (the ball
     // comes back to the line of scrimmage) -- a stationary "no gain"
     // marker, not a zero-length arrow pretending there's a distance.
     if (/incomplet/.test(label)) {
-        return `<svg class="${cls}" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <g transform="translate(${x1},20)">
-                <circle r="3.4" class="fv-arrow-badge-ring"/>
-                <path d="M-1.6,-1.6 L1.6,1.6 M-1.6,1.6 L1.6,-1.6" class="fv-arrow-badge-x"/>
-            </g>
-        </svg>`;
+        return `<g class="${cls}" transform="translate(${p1.x.toFixed(1)},${p1.y.toFixed(1)})">
+            <circle r="9" class="fv-arrow-badge-ring"/>
+            <path d="M-4.2,-4.2 L4.2,4.2 M-4.2,4.2 L4.2,-4.2" class="fv-arrow-badge-x"/>
+        </g>`;
     }
 
-    // Apex values are deliberately far apart, not just nudged -- at the
-    // viewBox's 100x40 aspect ratio, stretched via preserveAspectRatio="none"
-    // onto a track many times wider than it is tall, a modest height delta
-    // (the previous kick=3/pass=8, only 5 units apart) reads as visually
-    // identical once squashed. Punts/kickoffs get a real ballistic arc
-    // (apex near the very top of the box); passes stay a much flatter,
-    // line-drive trajectory -- the two should never look alike again.
-    let kind = 'run', apexY = 20;
+    // Apex offsets are deliberately far apart, not just nudged -- punts/
+    // kickoffs get a real ballistic arc well above the line, passes stay a
+    // much flatter, line-drive trajectory -- the two should never look
+    // alike. Offsets are in the same viewBox units as everything else here.
+    let kind = 'run', apexOffset = 0;
     if (/sack/.test(label)) kind = 'sack';
     else if (/interception|fumble/.test(label)) kind = 'turnover';
-    else if (/punt|kickoff/.test(label)) { kind = 'kick'; apexY = 1.5; }
-    else if (/field goal|extra point/.test(label)) { kind = 'kick'; apexY = 6; }
-    else if (/pass/.test(label)) { kind = 'pass'; apexY = 15; }
+    else if (/punt|kickoff/.test(label)) { kind = 'kick'; apexOffset = 70; }
+    else if (/field goal|extra point/.test(label)) { kind = 'kick'; apexOffset = 40; }
+    else if (/pass/.test(label)) { kind = 'pass'; apexOffset = 26; }
 
-    const midX = (x1 + x2) / 2;
-    const d = apexY === 20 ? `M${x1},20 L${x2},20` : `M${x1},20 Q${midX},${apexY} ${x2},20`;
-    return `<svg class="${cls} fv-arrow--${kind}" viewBox="0 0 100 40" preserveAspectRatio="none">
-        <defs>
-            <marker id="fvArrowHead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" class="fv-arrow-head"/>
-            </marker>
-        </defs>
+    const midX = (p1.x + p2.x) / 2, apexY = p1.y - apexOffset;
+    const d = apexOffset === 0
+        ? `M${p1.x.toFixed(1)},${p1.y.toFixed(1)} L${p2.x.toFixed(1)},${p2.y.toFixed(1)}`
+        : `M${p1.x.toFixed(1)},${p1.y.toFixed(1)} Q${midX.toFixed(1)},${apexY.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    return `<g class="${cls} fv-arrow--${kind}">
         <path d="${d}" class="fv-arrow-path" marker-end="url(#fvArrowHead)"/>
-    </svg>`;
+    </g>`;
 }
 
 // -- Main region: tabbed dashboard (live/final) vs. one flowing preview -----

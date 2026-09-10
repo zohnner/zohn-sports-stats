@@ -93,21 +93,23 @@
 .fv-poss-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; animation: fvPossPulse 1.6s ease-in-out infinite; }
 .fv-poss-logo { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
 @keyframes fvPossPulse { 50% { opacity: 0.4; } }
-/* Deliberately flat, not a rotateX/perspective tilt -- tried and measured
-   (2026-09-09): a real rotateX(22deg) DOES produce a genuine, measurable
-   trapezoid on .fv-field's own box (getBoundingClientRect confirmed the top
-   edge ~7.7% narrower than the bottom, matching the perspective math exactly),
-   but the painted content inside -- the .fv-track mow-stripe background-image,
-   text, ball -- does not get the same perspective-correct warp; only vector
-   box/border edges do. Screenshotted at 22deg and, to rule out "just needs a
-   bigger angle," at an exaggerated 55deg too: the mismatch only got more
-   visible, never resolved -- the yard stripes stayed perfectly parallel while
-   the endzone edges alone kept slanting harder, reading as broken/misaligned
-   rather than 3D. A single ~90px-tall plane also has no room for the
-   row-by-row convergence that actually reads as "receding into depth" --
-   real broadcast field graphics get that from camera perspective on video,
-   not from tilting a flat compact UI bar. Flat matches what ESPN/CBS/NFL.com
-   all actually ship for this exact inline widget. */
+/* .fv-field is the OLD flat/div-based field (endzone+track+endzone flex
+   row) -- NFL moved off it to .fv-field3d below (D-1xx, 2026-09-09), but
+   js/ncaafLiveGame.js's _nclgFieldViewerHtml still emits this exact markup
+   and has NOT been ported yet, so this rule (and .fv-endzone/.fv-track/
+   .fv-centerlogo/.fv-scrimmage/.fv-redzone/.fv-firstdown/.fv-ball/
+   .fv-yardnums below) must stay working as-is -- do not repurpose or delete
+   them for NFL's sake. A rotateX/perspective tilt was tried and measured
+   here first: it DOES produce a genuine, measurable trapezoid on the box's
+   own edges (getBoundingClientRect confirmed the top ~7.7% narrower than the
+   bottom at 22deg, matching the math exactly, and again at an exaggerated
+   55deg), but the painted content inside -- the .fv-track mow-stripe
+   background-image, text, ball -- never gets the same perspective-correct
+   warp, only vector box/border edges do; the mismatch only got worse at the
+   bigger angle, never resolved. That's WHY NFL's rebuild draws everything as
+   real projected SVG geometry instead of trusting a CSS transform to warp
+   painted content -- see .fv-field3d's own comment. This rule stays flat
+   until NCAAF's copy gets the same treatment. */
 .fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; box-shadow: var(--shadow-md); }
 /* Stadium light: soft overhead glow + top/bottom vignette, layered above every
    child (endzones, turf, ball, arrow -- z-index:3 beats the ball's 2) so the
@@ -191,6 +193,18 @@
 .fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 @media (max-width: 640px) { .fv-field { height: 76px; } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
+/* NFL's real perspective field (D-1xx, 2026-09-09) -- everything drawn inside
+   .fv-field3d-svg is genuine projected geometry computed in JS
+   (_nlgFieldViewerHtml, js/nflLiveGame.js), not a texture the browser is
+   asked to warp, so the convergence toward the far edge is a fact about the
+   coordinates rather than a hope about 3D-transform rendering (see the long
+   comment on .fv-field above for why that approach didn't work). Taller than
+   the old flat field on purpose -- a single tilted plane needs real vertical
+   room to read as depth at all; a slim ~90px bar never had that. Uses
+   --shadow-md (theme-aware) rather than a hardcoded dark-only shadow. */
+.fv-field3d { position: relative; height: 240px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); box-shadow: var(--shadow-md); }
+.fv-field3d-svg { display: block; width: 100%; height: 100%; }
+@media (max-width: 640px) { .fv-field3d { height: 190px; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }
