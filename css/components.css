@@ -3973,6 +3973,23 @@
     white-space: nowrap;
 }
 
+/* D-149 — contextual link from the leaderboard header to the (previously orphaned)
+   /glossary page. Deliberately understated -- same weight class as the freshness
+   label beside it, not a call-to-action. */
+.leaderboard-glossary-link {
+    font-size: 0.67rem;
+    font-weight: 500;
+    color: var(--text-subtle);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--border-mid);
+}
+.leaderboard-glossary-link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
 /* ── By-Position Grid (leaders, all/all state) ───────────── */
 .lb-pos-grid {
     grid-column: 1 / -1;

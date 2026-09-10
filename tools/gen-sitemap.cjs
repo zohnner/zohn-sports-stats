@@ -12,7 +12,7 @@
  *   landings /mlb /nfl /ncaaf /ncaab /wnba · the 5 static stubs (mock-draft/
  *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
  *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
- *   /ncaab/standings · /wnba/standings · /wnba/leaders · /glossary
+ *   /ncaab/standings · /wnba/standings · /wnba/leaders · /glossary · /nfl/glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug} · /nfl/game/{id} (rolling window)
@@ -81,6 +81,7 @@ async function main() {
     add(urlTag('/wnba/standings', 'daily', '0.7'));
     add(urlTag('/wnba/leaders', 'daily', '0.7'));
     add(urlTag('/glossary', 'monthly', '0.6'));
+    add(urlTag('/nfl/glossary', 'monthly', '0.6'));
 
     // 2) MLB teams
     try {

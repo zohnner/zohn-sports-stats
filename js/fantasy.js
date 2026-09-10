@@ -1406,6 +1406,13 @@ function _dkQuickTools() {
         { v: 'nfl-sos',      icon: 'schedule',   l: 'Schedule',     d: 'Bye weeks + matchup difficulty by position' },
         { v: 'nfl-mydrafts', icon: 'save',       l: 'My Drafts',    d: 'Revisit your saved mock results' },
     ];
+    // D-149: /nfl/glossary is a real edge-rendered page (not a SPA view), so it's a
+    // plain <a href>, not a navigateTo() button, unlike every other card here.
+    const glossaryCard = `<a class="dk-tool-card" href="/nfl/glossary">
+        <span class="dk-tool-icon">${_iconSvg('clipboard')}</span>
+        <span class="dk-tool-body"><span class="dk-tool-name">Glossary</span><span class="dk-tool-desc">What ADP, VORP, Superflex & PPR mean</span></span>
+        <span class="dk-tool-go" aria-hidden="true">→</span>
+    </a>`;
     return `<section class="dk-tools">
         <h3 class="team-section__title">More Draft HQ tools</h3>
         <div class="dk-tools-grid">
@@ -1414,6 +1421,7 @@ function _dkQuickTools() {
                 <span class="dk-tool-body"><span class="dk-tool-name">${t.l}</span><span class="dk-tool-desc">${t.d}</span></span>
                 <span class="dk-tool-go" aria-hidden="true">→</span>
             </button>`).join('')}
+            ${glossaryCard}
         </div>
     </section>`;
 }

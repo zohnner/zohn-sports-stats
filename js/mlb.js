@@ -4863,7 +4863,11 @@ function displayMLBLeaderboards() {
     const freshnessLabel = _freshFmt
         ? `<span class="freshness-label" aria-label="Data last updated ${_escHtml(_freshFmt.slice('Updated '.length))}">${_escHtml(_freshFmt)}</span>`
         : '';
-    seasonDivider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M2 20V9M9 20V4M16 20V12M23 20V6"/></svg>Season Leaders · ${season}</span>${freshnessLabel}`;
+    // D-149 follow-on: /glossary (D-041 Phase 2) had zero internal links pointing at it
+    // anywhere in the app -- indexed, but an orphan. This is the one spot on the site
+    // where a reader is most likely to actually want it (staring at WHIP/FIP/wRC+
+    // column headers), so the link belongs here contextually, not just added to nav.
+    seasonDivider.innerHTML = `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M2 20V9M9 20V4M16 20V12M23 20V6"/></svg>Season Leaders · ${season}</span><span style="display:flex;align-items:center;gap:0.75rem">${freshnessLabel}<a href="/glossary" class="leaderboard-glossary-link">What do these stats mean?</a></span>`;
     fragment.appendChild(seasonDivider);
 
     // Rate-stat qualifier (MLB standard: 3.1 PA / 1 IP per team game) so small-sample
