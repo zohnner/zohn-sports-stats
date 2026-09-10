@@ -903,8 +903,18 @@ function _lgBuildFormStrip(awayTeamId, homeTeamId, awayAbbr, homeAbbr) {
 }
 
 function _lgAssemblePregameHtml(pp, away, home, hittersHtml, formHtml) {
-    const awayClr = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
-    const homeClr = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
+    // These feed _lgBuildPitcherCard's border-left:3px accent, not an
+    // avatar-gradient fill — a borderless-style accent has the same
+    // vanish-into-the-card risk as the bars/dots above for a near-black
+    // team primary (PIT/CWS/SD), so it needs the same fix. (Confirmed via
+    // a rendered test that the avatar gradients elsewhere in this file
+    // are NOT affected — white text + a fixed neutral border keep them
+    // legible regardless of team color — so those were deliberately left
+    // alone; this one has no such border to fall back on.)
+    const awayColors = getMLBTeamColors(away.abbreviation);
+    const homeColors = getMLBTeamColors(home.abbreviation);
+    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--accent)';
+    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
     return `<div class="lg-pregame-wrap">
         <div class="lg-pregame-pitchers">
             ${_lgBuildPitcherCard(pp.away, away.abbreviation, awayClr)}
