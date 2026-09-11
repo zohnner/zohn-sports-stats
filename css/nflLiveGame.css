@@ -241,7 +241,24 @@
    inline per-logo in js/nflLiveGame.js's logoPct()) over this real,
    undistorted box, sized in true CSS px so they stay circular/square
    regardless of the field's own aspect ratio. */
-.fv-ez-logo { position: absolute; width: 42px; height: 42px; transform: translate(-50%, -50%); object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)); z-index: 2; }
+/* width was a flat 42px (28px below the one 640px breakpoint) -- reported
+   live 2026-09-10 as overflowing the endzone at mobile widths, and measured:
+   .fv-field3d only shrinks to ~421px on real phone viewports (there's a
+   layout floor below that), where the endzone itself is ~28px wide at this
+   logo's own depth -- a 28px-wide logo there has ~zero margin and visibly
+   spills past the goal line onto the turf. Same 42px also crowds a ~773px
+   tablet-width endzone (~51px wide) far more tightly than it does the
+   ~1148px desktop case (~76px wide) it was tuned against, since a single
+   breakpoint jump can only ever be right at two widths. clamp() ties the
+   logo to a constant fraction of .fv-field3d's own width instead, which
+   preserves the same ~55% fill of the endzone at ANY container width (both
+   the logo and the endzone scale together, so their ratio doesn't drift);
+   the 20px floor is a deliberate legibility exception below that ratio's
+   own ~15px prediction at the narrowest real phone width -- a team crest
+   that small stops reading as anything -- and even at 20px it fits with
+   room to spare where 28px did not. Upper bound (42px) preserves the
+   existing, unchanged desktop size exactly. */
+.fv-ez-logo { position: absolute; width: clamp(20px, 3.7%, 42px); aspect-ratio: 1; transform: translate(-50%, -50%); object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)); z-index: 2; }
 /* Midfield watermark -- real team colors at partial opacity (a genuine
    painted stadium logo, not the flat white silhouette this used to be
    inside the SVG, which read as "just an opaque outline" -- reported bug).
@@ -249,7 +266,7 @@
    yard lines/ball/etc. still draw over it, matching how a real broadcast
    shot shows the yard markings crossing over turf art, not floating above it. */
 .fv-mid-logo { position: absolute; width: 26%; max-width: 130px; aspect-ratio: 1; transform: translate(-50%, -50%); object-fit: contain; opacity: 0.5; pointer-events: none; }
-@media (max-width: 640px) { .fv-field3d { height: 190px; } .fv-ez-logo { width: 28px; height: 28px; } .fv-mid-logo { width: 22%; } }
+@media (max-width: 640px) { .fv-field3d { height: 190px; } .fv-mid-logo { width: 22%; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }

@@ -382,6 +382,24 @@ const _FV = (() => {
 // (the true perspective delta differs slightly between the near and far
 // endpoint) that looks like a clean slide without needing per-attribute
 // animation support.
+// Glide duration scales with how far the marker actually has to travel,
+// instead of the flat 420ms every distance used to get. Live-checked against
+// real plays from the 2026-09-10 SF@LAR game run through this exact proj()/
+// disp() math: a QB kneel (6px) and a kickoff return (308px) both animated
+// in the same 420ms -- a ~50x difference in implied on-screen speed, which
+// reads as "the same glide" regardless of whether the play was a shuffle or
+// a breakaway. This does NOT chase DESIGN.md's 120-150ms UI-chrome standard
+// -- this page's other discrete field cues (480ms arrow entrance, 900ms
+// first-down flash, 900ms timeout-used flash, all in nflLiveGame.css) are
+// already well above that standard and were never meant to match it; 420ms
+// was already the closest thing on this page to the house number. The clamp
+// range below brackets the glide inside that same already-established
+// 220-900ms family rather than introducing a new scale.
+const _FV_GLIDE_MIN_MS = 220, _FV_GLIDE_MAX_MS = 640, _FV_GLIDE_REF_PX = 400;
+function _nlgGlideDuration(px) {
+    const t = Math.min(1, Math.abs(px) / _FV_GLIDE_REF_PX);
+    return Math.round(_FV_GLIDE_MIN_MS + (_FV_GLIDE_MAX_MS - _FV_GLIDE_MIN_MS) * t);
+}
 function _nlgAnimateFieldMotion() {
     const from = _nlg.fvLastPositions;
     const to = _nlg.fvPendingPositions;
@@ -392,23 +410,43 @@ function _nlgAnimateFieldMotion() {
     if (!svg) return;
     try {
         const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'; // ease-out, matches this file's other entrance motion
-        const DUR = 420;
         const slideGroup = (id, fromX, toX) => {
             const el = svg.querySelector('#' + id);
             if (!el || fromX === toX) return;
             el.animate([
                 { transform: `translateX(${(fromX - toX).toFixed(1)}px)` },
                 { transform: 'translateX(0px)' },
-            ], { duration: DUR, easing: EASE, fill: 'both' });
+            ], { duration: _nlgGlideDuration(fromX - toX), easing: EASE, fill: 'both' });
         };
         slideGroup('fvScrimLine', from.scrimBottomX, to.scrimBottomX);
         slideGroup('fvFirstDownLine', from.fdBottomX, to.fdBottomX);
         const ballEl = svg.querySelector('#fvBallG');
         if (ballEl && (from.ball.x !== to.ball.x || from.ball.y !== to.ball.y)) {
+            const dx = from.ball.x - to.ball.x, dy = from.ball.y - to.ball.y;
             ballEl.animate([
-                { transform: `translate(${(from.ball.x - to.ball.x).toFixed(1)}px,${(from.ball.y - to.ball.y).toFixed(1)}px) scale(${to.ballScale})` },
+                { transform: `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${to.ballScale})` },
                 { transform: `translate(0px,0px) scale(${to.ballScale})` },
-            ], { duration: DUR, easing: EASE, fill: 'both' });
+            ], { duration: _nlgGlideDuration(Math.hypot(dx, dy)), easing: EASE, fill: 'both' });
+        }
+        // Turnover flash: the one-shot play arrow already tints red/dashed for
+        // kind:'turnover', but the persistent ball marker had no possession-
+        // change tell at all -- it just glided in the new team's color like
+        // any ordinary gain. Live-confirmed against 2 real INTs in tonight's
+        // SF@LAR game. Reuses --color-loss and the 900ms duration this page
+        // already uses for the first-down-earned/timeout-used flashes
+        // (nflLiveGame.css), not a new value. Kept outside the ball-moved
+        // check above: a short fumble recovery can leave the marker almost
+        // where it was, but the possession change is still the real event
+        // worth flagging regardless of how far the spot itself shifted.
+        if (ballEl && to.turnover) {
+            const ballFill = svg.querySelector('#fvBallG ellipse');
+            if (ballFill) {
+                const finalFill = ballFill.getAttribute('fill');
+                ballFill.animate([
+                    { fill: 'var(--color-loss)' },
+                    { fill: finalFill },
+                ], { duration: 900, easing: 'ease-out', fill: 'both' });
+            }
         }
     } catch (e) { if (window.Logger) Logger.warn('field motion animate failed', e, 'NFL'); }
 }
@@ -690,7 +728,13 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
     // Stash this render's positions for _nlgAnimateFieldMotion (called by
     // _nlgRenderHeader right after this HTML is mounted) to compare against
     // next poll's positions and glide the difference instead of teleporting.
-    _nlg.fvPendingPositions = { scrimBottomX: scrimA.x, fdBottomX: fdA.x, ball: { x: ballPt.x, y: ballPt.y }, ballScale };
+    // turnover reuses the same interception|fumble test _nlgPlayArrowSvg's
+    // kind classification already applies to sit.lastPlay -- kept as its own
+    // one-line check here rather than a shared helper since this is the only
+    // other call site and the two functions read different lastPlay fields.
+    const lastPlayLabel = (sit.lastPlay?.type?.text || '').toLowerCase();
+    const isTurnoverPlay = /interception|fumble/.test(lastPlayLabel);
+    _nlg.fvPendingPositions = { scrimBottomX: scrimA.x, fdBottomX: fdA.x, ball: { x: ballPt.x, y: ballPt.y }, ballScale, turnover: isTurnoverPlay };
 
     return `
     <div class="field-viewer">
@@ -713,8 +757,23 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
                         <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
                         <stop offset="100%" stop-color="#000" stop-opacity="0.28"/>
                     </linearGradient>
-                    <marker id="fvArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-                        <path d="M0,0 L8,4 L0,8 Z" class="fv-arrow-head"/>
+                    <!-- markerUnits="userSpaceOnUse" (default is strokeWidth) -- without
+                         it, this marker's size is multiplied by .fv-arrow-path's
+                         stroke-width, which is pinned to a fixed CSS px value via
+                         vector-effect:non-scaling-stroke (nflLiveGame.css) so the LINE
+                         stays crisp at any zoom. That's fine for the line; it also meant
+                         the arrowhead rendered at a fixed screen-pixel size no matter how
+                         much smaller the rest of the field (ball, pylons, yard lines --
+                         all plain VB-unit geometry that scales with the SVG's own
+                         viewBox-to-viewport factor) got on a narrow viewport. Reported
+                         live 2026-09-10: the arrowhead was already comparable in size to
+                         the ball itself at desktop width, and visibly larger at mobile
+                         width once everything else had scaled down around it.
+                         userSpaceOnUse puts the marker in the SAME coordinate space as
+                         the ball/pylons/lines, so it now scales down with them instead
+                         of staying fixed. -->
+                    <marker id="fvArrowHead" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="10.5" refY="7" orient="auto">
+                        <path d="M0,0 L14,7 L0,14 Z" class="fv-arrow-head"/>
                     </marker>
                 </defs>
                 <polygon points="${fieldOutline}" fill="#1a5c2c"/>
