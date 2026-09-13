@@ -79,6 +79,12 @@ class ErrorHandler {
         if (!this.#toastContainer) {
             this.#toastContainer = document.createElement('div');
             this.#toastContainer.className = 'toast-container';
+            // D-118 Idea 2 spec called for this on the action-toast case
+            // specifically ("tell screen reader users a card-worthy moment
+            // happened, not just sighted users") -- applied to the shared
+            // container so every toast site-wide gets it, not just this one,
+            // since the gap was pre-existing and this is the one place to fix it.
+            this.#toastContainer.setAttribute('aria-live', 'polite');
             document.body.appendChild(this.#toastContainer);
         }
         return this.#toastContainer;
@@ -88,21 +94,31 @@ class ErrorHandler {
      * Show a dismissible toast notification.
      * @param {string} message
      * @param {'error'|'warn'|'success'|'info'} type
-     * @param {{ title?: string, duration?: number }} opts
+     * @param {{ title?: string, duration?: number, actions?: {label:string, onClick:Function, primary?:boolean}[] }} opts
      * @returns {Function} dismiss function
      */
-    static toast(message, type = 'error', { title, duration = 5000 } = {}) {
+    static toast(message, type = 'error', { title, duration = 5000, actions } = {}) {
         // _iconSvg keys, not emoji, since 2026-09-07's emoji-removal pass.
         const icons    = { error: 'warning', warn: 'bell', success: 'checkCircle', info: 'info' };
         const defaults = { error: 'Error', warn: 'Warning', success: 'Success', info: 'Info' };
 
         const el = document.createElement('div');
         el.className = `toast toast-${type}`;
+        // D-118 Idea 2 -- action-button variant. Same container/body/close
+        // chrome every toast already has; actions render as a pill row using
+        // the same .hcs-pill convention the Highlight Card Studio already
+        // uses elsewhere, rather than inventing a second button style.
+        const actionsHtml = (actions && actions.length)
+            ? `<div class="toast-actions">${actions.map((a, i) =>
+                `<button type="button" class="hcs-pill${a.primary ? ' hcs-pill--active' : ''}" data-toast-action="${i}">${_escHtml(a.label)}</button>`
+              ).join('')}</div>`
+            : '';
         el.innerHTML = `
             <span class="toast-icon">${_iconSvg(icons[type])}</span>
             <div class="toast-body">
                 <div class="toast-title">${title ?? defaults[type]}</div>
                 <div class="toast-message">${message}</div>
+                ${actionsHtml}
             </div>
             <button class="toast-close" aria-label="Dismiss">×</button>
         `;
@@ -113,6 +129,11 @@ class ErrorHandler {
         };
 
         el.querySelector('.toast-close').addEventListener('click', dismiss);
+        if (actions && actions.length) {
+            el.querySelectorAll('[data-toast-action]').forEach((btn, i) => {
+                btn.addEventListener('click', () => { actions[i].onClick?.(); dismiss(); });
+            });
+        }
         this.#getContainer().appendChild(el);
         if (duration > 0) setTimeout(dismiss, duration);
 

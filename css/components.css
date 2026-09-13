@@ -373,6 +373,10 @@
 .toast-body    { flex: 1; min-width: 0; }
 .toast-title   { font-weight: 700; font-size: var(--text-sm); margin-bottom: 0.2rem; }
 .toast-message { color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.45; word-break: break-word; }
+/* D-118 Idea 2 -- action-button toast variant (big-play auto-suggest). Reuses
+   .hcs-pill as-is; only new rule is the row layout + spacing above it. */
+.toast-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: 0.5rem; }
+.toast-actions .hcs-pill { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
 
 .toast-close {
     background: none;

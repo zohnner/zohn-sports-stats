@@ -1414,7 +1414,9 @@ Escalation needed: no (for the layout fix). The roster-name anomaly may need Rel
 
 ---
 
-**Gate status (updated 2026-08-24): all three gates present for both ideas.** Kael's visual pass and Axiom's feasibility check are done (above) — one real structural correction found for Idea 1 (the sticky rule needs a new wrapper, not `.nlg-header` itself), one small existing-component extension identified for Idea 2 (a new action-button toast variant). See DECISIONS.md D-118 for the consensus record. Neither is scheduled — this stays a spec, not a build queue entry, until the owner ratifies scheduling one or both (same standing pattern as D-043).
+**Gate status (updated 2026-08-24): all three gates present for both ideas.** Kael's visual pass and Axiom's feasibility check are done (above) — one real structural correction found for Idea 1 (the sticky rule needs a new wrapper, not `.nlg-header` itself), one small existing-component extension identified for Idea 2 (a new action-button toast variant). See DECISIONS.md D-118 for the consensus record.
+
+**Idea 2 — ✅ SHIPPED 2026-09-13 (D-152), live-verified against real Week 1 plays.** Idea 1 (sticky header) remains unscheduled — see DECISIONS.md D-152 for why only one was picked up this pass, not both.
 
 ---
 

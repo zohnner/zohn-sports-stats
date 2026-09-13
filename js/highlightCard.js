@@ -463,10 +463,46 @@ const _HC_NFL_GROUP_LABELS = { passing: 'Passing', rushing: 'Rushing', receiving
 
 let _hcNflState = null;
 let _hcNflPendingEventId = null;
+let _hcNflPendingAthleteId = null;
 
 function openNFLHighlightCardForGame(eventId) {
     _hcNflPendingEventId = eventId;
     navigateTo('nfl-highlight-card');
+}
+
+// D-118 Idea 2 -- big-play auto-suggest handoff (js/nflLiveGame.js). Sibling
+// to _hcNflPendingEventId, same single-value/consume-once pattern. athleteId
+// is the ESPN athlete id from the live play's athletesInvolved[] -- resolved
+// to a side/group/index against the real boxscore once it loads, since the
+// Studio's own player <select> is keyed by array position, not athlete id
+// (see _hcNflAutoSelectPendingAthlete).
+function openNFLHighlightCardForPlay(eventId, athleteId) {
+    _hcNflPendingEventId = eventId;
+    _hcNflPendingAthleteId = athleteId;
+    navigateTo('nfl-highlight-card');
+}
+
+// Resolves the pending athlete id (if any) against the just-loaded boxscore
+// and auto-selects that player -- a genuinely faster path than today's
+// game-only preselect. Silently no-ops if the id isn't found in either
+// side's boxscore (e.g. a defensive player with no offensive/kicking stat
+// line) rather than erroring; the game is still preselected either way.
+function _hcNflAutoSelectPendingAthlete(container) {
+    const athleteId = _hcNflPendingAthleteId;
+    _hcNflPendingAthleteId = null;
+    if (!athleteId) return false;
+    for (const side of ['away', 'home']) {
+        const groups = _hcNflGroupsForSide(side);
+        for (const g of groups) {
+            const idx = (g.group.athletes || []).findIndex(a => String(a.athlete?.id) === String(athleteId));
+            if (idx !== -1) {
+                _hcNflPickPlayer(side, g.key, idx);
+                _hcNflRenderStudio(container);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function _hcNflResetState() {
@@ -490,6 +526,7 @@ async function displayNFLHighlightCard() {
         if (presetEventId) {
             Logger.info('Highlight Card Studio opened from NFL game view', { eventId: presetEventId }, 'NFL');
             await _hcNflPickGame(presetEventId, true);
+            _hcNflAutoSelectPendingAthlete(container);
             return;
         }
         // "Recent completed games" for NFL means this week's finals — there's no

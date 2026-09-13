@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -60,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -87,6 +87,11 @@ async function showNFLGame(eventId) {
         if (_nlgState(data) === 'in') {
             try { _nlg.situation = await fetchNFLLiveSituation(eventId); } catch (_) { /* field viewer just omits */ }
         }
+        // Seed on first mount so the big-play suggestion (D-118 Idea 2) never
+        // fires for whatever the last play happened to be before the user
+        // opened the page -- only a play that happens while they're actually
+        // watching should prompt "make a card?".
+        if (isNewGame && _nlg.situation?.lastPlay?.id) _nlg.lastBigPlayId = _nlg.situation.lastPlay.id;
         _nlgRender(data);
         _nlgMaybePoll(data);
     } catch (err) {
@@ -147,6 +152,7 @@ function _nlgRender(data) {
     if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb('nfl-games', `${awayAbbr} @ ${homeAbbr}`);
 
     const state = _nlgState(data);
+    if (state === 'in') _nlgCheckBigPlay();
     const isFirstRender = grid.className !== 'nlg-shell-mounted';
     if (isFirstRender) {
         grid.className = 'nlg-shell-mounted'; grid.style.cssText = '';
@@ -838,6 +844,58 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // space -- it now takes proj/disp so the arrow's start/end points land in the
 // exact same perspective grid as the yard lines around it, instead of a flat
 // 0-100 strip that no longer matches the field's own geometry.
+// D-118 Idea 2 -- big-play Highlight Card auto-suggest, fully gated (ISSUES.md
+// "immersion brainstorm", ratified 2026-08-24, unbuilt until now). Rule-based,
+// no EPA -- that version stays blocked on missing nflverse 2026 play-by-play
+// data (D-081), unchanged by this. Reads sit.lastPlay, the exact same field
+// the play arrow above already parses every poll -- zero new fetches. A
+// qualifying play is a score, a turnover (INT or opponent fumble recovery),
+// or a 20+ yard gain. Toast only, never auto-navigates (ux.md's
+// every-interaction-has-a-cost rule) -- the user chose to be on this page,
+// and jumping them into the Studio the instant something exciting happens
+// would cost them their place in whatever they were watching. Replace-not-
+// stack: a new qualifying play while one is showing replaces it rather than
+// stacking a second (spec's own rate-limit rule).
+function _nlgCheckBigPlay() {
+    const lp = _nlg.situation?.lastPlay;
+    if (!lp || !lp.id || lp.id === _nlg.lastBigPlayId) return;
+    _nlg.lastBigPlayId = lp.id;
+    if (!lp.type || typeof lp.statYardage !== 'number') return;
+    const label = (lp.type.text || '').toLowerCase();
+    // Same admin-play exclusion _nlgPlayArrowSvg already uses just below --
+    // a timeout or penalty is never a "big play" regardless of yardage.
+    if (/timeout|two-minute|end of|coin toss|kneel|spike|penalty/.test(label)) return;
+
+    const isScore = (lp.scoreValue || 0) > 0;
+    // "own" excludes a team recovering its own fumble (no possession change,
+    // not the exciting turnover this rule means) -- unverified against a
+    // real ESPN fumble-recovery type.text this session (today's live check
+    // only produced an interception), flagged rather than asserted certain.
+    const isTurnover = /intercept/.test(label) || (/fumble/.test(label) && !/own/.test(label));
+    const isBigGain = lp.statYardage >= 20;
+    if (!isScore && !isTurnover && !isBigGain) return;
+
+    const athlete = (lp.athletesInvolved || [])[0];
+    if (!athlete || !athlete.id) return; // nothing to pre-select in the Studio without one
+
+    const kind = isScore
+        ? (lp.scoreValue === 6 ? 'TD' : lp.scoreValue === 3 ? 'FG' : lp.scoreValue === 2 ? 'safety' : 'score')
+        : isTurnover ? (/intercept/.test(label) ? 'INT' : 'fumble recovery')
+        : 'big gain';
+    const name = _escHtml(athlete.shortName || athlete.fullName || 'That play');
+    const message = `${name} — ${lp.statYardage}-yd ${kind}. Make a card?`;
+
+    if (_nlg.bigPlayDismiss) _nlg.bigPlayDismiss();
+    _nlg.bigPlayDismiss = ErrorHandler.toast(message, 'info', {
+        title: 'Big play',
+        duration: 12000,
+        actions: [
+            { label: 'Create Card', primary: true, onClick: () => openNFLHighlightCardForPlay(_nlg.eventId, athlete.id) },
+            { label: 'Dismiss' },
+        ],
+    });
+}
+
 function _nlgPlayArrowSvg(sit, proj, disp, yF) {
     const lp = sit.lastPlay;
     if (!lp || !lp.type || typeof lp.start?.yardLine !== 'number' || typeof lp.end?.yardLine !== 'number') return '';
