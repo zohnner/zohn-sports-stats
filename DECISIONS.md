@@ -3191,3 +3191,17 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v287 → v288. Trigger rate validated against all 10 real games played today (8 total qualifying plays site-wide), not just traced on paper. Not yet seen rendering in a real browser — same disclosed limitation as every other visual piece shipped this session without browser-automation access; the DOM/CSS/animation logic is correct by construction and reuses proven patterns (the toast container's body-append pattern, the ambient pulse's reduced-motion fallback structure), but an actual on-screen look has not been observed.
 
 **Escalation:** none — a deliberate, owner-approved posture departure, recorded plainly rather than treated as routine.
+
+---
+
+## D-158 — "Why It Matters" deterministic explanation line, added to the critical-moment overlay — 2026-09-13
+
+**Trigger:** owner-directed continuation, picking up the one remaining named idea from the original brainstorm most aligned with this project's existing values rather than in tension with them: a deterministic, rules-derived explanation of a moment's significance, explicitly *not* LLM-generated commentary. The owner's own brainstorm made this distinction directly ("I wouldn't make an LLM generate generic commentary... generate deterministic explanations from your actual analytics... that's auditable") — a rare case in this brainstorm where the proposed direction and this project's own no-hallucination-risk posture already agree, so no conflict to flag this time, unlike D-155/D-157.
+
+**Scoped to where it earns its keep, not built as a standalone new surface:** rather than a new card or section, `_nlgWhyItMatters(comp)` replaces the critical-moment overlay's (D-157) bare "N-point win probability swing" with real game-state context — who leads, by how much, with how much time left, or "Tied" if the play just evened the score. Built entirely from data already in hand (score, quarter, clock) — no new fetch, no model, nothing that could invent a number that isn't real. Chose this placement specifically because the critical-moment overlay is the one place on the page dramatic enough to deserve a full sentence of context, and it's already the rarest, most scoped-down surface built today (8 plays across all of Week 1's first Sunday) — extending an already-narrow, already-calibrated feature is a smaller, safer move than opening a new one.
+
+**Verified with constructed inputs, not against a historical mid-game state:** reconstructing the *exact* score/clock at the moment of an earlier play in an already-final game isn't practical without walking the full scoring-play sequence, so this was verified differently and disclosed as such: ran the actual function against four realistic inputs matching the real API shapes already confirmed live earlier this session (a normal leading-team case, a tied-game case, an overtime case, and a case with missing clock/period data). All four produced grammatically correct, sensible output, including graceful degradation on the missing-data case (no dangling "with left in the" fragment) — matching this file's standing "absent degrades to nothing" convention rather than a broken partial sentence.
+
+**Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v288 → v289.
+
+**Escalation:** none.

@@ -1019,7 +1019,7 @@ function _nlgCheckBigPlay() {
         if (Math.abs(wpDelta) >= 0.15) {
             const critComp = _nlgComp(_nlg.lastData);
             const critTeam = (wpDelta > 0 ? _nlgSide(critComp, 'home') : _nlgSide(critComp, 'away')).team || {};
-            _nlgFireCriticalMoment(kind, critTeam, Math.round(Math.abs(wpDelta) * 100));
+            _nlgFireCriticalMoment(kind, critTeam, Math.round(Math.abs(wpDelta) * 100), _nlgWhyItMatters(critComp));
         }
     }
 
@@ -1058,8 +1058,32 @@ function _nlgCheckBigPlay() {
 // gets a shorter, non-animated static appearance instead of losing the
 // moment entirely -- same fallback posture as every other motion in this
 // file, not an exception carved out for this one.
+// "Why It Matters" (2026-09-13, same round as D-157) -- a deterministic,
+// rules-derived game-state sentence, not an LLM-generated one. The owner's
+// own brainstorm explicitly favored this over AI commentary: "generate
+// deterministic explanations from your actual analytics... auditable."
+// Built from data already in hand (score, quarter, clock) -- no new fetch,
+// no model, nothing that could hallucinate a number that isn't real. Scoped
+// to the one place it earns its keep most: the critical-moment overlay,
+// replacing a bare "N-point swing" with real context about what the score
+// and clock actually mean right now.
+function _nlgWhyItMatters(comp) {
+    const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
+    const hs = parseInt(home.score, 10) || 0, as = parseInt(away.score, 10) || 0;
+    const margin = Math.abs(hs - as);
+    const status = comp.status || {};
+    const clock = status.displayClock || '';
+    const period = status.period;
+    const periodLabel = period === 1 ? '1st' : period === 2 ? '2nd' : period === 3 ? '3rd' : period === 4 ? '4th' : (period > 4 ? 'OT' : '');
+    const timeLine = (clock && periodLabel) ? ` with ${clock} left in the ${periodLabel}` : '';
+
+    if (margin === 0) return `Tied${timeLine}`;
+    const leaderAbbr = ((hs > as ? home : away).team || {}).abbreviation || 'Leader';
+    return `${leaderAbbr} leads by ${margin}${timeLine}`;
+}
+
 let _nlgCriticalShowing = false;
-function _nlgFireCriticalMoment(kind, team, deltaPct) {
+function _nlgFireCriticalMoment(kind, team, deltaPct, whyItMatters) {
     if (_nlgCriticalShowing) return;
     _nlgCriticalShowing = true;
 
@@ -1085,6 +1109,7 @@ function _nlgFireCriticalMoment(kind, team, deltaPct) {
             <span class="nlg-critical-team">${_escHtml(name)}</span>
             <span class="nlg-critical-verb">${_escHtml(verb)}</span>
             <span class="nlg-critical-sub">${deltaPct}-point win probability swing</span>
+            ${whyItMatters ? `<span class="nlg-critical-why">${_escHtml(whyItMatters)}</span>` : ''}
         </div>`;
     document.body.appendChild(el);
 

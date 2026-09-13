@@ -82,6 +82,16 @@
     color: var(--text-secondary);
     letter-spacing: 0.02em;
 }
+/* "Why It Matters" line -- deterministic game-state sentence, not the raw
+   WP-swing number above it. Slightly more muted than .nlg-critical-sub so
+   the two read as headline + supporting context, not two equal facts. */
+.nlg-critical-why {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
 /* Reduced motion: opacity-only appearance, much shorter hold (JS-side
    HOLD_MS split), no wash/scale animation -- a static fallback, not a
    removed moment, same posture as the ambient pulse above. Belt-and-
