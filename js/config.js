@@ -211,6 +211,8 @@ const _ICON = {
     checkCircle:   '<circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10 10.8 6"/>',
     info:          '<circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5.2h.01"/>',
     bell:          '<path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8L4 11z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/>',
+    speakerOn:     '<path d="M2 6h2.5l4-3.5v11l-4-3.5H2V6z"/><path d="M11 5.5a4 4 0 0 1 0 5M13 3.5a7 7 0 0 1 0 9"/>',
+    speakerOff:    '<path d="M2 6h2.5l4-3.5v11l-4-3.5H2V6z"/><path d="M11 5.5 15 10.5M15 5.5 11 10.5"/>',
     net:           '<path d="M2 3h12v10l-4-2v-8M2 3l4 2v8M6 5h4M4 8h8M4 11h8"/>',
     star:          '<path d="M8 2 9.9 6.2 14.5 6.7 11 9.7 12 14.3 8 11.9 4 14.3 5 9.7 1.5 6.7 6.1 6.2 8 2z"/>',
     shield:        '<path d="M8 2 13.5 4v4.3c0 3.4-2.3 5.9-5.5 7.2-3.2-1.3-5.5-3.8-5.5-7.2V4L8 2z"/>',

@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -36,6 +36,84 @@ const NLG_POLL_MS = 20000;
 // than the 20s live cadence since nothing else about a scheduled game
 // changes between polls.
 const NLG_PREGAME_POLL_MS = 60000;
+
+// Sound design (D-159, "elevate the experience," 2026-09-13). Synthesized
+// tones via the Web Audio API -- deliberately not sourced/hosted audio
+// files, which would need a new CSP allowance and raise a real licensing
+// question for anything that sounds like a broadcast SFX. A clean
+// oscillator tone is also the more honest register for this brand anyway
+// (the owner's own brainstorm named "Bloomberg terminal / F1 interface, not
+// ESPN" as the target, and a synthesized tick reads as exactly that,
+// where a sourced "ding" sample would read as a game-show/ESPN cue).
+// Off by default (localStorage `ss_nfl_sound`, opt-in only, no dark
+// pattern) -- browsers require a real user gesture before audio can play
+// at all, so the toggle button click itself is what creates/resumes the
+// AudioContext; sound can never start itself.
+const NLG_SOUND_KEY = 'ss_nfl_sound';
+let _nlgAudioCtx = null;
+
+function _nlgSoundEnabled() {
+    try { return localStorage.getItem(NLG_SOUND_KEY) === '1'; } catch (_) { return false; }
+}
+
+function _nlgGetAudioCtx() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!_nlgAudioCtx) _nlgAudioCtx = new AC();
+    if (_nlgAudioCtx.state === 'suspended') _nlgAudioCtx.resume().catch(() => {});
+    return _nlgAudioCtx;
+}
+
+// Plays one short synthesized note. Deliberately tiny/restrained (soft
+// attack/decay envelope, low peak gain) -- this is a UI tick, not a sound
+// effect. Fails silently on any error (no AudioContext support, a browser
+// blocking playback outside a gesture, etc.) rather than ever throwing --
+// sound is a bonus layer, never something that should break the page.
+function _nlgTone(freq, durationMs, type = 'sine', gainPeak = 0.12) {
+    const ctx = _nlgGetAudioCtx();
+    if (!ctx) return;
+    try {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(gainPeak, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durationMs / 1000);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + durationMs / 1000 + 0.03);
+    } catch (_) {}
+}
+
+// Named presets, not raw frequency calls at each site -- keeps every actual
+// sound-design decision (which cue sounds like what) in exactly one place.
+// Deliberately narrow: only the events that were already rare/meaningful
+// enough to get a VISUAL treatment today get a sound too (score, turnover,
+// entering 4th down, a critical moment) -- a plain 20+ yard gain does not,
+// same "if everything makes noise, nothing sounds important" discipline
+// applied to audio as this file already applies to motion.
+function _nlgPlayTone(preset) {
+    if (!_nlgSoundEnabled()) return;
+    if (preset === 'score') { _nlgTone(523.25, 90, 'sine', 0.12); setTimeout(() => _nlgTone(659.25, 140, 'sine', 0.12), 90); }
+    else if (preset === 'turnover') { _nlgTone(196, 220, 'triangle', 0.14); }
+    else if (preset === 'battle') { _nlgTone(440, 70, 'sine', 0.08); }
+    else if (preset === 'critical') { _nlgTone(392, 100, 'sine', 0.13); setTimeout(() => _nlgTone(523.25, 100, 'sine', 0.13), 100); setTimeout(() => _nlgTone(659.25, 220, 'sine', 0.14), 200); }
+}
+
+function _nlgToggleSound(btn) {
+    const next = !_nlgSoundEnabled();
+    try { localStorage.setItem(NLG_SOUND_KEY, next ? '1' : '0'); } catch (_) {}
+    if (next) _nlgGetAudioCtx(); // create/resume on this exact user gesture -- required by browser autoplay policy
+    _nlgUpdateSoundToggleBtn(btn || document.getElementById('nlgSoundToggle'));
+    if (next) _nlgPlayTone('score'); // a one-off confirmation tone so turning it on has an audible result immediately
+}
+
+function _nlgUpdateSoundToggleBtn(btn) {
+    if (!btn) return;
+    const on = _nlgSoundEnabled();
+    btn.innerHTML = `${_iconSvg(on ? 'speakerOn' : 'speakerOff', 13)} Sound ${on ? 'On' : 'Off'}`;
+    btn.setAttribute('aria-pressed', String(on));
+}
 
 const _NLG_TABS = [
     { id: 'summary', label: 'Summary' },
@@ -60,7 +138,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -166,6 +244,7 @@ function _nlgRender(data) {
               <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
               ${_nlg.catchupData ? `<button type="button" class="hcs-pill" onclick="_nlgToggleCatchup()">${_iconSvg('trendUp', 13)} Catch Me Up (${_nlg.catchupData.plays.length})</button>` : ''}
               <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">${_iconSvg('film', 13)} Create Highlight Card</button>
+              <button type="button" class="hcs-pill" id="nlgSoundToggle" aria-pressed="${_nlgSoundEnabled()}" onclick="_nlgToggleSound(this)">${_iconSvg(_nlgSoundEnabled() ? 'speakerOn' : 'speakerOff', 13)} Sound ${_nlgSoundEnabled() ? 'On' : 'Off'}</button>
             </div>
             ${_nlgCatchupHtml(home, away)}
             <div class="nlg-header"></div>
@@ -365,6 +444,14 @@ function _nlgRenderHeader(comp, home, away) {
     // needed, unlike the flash above, since this is meant to persist, not fire
     // once).
     const isBattle = live && sit?.down === 4;
+    // Sound cue (D-159): a short tick on the TRANSITION into 4th down only --
+    // isBattle itself is recomputed fresh every poll (true for as long as
+    // it stays 4th down), so without this separate tracker the tone would
+    // replay on every single 20s poll tick while a team is still deciding
+    // what to do on 4th down, which is exactly the kind of noise this
+    // feature's own restraint principle argues against.
+    if (isBattle && !_nlg.lastBattleState) _nlgPlayTone('battle');
+    _nlg.lastBattleState = isBattle;
 
     const sitLine = sit
         ? (fieldHtml
@@ -1005,6 +1092,16 @@ function _nlgCheckBigPlay() {
     const name = _escHtml(athlete.shortName || athlete.fullName || 'That play');
     const message = `${name} — ${lp.statYardage}-yd ${kind}. Make a card?`;
 
+    // Sound cue: score/turnover only, not a plain big gain -- same rarity
+    // discipline as the tone presets themselves (see their own header
+    // comment). If a critical moment ALSO fires below, its own 'critical'
+    // tone plays in addition to this one -- two real, distinct facts (this
+    // was a score/turnover, AND it was also a critical swing), not a
+    // conflict to resolve.
+    const _turnoverKinds = new Set(['INT', 'fumble recovery']);
+    if (_turnoverKinds.has(kind)) _nlgPlayTone('turnover');
+    else if (kind !== 'big gain') _nlgPlayTone('score');
+
     // Tension-tier "critical moment" (owner-directed, 2026-09-13 -- see
     // DECISIONS.md D-157 for the full reasoning). Deliberately narrower than
     // a plain qualifying big play: only a real, rare win-probability swing
@@ -1086,6 +1183,7 @@ let _nlgCriticalShowing = false;
 function _nlgFireCriticalMoment(kind, team, deltaPct, whyItMatters) {
     if (_nlgCriticalShowing) return;
     _nlgCriticalShowing = true;
+    _nlgPlayTone('critical');
 
     const abbr = team.abbreviation || '';
     const name = team.shortDisplayName || team.name || abbr || 'That team';

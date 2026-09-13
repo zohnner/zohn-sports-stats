@@ -3205,3 +3205,23 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v288 → v289.
 
 **Escalation:** none.
+
+---
+
+## D-159 — Sound design shipped, synthesized tones on score/turnover/4th-down/critical — 2026-09-13
+
+**Trigger:** owner-directed continuation, picking up sound design — the original brainstorm's own instinct here ("Bloomberg terminal / F1 interface, not ESPN") was already aligned with this project's brand posture, so no restraint conflict to raise this time.
+
+**Real implementation choice made before writing any code, not defaulted into:** synthesized tones via the Web Audio API (`OscillatorNode`/`GainNode`), not sourced or hosted audio files. Two independent reasons, either alone sufficient: sourced files would need a new CSP allowance (a new host, or a same-origin asset that then needs licensing clearance for anything resembling a broadcast SFX) — a synthesized tone needs neither. And a clean oscillator tone is the more honest register for the stated goal anyway; a sourced "ding" sample reads as a game-show/ESPN cue regardless of how it's chosen, where a plain sine/triangle tone reads as exactly the restrained instrument-panel feel the brainstorm named.
+
+**Off by default, opt-in only, no dark pattern:** `localStorage` (`ss_nfl_sound`), a topbar toggle (reusing `.hcs-pill`, matching every other one-off button in this shell). Browsers require a genuine user gesture before audio can play at all — the toggle click itself is what creates/resumes the `AudioContext`, so sound can never start itself regardless of any code path. Turning it on plays an immediate confirmation tone so the action has an audible result right away, not a silent flag flip.
+
+**Four presets, deliberately narrow — reusing the exact same rarity discipline this session already applied to motion, now applied to audio:** a two-note ascending chime on a score, a lower single triangle-wave tone on a turnover, a short 70ms tick on entering 4th down (gated on the actual state *transition*, not replayed on every poll while already in it — the same one-shot-vs-sustained distinction D-153's battle-state visual treatment already made, now applied to its matching sound), and a three-note ascending arpeggio — clearly more elaborate than the plain score chime — on a critical moment (D-157). A plain 20+ yard gain gets no sound at all, on purpose: the same "if everything makes noise, nothing sounds important" principle already named for the visual tension layer, extended to audio rather than treated as a separate question.
+
+**New icons added, not emoji:** `speakerOn`/`speakerOff` added to `js/config.js`'s shared `_ICON` set, matching this project's post-emoji-removal convention (`_iconSvg()` keys, never a raw glyph) — checked that no volume/speaker icon already existed before adding one.
+
+**The one piece of this session's work that genuinely cannot be verified the way everything else was today, stated plainly rather than glossed over:** every other feature shipped today was checked against real, live API data — this one has no data to check against. The frequency/timing choices (523.25 Hz/659.25 Hz for the score chime, 196 Hz triangle for turnover, 440 Hz for the 4th-down tick, a 392→523.25→659.25 Hz rise for critical) are grounded in real musical pitches and an ascending-pattern-reads-as-positive convention, and the trigger wiring reuses call sites already verified correct earlier today (D-152/D-153/D-157) — but whether the actual sound is pleasant, audible, or well-balanced has not been heard, because no browser with audio output was available this session. This is a harder limit than the earlier "haven't seen it render" disclosures for CSS/visual work, since audio genuinely cannot be inspected via any text-based tool at all. Flagged honestly as the least-verified piece of today's work, not asserted as equally solid.
+
+**Verified:** `node --check` clean on both changed files (`js/nflLiveGame.js`, `js/config.js`). `tools/check-manifest.cjs` clean (no new files — `config.js` already in the script chain). `sw.js` `CACHE_NAME` bumped v289 → v290.
+
+**Escalation:** none.
