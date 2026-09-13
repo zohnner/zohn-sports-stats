@@ -17,6 +17,81 @@
 @media (prefers-reduced-motion: reduce) {
     .nlg-wrap--high-leverage { animation: none; box-shadow: 0 0 0 2px var(--color-warn-border); }
 }
+
+/* D-157: full-page critical-moment overlay -- owner-directed departure from
+   this file's usual restraint, scoped narrowly (a real, rare >=15-point
+   win-probability swing gates this in JS, not every score) rather than
+   applied broadly. pointer-events:none so it never blocks reading or
+   clicking the actual page underneath; role=status + aria-live=polite (set
+   in JS) announce it to screen readers without stealing focus. Team color
+   (not --accent) drives the wash -- this is a specific team's moment,
+   matching the border=identity convention already used elsewhere on this
+   site for team color. z-index below --z-toast on purpose, so the big-play
+   toast's Create Card button (which can fire on the same play) stays
+   reachable even while this is showing. */
+.nlg-critical {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%,
+        color-mix(in srgb, var(--nlg-critical-color) 32%, transparent) 0%,
+        color-mix(in srgb, var(--nlg-critical-color) 8%, transparent) 45%,
+        transparent 75%);
+    animation: nlgCriticalIn 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.nlg-critical--out { animation: nlgCriticalOut 550ms ease-in both; }
+@keyframes nlgCriticalIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes nlgCriticalOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+.nlg-critical-body {
+    text-align: center;
+    padding: 1.5rem 2rem;
+    animation: nlgCriticalBodyIn 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes nlgCriticalBodyIn {
+    0%   { transform: scale(0.85) translateY(8px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.nlg-critical-team {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--nlg-critical-color);
+    text-shadow: 0 2px 24px color-mix(in srgb, var(--nlg-critical-color) 60%, transparent);
+}
+.nlg-critical-verb {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 8vw, 4.5rem);
+    line-height: 1.05;
+    color: var(--text-primary);
+    text-shadow: 0 4px 32px color-mix(in srgb, var(--nlg-critical-color) 45%, transparent);
+    margin: 0.15rem 0;
+}
+.nlg-critical-sub {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+}
+/* Reduced motion: opacity-only appearance, much shorter hold (JS-side
+   HOLD_MS split), no wash/scale animation -- a static fallback, not a
+   removed moment, same posture as the ambient pulse above. Belt-and-
+   suspenders: the JS already detects prefers-reduced-motion and applies
+   .nlg-critical--static directly, but the media query here is a pure CSS
+   failsafe in case that detection is ever wrong. */
+.nlg-critical--static, .nlg-critical--static .nlg-critical-body { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    .nlg-critical, .nlg-critical-body { animation: none; }
+}
 .nlg-livebadge { color: var(--color-live); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; animation: nlgpulse 1.4s ease-in-out infinite; }
 @keyframes nlgpulse { 50% { opacity: 0.35; } }
 /* D-118 Idea 1 -- sticky score header. Same sticky offset expression

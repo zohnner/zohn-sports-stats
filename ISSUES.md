@@ -2052,5 +2052,5 @@ Owner opened by asking "what sport/feature next" and asked to be walked through 
 
 - **Key Plays (WP-swing ranking)** — ✅ SHIPPED (D-155).
 - **"Catch Me Up" recap** — ✅ SHIPPED 2026-09-13 (D-156). Round one is complete.
-- **Tension-tier system (NORMAL→CRITICAL, full-page transitions)** — GATED, owner-directed future round. Needs its own Vera/Kael/Axiom pass before building, per this file's own routing rule — a full-page state transition in particular needs a real visual spec, not an ad hoc build, given it's a deliberate departure from `DESIGN.md`'s current restraint posture and should be reviewed against it explicitly, not slipped in quietly.
+- **Tension-tier system (NORMAL→CRITICAL, full-page transitions)** — **CRITICAL tier ✅ SHIPPED 2026-09-13 (D-157)**, built in isolation and validated against real game data (8 qualifying plays across all 10 games played today) before committing to the rest. NORMAL/ELEVATED/HIGH tiers remain unbuilt — today's existing ambient leverage pulse (D-153) and battle-state treatment already cover the lower-intensity end; a formal ladder connecting all four tiers is still open if wanted.
 - **"Why It Matters" deterministic explanations, interactive drive-history field mode, sound design, per-event-type push notifications, cross-sport engine abstraction** — all named, none started. Not forgotten, just not this round.

@@ -1005,6 +1005,24 @@ function _nlgCheckBigPlay() {
     const name = _escHtml(athlete.shortName || athlete.fullName || 'That play');
     const message = `${name} — ${lp.statYardage}-yd ${kind}. Make a card?`;
 
+    // Tension-tier "critical moment" (owner-directed, 2026-09-13 -- see
+    // DECISIONS.md D-157 for the full reasoning). Deliberately narrower than
+    // a plain qualifying big play: only a real, rare win-probability swing
+    // (>=15 points) earns the full-page treatment -- an ordinary touchdown
+    // in a blowout still only gets today's toast/ambient pulse. Reuses the
+    // exact winprobability[] pairing Key Plays/Catch Me Up already read
+    // (D-155/D-156), no new data, no new fetch.
+    const wpArr = (_nlg.lastData?.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
+    const wpIdx = wpArr.findIndex(w => String(w.playId) === String(lp.id));
+    if (wpIdx > 0) {
+        const wpDelta = wpArr[wpIdx].homeWinPercentage - wpArr[wpIdx - 1].homeWinPercentage;
+        if (Math.abs(wpDelta) >= 0.15) {
+            const critComp = _nlgComp(_nlg.lastData);
+            const critTeam = (wpDelta > 0 ? _nlgSide(critComp, 'home') : _nlgSide(critComp, 'away')).team || {};
+            _nlgFireCriticalMoment(kind, critTeam, Math.round(Math.abs(wpDelta) * 100));
+        }
+    }
+
     // {immediate:true} on the replace path -- see errorHandler.js's comment on
     // dismiss(). A normal animated dismiss would leave the old toast on screen
     // for its ~250ms exit animation while the new one is already appended,
@@ -1023,6 +1041,60 @@ function _nlgCheckBigPlay() {
             { label: 'Dismiss' },
         ],
     });
+}
+
+// Full-page critical-moment overlay (D-157). Genuinely rare by construction
+// (see the >=15-point win-probability gate at the call site above) -- the
+// same "if everything pulses nothing feels important" discipline this
+// file's ambient leverage pulse already follows, just applied to a louder
+// treatment for this specific tier because that intensity was the explicit,
+// deliberate direction chosen for it, not a lapse in that discipline.
+// pointer-events:none (set in CSS) so it never blocks reading or clicking
+// the actual page underneath while it plays. One-shot and non-stacking: a
+// second qualifying moment while one is already showing is simply skipped
+// rather than queued or replacing the first -- these should be rare enough
+// that two colliding in the same few seconds is a real edge case, not a
+// common one worth building queue/replace logic for. prefers-reduced-motion
+// gets a shorter, non-animated static appearance instead of losing the
+// moment entirely -- same fallback posture as every other motion in this
+// file, not an exception carved out for this one.
+let _nlgCriticalShowing = false;
+function _nlgFireCriticalMoment(kind, team, deltaPct) {
+    if (_nlgCriticalShowing) return;
+    _nlgCriticalShowing = true;
+
+    const abbr = team.abbreviation || '';
+    const name = team.shortDisplayName || team.name || abbr || 'That team';
+    const color = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
+    const verb = kind === 'TD' ? 'TOUCHDOWN'
+        : kind === 'INT' ? 'INTERCEPTION'
+        : kind === 'fumble recovery' ? 'FUMBLE RECOVERY'
+        : kind === 'FG' ? 'FIELD GOAL'
+        : kind === 'safety' ? 'SAFETY'
+        : kind === '2-pt conversion' ? 'TWO-POINT CONVERSION'
+        : 'GAME-CHANGING PLAY';
+
+    const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const el = document.createElement('div');
+    el.className = 'nlg-critical' + (reduced ? ' nlg-critical--static' : '');
+    el.style.setProperty('--nlg-critical-color', color);
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.innerHTML = `
+        <div class="nlg-critical-body">
+            <span class="nlg-critical-team">${_escHtml(name)}</span>
+            <span class="nlg-critical-verb">${_escHtml(verb)}</span>
+            <span class="nlg-critical-sub">${deltaPct}-point win probability swing</span>
+        </div>`;
+    document.body.appendChild(el);
+
+    const HOLD_MS = reduced ? 1600 : 3200;
+    setTimeout(() => {
+        const cleanup = () => { el.remove(); _nlgCriticalShowing = false; };
+        if (reduced) { cleanup(); return; }
+        el.classList.add('nlg-critical--out');
+        el.addEventListener('animationend', cleanup, { once: true });
+    }, HOLD_MS);
 }
 
 function _nlgPlayArrowSvg(sit, proj, disp, yF) {
