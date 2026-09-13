@@ -3135,3 +3135,21 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v284 → v285.
 
 **Escalation:** none.
+
+---
+
+## D-155 — "Key Plays" sidebar card (win-probability-swing ranking), first piece of the "elevate the experience" round 2 — 2026-09-13
+
+**Trigger:** owner brought an external, extensive brainstorm document proposing a large "Game State Engine" vision for the live viewer (leverage/urgency/momentum scoring, a tiered NORMAL→CRITICAL tension system, "Why It Matters" analytical explanations, a drive-by-drive interactive field history, a "Catch Me Up" recap, sound design, per-event-type push notifications, and a shared cross-sport abstraction). Rather than build toward all of it, flagged two real conflicts before writing any code and got explicit direction on both (owner chose to go bigger on tension-tier theatrics for a *future* round, and to scope *this* round narrowly): **(1)** several of the proposal's centerpiece examples (`+0.74 EPA`, an EPA-sorted "most important plays" list) assume play-value data that D-081 already confirmed doesn't exist for this season (missing `play_by_play_2026` from nflverse) — the same reason the big-play auto-suggest (D-152) is rule-based instead of EPA-based. **(2)** the proposal's full-page CRITICAL state transitions and emoji-led copy sit in real tension with `DESIGN.md`'s standing rule that color/motion marks category, not importance, and with this site's own deliberate emoji-removal pass earlier this year. Owner's call: keep that theatrical direction for later, scope round one to what's buildable today with zero new data — win-probability-swing leverage ranking and a "Catch Me Up" recap, NFL only, no cross-sport abstraction yet.
+
+**Built:** `_nlgKeyPlays(data)`, a new sidebar card ranking the 5 plays with the largest win-probability swing in the game. Uses `data.winprobability[]` (D-106, already live, already verified) paired by `playId` against the matching play's `.text` in `drives.previous[]`/`drives.current` (both already fetched for Play-by-Play/Box Score — no new request). Delta between consecutive win-probability entries is exactly "how much did the play that caused this transition move the game" — a real, honest substitute for EPA-based significance scoring that needs no new data source, distinct from (and not pretending to be) the EPA version the original brainstorm assumed. The card's own caption says so explicitly ("Ranked by win-probability swing, not EPA — not yet available for this season") rather than leaving the distinction implicit.
+
+**Real bug caught live before shipping, not after:** hand-computed the exact ranking logic against a real live game (LV@MIA) before writing the final version. First pass surfaced `"*** play under review ***"` — an ESPN administrative replay-review marker, not a real snap — tied for #2 behind an actual touchdown. Couldn't be filtered by `type.text` the way the play-arrow's own admin-play filter works elsewhere in this file — ESPN mis-categorizes this specific marker as a plain `"Rush"` — so filtered on the literal asterisk-wrapped marker text instead, the only reliable signal available for this specific case. Re-verified after the fix against the same real game: touchdown ranks #1 (6% swing), four genuine football plays fill out the rest, zero administrative noise.
+
+**Placement:** sidebar, directly after the win-probability chart (`_nlgSidebarHtml`) — grouped there because it's derived from the exact same array, not a new independent data dependency.
+
+**Not built this pass, staying scoped:** "Catch Me Up" (the other half of round one, next), the tension-tier NORMAL→CRITICAL system, "Why It Matters" explanations, the interactive drive-history field mode, sound, per-event-type notifications, and the cross-sport abstraction. All named directions from the same brainstorm, deliberately not started here — see ISSUES.md for where the tension-tier direction is recorded for whenever that round starts.
+
+**Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v285 → v286. Live-verified against real Week 1 data before and after the fix, not just traced on paper.
+
+**Escalation:** none.

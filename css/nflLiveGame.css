@@ -407,6 +407,16 @@
 .nlg-fantasy-team { color: var(--text-muted); font-size: 0.68rem; }
 .nlg-fantasy-pts { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
+/* Key Plays (2026-09-13) -- same list/row/zebra-stripe recipe as
+   .nlg-fantasy-list/-row above, not a new pattern. */
+.nlg-keyplay-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.nlg-keyplay-row { display: grid; grid-template-columns: 1.2rem 1fr auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.78rem; }
+.nlg-keyplay-row:nth-child(odd) { background: var(--bg-raised); }
+.nlg-keyplay-rank { color: var(--text-subtle); font-weight: 700; }
+.nlg-keyplay-text { color: var(--text-secondary); line-height: 1.35; }
+.nlg-keyplay-wp { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nlg-keyplay-wp-unit { font-weight: 600; font-size: 0.62rem; color: var(--text-muted); margin-left: 0.1rem; }
+
 .nlg-venue-caption { margin-top: 0.5rem; }
 
 @media (max-width: 900px) {

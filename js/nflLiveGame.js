@@ -1742,11 +1742,65 @@ function _nlgSidebarHtml(data, comp, home, away) {
     return `<aside class="nlg-side">
         ${_nlgYourRosterSection(data, home, away)}
         ${_nlgWinProbability(data, home, away)}
+        ${_nlgKeyPlays(data)}
         ${_nlgSidebarLeaders(data)}
         ${_nlgFantasyLeadersCard(data)}
         ${_nlgGameFlow(comp, home, away)}
         ${_nlgStandingsCard(data, home, away)}
     </aside>`;
+}
+
+// Key Plays (2026-09-13, "elevate the experience" round 2) -- ranks real
+// plays by win-probability swing. Deliberately NOT EPA-based: EPA/CPOE stay
+// blocked on missing nflverse 2026 play-by-play data (D-081), unchanged by
+// this -- same reason the big-play auto-suggest (D-152) is rule-based
+// instead. WP swing is a real, already-live, already-verified (D-106)
+// substitute that needs zero new data: data.winprobability[] pairs each
+// entry with the playId that caused the transition FROM the previous
+// entry, so the delta between consecutive entries is exactly "how much did
+// this specific play move the game." Cross-referenced against
+// drives.previous[].plays[]/drives.current.plays for the actual play text
+// -- both already fetched for Play-by-Play/Box Score, no new fetch here
+// either. Placed directly after the win-probability chart in the sidebar
+// since it's derived from the exact same array.
+function _nlgKeyPlays(data) {
+    const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
+    if (wp.length < 2) return '';
+
+    const allPlays = [
+        ...((data.drives?.previous || []).flatMap(d => d.plays || [])),
+        ...((data.drives?.current?.plays) || []),
+    ];
+    if (!allPlays.length) return '';
+    const playById = new Map(allPlays.map(p => [String(p.id), p]));
+
+    // ESPN's own type.text lies here -- a "*** play under review ***"
+    // administrative marker (not a real snap) is categorized as a plain
+    // "Rush," so the play-arrow's own type.text-based admin filter doesn't
+    // catch it. Found live: it tied for #2 in a real ranking, right behind
+    // an actual touchdown. Filtered on the literal asterisk-wrapped marker
+    // text instead, the only reliable signal ESPN gives for this case.
+    const swings = [];
+    for (let i = 1; i < wp.length; i++) {
+        const play = playById.get(String(wp[i].playId));
+        if (!play || !play.text) continue; // no play text to show -- skip rather than render a bare percentage
+        if (/^\s*\*{3}.*\*{3}\s*$/.test(play.text)) continue;
+        swings.push({ delta: Math.abs(wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage), play });
+    }
+    if (!swings.length) return '';
+
+    const top = swings.sort((a, b) => b.delta - a.delta).slice(0, 5);
+    const rows = top.map(({ delta, play }, i) => `
+        <div class="nlg-keyplay-row">
+            <span class="nlg-keyplay-rank">${i + 1}</span>
+            <span class="nlg-keyplay-text">${_escHtml(play.text)}</span>
+            <span class="nlg-keyplay-wp">${Math.round(delta * 100)}<span class="nlg-keyplay-wp-unit">% WP</span></span>
+        </div>`).join('');
+
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Key Plays</h3>
+        <div class="nlg-keyplay-list">${rows}</div>
+        <p class="pct-caption">Ranked by win-probability swing, not EPA (not yet available for this season)</p>
+    </div>`;
 }
 
 // -- Your Roster in This Game — live fantasy points for the signed-in
