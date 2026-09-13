@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -60,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -91,7 +91,7 @@ async function showNFLGame(eventId) {
         // fires for whatever the last play happened to be before the user
         // opened the page -- only a play that happens while they're actually
         // watching should prompt "make a card?".
-        if (isNewGame && _nlg.situation?.lastPlay?.id) _nlg.lastBigPlayId = _nlg.situation.lastPlay.id;
+        if (isNewGame && _nlg.situation?.situation?.lastPlay?.id) _nlg.lastBigPlayId = _nlg.situation.situation.lastPlay.id;
         _nlgRender(data);
         _nlgMaybePoll(data);
     } catch (err) {
@@ -174,6 +174,17 @@ function _nlgRender(data) {
         if (sideEl) sideEl.outerHTML = _nlgSidebarHtml(data, comp, home, away);
     }
 
+    // Ambient tension pulse -- applied to the whole wrap, not a specific tab
+    // or panel, so it's visible regardless of which tab the user is on (same
+    // "visible everywhere, not just the Live tab" choice js/liveGame.js's
+    // .lg-panel--high-leverage made). Toggled every render, not tracked as a
+    // one-shot change -- a sustained ambient state, not an event.
+    const wrapEl = grid.querySelector('.nlg-wrap');
+    if (wrapEl) {
+        const lev = state === 'in' ? _nlgLeverageIndex(comp) : null;
+        wrapEl.classList.toggle('nlg-wrap--high-leverage', lev != null && lev >= 16);
+    }
+
     _nlgRenderHeader(comp, home, away);
     _nlgRenderMain(data, comp, home, away, state);
 
@@ -230,6 +241,34 @@ function _nlgKickoffCountdown(dateStr) {
     if (h > 0) parts.push(`${h}h`);
     parts.push(`${m}m`);
     return `Kicks off in ${parts.join(' ')}`;
+}
+
+// Tension layer (2026-09-13, NFL follow-on to js/liveGame.js's MLB tension
+// cues, 34a9ccf) -- ambient in-game leverage. Deliberately NOT a reuse of
+// _nflLeverage (js/app.js): that function picks WHICH live game the home
+// hero should feature, so it includes a +100 followed-team bonus and a +4
+// national-broadcast bonus -- real signals for "which game should I watch,"
+// meaningless once someone has already committed to watching THIS one (a
+// followed team's 45-3 blowout would still read as maximally "high leverage"
+// under that formula, which is backwards for an in-page tension cue). This is
+// a smaller, from-scratch formula measuring only in-game stakes: quarter,
+// score closeness, and red zone. No baseline-ratio scale like MLB's
+// leverage index (period*2 + closeness maxes near 20, not a "1.0 = average"
+// ratio) -- the >=16 threshold below is a considered estimate (Q4 within two
+// scores, or a tied Q3 game, or red zone tips a moderately close game over),
+// not empirically tuned against historical NFL win-probability swings the
+// way a real leverage-index model would be.
+function _nlgLeverageIndex(comp) {
+    const status = comp.status || {};
+    const period = status.period;
+    if (status.type?.state !== 'in' || !period) return null;
+    const home = (comp.competitors || []).find(c => c.homeAway === 'home') || {};
+    const away = (comp.competitors || []).find(c => c.homeAway === 'away') || {};
+    const hs = parseInt(home.score, 10) || 0, as = parseInt(away.score, 10) || 0;
+    const diff = Math.abs(hs - as);
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    const redZone = _nlg.situation?.situation?.isRedZone ? 2 : 0;
+    return (period * 2) + closeness + redZone;
 }
 
 function _nlgRenderHeader(comp, home, away) {
@@ -300,12 +339,33 @@ function _nlgRenderHeader(comp, home, away) {
     // no last-play text either. Without a field viewer (missing yardLine/
     // down data -- the only place this info appears at all), it keeps its
     // original full content.
+    // Tension cue -- situation flash: mirrors js/liveGame.js's _lgFlashSituation,
+    // adapted to this file's "rebuild the whole header from a template string
+    // every poll" architecture rather than MLB's "patch a persistent node"
+    // one. Because headerEl.innerHTML is fully replaced each render, a fresh
+    // element created WITH the flash class present plays its one-shot CSS
+    // entrance animation automatically on mount -- no classList.add/setTimeout
+    // removal needed the way MLB's version required (that pattern is for a
+    // node that survives across renders; this one never does).
+    const sitKey = sit && typeof sit.down === 'number' ? `${sit.down}_${sit.distance}_${sit.possession}` : null;
+    const sitChanged = sitKey !== null && _nlg.lastSituationKey !== null && _nlg.lastSituationKey !== sitKey;
+    _nlg.lastSituationKey = sitKey;
+    const sitFlashCls = sitChanged ? ' nlg-situation--flash' : '';
+
+    // Tension cue -- battle state: 4th down is the NFL analog of MLB's
+    // sustained 2-strike treatment -- an ongoing "this drive ends here if they
+    // don't convert" state, re-included in the template for as long as it
+    // stays true across consecutive polls (no separate one-shot tracking
+    // needed, unlike the flash above, since this is meant to persist, not fire
+    // once).
+    const isBattle = live && sit?.down === 4;
+
     const sitLine = sit
         ? (fieldHtml
             ? (sit.lastPlay && sit.lastPlay.text
-                ? `<div class="nlg-situation"><span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span></div>`
+                ? `<div class="nlg-situation${sitFlashCls}"><span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span></div>`
                 : '')
-            : `<div class="nlg-situation">
+            : `<div class="nlg-situation${sitFlashCls}">
                  ${sitPossTeamName ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sitPossTeamName)} ball</span>` : (sit.possessionText ? `<span class="nlg-poss">${_iconSvg('football', 12)} ${_escHtml(sit.possessionText)}</span>` : '')}
                  ${sit.downDistanceText ? `<span class="nlg-dd">${_escHtml(sit.downDistanceText)}</span>` : ''}
                  ${sit.lastPlay && sit.lastPlay.text ? `<span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span>` : ''}
@@ -313,7 +373,7 @@ function _nlgRenderHeader(comp, home, away) {
         : '';
 
     headerEl.innerHTML = `
-        <div class="nlg-score ${live ? 'nlg-score--live' : ''}">
+        <div class="nlg-score ${live ? 'nlg-score--live' : ''}${isBattle ? ' nlg-score--battle' : ''}">
           ${teamBlock(away, 'away')}
           <div class="nlg-center">
             <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
@@ -857,7 +917,18 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // stack: a new qualifying play while one is showing replaces it rather than
 // stacking a second (spec's own rate-limit rule).
 function _nlgCheckBigPlay() {
-    const lp = _nlg.situation?.lastPlay;
+    // BUG FIX (found 2026-09-13, same session as the original ship): this was
+    // _nlg.situation?.lastPlay, one level too shallow. fetchNFLLiveSituation()
+    // (js/nfl.js) returns {situation, homeTeamId, awayTeamId} -- a wrapped
+    // object, the exact same shape _nlgRenderHeader already correctly reads
+    // via `_nlg.situation?.situation` a few hundred lines above this function.
+    // The shallow read meant lp was always undefined in the real browser,
+    // silently no-op'ing every single poll -- passed every syntax check and
+    // every hand-traced-against-raw-API verification because those checks
+    // never actually exercised this exact variable path. Found on a later
+    // re-read while building the leverage/tension follow-up, not caught by
+    // anything automated.
+    const lp = _nlg.situation?.situation?.lastPlay;
     if (!lp || !lp.id || lp.id === _nlg.lastBigPlayId) return;
     _nlg.lastBigPlayId = lp.id;
     if (!lp.type || typeof lp.statYardage !== 'number') return;

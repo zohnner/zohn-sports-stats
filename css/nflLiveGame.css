@@ -1,8 +1,30 @@
 /* NFL Live Game viewer (D-030) */
 .nlg-wrap { max-width: 1180px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+/* Tension layer (2026-09-13, NFL follow-on to css/liveGame.css's MLB pass) --
+   ambient in-game leverage, same slow-pulse-not-fast-flash treatment and the
+   same --color-warn semantic channel (never --accent/team colors, per
+   DESIGN.md). Applied to the whole wrap so it reads on every tab, not just
+   Summary -- mirrors .lg-panel--high-leverage's own "visible everywhere"
+   choice exactly. */
+.nlg-wrap--high-leverage {
+    animation: nlgLeveragePulse 2.2s ease-in-out infinite;
+    border-radius: var(--radius-lg);
+}
+@keyframes nlgLeveragePulse {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50%      { box-shadow: 0 0 0 3px var(--color-warn-border); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nlg-wrap--high-leverage { animation: none; box-shadow: 0 0 0 2px var(--color-warn-border); }
+}
 .nlg-livebadge { color: var(--color-live); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; animation: nlgpulse 1.4s ease-in-out infinite; }
 @keyframes nlgpulse { 50% { opacity: 0.35; } }
 .nlg-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1.1rem 1rem; margin: 0.6rem 0 1rem; }
+/* Tension cue -- battle state: sustained (not one-shot) for as long as it's
+   4th down, the NFL analog of MLB's 2-strike .lg-hero--battle treatment --
+   an ongoing "this drive ends here" state, re-applied every render while
+   true, not an animation. */
+.nlg-score--battle { border-color: var(--color-warn-border); background: linear-gradient(180deg, var(--color-warn-subtle), var(--bg-card) 70%); }
 .nlg-team { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; border-top: 3px solid var(--tc); cursor: pointer; color: var(--text-primary); border-radius: var(--radius-md); padding: 0.5rem 0.3rem; }
 .nlg-team img { width: 52px; height: 52px; object-fit: contain; }
 .nlg-team-abbr { font-weight: 800; font-size: 0.95rem; }
@@ -20,6 +42,19 @@
    game's own badge, .nlg-status--live/.nlg-livebadge just above). */
 .nlg-countdown { font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-top: 0.15rem; }
 .nlg-situation { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; background: color-mix(in srgb, var(--color-live) 8%, transparent); border: 1px solid color-mix(in srgb, var(--color-live) 30%, transparent); border-radius: var(--radius-md); padding: 0.5rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem; }
+/* Tension cue -- situation flash: fires once per genuine down/distance/
+   possession change (never on a poll that re-fetches the same state) --
+   mirrors css/liveGame.css's .lg-situation--flash. Element is freshly
+   created each poll (headerEl.innerHTML fully rebuilds), so this plays as a
+   normal CSS entrance animation on mount; no JS removal needed. */
+.nlg-situation--flash { animation: nlgSituationFlash 700ms ease-out; }
+@keyframes nlgSituationFlash {
+    0%   { background: var(--color-warn-subtle); border-color: var(--color-warn-border); }
+    100% { background: color-mix(in srgb, var(--color-live) 8%, transparent); border-color: color-mix(in srgb, var(--color-live) 30%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nlg-situation--flash { animation: none; }
+}
 .nlg-poss { font-weight: 800; color: var(--text-primary); }
 .nlg-poss svg { vertical-align: -2px; }
 .nlg-dd { font-weight: 700; color: var(--text-primary); }
