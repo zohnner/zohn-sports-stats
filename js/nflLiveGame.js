@@ -866,7 +866,11 @@ function _nlgCheckBigPlay() {
     // a timeout or penalty is never a "big play" regardless of yardage.
     if (/timeout|two-minute|end of|coin toss|kneel|spike|penalty/.test(label)) return;
 
-    const isScore = (lp.scoreValue || 0) > 0;
+    // scoreValue === 1 is an extra point -- it always immediately follows a
+    // touchdown play that already got its own toast, so treating it as its
+    // own qualifying play would fire a second, redundant prompt seconds
+    // after the TD's. Excluded from isScore entirely, not just de-prioritized.
+    const isScore = (lp.scoreValue || 0) > 1;
     // "own" excludes a team recovering its own fumble (no possession change,
     // not the exciting turnover this rule means) -- unverified against a
     // real ESPN fumble-recovery type.text this session (today's live check
@@ -878,14 +882,31 @@ function _nlgCheckBigPlay() {
     const athlete = (lp.athletesInvolved || [])[0];
     if (!athlete || !athlete.id) return; // nothing to pre-select in the Studio without one
 
+    // scoreValue alone can't tell a safety (defense scores 2) from a 2-point
+    // conversion (offense scores 2) -- both are worth 2, completely different
+    // plays. Checked type.text for "safety" explicitly instead of assuming;
+    // anything else at scoreValue 2 reads as a plain 2-pt conversion, not
+    // mislabeled as a safety.
     const kind = isScore
-        ? (lp.scoreValue === 6 ? 'TD' : lp.scoreValue === 3 ? 'FG' : lp.scoreValue === 2 ? 'safety' : 'score')
+        ? (lp.scoreValue === 6 ? 'TD'
+            : lp.scoreValue === 3 ? 'FG'
+            : lp.scoreValue === 2 ? (/safety/.test(label) ? 'safety' : '2-pt conversion')
+            : 'score')
         : isTurnover ? (/intercept/.test(label) ? 'INT' : 'fumble recovery')
         : 'big gain';
     const name = _escHtml(athlete.shortName || athlete.fullName || 'That play');
     const message = `${name} — ${lp.statYardage}-yd ${kind}. Make a card?`;
 
-    if (_nlg.bigPlayDismiss) _nlg.bigPlayDismiss();
+    // {immediate:true} on the replace path -- see errorHandler.js's comment on
+    // dismiss(). A normal animated dismiss would leave the old toast on screen
+    // for its ~250ms exit animation while the new one is already appended,
+    // violating the spec's own "no more than one prompt visible ever" rule on
+    // back-to-back qualifying plays (a real bug found on re-review, not a
+    // theoretical one -- e.g. a pick-six's INT followed moments later by
+    // another team's own big play in a different live game on the same slate
+    // isn't even needed to trigger it; two qualifying plays close together in
+    // THIS game alone is enough).
+    if (_nlg.bigPlayDismiss) _nlg.bigPlayDismiss({ immediate: true });
     _nlg.bigPlayDismiss = ErrorHandler.toast(message, 'info', {
         title: 'Big play',
         duration: 12000,

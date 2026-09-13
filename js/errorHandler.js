@@ -123,7 +123,13 @@ class ErrorHandler {
             <button class="toast-close" aria-label="Dismiss">×</button>
         `;
 
-        const dismiss = () => {
+        // D-118 Idea 2 follow-up: {immediate:true} skips the exit animation and
+        // removes synchronously -- needed by any caller that replaces one toast
+        // with another back-to-back (e.g. two qualifying big plays in a row),
+        // since the normal animated dismiss leaves both toasts on screen for
+        // the ~250ms exit animation otherwise. Default behavior unchanged.
+        const dismiss = (opts) => {
+            if (opts && opts.immediate) { el.remove(); return; }
             el.classList.add('toast-out');
             el.addEventListener('animationend', () => el.remove(), { once: true });
         };

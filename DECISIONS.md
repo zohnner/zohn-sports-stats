@@ -3072,3 +3072,21 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean on all three changed JS files. `tools/check-manifest.cjs` clean (no new file — all edits to existing script-chain entries). `tools/check-themes.cjs` unchanged (0 errors, same 2 pre-existing warnings). `sw.js` `CACHE_NAME` bumped v281 → v282. Not yet verified end-to-end in a real browser (no browser-automation tool available this session) — the logic is verified against real live data by hand-tracing, and the toast/handoff code is a straightforward extension of two already-proven, already-shipped systems (the toast container, the preset-event-id handoff), not new architecture, but a real click-through (toast appears on a real qualifying play, Create Card lands in the Studio with the right player pre-selected) is the next actual proof and hasn't happened yet.
 
 **Escalation:** none.
+
+---
+
+## D-152 addendum — three real bugs found on self-review, fixed same session — 2026-09-13
+
+**Trigger:** owner asked "how can we polish, is there anything we're missing" immediately after D-152 shipped. Re-read the shipped code against the original spec and against real edge cases rather than treating "shipped and live-verified" as "done" — three genuine bugs surfaced, not stylistic nitpicks.
+
+1. **Overlapping-toast bug in the replace-not-stack path.** The original `if (_nlg.bigPlayDismiss) _nlg.bigPlayDismiss();` called the normal animated dismiss (a 250ms exit animation, `el.remove()` only on `animationend`), then immediately appended a brand-new toast on the very next line — for that 250ms window, both toasts were on screen at once, directly violating the spec's own "no more than one prompt visible ever" rule on two qualifying plays close together. Fixed by giving `ErrorHandler.toast()`'s returned `dismiss()` an optional `{immediate: true}` that removes synchronously, used only on the replace path — every other existing caller's dismiss behavior is unchanged.
+2. **`scoreValue === 2` conflated a safety with a 2-point conversion.** Both are worth 2 points; a safety is the *defense* scoring, a 2-pt conversion is the *offense* scoring on a play from the 2 — completely different plays, would have mislabeled every real 2-pt conversion as "safety" in the toast copy. Fixed to check `type.text` for "safety" explicitly rather than inferring from the point value alone; anything else at 2 points reads as "2-pt conversion."
+3. **Extra points were qualifying as their own big play.** `scoreValue > 0` included PATs (always worth exactly 1), which follow immediately after every touchdown — the TD already gets its own toast, so the PAT would have fired a second, redundant prompt seconds later on literally every score in every game. Fixed to `scoreValue > 1`.
+
+**Re-verified against fresh real data after the fix, not just re-read:** pulled live `situation.lastPlay` across all 8 active games again. Caught a genuine fumble in the wild this pass ("Sack Opp Fumble Recovery," TB@CIN) — correctly classified as a qualifying turnover, which resolves the one caveat the original D-152 entry had explicitly flagged as unverified (fumble detection had only been traced on paper before this). Also caught two real qualifying big gains (53-yd and 40-yd receptions) and confirmed penalties/timeouts/short gains still correctly excluded. No PAT happened to land in this particular snapshot to literally observe the exclusion firing, but the fix is a one-line arithmetic change (`> 0` to `> 1`) against a field already proven reliable across dozens of real observed plays this session — not asserting false certainty, just noting the gap honestly.
+
+**Also confirmed, not assumed:** focus states on the new toast action buttons are already covered by the site's existing global `:focus-visible` rule (`css/main.css`) — no override needed, checked rather than trusted. Mobile toast layout (`.toast-container` near-full-width + wrapping `.toast-actions` row at ≤768px) was checked by reading the actual CSS rules, not pixel-verified in a real browser — flagged honestly as a static read, not a rendered confirmation, since no browser-automation tool was available this session.
+
+**Verified:** `node --check` clean on both changed files. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v282 → v283.
+
+**Escalation:** none.
