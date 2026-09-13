@@ -372,18 +372,33 @@ function _nlgRenderHeader(comp, home, away) {
                </div>`)
         : '';
 
+    // D-118 Idea 1 (sticky score header, ISSUES.md "immersion brainstorm",
+    // ratified 2026-08-24, unbuilt until now). Axiom's own feasibility note
+    // on that spec: .nlg-header can't take position:sticky as originally
+    // proposed, because .nlg-score/fieldHtml/sitLine are flat siblings here --
+    // that would pin the field-position graphic too, directly contradicting
+    // the spec's "field viewer does not stick" requirement (it's the richest
+    // visual on the page and deserves real space when actually being looked
+    // at, not a permanently-reserved sliver of every tab). Fix: a new
+    // .nlg-header-pin wrapper around just the score row + situation line;
+    // fieldHtml stays a sibling OUTSIDE it, scrolling away normally. CSS
+    // (not JS) handles dropping the situation row from the pinned bar on
+    // mobile (Kael's spec), same "CSS over JS for visuals" discipline this
+    // codebase uses everywhere else.
     headerEl.innerHTML = `
-        <div class="nlg-score ${live ? 'nlg-score--live' : ''}${isBattle ? ' nlg-score--battle' : ''}">
-          ${teamBlock(away, 'away')}
-          <div class="nlg-center">
-            <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
-            ${countdown ? `<div class="nlg-countdown">${_escHtml(countdown)}</div>` : ''}
-            <div class="nlg-vs">@</div>
+        <div class="nlg-header-pin">
+          <div class="nlg-score ${live ? 'nlg-score--live' : ''}${isBattle ? ' nlg-score--battle' : ''}">
+            ${teamBlock(away, 'away')}
+            <div class="nlg-center">
+              <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
+              ${countdown ? `<div class="nlg-countdown">${_escHtml(countdown)}</div>` : ''}
+              <div class="nlg-vs">@</div>
+            </div>
+            ${teamBlock(home, 'home')}
           </div>
-          ${teamBlock(home, 'home')}
+          ${sitLine}
         </div>
-        ${fieldHtml}
-        ${sitLine}`;
+        ${fieldHtml}`;
     if (fieldHtml) _nlgAnimateFieldMotion();
 }
 

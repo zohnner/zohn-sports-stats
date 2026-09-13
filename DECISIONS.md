@@ -3112,3 +3112,26 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean. `tools/check-manifest.cjs` clean (no new files). `sw.js` `CACHE_NAME` bumped v283 → v284.
 
 **Escalation:** none — the bug is disclosed and fixed in the same entry it was found in, not a live incident requiring owner notification beyond this record.
+
+---
+
+## D-154 — Sticky score header shipped, completing the immersion-brainstorm spec — 2026-09-13
+
+**Trigger:** owner-directed continuation after D-153. With the leverage/tension layer shipped, Idea 1 (sticky score header) was the one remaining fully-gated item from the 2026-08-24 "immersion brainstorm" (ISSUES.md) — both ideas from that spec are now built, closing it out entirely.
+
+**Built exactly to Axiom's own feasibility correction, not the spec's original literal proposal:** the spec as originally written said `.nlg-header` becomes `position: sticky`. Axiom's 2026-08-24 feasibility pass had already found that wouldn't work — `_nlgRenderHeader`'s `headerEl.innerHTML` puts `.nlg-score`, the field-viewer graphic, and the situation line in as flat siblings, so pinning `.nlg-header` directly would pin the field viewer too, contradicting the spec's own "field viewer does not stick" requirement. Re-verified this was still true of the current code (it is, confirmed by reading the live template before touching it) and built the fix Axiom specified: a new `.nlg-header-pin` wrapper around just the score row and situation line, with the field-viewer HTML left as a sibling outside it so it scrolls away normally while the compact bar stays pinned.
+
+**Details:**
+- `position: sticky; top: calc(var(--header-height) + var(--ticker-height) + var(--header-sub-h))` — the exact same expression `.nlg-side` already uses (verified against the real rule before reusing it, not assumed identical). `z-index: var(--z-sticky)` (100) — a real token from the site's existing z-index scale (`css/variables.css`), sitting correctly below the site header's own `--z-nav` (200).
+- Deliberately stays pinned on mobile too, unlike `.nlg-side` (which unpins at ≤900px) — matches the spec's own reasoning that a shorter viewport makes the header scroll away even faster, so it's more valuable pinned there, not less.
+- Kael's mobile spec (drop the situation row, score only, below 900px) implemented in CSS (`.nlg-header-pin .nlg-situation { display: none }`), not JS — matches this codebase's standing "CSS over JS for visuals" rule rather than adding a conditional render branch.
+- Border-bottom + box-shadow shown unconditionally rather than only-when-actually-scrolled-and-stuck (which would need scroll-position JS to detect cleanly) — a bottom border under a header card in normal flow reads fine too, a deliberate simplification over building new scroll-detection machinery for a cosmetic-only difference.
+- Checked for DOM-order assumptions before restructuring, not just after: grepped for any `.nlg-header >` child-combinator selector or positional (`headerEl.children[n]`) access that the new wrapper nesting could break — none exist. Also checked `_nlgAnimateFieldMotion` (the field viewer's glide-animation trigger) — it queries by class globally (`document.querySelector('.fv-field3d-svg')`), unaffected by the field viewer moving from a middle sibling to a trailing one.
+
+**Tooling note, not a code issue:** the Grep tool gave a false "no matches" on `.nlg-situation` searches against this specific file twice during this session (confirmed false by cross-checking with a direct `grep` call, which found real matches both times) — flagging as an observed tool reliability gap, not asserting a cause. Cross-checked negative results with a second method before trusting them, rather than concluding something didn't exist because one search said so.
+
+**Not independently browser-verified** — same disclosed limitation as D-153 and the earlier mobile-layout check: no browser-automation tool available this session, so this is verified by reading the actual template output and cross-referencing the real CSS rules it depends on (`.nlg-side`'s sticky expression, the `--z-sticky` token, the 900px breakpoint already shared with `.nlg-side`'s own mobile unpin), not by seeing it render and scroll in a real viewport. Flagged honestly rather than claimed as done.
+
+**Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v284 → v285.
+
+**Escalation:** none.

@@ -19,6 +19,32 @@
 }
 .nlg-livebadge { color: var(--color-live); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; animation: nlgpulse 1.4s ease-in-out infinite; }
 @keyframes nlgpulse { 50% { opacity: 0.35; } }
+/* D-118 Idea 1 -- sticky score header. Same sticky offset expression
+   .nlg-side already uses (css/nflLiveGame.css, verified before reuse, not
+   guessed) -- pinned directly under the site's own sticky header stack.
+   Deliberately stays pinned on mobile too, unlike .nlg-side below (which
+   unpins at 900px) -- the spec's own reasoning: a shorter mobile viewport
+   makes the header scroll away even faster, so it's more valuable there,
+   not less. --z-sticky (100) sits below the site header's --z-nav (200) and
+   above normal tab content. Border+shadow shown unconditionally rather than
+   only-when-actually-stuck (would need scroll-position JS to detect) -- a
+   bottom border under a header card reads fine in normal flow too, not just
+   once content is sliding underneath it. */
+.nlg-header-pin {
+    position: sticky;
+    top: calc(var(--header-height) + var(--ticker-height) + var(--header-sub-h));
+    z-index: var(--z-sticky);
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+}
+@media (max-width: 900px) {
+    /* Kael's spec: score row only on mobile -- a two-row sticky bar eats
+       too much of a short viewport for what it's protecting (the content
+       scrolling underneath); full down-distance is one glance away at the
+       top of the Summary tab regardless. */
+    .nlg-header-pin .nlg-situation { display: none; }
+}
 .nlg-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1.1rem 1rem; margin: 0.6rem 0 1rem; }
 /* Tension cue -- battle state: sustained (not one-shot) for as long as it's
    4th down, the NFL analog of MLB's 2-strike .lg-hero--battle treatment --
