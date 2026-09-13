@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -60,7 +60,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -92,6 +92,10 @@ async function showNFLGame(eventId) {
         // opened the page -- only a play that happens while they're actually
         // watching should prompt "make a card?".
         if (isNewGame && _nlg.situation?.situation?.lastPlay?.id) _nlg.lastBigPlayId = _nlg.situation.situation.lastPlay.id;
+        // Catch Me Up (D-156) -- computed once here, on the very first fetch
+        // for a fresh mount, not on every poll. See _nlgComputeCatchup's own
+        // header comment for why a per-poll recompute would defeat the point.
+        if (isNewGame) _nlg.catchupData = _nlgComputeCatchup(data);
         _nlgRender(data);
         _nlgMaybePoll(data);
     } catch (err) {
@@ -160,8 +164,10 @@ function _nlgRender(data) {
           <div class="nlg-wrap">
             <div class="nlg-topbar">
               <button onclick="navigateTo('nfl-games')" class="back-button">← Scores</button>
+              ${_nlg.catchupData ? `<button type="button" class="hcs-pill" onclick="_nlgToggleCatchup()">${_iconSvg('trendUp', 13)} Catch Me Up (${_nlg.catchupData.plays.length})</button>` : ''}
               <button type="button" class="hcs-pill" onclick="openNFLHighlightCardForGame('${_escHtml(String(_nlg.eventId))}')">${_iconSvg('film', 13)} Create Highlight Card</button>
             </div>
+            ${_nlgCatchupHtml(home, away)}
             <div class="nlg-header"></div>
             <div class="nlg-layout">
               <div class="nlg-main"></div>
@@ -931,6 +937,50 @@ function _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc) {
 // would cost them their place in whatever they were watching. Replace-not-
 // stack: a new qualifying play while one is showing replaces it rather than
 // stacking a second (spec's own rate-limit rule).
+// Shared qualification predicate (extracted 2026-09-13 while building Catch
+// Me Up, D-156) -- both the big-play auto-suggest below and Catch Me Up's
+// recap need the identical "is this a real, notable play" rule, so it lives
+// in exactly one place rather than being copy-pasted a second time. A
+// qualifying play is a score (scoreValue > 1 -- excludes extra points, which
+// always immediately follow a TD that already got its own notice), a
+// turnover (INT, or a fumble recovery that isn't the same team recovering
+// its own fumble), or a 20+ yard gain. Excludes admin plays (timeout/
+// penalty/etc., same filter _nlgPlayArrowSvg uses) and ESPN's own
+// "*** play under review ***" marker, which ESPN mis-categorizes as a plain
+// "Rush" (so the type.text admin filter alone doesn't catch it -- found live
+// building Key Plays, D-155; this predicate is what propagates that fix to
+// the big-play auto-suggest too, which never had it before now).
+function _nlgIsBigPlay(lp) {
+    if (!lp || !lp.type || typeof lp.statYardage !== 'number') return false;
+    const label = (lp.type.text || '').toLowerCase();
+    if (/timeout|two-minute|end of|coin toss|kneel|spike|penalty/.test(label)) return false;
+    if (/^\s*\*{3}.*\*{3}\s*$/.test(lp.text || '')) return false;
+    const isScore = (lp.scoreValue || 0) > 1;
+    // "own" excludes a team recovering its own fumble (no possession change,
+    // not the exciting turnover this rule means) -- unverified against a
+    // real ESPN fumble-recovery type.text this session (a real one was
+    // caught live building Key Plays, D-155, but its exact text wasn't
+    // captured then), flagged rather than asserted certain.
+    const isTurnover = /intercept/.test(label) || (/fumble/.test(label) && !/own/.test(label));
+    const isBigGain = lp.statYardage >= 20;
+    return isScore || isTurnover || isBigGain;
+}
+
+// scoreValue alone can't tell a safety (defense scores 2) from a 2-point
+// conversion (offense scores 2) -- both are worth 2, completely different
+// plays. Checks type.text for "safety" explicitly instead of assuming;
+// anything else at scoreValue 2 reads as a plain 2-pt conversion, not
+// mislabeled as a safety. Assumes _nlgIsBigPlay(lp) is already true.
+function _nlgPlayKind(lp) {
+    const label = (lp.type.text || '').toLowerCase();
+    const isScore = (lp.scoreValue || 0) > 1;
+    if (isScore) {
+        return lp.scoreValue === 6 ? 'TD' : lp.scoreValue === 3 ? 'FG' : lp.scoreValue === 2 ? (/safety/.test(label) ? 'safety' : '2-pt conversion') : 'score';
+    }
+    const isTurnover = /intercept/.test(label) || (/fumble/.test(label) && !/own/.test(label));
+    return isTurnover ? (/intercept/.test(label) ? 'INT' : 'fumble recovery') : 'big gain';
+}
+
 function _nlgCheckBigPlay() {
     // BUG FIX (found 2026-09-13, same session as the original ship): this was
     // _nlg.situation?.lastPlay, one level too shallow. fetchNFLLiveSituation()
@@ -946,40 +996,12 @@ function _nlgCheckBigPlay() {
     const lp = _nlg.situation?.situation?.lastPlay;
     if (!lp || !lp.id || lp.id === _nlg.lastBigPlayId) return;
     _nlg.lastBigPlayId = lp.id;
-    if (!lp.type || typeof lp.statYardage !== 'number') return;
-    const label = (lp.type.text || '').toLowerCase();
-    // Same admin-play exclusion _nlgPlayArrowSvg already uses just below --
-    // a timeout or penalty is never a "big play" regardless of yardage.
-    if (/timeout|two-minute|end of|coin toss|kneel|spike|penalty/.test(label)) return;
-
-    // scoreValue === 1 is an extra point -- it always immediately follows a
-    // touchdown play that already got its own toast, so treating it as its
-    // own qualifying play would fire a second, redundant prompt seconds
-    // after the TD's. Excluded from isScore entirely, not just de-prioritized.
-    const isScore = (lp.scoreValue || 0) > 1;
-    // "own" excludes a team recovering its own fumble (no possession change,
-    // not the exciting turnover this rule means) -- unverified against a
-    // real ESPN fumble-recovery type.text this session (today's live check
-    // only produced an interception), flagged rather than asserted certain.
-    const isTurnover = /intercept/.test(label) || (/fumble/.test(label) && !/own/.test(label));
-    const isBigGain = lp.statYardage >= 20;
-    if (!isScore && !isTurnover && !isBigGain) return;
+    if (!_nlgIsBigPlay(lp)) return;
 
     const athlete = (lp.athletesInvolved || [])[0];
     if (!athlete || !athlete.id) return; // nothing to pre-select in the Studio without one
 
-    // scoreValue alone can't tell a safety (defense scores 2) from a 2-point
-    // conversion (offense scores 2) -- both are worth 2, completely different
-    // plays. Checked type.text for "safety" explicitly instead of assuming;
-    // anything else at scoreValue 2 reads as a plain 2-pt conversion, not
-    // mislabeled as a safety.
-    const kind = isScore
-        ? (lp.scoreValue === 6 ? 'TD'
-            : lp.scoreValue === 3 ? 'FG'
-            : lp.scoreValue === 2 ? (/safety/.test(label) ? 'safety' : '2-pt conversion')
-            : 'score')
-        : isTurnover ? (/intercept/.test(label) ? 'INT' : 'fumble recovery')
-        : 'big gain';
+    const kind = _nlgPlayKind(lp);
     const name = _escHtml(athlete.shortName || athlete.fullName || 'That play');
     const message = `${name} — ${lp.statYardage}-yd ${kind}. Make a card?`;
 
@@ -1763,14 +1785,22 @@ function _nlgSidebarHtml(data, comp, home, away) {
 // -- both already fetched for Play-by-Play/Box Score, no new fetch here
 // either. Placed directly after the win-probability chart in the sidebar
 // since it's derived from the exact same array.
+// Flattens every play across every drive (previous + current) into one
+// chronological list -- shared by Key Plays and Catch Me Up (below) so this
+// isn't duplicated a second time. Already-fetched data (Play-by-Play/Box
+// Score need it too), no new fetch either place.
+function _nlgAllPlaysFlat(data) {
+    return [
+        ...((data.drives?.previous || []).flatMap(d => d.plays || [])),
+        ...((data.drives?.current?.plays) || []),
+    ];
+}
+
 function _nlgKeyPlays(data) {
     const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
     if (wp.length < 2) return '';
 
-    const allPlays = [
-        ...((data.drives?.previous || []).flatMap(d => d.plays || [])),
-        ...((data.drives?.current?.plays) || []),
-    ];
+    const allPlays = _nlgAllPlaysFlat(data);
     if (!allPlays.length) return '';
     const playById = new Map(allPlays.map(p => [String(p.id), p]));
 
@@ -1800,6 +1830,100 @@ function _nlgKeyPlays(data) {
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Key Plays</h3>
         <div class="nlg-keyplay-list">${rows}</div>
         <p class="pct-caption">Ranked by win-probability swing, not EPA (not yet available for this season)</p>
+    </div>`;
+}
+
+// Catch Me Up (2026-09-13, "elevate the experience" round 2, second piece
+// after Key Plays/D-155) -- a one-click recap of what happened in this game
+// since the user last had it open. No accounts needed: the marker is a
+// per-game play id in localStorage, same "local-first, no server round trip
+// for a purely cosmetic per-visitor convenience" posture as every other
+// localStorage-backed feature on this site. Reuses _nlgIsBigPlay/_nlgPlayKind
+// (the exact same rules the big-play auto-suggest uses) rather than
+// inventing a second definition of "notable."
+//
+// Computed exactly ONCE per fresh mount (called from showNFLGame, gated on
+// isNewGame), not on every poll -- the marker gets advanced to "now"
+// immediately as part of this same computation, so a recomputation on the
+// very next poll would always find zero gap by construction. The result is
+// a static snapshot of "since you were last away," which is the actual job
+// to be done -- it's not supposed to keep growing while you're already
+// watching (the tension layer and the big-play toast already cover "what's
+// happening right now").
+//
+// Known, disclosed limitation: the marker advances on every fresh mount,
+// which only reflects "closed the tab / navigated elsewhere and came back."
+// If someone keeps this exact tab open and focused but alt-tabs away to a
+// different application for an hour, the live poll (which keeps running as
+// long as AppState.currentView still points at this game) will have already
+// advanced the marker in the background, so nothing will appear to catch up
+// on. Accepted for this scope rather than adding document.visibilityState
+// tracking to close it -- the core "opened this game fresh, hours later"
+// case this feature exists for is unaffected.
+const NLG_CATCHUP_KEY_PREFIX = 'ss_nfl_catchup_';
+
+function _nlgComputeCatchup(data) {
+    const key = NLG_CATCHUP_KEY_PREFIX + _nlg.eventId;
+    let lastSeenId = null;
+    try { lastSeenId = localStorage.getItem(key); } catch (_) { /* storage disabled -- feature just never fires, not an error */ }
+
+    const allPlays = _nlgAllPlaysFlat(data);
+    const currentLastPlay = allPlays[allPlays.length - 1] || null;
+    try { if (currentLastPlay?.id) localStorage.setItem(key, String(currentLastPlay.id)); } catch (_) {}
+
+    if (!lastSeenId || !allPlays.length) return null; // first-ever visit to this game -- nothing to catch up on
+    const idx = allPlays.findIndex(p => String(p.id) === String(lastSeenId));
+    if (idx === -1 || idx >= allPlays.length - 1) return null; // marker not found (stale/pruned), or nothing new since
+
+    const since = allPlays.slice(idx + 1).filter(_nlgIsBigPlay);
+    if (!since.length) return null; // real plays happened, but nothing notable enough to recap
+
+    // Win-probability context, same array/pairing Key Plays already uses
+    // (D-106) -- how much things moved between the marker play and now.
+    const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
+    const wpAt = (playId) => { const e = wp.find(w => String(w.playId) === String(playId)); return e ? e.homeWinPercentage : null; };
+    const wpBefore = wpAt(lastSeenId);
+    const wpAfter = wp.length ? wp[wp.length - 1].homeWinPercentage : null;
+
+    return {
+        plays: since.map(p => ({ text: p.text, kind: _nlgPlayKind(p) })),
+        wpBefore, wpAfter,
+    };
+}
+
+// Toggle handler, wired via inline onclick same as every other one-time
+// button in this file's mount-once shell (e.g. "Create Highlight Card").
+function _nlgToggleCatchup() {
+    const panel = document.getElementById('nlgCatchup');
+    if (panel) panel.hidden = !panel.hidden;
+}
+
+// Rendered once, into the mount-once shell (isFirstRender in _nlgRender) --
+// not rebuilt on every poll, since the recap it shows is a static snapshot
+// from the moment the page opened, not a live-updating widget.
+function _nlgCatchupHtml(home, away) {
+    if (!_nlg.catchupData) return '';
+    const { plays, wpBefore, wpAfter } = _nlg.catchupData;
+    let wpLine = '';
+    if (wpBefore != null && wpAfter != null) {
+        // Frame around whichever team is currently ahead -- same convention
+        // _nlgWinProbability's own legend already uses, rather than always
+        // reporting the home team's number regardless of which side it favors.
+        const leaderIsHome = wpAfter >= 0.5;
+        const abbr = ((leaderIsHome ? home : away).team || {}).abbreviation || (leaderIsHome ? 'Home' : 'Away');
+        const beforePct = Math.round((leaderIsHome ? wpBefore : 1 - wpBefore) * 100);
+        const afterPct = Math.round((leaderIsHome ? wpAfter : 1 - wpAfter) * 100);
+        wpLine = `<p class="pct-caption">${_escHtml(abbr)} win probability: ${beforePct}% → ${afterPct}%</p>`;
+    }
+    const rows = plays.map(({ text, kind }) => `
+        <div class="nlg-keyplay-row">
+            <span class="nlg-keyplay-wp">${_escHtml(kind)}</span>
+            <span class="nlg-keyplay-text">${_escHtml(text)}</span>
+        </div>`).join('');
+    return `<div class="nlg-catchup nlg-side-card" id="nlgCatchup" hidden>
+        <h3 class="nlg-side-title">Since you last checked</h3>
+        ${wpLine}
+        <div class="nlg-keyplay-list">${rows}</div>
     </div>`;
 }
 

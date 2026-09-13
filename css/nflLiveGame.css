@@ -417,6 +417,13 @@
 .nlg-keyplay-wp { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .nlg-keyplay-wp-unit { font-weight: 600; font-size: 0.62rem; color: var(--text-muted); margin-left: 0.1rem; }
 
+/* Catch Me Up (2026-09-13) -- reuses .nlg-side-card's own card chrome
+   (background/border/radius/padding) verbatim via a second class on the
+   same element; only new rule needed is spacing, since this card sits in
+   the main column (below the topbar), not the sidebar's own flex-gap. */
+.nlg-catchup { margin: 0.6rem 0; }
+.nlg-catchup .nlg-keyplay-wp { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
 .nlg-venue-caption { margin-top: 0.5rem; }
 
 @media (max-width: 900px) {

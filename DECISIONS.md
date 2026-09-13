@@ -3153,3 +3153,25 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v285 → v286. Live-verified against real Week 1 data before and after the fix, not just traced on paper.
 
 **Escalation:** none.
+
+---
+
+## D-156 — "Catch Me Up" recap shipped, completing round one of "elevate the experience" — 2026-09-13
+
+**Trigger:** owner-directed continuation of D-155's round one scope — the second and last named piece ("Catch Me Up," "WP-swing ranking + Catch Me Up, NFL only" per the owner's own scoping decision).
+
+**Real refactor done before adding anything new:** while designing this feature's recap-content rules, recognized it needed the exact same "is this a real, notable play" definition the big-play auto-suggest (D-152) already has, and that duplicating those rules a second time would be exactly the mistake this session already made once (the qualification logic existed inline in `_nlgCheckBigPlay`, not as a reusable predicate). Extracted `_nlgIsBigPlay(lp)` and `_nlgPlayKind(lp)` from `_nlgCheckBigPlay`'s body with no behavior change to that function, and — as a direct, free side effect — this also fixes a real gap: the big-play auto-suggest never had D-155's "`*** play under review ***`" exclusion applied to it, since that fix was only added to Key Plays. It's now shared, so both features are protected. Also extracted `_nlgAllPlaysFlat(data)` (the previous/current-drive flattening `_nlgKeyPlays` already did inline) into its own function, used by both Key Plays and this feature.
+
+**Built:** `_nlgComputeCatchup(data)` — computed exactly once per fresh mount (`showNFLGame`, gated on `isNewGame`), not on every poll. Reads a per-game play id from `localStorage` (`ss_nfl_catchup_{eventId}`, no accounts needed — same local-first posture as every other client-only convenience on this site), immediately advances the marker to the current last play as part of the same call (so a recompute on the next poll would trivially find nothing — the marker's whole job is to only accumulate a gap while the tab is actually closed or the user has navigated elsewhere), then — if a marker existed and real plays happened since it — filters everything since that point through the shared `_nlgIsBigPlay` predicate and pairs the before/after win-probability numbers from the same `winprobability[]` array Key Plays already reads. A "Catch Me Up (N)" pill appears in the topbar only when there's something real to show; clicking it (`_nlgToggleCatchup`) reveals a card between the topbar and the sticky header, reusing `.nlg-side-card`'s own chrome via a second class rather than new CSS.
+
+**Live-verified end to end against a real live game, not just traced:** simulated a marker 10 plays back on a real active game and ran the exact production logic (marker lookup → slice → filter → WP pairing) against the live payload. Correctly surfaced a real 30-yard gain and a real field goal as the two notable plays since the simulated mark, and correctly paired win probability moving from 90.6% to 86.7% across that same window — a sensible, real shift, not a synthetic number.
+
+**One design choice worth stating plainly, not left implicit:** the win-probability line frames around whichever team is *currently* ahead (mirroring `_nlgWinProbability`'s own sidebar-legend convention, checked before reusing it), not always the home team — "MIA win probability: 91% → 87%" reads naturally regardless of which side of 50% the number sits on, where always reporting the home percentage would sometimes read backwards (a home team WP moving from 9% to 13% is genuinely an improvement for them, but reads like a decline at a glance).
+
+**Known, disclosed limitation, not silently accepted as invisible:** the marker advances on every fresh mount of this specific page. If someone keeps the tab open and focused on this exact game but alt-tabs to a different application for an hour, the live poll (which keeps running as long as `AppState.currentView` still points at this game) continues advancing the marker in the background, so nothing will appear to catch up on when they return to the tab. This wasn't closed with `document.visibilityState` tracking — the core case this feature exists for (closing the tab, navigating elsewhere and coming back, or opening the next day) is fully unaffected, and adding visibility-tracking machinery for the narrower alt-tab case was judged out of scope for round one's "narrow and fast" mandate, not overlooked.
+
+**Round one of "elevate the experience" is now complete:** both named pieces (Key Plays, D-155; Catch Me Up, this entry) shipped, NFL only, using zero new data sources, as scoped. The tension-tier theatrics, "Why It Matters," the interactive drive-history field mode, sound, per-event-type notifications, and the cross-sport engine abstraction remain deliberately unstarted — see ISSUES.md for where each is recorded.
+
+**Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v286 → v287.
+
+**Escalation:** none.
