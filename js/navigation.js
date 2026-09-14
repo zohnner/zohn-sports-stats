@@ -1468,6 +1468,19 @@ function _renderBottomNav(sport) {
 // `icon` values are _ICON keys (js/config.js), not emoji, since 2026-09-07's
 // site-wide emoji-removal pass -- render sites must use _iconSvg(meta.icon)
 // into .innerHTML, not .textContent (see _renderSportSwitch/_applySportUI below).
+// Single source of truth for "the scores view for this sport" — mlb/nfl/nhl
+// use `{sport}-games`, ncaaf/ncaab/wnba/nba use `{sport}-scores`. Root-caused
+// bug (D-161 follow-up, 2026-09-14): the ticker SCORES button's click handler
+// (js/app.js's setupTickerNav) used to keep its OWN hardcoded copy of this
+// map, independently of `_applySportUI`'s dataset.view assignment below — the
+// two had drifted apart (the handler's copy still said `nba: 'games'`, the
+// pre-registry bare-name view, and never had ncaaf/ncaab/wnba entries at
+// all, silently falling through to that same dead 'games' view for every
+// sport but mlb/nfl/nhl). One map, read by both, so they can't drift again.
+const _SPORT_SCORES_VIEW = {
+    mlb: 'mlb-games', nfl: 'nfl-games', nhl: 'nhl-games',
+    ncaaf: 'ncaaf-scores', ncaab: 'ncaab-scores', wnba: 'wnba-scores', nba: 'nba-scores',
+};
 const SPORTS_META = {
     nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'nba-home',     accent: '#c8102e' },
     mlb:   { id: 'mlb',   label: 'MLB',   icon: 'baseball',   sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
@@ -1730,7 +1743,7 @@ function _applySportUI(sport) {
     if (brandSub)  brandSub.textContent  = meta.sub;
     if (sport !== 'nfl') document.getElementById('nflOffseasonStrip')?.remove();
     const tickerScoresBtn = document.getElementById('tickerScoresBtn');
-    if (tickerScoresBtn) tickerScoresBtn.dataset.view = (sport === 'nba' ? 'games' : `${sport}-games`);
+    if (tickerScoresBtn) tickerScoresBtn.dataset.view = _SPORT_SCORES_VIEW[sport] || `${sport}-games`;
     _renderSubNav(sport);
     _renderBottomNav(sport);
     _renderMenuPanel(sport);

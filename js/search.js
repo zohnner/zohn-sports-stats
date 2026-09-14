@@ -1,8 +1,12 @@
 // ============================================================
 // SportStrata — Global Search (UX-007) + Recently Viewed (UX-006)
 //
-// Cmd/Ctrl+K opens overlay. Searches NBA/MLB/NFL players + teams
-// across already-loaded AppState data (no extra fetches).
+// Cmd/Ctrl+K opens overlay. Searches MLB/NFL/NCAAF players + teams across
+// already-loaded (or lazily-warmed) AppState data. NBA has no live search
+// surface (D-161 follow-up, 2026-09-14 — removed the old BDL-era blocks
+// rather than port them; no bulk player pool exists and there's no
+// team-detail route to click into, matching NCAAB/WNBA precedent) but
+// Recently Viewed still supports NBA players via _recentAction.
 // Recently viewed persisted to localStorage (last 10).
 // ============================================================
 
@@ -105,14 +109,21 @@ function _searchFocusable() {
 // ── Recent action builder ─────────────────────────────────────
 
 function _recentAction(r) {
+    // D-161 follow-up (2026-09-14): these two used to call showPlayerDetail()/
+    // showTeamDetail() (js/playerDetail.js, js/teams.js) — the pre-registry
+    // BDL-shaped functions. js/nba.js's displayNBAPlayerDetail already calls
+    // addRecent() with real ESPN athlete ids, so a genuinely-new NBA recent
+    // entry hitting the old function with an ESPN id (not a BDL id) would
+    // have been broken on click. NBA has no team-detail route (matches
+    // NCAAB/WNBA), so a team recent falls back to the Teams list.
     if (r.type === 'player' && r.sport === 'nba') {
-        return () => { closeGlobalSearch(); showPlayerDetail(r.id); };
+        return () => { closeGlobalSearch(); if (AppState.currentSport !== 'nba') switchSport('nba'); if (typeof showNBAPlayer === 'function') showNBAPlayer(r.id); };
     }
     if (r.type === 'player' && r.sport === 'mlb') {
         return () => { closeGlobalSearch(); showMLBPlayerDetail(r.id); };
     }
     if (r.type === 'team' && r.sport === 'nba') {
-        return () => { closeGlobalSearch(); if (AppState.currentSport !== 'nba') switchSport('nba'); showTeamDetail(r.id); };
+        return () => { closeGlobalSearch(); if (AppState.currentSport !== 'nba') switchSport('nba'); navigateTo('nba-teams'); };
     }
     if (r.type === 'team' && r.sport === 'mlb') {
         return () => { closeGlobalSearch(); if (AppState.currentSport !== 'mlb') switchSport('mlb'); showMLBTeamDetail(r.id); };
@@ -142,21 +153,16 @@ function _doSearch(q) {
 function _buildGroups(q) {
     const groups = [];
 
-    // ── NBA Players ──────────────────────────────────────────
-    const nbaHits = (AppState.allPlayers || []).filter(p => {
-        const name = `${p.first_name} ${p.last_name}`.toLowerCase();
-        return name.includes(q) || (p.team?.full_name || '').toLowerCase().includes(q)
-                                || (p.team?.abbreviation || '').toLowerCase().startsWith(q);
-    }).slice(0, 6).map(p => ({
-        id:     p.id,
-        sport:  'nba',
-        type:   'player',
-        name:   `${p.first_name} ${p.last_name}`,
-        sub:    `${p.team?.abbreviation || '—'} · ${p.position || '—'}`,
-        badge:  'NBA',
-        action: () => { closeGlobalSearch(); showPlayerDetail(p.id); },
-    }));
-    if (nbaHits.length) groups.push({ label: 'NBA Players', items: nbaHits });
+    // NBA Players search removed here (D-161 follow-up, 2026-09-14) — this
+    // block filtered AppState.allPlayers, which nothing populates any more
+    // now that NBA's old bare-name 'players' view is dead code (js/nba.js's
+    // real views never call loadPlayers()), so it always matched zero
+    // results. Not ported to real ESPN data: NBA has no bulk player pool the
+    // way MLB/NFL do, and NCAAF's own real player-detail feature deliberately
+    // has no search surface either (see the NCAAF teams comment below) —
+    // adding one here would be new scope, not a bug fix, and would
+    // misrepresent coverage the same way that NCAAF comment already warns
+    // against.
 
     // ── MLB Players (deduplicate hitting vs pitching by id) ──
     const mlbSeen = new Set();
@@ -226,19 +232,13 @@ function _buildGroups(q) {
     if (nflHits.length) groups.push({ label: 'NFL Players', items: nflHits });
 
     // ── Teams ────────────────────────────────────────────────
+    // NBA Teams search removed here (D-161 follow-up, 2026-09-14) — same root
+    // cause as NBA Players above (filtered AppState.allTeams, which nothing
+    // populates any more) plus a second reason: NBA has no team-detail route
+    // to click through to (matches NCAAB/WNBA, neither of which is indexed
+    // here either) — a team-search result with nowhere real to go would be
+    // worse than no result.
     const teamHits = [
-        ...(AppState.allTeams || []).filter(t => {
-            const n = (t.full_name || t.name || '').toLowerCase();
-            return n.includes(q) || (t.abbreviation || '').toLowerCase().startsWith(q);
-        }).slice(0, 3).map(t => ({
-            id:     t.id,
-            sport:  'nba',
-            type:   'team',
-            name:   t.full_name || t.name,
-            sub:    `NBA · ${t.abbreviation || ''}`,
-            badge:  'NBA',
-            action: () => { closeGlobalSearch(); if (AppState.currentSport !== 'nba') switchSport('nba'); showTeamDetail(t.id); },
-        })),
         ...(AppState.mlbTeams || []).filter(t => {
             const n = (t.name || '').toLowerCase();
             return n.includes(q) || (t.abbrev || t.abbreviation || '').toLowerCase().startsWith(q);

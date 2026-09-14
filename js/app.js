@@ -1,10 +1,19 @@
 Logger.info('Initializing SportStrata…', undefined, 'APP');
 
-// Ticker — SCORES button navigates to scores for the active sport
+// Ticker — SCORES button navigates to scores for the active sport.
+// Real bug fixed here (D-161 follow-up, 2026-09-14): this used to keep its own
+// hardcoded sport->view map, independently of `_SPORT_SCORES_VIEW`
+// (js/navigation.js) that `_applySportUI` uses to set this same button's
+// `dataset.view` — the two had drifted apart, and this one still routed NBA
+// to the dead pre-registry 'games' view, with no entry at all for
+// ncaaf/ncaab/wnba (silently falling through to that same dead view for all
+// three). Reads the one shared map now instead of a second copy that can
+// drift again.
 (function setupTickerNav() {
     document.getElementById('tickerScoresBtn')?.addEventListener('click', () => {
-        const sportViews = { nba: 'games', mlb: 'mlb-games', nfl: 'nfl-games', nhl: 'nhl-games' };
-        navigateTo(sportViews[AppState.currentSport] || 'games');
+        const view = (typeof _SPORT_SCORES_VIEW !== 'undefined' && _SPORT_SCORES_VIEW[AppState.currentSport])
+            || 'mlb-games';
+        navigateTo(view);
     });
 })();
 
@@ -865,6 +874,11 @@ function _renderHomeRecents() {
         // an ncaaf/wnba chip would render but silently no-op on click.
         ncaaf: { player: 'showNCAAFPlayer' },
         wnba:  { player: 'showWNBAPlayer' },
+        // D-161 follow-up (2026-09-14): js/nba.js's displayNBAPlayerDetail
+        // already calls addRecent() for NBA players -- without this entry, a
+        // real NBA chip would render here and silently no-op on click, the
+        // exact failure mode the ncaaf/wnba comment above already warns about.
+        nba:   { player: 'showNBAPlayer' },
     };
     el.querySelectorAll('.home-recent-chip').forEach(chip => {
         chip.addEventListener('click', () => {
@@ -881,10 +895,10 @@ function _renderHomeRecents() {
 // ("Starred Players"); every non-MLB follow, and every followed TEAM in any sport, used to
 // be silently dropped. Neither the site-wide #favRail (D-103, teams only) nor the sign-in-
 // gated /dashboard (D-069) cover this: this is the home page's own quick-glance surface.
-// Sync pass renders whatever's already resolvable (MLB, NFL/NCAAF/NCAAB/WNBA teams); async
-// pass lazy-warms the NFL Sleeper pool and fetches NCAAF/WNBA followed players individually
-// (no bulk pool exists for either), then repaints -- mirrors _renderHomeInsights' own
-// background-then-rerender pattern below.
+// Sync pass renders whatever's already resolvable (MLB, NFL/NCAAF/NCAAB/WNBA/NBA teams); async
+// pass lazy-warms the NFL Sleeper pool and fetches NCAAF/WNBA/NBA followed players individually
+// (no bulk pool exists for any of the three), then repaints -- mirrors _renderHomeInsights' own
+// background-then-rerender pattern below. NBA added D-161 follow-up (2026-09-14).
 function _renderHomeFollowing() {
     const el = document.getElementById('homeStarred');
     if (!el) return;
@@ -897,7 +911,7 @@ function _renderHomeFollowing() {
     const resolved = {
         mlb:   { teams: [], players: [] }, nfl:   { teams: [], players: [] },
         ncaaf: { teams: [], players: [] }, ncaab: { teams: [], players: [] },
-        wnba:  { teams: [], players: [] },
+        wnba:  { teams: [], players: [] }, nba:   { teams: [], players: [] },
     };
     _renderHomeFollowingResolveSync(bySport, resolved);
     _renderHomeFollowingPaint(resolved);
@@ -910,9 +924,13 @@ function _renderHomeFollowing() {
 // _promoMoments' own note above for the exact TDZ bug this already caused once, live,
 // 2026-08-02). Function declarations are fully hoisted, so these read identically with
 // no ordering hazard.
-function _hfSportOrder() { return ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba']; }
+// nba added D-161 follow-up (2026-09-14) -- js/nba.js's renderFollowStar()
+// calls mean a real followed NBA team/player can exist now; without an entry
+// here it was silently dropped from Following entirely (no crash, just never
+// rendered), the same class of gap this whole module exists to close.
+function _hfSportOrder() { return ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba']; }
 function _hfPlayerDetailFn(sport) {
-    return { mlb: 'showMLBPlayerDetail', nfl: 'showNFLPlayerDetail', ncaaf: 'showNCAAFPlayer', wnba: 'showWNBAPlayer' }[sport];
+    return { mlb: 'showMLBPlayerDetail', nfl: 'showNFLPlayerDetail', ncaaf: 'showNCAAFPlayer', wnba: 'showWNBAPlayer', nba: 'showNBAPlayer' }[sport];
 }
 
 function _hfTeamChip(sport, abbr) {
@@ -1009,7 +1027,7 @@ function _renderHomeFollowingPaint(resolved) {
 }
 
 // Followed NFL players need the Sleeper pool warm (lazy -- mirrors js/search.js's own
-// on-demand warm, never fetched unconditionally on every home load); NCAAF/WNBA have no
+// on-demand warm, never fetched unconditionally on every home load); NCAAF/WNBA/NBA have no
 // bulk pool at all, so each followed player is resolved by its own athlete fetch, capped
 // at 10 and per-id try/catch so one bad id can't drop its siblings.
 async function _renderHomeFollowingHydrate(bySport, resolved) {
@@ -1055,9 +1073,28 @@ async function _renderHomeFollowingHydrate(bySport, resolved) {
         } catch (err) { Logger.warn('Home Following: WNBA athlete fetch failed', err, 'APP'); }
     });
 
+    // nba added D-161 follow-up (2026-09-14) -- same per-id athlete-fetch shape
+    // as ncaaf/wnba above (no bulk player pool exists for NBA either).
+    const nbaIds = (bySport.nba?.players || []).slice(0, 10);
+    const nbaFetches = nbaIds.map(async id => {
+        try {
+            const season = (typeof _nba !== 'undefined' && _nba.season) || undefined;
+            const cacheKey = `nba:athlete:${id}:${season}`;
+            let data = ApiCache.get(cacheKey);
+            if (!data) {
+                const res = await fetch(`/api/nbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                if (!res.ok) return;
+                data = await res.json();
+                ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            }
+            const bio = data?.bio;
+            if (bio?.name) resolved.nba.players.push(_hfPlayerChip('nba', id, bio.name, bio.team, bio.pos));
+        } catch (err) { Logger.warn('Home Following: NBA athlete fetch failed', err, 'APP'); }
+    });
+
     // NCAAB: no follow-star and no athlete endpoint exist yet (resolved.ncaab.players stays
     // empty by construction) -- nothing to await here, kept out of the Promise.all on purpose.
-    await Promise.all([...ncaafFetches, ...wnbaFetches]);
+    await Promise.all([...ncaafFetches, ...wnbaFetches, ...nbaFetches]);
 
     if (AppState.currentView === 'home') _renderHomeFollowingPaint(resolved);
 }
@@ -4019,9 +4056,15 @@ async function _loadWNBALandingLeaders() {
 // "Smart default" scope (owner decision): auto-reflects AuthState.follows,
 // no manual widget picker, no drag-and-drop. First real consumer of the
 // defaultSport preference key D-031 reserved but never wired up.
+// nba's teams/players entries fixed D-161 follow-up (2026-09-14) -- these
+// pointed at the pre-registry bare-name 'teams'/'players' views (dead code
+// since NBA's revival), so a followed NBA team chip or "browse NBA players"
+// link in the Dashboard went nowhere real. 'nba-leaders' for players (not a
+// bare players list) mirrors ncaaf's own entry -- neither sport has a plain
+// browsable player list, Leaders is the real entry point for both.
 const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', nba: 'NBA', nhl: 'NHL' };
-const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', nba: 'teams' };
-const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', nba: 'players' };
+const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', nba: 'nba-teams' };
+const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', nba: 'nba-leaders' };
 
 function _dashGroupFollows() {
     const bySport = {};
