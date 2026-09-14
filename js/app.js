@@ -179,6 +179,14 @@ const _EDITORIAL_SLOTS = {
     // Resolution 5), so #slLeaders is a genuine stat-leaders module here, not
     // a team-standings substitute.
     wnba:  { photoHero: false, news: true, games: true, leaders: true,  signature: true, fantasyPulse: false, matchup: false },
+    // NBA (D-161 follow-up, 2026-09-14): same shape as WNBA's -- real player
+    // leaders, no fantasy feature, no player-photo pipeline -- except
+    // `signature: false`: NBA has no Playoff Picture feature (a real
+    // per-conference bracket is a materially bigger build than WNBA's
+    // standings-derived snapshot, deliberately scoped out of v1) to
+    // summarize in the rail, so that slot is honestly omitted rather than
+    // faked with a substitute. Revisit if/when a Playoff Picture ships.
+    nba:   { photoHero: false, news: true, games: true, leaders: true,  signature: false, fantasyPulse: false, matchup: false },
 };
 const _EDITORIAL_LOADERS = {
     nfl: () => {
@@ -215,6 +223,12 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadWNBALandingLeaders === 'function') _loadWNBALandingLeaders();
         if (typeof _loadWNBALandingSignature === 'function') _loadWNBALandingSignature();
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('wnba', 'Latest WNBA');
+    },
+    nba: () => {
+        if (typeof _loadNBALandingSpotlight === 'function') _loadNBALandingSpotlight();
+        if (typeof _loadNBALandingGames === 'function') _loadNBALandingGames();
+        if (typeof _loadNBALandingLeaders === 'function') _loadNBALandingLeaders();
+        if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('nba', 'Latest NBA');
     },
 };
 
@@ -4048,6 +4062,97 @@ async function _loadWNBALandingLeaders() {
             <div class="sl-leaders">${tiles}</div></section>`;
     } catch (err) {
         Logger.warn('WNBA landing leaders failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+
+// ── NBA landing Game Spotlight (D-161 follow-up, 2026-09-14) — same shape as
+// WNBA's Phase 5 spotlight, using the live/marquee-scored picker (_nbaLeverage/
+// _nbaMarquee) already built for the cross-sport home hero, rather than
+// WNBA's simpler live-else-soonest-upcoming pick (NBA already has the richer
+// scoring model, no reason to downgrade to WNBA's for this reuse).
+async function _loadNBALandingSpotlight() {
+    const host = document.getElementById('slSpotlight');
+    if (!host) return;
+    let games = [];
+    try {
+        games = (AppState.nbaGames && AppState.nbaGames.length) ? AppState.nbaGames
+            : (typeof fetchNBAScoreboard === 'function' ? await fetchNBAScoreboard() : []);
+        AppState.nbaGames = games;
+    } catch (err) {
+        Logger.warn('NBA landing spotlight fetch failed', err && err.message, 'APP');
+    }
+    if (!host.isConnected) return;
+    const live = (games || []).filter(g => g.isLive);
+    const upcoming = (games || []).filter(g => !g.isLive && !g.isFinal);
+    let hero = null;
+    if (live.length) {
+        const g = live.slice().sort((a, b) => _nbaLeverage(b) - _nbaLeverage(a))[0];
+        hero = _heroFromNBAGame(g, 'live');
+    } else if (upcoming.length) {
+        const g = upcoming.slice().sort((a, b) => _nbaMarquee(b) - _nbaMarquee(a))[0];
+        hero = _heroFromNBAGame(g, 'upcoming');
+    }
+    if (!hero) { host.remove(); return; }
+    host.innerHTML = `<div class="home-hero home-hero--${hero.kind}" role="button" tabindex="0">${hero.html}</div>`;
+    const card = host.querySelector('.home-hero');
+    card.onclick = hero.onClick;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+    document.getElementById('slHero')?.classList.add('sl-hero--slim');
+}
+// ── NBA landing Games module — reuses _nbaGameCard (js/nba.js), already
+// wired to the real showNBAGame() panel.
+async function _loadNBALandingGames() {
+    const host = document.getElementById('slGames');
+    if (!host) return;
+    try {
+        const games = (AppState.nbaGames && AppState.nbaGames.length) ? AppState.nbaGames
+            : (typeof fetchNBAScoreboard === 'function' ? await fetchNBAScoreboard() : []);
+        AppState.nbaGames = games;
+        if (!host.isConnected) return;
+        const liveFirst = g => g.isLive ? 0 : 1;
+        const picked = (games || []).slice().sort((a, b) => (liveFirst(a) - liveFirst(b)) || (new Date(a.date) - new Date(b.date))).slice(0, 6);
+        const cards = picked.map(g => (typeof _nbaGameCard === 'function') ? _nbaGameCard(g) : '').filter(Boolean).join('');
+        if (!cards) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('nba-scores')">All scores →</button></div>
+            <div class="sl-games">${cards}</div></section>`;
+    } catch (err) {
+        Logger.warn('NBA landing games failed', err && err.message, 'APP');
+        host.remove();
+    }
+}
+// ── NBA landing Leaders module — same shape as WNBA's, via /api/nbastats
+// (same category/field names, live-verified before nbastats.js was built).
+// No Signature module for NBA (see _EDITORIAL_SLOTS.nba below) -- NBA has no
+// Playoff Picture feature to summarize (real per-conference bracket, scoped
+// out of v1, D-161), so this slot is honestly omitted rather than faked.
+async function _loadNBALandingLeaders() {
+    const host = document.getElementById('slLeaders');
+    if (!host) return;
+    try {
+        const season = (typeof _nba !== 'undefined') ? _nba.season : (typeof NBA_LAST_SEASON !== 'undefined' ? NBA_LAST_SEASON : new Date().getFullYear());
+        const res = await fetch(`/api/nbastats?season=${season}`);
+        if (!res.ok) throw new Error(`nbastats ${res.status}`);
+        const data = await res.json();
+        if (!host.isConnected) return;
+        const cats = (data && data.categories) || [];
+        const wanted = ['PPG', 'RPG', 'APG'];
+        const picked = wanted.map(u => cats.find(c => (c.unit || '').toUpperCase() === u)).filter(Boolean);
+        const tiles = (picked.length ? picked : cats.slice(0, 3)).map(cat => {
+            const l = (cat.leaders || [])[0];
+            if (!l || l.value == null) return '';
+            return `<button class="sl-leader" onclick="navigateTo('nba-player-${_escHtml(String(l.id))}')">
+                <span class="sl-leader-val">${_escHtml(String(l.value))}<span class="sl-leader-unit">${_escHtml(cat.unit || '')}</span></span>
+                <span class="sl-leader-name">${_escHtml(l.name || '')}</span>
+                <span class="sl-leader-team">${_escHtml(l.team || '')}</span></button>`;
+        }).filter(Boolean).join('');
+        if (!tiles) { host.remove(); return; }
+        host.innerHTML = `<section class="sl-section">
+            <div class="sl-section-hdr"><span class="eyebrow">League Leaders</span><button class="sl-section-link" onclick="navigateTo('nba-leaders')">Full leaderboards →</button></div>
+            <div class="sl-leaders">${tiles}</div></section>`;
+    } catch (err) {
+        Logger.warn('NBA landing leaders failed', err && err.message, 'APP');
         host.remove();
     }
 }
