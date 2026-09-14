@@ -67,15 +67,15 @@ function setupNavigation() {
     _initSportSwitchMenu();
     if (typeof initGlobalSearch === 'function') initGlobalSearch();
 
-    // Search (debounced) — NBA does live API search; MLB does local filter
-    const countEl = document.getElementById('resultCount');
+    // Search (debounced) — MLB does local filter over its own players view.
+    // The old bare 'players' (NBA) branch removed here (D-161 follow-up
+    // cleanup, 2026-09-14) — searchPlayers() lived in the now-deleted
+    // js/players.js/playerDetail.js cluster's reachable-only-via-dead-view
+    // path.
     const handleSearch = debounce(async e => {
         const val = e.target.value;
         if (searchClear) searchClear.style.display = val ? 'block' : 'none';
-        if (AppState.currentView === 'players') {
-            if (val.trim().length >= 2 && countEl) countEl.textContent = 'Searching…';
-            await searchPlayers(val);
-        } else if (AppState.currentView === 'mlb-players') {
+        if (AppState.currentView === 'mlb-players') {
             filterMLBPlayers(val);
         }
     }, 300);
@@ -84,7 +84,6 @@ function setupNavigation() {
     searchClear?.addEventListener('click', () => {
         searchBox.value = '';
         searchClear.style.display = 'none';
-        if (AppState.currentView === 'players')     searchPlayers('');
         if (AppState.currentView === 'mlb-players') filterMLBPlayers('');
     });
 
@@ -95,9 +94,13 @@ function setupNavigation() {
         // write. Route through the hash router (sport-aware) — blindly going
         // home here caused cross-sport chimera states (D-038 V2).
         if (!s)                  { _loadFromHash(); return; }
-        if (s.view === 'player')    { _restorePlayerDetail(s.id);             return; }
-        if (s.view === 'team')      { _restoreTeamDetail(s.id);              return; }
-        if (s.view === 'team-game') { _restoreTeamGameDetail(s.teamId, s.gameId); return; }
+        // 'player'/'team'/'team-game' branches removed here (D-161 follow-up
+        // cleanup, 2026-09-14) -- their targets (js/playerDetail.js's
+        // showPlayerDetail, js/teams.js's showTeamDetail/showTeamGameDetail)
+        // no longer exist. A stale pre-revival history entry hitting this
+        // falls through to the generic sport-prefix branch below, which
+        // treats an unrecognized bare view as 'nba' and lands on nba-home --
+        // graceful, not a thrown error.
         if (s.view === 'mlb-player') {
             // Restore MLB player detail — ensure sport is set correctly
             if (AppState.currentSport !== 'mlb') {
@@ -537,58 +540,24 @@ function renderCurrentView(view) {
     if (view.startsWith('wnba-')) { _renderWNBAView(view); return; }
     if (view.startsWith('nba-')) { _renderNBAView(view); return; }
 
-    // Legacy bare-name NBA views (pre-registry, pre-D-161) — dead code now
-    // that nothing points at them (see the SPORTS comment above), left in
-    // place rather than deleted this session
+    // Legacy bare-name NBA routes ('players'/'leaders'/'teams'/'games'/
+    // 'standings'/'builder') removed here (D-161 follow-up cleanup,
+    // 2026-09-14) — nothing points at them any more (see the SPORTS comment
+    // above), and their target functions in js/teams.js/js/games.js/
+    // js/playerDetail.js no longer exist (those 3 files were deleted in the
+    // same pass, confirmed to have zero live external callers first). Their
+    // sibling js/players.js/js/leaderboards.js/js/standings.js files are
+    // KEPT despite their own bare-view routes also being dead here, because
+    // each contains one small function real live features depend on:
+    // loadStatsForPlayers() (Arcade's "Who Am I?"), _buildPillControl() (MLB
+    // Leaderboards' filter pills), and _parseStreak() (home/MLB/NFL standings
+    // streak badges) respectively — see DECISIONS.md D-161 for the full
+    // audit that found this and corrected the original "these 5 files are
+    // dead, safe to delete" claim.
     const viewCount = document.getElementById('viewResultCount');
     switch (view) {
         case 'home':
             loadHome();
-            break;
-
-        case 'players':
-            if (AppState.allPlayers.length === 0) {
-                loadPlayers();
-            } else {
-                displayPlayers(AppState.filteredPlayers);
-                updatePlayerCount();
-            }
-            break;
-
-        case 'leaders':
-            loadLeaderboards();
-            break;
-
-        case 'teams':
-            if (viewCount) viewCount.textContent = 'NBA Teams';
-            if (AppState.allTeams.length === 0) {
-                loadTeams();
-            } else {
-                displayTeams(AppState.allTeams);
-            }
-            break;
-
-        case 'games':
-            if (viewCount) viewCount.textContent = 'Recent Games';
-            if (AppState.allGames.length === 0) {
-                loadGames();
-            } else {
-                displayGames(AppState.allGames);
-            }
-            break;
-
-        case 'standings':
-            if (viewCount) viewCount.textContent = 'NBA Standings';
-            if (AppState.nbaStandings?.length) {
-                displayStandings(AppState.nbaStandings, _standingsConf ?? 'East');
-            } else {
-                loadStandings();
-            }
-            break;
-
-        case 'builder':
-            if (viewCount) viewCount.textContent = 'Stat Builder';
-            displayStatBuilder();
             break;
 
         case 'arcade':
@@ -883,15 +852,6 @@ function _renderNHLView(view) {
 
 // ── History restoration ──────────────────────────────────────
 
-async function _restorePlayerDetail(playerId) {
-    Logger.info(`Restoring player detail ${playerId}`, undefined, 'NAV');
-    if (AppState.allPlayers.length === 0) await loadPlayers();
-    if (!AppState.playerStats[playerId] && AppState.allPlayers.length > 0) {
-        await loadStatsForPlayers(AppState.allPlayers);
-    }
-    showPlayerDetail(playerId, false);
-}
-
 async function _restoreMLBTeamDetail(teamId) {
     Logger.info(`Restoring MLB team detail ${teamId}`, undefined, 'NAV');
     if (AppState.currentSport !== 'mlb') {
@@ -970,26 +930,6 @@ async function _restoreMLBComparison(group, id1, id2) {
     });
 }
 
-async function _restoreTeamDetail(teamId) {
-    Logger.info(`Restoring team detail ${teamId}`, undefined, 'NAV');
-    if (AppState.allTeams.length === 0) {
-        AppState.allTeams = await fetchTeamsAPI();
-    }
-    showTeamDetail(teamId, false);
-}
-
-async function _restoreTeamGameDetail(teamId, gameId) {
-    Logger.info(`Restoring team game detail team=${teamId} game=${gameId}`, undefined, 'NAV');
-    if (AppState.allTeams.length === 0) {
-        AppState.allTeams = await fetchTeamsAPI();
-    }
-    // Restore the recent-games cache so the game header renders correctly
-    if (!AppState._teamRecentGames[teamId]) {
-        AppState._teamRecentGames[teamId] = await fetchTeamGamesAPI(teamId, 12).catch(() => []);
-    }
-    showTeamGameDetail(gameId, teamId);
-}
-
 function _loadFromHash() {
     // D-041 Phase 1: edge-prerendered path URLs (e.g. /mlb/team/nyy) set window.__SS_ROUTE
     // so the SPA boots straight to the entity. Additive — normal loads never set it.
@@ -1043,9 +983,6 @@ function _loadFromHash() {
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('home', false); return; }
 
-    const playerMatch        = hash.match(/^player-(\d+)$/);
-    const teamMatch          = hash.match(/^team-(\d+)$/);
-    const teamGameMatch      = hash.match(/^team-(\d+)-game-(\d+)$/);
     const mlbPlayerMatch     = hash.match(/^mlb-player-(\d+)(?:-(hitting|pitching))?$/);
     const mlbTeamMatch       = hash.match(/^mlb-team-(\d+)$/);
     const mlbCompareMatch    = hash.match(/^mlb-compare-(hitting|pitching)-(\d+)-(\d+)$/);
@@ -1063,14 +1000,7 @@ function _loadFromHash() {
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
     const ncaabGameMatch     = hash.match(/^ncaab-game-([A-Za-z0-9]+)$/);
 
-    if (playerMatch) {
-        _restorePlayerDetail(parseInt(playerMatch[1]));
-    } else if (teamGameMatch) {
-        // More specific pattern checked before plain team match
-        _restoreTeamGameDetail(parseInt(teamGameMatch[1]), parseInt(teamGameMatch[2]));
-    } else if (teamMatch) {
-        _restoreTeamDetail(parseInt(teamMatch[1]));
-    } else if (mlbCompareMatch) {
+    if (mlbCompareMatch) {
         _restoreMLBComparison(mlbCompareMatch[1], parseInt(mlbCompareMatch[2]), parseInt(mlbCompareMatch[3]));
     } else if (mlbScorecardMatch) {
         AppState.currentSport = 'mlb';
@@ -1151,7 +1081,18 @@ function _loadFromHash() {
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
         const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
         const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs'];
-        const nbaViews = ['players', 'leaders', 'teams', 'games', 'standings', 'builder', 'arcade', 'home', 'news'];
+        // nba-* array added D-161 follow-up (2026-09-14) -- this was missing
+        // entirely (unlike every other sport above), a real bug live-verified
+        // via a fresh puppeteer page load: #nba-scores/#nba-standings/etc.
+        // fell through all the way to the final catch-all below and landed on
+        // home instead of the real view, while the identical #wnba-scores/
+        // #ncaaf-scores links already worked correctly. `home`/`arcade`/`news`
+        // are the real remaining sport-agnostic bare views (the old NBA-only
+        // 'players'/'leaders'/'teams'/'games'/'standings'/'builder' entries
+        // that used to live in this array are gone -- their target routes no
+        // longer exist, see the switch-case removal above).
+        const nbaViews = ['nba-home', 'nba-scores', 'nba-standings', 'nba-teams', 'nba-leaders'];
+        const sharedViews = ['home', 'arcade', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
             _applySportUI('mlb');
@@ -1176,6 +1117,10 @@ function _loadFromHash() {
             AppState.currentSport = 'wnba';
             _applySportUI('wnba');
             navigateTo(hash, false);
+        } else if (nbaViews.includes(hash)) {
+            AppState.currentSport = 'nba';
+            _applySportUI('nba');
+            navigateTo(hash, false);
         } else if (hash === 'account' || hash === 'dashboard') {
             // Mobile audit fix (2026-08-09): these sport-agnostic account-system views
             // aren't part of any per-sport view array above, so they fell through to the
@@ -1185,7 +1130,7 @@ function _loadFromHash() {
             // (they're not NBA views), so they get their own explicit pass-through instead.
             navigateTo(hash, false);
         } else {
-            navigateTo(nbaViews.includes(hash) ? hash : 'home', false);
+            navigateTo(sharedViews.includes(hash) ? hash : 'home', false);
         }
     }
 }
