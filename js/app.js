@@ -514,6 +514,93 @@ setupNavigation();
     setInterval(_poll, 60000);
 })();
 
+// Live score polling — NCAAB/WNBA/NBA (60s each; mirror NCAAF's shape).
+// Real, shared gap found during the NBA revival sweep (2026-09-14): MLB,
+// NFL, and NCAAF all auto-refresh their own Scores page and ticker while a
+// game is live, but NCAAB/WNBA/NBA never got the equivalent loop when their
+// Scores views shipped — a fan sitting on ncaab-scores/wnba-scores/nba-scores
+// during a live game never saw it update without a manual reload, the exact
+// bug NCAAF's own missing-poll gap (fixed 2026-08-30, see that loop's own
+// comment above) already described. Simpler than NCAAF's version since none
+// of these three fetchers take a filter param.
+(function setupNCAABLivePolling() {
+    const FORCE_REFRESH_MS = 5 * 60 * 1000;
+    let _lastFetchAt = 0;
+    async function _poll() {
+        try {
+            if (AppState.currentSport !== 'ncaab') return;
+            if (typeof fetchNCAABScoreboard !== 'function') return;
+            const cached = AppState.ncaabGames || [];
+            const hasLive = cached.some(g => g.isLive);
+            const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
+            if (cached.length > 0 && !hasLive && !dueForRecheck) return;
+            if (AppState.currentView === 'ncaab-scores' && typeof displayNCAABScores === 'function') {
+                await displayNCAABScores();
+            } else {
+                const games = await fetchNCAABScoreboard();
+                AppState.ncaabGames = games;
+                if (AppState.currentView !== 'home' && typeof updateNCAABTicker === 'function') updateNCAABTicker(games);
+            }
+            _lastFetchAt = Date.now();
+            const liveCount = (AppState.ncaabGames || []).filter(g => g.isLive).length;
+            if (liveCount > 0 && window.Logger) Logger.info(`NCAAB live poll: ${liveCount} live`, undefined, 'POLL');
+        } catch (err) { if (window.Logger) Logger.warn('NCAAB live poll failed', err.message, 'POLL'); }
+    }
+    setInterval(_poll, 60000);
+})();
+
+(function setupWNBALivePolling() {
+    const FORCE_REFRESH_MS = 5 * 60 * 1000;
+    let _lastFetchAt = 0;
+    async function _poll() {
+        try {
+            if (AppState.currentSport !== 'wnba') return;
+            if (typeof fetchWNBAScoreboard !== 'function') return;
+            const cached = AppState.wnbaGames || [];
+            const hasLive = cached.some(g => g.isLive);
+            const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
+            if (cached.length > 0 && !hasLive && !dueForRecheck) return;
+            if (AppState.currentView === 'wnba-scores' && typeof displayWNBAScores === 'function') {
+                await displayWNBAScores();
+            } else {
+                const games = await fetchWNBAScoreboard();
+                AppState.wnbaGames = games;
+                if (AppState.currentView !== 'home' && typeof updateWNBATicker === 'function') updateWNBATicker(games);
+            }
+            _lastFetchAt = Date.now();
+            const liveCount = (AppState.wnbaGames || []).filter(g => g.isLive).length;
+            if (liveCount > 0 && window.Logger) Logger.info(`WNBA live poll: ${liveCount} live`, undefined, 'POLL');
+        } catch (err) { if (window.Logger) Logger.warn('WNBA live poll failed', err.message, 'POLL'); }
+    }
+    setInterval(_poll, 60000);
+})();
+
+(function setupNBALivePolling() {
+    const FORCE_REFRESH_MS = 5 * 60 * 1000;
+    let _lastFetchAt = 0;
+    async function _poll() {
+        try {
+            if (AppState.currentSport !== 'nba') return;
+            if (typeof fetchNBAScoreboard !== 'function') return;
+            const cached = AppState.nbaGames || [];
+            const hasLive = cached.some(g => g.isLive);
+            const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
+            if (cached.length > 0 && !hasLive && !dueForRecheck) return;
+            if (AppState.currentView === 'nba-scores' && typeof displayNBAScores === 'function') {
+                await displayNBAScores();
+            } else {
+                const games = await fetchNBAScoreboard();
+                AppState.nbaGames = games;
+                if (AppState.currentView !== 'home' && typeof updateNBATicker === 'function') updateNBATicker(games);
+            }
+            _lastFetchAt = Date.now();
+            const liveCount = (AppState.nbaGames || []).filter(g => g.isLive).length;
+            if (liveCount > 0 && window.Logger) Logger.info(`NBA live poll: ${liveCount} live`, undefined, 'POLL');
+        } catch (err) { if (window.Logger) Logger.warn('NBA live poll failed', err.message, 'POLL'); }
+    }
+    setInterval(_poll, 60000);
+})();
+
 // Live score polling — Home's merged cross-sport ticker (ISSUES.md "Home —
 // Cross-sport score ticker"). Runs only while AppState.currentView === 'home';
 // the MLB/NFL loops above skip their own ticker render in that state so the
@@ -2460,17 +2547,20 @@ function _wireRailTabs() {
     });
 }
 
-// Home redesign Phase 1 (2026-09-07): cross-sourced across all 5 sports
-// instead of MLB's /api/news feed alone -- each of NFL/NCAAF/NCAAB/WNBA
+// Home redesign Phase 1 (2026-09-07): cross-sourced across all 6 sports
+// instead of MLB's /api/news feed alone -- each of NFL/NCAAF/NCAAB/WNBA/NBA
 // already has a real /api/news?sport= feed (NCAAB/WNBA added during the
-// sport-landing port), so there's no reason Headlines stayed MLB-only.
-// Merged and sorted by recency rather than kept in 5 separate lists, since
-// the point is "what's new right now," not "what's new per sport."
+// sport-landing port, NBA added D-161 follow-up -- functions/api/news.js's
+// LEAGUES map; this array was found still missing 'nba' during the NBA
+// revival sweep, 2026-09-14), so there's no reason Headlines stayed
+// MLB-only or excluded any live sport. Merged and sorted by recency rather
+// than kept in per-sport lists, since the point is "what's new right now,"
+// not "what's new per sport."
 async function _renderHomeHeadlines() {
     const host = document.getElementById('railHeadlines');
     if (!host) return;
     const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
-    const sports = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba'];
+    const sports = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba'];
     try {
         let data = _homeNewsCache;
         if (!data) {
@@ -4227,9 +4317,18 @@ async function _loadNBALandingLeaders() {
 // link in the Dashboard went nowhere real. 'nba-leaders' for players (not a
 // bare players list) mirrors ncaaf's own entry -- neither sport has a plain
 // browsable player list, Leaders is the real entry point for both.
-const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', nba: 'NBA', nhl: 'NHL' };
-const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', nba: 'nba-teams' };
-const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', nba: 'nba-leaders' };
+const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', ncaab: 'NCAAB', wnba: 'WNBA', nba: 'NBA', nhl: 'NHL' };
+// ncaab/wnba added to _SPORT_TEAMS_VIEW (NBA revival sweep, 2026-09-14) --
+// both were missing even though both sports have a real teams view; a
+// followed ncaab/wnba team's chip in the Dashboard rendered as a clickable
+// button whose onclick fell through to an empty string (no error, just a
+// dead click) since _dashSectionHtml only omits the browse-teams link when
+// the map entry is absent for playersView, not teamsView. wnba also added
+// to _SPORT_PLAYERS_VIEW -- unlike ncaab (genuinely no player list/detail
+// view yet, so its absence here is correct), wnba has real Leaders +
+// player detail (D-092 Resolution 5).
+const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', ncaab: 'ncaab-teams', wnba: 'wnba-teams', nba: 'nba-teams' };
+const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', wnba: 'wnba-leaders', nba: 'nba-leaders' };
 
 function _dashGroupFollows() {
     const bySport = {};
@@ -4662,6 +4761,30 @@ function _dashResolvePlayerName(sport, id) {
     return null;
 }
 
+// Async counterpart for ncaaf/wnba/nba -- same per-id athlete-fetch shape and cache
+// keys as Home's _renderHomeFollowingHydrate (found and fixed in the same NBA
+// revival sweep, 2026-09-14): this list was only ever resolving mlb/nfl synchronously
+// and showing "Player #12345" for every other sport's followed player, exactly the
+// gap that module's own comment already described before it got fixed there.
+// ncaab has no follow-star/athlete endpoint at all, so it's not handled here either.
+const _DASH_ATHLETE_EP = { ncaaf: '/api/ncaafathlete', wnba: '/api/wnbaathlete', nba: '/api/nbaathlete' };
+async function _dashResolvePlayerNameAsync(sport, id) {
+    const endpoint = _DASH_ATHLETE_EP[sport];
+    if (!endpoint) return null;
+    try {
+        const seasonSrc = { ncaaf: typeof _ncaaf !== 'undefined' && _ncaaf.season, wnba: typeof _wnba !== 'undefined' && _wnba.season, nba: typeof _nba !== 'undefined' && _nba.season }[sport];
+        const cacheKey = `${sport}:athlete:${id}:${seasonSrc}`;
+        let data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await fetch(`${endpoint}?id=${encodeURIComponent(id)}&season=${seasonSrc}`);
+            if (!res.ok) return null;
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+        }
+        return data?.bio?.name || null;
+    } catch (err) { Logger.warn(`Manage Follows: ${sport} athlete fetch failed`, err, 'APP'); return null; }
+}
+
 function _renderSettingsFollowsList() {
     const host = document.getElementById('settingsFollowsList');
     if (!host) return;
@@ -4689,15 +4812,24 @@ function _renderSettingsFollowsList() {
                 displayHtml = img + _escHtml(entityId);
             } else {
                 const name = _dashResolvePlayerName(sport, entityId);
-                displayHtml = name ? _escHtml(name) : `Player #${_escHtml(entityId)}`;
+                const needsAsync = !name && _DASH_ATHLETE_EP[sport];
+                const nameAttr = needsAsync ? ` data-follow-name-sport="${_escHtml(sport)}" data-follow-name-id="${_escHtml(entityId)}"` : '';
+                displayHtml = `<span${nameAttr}>${name ? _escHtml(name) : `Player #${_escHtml(entityId)}`}</span>`;
             }
             return `<div class="settings-follow-row">
-                <span>${displayHtml}</span>
+                ${entityType === 'team' ? `<span>${displayHtml}</span>` : displayHtml}
                 <button class="settings-unfollow-btn" data-unfollow-sport="${_escHtml(sport)}" data-unfollow-type="${_escHtml(entityType)}" data-unfollow-id="${_escHtml(entityId)}" aria-label="Unfollow" title="Unfollow">&times;</button>
             </div>`;
         }).join('');
         return `<p class="settings-subsection-label">${_escHtml(label)}</p>${rows}`;
     }).join('');
+
+    host.querySelectorAll('[data-follow-name-sport]').forEach(el => {
+        const { followNameSport: sport, followNameId: id } = el.dataset;
+        _dashResolvePlayerNameAsync(sport, id).then(name => {
+            if (name) el.textContent = name;
+        });
+    });
 
     host.querySelectorAll('.settings-unfollow-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -4892,9 +5024,11 @@ function _activePromoMoment() {
 // ncaaf-* view would silently fail to switch AppState.currentSport.
 // 'ncaab'/'wnba' were missing too (home redesign Phase 4, 2026-09-08) — same
 // bug, just never hit yet since no promo moment has pointed at either sport.
+// 'nba' was missing too (NBA revival sweep, 2026-09-14) — same bug again,
+// added after this list was last touched; same "never hit yet" caveat applies.
 function _hmGo(view) {
     const sport = view.split('-')[0];
-    if (['mlb', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'wnba'].includes(sport) && AppState.currentSport !== sport) {
+    if (['mlb', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'wnba', 'nba'].includes(sport) && AppState.currentSport !== sport) {
         AppState.currentSport = sport;
         if (typeof _applySportUI === 'function') _applySportUI(sport);
     }

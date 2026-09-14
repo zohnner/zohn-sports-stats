@@ -1,5 +1,6 @@
-// D-079 -- Push Notifications v1 (F5): game-start alerts for favorited MLB/NFL
-// teams. Runs on a Cron Trigger (see wrangler-push.toml), not a Pages Function --
+// D-079 -- Push Notifications v1 (F5): game-start alerts for favorited teams,
+// now across all 6 live sports (MLB/NFL/NCAAF/NCAAB/WNBA/NBA). Runs on a Cron
+// Trigger (see wrangler-push.toml), not a Pages Function --
 // same reasoning as worker/weekly-digest.js and worker/auth-purge.js, whose
 // /__run + shared-secret manual-test pattern this file copies rather than
 // reinvents.
@@ -7,6 +8,19 @@
 // Calls MLB Stats API and ESPN directly (not this site's own /api/mlb or /api/nfl
 // proxies) -- same "the alert pipeline shouldn't depend on the site itself being
 // up" reasoning as weekly-digest.js calling Sleeper directly.
+//
+// NCAAF/NCAAB/WNBA/NBA added in the NBA revival sweep (2026-09-14) -- this
+// file was still hardcoded to MLB/NFL only months after all four other sports
+// shipped a real follow-star (functions/api/follows.js's VALID_SPORTS already
+// covers all of them), so a follow on any of those four teams could never
+// actually produce a game-start alert. All four are ESPN scoreboards with the
+// identical event/competitions/competitors shape NFL's already reads, so
+// _espnUpcoming() below is one shared reader parameterized by URL + deep-link
+// builder rather than four more near-copies of _nflUpcoming. NCAAF's scoreboard
+// URL carries `groups=80` -- without it ESPN silently caps the response to the
+// ranked-leaning ~25 games instead of the real up-to-99 (D-135's finding in
+// js/ncaaf.js applies here too; this worker would otherwise miss alerts for any
+// followed team in an unranked-vs-unranked matchup).
 //
 // FIELD-SHAPE CAVEAT (flagged honestly, not verified live from this sandbox --
 // the sandbox has no outbound route to statsapi.mlb.com or ESPN, only to the npm
@@ -17,6 +31,12 @@
 // with a 7pm ET MLB or NFL game about to start) and confirm `result.matched` and
 // `result.sent` look right -- this is the "recommended spike" the ISSUES.md spec
 // called for, same caution already applied to the buildPushPayload() crypto path.
+// The NCAAF/NCAAB/WNBA/NBA additions carry the same caveat and are NOT yet
+// live-verified either -- their ESPN event/competitions/competitors shape is
+// copied from the already-proven NFL reader and from js/ncaaf.js's/js/nba.js's
+// own live-verified scoreboard parsing (same upstream shape, different call
+// site), but this exact worker has never made those four calls against a real
+// response. Run `/__run` again during a live window for each before trusting it.
 //
 // Dedup: push_sent_log (migrations/0007) keys on (user_id, game_key) so an
 // overlapping cron run can never double-send the same game-start alert twice,
@@ -35,6 +55,10 @@ const MLB_TEAMS_URL = 'https://statsapi.mlb.com/api/v1/teams?sportId=1';
 // after this worker's first live /__run hit reproduced the exact same failure
 // (an HTML body instead of JSON) on 2026-08-09.
 const NFL_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const NCAAF_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80';
+const NCAAB_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard';
+const WNBA_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard';
+const NBA_SCOREBOARD_URL = 'https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 const MLB_UA = 'SportStrata/1.0'; // matches functions/api/mlb.js's already-proven statsapi UA
 
@@ -124,8 +148,11 @@ async function _mlbUpcoming(now) {
 	return games;
 }
 
-async function _nflUpcoming(now) {
-	const data = await _fetchJson('nfl-scoreboard', NFL_SCOREBOARD_URL, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
+// Shared by NFL/NCAAF/NCAAB/WNBA/NBA -- all five ESPN scoreboards carry the
+// identical event/competitions/competitors shape; only the URL and the
+// deep-link builder differ per sport.
+async function _espnUpcoming(sport, url, now, urlFor) {
+	const data = await _fetchJson(`${sport}-scoreboard`, url, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
 	const games = [];
 	for (const ev of (data.events || [])) {
 		const statusName = ev.status && ev.status.type && ev.status.type.name;
@@ -139,16 +166,25 @@ async function _nflUpcoming(now) {
 		const away = (competitors.find((c) => c.homeAway === 'away') || {}).team;
 		if (!home || !away || !home.abbreviation || !away.abbreviation) continue;
 		games.push({
-			sport: 'nfl',
-			gameKey: `nfl:${ev.id}`,
+			sport,
+			gameKey: `${sport}:${ev.id}`,
 			home: home.abbreviation, away: away.abbreviation,
 			startMs,
 			title: `${away.abbreviation} @ ${home.abbreviation} starting soon`,
-			url: `https://sportstrata.cc/nfl`,
+			url: urlFor(ev.id),
 		});
 	}
 	return games;
 }
+
+const _nflUpcoming = (now) => _espnUpcoming('nfl', NFL_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/nfl');
+// NCAAF has a real per-game edge template (functions/ncaaf/game/[id].js); the
+// other three don't yet (see CLAUDE.md's Path URLs section), so they deep-link
+// to their sport landing page instead, same fallback NFL's own link already uses.
+const _ncaafUpcoming = (now) => _espnUpcoming('ncaaf', NCAAF_SCOREBOARD_URL, now, (id) => `https://sportstrata.cc/ncaaf/game/${id}`);
+const _ncaabUpcoming = (now) => _espnUpcoming('ncaab', NCAAB_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/ncaab');
+const _wnbaUpcoming = (now) => _espnUpcoming('wnba', WNBA_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/wnba');
+const _nbaUpcoming = (now) => _espnUpcoming('nba', NBA_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/nba');
 
 // -- Send ---------------------------------------------------------------
 
@@ -172,14 +208,17 @@ async function runAlerts(env) {
 	const now = Date.now();
 
 	// Isolated per-sport: one upstream being down (or blocked) shouldn't also
-	// silence the other, and the error needs to say which one broke.
-	const [mlbResult, nflResult] = await Promise.allSettled([_mlbUpcoming(now), _nflUpcoming(now)]);
-	const mlbGames = mlbResult.status === 'fulfilled' ? mlbResult.value : [];
-	const nflGames = nflResult.status === 'fulfilled' ? nflResult.value : [];
-	if (mlbResult.status === 'rejected') result.errors.push(String(mlbResult.reason).slice(0, 250));
-	if (nflResult.status === 'rejected') result.errors.push(String(nflResult.reason).slice(0, 250));
-
-	const games = [...mlbGames, ...nflGames];
+	// silence the others, and the error needs to say which one broke.
+	const sportFetchers = [
+		['mlb', _mlbUpcoming], ['nfl', _nflUpcoming], ['ncaaf', _ncaafUpcoming],
+		['ncaab', _ncaabUpcoming], ['wnba', _wnbaUpcoming], ['nba', _nbaUpcoming],
+	];
+	const settled = await Promise.allSettled(sportFetchers.map(([, fn]) => fn(now)));
+	const games = [];
+	settled.forEach((r, i) => {
+		if (r.status === 'fulfilled') games.push(...r.value);
+		else result.errors.push(`${sportFetchers[i][0]}: ${String(r.reason).slice(0, 200)}`);
+	});
 	if (!games.length) return result;
 
 	for (const game of games) {

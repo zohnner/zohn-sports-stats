@@ -1730,6 +1730,16 @@ const _PAGE_META = {
     'nba-standings':   { title: 'SportStrata — NBA Standings', desc: 'NBA standings by conference and division.' },
     'nba-teams':       { title: 'SportStrata — NBA Teams',     desc: 'Browse NBA teams by conference and division.' },
     'nba-leaders':     { title: 'SportStrata — NBA Leaders',   desc: 'NBA statistical leaders: points, rebounds, assists, steals, blocks.' },
+    // NCAAF was the one sport missing here entirely (found in the NBA revival
+    // sweep, 2026-09-14) — ncaab/wnba/nba all got entries when they shipped,
+    // but ncaaf-* views fell through to _PAGE_META['home']'s MLB copy on
+    // every client-side route change since D-042.
+    'ncaaf-home':      { title: 'SportStrata — College Football', desc: 'NCAA college football scores, rankings, standings, and stat leaders.' },
+    'ncaaf-scores':    { title: 'SportStrata — College Football Scores', desc: 'Live NCAA college football scores and today\'s scoreboard.' },
+    'ncaaf-standings': { title: 'SportStrata — College Football Standings', desc: 'NCAA college football standings by conference.' },
+    'ncaaf-teams':     { title: 'SportStrata — College Football Teams', desc: 'Browse NCAA college football teams by conference.' },
+    'ncaaf-rankings':  { title: 'SportStrata — College Football Rankings', desc: 'AP, Coaches, and CFP Top 25 for NCAA college football.' },
+    'ncaaf-leaders':   { title: 'SportStrata — College Football Leaders', desc: 'NCAA college football statistical leaders by category.' },
 };
 
 function _updatePageMeta(view) {
