@@ -3225,3 +3225,21 @@ NFL's real Injury Report (`nfl.js`, N-17) works because Sleeper's player pool ca
 **Verified:** `node --check` clean on both changed files (`js/nflLiveGame.js`, `js/config.js`). `tools/check-manifest.cjs` clean (no new files — `config.js` already in the script chain). `sw.js` `CACHE_NAME` bumped v289 → v290.
 
 **Escalation:** none.
+
+---
+
+## D-160 — Drive-history position bars added to Play-by-Play, scoped from the original field-mode-switcher idea — 2026-09-13
+
+**Trigger:** owner-directed pickup after a real fork was raised and answered directly (AskUserQuestion): push notifications (backend Worker work, likely blocked on the same broken `wrangler` auth from this morning's D1 migration) versus the drive-history field mode (purely client-side, deployable the same way as every other feature shipped today). Owner chose drive-history.
+
+**Scoped down from the original proposal, and the reasoning for why, not just the result:** the brainstorm described a LIVE/DRIVE/GAME mode-switcher rebuilding the live field viewer into a historical-replay engine, with per-drive field reconstructions. Before building anything, checked what already existed: the Play-by-Play tab (`_nlgRenderPbp`) already renders every drive as a native `<details>`/`<summary>` accordion with its individual plays inside, already deduped against a real live-verified ESPN data quirk (D-080-era bug where `drives.current` can be the same object as `drives.previous`'s last entry). That's already the actual exploration interface the brainstorm wanted — click a drive, see what happened. Building a second, separate "Drive History" list would have duplicated it. What was genuinely missing was the visual field-position context; added that instead of the whole list.
+
+**Built:** `_nlgDriveBarHtml(d, homeAbbr, tc)` — a plain CSS start→end position bar (no SVG, no perspective projection, not the live field viewer's machinery at all) inserted directly into the existing drive `<summary>` via a `flex-basis:100%` trick that forces it onto its own row inside the same flex container, rather than a new wrapper element. Visible at a glance even when a drive is collapsed, since `<summary>` content renders regardless of the `<details>` open state. `drive.start.yardLine`/`end.yardLine` confirmed live today to already sit on the exact same home-anchored 0-100 scale the live field viewer's `sit.yardLine` already uses (checked directly against a real live drive before assuming it, not carried over from the live-situation feed's already-proven shape without re-checking) — so the same `disp()` mirror the field viewer already uses is the only conversion needed, no new math.
+
+**Live-verified against real drives before shipping:** computed the bar's left/width percentages by hand against five real drives from today's Sunday Night game. An 83-yard NYG touchdown drive (NYG 17 → DAL 0) correctly spans 0%–83%; an 85-yard DAL touchdown drive (DAL 15 → NYG 0) correctly spans 15%–100%; three shorter punt-ending drives all produced sensible, proportionate bar widths. Direction and territory both read correctly against real field position, not just arithmetically plausible numbers.
+
+**Named directly, not left implicit:** the existing "Game Flow" sidebar card (cumulative scoring-by-quarter line chart) is a different signal from drive-by-drive field position/possession control, despite sharing a name with what the brainstorm called "game flow." Kept both, didn't repurpose one into the other — they answer different questions (how has scoring trended vs. where has each drive gone).
+
+**Verified:** `node --check` clean. `tools/check-manifest.cjs` clean. `sw.js` `CACHE_NAME` bumped v290 → v291.
+
+**Escalation:** none.

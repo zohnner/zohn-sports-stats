@@ -1667,7 +1667,34 @@ function _nlgNewsCard(data, forceOpen) {
 
 // -- Play-by-Play tab (drives.current + drives.previous, live-verified shape) --
 
+// Drive-history position bar (2026-09-13, "elevate the experience," D-160).
+// Scoped narrower than the original brainstorm's LIVE/DRIVE/GAME field-mode
+// switcher: rather than rebuild the live field viewer into a historical-
+// replay engine, this adds a simple CSS start->end bar directly into the
+// Play-by-Play tab's existing per-drive <details>/<summary> accordion
+// (below), which already does the actual exploration job (click a drive,
+// see its plays) -- turning the field position into something visible at a
+// glance without expanding, not building a second, separate drive list that
+// would duplicate what's already there. drive.start.yardLine/end.yardLine
+// are already on the exact same home-anchored 0-100 scale the live field
+// viewer's sit.yardLine uses (re-verified against a real live drive today,
+// same as the shape D-105/D-148 already proved for live situations) -- no
+// new conversion math, same disp() mirror the field viewer already uses.
+function _nlgDriveBarHtml(d, homeAbbr, tc) {
+    const s = d.start?.yardLine, e = d.end?.yardLine;
+    if (typeof s !== 'number' || typeof e !== 'number') return '';
+    const disp = (v) => 100 - v;
+    const sPct = disp(s), ePct = disp(e);
+    const teamAbbr = (d.team || {}).abbreviation || '';
+    const color = tc(teamAbbr === homeAbbr ? homeAbbr : teamAbbr);
+    const left = Math.min(sPct, ePct), width = Math.max(1, Math.abs(ePct - sPct));
+    return `<div class="nlg-drive-bar"><div class="nlg-drive-bar-fill" style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%;background:${_escHtml(color)}"></div></div>`;
+}
+
 function _nlgRenderPbp(data) {
+    const comp = _nlgComp(data);
+    const homeAbbr = (_nlgSide(comp, 'home').team || {}).abbreviation || '';
+    const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
     const drivesObj = data.drives || {};
     // Bug found live 2026-08-13 against a real in-progress game (event
     // 401874392, TEN@SF -- see ISSUES.md "Live NFL preseason debugging
@@ -1690,7 +1717,8 @@ function _nlgRenderPbp(data) {
             </div>`).join('');
         return `<details class="nlg-card" ${i < 2 ? 'open' : ''}>
             <summary class="nlg-sum">${_escHtml(teamAbbr)} · ${_escHtml(d.description || d.displayResult || 'Drive')}
-                <span class="nlg-sum-teams">${_escHtml(d.shortDisplayResult || '')}</span></summary>
+                <span class="nlg-sum-teams">${_escHtml(d.shortDisplayResult || '')}</span>
+                ${_nlgDriveBarHtml(d, homeAbbr, tc)}</summary>
             <div class="nlg-pbp-plays">${playsHtml}</div>
         </details>`;
     };

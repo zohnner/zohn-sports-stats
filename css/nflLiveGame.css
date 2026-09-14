@@ -175,9 +175,17 @@
 .nlg-lastplay { width: 100%; display: flex; gap: 0.4rem; text-align: left; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); border-top: 1px solid color-mix(in srgb, var(--color-live) 25%, transparent); padding-top: 0.4rem; margin-top: 0.1rem; }
 .nlg-lastplay::before { content: 'LAST PLAY'; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; color: var(--text-subtle); align-self: flex-start; margin-top: 0.15rem; }
 .nlg-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); margin-bottom: 1rem; overflow: hidden; }
-.nlg-sum { cursor: pointer; padding: 0.6rem 1rem; font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.nlg-sum { cursor: pointer; padding: 0.6rem 1rem; font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
 .nlg-sum::-webkit-details-marker { display: none; }
 .nlg-sum-teams { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-subtle); font-size: 0.7rem; }
+/* Drive-history position bar (D-160) -- flex-basis:100% forces it onto its
+   own row below the existing team/description line, inside the same
+   flex-wrap .nlg-sum row rather than a new wrapper element. A plain 100-unit
+   track (no perspective/SVG -- this isn't the live field viewer, just an
+   at-a-glance strip) with one colored fill segment for where the drive
+   started and ended. */
+.nlg-drive-bar { flex-basis: 100%; position: relative; height: 4px; margin-top: 0.4rem; background: var(--border-default); border-radius: var(--radius-full); cursor: default; }
+.nlg-drive-bar-fill { position: absolute; top: 0; bottom: 0; border-radius: var(--radius-full); opacity: 0.85; }
 .nlg-ls { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .nlg-ls th, .nlg-ls td { text-align: center; padding: 0.45rem 0.5rem; font-variant-numeric: tabular-nums; }
 .nlg-ls thead th { color: var(--text-muted); font-size: 0.64rem; text-transform: uppercase; border-bottom: 1px solid var(--border-default); }
