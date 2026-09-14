@@ -347,7 +347,25 @@ function _hcColorValue() {
     return `var(${choice.varName})`;
 }
 
-function _hcCardHtml() {
+// Per-stat accent, reused from the real leaderboard category palette
+// (MLB_LEADER_CATS, mlb.js) rather than inventing a new one — DESIGN.md's
+// "category color discipline" rule means a stat's color has to mean
+// something everywhere it appears, not just look nice on this one card.
+// Matched on key+group since some keys (e.g. strikeOuts) exist in both
+// hitting and pitching with different colors. Falls back to the card's
+// team/accent color (CSS var chain in .hcs-stat) for keys with no entry
+// (AB, PIT, ER, pitching BB/HR) — never a made-up color.
+function _hcStatColor(key) {
+    if (typeof MLB_LEADER_CATS === 'undefined') return null;
+    const cat = MLB_LEADER_CATS.find(c => c.key === key && c.group === (_hcState.group === 'pitching' ? 'pitching' : 'hitting'));
+    return cat ? cat.color : null;
+}
+
+function _hcHeadshotUrl() {
+    return typeof getMLBPlayerHeadshotUrl === 'function' ? getMLBPlayerHeadshotUrl(_hcState.personId) : null;
+}
+
+function _hcCardHtml(hasPhoto) {
     // Boxscore JSON keys per-player stats as "batting"/"pitching" (MLB Stats API
     // convention) — distinct from AppState.mlbPlayerStats' season-stats grouping,
     // which uses "hitting". _hcState.group stays "hitting" as the UI-facing label
@@ -359,6 +377,10 @@ function _hcCardHtml() {
     const abbr = _hcTeamAbbr(_hcState.side);
     const oppAbbr = _hcOpponentAbbr(_hcState.side);
     const dateLabel = _hcState.game?.gameDate ? new Date(_hcState.game.gameDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const fullName = _hcState.player.person.fullName || '';
+    const initials = _escHtml(fullName.split(' ').map(w => w[0] || '').slice(0, 2).join(''));
+    const logoUrl = typeof getMLBTeamLogoByAbbr === 'function' ? getMLBTeamLogoByAbbr(abbr) : null;
+    const headshotUrl = _hcHeadshotUrl();
     const statHtml = _hcState.selectedStats.map((key, i) => {
         const meta = catalog.find(s => s.key === key);
         const raw = stat[key];
@@ -373,27 +395,65 @@ function _hcCardHtml() {
         // live on production (Chrome, real boxscore data) before this fix.
         const animatesUp = isNumeric && _hcState.anim === 'countup';
         const initialText = animatesUp ? '0' : _escHtml(displayVal);
-        return `<div class="hcs-stat" style="animation-delay:${i * 110}ms">
+        const statColor = _hcStatColor(key);
+        return `<div class="hcs-stat" style="animation-delay:${i * 110}ms${statColor ? `;--stat-color:${statColor}` : ''}">
             <div class="hcs-stat-value"${animatesUp ? ` data-hc-count="${displayVal}"` : ''}>${initialText}</div>
             <div class="hcs-stat-label">${_escHtml(meta?.label || key)}</div>
         </div>`;
     }).join('');
     return `
-        <div class="hcs-id-row">
-            <div class="hcs-player">${_escHtml(_hcState.player.person.fullName)}</div>
-            <div class="hcs-meta">${_escHtml(abbr)} vs ${_escHtml(oppAbbr)} · ${_escHtml(dateLabel)}</div>
-        </div>
-        <div class="hcs-stat-row">${statHtml}</div>
-        <div class="hcs-brand">Sport<span class="accent">Strata</span></div>`;
+        <div class="hcs-wash"></div>
+        <div class="hcs-card-inner">
+            <div class="hcs-card-head">
+                ${logoUrl ? `<img class="hcs-logo-chip" src="${logoUrl}" data-hide-on-error alt="">` : ''}
+                <div class="hcs-card-head-text">
+                    <div class="hcs-matchup">${_escHtml(abbr)} vs ${_escHtml(oppAbbr)}</div>
+                    <div class="hcs-date">${_escHtml(dateLabel)}</div>
+                </div>
+            </div>
+            <div class="hcs-id-row">
+                <div class="player-avatar hcs-avatar" style="background:${_hcColorValue()}">
+                    <span class="avatar-text">${initials}</span>
+                    ${hasPhoto ? `<img class="player-headshot" data-hide-on-error src="${headshotUrl}" alt="">` : ''}
+                </div>
+                <div class="hcs-id-text">
+                    <div class="hcs-player">${_escHtml(fullName)}</div>
+                    <div class="hcs-id-meta">${_hcState.group === 'pitching' ? 'Pitching' : 'Hitting'} line</div>
+                </div>
+            </div>
+            <div class="hcs-stat-row">${statHtml}</div>
+            <div class="hcs-footer">
+                <span class="hcs-wordmark">Sport<span class="accent">Strata</span></span>
+                <span class="hcs-domain">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
+            </div>
+        </div>`;
 }
 
+// Renders instantly with initials (never blocks the preview on a network
+// fetch — DESIGN.md "skeletons speak," immediate feedback over a blank
+// wait), then hydrates the real headshot in place once/if it loads.
 function _hcRenderPreview() {
     const mount = document.getElementById('hcsPreviewMount');
     if (!mount) return;
     mount.className = `hcs-preview-mount hcs-card hcs-card--${_hcState.anim}`;
     mount.style.setProperty('--team-color', _hcColorValue());
-    mount.innerHTML = _hcCardHtml();
+    mount.innerHTML = _hcCardHtml(false);
     if (_hcState.anim === 'countup') _hcAnimateCounts(mount);
+    _hcHydratePhoto(mount, _hcState.personId, _hcHeadshotUrl());
+}
+
+async function _hcHydratePhoto(mount, requestedPersonId, url) {
+    if (typeof _shcPreloadImage !== 'function') return;
+    const hasPhoto = await _shcPreloadImage(url);
+    if (!hasPhoto || _hcState.personId !== requestedPersonId) return;
+    const avatar = mount.querySelector('.hcs-avatar');
+    if (!avatar || avatar.querySelector('.player-headshot')) return;
+    const img = document.createElement('img');
+    img.className = 'player-headshot';
+    img.alt = '';
+    img.dataset.hideOnError = '1';
+    img.src = url;
+    avatar.appendChild(img);
 }
 
 function _hcAnimateCounts(root) {
@@ -416,10 +476,14 @@ function _hcAnimateCounts(root) {
 }
 
 async function _hcExportPNG(btn) {
+    // Preload before building the export DOM (rather than racing html2canvas
+    // against an <img> that hasn't loaded yet) — same reason shareCard.js's
+    // _shcBuildCard() decides photo-vs-initials before constructing its markup.
+    const hasPhoto = typeof _shcPreloadImage === 'function' ? await _shcPreloadImage(_hcHeadshotUrl()) : false;
     const cardEl = document.createElement('div');
     cardEl.className = 'hcs-card hcs-export-card';
     cardEl.style.setProperty('--team-color', _hcColorValue());
-    cardEl.innerHTML = _hcCardHtml();
+    cardEl.innerHTML = _hcCardHtml(hasPhoto);
     // Export is a static snapshot — render final (non-animating) values directly,
     // no count-up needed since html2canvas captures a single instant anyway.
     cardEl.querySelectorAll('[data-hc-count]').forEach(el => { el.textContent = el.dataset.hcCount; });
@@ -782,12 +846,29 @@ function _hcNflDateLabel() {
     return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function _hcNflCardHtml() {
+function _hcNflHeadshotUrl() {
+    const id = _hcNflState.player?.athlete?.id;
+    return typeof getNFLPlayerHeadshotUrl === 'function' ? getNFLPlayerHeadshotUrl(id) : null;
+}
+
+// No per-stat color catalog exists for NFL anywhere in the codebase (unlike
+// MLB_LEADER_CATS) — ESPN's boxscore stat groups are positional-by-label,
+// not semantically keyed, so there's no stable per-stat identity to hang a
+// color on. Every tile below uses the single selected team/accent color
+// instead (no --stat-color set, so CSS falls back to --team-color) rather
+// than inventing an arbitrary rotation, which DESIGN.md's category-color
+// rule ("marks category, never decorates") would call a violation.
+function _hcNflCardHtml(hasPhoto) {
     const catalog = _hcNflStatCatalog();
     const abbr = _hcNflTeamAbbr(_hcNflState.side);
     const oppAbbr = _hcNflOpponentAbbr(_hcNflState.side);
     const dateLabel = _hcNflDateLabel();
-    const name = (_hcNflState.player.athlete && (_hcNflState.player.athlete.displayName || _hcNflState.player.athlete.shortName)) || 'Player';
+    const athlete = _hcNflState.player.athlete || {};
+    const name = athlete.displayName || athlete.shortName || 'Player';
+    const posLabel = athlete.position?.abbreviation || _HC_NFL_GROUP_LABELS[_hcNflState.group] || '';
+    const initials = _escHtml(name.split(' ').map(w => w[0] || '').slice(0, 2).join(''));
+    const logoUrl = typeof getNFLTeamLogoUrl === 'function' ? getNFLTeamLogoUrl(abbr) : null;
+    const headshotUrl = _hcNflHeadshotUrl();
     const rawStats = _hcNflState.player.stats || [];
     const statHtml = _hcNflState.selectedStats.map((key, i) => {
         const meta = catalog.find(c => c.key === key);
@@ -802,12 +883,31 @@ function _hcNflCardHtml() {
         </div>`;
     }).join('');
     return `
-        <div class="hcs-id-row">
-            <div class="hcs-player">${_escHtml(name)}</div>
-            <div class="hcs-meta">${_escHtml(abbr)} vs ${_escHtml(oppAbbr)} · ${_escHtml(dateLabel)}</div>
-        </div>
-        <div class="hcs-stat-row">${statHtml}</div>
-        <div class="hcs-brand">Sport<span class="accent">Strata</span></div>`;
+        <div class="hcs-wash"></div>
+        <div class="hcs-card-inner">
+            <div class="hcs-card-head">
+                ${logoUrl ? `<img class="hcs-logo-chip" src="${logoUrl}" data-hide-on-error alt="">` : ''}
+                <div class="hcs-card-head-text">
+                    <div class="hcs-matchup">${_escHtml(abbr)} vs ${_escHtml(oppAbbr)}</div>
+                    <div class="hcs-date">${_escHtml(dateLabel)}</div>
+                </div>
+            </div>
+            <div class="hcs-id-row">
+                <div class="player-avatar hcs-avatar" style="background:${_hcNflColorValue()}">
+                    <span class="avatar-text">${initials}</span>
+                    ${hasPhoto ? `<img class="player-headshot" data-hide-on-error src="${headshotUrl}" alt="">` : ''}
+                </div>
+                <div class="hcs-id-text">
+                    <div class="hcs-player">${_escHtml(name)}</div>
+                    <div class="hcs-id-meta">${_escHtml(posLabel)}</div>
+                </div>
+            </div>
+            <div class="hcs-stat-row">${statHtml}</div>
+            <div class="hcs-footer">
+                <span class="hcs-wordmark">Sport<span class="accent">Strata</span></span>
+                <span class="hcs-domain">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
+            </div>
+        </div>`;
 }
 
 function _hcNflRenderPreview() {
@@ -815,15 +915,31 @@ function _hcNflRenderPreview() {
     if (!mount) return;
     mount.className = `hcs-preview-mount hcs-card hcs-card--${_hcNflState.anim}`;
     mount.style.setProperty('--team-color', _hcNflColorValue());
-    mount.innerHTML = _hcNflCardHtml();
+    mount.innerHTML = _hcNflCardHtml(false);
     if (_hcNflState.anim === 'countup') _hcAnimateCounts(mount);
+    _hcNflHydratePhoto(mount, _hcNflState.player, _hcNflHeadshotUrl());
+}
+
+async function _hcNflHydratePhoto(mount, requestedPlayer, url) {
+    if (typeof _shcPreloadImage !== 'function') return;
+    const hasPhoto = await _shcPreloadImage(url);
+    if (!hasPhoto || _hcNflState.player !== requestedPlayer) return;
+    const avatar = mount.querySelector('.hcs-avatar');
+    if (!avatar || avatar.querySelector('.player-headshot')) return;
+    const img = document.createElement('img');
+    img.className = 'player-headshot';
+    img.alt = '';
+    img.dataset.hideOnError = '1';
+    img.src = url;
+    avatar.appendChild(img);
 }
 
 async function _hcNflExportPNG(btn) {
+    const hasPhoto = typeof _shcPreloadImage === 'function' ? await _shcPreloadImage(_hcNflHeadshotUrl()) : false;
     const cardEl = document.createElement('div');
     cardEl.className = 'hcs-card hcs-export-card';
     cardEl.style.setProperty('--team-color', _hcNflColorValue());
-    cardEl.innerHTML = _hcNflCardHtml();
+    cardEl.innerHTML = _hcNflCardHtml(hasPhoto);
     cardEl.querySelectorAll('[data-hc-count]').forEach(el => { el.textContent = el.dataset.hcCount; });
     const name = (_hcNflState.player.athlete && (_hcNflState.player.athlete.displayName || _hcNflState.player.athlete.shortName)) || 'highlight';
     const fileName = `sportstrata-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
