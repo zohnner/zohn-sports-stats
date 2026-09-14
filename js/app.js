@@ -558,6 +558,22 @@ setupNavigation();
             if (AppState.currentSport !== 'wnba') switchSport('wnba');
             if (gid) navigateTo('wnba-game-' + gid);
             else navigateTo('wnba-scores');
+        } else if (sport === 'ncaab') {
+            // ncaab/nba branches added 2026-09-14 (D-161 follow-up, same pass
+            // that gave Scorebug a basketball normalizer) -- without these, a
+            // real ticker item would render (Scorebug.renderTickerItem sets
+            // data-sport="ncaab"/"nba") but silently no-op on click, same
+            // failure mode already fixed once this session for Recently
+            // Viewed chips. Mirrors the existing wnba branch's exact shape.
+            const gid = item.dataset.gameId;
+            if (AppState.currentSport !== 'ncaab') switchSport('ncaab');
+            if (gid) navigateTo('ncaab-game-' + gid);
+            else navigateTo('ncaab-scores');
+        } else if (sport === 'nba') {
+            const gid = item.dataset.gameId;
+            if (AppState.currentSport !== 'nba') switchSport('nba');
+            if (gid) navigateTo('nba-game-' + gid);
+            else navigateTo('nba-scores');
         } else if (sport === 'nhl') {
             if (AppState.currentSport !== 'nhl') switchSport('nhl');
             else navigateTo('nhl-games');
@@ -609,7 +625,7 @@ async function _updateHomeTicker() {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker || typeof Scorebug === 'undefined') return;
 
-    const [mlbGames, nflGames, ncaafGames] = await Promise.all([
+    const [mlbGames, nflGames, ncaafGames, ncaabGames, wnbaGames, nbaGames] = await Promise.all([
         (async () => {
             try {
                 // Phase 4 perf pass (2026-09-08): _updateHomeTicker itself is
@@ -644,6 +660,39 @@ async function _updateHomeTicker() {
                 return g;
             } catch (_) { return AppState.ncaafGames || []; }
         })(),
+        // NCAAB/WNBA/NBA added 2026-09-14 (D-161 follow-up) -- Scorebug had no
+        // basketball normalizer until now, so these three sports' games had
+        // never once appeared in the home page's own merged ticker banner
+        // (their sport-specific tickers, e.g. updateNBATicker, are a separate
+        // code path and were unaffected by this gap). Reuses the same
+        // `_homeInflightFetch` keys ('ncaabGames'/'wnbaGames'/'nbaGames') the
+        // cross-sport hero's own guest-sport fetch (_HOME_HERO_GUEST_SPORTS)
+        // already uses for these sports, so a concurrent hero fetch and this
+        // ticker fetch dedupe into one real network call, not two.
+        (async () => {
+            if (typeof fetchNCAABScoreboard !== 'function') return AppState.ncaabGames || [];
+            try {
+                const g = await _homeInflightFetch('ncaabGames', fetchNCAABScoreboard);
+                AppState.ncaabGames = g;
+                return g;
+            } catch (_) { return AppState.ncaabGames || []; }
+        })(),
+        (async () => {
+            if (typeof fetchWNBAScoreboard !== 'function') return AppState.wnbaGames || [];
+            try {
+                const g = await _homeInflightFetch('wnbaGames', fetchWNBAScoreboard);
+                AppState.wnbaGames = g;
+                return g;
+            } catch (_) { return AppState.wnbaGames || []; }
+        })(),
+        (async () => {
+            if (typeof fetchNBAScoreboard !== 'function') return AppState.nbaGames || [];
+            try {
+                const g = await _homeInflightFetch('nbaGames', fetchNBAScoreboard);
+                AppState.nbaGames = g;
+                return g;
+            } catch (_) { return AppState.nbaGames || []; }
+        })(),
     ]);
 
     // The view may have moved on while these fetches were in flight — don't
@@ -651,7 +700,7 @@ async function _updateHomeTicker() {
     // fast navigation away from Home).
     if (AppState.currentView !== 'home') return;
 
-    // This is the one place all three sports' fresh game data lands at once —
+    // This is the one place every sport's fresh game data lands at once —
     // piggyback the sport-picker's live/today counts on it rather than adding
     // a second fetch cycle just for the picker cards.
     if (typeof _renderSportPicker === 'function') _renderSportPicker();
@@ -671,6 +720,17 @@ async function _updateHomeTicker() {
     });
     (ncaafGames || []).forEach(g => {
         entries.push({ model: Scorebug.normalizeNCAAFGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'ncaaf' });
+    });
+    // Basketball scoreboard fetchers scope to "today" the same way football's
+    // do, so no extra date filtering here either.
+    (ncaabGames || []).forEach(g => {
+        entries.push({ model: Scorebug.normalizeNCAABGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'ncaab' });
+    });
+    (wnbaGames || []).forEach(g => {
+        entries.push({ model: Scorebug.normalizeWNBAGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'wnba' });
+    });
+    (nbaGames || []).forEach(g => {
+        entries.push({ model: Scorebug.normalizeNBAGame(g), ts: g.date ? new Date(g.date).getTime() : 0, sport: 'nba' });
     });
 
     if (entries.length === 0) {

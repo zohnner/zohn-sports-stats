@@ -9,6 +9,9 @@
 // Sport-specific live payloads (MLB inning/outs/bases; football down-and-distance)
 // bake into `liveHtml`/`matchHtml` by that sport's normalizer, so the builders stay
 // identical across sports. Consumers migrate to these one at a time (S2).
+// Basketball (NBA/NCAAB/WNBA) added 2026-09-14, D-161 follow-up -- no live
+// spatial payload exists for any of the three (unlike MLB/football), so
+// their normalizer leaves liveHtml/matchHtml empty rather than inventing one.
 
 (function (global) {
     'use strict';
@@ -123,6 +126,42 @@
     function normalizeNFLGame(g) { return _normalizeFootball(g, 'nfl'); }
     function normalizeNCAAFGame(g) { return _normalizeFootball(g, 'ncaaf'); }
 
+    // ── Normalizer: basketball (NBA / NCAAB / WNBA share the same scoreboard
+    // shape — confirmed live 2026-09-14 by comparing fetchNBAScoreboard/
+    // fetchNCAABScoreboard/fetchWNBAScoreboard's own mapping code directly,
+    // not assumed from the football precedent) → model.
+    // g: { id, date, isFinal, isLive, statusText, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
+    // Built to close a real, pre-existing gap: the home page's own merged
+    // ticker (_updateHomeTicker, js/app.js) only ever normalized MLB/NFL/
+    // NCAAF games because no basketball normalizer existed here — NCAAB and
+    // WNBA games have never appeared in the home ticker banner, and NBA
+    // inherited the same gap when it shipped. This one normalizer, wired
+    // into _updateHomeTicker + setupTickerClicks, closes it for all three at
+    // once rather than three separate near-duplicate fixes.
+    function _normalizeBasketball(g, sport) {
+        const mk = t => ({
+            abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
+            score: t ? t.score : 0, logo: (t && t.logo) || '', color: '', winner: !!(t && t.winner),
+        });
+        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal;
+        return {
+            sport, key: `${sport}-${g.id}`, id: g.id,
+            status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
+            pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
+            // g.statusText already carries ESPN's own clock/period text while live
+            // (e.g. "12:04 - 2nd") and the kickoff-style time while upcoming isn't
+            // available on this shape the way football's raw date-only field is —
+            // reuse it directly rather than re-deriving a label from g.date.
+            pillLabel: isLive ? (g.statusText || 'LIVE') : isFinal ? 'Final' : _kickoffLabel(g.date),
+            hasScore: true,
+            home: mk(g.homeTeam), away: mk(g.awayTeam),
+            liveHtml: '', matchHtml: '', ariaExtra: '',
+        };
+    }
+    function normalizeNBAGame(g) { return _normalizeBasketball(g, 'nba'); }
+    function normalizeNCAABGame(g) { return _normalizeBasketball(g, 'ncaab'); }
+    function normalizeWNBAGame(g) { return _normalizeBasketball(g, 'wnba'); }
+
     // League glyph (D-043 3a, Vera) — a muted inline mark, not a colored badge
     // (border=identity/badge=state discipline stays); lets a mixed "All" tab
     // scan by sport at a glance. Shown on every card, not just the mixed tab —
@@ -134,6 +173,7 @@
     function _leagueGlyph(sport) {
         if (sport === 'mlb') return 'baseball';
         if (sport === 'nfl' || sport === 'ncaaf') return 'football';
+        if (sport === 'nba' || sport === 'ncaab' || sport === 'wnba') return 'basketball';
         return '';
     }
 
@@ -210,5 +250,9 @@
             </div>`;
     }
 
-    global.Scorebug = { normalizeMLBGame, normalizeNFLGame, normalizeNCAAFGame, renderScoreCard, renderTickerItem };
+    global.Scorebug = {
+        normalizeMLBGame, normalizeNFLGame, normalizeNCAAFGame,
+        normalizeNBAGame, normalizeNCAABGame, normalizeWNBAGame,
+        renderScoreCard, renderTickerItem,
+    };
 })(typeof window !== 'undefined' ? window : globalThis);
