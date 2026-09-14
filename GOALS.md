@@ -80,9 +80,12 @@ No frameworks, no build step, no CI pipeline complexity.
 Vanilla JS + CSS modules. Each sport is one file (or at most two).  
 The codebase should be readable by a future contributor in 30 minutes.
 
-### G6 — Sport Scope (amended 2026-07-01)
-MLB (flagship) and NFL (live beta, D-012) are the two invested sports — the barbell. G2 depth goals were met 2026-06-08, which released the old preview freeze.  
-NBA and NHL are parked: no feature work, and their currently-unreachable client code should be delivery-gated or removed (deep-review 2026-07-01, finding X5). Reviving either requires an owner decision in DECISIONS.md.
+### G6 — Sport Scope (re-ratified 2026-09-14 — the 2026-07-01 version below had gone stale months before this correction, flagged 2026-08-15 and left unfixed until now; kept visible as the reasoning trail, not silently overwritten)
+Six sports are live: MLB (flagship), NFL (public beta, D-012), NCAA Football (D-042), NCAA Men's Basketball (D-052), WNBA (D-092). NHL stays parked — preview only, no feature work without an owner decision recorded here first.
+
+**NBA is being actively revived as of D-161 (2026-09-14) — owner-directed, not parked.** This reverses G6's old "parked" language for NBA specifically; NHL's parked status is unchanged. D-052's engineering findings about NBA still hold and should ground the revival work, not be rediscovered: no live data layer exists (the old client code predates the `SPORTS` registry and runs on Ball Don't Lie's paid-gated tier), so this is a rebuild on the same ESPN-proxy-clone pattern already proven four times (NFL/NCAAF/NCAAB/WNBA), not a reactivation — and the old UI components predate `DESIGN.md` (D-040) entirely, so a real cohesion decision (patch old components vs. rebuild fresh) is part of the work, not a detail to skip. See D-161 for the full record and the open nav/home-impact question it deliberately left for that work to answer with real measurement.
+
+**Original 2026-07-01 language, superseded above but kept for history:** "MLB (flagship) and NFL (live beta, D-012) are the two invested sports — the barbell... NBA and NHL are parked: no feature work, and their currently-unreachable client code should be delivery-gated or removed (deep-review 2026-07-01, finding X5). Reviving either requires an owner decision in DECISIONS.md." The "two-sport barbell" framing stopped being accurate the moment D-042 shipped and was never corrected here until now, despite `CLAUDE.md`'s Sport Focus section and this project's own `ISSUES.md` (2026-08-15 NAV/SEO pass) both flagging the drift explicitly.
 
 ---
 
