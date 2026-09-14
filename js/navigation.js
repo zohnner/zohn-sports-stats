@@ -131,6 +131,7 @@ function setupNavigation() {
                 : s.view.startsWith('ncaab-') ? 'ncaab'
                 : s.view.startsWith('wnba-') ? 'wnba'
                 : s.view.startsWith('nhl-') ? 'nhl'
+                : s.view.startsWith('nba-') ? 'nba'
                 : 'nba';
             if (AppState.currentSport !== sportFromView) {
                 AppState.currentSport = sportFromView;
@@ -263,6 +264,7 @@ function _trackPageView(view) {
         : view.startsWith('ncaab-') ? 'ncaab'
         : view.startsWith('wnba-') ? 'wnba'
         : view.startsWith('nhl-') ? 'nhl'
+        : view.startsWith('nba-') ? 'nba'
         : 'nba';
     const blob = new Blob([JSON.stringify({ sport, view })], { type: 'application/json' });
     navigator.sendBeacon('/api/track', blob);
@@ -376,6 +378,13 @@ function _seedSportTicker(sport) {
                 if (typeof updateWNBATicker === 'function') updateWNBATicker(games);
             }).catch(() => {});
         }
+    } else if (sport === 'nba') {
+        if (typeof fetchNBAScoreboard === 'function') {
+            fetchNBAScoreboard().then(games => {
+                AppState.nbaGames = games;
+                if (typeof updateNBATicker === 'function') updateNBATicker(games);
+            }).catch(() => {});
+        }
     }
 }
 
@@ -463,6 +472,11 @@ const _NAV_META = {
     'wnba-leaders':    { label: 'WNBA Leaders' },
     'wnba-playoffs':   { label: 'WNBA Playoff Picture' },
     'wnba-home':       { label: 'WNBA' },
+    'nba-scores':      { label: 'NBA Scores' },
+    'nba-standings':   { label: 'NBA Standings' },
+    'nba-teams':       { label: 'NBA Teams' },
+    'nba-leaders':     { label: 'NBA Leaders' },
+    'nba-home':        { label: 'NBA' },
     'arcade':        { label: 'Arcade' },
 };
 
@@ -505,7 +519,7 @@ function renderCurrentView(view) {
     document.body.classList.toggle('view-home', view === 'home');
 
     // Sport landing pages (D-045) — clean per-sport home
-    const _homeMatch = view.match(/^(mlb|nfl|ncaaf|ncaab|wnba)-home$/);
+    const _homeMatch = view.match(/^(mlb|nfl|ncaaf|ncaab|wnba|nba)-home$/);
     if (_homeMatch && typeof _renderSportLanding === 'function') { _renderSportLanding(_homeMatch[1]); return; }
 
     // Account management (D-031) — sport-agnostic, same pattern as the home dispatch above
@@ -521,8 +535,11 @@ function renderCurrentView(view) {
     if (view.startsWith('ncaaf-')) { _renderNCAAFView(view); return; }
     if (view.startsWith('ncaab-')) { _renderNCAABView(view); return; }
     if (view.startsWith('wnba-')) { _renderWNBAView(view); return; }
+    if (view.startsWith('nba-')) { _renderNBAView(view); return; }
 
-    // NBA views
+    // Legacy bare-name NBA views (pre-registry, pre-D-161) — dead code now
+    // that nothing points at them (see the SPORTS comment above), left in
+    // place rather than deleted this session
     const viewCount = document.getElementById('viewResultCount');
     switch (view) {
         case 'home':
@@ -1245,6 +1262,16 @@ const SUB_NAV_TABS = {
         { v: 'wnba-playoffs', l: 'Playoff Picture' },
         { v: 'news', l: 'News' },
     ],
+    // nba (D-161): flat Scores/Standings/Teams/Leaders/News, same shape as
+    // ncaab's — but Leaders is real here (unlike ncaab's deferral), matching
+    // wnba's own v1 scope instead.
+    nba: [
+        { v: 'nba-scores', l: 'Scores' },
+        { v: 'nba-standings', l: 'Standings' },
+        { v: 'nba-teams', l: 'Teams' },
+        { v: 'nba-leaders', l: 'Leaders' },
+        { v: 'news', l: 'News' },
+    ],
 };
 
 function _renderSubNav(sport) {
@@ -1366,6 +1393,12 @@ const MENU_TABS = {
         { v:'wnba-teams', l:'Teams', i:'teams' }, { v:'wnba-leaders', l:'Leaders', i:'leaders' },
         { v:'wnba-playoffs', l:'Playoff Picture', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
+    nba: [
+        { group:'NBA' },
+        { v:'nba-scores', l:'Scores', i:'scores' }, { v:'nba-standings', l:'Standings', i:'standings' },
+        { v:'nba-teams', l:'Teams', i:'teams' }, { v:'nba-leaders', l:'Leaders', i:'leaders' },
+        { v:'news', l:'News', i:'extra' },
+    ],
 };
 
 function _renderMenuPanel(sport) {
@@ -1407,6 +1440,11 @@ const BOTTOM_NAV_TABS = {
         { v: 'wnba-leaders', l: 'Leaders', i: 'leaders' }, { v: 'wnba-teams', l: 'Teams', i: 'teams' },
         { more: true, l: 'More', i: 'extra' },
     ],
+    nba: [
+        { v: 'nba-scores', l: 'Scores', i: 'scores' }, { v: 'nba-standings', l: 'Standings', i: 'standings' },
+        { v: 'nba-leaders', l: 'Leaders', i: 'leaders' }, { v: 'nba-teams', l: 'Teams', i: 'teams' },
+        { more: true, l: 'More', i: 'extra' },
+    ],
 };
 
 function _renderBottomNav(sport) {
@@ -1431,7 +1469,7 @@ function _renderBottomNav(sport) {
 // site-wide emoji-removal pass -- render sites must use _iconSvg(meta.icon)
 // into .innerHTML, not .textContent (see _renderSportSwitch/_applySportUI below).
 const SPORTS_META = {
-    nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'players',      accent: '#c8102e' },
+    nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'nba-home',     accent: '#c8102e' },
     mlb:   { id: 'mlb',   label: 'MLB',   icon: 'baseball',   sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
     nfl:   { id: 'nfl',   label: 'NFL',   icon: 'football',   sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
     nhl:   { id: 'nhl',   label: 'NHL',   icon: 'puck',       sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
@@ -1445,7 +1483,16 @@ const SPORTS_META = {
 // wnba added D-092 (owner override of D-052's calendar-gap recommendation — see
 // DECISIONS.md D-092) — data layer ships in the same pass as this registry entry,
 // so no phased hold-back needed (unlike ncaab's P1/P2/P3 split).
-const SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba'].map(id => SPORTS_META[id]);
+// nba added D-161 (2026-09-14, owner-directed revival) — replaces the dead
+// Ball Don't Lie v1 data layer with the same ESPN-proxy-clone pattern used
+// by every sport since D-042 (see functions/api/nba.js, js/nba.js). Old
+// bare-name NBA views ('players'/'teams'/'games'/'standings', still handled
+// by the legacy switch at the bottom of renderCurrentView) are now dead code
+// -- nothing in SUB_NAV_TABS/MENU_TABS/BOTTOM_NAV_TABS/defaultView points at
+// them anymore, but they're left in place rather than deleted this session
+// (see DECISIONS.md D-161 continuation) since js/teams.js and js/games.js's
+// exact blast radius wasn't re-verified under this pass's time budget.
+const SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba'].map(id => SPORTS_META[id]);
 
 function _renderSportSwitch(sport) {
     const wrap = document.getElementById('sportSwitch') || document.querySelector('.sport-switch');
@@ -1721,6 +1768,10 @@ const _PAGE_META = {
     'wnba-teams':      { title: 'SportStrata — WNBA Teams',     desc: 'Browse WNBA teams by conference.' },
     'wnba-leaders':    { title: 'SportStrata — WNBA Leaders',    desc: 'WNBA statistical leaders: points, rebounds, assists, steals, blocks.' },
     'wnba-playoffs':   { title: 'SportStrata — WNBA Playoff Picture', desc: 'Top-8-overall WNBA playoff picture, updated from live conference standings.' },
+    'nba-scores':      { title: 'SportStrata — NBA Scores',    desc: 'Live NBA scores and today\'s scoreboard.' },
+    'nba-standings':   { title: 'SportStrata — NBA Standings', desc: 'NBA standings by conference and division.' },
+    'nba-teams':       { title: 'SportStrata — NBA Teams',     desc: 'Browse NBA teams by conference and division.' },
+    'nba-leaders':     { title: 'SportStrata — NBA Leaders',   desc: 'NBA statistical leaders: points, rebounds, assists, steals, blocks.' },
 };
 
 function _updatePageMeta(view) {

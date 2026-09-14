@@ -4143,8 +4143,16 @@ body.a2hs-open { padding-bottom: 4.5rem; }
    sport it was. Replaced with the same trigger+dropdown pattern already proven by
    .auth-control/.auth-menu: .sport-switch-trigger shows only the active sport and opens
    .sport-switch as a full-width, vertically-stacked dropdown sheet -- every sport fully
-   readable, no scrolling, one tap. */
-@media (max-width: 768px) {
+   readable, no scrolling, one tap.
+   Breakpoint raised 768px -> 800px (D-161, NBA revival nav audit, 2026-09-14):
+   live-measured via real Chrome DOM layout (puppeteer against the actual dev
+   server, not viewport emulation) that adding a 6th sport pill (NBA) overflows
+   .header-inner by 1-6px in the narrow 769-774px window -- exactly the pixel
+   range right where this breakpoint used to hand off from the dropdown to the
+   inline row, confirmed absent at 5 pills (today's prod) via the same A/B
+   test. Same fix shape as the search-label breakpoint below, which was raised
+   768->900 for the identical reason when the switcher grew from 2 pills to 5. */
+@media (max-width: 800px) {
     .sport-switch-trigger { display: inline-flex; }
     .sport-switch-wrap { margin-left: var(--space-2); }
     .sport-switch {

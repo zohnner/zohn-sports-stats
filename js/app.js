@@ -85,6 +85,16 @@ const _SPORT_LANDING = {
         ['wnba-standings', 'table', 'Standings', 'Eastern & Western, one page'],
         ['wnba-scores', 'scores', 'Scores', 'Live scoreboard'],
         ['wnba-teams', 'player', 'Teams', 'Browse by conference'] ] },
+    // D-161 (NBA revival): real per-player leaders exist (unlike NCAAB), same
+    // 4-card shape as WNBA's own v1. No _EDITORIAL_SLOTS entry -- falls
+    // through to the simpler hero+cards landing, same starting point NCAAB/
+    // WNBA had before their own editorial-port phases (a later decision,
+    // not assumed here).
+    nba: { tag: 'Every NBA conference — free, no login.', cards: [
+        ['nba-leaders', 'bars', 'Leaders', 'PPG · RPG · APG · SPG · BPG'],
+        ['nba-standings', 'table', 'Standings', 'Eastern & Western, by division'],
+        ['nba-scores', 'scores', 'Scores', 'Live scoreboard'],
+        ['nba-teams', 'player', 'Teams', 'Browse by conference'] ] },
 };
 
 // NFL landing seasonal line (D-045 said "one hero + seasonal line" but the line was a
@@ -216,6 +226,7 @@ const _HOME_HERO_GUEST_SPORTS = {
     ncaaf: { fetch: () => fetchNCAAFScoreboard(), cache: 'ncaafGames', leverage: _ncaafLeverage, marquee: _ncaafMarquee, heroFn: _heroFromNCAAFGame },
     ncaab: { fetch: () => fetchNCAABScoreboard(), cache: 'ncaabGames', leverage: _ncaabLeverage, marquee: _ncaabMarquee, heroFn: _heroFromNCAABGame },
     wnba:  { fetch: () => fetchWNBAScoreboard(),  cache: 'wnbaGames',  leverage: _wnbaLeverage,  marquee: _wnbaMarquee,  heroFn: _heroFromWNBAGame },
+    nba:   { fetch: () => fetchNBAScoreboard(),   cache: 'nbaGames',   leverage: _nbaLeverage,  marquee: _nbaMarquee,   heroFn: _heroFromNBAGame },
 };
 
 // Home redesign Phase 4 perf pass (2026-09-08) — a real network trace of a
@@ -2056,6 +2067,41 @@ function _heroFromWNBAGame(g, kind) {
     return { kind, html, onClick: () => { if (typeof showWNBAGame === 'function') showWNBAGame(g.id); } };
 }
 
+// NBA landing/home Game hero (D-161 revival) -- same shape as WNBA's
+// (live-scored/marquee, real Live/Final Game panel via showNBAGame). No
+// `rank` field on NBA's team shape (no poll for a pro league), same as WNBA.
+function _heroFromNBAGame(g, kind) {
+    const _esc = s => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
+    const matchupTitle = `${_esc(g.awayTeam.name || g.awayTeam.abbr)} at ${_esc(g.homeTeam.name || g.homeTeam.abbr)}`;
+    let kicker, hook, cta;
+    if (kind === 'live') {
+        kicker = `<span class="hero-kicker hero-kicker--live">LIVE</span>`;
+        const diff = Math.abs((g.homeTeam.score || 0) - (g.awayTeam.score || 0));
+        const leadTeam = (g.homeTeam.score || 0) > (g.awayTeam.score || 0) ? g.homeTeam
+            : ((g.awayTeam.score || 0) > (g.homeTeam.score || 0) ? g.awayTeam : null);
+        hook = leadTeam
+            ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
+            : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
+        cta = 'Watch live →';
+    } else {
+        const d = g.date ? new Date(g.date) : null;
+        const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
+        kicker = `<span class="hero-kicker">${g.statusText && g.statusText !== 'TBD' ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
+        hook = 'Tip-off soon';
+        cta = 'Game preview →';
+    }
+    const board = _heroLogoBoard(g, kind === 'live');
+    const html = `
+        <div class="hero-main">
+            ${kicker}
+            <h2 class="hero-headline">${matchupTitle}</h2>
+            <p class="hero-hook">${hook}</p>
+            <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
+        </div>
+        <div class="hero-visual">${board}</div>`;
+    return { kind, html, onClick: () => { if (typeof showNBAGame === 'function') showNBAGame(g.id); } };
+}
+
 // _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was
 // _homeHeroSport()'s NFL-only branch (calendar-gated, live-then-soonest-
 // upcoming, no cross-sport comparison); _renderHomeHero() below now scores
@@ -2086,6 +2132,11 @@ function _ncaabGameHasFav(g) {
 function _wnbaGameHasFav(g) {
     if (typeof _isFollowed !== 'function') return false;
     return _isFollowed('wnba', 'team', g.homeTeam?.abbr) || _isFollowed('wnba', 'team', g.awayTeam?.abbr);
+}
+// D-161 (NBA revival): same one-line mirror, for NBA.
+function _nbaGameHasFav(g) {
+    if (typeof _isFollowed !== 'function') return false;
+    return _isFollowed('nba', 'team', g.homeTeam?.abbr) || _isFollowed('nba', 'team', g.awayTeam?.abbr);
 }
 // NFL-side leverage/marquee scores, calibrated to land in roughly the same
 // numeric range as MLB's leverage()/marquee() in _renderHomeHero() below
@@ -2164,6 +2215,16 @@ function _wnbaLeverage(g) {
 }
 function _wnbaMarquee(g) {
     return (_wnbaGameHasFav(g) ? 100 : 0);
+}
+// D-161 (NBA revival): same shape as WNBA's -- no poll for a pro league, so
+// no ranked-matchup bonus (that's NCAAB's addition, not applicable here).
+function _nbaLeverage(g) {
+    const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
+    const closeness = Math.max(0, 10 - diff * (10 / 16));
+    return closeness + (_nbaGameHasFav(g) ? 100 : 0);
+}
+function _nbaMarquee(g) {
+    return (_nbaGameHasFav(g) ? 100 : 0);
 }
 // D-100 (supersedes the _homeHeroSport() calendar gate above): whichever
 // sport has the more compelling live game wins the hero slot, any day of the
@@ -2829,6 +2890,11 @@ function _sportPickerStatus(id) {
                           return { cls: 'idle', label: 'Preview · starts Nov' }; }
     if (id === 'wnba')  { if (m >= 4 && m <= 10)  return { cls: 'active', label: 'Season underway' };
                           return { cls: 'idle', label: 'Preview · starts April' }; }
+    // D-161 (NBA revival): in-season Oct-June (confirmed live 2026-09-14
+    // against the real ESPN scoreboard payload -- 2025-26 season window
+    // 2025-10-01..2026-06-27). Jul-Sep is the only true offseason.
+    if (id === 'nba')   { if (m >= 10 || m <= 6)  return { cls: 'active', label: 'Season underway' };
+                          return { cls: 'idle', label: 'Preview · starts Oct' }; }
     return { cls: 'idle', label: 'Explore' };
 }
 
@@ -2864,6 +2930,8 @@ function _sportPickerCounts() {
     counts.ncaab = { today: ncaabToday.length, live: ncaabToday.filter(g => g.isLive).length };
     const wnbaToday = _gamesToday(AppState.wnbaGames);
     counts.wnba = { today: wnbaToday.length, live: wnbaToday.filter(g => g.isLive).length };
+    const nbaToday = _gamesToday(AppState.nbaGames);
+    counts.nba = { today: nbaToday.length, live: nbaToday.filter(g => g.isLive).length };
 
     return counts;
 }
@@ -2894,6 +2962,7 @@ function _sportPickerGame(sport) {
     if (sport === 'ncaaf') return pick(AppState.ncaafGames, _ncaafLeverage, _ncaafMarquee);
     if (sport === 'ncaab') return pick(AppState.ncaabGames, _ncaabLeverage, _ncaabMarquee);
     if (sport === 'wnba')  return pick(AppState.wnbaGames,  _wnbaLeverage,  _wnbaMarquee);
+    if (sport === 'nba')   return pick(AppState.nbaGames,   _nbaLeverage,   _nbaMarquee);
     return null;
 }
 
@@ -2937,7 +3006,7 @@ function _sportPickerSnippet(sport) {
                 ? `${m.away.abbr} ${m.away.score} \u2013 ${m.home.abbr} ${m.home.score} \u00b7 ${m.pillLabel}`
                 : `${m.away.abbr} @ ${m.home.abbr} \u00b7 ${m.pillLabel}`;
         }
-        if (sport === 'ncaab' || sport === 'wnba') {
+        if (sport === 'ncaab' || sport === 'wnba' || sport === 'nba') {
             const away = g.awayTeam, home = g.homeTeam;
             if (!away || !home) return '';
             if (g.isLive || g.isFinal) {

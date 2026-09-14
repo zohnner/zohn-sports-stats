@@ -9,19 +9,21 @@
  *   node tools/gen-sitemap.cjs --dry      # prints the url count, writes nothing
  *
  * Only lists paths that have a real edge-render template today:
- *   landings /mlb /nfl /ncaaf /ncaab /wnba · the 5 static stubs (mock-draft/
+ *   landings /mlb /nfl /ncaaf /ncaab /wnba /nba · the 5 static stubs (mock-draft/
  *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
  *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
- *   /ncaab/standings · /wnba/standings · /wnba/leaders · /glossary · /nfl/glossary
+ *   /ncaab/standings · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
+ *   /glossary · /nfl/glossary
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug} · /nfl/game/{id} (rolling window)
- *   /wnba/player/{espnId}/{slug}
+ *   /wnba/player/{espnId}/{slug} · /nba/player/{espnId}/{slug}
  *
- * NCAAB and WNBA deliberately have no /team/ or (NCAAB) /player/ entries —
- * neither sport has a client-side team-detail route yet, and NCAAB has no
- * player-detail view at all (confirmed against js/ncaab.js/js/wnba.js's
- * _render*View dispatch during the 2026-08-31 SEO audit, DECISIONS.md D-121).
+ * NCAAB, WNBA and NBA deliberately have no /team/ entries, and NCAAB has no
+ * /player/ entries either — none of the three has a client-side team-detail
+ * route yet, and NCAAB has no player-detail view at all (confirmed against
+ * js/ncaab.js/js/wnba.js/js/nba.js's _render*View dispatch during the
+ * 2026-08-31 SEO audit, DECISIONS.md D-121, and again for NBA at D-161).
  * Don't add those sections here until the underlying SPA views exist —
  * a sitemap entry with nothing real to hydrate into is worse than no entry.
  *
@@ -68,7 +70,7 @@ async function main() {
 
     // 1) static / landings / stubs
     add(urlTag('/', 'daily', '1.0'));
-    for (const s of ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba']) add(urlTag('/' + s, 'daily', '0.9'));
+    for (const s of ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba']) add(urlTag('/' + s, 'daily', '0.9'));
     for (const s of ['mock-draft', 'draft-kit', 'playoff-odds', 'ask', 'pickem']) add(urlTag('/' + s, 'weekly', '0.7'));
     add(urlTag('/mlb/standings', 'daily', '0.7'));
     add(urlTag('/mlb/leaders', 'daily', '0.7'));
@@ -80,6 +82,8 @@ async function main() {
     add(urlTag('/ncaab/standings', 'daily', '0.7'));
     add(urlTag('/wnba/standings', 'daily', '0.7'));
     add(urlTag('/wnba/leaders', 'daily', '0.7'));
+    add(urlTag('/nba/standings', 'daily', '0.7'));
+    add(urlTag('/nba/leaders', 'daily', '0.7'));
     add(urlTag('/glossary', 'monthly', '0.6'));
     add(urlTag('/nfl/glossary', 'monthly', '0.6'));
 
@@ -218,7 +222,17 @@ async function main() {
         }
     } catch (e) { console.error('WNBA players:', e.message); }
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+    // 9) NBA players (D-161) — same compact leaders endpoint pattern as WNBA
+    try {
+        const nl = await jget(`${BASE}/api/nbastats`);
+        for (const cat of (nl.categories || [])) {
+            for (const l of (cat.leaders || [])) {
+                if (l.id && l.name) add(urlTag(`/nba/player/${l.id}/${slug(l.name)}`, 'weekly', '0.5'));
+            }
+        }
+    } catch (e) { console.error('NBA players:', e.message); }
+
+    const xml =`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
     if (DRY) { console.log(`[dry] ${urls.length} urls (nothing written)`); return; }
     const out = path.join(process.cwd(), 'sitemap.xml');
     fs.writeFileSync(out, xml);

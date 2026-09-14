@@ -2,11 +2,9 @@
 // Shared basketball live-game viewer — one tabbed dashboard (Summary,
 // Play-by-Play, Box Score, Team Stats, Analytics) + sidebar (Win
 // Probability, Game Leaders, Game Flow, Standings), parameterized by
-// sport via _BLG_SPORTS so WNBA and NCAAB — both riding ESPN's same
-// site.web.api.espn.com basketball product family — share one
-// implementation instead of two near-duplicate files. NBA (preview-only)
-// deliberately has no entry in _BLG_SPORTS yet; wiring it later is
-// adding one config entry + its own fetchSummary, not new viewer work.
+// sport via _BLG_SPORTS so WNBA, NCAAB, and NBA (D-161, 2026-09-14) — all
+// riding ESPN's same site.web.api.espn.com basketball product family —
+// share one implementation instead of three near-duplicate files.
 //
 // Built after live-fetching real completed games from both sports'
 // /summary endpoints (2026-09-08, WNBA event 401857180, NCAAB event
@@ -69,6 +67,11 @@ const _blg = { sport: null, eventId: null, timer: null, activeTab: 'summary', la
 const _BLG_SPORTS = {
     wnba:  { label: 'WNBA',  scoresView: 'wnba-scores',  gamePrefix: 'wnba-game-',  fetchSummary: (id) => fetchWNBAGameSummary(id) },
     ncaab: { label: 'NCAAB', scoresView: 'ncaab-scores', gamePrefix: 'ncaab-game-', fetchSummary: (id) => fetchNCAABGameSummary(id) },
+    // nba (D-161, 2026-09-14): exactly the "one config entry, not new viewer
+    // work" the file header above predicted — but verified against a real
+    // completed NBA /summary before trusting that, not assumed. See
+    // js/nba.js's fetchNBAGameSummary comment for the live-check details.
+    nba:   { label: 'NBA',   scoresView: 'nba-scores',   gamePrefix: 'nba-game-',   fetchSummary: (id) => fetchNBAGameSummary(id) },
 };
 
 const _BLG_TABS = [
