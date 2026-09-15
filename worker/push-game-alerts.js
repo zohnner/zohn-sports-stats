@@ -31,12 +31,16 @@
 // with a 7pm ET MLB or NFL game about to start) and confirm `result.matched` and
 // `result.sent` look right -- this is the "recommended spike" the ISSUES.md spec
 // called for, same caution already applied to the buildPushPayload() crypto path.
-// The NCAAF/NCAAB/WNBA/NBA additions carry the same caveat and are NOT yet
-// live-verified either -- their ESPN event/competitions/competitors shape is
-// copied from the already-proven NFL reader and from js/ncaaf.js's/js/nba.js's
-// own live-verified scoreboard parsing (same upstream shape, different call
-// site), but this exact worker has never made those four calls against a real
-// response. Run `/__run` again during a live window for each before trusting it.
+// The NCAAF/NCAAB/WNBA/NBA additions: partially live-verified 2026-09-15 via
+// a real `/__run` hit against production -- { matched:0, errors:[] }, meaning
+// all six sport fetchers (mlb/nfl/ncaaf/ncaab/wnba/nba) executed cleanly
+// against real upstream responses with no exceptions, confirming the URLs,
+// the NCAAF `groups=80` param, and the shared _espnUpcoming() parsing all
+// hold up for real. `matched:0` at test time means the match/dedup/send
+// path itself (the DB join, push_sent_log write, buildPushPayload call)
+// remains unexercised for these four sports -- still worth a real hit during
+// an actual pre-game window for a followed NCAAF/NCAAB/WNBA/NBA team before
+// fully trusting the end-to-end send path, same as MLB/NFL's own original spike.
 //
 // Dedup: push_sent_log (migrations/0007) keys on (user_id, game_key) so an
 // overlapping cron run can never double-send the same game-start alert twice,
