@@ -11,8 +11,6 @@ import { betterAuth } from 'better-auth';
 import { passkey } from '@better-auth/passkey';
 import { magicLink } from 'better-auth/plugins';
 import { createAuthMiddleware, APIError } from 'better-auth/api';
-import { Kysely } from 'kysely';
-import { D1Dialect } from 'kysely-d1';
 import { sendMagicLinkEmail } from './_email.js';
 import { verifyTurnstile } from './_turnstile.js';
 
@@ -35,15 +33,19 @@ export function buildAuth(env) {
 		throw new Error('AUTH_SECRET missing — see docs/auth-setup-runbook.md step 7.');
 	}
 
-	const db = new Kysely({ dialect: new D1Dialect({ database: env.USER_DB }) });
-
+	// Pass the raw D1 binding directly rather than pre-wrapping it in the third-party
+	// kysely-d1 package: better-auth's own adapter factory auto-detects a raw D1Database
+	// (`"batch" in db && "exec" in db && "prepare" in db`) and builds its own D1-aware
+	// Kysely dialect/introspector internally, which queries sqlite_master directly.
+	// A pre-built external Kysely instance (the old `{ db, type: 'sqlite' }` shape) skips
+	// that detection entirely and falls back to Kysely's generic SqliteIntrospector, whose
+	// getTables() issues a `pragma_table_info(...)` table-valued-function query — D1's
+	// authorizer rejects PRAGMA-based queries with SQLITE_AUTH, and since this app builds a
+	// fresh betterAuth() instance per request (see comment above), that crashed every single
+	// /api/auth/*, /api/me, /api/follows, /api/prefs, /api/pushSubscribe request. Found live
+	// 2026-09-15 via Cloudflare's Functions real-time logs after a site-wide 500 was reported.
 	return betterAuth({
-		// { db, type: 'sqlite' } rather than passing the Kysely instance bare: better-auth's
-		// dialect auto-detection matches known dialect constructor names (Postgres/MySQL/
-		// Sqlite), and D1Dialect (from kysely-d1) isn't one of them — the explicit type hint
-		// is required, not optional, for a correct sqlite-flavored adapter (booleans as 0/1,
-		// no RETURNING support assumed, etc).
-		database: { db, type: 'sqlite' },
+		database: env.USER_DB,
 		secret: env.AUTH_SECRET,
 		baseURL: env.AUTH_BASE_URL || undefined,
 		trustedOrigins: env.AUTH_TRUSTED_ORIGINS

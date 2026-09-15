@@ -485,7 +485,7 @@ function _sbLoadMath() {
     if (_sbMathPromise) return _sbMathPromise;
     _sbMathPromise = new Promise((resolve, reject) => {
         const sc = document.createElement('script');
-        sc.src = 'js/math.min.js';
+        sc.src = '/js/math.min.js';
         sc.onload = resolve;
         sc.onerror = () => { _sbMathPromise = null; reject(new Error('math.js load failed')); };
         document.head.appendChild(sc);

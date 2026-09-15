@@ -4611,7 +4611,7 @@ if (typeof window !== 'undefined') {
 const _KEPT_THEMES = { dark: 1, light: 1, 'nl-monarchs': 1 };
 
 const _CC_TEAM_LOGOS = {
-    'nl-monarchs':     'assets/themes/images.png',
+    'nl-monarchs':     '/assets/themes/images.png',
 };
 
 const _CC_THEME_ALTS = {
@@ -4636,11 +4636,11 @@ function _applyTheme(theme, opts) {
     if (logoEl) {
         const ccLogo = _CC_TEAM_LOGOS[theme];
         if (ccLogo) {
-            logoEl.onerror = () => { logoEl.src = 'assets/icon-64.png'; logoEl.onerror = null; };
+            logoEl.onerror = () => { logoEl.src = '/assets/icon-64.png'; logoEl.onerror = null; };
         } else {
             logoEl.onerror = null;
         }
-        logoEl.src = ccLogo || 'assets/icon-64.png';
+        logoEl.src = ccLogo || '/assets/icon-64.png';
         logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
     // F9: keep the browser UI tint in sync with the active theme background token.
@@ -4946,7 +4946,7 @@ if (typeof window !== 'undefined') {
         strip.setAttribute('role', 'region');
         strip.setAttribute('aria-label', 'Install SportStrata');
         strip.innerHTML = `
-            <img class="a2hs-icon" src="assets/icon-64.png" alt="">
+            <img class="a2hs-icon" src="/assets/icon-64.png" alt="">
             <span class="a2hs-text">Install SportStrata for one-tap access</span>
             <button class="btn-primary a2hs-install">Install</button>
             <button class="a2hs-dismiss" aria-label="Dismiss install prompt">\u00d7</button>`;
