@@ -186,7 +186,16 @@ const _PWR_SPORTS = {
 // onClick} -- the one piece every sport supplies differently, since MLB/NFL/
 // ESPN sports don't share a team-lookup shape.
 function _prRenderRows(scored, cfg) {
-    const withGames = scored.filter(s => s.gamesPlayed > 0);
+    // Real live find (NCAAF, 2026-09-15): computeSRS correctly folds any
+    // opponent encountered in `games` into the rating graph even if it
+    // wasn't in the `teamList` passed in -- e.g. an FCS team an FBS team
+    // played, which is exactly right for the FBS team's own opponent-
+    // adjusted rating (dropping it would understate that FBS team's real
+    // schedule). But it has no entry in a standings-derived teamMeta (FBS-
+    // only), so it can't render a name/logo/record -- exclude it from the
+    // rendered list rather than show a bare abbreviation with no identity.
+    // It still did its job: shaping the ratings of the teams that DO render.
+    const withGames = scored.filter(s => s.gamesPlayed > 0 && cfg.getMeta(s.team));
     if (!withGames.length) return null;
     const maxRating = withGames[0].rating;
     const minRating = withGames[withGames.length - 1].rating;
