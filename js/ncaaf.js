@@ -273,6 +273,57 @@ async function fetchNCAAFScoreboard(opts = {}) {
     }).filter(Boolean);
 }
 
+// Power Rankings adapter (js/powerRankings.js) -- weeks 1..15 covers a full
+// FBS regular season; a not-yet-played week just returns not-final games,
+// dropped by the isFinal filter below, same reasoning as fetchNFLSeasonGames.
+// groups=80 is already baked into fetchNCAAFScoreboard (D-135), so FCS
+// crossover games are included here too, not filtered out.
+async function fetchNCAAFSeasonGames() {
+    const cacheKey = `ncaafSeasonGames${NCAAF_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const weeks = await Promise.all(
+        Array.from({ length: 15 }, (_, i) => i + 1).map(week =>
+            fetchNCAAFScoreboard({ seasontype: 2, week }).catch(() => [])
+        )
+    );
+
+    const games = weeks.flat()
+        .filter(g => g && g.isFinal)
+        .map(g => ({
+            home:      g.homeTeam.abbr,
+            away:      g.awayTeam.abbr,
+            homeScore: g.homeTeam.score,
+            awayScore: g.awayTeam.score,
+            date:      g.date,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
+// Builds { abbr: {name, logo, color, record, onClick} } from the full FBS
+// standings tree (~130 teams across ~12 conferences) -- the roster this
+// feeds _prShow('ncaaf') needs, since a week-by-week game loop alone won't
+// include a team on a bye. navigateTo('ncaaf-team-{id}') keys on ESPN's
+// numeric team id, not abbr (see showNCAAFTeam's dispatch above).
+async function fetchNCAAFPowerTeamMeta() {
+    const confs = await fetchNCAAFStandings(NCAAF_SEASON);
+    const meta = {};
+    confs.forEach(c => c.teams.forEach(t => {
+        if (!t.abbr) return;
+        meta[t.abbr] = {
+            name: t.name,
+            logo: t.logo,
+            color: null,
+            record: (t.wins != null && t.losses != null) ? `${t.wins}-${t.losses}` : (t.overall || ''),
+            onClick: t.id ? `navigateTo('ncaaf-team-${t.id}')` : '',
+        };
+    }));
+    return meta;
+}
+
 // D-130: raw situation + team-id pair for the live game viewer's field
 // graphic (js/ncaafLiveGame.js), mirroring js/nfl.js's fetchNFLLiveSituation
 // exactly — including bypassing espnNCAAFFetch's ApiCache layer with a plain
@@ -586,10 +637,11 @@ function _renderNCAAFView(view) {
     if (view.startsWith('ncaaf-game-')) { if (typeof showNCAAFGame === 'function') showNCAAFGame(view.slice('ncaaf-game-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
-        case 'ncaaf-standings': displayNCAAFStandings(); break;
-        case 'ncaaf-teams':     displayNCAAFTeams();     break;
-        case 'ncaaf-rankings':  displayNCAAFRankings();  break;
-        case 'ncaaf-leaders':   displayNCAAFLeaders();   break;
+        case 'ncaaf-standings':      displayNCAAFStandings();          break;
+        case 'ncaaf-teams':          displayNCAAFTeams();              break;
+        case 'ncaaf-rankings':       displayNCAAFRankings();           break;
+        case 'ncaaf-leaders':        displayNCAAFLeaders();            break;
+        case 'ncaaf-powerrankings':  if (typeof _prShow === 'function') _prShow('ncaaf'); break;
         case 'ncaaf-scores':
         default:                displayNCAAFScores();
     }
@@ -1226,6 +1278,8 @@ async function _loadNCAAFGameLog(id, season) {
 window._loadNCAAFRadar      = _loadNCAAFRadar;
 window._loadNCAAFGameLog    = _loadNCAAFGameLog;
 window.fetchNCAAFScoreboard = fetchNCAAFScoreboard;
+window.fetchNCAAFSeasonGames = fetchNCAAFSeasonGames;
+window.fetchNCAAFPowerTeamMeta = fetchNCAAFPowerTeamMeta;
 window.displayNCAAFScores   = displayNCAAFScores;
 window.displayNCAAFRankings = displayNCAAFRankings;
 window.displayNCAAFStandings = displayNCAAFStandings;

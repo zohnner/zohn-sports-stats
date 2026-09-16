@@ -339,7 +339,7 @@ Deeper docs live at the repo root: `CLAUDE.md` (architecture + conventions),
 
 ## Development
 
-- **Tests:** `node --test tests/stats.test.js tests/odds.test.js tests/query.test.js tests/vbd.test.js`
+- **Tests:** `node --test tests/stats.test.js tests/odds.test.js tests/query.test.js tests/vbd.test.js tests/powerRankings.test.js`
 - **Pre-deploy:** run the `tools/` checks (delivery-manifest sync, theme contrast,
   name-join health) — bundled as the `/deploy-check` routine. Never add a JS/CSS
   file without adding it to **both** `index.html` and `sw.js`.

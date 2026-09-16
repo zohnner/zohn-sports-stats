@@ -209,9 +209,10 @@ function _renderNBAView(view) {
     if (view.startsWith('nba-game-'))   { showNBAGame(view.slice('nba-game-'.length));     return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
-        case 'nba-standings': displayNBAStandings(); break;
-        case 'nba-teams':     displayNBATeams();     break;
-        case 'nba-leaders':   displayNBALeaders();   break;
+        case 'nba-standings':      displayNBAStandings();          break;
+        case 'nba-teams':          displayNBATeams();              break;
+        case 'nba-leaders':        displayNBALeaders();            break;
+        case 'nba-powerrankings':  if (typeof _prShow === 'function') _prShow('nba'); break;
         case 'nba-scores':
         case 'nba-home':
         default:                displayNBAScores();
@@ -273,6 +274,69 @@ async function fetchNBAStandings(season) {
     const out = confs.filter(c => c.teams.length);
     ApiCache.set(cacheKey, out, ApiCache.TTL.LONG);
     return out;
+}
+
+// Power Rankings adapter (js/powerRankings.js), modeled directly on WNBA's
+// verified pattern (js/wnba.js's fetchWNBASeasonGames): 30 teams makes a
+// per-team /teams/{id}/schedule loop (30 calls) reasonable the way it was
+// for WNBA's 15, unlike NCAAB's 360+-team pool. UNVERIFIED until the season
+// starts (2026-09-15): NBA is in the offseason right now, so the per-team
+// schedule endpoint's shape for this specific sport (seasonType.type,
+// competitors[].score.value) has not been checked against a real NBA game
+// the way it was for WNBA -- carried forward as the same ESPN platform
+// family, not re-verified.
+async function fetchNBASeasonGames() {
+    const cacheKey = `nbaSeasonGames${NBA_LAST_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const confs = await fetchNBAStandings(NBA_LAST_SEASON);
+    const teamIds = confs.flatMap(c => c.teams.map(t => t.id)).filter(Boolean);
+
+    const perTeam = await Promise.all(
+        teamIds.map(id => espnNBAFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.SEASON).catch(() => null))
+    );
+
+    const seen = new Set();
+    const games = [];
+    perTeam.forEach(d => {
+        (d?.events || []).forEach(ev => {
+            if (seen.has(ev.id)) return;
+            if (ev.seasonType?.type !== 2) return;
+            const comp = ev.competitions?.[0];
+            if (!comp || !comp.status?.type?.name?.startsWith('STATUS_FINAL')) return;
+            const home = comp.competitors?.find(c => c.homeAway === 'home');
+            const away = comp.competitors?.find(c => c.homeAway === 'away');
+            if (!home || !away) return;
+            seen.add(ev.id);
+            games.push({
+                home:      home.team.abbreviation,
+                away:      away.team.abbreviation,
+                homeScore: home.score?.value ?? 0,
+                awayScore: away.score?.value ?? 0,
+                date:      ev.date,
+            });
+        });
+    });
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
+async function fetchNBAPowerTeamMeta() {
+    const confs = await fetchNBAStandings(NBA_LAST_SEASON);
+    const meta = {};
+    confs.forEach(c => c.teams.forEach(t => {
+        if (!t.abbr) return;
+        meta[t.abbr] = {
+            name: t.name,
+            logo: t.logo,
+            color: null,
+            record: t.overall || '',
+            onClick: '',
+        };
+    }));
+    return meta;
 }
 
 function _nbaSeasonSelect() {
@@ -361,6 +425,8 @@ window.fetchNBAScoreboard = fetchNBAScoreboard;
 window.displayNBAScores    = displayNBAScores;
 window.displayNBAStandings = displayNBAStandings;
 window.displayNBATeams     = displayNBATeams;
+window.fetchNBASeasonGames = fetchNBASeasonGames;
+window.fetchNBAPowerTeamMeta = fetchNBAPowerTeamMeta;
 window._renderNBAView      = _renderNBAView;
 window.updateNBATicker     = updateNBATicker;
 

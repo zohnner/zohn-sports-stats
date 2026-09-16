@@ -66,7 +66,7 @@ jobs:
           echo "OK: .env is not tracked"
 
       - name: Unit tests (deploy-check #9)
-        run: node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/scorebug.test.js tests/entitlement.test.js
+        run: node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/scorebug.test.js tests/entitlement.test.js tests/powerRankings.test.js
 
       - name: Delivery manifest in sync (deploy-check #10)
         run: node tools/check-manifest.cjs

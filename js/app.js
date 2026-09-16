@@ -2731,23 +2731,25 @@ async function _mlbTrendingStatMoment() {
         text: `${avgTop.player?.fullName || '—'} (${avgTop.team?.abbreviation || ''}) is hitting ${avgStr} over the last 7 days` };
 }
 
-// NFL: _nflPowerScore (js/nflStandings.js) margin between #1 and #2.
+// NFL: SRS rating (js/powerRankings.js) margin between #1 and #2.
 async function _nflStatMoment() {
-    if (typeof fetchNFLStandings !== 'function' || typeof _nflPowerScore !== 'function') return null;
+    if (typeof fetchNFLSeasonGames !== 'function' || typeof fetchNFLPowerTeamMeta !== 'function' || typeof computeSRS !== 'function') return null;
     try {
-        const season = (typeof _nstdSeasonDefault === 'function') ? _nstdSeasonDefault() : undefined;
-        // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
-        // as the other _statMomentCandidates() sub-fetchers -- observed this
-        // one duplicate in a live network trace too.
-        const rows = (typeof _nstd !== 'undefined' && _nstd.bySeason[season]) || await _homeInflightFetch(`nflStandings:${season}`, () => fetchNFLStandings(season));
-        if (typeof _nstd !== 'undefined') _nstd.bySeason[season] = rows;
-        if (!rows || !rows.length) return null;
-        const scored = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr);
+        const [games, teamMeta] = await Promise.all([
+            _homeInflightFetch('nflSeasonGames', fetchNFLSeasonGames),
+            _homeInflightFetch('nflPowerTeamMeta', fetchNFLPowerTeamMeta),
+        ]);
+        const scored = computeSRS(games, Object.keys(teamMeta), {
+            marginCap: _PWR_SPORTS.nfl.marginCap,
+            homeAdvantage: _PWR_SPORTS.nfl.homeAdvantage,
+            recencyHalfLifeDays: _PWR_SPORTS.nfl.recencyHalfLifeDays,
+        }).filter(s => s.gamesPlayed > 0);
         const [top, second] = scored;
         if (!top) return null;
-        const margin = second ? top._pwr - second._pwr : 0;
-        return { sport: 'nfl', score: _notabilityFromMargin(margin * 100, 3, 35, 90), view: 'nfl-powerrankings',
-            text: `${top.shortName || top.name} lead the NFL Power Rankings at ${top.wins}-${top.losses}` };
+        const meta = teamMeta[top.team] || {};
+        const margin = second ? top.rating - second.rating : 0;
+        return { sport: 'nfl', score: _notabilityFromMargin(margin, 6, 35, 90), view: 'nfl-powerrankings',
+            text: `${meta.name || top.team} lead the NFL Power Rankings at ${meta.record || ''}` };
     } catch (_) { return null; }
 }
 
@@ -3445,18 +3447,31 @@ async function _loadMLBLandingSignature() {
         }).join('');
 
         let powerHtml = '';
-        if (typeof _mlbComputePowerRankings === 'function') {
+        if (typeof computeSRS === 'function' && typeof fetchMLBSeasonGames === 'function') {
             const allTeams = (AppState.mlbStandings || []).flatMap(d => d.teams.map(t => ({ ...t, division: d.division })));
-            const top3 = _mlbComputePowerRankings(allTeams).slice(0, 3);
-            const chips = top3.map((t, i) => `
-                <button class="sl-power-chip" onclick="navigateTo('mlb-standings')">
-                    <span class="sl-power-rank">${i + 1}</span>
-                    <img src="${_escHtml(getMLBTeamLogoUrl(t.teamId))}" alt="" loading="lazy" data-hide-on-error>
-                    <span>${_escHtml(t.teamAbbr)}</span>
-                </button>`).join('');
-            powerHtml = `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('mlb-standings')">Full rankings →</button></div>
-                <div class="sl-power-chips">${chips}</div></section>`;
+            const byAbbr = {};
+            allTeams.forEach(t => { byAbbr[t.teamAbbr] = t; });
+            const games = await fetchMLBSeasonGames().catch(() => []);
+            const scored = computeSRS(games, Object.keys(byAbbr), {
+                marginCap: _PWR_SPORTS.mlb.marginCap,
+                homeAdvantage: _PWR_SPORTS.mlb.homeAdvantage,
+                recencyHalfLifeDays: _PWR_SPORTS.mlb.recencyHalfLifeDays,
+            });
+            const top3 = scored.filter(s => s.gamesPlayed > 0).slice(0, 3);
+            if (top3.length && host.isConnected) {
+                const chips = top3.map((s, i) => {
+                    const t = byAbbr[s.team] || {};
+                    return `
+                    <button class="sl-power-chip" onclick="navigateTo('mlb-standings')">
+                        <span class="sl-power-rank">${i + 1}</span>
+                        <img src="${_escHtml(getMLBTeamLogoUrl(t.teamId))}" alt="" loading="lazy" data-hide-on-error>
+                        <span>${_escHtml(s.team)}</span>
+                    </button>`;
+                }).join('');
+                powerHtml = `<section class="sl-section">
+                    <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('mlb-standings')">Full rankings →</button></div>
+                    <div class="sl-power-chips">${chips}</div></section>`;
+            }
         }
 
         if (!pennantRows && !powerHtml) { host.remove(); return; }
@@ -3765,20 +3780,29 @@ async function _loadNFLLandingSignature() {
                 </div>`).join('');
             return `<div><h3 class="sl-playoff-conf-title">${conf}</h3>${rowsHtml}</div>`;
         }).join('');
-        // Power Rankings teaser (Phase 2): top-3 by _nflPowerScore (js/nflStandings.js),
-        // zero new fetch -- same `rows` this module already has in hand.
+        // Power Rankings teaser: top-3 by opponent-adjusted SRS (js/powerRankings.js).
         let powerHtml = '';
-        if (typeof _nflPowerScore === 'function' && rows && rows.length) {
-            const top3 = rows.map(t => ({ ...t, _pwr: _nflPowerScore(t) })).sort((a, b) => b._pwr - a._pwr).slice(0, 3);
-            const chips = top3.map((t, i) => `
-                <button class="sl-power-chip" onclick="navigateTo('nfl-powerrankings')">
-                    <span class="sl-power-rank">${i + 1}</span>
-                    <img src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>
-                    <span>${_escHtml(t.shortName)}</span>
-                </button>`).join('');
-            powerHtml = `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('nfl-powerrankings')">Full rankings →</button></div>
-                <div class="sl-power-chips">${chips}</div></section>`;
+        if (typeof computeSRS === 'function' && typeof fetchNFLSeasonGames === 'function' && typeof fetchNFLPowerTeamMeta === 'function') {
+            const [games, teamMeta] = await Promise.all([fetchNFLSeasonGames(), fetchNFLPowerTeamMeta()]).catch(() => [[], {}]);
+            const top3 = computeSRS(games, Object.keys(teamMeta || {}), {
+                marginCap: _PWR_SPORTS.nfl.marginCap,
+                homeAdvantage: _PWR_SPORTS.nfl.homeAdvantage,
+                recencyHalfLifeDays: _PWR_SPORTS.nfl.recencyHalfLifeDays,
+            }).filter(s => s.gamesPlayed > 0).slice(0, 3);
+            if (top3.length && host.isConnected) {
+                const chips = top3.map((s, i) => {
+                    const meta = teamMeta[s.team] || {};
+                    return `
+                    <button class="sl-power-chip" onclick="navigateTo('nfl-powerrankings')">
+                        <span class="sl-power-rank">${i + 1}</span>
+                        <img src="${_escHtml(meta.logo)}" alt="" loading="lazy" data-hide-on-error>
+                        <span>${_escHtml(meta.name || s.team)}</span>
+                    </button>`;
+                }).join('');
+                powerHtml = `<section class="sl-section">
+                    <div class="sl-section-hdr"><span class="eyebrow">Power Rankings</span><button class="sl-section-link" onclick="navigateTo('nfl-powerrankings')">Full rankings →</button></div>
+                    <div class="sl-power-chips">${chips}</div></section>`;
+            }
         }
         if (!confHtml && !powerHtml) { host.remove(); return; }
         host.innerHTML = (confHtml ? `<section class="sl-section">

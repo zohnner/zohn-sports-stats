@@ -4802,26 +4802,6 @@ body.view-home .search-global-btn { display: none; }
 .sl-matchup-pts { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .sl-matchup-vs { color: var(--text-subtle); font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
 
-/* NFL Power Rankings page (js/nflStandings.js displayNFLPowerRankings) */
-.nstd-pwr-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
-/* DESIGN.md addition: one team per row -- reuses the --tc idiom for a
-   team-identity left edge, same mechanism as .sl-playoff-row, rest of the
-   border stays neutral. Set inline per-row from JS via getNFLTeamColor(). */
-.nstd-pwr-row { display: grid; grid-template-columns: 2rem 28px 1fr auto auto 90px; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--tc, var(--border-default)); border-radius: var(--radius-sm); cursor: pointer; }
-.nstd-pwr-row:hover { border-color: var(--border-strong); border-left-color: var(--tc, var(--border-strong)); }
-.nstd-pwr-rank { font-family: var(--font-mono); font-weight: 800; color: var(--text-muted); }
-.nstd-pwr-logo { width: 26px; height: 26px; object-fit: contain; }
-.nstd-pwr-name { font-weight: 700; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nstd-pwr-rec { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
-.nstd-pwr-streak { font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; }
-.nstd-pwr-bar { display: block; height: 6px; border-radius: var(--radius-full); background: var(--border-default); overflow: hidden; }
-/* DESIGN.md fix: a static progress-bar fill isn't the brand speaking -- the
-   adjacent .nstd-pwr-streak on the same row already gets this right with
-   win/loss/muted; bring the bar in line with its own row instead of leaving
-   it the one accent-colored element for no semantic reason. */
-.nstd-pwr-bar__fill { display: block; height: 100%; background: var(--text-muted); border-radius: var(--radius-full); }
-@media (max-width: 640px) { .nstd-pwr-row { grid-template-columns: 1.6rem 24px 1fr auto; } .nstd-pwr-streak, .nstd-pwr-bar { display: none; } }
-
 /* ══════════════════════════════════════════════════════════════════════════
    NFL landing editorial redesign — "sports network, not sports dashboard."
    Everything below is scoped under .sport-landing--editorial (NFL's landing

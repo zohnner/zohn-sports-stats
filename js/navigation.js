@@ -1078,9 +1078,9 @@ function _loadFromHash() {
         const mlbViews = ['mlb-home', 'mlb-players', 'mlb-leaders', 'mlb-teams', 'mlb-games', 'mlb-standings', 'mlb-builder', 'mlb-prep', 'mlb-compare', 'mlb-highlight-card'];
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-pickem', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
-        const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders'];
-        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings'];
-        const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs'];
+        const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders', 'ncaaf-powerrankings'];
+        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings', 'ncaab-powerrankings'];
+        const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs', 'wnba-powerrankings'];
         // nba-* array added D-161 follow-up (2026-09-14) -- this was missing
         // entirely (unlike every other sport above), a real bug live-verified
         // via a fresh puppeteer page load: #nba-scores/#nba-standings/etc.
@@ -1091,7 +1091,7 @@ function _loadFromHash() {
         // 'players'/'leaders'/'teams'/'games'/'standings'/'builder' entries
         // that used to live in this array are gone -- their target routes no
         // longer exist, see the switch-case removal above).
-        const nbaViews = ['nba-home', 'nba-scores', 'nba-standings', 'nba-teams', 'nba-leaders'];
+        const nbaViews = ['nba-home', 'nba-scores', 'nba-standings', 'nba-teams', 'nba-leaders', 'nba-powerrankings'];
         const sharedViews = ['home', 'arcade', 'news'];
         if (mlbViews.includes(hash)) {
             AppState.currentSport = 'mlb';
@@ -1190,6 +1190,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaaf-teams', l: 'Teams' },
         { v: 'ncaaf-rankings', l: 'Rankings' },
         { v: 'ncaaf-leaders', l: 'Leaders' },
+        { v: 'ncaaf-powerrankings', l: 'Power Rankings' },
         { v: 'news', l: 'News' },
     ],
     ncaab: [
@@ -1197,6 +1198,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaab-standings', l: 'Standings' },
         { v: 'ncaab-teams', l: 'Teams' },
         { v: 'ncaab-rankings', l: 'Rankings' },
+        { v: 'ncaab-powerrankings', l: 'Power Rankings' },
         { v: 'news', l: 'News' },
     ],
     wnba: [
@@ -1205,6 +1207,7 @@ const SUB_NAV_TABS = {
         { v: 'wnba-teams', l: 'Teams' },
         { v: 'wnba-leaders', l: 'Leaders' },
         { v: 'wnba-playoffs', l: 'Playoff Picture' },
+        { v: 'wnba-powerrankings', l: 'Power Rankings' },
         { v: 'news', l: 'News' },
     ],
     // nba (D-161): flat Scores/Standings/Teams/Leaders/News, same shape as
@@ -1215,6 +1218,7 @@ const SUB_NAV_TABS = {
         { v: 'nba-standings', l: 'Standings' },
         { v: 'nba-teams', l: 'Teams' },
         { v: 'nba-leaders', l: 'Leaders' },
+        { v: 'nba-powerrankings', l: 'Power Rankings' },
         { v: 'news', l: 'News' },
     ],
 };
@@ -1324,25 +1328,27 @@ const MENU_TABS = {
         { group:'College Football' },
         { v:'ncaaf-scores', l:'Scores', i:'scores' }, { v:'ncaaf-standings', l:'Standings', i:'standings' },
         { v:'ncaaf-teams', l:'Teams', i:'teams' }, { v:'ncaaf-rankings', l:'Rankings', i:'leaders' },
-        { v:'ncaaf-leaders', l:'Leaders', i:'leaders' }, { v:'news', l:'News', i:'extra' },
+        { v:'ncaaf-leaders', l:'Leaders', i:'leaders' }, { v:'ncaaf-powerrankings', l:'Power Rankings', i:'leaders' },
+        { v:'news', l:'News', i:'extra' },
     ],
     ncaab: [
         { group:'College Basketball' },
         { v:'ncaab-scores', l:'Scores', i:'scores' }, { v:'ncaab-standings', l:'Standings', i:'standings' },
         { v:'ncaab-teams', l:'Teams', i:'teams' }, { v:'ncaab-rankings', l:'Rankings', i:'leaders' },
-        { v:'news', l:'News', i:'extra' },
+        { v:'ncaab-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
     wnba: [
         { group:'WNBA' },
         { v:'wnba-scores', l:'Scores', i:'scores' }, { v:'wnba-standings', l:'Standings', i:'standings' },
         { v:'wnba-teams', l:'Teams', i:'teams' }, { v:'wnba-leaders', l:'Leaders', i:'leaders' },
-        { v:'wnba-playoffs', l:'Playoff Picture', i:'leaders' }, { v:'news', l:'News', i:'extra' },
+        { v:'wnba-playoffs', l:'Playoff Picture', i:'leaders' }, { v:'wnba-powerrankings', l:'Power Rankings', i:'leaders' },
+        { v:'news', l:'News', i:'extra' },
     ],
     nba: [
         { group:'NBA' },
         { v:'nba-scores', l:'Scores', i:'scores' }, { v:'nba-standings', l:'Standings', i:'standings' },
         { v:'nba-teams', l:'Teams', i:'teams' }, { v:'nba-leaders', l:'Leaders', i:'leaders' },
-        { v:'news', l:'News', i:'extra' },
+        { v:'nba-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
     ],
 };
 

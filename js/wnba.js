@@ -192,10 +192,11 @@ function _renderWNBAView(view) {
     if (view.startsWith('wnba-game-'))   { showWNBAGame(view.slice('wnba-game-'.length));     return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
-        case 'wnba-standings': displayWNBAStandings(); break;
-        case 'wnba-teams':     displayWNBATeams();     break;
-        case 'wnba-leaders':   displayWNBALeaders();   break;
-        case 'wnba-playoffs':  displayWNBAPlayoffPicture(); break;
+        case 'wnba-standings':      displayWNBAStandings();               break;
+        case 'wnba-teams':          displayWNBATeams();                   break;
+        case 'wnba-leaders':        displayWNBALeaders();                 break;
+        case 'wnba-playoffs':       displayWNBAPlayoffPicture();          break;
+        case 'wnba-powerrankings':  if (typeof _prShow === 'function') _prShow('wnba'); break;
         case 'wnba-scores':
         case 'wnba-home':
         default:                displayWNBAScores();
@@ -251,6 +252,76 @@ async function fetchWNBAStandings(season) {
     const out = confs.filter(c => c.teams.length);
     ApiCache.set(cacheKey, out, ApiCache.TTL.LONG);
     return out;
+}
+
+// Power Rankings adapter (js/powerRankings.js). Live-verified 2026-09-15
+// before writing this: WNBA's /scoreboard does NOT accept a dates=
+// range in one call (dates=20260601-20260630 400s with ESPN's own "Failed
+// to get events endpoint"; a single dates=YYYYMMDD works fine) and its
+// week= param silently returns zero events rather than filtering -- so a
+// day-by-day loop across the ~180-day Apr-Oct season was the only option
+// via /scoreboard, and a bad one (~180 calls). Used the per-team
+// /teams/{id}/schedule endpoint instead (also live-verified): one call per
+// team returns that team's full season (confirmed live: 47 events for a
+// real team, seasonType.type 1=preseason/2=regular, status.type.name/
+// competitors[].score.value -- a genuinely different score shape than
+// /scoreboard's plain string). 15 teams = 15 calls instead of ~180, each
+// game appears in both participants' schedules so results are deduped by
+// event id below.
+async function fetchWNBASeasonGames() {
+    const cacheKey = `wnbaSeasonGames${WNBA_LAST_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const confs = await fetchWNBAStandings(WNBA_LAST_SEASON);
+    const teamIds = confs.flatMap(c => c.teams.map(t => t.id)).filter(Boolean);
+
+    const perTeam = await Promise.all(
+        teamIds.map(id => espnWNBAFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.SEASON).catch(() => null))
+    );
+
+    const seen = new Set();
+    const games = [];
+    perTeam.forEach(d => {
+        (d?.events || []).forEach(ev => {
+            if (seen.has(ev.id)) return;
+            if (ev.seasonType?.type !== 2) return;
+            const comp = ev.competitions?.[0];
+            if (!comp || !comp.status?.type?.name?.startsWith('STATUS_FINAL')) return;
+            const home = comp.competitors?.find(c => c.homeAway === 'home');
+            const away = comp.competitors?.find(c => c.homeAway === 'away');
+            if (!home || !away) return;
+            seen.add(ev.id);
+            games.push({
+                home:      home.team.abbreviation,
+                away:      away.team.abbreviation,
+                homeScore: home.score?.value ?? 0,
+                awayScore: away.score?.value ?? 0,
+                date:      ev.date,
+            });
+        });
+    });
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
+async function fetchWNBAPowerTeamMeta() {
+    const confs = await fetchWNBAStandings(WNBA_LAST_SEASON);
+    const meta = {};
+    confs.forEach(c => c.teams.forEach(t => {
+        if (!t.abbr) return;
+        meta[t.abbr] = {
+            name: t.name,
+            logo: t.logo,
+            color: null,
+            record: t.overall || '',
+            // No WNBA team-detail route exists yet (per CLAUDE.md) -- rows
+            // render fine with no onClick, same as any team without one.
+            onClick: '',
+        };
+    }));
+    return meta;
 }
 
 function _wnbaSeasonSelect() {
@@ -339,6 +410,8 @@ window.fetchWNBAScoreboard = fetchWNBAScoreboard;
 window.displayWNBAScores    = displayWNBAScores;
 window.displayWNBAStandings = displayWNBAStandings;
 window.displayWNBATeams     = displayWNBATeams;
+window.fetchWNBASeasonGames = fetchWNBASeasonGames;
+window.fetchWNBAPowerTeamMeta = fetchWNBAPowerTeamMeta;
 
 // ── Playoff Picture (standings-derived, not odds/bracket) ─────
 // Real format (live-verified via WebSearch, 2026-08-10): top 8 of 15 teams

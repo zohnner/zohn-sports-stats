@@ -311,6 +311,39 @@ async function fetchNFLScoreboard(opts = {}) {
     }).filter(Boolean);
 }
 
+// Power Rankings adapter (js/powerRankings.js) -- the whole regular season to
+// date, looped week-by-week via the same fetchNFLScoreboard every other NFL
+// view uses. Loops a fixed 1..18 rather than computing "the real current
+// week": a future week's fetch just returns not-yet-final games, which the
+// isFinal filter below drops anyway, so there's no need to know how far the
+// season has actually progressed. Composed-result cached under its own key
+// (ApiCache.TTL.SEASON) so re-opening the power rankings page doesn't
+// re-fan-out 18 requests every time.
+async function fetchNFLSeasonGames() {
+    const cacheKey = `nflSeasonGames${NFL_STATS_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const weeks = await Promise.all(
+        Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
+            fetchNFLScoreboard({ seasontype: 2, week }).catch(() => [])
+        )
+    );
+
+    const games = weeks.flat()
+        .filter(g => g && g.isFinal)
+        .map(g => ({
+            home:      g.homeTeam.abbr,
+            away:      g.awayTeam.abbr,
+            homeScore: g.homeTeam.score,
+            awayScore: g.awayTeam.score,
+            date:      g.date,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
 // D-105: the live game detail page's field viewer needs the FULL raw
 // situation object (numeric down/distance/yardLine/possession/timeouts) --
 // live-verified 2026-08-16 that ESPN's /summary response's

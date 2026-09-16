@@ -3002,29 +3002,24 @@
     font-style: italic;
 }
 
-/* ── Power Rankings ───────────────────────────────────────────── */
+/* ── Power Rankings (shared across all 6 sports, js/powerRankings.js) ──
+   Replaces two unrelated bespoke systems (this file's old .power-* for MLB,
+   css/main.css's .nstd-pwr-* for NFL) with one component every sport's
+   opponent-adjusted SRS rating renders through. --tc (team color) idiom for
+   the left-border identity stripe is carried over from NFL's version. */
 
-.power-header-row {
+.pwr-wrap { max-width: 760px; margin: 0 auto; }
+.pwr-head { margin-bottom: 1rem; }
+.pwr-loading, .pwr-empty { padding: 2rem 1rem; text-align: center; color: var(--text-muted); }
+
+.pwr-header-row {
     display: grid;
-    grid-template-columns: 32px 36px 1fr 90px 100px 56px 80px;
+    grid-template-columns: 2rem 32px 1fr 90px 70px;
     gap: 0.5rem;
     padding: 0.35rem 1rem 0.35rem 0.75rem;
     align-items: center;
 }
-/* MLB power rankings — includes L10 column */
-.power-header-row--mlb,
-.power-row--mlb {
-    grid-template-columns: 32px 36px 1fr 90px 56px 56px 80px;
-}
-
-.power-l10 {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-}
-.power-col-label {
+.pwr-col-label {
     font-size: 0.62rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -3032,118 +3027,63 @@
     color: var(--text-muted);
 }
 
-.power-list { display: flex; flex-direction: column; }
+.pwr-list { display: flex; flex-direction: column; gap: 0.4rem; }
 
-.power-row {
+.pwr-row {
     display: grid;
-    grid-template-columns: 32px 36px 1fr 90px 100px 56px 80px;
+    grid-template-columns: 2rem 32px 1fr 90px 70px;
     gap: 0.5rem;
-    padding: 0.6rem 1rem 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--border-default);
     align-items: center;
-    transition: background var(--transition-fast);
+    padding: 0.6rem 1rem 0.6rem 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--tc, var(--border-default));
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
 }
-.power-row:hover { background: var(--bg-interactive); }
-.power-row:last-child { border-bottom: none; }
+.pwr-row:hover { background: var(--bg-interactive); border-color: var(--border-strong); border-left-color: var(--tc, var(--border-strong)); }
 
-.power-rank {
+.pwr-rank {
     font-size: 0.8rem;
     font-weight: 800;
     color: var(--text-muted);
     text-align: center;
     font-variant-numeric: tabular-nums;
 }
-.power-logo {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-}
-.power-team { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
-.power-team-name {
+.pwr-logo { width: 28px; height: 28px; object-fit: contain; }
+.pwr-team { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.pwr-team-name {
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
 }
-.power-bar-wrap {
-    height: 3px;
-    background: var(--bg-interactive);
-    border-radius: 2px;
-    overflow: hidden;
-}
-.power-bar-fill {
+.pwr-bar-wrap { height: 3px; background: var(--bg-interactive); border-radius: 2px; overflow: hidden; }
+.pwr-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--accent), var(--accent-light));
     border-radius: 2px;
     transition: width 0.6s var(--ease-out);
 }
 
-.power-record {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
-    display: flex;
-    flex-direction: column;
-}
-.power-pct {
-    font-size: 0.7rem;
+.pwr-record {
+    font-size: 0.78rem;
     color: var(--text-muted);
-    font-weight: 500;
-}
-
-.power-l10 {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.power-pip {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-.power-pip--win  { background: var(--color-win); }
-.power-pip--loss { background: var(--bg-interactive-hov); }
-
-.power-streak {
-    font-size: var(--text-sm);
-    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    text-align: center;
+    text-align: right;
 }
-
-.power-heat {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 0.2em 0.55em;
-    border-radius: var(--radius-full);
-    text-align: center;
-    white-space: nowrap;
-}
-.power-heat--hot   { background: var(--color-tier-below-subtle); color: var(--color-tier-below); }
-.power-heat--solid { background: var(--color-tier-good-subtle);  color: var(--color-tier-good); }
-.power-heat--mid   { background: var(--bg-interactive);           color: var(--text-muted); }
-.power-heat--cold  { background: var(--color-tier-avg-subtle);   color: var(--color-tier-avg); }
-
-.power-conf {
-    font-size: 0.55rem;
+.pwr-rating {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
     font-weight: 800;
-    padding: 0.1em 0.35em;
-    border-radius: 3px;
-    letter-spacing: 0.05em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
-.power-conf--east { background: var(--color-al-subtle); color: var(--color-east); }
-.power-conf--west { background: var(--color-nl-subtle); color: var(--color-west); }
 
-.power-note {
+.pwr-note {
     font-size: 0.68rem;
     color: var(--text-muted);
     text-align: center;
@@ -3152,10 +3092,10 @@
 }
 
 @media (max-width: 600px) {
-    .power-header-row,
-    .power-row { grid-template-columns: 28px 28px 1fr 70px 0 40px 64px; }
-    .power-l10 { display: none; }
-    .power-col-label:nth-child(5) { display: none; }
+    .pwr-header-row,
+    .pwr-row { grid-template-columns: 1.6rem 26px 1fr 60px; }
+    .pwr-record { display: none; }
+    .pwr-col-label:nth-child(4) { display: none; }
     .adv-stats-grid { grid-template-columns: 1fr 1fr; }
 }
 

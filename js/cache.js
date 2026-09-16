@@ -28,6 +28,9 @@ class ApiCache {
         MEDIUM: 30 * 60 * 1000,   // 30 min  — season averages, players
         LONG:   60 * 60 * 1000,   // 60 min  — teams (rarely change)
         DAILY:  12 * 60 * 60 * 1000, // 12 hr — Savant data updated once/day (percentile rankings, sprint speed)
+        SEASON: 25 * 60 * 1000,   // 25 min  — composed full-season game logs (power rankings) — long enough
+                                  // that re-opening the page doesn't re-fan-out a week-loop of fetches,
+                                  // short enough that same-day new results show up same-day.
     };
 
     static #key(raw) {

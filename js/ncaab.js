@@ -51,8 +51,20 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
     return json;
 }
 
-async function fetchNCAABScoreboard() {
-    const data = await espnNCAABFetch('/scoreboard', {}, ApiCache.TTL.SHORT);
+// D-135-class bug, found live 2026-09-15 while building the Power Rankings
+// season-games adapter (same fix NCAAF needed, DECISIONS.md D-135): without
+// groups=50 (ESPN's Division I classification group id), this scoreboard
+// silently under-reports -- a real Saturday (2026-02-14) returned 17 events
+// without it, 132 with it. Now sends groups:50 unconditionally, on every
+// call, not just the season-games adapter's -- this was the live "today's
+// scores" default too, so every NCAAB visitor has been seeing a badly
+// incomplete slate. opts.dates lets fetchNCAABSeasonGames loop single days
+// (a date RANGE 400s -- live-verified, ESPN's own "Failed to get events
+// endpoint" -- so this can only ever be called with one date at a time).
+async function fetchNCAABScoreboard(opts = {}) {
+    const params = { groups: 50 };
+    if (opts.dates) params.dates = opts.dates;
+    const data = await espnNCAABFetch('/scoreboard', params, ApiCache.TTL.SHORT);
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -77,6 +89,75 @@ async function fetchNCAABScoreboard() {
             statusText: status?.type?.shortDetail || status?.type?.description || '',
         };
     }).filter(Boolean);
+}
+
+// Power Rankings adapter (js/powerRankings.js). NCAAB has no per-team-
+// schedule shortcut the way WNBA's 15-team pool allowed (D-052: ~360
+// Division I teams -- looping per-team would mean 360+ calls, worse than
+// the day-loop this uses instead) and, live-verified 2026-09-15 the same
+// way as WNBA, its /scoreboard endpoint has no date-RANGE support (400s)
+// -- one dates=YYYYMMDD call per day is the only option. A real Saturday's
+// single-day payload with groups=50 ran ~2.5MB uncompressed (132 games) --
+// real, worth flagging for a future look once the season is actually live
+// and this can be measured under real traffic, not guessed at from here.
+// Batched at CONCURRENCY days at a time rather than firing the whole
+// season's worth of requests at once, to stay well under
+// functions/api/_middleware.js's 120 req/min/IP limit.
+// UNVERIFIED until the season starts (2026-09-15): NCAAB is in the
+// offseason right now (_ncaabIsOffseason), so none of this has been run
+// against a single real completed game -- the date-loop mechanics and
+// groups=50 fix are confirmed live against last season's real historical
+// dates, but the season-boundary math and end-to-end adapter have not.
+async function fetchNCAABSeasonGames() {
+    const cacheKey = `ncaabSeasonGames${NCAAB_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const seasonStart = new Date(Date.UTC(NCAAB_SEASON - 1, 10, 1)); // Nov 1
+    const today = new Date();
+    if (seasonStart > today) { ApiCache.set(cacheKey, [], ApiCache.TTL.SEASON); return []; }
+
+    const dates = [];
+    for (let d = new Date(seasonStart); d <= today; d.setUTCDate(d.getUTCDate() + 1)) {
+        dates.push(`${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`);
+    }
+
+    const CONCURRENCY = 8;
+    const perDay = [];
+    for (let i = 0; i < dates.length; i += CONCURRENCY) {
+        const batch = dates.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(batch.map(dt => fetchNCAABScoreboard({ dates: dt }).catch(() => [])));
+        perDay.push(...results);
+    }
+
+    const games = perDay.flat()
+        .filter(g => g && g.isFinal)
+        .map(g => ({
+            home:      g.homeTeam.abbr,
+            away:      g.awayTeam.abbr,
+            homeScore: g.homeTeam.score,
+            awayScore: g.awayTeam.score,
+            date:      g.date,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
+async function fetchNCAABPowerTeamMeta() {
+    const confs = await fetchNCAABStandings(NCAAB_LAST_SEASON);
+    const meta = {};
+    confs.forEach(c => c.teams.forEach(t => {
+        if (!t.abbr) return;
+        meta[t.abbr] = {
+            name: t.name,
+            logo: t.logo,
+            color: null,
+            record: t.overall || '',
+            onClick: '',
+        };
+    }));
+    return meta;
 }
 
 function _ncaabOffseasonState() {
@@ -210,9 +291,10 @@ function _renderNCAABView(view) {
     if (view.startsWith('ncaab-game-')) { showNCAABGame(view.slice('ncaab-game-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
-        case 'ncaab-standings': displayNCAABStandings(); break;
-        case 'ncaab-teams':     displayNCAABTeams();     break;
-        case 'ncaab-rankings':  displayNCAABRankings();  break;
+        case 'ncaab-standings':      displayNCAABStandings();          break;
+        case 'ncaab-teams':          displayNCAABTeams();              break;
+        case 'ncaab-rankings':       displayNCAABRankings();           break;
+        case 'ncaab-powerrankings':  if (typeof _prShow === 'function') _prShow('ncaab'); break;
         case 'ncaab-scores':
         case 'ncaab-home':
         default:                displayNCAABScores();
@@ -441,5 +523,7 @@ window.displayNCAABScores   = displayNCAABScores;
 window.displayNCAABRankings = displayNCAABRankings;
 window.displayNCAABStandings = displayNCAABStandings;
 window.displayNCAABTeams    = displayNCAABTeams;
+window.fetchNCAABSeasonGames = fetchNCAABSeasonGames;
+window.fetchNCAABPowerTeamMeta = fetchNCAABPowerTeamMeta;
 window._renderNCAABView     = _renderNCAABView;
 window.updateNCAABTicker    = updateNCAABTicker;

@@ -942,6 +942,46 @@ async function fetchMLBSchedule(daysBack = 7) {
         .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
 }
 
+// Power Rankings adapter — the whole season to date, not the last few days
+// fetchMLBSchedule pulls for the ticker/home page. Deliberately its own call
+// rather than fetchMLBSchedule(daysBack=huge): that function hydrates
+// probablePitcher+linescore, unneeded weight across ~2,300 season games when
+// all computeSRS needs is team abbr + final score + date. Field shape
+// (status.abstractGameState, teams.home/away.team.abbreviation, .score,
+// gameDate) confirmed live 2026-09-15 before writing this. gameType:'R' is
+// load-bearing, not cosmetic -- a March-to-today range without it pulls in
+// Spring Training (S), exhibition/WBC-style entries (E), and the All-Star
+// Game (A) alongside real teams, live-confirmed to badly distort ratings
+// (single-game international/exhibition "teams" landed at both the very top
+// and bottom of the list ahead of real playoff contenders before this fix).
+async function fetchMLBSeasonGames() {
+    const cacheKey = `mlbSeasonGames${MLB_SEASON}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const data = await mlbFetch('/schedule', {
+        sportId:   1,
+        startDate: `${MLB_SEASON}-03-01`,
+        endDate:   new Date().toISOString().split('T')[0],
+        gameType:  'R',
+        hydrate:   'team',
+    }, ApiCache.TTL.SEASON);
+
+    const games = (data.dates || [])
+        .flatMap(d => d.games || [])
+        .filter(g => g.status?.abstractGameState === 'Final')
+        .map(g => ({
+            home:      g.teams.home.team.abbreviation,
+            away:      g.teams.away.team.abbreviation,
+            homeScore: g.teams.home.score,
+            awayScore: g.teams.away.score,
+            date:      g.gameDate,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
+    return games;
+}
+
 // MLB Stats API rejects `stats=last7Days` (400) on the league-wide /stats
 // endpoint — that token is only valid as a `type` inside a single player's
 // hydrate (see _fetchMLBHittingSplits). The league-leaderboard equivalent is
@@ -5855,46 +5895,12 @@ function displayMLBWildCard(divisions) {
 
 // ── MLB Power Rankings ────────────────────────────────────────
 
-// Hoisted out of displayMLBPowerRankings (2026-09-07, sport-landing port) so
-// the MLB landing page's Signature module can reuse the exact same power
-// score for a top-3 chips teaser, mirroring how NFL's Signature module
-// already reuses the top-level, window-exported _nflPowerScore
-// (js/nflStandings.js). Unlike NFL's version, MLB's run-differential factor
-// is normalized against the *current team set's* min/max rather than a fixed
-// clamp range, so it can't be a single-team-in, score-out pure function the
-// way NFL's is -- _mlbComputePowerRankings does the two-pass (derive
-// rdiffMin/rdiffMax, then score) and is what callers should use; the exported
-// _mlbPowerScore(t, rdiffMin, rdiffMax) is the per-team half of that, kept
-// separate only so this stays a literal relocation of the original inline
-// logic (byte-identical scores/order), not a reformulation.
-function _mlbPowerScore(t, rdiffMin, rdiffMax) {
-    const gp      = t.wins + t.losses;
-    const winPct  = gp > 0 ? t.wins / gp : 0;
-    const rd      = parseFloat(t.rdiff);
-    const rdFact  = isNaN(rd) ? winPct
-        : rdiffMax !== rdiffMin ? (rd - rdiffMin) / (rdiffMax - rdiffMin) : 0.5;
-    const strNum  = typeof _parseStreak === 'function' ? _parseStreak(t.streak) : 0;
-    const strFact = (strNum + 10) / 20;
-    // L10 form factor: parse "W-L" string → recent win rate
-    const l10Parts = (t.l10 || '').split('-').map(Number);
-    const l10Fact  = l10Parts.length === 2 && !isNaN(l10Parts[0]) && (l10Parts[0] + l10Parts[1]) > 0
-        ? l10Parts[0] / (l10Parts[0] + l10Parts[1])
-        : winPct;
-    return winPct * 0.50 + rdFact * 0.20 + strFact * 0.10 + l10Fact * 0.20;
-}
-function _mlbComputePowerRankings(allTeams) {
-    // Normalise RDIFF: parse "+12" / "-5" / "—" → number, then scale to 0..1
-    const rdiffs = allTeams
-        .map(t => parseFloat(t.rdiff))
-        .filter(n => !isNaN(n));
-    const rdiffMin = Math.min(...rdiffs, 0);
-    const rdiffMax = Math.max(...rdiffs, 1);
-    return allTeams
-        .map(t => ({ ...t, _score: _mlbPowerScore(t, rdiffMin, rdiffMax) }))
-        .sort((a, b) => b._score - a._score);
-}
-
-function displayMLBPowerRankings(divisions) {
+// Opponent-adjusted SRS (js/powerRankings.js), replacing the old win%/run-
+// diff/streak/L10 composite -- that system had no strength-of-schedule
+// adjustment at all. Kept as MLB's own wrapper (not routed through the
+// shared _prShow) because MLB's power rankings are a tab embedded in
+// Standings, not a standalone nav route, unlike every other sport's.
+async function displayMLBPowerRankings(divisions) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'standings-container';
 
@@ -5902,13 +5908,6 @@ function displayMLBPowerRankings(divisions) {
         grid.innerHTML = '<p style="padding:2rem;color:var(--text-muted);text-align:center">No standings data available</p>';
         return;
     }
-
-    // Flatten all teams from all divisions
-    const allTeams = divisions.flatMap(d => d.teams.map(t => ({ ...t, division: d.division })));
-
-    const scored = _mlbComputePowerRankings(allTeams);
-
-    const maxScore = scored[0]._score || 1;
 
     const tabHtml = `
         <div class="standings-tabs">
@@ -5920,53 +5919,38 @@ function displayMLBPowerRankings(divisions) {
         </div>
     `;
 
-    const rowsHtml = scored.map((team, idx) => {
-        const rank      = idx + 1;
-        const gp        = team.wins + team.losses;
-        const winPct    = gp > 0 ? (team.wins / gp).toFixed(3) : '.000';
-        const strNum    = typeof _parseStreak === 'function' ? _parseStreak(team.streak) : 0;
-        const streakClr = strNum >= 3 ? 'var(--color-win)' : strNum <= -3 ? 'var(--color-loss)' : 'var(--text-muted)';
-        const logo      = getMLBTeamLogoUrl(team.teamId);
-        const barW      = (team._score / maxScore * 100).toFixed(1);
+    grid.innerHTML = `${tabHtml}<div class="pwr-loading"><div class="skeleton-line" style="height:48px;width:60%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Computing power rankings…</p></div>`;
 
-        const heat = team._score >= 0.65 ? { label: 'HOT',   cls: 'power-heat--hot'  }
-                   : team._score >= 0.52 ? { label: 'SOLID', cls: 'power-heat--solid' }
-                   : team._score >= 0.40 ? { label: 'MID',   cls: 'power-heat--mid'  }
-                   :                       { label: 'COLD',  cls: 'power-heat--cold'  };
+    const allTeams = divisions.flatMap(d => d.teams.map(t => ({ ...t, division: d.division })));
+    const teamMeta = {};
+    allTeams.forEach(t => {
+        const gp = t.wins + t.losses;
+        const winPct = gp > 0 ? (t.wins / gp).toFixed(3) : '.000';
+        teamMeta[t.teamAbbr] = {
+            name: t.teamName,
+            logo: getMLBTeamLogoUrl(t.teamId),
+            color: (getMLBTeamColors(t.teamAbbr) || {}).primary,
+            record: `${t.wins}–${t.losses} ${winPct}`,
+            onClick: `showMLBTeamDetail(${t.teamId})`,
+        };
+    });
 
-        const divShort = team.division.replace('American League ', 'AL ').replace('National League ', 'NL ');
-        const leagueCls = divShort.startsWith('AL') ? 'power-conf--east' : 'power-conf--west';
-
-        return `
-            <div class="power-row power-row--mlb" role="button" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${team.teamId})" onkeydown="if(event.key==='Enter')this.click()">
-                <div class="power-rank">${rank}</div>
-                ${logo ? `<img class="power-logo" src="${logo}" alt="" loading="lazy" data-hide-on-error>` : '<div class="power-logo"></div>'}
-                <div class="power-team">
-                    <div class="power-team-name">${team.teamName} <span class="power-conf ${leagueCls}">${divShort.slice(0, 2)}</span></div>
-                    <div class="power-bar-wrap">
-                        <div class="power-bar-fill" style="width:${barW}%"></div>
-                    </div>
-                </div>
-                <div class="power-record">${team.wins}–${team.losses}<span class="power-pct">${winPct}</span></div>
-                <div class="power-streak" style="color:${streakClr}">${team.streak || '—'}</div>
-                <div class="power-l10">${team.l10 || '—'}</div>
-                <div class="power-heat ${heat.cls}">${heat.label}</div>
-            </div>
-        `;
-    }).join('');
+    let listHtml = null;
+    try {
+        const games = await fetchMLBSeasonGames();
+        const scored = computeSRS(games, Object.keys(teamMeta), {
+            marginCap: _PWR_SPORTS.mlb.marginCap,
+            homeAdvantage: _PWR_SPORTS.mlb.homeAdvantage,
+            recencyHalfLifeDays: _PWR_SPORTS.mlb.recencyHalfLifeDays,
+        });
+        listHtml = _prRenderRows(scored, { getMeta: (abbr) => teamMeta[abbr] });
+    } catch (err) {
+        Logger.error('MLB power rankings failed', err && err.message, 'MLB');
+    }
 
     grid.innerHTML = `
         ${tabHtml}
-        <div class="power-header-row power-header-row--mlb">
-            <div></div><div></div>
-            <div class="power-col-label">Team</div>
-            <div class="power-col-label">Record</div>
-            <div class="power-col-label">Streak</div>
-            <div class="power-col-label">L10</div>
-            <div class="power-col-label">Form</div>
-        </div>
-        <div class="power-list">${rowsHtml}</div>
-        <p class="power-note">Power score = Win% (50%) + L10 Form (20%) + Run Differential (20%) + Streak (10%)</p>
+        ${listHtml || '<p style="padding:2rem;color:var(--text-muted);text-align:center">Power rankings need real results — check back once more games are in the books, or after a network hiccup clears.</p>'}
     `;
 }
 
@@ -7418,8 +7402,7 @@ if (typeof window !== 'undefined') {
     window.displayMLBStandings       = displayMLBStandings;
     window.displayMLBWildCard        = displayMLBWildCard;
     window.displayMLBPowerRankings   = displayMLBPowerRankings;
-    window._mlbPowerScore            = _mlbPowerScore;
-    window._mlbComputePowerRankings  = _mlbComputePowerRankings;
+    window.fetchMLBSeasonGames       = fetchMLBSeasonGames;
     window.displayMLBTransactions    = displayMLBTransactions;
     window.getMLBTeamColors        = getMLBTeamColors;
     window._renderMLBGroupToggle   = _renderMLBGroupToggle;
