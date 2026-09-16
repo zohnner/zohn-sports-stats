@@ -1823,12 +1823,18 @@ async function _loadNFLPlayerStats(p, season) {
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
-        // Read back data.season, not the requested `season` param: /api/nflplayer can now
-        // silently fall back to last season's real stats when the current season's aren't
-        // populated yet (season-flip gap, see that Function's own comment) -- without this,
-        // the stat line above would correctly show last season's numbers while the game log
-        // right below it kept requesting the current, still-empty season.
-        if (data.espnId) _loadNFLGameLog(data.espnId, data.season);
+        // Bug found live 2026-09-15: this used to read data.season here (the season the
+        // aggregate stat line fell back to, e.g. 2025) instead of the season the user
+        // actually selected, on the theory that the game log endpoint was equally empty
+        // for the new season so keeping both in sync avoided a stats-2025/gamelog-empty
+        // mismatch. That's gone stale -- /api/nflgamelog has its OWN, independent season
+        // fallback-free lookup, and real Week 1 2026 games ARE in it (confirmed live:
+        // /api/nflgamelog?id=3139477&season=2026 returns a real Mahomes Week 1 game) even
+        // though /api/nflplayer's season-aggregate statistics resource hadn't caught up
+        // yet. Requesting `season` (not data.season) here means the game log now shows
+        // real, available current-season games instead of being needlessly held back to
+        // whatever year the aggregate stat line fell back to.
+        if (data.espnId) _loadNFLGameLog(data.espnId, season);
         if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId, p.position); }
         if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name); return; }
         if (!document.body.contains(host)) return;  // user navigated away
@@ -1844,9 +1850,21 @@ async function _loadNFLPlayerStats(p, season) {
             </div>`;
         }).join('');
 
+        // Honest, visible callout rather than a quiet header-only label change: the
+        // requested season and the season actually returned can differ (the season-
+        // aggregate stats resource lags real games by more than a week, see the
+        // fallback note in functions/api/nflplayer.js) -- a user who picked 2026 from
+        // the dropdown should see why 2025 numbers are showing, not just a small title
+        // that reads "2025 Season Stats" easy to miss right after clicking "2026".
+        const fellBack = Number(data.season) !== Number(season);
+        const fallbackNote = fellBack
+            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${season} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+            : '';
+
         host.className = 'stats-card';
         host.innerHTML = `
             <h2 class="detail-section-title">${data.season} Season Stats${data.gp ? ` · ${_escHtml(String(data.gp))} GP` : ''}</h2>
+            ${fallbackNote}
             ${groupsHtml}
             <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
         `;
