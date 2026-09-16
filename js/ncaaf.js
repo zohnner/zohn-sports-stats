@@ -996,10 +996,22 @@ async function showNCAAFPlayer(id) {
         grid.innerHTML = _ncaafErr("Couldn't load this player.", 'displayNCAAFLeaders');
         return;
     }
-    displayNCAAFPlayerDetail(data);
+    displayNCAAFPlayerDetail(data, _ncaaf.season);
 }
 
-function displayNCAAFPlayerDetail(data) {
+// requestedSeason defaults to data.season for safety (no other caller exists
+// today), but showNCAAFPlayer always passes the season it actually asked
+// for -- same latent bug class fixed live for NFL (js/nfl.js, D-1xx
+// 2026-09-15): the game log was using data.season (whatever year the
+// athlete-stats endpoint's own fallback resolved to) instead of the season
+// the caller actually requested. Not currently visibly broken for NCAAF --
+// live-checked 2026-09-16, ESPN's NCAAF season-aggregate stats are already
+// populated for 2026 unlike NFL's at the same relative point in its season
+// -- but the same upstream lag that hit NFL in Week 1 will hit NCAAF's
+// pipeline too whenever ESPN's aggregation falls behind a future season's
+// early weeks, so fixed proactively rather than waiting to reproduce it.
+function displayNCAAFPlayerDetail(data, requestedSeason) {
+    requestedSeason = requestedSeason != null ? requestedSeason : data && data.season;
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'player-detail-container';
@@ -1050,12 +1062,20 @@ function displayNCAAFPlayerDetail(data) {
         ? detailSection({ title: 'Season Stats', body: `<p class="detail-prose">No ${data.season} season stats for ${_escHtml(bio.name)} yet — common for reserves and early-career players.</p>` })
         : '';
 
-    grid.innerHTML = header + profile + statSections +
+    // Same honest, visible callout NFL's player page got (js/nfl.js) rather than
+    // a quiet label-only change: data.season can differ from requestedSeason when
+    // the athlete-stats endpoint fell back to a prior year.
+    const fellBack = Number(data.season) !== Number(requestedSeason);
+    const fallbackNote = fellBack
+        ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${requestedSeason} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+        : '';
+
+    grid.innerHTML = header + profile + fallbackNote + statSections +
         `<div id="ncaaf-radar-host"></div>` + noStats +
         `<div id="ncaaf-gamelog-host"></div>` +
         `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
     if (typeof _loadNCAAFRadar === 'function') _loadNCAAFRadar(data.groups);
-    if (typeof _loadNCAAFGameLog === 'function') _loadNCAAFGameLog(data.id, data.season);
+    if (typeof _loadNCAAFGameLog === 'function') _loadNCAAFGameLog(data.id, requestedSeason);
 }
 
 // ── Team detail (D-044 P4) — banner + team leaders ───────────
