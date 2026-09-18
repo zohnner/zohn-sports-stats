@@ -893,7 +893,7 @@ function loadHome() {
         <div class="home-welcome">
             <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
             <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NCAAF, NCAAB, and WNBA — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
-        </div>` : ''}
+        </div>` : `<div class="home-welcome-back" id="homeWelcomeBack" hidden></div>`}
         <div class="sl-layout home-hub-layout">
             <div class="sl-primary">
                 <!-- Data-Story hero (D-046 P2, cross-sport across all 5 since the
@@ -984,6 +984,7 @@ function loadHome() {
     _wireHomeSportTabs();
     _wireRailTabs();
     _renderHomeHeadlines();
+    _renderHomeWelcomeBack();
     _renderHomeInsights();
 
     // Background-load leaderboard data for the Insights rail if not yet cached
@@ -2556,14 +2557,17 @@ function _wireRailTabs() {
 // MLB-only or excluded any live sport. Merged and sorted by recency rather
 // than kept in per-sport lists, since the point is "what's new right now,"
 // not "what's new per sport."
-async function _renderHomeHeadlines() {
-    const host = document.getElementById('railHeadlines');
-    if (!host) return;
-    const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
+// Shared by _renderHomeHeadlines and _renderHomeWelcomeBack (both need the
+// same cross-sport article list) -- _homeNewsCache persists the result across
+// calls once resolved, and _homeInflightFetch dedupes the two if they race
+// each other before either has resolved, same pattern this file already uses
+// for every other home-load fetch (see the Phase 4 perf-pass comments above
+// on _loadHomeTodayGames' calls) rather than risking a second /api/news burst.
+async function _fetchHomeNewsArticles() {
+    if (_homeNewsCache) return _homeNewsCache.articles || [];
     const sports = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba'];
-    try {
-        let data = _homeNewsCache;
-        if (!data) {
+    const articles = await _homeInflightFetch('homeNewsArticles', async () => {
+        try {
             const results = await Promise.all(sports.map(async sport => {
                 try {
                     const res = await fetch(`/api/news?sport=${sport}`);
@@ -2572,10 +2576,20 @@ async function _renderHomeHeadlines() {
                     return ((json && json.articles) || []).map(a => ({ ...a, _sport: sport }));
                 } catch (_) { return []; }
             }));
-            data = { articles: results.flat() };
-            _homeNewsCache = data;
-        }
-        const articles = ((data && data.articles) || [])
+            return results.flat();
+        } catch (_) { return []; }
+    });
+    _homeNewsCache = { articles };
+    return articles;
+}
+
+async function _renderHomeHeadlines() {
+    const host = document.getElementById('railHeadlines');
+    if (!host) return;
+    const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
+    try {
+        const allArticles = await _fetchHomeNewsArticles();
+        const articles = allArticles
             .filter(a => a && a.headline && a.links?.web?.href)
             .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
             .slice(0, 8);
@@ -2594,6 +2608,103 @@ async function _renderHomeHeadlines() {
         if (window.Logger) Logger.warn('home headlines failed', err, 'APP');
         if (host.isConnected) host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
     }
+}
+
+// ── "Welcome Back" module — returning-visitor re-engagement ────────────────
+// Shown only when zs_last_visit names a different local calendar day than
+// today (a real gap, not a same-day reload) -- mutually exclusive with the
+// first-visit .home-welcome banner above, since loadHome()'s template only
+// renders #homeWelcomeBack in the isFirstVisit-false branch. Renders nothing
+// at all, not an empty shell, when neither sub-section below has content --
+// same fail-to-nothing posture _renderHomeHero already uses.
+//
+// Date comparisons reuse mlb.js's _mlbDateString ET-anchor convention (fixed
+// -5h offset, not real DST-aware ET) so this lines up with the exact scheme
+// arcade.js's zs_quest_streak already writes lastDate in -- a different
+// timezone convention here would make the streak-freshness check below wrong
+// near midnight ET even though each piece is internally consistent.
+function _hwbTodayStr() {
+    return typeof _mlbDateString === 'function' ? _mlbDateString(0) : new Date().toISOString().slice(0, 10);
+}
+function _hwbYesterdayStr() {
+    return typeof _mlbDateString === 'function' ? _mlbDateString(-1) : new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+}
+function _hwbEtDateStrFromTs(ts) {
+    const d = new Date(ts - 5 * 60 * 60 * 1000);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+// arcade.js's _questSaveStreak only zeroes zs_quest_streak.count on the *next
+// loss* -- it never expires on its own just from days passing (js/arcade.js
+// ~line 1600). A stored count can be several days stale, so this checks
+// lastDate directly (today or yesterday) rather than trusting count > 0,
+// so this module never claims a streak is alive when arcade.js's own count
+// hasn't caught up to reality yet.
+function _hwbActiveStreak() {
+    try {
+        const raw = JSON.parse(localStorage.getItem('zs_quest_streak') || '{}');
+        const count = raw.count || 0;
+        if (!count) return null;
+        if (raw.lastDate !== _hwbTodayStr() && raw.lastDate !== _hwbYesterdayStr()) return null;
+        return count;
+    } catch (_) { return null; }
+}
+
+function _hwbRelativeLabel(lastDayStr) {
+    if (lastDayStr === _hwbYesterdayStr()) return 'yesterday';
+    const diffDays = Math.round((new Date(`${_hwbTodayStr()}T00:00:00`) - new Date(`${lastDayStr}T00:00:00`)) / 86400000);
+    if (diffDays >= 2 && diffDays <= 6) return `${diffDays} days ago`;
+    return new Date(`${lastDayStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+async function _renderHomeWelcomeBack() {
+    const host = document.getElementById('homeWelcomeBack');
+    if (!host) return; // first-visit banner rendered instead this load -- nothing to do
+
+    let lastVisitRaw = null;
+    try { lastVisitRaw = localStorage.getItem('zs_last_visit'); } catch (_) {}
+    // Advance the stored timestamp before anything async below, so a slow
+    // headlines fetch can't leave it stale -- the next visit's gap is always
+    // measured from *this* visit, not from whenever this function happens to finish.
+    try { localStorage.setItem('zs_last_visit', String(Date.now())); } catch (_) {}
+
+    const lastVisitTs = Number(lastVisitRaw) || null;
+    if (!lastVisitTs) return; // never recorded before (or storage was cleared) -- nothing to compare against yet
+
+    const lastDayStr = _hwbEtDateStrFromTs(lastVisitTs);
+    if (lastDayStr === _hwbTodayStr()) return; // same calendar day -- not a real gap
+
+    const streak = _hwbActiveStreak();
+    const streakHtml = streak
+        ? `<div class="hwb-row hwb-streak">
+            ${_iconSvg('fire', 15)}
+            <span>Your Daily Quest streak is at <strong>${streak} day${streak === 1 ? '' : 's'}</strong> — <a href="#" onclick="navigateTo('arcade');return false;">keep it going</a></span>
+        </div>`
+        : '';
+
+    let headlinesHtml = '';
+    try {
+        const allArticles = await _fetchHomeNewsArticles();
+        const since = allArticles
+            .filter(a => a && a.headline && a.links?.web?.href)
+            .filter(a => {
+                const pub = new Date(a.published || a.lastModified).getTime();
+                return pub && pub > lastVisitTs;
+            })
+            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
+            .slice(0, 2);
+        if (since.length) {
+            headlinesHtml = `<div class="hwb-row hwb-headlines">
+                ${since.map(a => `<a class="hwb-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">${_escHtml(a.headline)}</a>`).join('')}
+            </div>`;
+        }
+    } catch (_) { /* headlines are a bonus, not a requirement -- fail silent */ }
+
+    if (!host.isConnected) return; // navigated away while the headlines fetch was in flight
+    if (!streakHtml && !headlinesHtml) return; // nothing worth a "welcome back" for -- stay hidden
+
+    host.innerHTML = `<span class="hwb-title">Welcome back — ${_escHtml(_hwbRelativeLabel(lastDayStr))}</span>${streakHtml}${headlinesHtml}`;
+    host.hidden = false;
 }
 
 // ── Cross-sport stat-moment Insights engine (home redesign Phase 1) ────────
