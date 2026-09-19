@@ -1986,12 +1986,24 @@ async function _loadNFLAdvanced(p, season) {
         }).join('');
 
         const _reqSeason = Number(season) || NFL_STATS_SEASON;
-        const _ngsLag = (data.season && Number(data.season) < _reqSeason) ? ' (latest available)' : '';
+        const _ngsGap = data.season ? _reqSeason - Number(data.season) : 0;
+        // Visible callout, not just a caption suffix -- mirrors the treatment
+        // b7a6fc3 gave the season-aggregate stats card for the same class of
+        // fallback. Worded by gap size: confirmed live 2026-09-18 that
+        // nflverse's 2025/2026 NGS files don't exist yet (both 404) and 2024's
+        // file is a 616-byte stub this function's own >100-row guard correctly
+        // rejects, so the real fallback right now is a full 3 seasons back
+        // (2023) -- a flat "(latest available)" reads the same for a 1-year
+        // gap and a 3-year one, which understates how stale this actually is.
+        const _ngsNote = _ngsGap > 0
+            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${_reqSeason} Next Gen Stats aren't published yet — showing ${data.season}${_ngsGap > 1 ? `, the most recent complete season nflverse has released` : ' instead'}.</p>`
+            : '';
         host.className = 'stats-card';
         host.innerHTML = `
             <h2 class="detail-section-title">Key Metrics · Next Gen Stats</h2>
+            ${_ngsNote}
             ${rows}
-            <p class="pct-caption">${data.season}${_ngsLag} season · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
+            <p class="pct-caption">${data.season} season · percentile vs ${data.qualifiedPlayers} qualified ${_escHtml(pool)} · red = elite · Data via nflverse Next Gen Stats (CC-BY)</p>`;
 
         // Stat Profile radar — same NGS metrics as the percentile bars above,
         // just plotted as a shape instead of a list (mirrors MLB's Stat Profile card).
