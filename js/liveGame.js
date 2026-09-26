@@ -933,8 +933,9 @@ function _lgAssemblePregameHtml(pp, away, home, hittersHtml, formHtml) {
     // alone; this one has no such border to fall back on.)
     const awayColors = getMLBTeamColors(away.abbreviation);
     const homeColors = getMLBTeamColors(home.abbreviation);
-    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--accent)';
-    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
+    const _pair   = _matchupTeamColors(awayColors, homeColors);
+    const awayClr = _pair.away || 'var(--accent)';
+    const homeClr = _pair.home || 'var(--accent)';
     return `<div class="lg-pregame-wrap">
         <div class="lg-pregame-pitchers">
             ${_lgBuildPitcherCard(pp.away, away.abbreviation, awayClr)}
@@ -1884,8 +1885,11 @@ function _buildWinProb(feed) {
     // identical solid-fill-plus-white-text recipe and had the identical bug.
     const homeColors = getMLBTeamColors(home.abbreviation);
     const awayColors = getMLBTeamColors(away.abbreviation);
-    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
-    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--accent)';
+    // Color is the only team channel in this segmented bar, so the two
+    // colors are resolved as a pair (DET/SEA share #0C2C56, CWS/PIT #27251F).
+    const _pair   = _matchupTeamColors(awayColors, homeColors);
+    const homeClr = _pair.home || 'var(--accent)';
+    const awayClr = _pair.away || 'var(--accent)';
     const homePct = Math.round(homeProb * 100);
     const awayPct = 100 - homePct;
 
@@ -1954,8 +1958,9 @@ function _lgRenderWinProbChart(feed, gamePk) {
     const away = feed.gameData?.teams?.away || {};
     const homeColors = getMLBTeamColors(home.abbreviation);
     const awayColors = getMLBTeamColors(away.abbreviation);
-    const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--accent)';
-    const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--text-muted)';
+    const _pair   = _matchupTeamColors(awayColors, homeColors);
+    const homeClr = _pair.home || 'var(--accent)';
+    const awayClr = _pair.away || 'var(--text-muted)';
 
     StatsCharts.winProbability(`lg-wp-chart-${gamePk}`, hist, {
         homeAbbr: home.abbreviation || 'HOME',
@@ -2629,8 +2634,9 @@ async function _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr) 
         // uses the identical solid-fill-plus-white-text recipe.
         const awayColors = getMLBTeamColors(awayAbbr);
         const homeColors = getMLBTeamColors(homeAbbr);
-        const awayClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(awayColors) : awayColors?.primary) || 'var(--text-muted)';
-        const homeClr = (typeof _barSafeTeamColor === 'function' ? _barSafeTeamColor(homeColors) : homeColors?.primary) || 'var(--text-muted)';
+        const _pair   = _matchupTeamColors(awayColors, homeColors);
+        const awayClr = _pair.away || 'var(--text-muted)';
+        const homeClr = _pair.home || 'var(--text-muted)';
 
         // Floored, not a straight percentage split — a shutout series (e.g.
         // 1-0) otherwise renders as one full-bleed segment with no visible

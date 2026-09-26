@@ -137,6 +137,17 @@ function _nclgTeamColor(team) {
     return hex ? `#${hex}` : 'var(--accent)';
 }
 
+// Chart-only pair: ESPN colors are runtime data, so two teams can collide
+// (NAVY @ UAB, 2026-09-26) — see _matchupTeamColors in js/config.js.
+function _nclgMatchupColors(homeTeam, awayTeam) {
+    const pair = t => {
+        const p = (t?.color || '').replace('#', ''), s = (t?.alternateColor || '').replace('#', '');
+        return p ? { primary: `#${p}`, secondary: s ? `#${s}` : null } : null;
+    };
+    const r = _matchupTeamColors(pair(awayTeam), pair(homeTeam));
+    return { home: r.home || 'var(--accent)', away: r.away || 'var(--text-muted)' };
+}
+
 // -- Shell + header (mounted once; only header/sidebar/active tab body get
 // -- touched on every poll tick, so a user's open tab and scroll position
 // -- survive a live re-render — the exact bug D-080 fixed for the NFL
@@ -300,8 +311,8 @@ function _nclgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away) {
     const firstDownPct = possHome
         ? Math.min(100, sit.yardLine + (sit.distance || 0))
         : Math.max(0, sit.yardLine - (sit.distance || 0));
-    const possColor = possHome ? _nclgTeamColor(home.team) : _nclgTeamColor(away.team);
-    const homeColor = _nclgTeamColor(home.team), awayColor = _nclgTeamColor(away.team);
+    const { home: homeColor, away: awayColor } = _nclgMatchupColors(home.team, away.team);
+    const possColor = possHome ? homeColor : awayColor;
 
     const rzLeft = possHome ? 80 : 0;
     const rzRight = possHome ? 100 : 20;
@@ -727,8 +738,7 @@ function _nclgWinProbability(data, home, away) {
     if (wp.length < 2) return '';
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = _nclgTeamColor(home.team);
-    const aColor = _nclgTeamColor(away.team);
+    const { home: hColor, away: aColor } = _nclgMatchupColors(home.team, away.team);
     const n = wp.length;
     const w = 220, hgt = 56, pad = 4;
     const midY = hgt / 2;
@@ -807,8 +817,7 @@ function _nclgGameFlow(comp, home, away) {
     const aPts = ac.map((_, i) => pt(ac, i)).join(' ');
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = _nclgTeamColor(home.team);
-    const aColor = _nclgTeamColor(away.team);
+    const { home: hColor, away: aColor } = _nclgMatchupColors(home.team, away.team);
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Flow</h3>
         <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
             <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2"/>

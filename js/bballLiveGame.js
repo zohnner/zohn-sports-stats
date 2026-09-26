@@ -146,6 +146,15 @@ function _blgTC(team, isAway) {
     return isAway ? 'var(--text-muted)' : 'var(--accent)';
 }
 
+// Chart-only pair (2026-09-26): ESPN colors are runtime data and several
+// NBA primaries are exact duplicates (CHI/HOU/TOR, ATL/POR, ...), so the two
+// series can collide — see _matchupTeamColors in js/config.js.
+function _blgMatchupColors(homeTeam, awayTeam) {
+    const pair = t => t && t.color ? { primary: '#' + t.color, secondary: t.alternateColor ? '#' + t.alternateColor : null } : null;
+    const r = _matchupTeamColors(pair(awayTeam), pair(homeTeam));
+    return { home: r.home || 'var(--accent)', away: r.away || 'var(--text-muted)' };
+}
+
 function _blgRecord(c) {
     const list = c.record || [];
     const total = list.find(r => r.type === 'total') || list[0];
@@ -485,7 +494,7 @@ function _blgWinProbability(data, home, away) {
     if (wp.length < 2) return '';
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = _blgTC(home.team, false), aColor = _blgTC(away.team, true);
+    const { home: hColor, away: aColor } = _blgMatchupColors(home.team, away.team);
     const n = wp.length;
     const w = 220, hgt = 56, pad = 4;
     const midY = hgt / 2;
@@ -559,7 +568,7 @@ function _blgGameFlow(comp, home, away) {
     const aPts = ac.map((_, i) => pt(ac, i)).join(' ');
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = _blgTC(home.team, false), aColor = _blgTC(away.team, true);
+    const { home: hColor, away: aColor } = _blgMatchupColors(home.team, away.team);
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Flow</h3>
         <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
             <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2"/>

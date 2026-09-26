@@ -1330,8 +1330,7 @@ function _nlgWinProjectionCard(data, home, away) {
     const aPct = 100 - hPct;
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
-    const hColor = tc(homeAbbr), aColor = tc(awayAbbr);
+    const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
     return `<div class="nlg-card nlg-winproj">
         <div class="nlg-sum">Win Projection <span class="nlg-sum-teams">ESPN Matchup Predictor</span></div>
         <div class="nlg-winproj-body">
@@ -2274,13 +2273,22 @@ function _nlgRenderYourRoster(data) {
 // for free and avoids the kind of coordinate-math bug D-105 caught in the
 // field viewer. Renders nothing (fails-safe, same convention as every other
 // sidebar card here) if fewer than 2 real entries exist.
+// Chart-only pair (2026-09-26): _NFL_TEAM_COLOR has exact duplicate
+// primaries (GB/PIT, CIN/DEN, ATL/HOU/KC, NE/SF) and no secondaries, so a
+// collision degrades away to neutral gray — see _matchupTeamColors.
+function _nlgMatchupColors(homeAbbr, awayAbbr) {
+    const hex = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || null;
+    const h = hex(homeAbbr), a = hex(awayAbbr);
+    const r = _matchupTeamColors(a ? { primary: a } : null, h ? { primary: h } : null);
+    return { home: r.home || 'var(--accent)', away: r.away || 'var(--text-muted)' };
+}
+
 function _nlgWinProbability(data, home, away) {
     const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number');
     if (wp.length < 2) return '';
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(homeAbbr)) || 'var(--accent)';
-    const aColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(awayAbbr)) || 'var(--text-muted)';
+    const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
     const n = wp.length;
     const w = 220, hgt = 56, pad = 4;
     const midY = hgt / 2;
@@ -2414,8 +2422,7 @@ function _nlgGameFlow(comp, home, away) {
     const aPts = ac.map((_, i) => pt(ac, i)).join(' ');
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
-    const hColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(homeAbbr)) || 'var(--accent)';
-    const aColor = (typeof getNFLTeamColor === 'function' && getNFLTeamColor(awayAbbr)) || 'var(--text-muted)';
+    const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Flow</h3>
         <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
             <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2"/>

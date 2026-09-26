@@ -786,7 +786,9 @@ function _createNFLGameCard(game, isTopLeverage) {
     const numPeriods = Math.max(homeLS.length, awayLS.length);
     let flowHtml = '';
     if (numPeriods > 0 && (game.isFinal || game.isLive)) {
-        const flowHomeColor = homeColor || 'var(--text-secondary)';
+        const awayColorRaw = getNFLTeamColor(game.awayTeam.abbr);
+        const flowPair = _matchupTeamColors(awayColorRaw ? { primary: awayColorRaw } : null, homeColor ? { primary: homeColor } : null);
+        const flowHomeColor = flowPair.home || 'var(--text-secondary)';
         // Live-verified (2026-08-15) that _NFL_TEAM_COLOR has real duplicate
         // hexes across unrelated teams -- GB/PIT both #FFB612, CIN/DEN both
         // #FB4F14, ATL/HOU/KC all #E31837, NE/SF both #C8102E -- so two brand
@@ -796,9 +798,9 @@ function _createNFLGameCard(game, isTopLeverage) {
         // away side falls back to a neutral gray whenever it would collide
         // with (or is missing relative to) the home color, same "absent
         // degrades to nothing" fallback already used for teams with no
-        // mapped color at all.
-        const awayColorRaw = getNFLTeamColor(game.awayTeam.abbr);
-        const flowAwayColor = (awayColorRaw && awayColorRaw !== homeColor) ? awayColorRaw : 'var(--text-muted)';
+        // mapped color at all. Extended 2026-09-26 from exact-hex equality to
+        // near-misses (CAR/LAC, BUF/IND, ARI/WAS) via _matchupTeamColors.
+        const flowAwayColor = flowPair.away || 'var(--text-muted)';
         const maxVal = Math.max(1, ...homeLS, ...awayLS);
         const periodLabel = (i) => i < 4 ? `Q${i + 1}` : (numPeriods - i <= 1 ? 'OT' : `OT${i - 3}`);
         const bars = Array.from({ length: numPeriods }, (_, i) => {

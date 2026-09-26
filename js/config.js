@@ -151,6 +151,65 @@ function _barSafeTeamColor(colors) {
     } catch (_) { return primary; }
 }
 
+// Two-team color resolution (2026-09-26). _barSafeTeamColor only checks one
+// team against the card; nothing checked the two teams against EACH OTHER,
+// so a chart whose only team-encoding channel is color could render both
+// series the same. Live-confirmed on NAVY @ UAB (#00225b vs #1a5632): far
+// apart in hue, yet unreadable — two dark colors collapse to the same
+// near-black at bar/line sizes, which is why the rule below has a separate
+// dark-pair test instead of relying on color distance alone. Distance is
+// measured in OKLab (perceptually uniform, unlike raw RGB).
+function _oklab([r, g, b]) {
+    const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const [R, G, B] = [lin(r), lin(g), lin(b)];
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    return [
+        0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+        1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+        0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+    ];
+}
+function _teamColorsDistinct(c1, c2) {
+    const p1 = _parseCssColor(c1), p2 = _parseCssColor(c2);
+    if (!p1 || !p2) return c1 !== c2;
+    const A = _oklab(p1), B = _oklab(p2);
+    const dL = Math.abs(A[0] - B[0]);
+    if (Math.hypot(dL, A[1] - B[1], A[2] - B[2]) < 0.15) return false;
+    if (Math.max(A[0], B[0]) < 0.5 && dL < 0.2) return false;
+    return true;
+}
+// Resolves a matchup's two chart colors from {primary, secondary} pairs.
+// Home keeps its bar-safe color when possible and the away side yields
+// first (the convention NFL's Game Flow chart already used for exact
+// duplicates). Every substitute must still clear _barSafeTeamColor's card
+// contrast floor; if no primary/secondary combination works, away degrades
+// to `fallback`. Returns null for a side with no color at all, so callers
+// keep their own existing missing-color fallbacks.
+function _matchupTeamColors(awayColors, homeColors, fallback = 'var(--text-muted)') {
+    const home = _barSafeTeamColor(homeColors) || null;
+    const away = _barSafeTeamColor(awayColors) || null;
+    if (!home || !away || _teamColorsDistinct(home, away)) return { away, home };
+    let bg = null;
+    try {
+        const cs = getComputedStyle(document.documentElement);
+        const bgBase = _parseCssColor(cs.getPropertyValue('--bg-base'));
+        const bgCard = _parseCssColor(cs.getPropertyValue('--bg-card'));
+        if (bgBase && bgCard) bg = _compositeOverBg(bgCard, bgBase);
+    } catch (_) { /* no DOM — skip the contrast floor */ }
+    const readable = c => !!_parseCssColor(c) && (!bg || _contrastRatio(c, bg) >= 1.6);
+    const uniq = arr => [...new Set(arr.filter(Boolean))];
+    const homeOpts = uniq([home, homeColors?.primary, homeColors?.secondary]).filter((c, i) => i === 0 || readable(c));
+    const awayOpts = uniq([away, awayColors?.primary, awayColors?.secondary]).filter((c, i) => i === 0 || readable(c));
+    for (const h of homeOpts) {
+        for (const a of awayOpts) {
+            if (_teamColorsDistinct(h, a)) return { away: a, home: h };
+        }
+    }
+    return { away: fallback, home };
+}
+
 // Shared Savant-style percentile color: diverging blue → gray → red (red = elite).
 // Fixed hex by design — a data-encoding scale, not a themed surface. Used by MLB + NFL.
 function _pctColor(p) {
@@ -283,6 +342,8 @@ if (typeof window !== 'undefined') {
     window._iconSvg           = _iconSvg;
     window._contrastRatio     = _contrastRatio;
     window._barSafeTeamColor  = _barSafeTeamColor;
+    window._teamColorsDistinct = _teamColorsDistinct;
+    window._matchupTeamColors = _matchupTeamColors;
 }
 
 // Canonical public domain — printed on share cards and share text.

@@ -228,6 +228,7 @@ async function fetchNCAAFScoreboard(opts = {}) {
             // competitor.team too (2026-08-30), so no separate color map needed
             // the way NFL's 32-team _NFL_TEAM_COLOR is (CFB has 130+ FBS teams).
             color:  t?.team?.color || '',
+            altColor: t?.team?.alternateColor || '',
             score:  parseInt(t?.score || '0', 10),
             rank:   t?.curatedRank?.current && t.curatedRank.current <= 25 ? t.curatedRank.current : null,
             winner: t?.winner === true,
@@ -518,9 +519,10 @@ function _ncaafGameCard(g) {
     const numPeriods = Math.max(homeLS.length, awayLS.length);
     let flowHtml = '';
     if (numPeriods > 0 && (g.isFinal || g.isLive)) {
-        const homeColor = g.homeTeam.color ? `#${g.homeTeam.color}` : 'var(--text-secondary)';
-        const awayColorRaw = g.awayTeam.color ? `#${g.awayTeam.color}` : null;
-        const awayColor = (awayColorRaw && awayColorRaw !== homeColor) ? awayColorRaw : 'var(--text-muted)';
+        const hexPair = t => t.color ? { primary: `#${t.color}`, secondary: t.altColor ? `#${t.altColor}` : null } : null;
+        const pair = _matchupTeamColors(hexPair(g.awayTeam), hexPair(g.homeTeam));
+        const homeColor = pair.home || 'var(--text-secondary)';
+        const awayColor = pair.away || 'var(--text-muted)';
         const maxVal = Math.max(1, ...homeLS, ...awayLS);
         const periodLabel = (i) => i < 4 ? `Q${i + 1}` : (numPeriods - i <= 1 ? 'OT' : `OT${i - 3}`);
         const bars = Array.from({ length: numPeriods }, (_, i) => {
