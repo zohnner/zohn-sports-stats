@@ -303,6 +303,38 @@ async function fetchNCAAFSeasonGames() {
     return games;
 }
 
+// Prior-season adapter for the power-rankings early-season prior (2026-09-19)
+// -- mirrors fetchNFLPriorSeasonGames (js/nfl.js): same week-loop as
+// fetchNCAAFSeasonGames above, pointed at last year via fetchNCAAFScoreboard's
+// `season` param. groups=80 is still baked into fetchNCAAFScoreboard, so last
+// season's FCS-crossover blowouts are included here too. Cached under
+// TTL.DAILY, not TTL.SEASON -- a finished prior season never changes.
+async function fetchNCAAFPriorSeasonGames() {
+    const priorSeason = NCAAF_SEASON - 1;
+    const cacheKey = `ncaafPriorSeasonGames${priorSeason}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const weeks = await Promise.all(
+        Array.from({ length: 15 }, (_, i) => i + 1).map(week =>
+            fetchNCAAFScoreboard({ seasontype: 2, week, season: priorSeason }).catch(() => [])
+        )
+    );
+
+    const games = weeks.flat()
+        .filter(g => g && g.isFinal)
+        .map(g => ({
+            home:      g.homeTeam.abbr,
+            away:      g.awayTeam.abbr,
+            homeScore: g.homeTeam.score,
+            awayScore: g.awayTeam.score,
+            date:      g.date,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.DAILY);
+    return games;
+}
+
 // Builds { abbr: {name, logo, color, record, onClick} } from the full FBS
 // standings tree (~130 teams across ~12 conferences) -- the roster this
 // feeds _prShow('ncaaf') needs, since a week-by-week game loop alone won't

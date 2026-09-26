@@ -39,6 +39,25 @@ function computeSRS(games, teamList, opts) {
         maxIterations = 3000,
         tolerance = 0.001,
         now = Date.now(),
+        // Early-season fix (2026-09-19): with few games played, the team-game
+        // graph is mostly disconnected components (Week 1 NFL is literally 16
+        // separate 2-team pairs), and forcing every component's mean to
+        // exactly 0 throws away the only information that could ever compare
+        // them -- live-verified this collapses ratings to pure +/-margin/2
+        // with zero opponent context (Chicago blowing out a bad Carolina team
+        // outranked San Francisco routing a good Rams team on the road).
+        // priorRatings (team -> a regressed prior-season SRS rating,
+        // self-computed by this same function, never an editorial poll) plus
+        // a fixed priorWeight anchor each team's iteration target AND -- the
+        // part that actually fixes cross-component comparisons -- each
+        // component recenters to its members' mean prior rather than to
+        // literal zero, so disconnected components keep the relative
+        // strength their priors imply instead of all reading as "average"
+        // until the schedule connects them. Both default to a no-op (empty
+        // map, weight 0), reproducing the original zero-mean behavior exactly
+        // -- existing callers (MLB, NBA, WNBA, NCAAB) are unaffected.
+        priorRatings = new Map(),
+        priorWeight = 0,
     } = opts || {};
 
     const teams = new Set(Array.isArray(teamList) ? teamList : []);
@@ -67,10 +86,11 @@ function computeSRS(games, teamList, opts) {
     });
 
     let rating = new Map();
-    teams.forEach(t => rating.set(t, 0));
-    // Teams with zero games stay at exactly 0 and never enter the active set
-    // below -- they don't participate in the iteration or the re-centering,
-    // since they have no games to average and shouldn't drag the league mean.
+    teams.forEach(t => rating.set(t, priorRatings.get(t) || 0));
+    // Teams with zero games stay at their prior (0 when none is supplied) and
+    // never enter the active set below -- they don't participate in the
+    // iteration or the re-centering, since they have no games to average and
+    // shouldn't drag the league mean.
     const activeTeams = [...teamGames.keys()].filter(t => teamGames.get(t).length > 0);
 
     // Connected components, found once via BFS over the team-game graph (who
@@ -121,6 +141,10 @@ function computeSRS(games, teamList, opts) {
                 vSum += gm.weight * (gm.margin + oppRating);
                 wSum += gm.weight;
             });
+            if (priorWeight > 0) {
+                vSum += priorWeight * (priorRatings.get(t) || 0);
+                wSum += priorWeight;
+            }
             target.set(t, wSum > 0 ? vSum / wSum : 0);
         });
 
@@ -130,9 +154,17 @@ function computeSRS(games, teamList, opts) {
             newRating.set(t, prev + damping * (target.get(t) - prev));
         });
 
+        // Recenter each component to its members' mean PRIOR rating, not to
+        // literal 0 -- with priorRatings unset (every call site outside
+        // NFL/NCAAF today) priorMean is 0 for every component, so this is
+        // exactly the original behavior. With a prior, this is what actually
+        // lets two components that share no common opponent stay correctly
+        // ordered relative to each other instead of both washing out to
+        // "average."
         components.forEach(comp => {
             const mean = comp.reduce((s, t) => s + newRating.get(t), 0) / comp.length;
-            comp.forEach(t => newRating.set(t, newRating.get(t) - mean));
+            const priorMean = comp.reduce((s, t) => s + (priorRatings.get(t) || 0), 0) / comp.length;
+            comp.forEach(t => newRating.set(t, newRating.get(t) - (mean - priorMean)));
         });
 
         let maxDelta = 0;
@@ -164,12 +196,25 @@ function computeSRS(games, teamList, opts) {
 // rankings are a tab embedded in Standings (displayMLBPowerRankings, js/mlb.js),
 // not routed through the shared _prShow, so it calls fetchMLBSeasonGames
 // directly instead.
+// priorWeight/priorCarryover/fetchPriorSeasonGames (NFL + NCAAF only,
+// 2026-09-19): the early-season fix above needs an actual prior to blend in.
+// fetchPriorSeasonGames re-runs the exact same fetchSeasonGames adapter one
+// year back (both sports' scoreboard fetchers already take a `season` param)
+// -- computed once via computeSRS itself, then regressed by priorCarryover
+// before being handed to computeSRS as this season's priorRatings, so it's
+// entirely the site's own on-field results, never an editorial poll. Values
+// tuned against real 2025-final vs 2026-Week-1 data (see DECISIONS.md) --
+// worth re-checking once more of the 2026 season is in. MLB/NBA/WNBA/NCAAB
+// don't get this yet (owner scoped this pass to NFL+NCAAF); computeSRS's
+// prior params default to a no-op, so those sports are unaffected.
 const _PWR_SPORTS = {
     mlb:   { label: 'MLB',   navRoute: 'mlb-powerrankings',   marginCap: 8,  homeAdvantage: 0,   recencyHalfLifeDays: 30 },
     nfl:   { label: 'NFL',   navRoute: 'nfl-powerrankings',   marginCap: 24, homeAdvantage: 2.5, recencyHalfLifeDays: 50,
-             fetchSeasonGames: () => fetchNFLSeasonGames(), fetchTeamMeta: () => fetchNFLPowerTeamMeta() },
+             fetchSeasonGames: () => fetchNFLSeasonGames(), fetchTeamMeta: () => fetchNFLPowerTeamMeta(),
+             fetchPriorSeasonGames: () => fetchNFLPriorSeasonGames(), priorWeight: 3, priorCarryover: 0.45 },
     ncaaf: { label: 'NCAAF', navRoute: 'ncaaf-powerrankings', marginCap: 28, homeAdvantage: 2.5, recencyHalfLifeDays: 45,
-             fetchSeasonGames: () => fetchNCAAFSeasonGames(), fetchTeamMeta: () => fetchNCAAFPowerTeamMeta() },
+             fetchSeasonGames: () => fetchNCAAFSeasonGames(), fetchTeamMeta: () => fetchNCAAFPowerTeamMeta(),
+             fetchPriorSeasonGames: () => fetchNCAAFPriorSeasonGames(), priorWeight: 3, priorCarryover: 0.45 },
     nba:   { label: 'NBA',   navRoute: 'nba-powerrankings',   marginCap: 20, homeAdvantage: 2.5, recencyHalfLifeDays: 22,
              fetchSeasonGames: () => fetchNBASeasonGames(), fetchTeamMeta: () => fetchNBAPowerTeamMeta() },
     wnba:  { label: 'WNBA',  navRoute: 'wnba-powerrankings',  marginCap: 20, homeAdvantage: 2,   recencyHalfLifeDays: 22,
@@ -232,6 +277,32 @@ function _prRenderRows(scored, cfg) {
     `;
 }
 
+// Computes each team's regressed prior-season rating for the early-season
+// blend above. Returns an empty Map when the sport has no
+// fetchPriorSeasonGames adapter wired (every sport but NFL/NCAAF right now)
+// -- computeSRS treats that as a no-op automatically, so this is safe to
+// call unconditionally. `now` is anchored to the day after the prior
+// season's last game rather than Date.now() -- using the real "today" would
+// run every prior-season game through recencyHalfLifeDays decay (months old
+// by definition), which would silently shrink the whole prior toward 0
+// regardless of how good the team actually finished. This is the team's
+// real final rating for that season, not a decayed echo of it.
+async function _prComputePriorRatings(cfg) {
+    if (!cfg.fetchPriorSeasonGames) return new Map();
+    const priorGames = await cfg.fetchPriorSeasonGames();
+    if (!priorGames || !priorGames.length) return new Map();
+    const priorTeamList = [...new Set(priorGames.flatMap(g => [g.home, g.away]))];
+    const anchor = Math.max(...priorGames.map(g => new Date(g.date).getTime())) + 86400000;
+    const finalRatings = computeSRS(priorGames, priorTeamList, {
+        marginCap: cfg.marginCap,
+        homeAdvantage: cfg.homeAdvantage,
+        recencyHalfLifeDays: cfg.recencyHalfLifeDays,
+        now: anchor,
+    });
+    const carryover = cfg.priorCarryover || 0;
+    return new Map(finalRatings.map(s => [s.team, s.rating * carryover]));
+}
+
 // Generic standalone-page renderer, used by every sport whose power rankings
 // live at their own nav route (NFL, and the 4 sports newly getting one).
 // MLB keeps its own wrapper (displayMLBPowerRankings, js/mlb.js) since its
@@ -245,12 +316,19 @@ async function _prShow(sport) {
     grid.innerHTML = `<div class="pwr-loading"><div class="skeleton-line" style="height:48px;width:60%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Computing power rankings…</p></div>`;
 
     try {
-        const [games, teamMeta] = await Promise.all([cfg.fetchSeasonGames(), cfg.fetchTeamMeta()]);
+        const [games, teamMeta, priorRatings] = await Promise.all([
+            cfg.fetchSeasonGames(), cfg.fetchTeamMeta(),
+            // The prior only sharpens early-season order; losing it must
+            // never take the whole page down with it.
+            _prComputePriorRatings(cfg).catch(() => new Map()),
+        ]);
         const teamList = Object.keys(teamMeta);
         const scored = computeSRS(games, teamList, {
             marginCap: cfg.marginCap,
             homeAdvantage: cfg.homeAdvantage,
             recencyHalfLifeDays: cfg.recencyHalfLifeDays,
+            priorRatings,
+            priorWeight: cfg.priorWeight || 0,
         });
         const listHtml = _prRenderRows(scored, { getMeta: (abbr) => teamMeta[abbr] });
         if (!listHtml) {
@@ -279,4 +357,5 @@ if (typeof window !== 'undefined') {
     window._PWR_SPORTS = _PWR_SPORTS;
     window._prRenderRows = _prRenderRows;
     window._prShow = _prShow;
+    window._prComputePriorRatings = _prComputePriorRatings;
 }

@@ -158,3 +158,64 @@ test('empty input: no games, no teams throws nothing and returns empty', () => {
     assert.equal(Array.isArray(scored), true);
     assert.equal(scored.length, 0);
 });
+
+// ── Early-season prior blend (2026-09-19) ──────────────────────────────
+// Week 1 of a real season is N disconnected 2-team pairs -- no shared
+// opponents anywhere. Without a prior, forcing every pair's mean to 0 means
+// the ONLY information in the rating is that pair's own margin: a blowout
+// win over a weak team is indistinguishable from a blowout win over a
+// strong one. These tests reproduce that shape with two disconnected pairs
+// where the "quality" signal can only come from priorRatings.
+
+test('no prior supplied: disconnected pairs default to the original zero-mean behavior', () => {
+    const ctx = load();
+    // A beats B by 10 (pair 1); C beats D by 10 (pair 2) -- structurally
+    // identical, fully disconnected from each other.
+    const games = [
+        { home: 'A', away: 'B', homeScore: 20, awayScore: 10, date: TODAY },
+        { home: 'C', away: 'D', homeScore: 20, awayScore: 10, date: TODAY },
+    ];
+    const scored = ctx.computeSRS(games, ['A', 'B', 'C', 'D'], {
+        marginCap: 100, homeAdvantage: 0, recencyHalfLifeDays: 9999, now: NOW,
+    });
+    const r = byTeam(scored);
+    // Both winners rate identically and both losers rate identically --
+    // there is no way to tell A is "better" or "worse" than C without a prior.
+    assert.ok(Math.abs(r.A.rating - r.C.rating) < 0.001, `A and C should be indistinguishable with no prior: A=${r.A.rating}, C=${r.C.rating}`);
+    assert.ok(Math.abs(r.A.rating - 5) < 0.01, `A expected ~5 (margin/2), got ${r.A.rating}`);
+});
+
+test('prior blend: disconnected pairs stay correctly ordered by their prior strength', () => {
+    const ctx = load();
+    // Same two structurally-identical pairs as above, but A/B enter with a
+    // strong prior and C/D enter with a weak one -- e.g. A is a good team
+    // that beat a bad team, C is a bad team that beat a worse one. Without
+    // a prior these are indistinguishable (see test above); with one, A's
+    // pair should rate above C's pair even though both margins are +10.
+    const games = [
+        { home: 'A', away: 'B', homeScore: 20, awayScore: 10, date: TODAY },
+        { home: 'C', away: 'D', homeScore: 20, awayScore: 10, date: TODAY },
+    ];
+    const priorRatings = new Map([['A', 15], ['B', 15], ['C', -15], ['D', -15]]);
+    const scored = ctx.computeSRS(games, ['A', 'B', 'C', 'D'], {
+        marginCap: 100, homeAdvantage: 0, recencyHalfLifeDays: 9999, now: NOW,
+        priorRatings, priorWeight: 2,
+    });
+    const r = byTeam(scored);
+    assert.ok(r.A.rating > r.C.rating, `A (strong prior) should outrate C (weak prior) despite an identical margin: A=${r.A.rating}, C=${r.C.rating}`);
+    assert.ok(r.A.rating > r.B.rating, `A (won) should still outrate B (lost) within its own pair: A=${r.A.rating}, B=${r.B.rating}`);
+    assert.ok(r.C.rating > r.D.rating, `C (won) should still outrate D (lost) within its own pair: C=${r.C.rating}, D=${r.D.rating}`);
+});
+
+test('prior blend: a team with no prior data (0) is unaffected by an unrelated team\'s prior', () => {
+    const ctx = load();
+    const games = [{ home: 'A', away: 'B', homeScore: 20, awayScore: 10, date: TODAY }];
+    // Only A has a prior; B (e.g. new to the league) defaults to 0.
+    const priorRatings = new Map([['A', 15]]);
+    const scored = ctx.computeSRS(games, ['A', 'B'], {
+        marginCap: 100, homeAdvantage: 0, recencyHalfLifeDays: 9999, now: NOW,
+        priorRatings, priorWeight: 2,
+    });
+    const r = byTeam(scored);
+    assert.ok(r.A.rating > r.B.rating, `A (has a prior) should outrate B (no prior, defaults to 0): A=${r.A.rating}, B=${r.B.rating}`);
+});

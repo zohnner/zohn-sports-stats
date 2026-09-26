@@ -344,6 +344,39 @@ async function fetchNFLSeasonGames() {
     return games;
 }
 
+// Prior-season adapter for the power-rankings early-season prior (2026-09-19)
+// -- same shape and same week-loop as fetchNFLSeasonGames, just pointed at
+// last year via fetchNFLScoreboard's own `season` param (already supported,
+// confirmed live: ESPN's `dates=YYYY` returns that season regardless of
+// what's "current"). Cached under TTL.DAILY rather than TTL.SEASON -- a
+// completed prior season never changes, so there's no reason to re-fetch 18
+// weeks of it every 25 minutes the way the in-progress season above needs to.
+async function fetchNFLPriorSeasonGames() {
+    const priorSeason = NFL_STATS_SEASON - 1;
+    const cacheKey = `nflPriorSeasonGames${priorSeason}`;
+    const cached = ApiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const weeks = await Promise.all(
+        Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
+            fetchNFLScoreboard({ seasontype: 2, week, season: priorSeason }).catch(() => [])
+        )
+    );
+
+    const games = weeks.flat()
+        .filter(g => g && g.isFinal)
+        .map(g => ({
+            home:      g.homeTeam.abbr,
+            away:      g.awayTeam.abbr,
+            homeScore: g.homeTeam.score,
+            awayScore: g.awayTeam.score,
+            date:      g.date,
+        }));
+
+    ApiCache.set(cacheKey, games, ApiCache.TTL.DAILY);
+    return games;
+}
+
 // D-105: the live game detail page's field viewer needs the FULL raw
 // situation object (numeric down/distance/yardLine/possession/timeouts) --
 // live-verified 2026-08-16 that ESPN's /summary response's
