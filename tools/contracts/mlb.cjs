@@ -28,7 +28,8 @@ module.exports = {
                 'dates[0].games[].teams.away.team.abbreviation',
             ],
             invariants: [
-                L.minCount('dates[0].games', 8, { fullSlateOnly: true, severity: 'warn' }),
+                // 8 → 4: cuts routine Monday/Thursday (fewer scheduled MLB games) noise; still warn severity.
+                L.minCount('dates[0].games', 4, { fullSlateOnly: true, severity: 'warn' }),
                 // abstractGameState 'Final' also covers cancelled (codedGameState 'C'),
                 // postponed ('D') and forfeited ('Q'/'R') games that carry no score —
                 // live-confirmed on gamePk 823490 (NYY/BAL rainout, 2026-09-27). Only 'F'
@@ -44,7 +45,13 @@ module.exports = {
         {
             id: 'mlb-standings',
             mirrors: 'js/mlb.js fetchMLBStandings',
-            route: c => mlbUrl('/standings', { leagueId: '103,104', season: c.season, standingsTypes: 'regularSeason' }),
+            // c.season == null (offseason probe) — MLB's calendar year hasn't flipped
+            // to the new season yet in Jan/Feb, so the prior year is still the live one.
+            route: c => mlbUrl('/standings', {
+                leagueId: '103,104',
+                season: c.season ?? (new Date().getUTCMonth() < 2 ? new Date().getUTCFullYear() - 1 : new Date().getUTCFullYear()),
+                standingsTypes: 'regularSeason',
+            }),
             paths: [
                 'records[].teamRecords[].team.id',
                 'records[].teamRecords[].wins',

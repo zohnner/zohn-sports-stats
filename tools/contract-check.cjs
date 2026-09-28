@@ -20,7 +20,10 @@ const WALK_BACK_DAYS = 10;
 
 const looksLikeHtml = snippet => /^\s*</.test(snippet || '');
 
-const inWeekRange = (range, week) => !range || (typeof week === 'number' && week >= range[0] && week <= range[1]);
+const inWeekRange = (range, week, lastRegularWeek) => !range || (
+    typeof week === 'number' && typeof lastRegularWeek === 'number' &&
+    week >= range.from && week <= lastRegularWeek - range.lastMinus
+);
 
 function dateBack(today, n) {
     const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - n));
@@ -31,7 +34,10 @@ function dateBack(today, n) {
 function fetchJsonFrom(base) {
     return async p => {
         try {
-            const r = await fetch(base + p, { headers: { 'User-Agent': 'SportStrata-ContractCheck/1.0' } });
+            const r = await fetch(base + p, {
+                headers: { 'User-Agent': 'SportStrata-ContractCheck/1.0' },
+                signal: AbortSignal.timeout(20000),
+            });
             const text = await r.text();
             let json = null;
             try { json = JSON.parse(text); } catch { json = null; }
@@ -93,7 +99,9 @@ async function runContract(c, ctx, fetchJson) {
     for (const inv of c.invariants || []) {
         const msg = inv.check(res.json, ctx);
         if (!msg) continue;
-        (inv.severity === 'warn' || ctx.offseason ? r.warnings : r.failures).push(`${inv.name}: ${msg}`);
+        const downgrade = inv.severity === 'warn' ||
+            (inv.kind === 'count' && (ctx.offseason || ctx.regularSeason === false));
+        (downgrade ? r.warnings : r.failures).push(`${inv.name}: ${msg}`);
     }
     return settle(r);
 }
@@ -108,7 +116,10 @@ async function runSport(sport, fetchJson, today) {
     let ctx;
     let label;
     if (probe.offseason) {
-        ctx = { offseason: true, fullSlate: false, season: today.getUTCFullYear() };
+        // No live season signal available — a guessed year sends real requests to
+        // routes that 502/empty on an out-of-range season (F2); contract routes
+        // treat ctx.season == null as "omit the param".
+        ctx = { offseason: true, fullSlate: false, regularSeason: false, season: null };
         label = `offseason (no finals in the last ${WALK_BACK_DAYS} days)`;
         probeResult.notes.push(label);
     } else {
@@ -116,12 +127,18 @@ async function runSport(sport, fetchJson, today) {
             ...probe.date,
             season: probe.season ?? today.getUTCFullYear(),
             finalId: probe.finalIds[0],
-            fullSlate: probe.isGameDay && probe.regularSeason && inWeekRange(sport.fullSlateWeeks, probe.week),
+            fullSlate: probe.isGameDay && probe.regularSeason && inWeekRange(sport.fullSlateWeeks, probe.week, probe.lastRegularWeek),
             offseason: false,
+            regularSeason: probe.regularSeason,
         };
+        if (sport.fullSlateWeeks && probe.isGameDay && probe.regularSeason &&
+            (typeof probe.week !== 'number' || typeof probe.lastRegularWeek !== 'number')) {
+            probeResult.warnings.push(`full-slate floor disabled: ESPN week/calendar missing (week=${probe.week}, lastRegularWeek=${probe.lastRegularWeek})`);
+        }
         probeResult.url = sport.probe.route(probe.date);
-        label = `${probe.date.iso} (${probe.isGameDay ? 'game day' : 'off day'}, ${probe.regularSeason ? 'regular season' : 'non-regular season'}) · ${probe.finalIds.length} final(s)`;
+        label = `${probe.date.iso} (${probe.isGameDay ? 'game day' : 'off day'}, ${probe.regularSeason ? 'regular season' : 'non-regular season'}) · ${probe.finalIds.length} final(s) · full slate: ${ctx.fullSlate ? 'on' : 'off'}`;
     }
+    settle(probeResult);
     const results = [probeResult];
     for (const c of sport.contracts) {
         if (ctx.offseason && c.needs) {
@@ -187,7 +204,16 @@ async function main(argv) {
     const fetchJson = fetchJsonFrom(base.replace(/\/$/, ''));
     const today = new Date();
     const reports = [];
-    for (const s of sports) reports.push(await runSport(s, fetchJson, today));
+    for (const s of sports) {
+        try {
+            reports.push(await runSport(s, fetchJson, today));
+        } catch (e) {
+            reports.push({ sport: s.sport, probe: 'crashed', results: [{
+                id: `${s.sport}-probe`, url: null, status: 'fail',
+                failures: [`runner crashed: ${e && e.message}`], warnings: [], notes: [],
+            }] });
+        }
+    }
     printReport(reports);
     const exitCode = exitCodeFor(reports);
     if (jsonOut) {

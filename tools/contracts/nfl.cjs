@@ -26,6 +26,8 @@ module.exports = {
                 'events[].competitions[0].competitors[].linescores[].value',
             ],
             invariants: [
+                // Floor of 8 assumes a full Sunday slate; a Christmas-on-Sunday
+                // (2022: 3 games moved off-slot; next recurrence 2033) will warn/fail — revisit then.
                 L.minCount('events', 8, { fullSlateOnly: true }),
                 L.numeric('events[].competitions[0].competitors[].score'),
             ],
@@ -52,7 +54,7 @@ module.exports = {
         {
             id: 'nfl-standings',
             mirrors: 'js/nflStandings.js fetchNFLStandings',
-            route: c => `/api/nflstandings?season=${c.season}`,
+            route: c => c.season == null ? '/api/nflstandings' : `/api/nflstandings?season=${c.season}`,
             paths: [],
             invariants: [L.deepCount('entries', 32, { exact: true, each: 'team.abbreviation' })],
         },

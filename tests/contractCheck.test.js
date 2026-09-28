@@ -118,8 +118,8 @@ test('readEspnScoreboard reads finals and season from events', () => {
         { id: '1', season: { year: 2026, type: 2 }, status: { type: { state: 'post' } } },
         { id: '2', season: { year: 2026, type: 2 }, status: { type: { state: 'pre' } } },
     ] };
-    assert.deepEqual(lib.readEspnScoreboard(json), { finalIds: ['1'], season: 2026, regularSeason: true, week: undefined });
-    assert.deepEqual(lib.readEspnScoreboard({}), { finalIds: [], season: undefined, regularSeason: false, week: undefined });
+    assert.deepEqual(lib.readEspnScoreboard(json), { finalIds: ['1'], season: 2026, regularSeason: true, week: undefined, lastRegularWeek: undefined });
+    assert.deepEqual(lib.readEspnScoreboard({}), { finalIds: [], season: undefined, regularSeason: false, week: undefined, lastRegularWeek: undefined });
 });
 
 test('readEspnScoreboard reads week.number', () => {
@@ -129,15 +129,29 @@ test('readEspnScoreboard reads week.number', () => {
     assert.equal(lib.readEspnScoreboard(json).week, 15);
 });
 
+test('readEspnScoreboard reads lastRegularWeek from the calendar\'s Regular Season entry', () => {
+    const json = {
+        week: { number: 4 },
+        leagues: [{ calendar: [
+            { label: 'Preseason', value: '1', entries: [{ label: 'Week 1', value: '1' }] },
+            { label: 'Regular Season', value: '2', entries: Array.from({ length: 15 }, (_, i) => ({ label: `Week ${i + 1}`, value: String(i + 1) })) },
+            { label: 'Postseason', value: '3', entries: [{ label: 'Bowls', value: '1' }, { label: 'CFP', value: '2' }] },
+        ] }],
+        events: [{ id: '1', season: { year: 2026, type: 2 }, status: { type: { state: 'post' } } }],
+    };
+    assert.equal(lib.readEspnScoreboard(json).lastRegularWeek, 15);
+    assert.equal(lib.readEspnScoreboard({}).lastRegularWeek, undefined);
+});
+
 test('readMlbSchedule reads finals, season and regular-season flag', () => {
     const json = { dates: [{ games: [
         { gamePk: 9, season: '2026', gameType: 'R', status: { abstractGameState: 'Final' } },
         { gamePk: 8, season: '2026', gameType: 'R', status: { abstractGameState: 'Preview' } },
     ] }] };
-    assert.deepEqual(lib.readMlbSchedule(json), { finalIds: [9], season: 2026, regularSeason: true, week: undefined });
+    assert.deepEqual(lib.readMlbSchedule(json), { finalIds: [9], season: 2026, regularSeason: true, week: undefined, lastRegularWeek: undefined });
     const post = { dates: [{ games: [{ gamePk: 1, season: '2026', gameType: 'F', status: { abstractGameState: 'Final' } }] }] };
     assert.equal(lib.readMlbSchedule(post).regularSeason, false);
-    assert.deepEqual(lib.readMlbSchedule({ dates: [] }), { finalIds: [], season: undefined, regularSeason: false, week: undefined });
+    assert.deepEqual(lib.readMlbSchedule({ dates: [] }), { finalIds: [], season: undefined, regularSeason: false, week: undefined, lastRegularWeek: undefined });
 });
 
 const check = require('../tools/contract-check.cjs');
@@ -230,17 +244,38 @@ test('runContract: warn-severity and offseason invariant failures become warning
     assert.equal(r.status, 'warn');
 });
 
-test('runSport: offseason skips probe/final contracts but runs the rest', async () => {
+test('runContract: F3/F4 — a predicate failure still fails in the offseason (only count invariants downgrade)', async () => {
+    const c = { id: 'z', route: () => '/z', paths: [], invariants: [lib.predicate('always fails', () => 'nope')] };
+    const r = await check.runContract(c, { offseason: true }, stubFetch({ '/z': {} }));
+    assert.equal(r.status, 'fail');
+    assert.deepEqual(r.warnings, []);
+    assert.match(r.failures[0], /always fails: nope/);
+});
+
+test('runContract: F4 — ctx.regularSeason false downgrades count failures but not predicate failures', async () => {
+    const c = { id: 'w', route: () => '/w', paths: [], invariants: [
+        lib.exactCount('teams', 32),
+        lib.predicate('always fails', () => 'nope'),
+    ] };
+    const r = await check.runContract(c, { offseason: false, regularSeason: false }, stubFetch({ '/w': { teams: [] } }));
+    assert.match(r.warnings[0], /exactCount/);
+    assert.match(r.failures[0], /always fails: nope/);
+    assert.equal(r.status, 'fail');
+});
+
+test('runSport: offseason skips probe/final contracts, omits season on the rest, and downgrades count failures', async () => {
     const all = allDates(sb([]));
-    all['/standings?season=2026'] = { teams: [] };
+    all['/standings'] = { teams: [] };
     const sport = nflLike({ contracts: [
         { id: 'nfl-scoreboard', needs: 'probe', route: c => `/sb?d=${c.yyyymmdd}`, paths: [], invariants: [] },
-        { id: 'nfl-standings', route: c => `/standings?season=${c.season}`, paths: [], invariants: [lib.exactCount('teams', 32)] },
+        { id: 'nfl-standings', route: c => c.season == null ? '/standings' : `/standings?season=${c.season}`, paths: [], invariants: [lib.exactCount('teams', 32)] },
     ] });
     const out = await check.runSport(sport, stubFetch(all), TUE);
     assert.deepEqual(out.results.map(r => [r.id, r.status]), [
         ['nfl-probe', 'pass'], ['nfl-scoreboard', 'skip'], ['nfl-standings', 'warn'],
     ]);
+    // F2: no guessed season is sent — the route must resolve to the no-season URL, not /standings?season=null.
+    assert.equal(out.results[2].url, '/standings');
     assert.match(out.probe, /offseason/);
 });
 
@@ -264,22 +299,30 @@ test('runSport: in-season builds ctx with season, finalId and fullSlate', async 
     assert.equal(seen.yyyymmdd, '20260927');
 });
 
-test('runSport: fullSlate is false outside fullSlateWeeks', async () => {
-    const all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 15 }, ...sb(['g1']) }, '/sum': {} };
+const calWithWeeks = n => ({ leagues: [{ calendar: [{ value: '2', entries: Array.from({ length: n }, (_, i) => ({ value: String(i + 1) })) }] }] });
+
+test('runSport: fullSlate true at week 13 / false at week 14 when lastRegularWeek is 15 (F1: data-driven championship-week gate)', async () => {
+    const fullSlateWeeks = { from: 2, lastMinus: 2 };
     let seen;
-    const sport = nflLike({ fullSlateWeeks: [2, 14], contracts: [{ id: 'nfl-summary', needs: 'final',
+    const sportAt = week => nflLike({ fullSlateWeeks, contracts: [{ id: 'nfl-summary', needs: 'final',
         route: c => { seen = c; return '/sum'; }, paths: [], invariants: [] }] });
-    await check.runSport(sport, stubFetch(all), TUE);
+
+    let all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 13 }, ...calWithWeeks(15), ...sb(['g1']) }, '/sum': {} };
+    await check.runSport(sportAt(13), stubFetch(all), TUE);
+    assert.equal(seen.fullSlate, true);
+
+    all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 14 }, ...calWithWeeks(15), ...sb(['g1']) }, '/sum': {} };
+    await check.runSport(sportAt(14), stubFetch(all), TUE);
     assert.equal(seen.fullSlate, false);
 });
 
-test('runSport: fullSlate is true inside fullSlateWeeks', async () => {
-    const all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 4 }, ...sb(['g1']) }, '/sum': {} };
-    let seen;
-    const sport = nflLike({ fullSlateWeeks: [2, 14], contracts: [{ id: 'nfl-summary', needs: 'final',
-        route: c => { seen = c; return '/sum'; }, paths: [], invariants: [] }] });
-    await check.runSport(sport, stubFetch(all), TUE);
-    assert.equal(seen.fullSlate, true);
+test('runSport: full-slate floor disables (fullSlate false, probe warns) when ESPN week/calendar is missing', async () => {
+    const all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': sb(['g1']), '/sum': {} };
+    const sport = nflLike({ fullSlateWeeks: { from: 2, lastMinus: 2 }, contracts: [{ id: 'nfl-summary', needs: 'final',
+        route: () => '/sum', paths: [], invariants: [] }] });
+    const out = await check.runSport(sport, stubFetch(all), TUE);
+    assert.equal(out.results[0].status, 'warn');
+    assert.match(out.results[0].warnings[0], /full-slate floor disabled: ESPN week\/calendar missing \(week=undefined, lastRegularWeek=undefined\)/);
 });
 
 test('validateSports throws on a malformed contract path', () => {

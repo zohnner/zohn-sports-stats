@@ -8,10 +8,15 @@ module.exports = {
     gameDay: 6,
     // Live-confirmed regular-season Saturday event counts vary a lot outside the
     // meat of the schedule: week 1 (2025-08-30) had 62, but week 1 also covers the
-    // ~5-game Week 0 Saturday (2025-08-23); weeks 15-16 are championship weekend /
-    // Army-Navy with as few as 2-6 games. Weeks 2-14 are the reliable full-slate
-    // window; 40 still catches the D-135 groups=80 regression (which returned ~25).
-    fullSlateWeeks: [2, 14],
+    // ~5-game Week 0 Saturday (2025-08-23). ESPN's week numbering itself shifts by
+    // year (2025-11-29 scoreboard: 16 regular-season weeks in leagues[0].calendar,
+    // week 14 = rivalry Saturday/51 events, 15 = championships/6, 16 = Army-Navy/2;
+    // 2026-09-26 scoreboard: only 15 regular-season weeks, so week 14 there is
+    // championship Saturday 2026-12-05, ~6-12 events) — a fixed [2,14] would
+    // false-FAIL in 2026. Championship week is always lastRegularWeek - 1, so the
+    // reliable full-slate window is weeks 2 .. lastRegularWeek - 2 (2025: 2-14,
+    // 2026: 2-13); 40 still catches the D-135 groups=80 regression (which returned ~25).
+    fullSlateWeeks: { from: 2, lastMinus: 2 },
     probe: { route: scoreboard, read: L.readEspnScoreboard },
     contracts: [
         {
@@ -51,14 +56,14 @@ module.exports = {
         {
             id: 'ncaaf-standings',
             mirrors: 'js/ncaaf.js fetchNCAAFStandings',
-            route: c => `/api/ncaafstandings?season=${c.season}`,
+            route: c => c.season == null ? '/api/ncaafstandings' : `/api/ncaafstandings?season=${c.season}`,
             paths: [],
             invariants: [L.deepCount('entries', 120, { each: 'team.abbreviation' })],
         },
         {
             id: 'ncaaf-leaders',
             mirrors: 'js/ncaaf.js /api/ncaafstats leaders loader',
-            route: c => `/api/ncaafstats?season=${c.season}`,
+            route: c => c.season == null ? '/api/ncaafstats' : `/api/ncaafstats?season=${c.season}`,
             paths: ['categories[].key', 'categories[].leaders[].id', 'categories[].leaders[].name', 'categories[].leaders[].value'],
             invariants: [L.minCount('categories', 5), L.eachNonEmpty('categories[].leaders')],
         },

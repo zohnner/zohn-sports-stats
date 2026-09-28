@@ -80,6 +80,7 @@ function minCount(path, n, opts = {}) {
     return {
         name: `minCount(${path}, ${n})`,
         severity: opts.severity || 'fail',
+        kind: 'count',
         check(data, ctx) {
             const arr = getAt(data, path);
             if (!Array.isArray(arr)) return `${path} is not an array`;
@@ -94,6 +95,7 @@ function exactCount(path, n, opts = {}) {
     return {
         name: `exactCount(${path}, ${n})`,
         severity: opts.severity || 'fail',
+        kind: 'count',
         check(data) {
             const arr = getAt(data, path);
             if (!Array.isArray(arr)) return `${path} is not an array`;
@@ -107,6 +109,7 @@ function deepCount(key, n, opts = {}) {
     return {
         name: `deepCount(${key}, ${opts.exact ? '=' : '>='}${n})`,
         severity: opts.severity || 'fail',
+        kind: 'count',
         check(data) {
             const items = deepCollect(data, key);
             if (opts.exact ? items.length !== n : items.length < n) {
@@ -139,6 +142,7 @@ function eachNonEmpty(path, opts = {}) {
     return {
         name: `eachNonEmpty(${path})`,
         severity: opts.severity || 'fail',
+        kind: 'count',
         check(data) {
             const bad = collect(data, path).filter(({ value }) => !Array.isArray(value) || value.length === 0);
             return bad.length ? `${bad.length} empty or missing, e.g. ${bad[0].loc}` : null;
@@ -153,11 +157,18 @@ function predicate(name, fn, opts = {}) {
 function readEspnScoreboard(json) {
     const events = Array.isArray(json?.events) ? json.events : [];
     const season = events[0]?.season;
+    // Regular-season week count varies by year (2025: 16, 2026: 15) — read it from
+    // the scoreboard's own calendar (value '2' = "Regular Season") rather than
+    // hardcoding it, so week-range invariants stay correct across season boundaries.
+    const calendar = json?.leagues?.[0]?.calendar;
+    const regularSeasonEntry = Array.isArray(calendar) ? calendar.find(c => c?.value === '2') : undefined;
+    const lastRegularWeek = Array.isArray(regularSeasonEntry?.entries) ? regularSeasonEntry.entries.length : undefined;
     return {
         finalIds: events.filter(e => e?.status?.type?.state === 'post').map(e => e.id),
         season: season?.year,
         regularSeason: season?.type === 2,
         week: json?.week?.number,
+        lastRegularWeek,
     };
 }
 
@@ -168,6 +179,7 @@ function readMlbSchedule(json) {
         season: games[0] ? Number(games[0].season) : undefined,
         regularSeason: games.length > 0 && games.every(g => g.gameType === 'R'),
         week: undefined,
+        lastRegularWeek: undefined,
     };
 }
 
