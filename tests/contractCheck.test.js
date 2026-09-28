@@ -303,3 +303,41 @@ test('shipped contract files load, validate, and use unique ids', () => {
     assert.equal(ids.length, 12);
     for (const s of sports) for (const c of s.contracts) assert.ok(c.mirrors, `${c.id} needs a mirrors note`);
 });
+
+const issues = require('../tools/contract-issues.cjs');
+
+const report = results => ({
+    generatedAt: '2026-09-29T11:00:05.000Z',
+    base: 'https://sportstrata.cc',
+    exitCode: 2,
+    sports: [{ sport: 'nfl', probe: 'x', results }],
+});
+const R = (id, status, failures = []) => ({ id, url: `/api/${id}`, status, failures, warnings: [], notes: [] });
+
+test('planIssueActions creates an issue for a new failure', () => {
+    const acts = issues.planIssueActions(report([R('nfl-scoreboard', 'fail', ['missing events[].id'])]), [], 'https://run/1');
+    assert.equal(acts.length, 1);
+    assert.equal(acts[0].type, 'create');
+    assert.equal(acts[0].title, 'contract-drift: nfl-scoreboard');
+    assert.match(acts[0].body, /2026-09-29/);
+    assert.match(acts[0].body, /- missing events\[\]\.id/);
+    assert.match(acts[0].body, /https:\/\/run\/1/);
+});
+
+test('planIssueActions comments on an already-open issue instead of duplicating', () => {
+    const acts = issues.planIssueActions(report([R('nfl-scoreboard', 'fail', ['x'])]),
+        [{ number: 7, title: 'contract-drift: nfl-scoreboard' }], null);
+    assert.deepEqual(acts.map(a => [a.type, a.number]), [['comment', 7]]);
+});
+
+test('planIssueActions closes an open issue once the route passes or only warns', () => {
+    const open = [{ number: 7, title: 'contract-drift: nfl-scoreboard' }, { number: 8, title: 'contract-drift: nfl-probe' }];
+    const acts = issues.planIssueActions(report([R('nfl-probe', 'pass'), R('nfl-scoreboard', 'warn')]), open, null);
+    assert.deepEqual(acts.map(a => [a.type, a.number]), [['close', 8], ['close', 7]]);
+    assert.match(acts[0].body, /Passing again as of 2026-09-29/);
+});
+
+test('planIssueActions leaves skipped routes and unrelated issues alone', () => {
+    const open = [{ number: 9, title: 'contract-drift: nfl-summary' }, { number: 10, title: 'something else' }];
+    assert.deepEqual(issues.planIssueActions(report([R('nfl-summary', 'skip')]), open, null), []);
+});
