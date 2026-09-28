@@ -642,9 +642,10 @@ async function loadNFLGames() {
 // (the home hero's picker), which adds a +100 followed-team bonus on top of
 // the same base formula. That bonus is right for picking ONE personalized
 // hero game; it would be wrong here, where the whole point is an honest
-// "closest game on the board" signal across every live game at once -- a
+// "biggest moment on the board" signal across every live game at once -- a
 // badge that just points at your own team regardless of score margin isn't
-// a real signal, it's decoration.
+// a real signal, it's decoration. Weighs game stage and red zone, not just
+// margin, so the badge must not claim "closest" (D-165).
 function _nflScoresLeverage(g) {
     const period = g.period || 1;
     const diff = Math.abs((g.homeTeam?.score ?? 0) - (g.awayTeam?.score ?? 0));
@@ -840,9 +841,9 @@ function _createNFLGameCard(game, isTopLeverage) {
         ${ghostHtml}
         <div class="game-card-header">
             <span class="game-date">${dateStr}${game.broadcast ? ` · ${_escHtml(game.broadcast)}` : ''}</span>
-            <span class="game-status ${statusCls}">${game.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}${game.isLive && game.clock ? ` · ${_escHtml(game.clock)}` : ''}</span>
+            <span class="game-status ${statusCls}">${game.isLive ? '<span class="live-dot"></span>' : ''}${_escHtml(game.statusText || (game.isFinal ? 'Final' : 'Scheduled'))}</span>
         </div>
-        ${isTopLeverage ? `<div class="game-badge game-badge--leverage">Closest game right now</div>` : ''}
+        ${isTopLeverage ? `<div class="game-badge game-badge--leverage">Biggest moment right now</div>` : ''}
         <div class="game-matchup">
             ${teamBlock(game.homeTeam, game.homeTeam.winner)}
             <div class="game-scores">

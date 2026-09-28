@@ -3406,3 +3406,11 @@ Picked up the deferred cleanup of `js/players.js`/`js/leaderboards.js`/`js/playe
 **Applied to every chart whose team encoding is color:** NCAAF scores-card Game Flow bars + viewer win probability/game flow/field graphic (`_nclgMatchupColors`); NFL Game Flow bars, viewer win probability/game flow/win projection (`_nlgMatchupColors` — no NFL secondaries exist, so collisions go gray); shared basketball viewer win probability/game flow (`_blgMatchupColors`); MLB pregame bar, `_buildWinProb`, `_lgRenderWinProbChart`, season-series bar. Out of scope by design: headers, logos, scorebug, standings-row tints, the MLB bullpen title (single-team identity, not comparison).
 
 **Verified** on a local `wrangler pages dev` build against live upstreams: NAVY @ UAB renders NAVY in gold `#b5a67c` vs UAB green in both viewer charts and the scores card; the other five finals that day kept their brand colors; dark and light themes both resolve DET/SEA (orange vs teal/navy) and CWS/PIT (silver vs gold/black). Same pass fixed `/deploy-check`'s test list, which had never included `tests/powerRankings.test.js`.
+
+## D-165 — NFL Scores status pill printed the clock twice; leverage badge claimed "closest"
+**Status:** shipped | **Date:** 2026-09-28
+
+**Bug 1, live-observed (Week 3, 2026-09-27):** every live NFL score card read e.g. "3:50 - 3rd · 3:50". `displayNFLGames` rendered ESPN's `status.type.shortDetail` (which already contains the clock) and then appended ` · displayClock`. Also produced "Halftime · 0:00" and "End of 3rd · 0:00". Fix: render `shortDetail` alone. NFL-only — checked every other sport's card; none appends the clock.
+
+**Bug 2, live-observed same day:** the D-140 badge said "Closest game right now" on DET 17-10 NYJ (4th qtr, red zone) while two 3-point games were live. `_nflScoresLeverage` weighs 2 points per quarter played plus red-zone and national-broadcast bonuses on top of margin — it measures leverage, not closeness (DET/NYJ 19.6 vs PIT/CIN 18.1). Kept the formula (a late red-zone drive is the game a broadcaster cuts to) and relabeled the badge "Biggest moment right now" so the copy stops overclaiming.
+
