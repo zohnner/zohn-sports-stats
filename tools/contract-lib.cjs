@@ -157,6 +157,7 @@ function readEspnScoreboard(json) {
         finalIds: events.filter(e => e?.status?.type?.state === 'post').map(e => e.id),
         season: season?.year,
         regularSeason: season?.type === 2,
+        week: json?.week?.number,
     };
 }
 
@@ -166,6 +167,7 @@ function readMlbSchedule(json) {
         finalIds: games.filter(g => g?.status?.abstractGameState === 'Final').map(g => g.gamePk),
         season: games[0] ? Number(games[0].season) : undefined,
         regularSeason: games.length > 0 && games.every(g => g.gameType === 'R'),
+        week: undefined,
     };
 }
 

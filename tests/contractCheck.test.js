@@ -118,8 +118,15 @@ test('readEspnScoreboard reads finals and season from events', () => {
         { id: '1', season: { year: 2026, type: 2 }, status: { type: { state: 'post' } } },
         { id: '2', season: { year: 2026, type: 2 }, status: { type: { state: 'pre' } } },
     ] };
-    assert.deepEqual(lib.readEspnScoreboard(json), { finalIds: ['1'], season: 2026, regularSeason: true });
-    assert.deepEqual(lib.readEspnScoreboard({}), { finalIds: [], season: undefined, regularSeason: false });
+    assert.deepEqual(lib.readEspnScoreboard(json), { finalIds: ['1'], season: 2026, regularSeason: true, week: undefined });
+    assert.deepEqual(lib.readEspnScoreboard({}), { finalIds: [], season: undefined, regularSeason: false, week: undefined });
+});
+
+test('readEspnScoreboard reads week.number', () => {
+    const json = { week: { number: 15 }, events: [
+        { id: '1', season: { year: 2026, type: 2 }, status: { type: { state: 'post' } } },
+    ] };
+    assert.equal(lib.readEspnScoreboard(json).week, 15);
 });
 
 test('readMlbSchedule reads finals, season and regular-season flag', () => {
@@ -127,10 +134,10 @@ test('readMlbSchedule reads finals, season and regular-season flag', () => {
         { gamePk: 9, season: '2026', gameType: 'R', status: { abstractGameState: 'Final' } },
         { gamePk: 8, season: '2026', gameType: 'R', status: { abstractGameState: 'Preview' } },
     ] }] };
-    assert.deepEqual(lib.readMlbSchedule(json), { finalIds: [9], season: 2026, regularSeason: true });
+    assert.deepEqual(lib.readMlbSchedule(json), { finalIds: [9], season: 2026, regularSeason: true, week: undefined });
     const post = { dates: [{ games: [{ gamePk: 1, season: '2026', gameType: 'F', status: { abstractGameState: 'Final' } }] }] };
     assert.equal(lib.readMlbSchedule(post).regularSeason, false);
-    assert.deepEqual(lib.readMlbSchedule({ dates: [] }), { finalIds: [], season: undefined, regularSeason: false });
+    assert.deepEqual(lib.readMlbSchedule({ dates: [] }), { finalIds: [], season: undefined, regularSeason: false, week: undefined });
 });
 
 const check = require('../tools/contract-check.cjs');
@@ -255,6 +262,24 @@ test('runSport: in-season builds ctx with season, finalId and fullSlate', async 
     assert.equal(seen.season, 2026);
     assert.equal(seen.fullSlate, true);
     assert.equal(seen.yyyymmdd, '20260927');
+});
+
+test('runSport: fullSlate is false outside fullSlateWeeks', async () => {
+    const all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 15 }, ...sb(['g1']) }, '/sum': {} };
+    let seen;
+    const sport = nflLike({ fullSlateWeeks: [2, 14], contracts: [{ id: 'nfl-summary', needs: 'final',
+        route: c => { seen = c; return '/sum'; }, paths: [], invariants: [] }] });
+    await check.runSport(sport, stubFetch(all), TUE);
+    assert.equal(seen.fullSlate, false);
+});
+
+test('runSport: fullSlate is true inside fullSlateWeeks', async () => {
+    const all = { '/sb?d=20260928': sb([]), '/sb?d=20260927': { week: { number: 4 }, ...sb(['g1']) }, '/sum': {} };
+    let seen;
+    const sport = nflLike({ fullSlateWeeks: [2, 14], contracts: [{ id: 'nfl-summary', needs: 'final',
+        route: c => { seen = c; return '/sum'; }, paths: [], invariants: [] }] });
+    await check.runSport(sport, stubFetch(all), TUE);
+    assert.equal(seen.fullSlate, true);
 });
 
 test('validateSports throws on a malformed contract path', () => {

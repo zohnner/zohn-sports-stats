@@ -6,6 +6,12 @@ const scoreboard = d => `/api/ncaaf?path=/scoreboard&groups=80&dates=${d.yyyymmd
 module.exports = {
     sport: 'ncaaf',
     gameDay: 6,
+    // Live-confirmed regular-season Saturday event counts vary a lot outside the
+    // meat of the schedule: week 1 (2025-08-30) had 62, but week 1 also covers the
+    // ~5-game Week 0 Saturday (2025-08-23); weeks 15-16 are championship weekend /
+    // Army-Navy with as few as 2-6 games. Weeks 2-14 are the reliable full-slate
+    // window; 40 still catches the D-135 groups=80 regression (which returned ~25).
+    fullSlateWeeks: [2, 14],
     probe: { route: scoreboard, read: L.readEspnScoreboard },
     contracts: [
         {
@@ -24,7 +30,7 @@ module.exports = {
                 'events[].competitions[0].competitors[].score',
             ],
             invariants: [
-                L.minCount('events', 50, { fullSlateOnly: true }),
+                L.minCount('events', 40, { fullSlateOnly: true }),
                 L.numeric('events[].competitions[0].competitors[].score'),
             ],
         },

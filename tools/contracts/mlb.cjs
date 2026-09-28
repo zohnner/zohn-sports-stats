@@ -29,13 +29,13 @@ module.exports = {
             ],
             invariants: [
                 L.minCount('dates[0].games', 8, { fullSlateOnly: true, severity: 'warn' }),
-                // abstractGameState 'Final' also covers a game that was rained out and never
-                // played (detailedState 'Cancelled', codedGameState 'C') — live-confirmed
-                // 2026-09-28 against gamePk 823490 (NYY/BAL, 2026-09-27, reason "Rain"), which
-                // has no teams.home/away.score at all. Only detailedState 'Final' means the
-                // game was actually completed with a score.
-                L.predicate('every completed (detailedState=Final) game has numeric home/away scores', data => {
-                    const finals = (data.dates?.[0]?.games || []).filter(g => g.status?.detailedState === 'Final');
+                // abstractGameState 'Final' also covers cancelled (codedGameState 'C'),
+                // postponed ('D') and forfeited ('Q'/'R') games that carry no score —
+                // live-confirmed on gamePk 823490 (NYY/BAL rainout, 2026-09-27). Only 'F'
+                // (Final) and 'O' (Game Over) mean the game was actually completed.
+                L.predicate('every completed (codedGameState F/O) game has numeric home/away scores', data => {
+                    const finals = (data.dates?.[0]?.games || [])
+                        .filter(g => g.status?.abstractGameState === 'Final' && ['F', 'O'].includes(g.status?.codedGameState));
                     const bad = finals.filter(g => typeof g.teams?.home?.score !== 'number' || typeof g.teams?.away?.score !== 'number');
                     return bad.length ? `${bad.length} completed game(s) without numeric scores, e.g. gamePk ${bad[0].gamePk}` : null;
                 }),

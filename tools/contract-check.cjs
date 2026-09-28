@@ -20,6 +20,8 @@ const WALK_BACK_DAYS = 10;
 
 const looksLikeHtml = snippet => /^\s*</.test(snippet || '');
 
+const inWeekRange = (range, week) => !range || (typeof week === 'number' && week >= range[0] && week <= range[1]);
+
 function dateBack(today, n) {
     const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - n));
     const iso = d.toISOString().slice(0, 10);
@@ -114,7 +116,7 @@ async function runSport(sport, fetchJson, today) {
             ...probe.date,
             season: probe.season ?? today.getUTCFullYear(),
             finalId: probe.finalIds[0],
-            fullSlate: probe.isGameDay && probe.regularSeason,
+            fullSlate: probe.isGameDay && probe.regularSeason && inWeekRange(sport.fullSlateWeeks, probe.week),
             offseason: false,
         };
         probeResult.url = sport.probe.route(probe.date);
