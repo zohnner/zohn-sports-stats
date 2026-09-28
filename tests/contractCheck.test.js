@@ -203,6 +203,15 @@ test('runContract: pass, missing path, HTML block, HTTP error', async () => {
     assert.match(r.failures[0], /^HTTP 404/);
 });
 
+test('runContract: non-2xx HTML body is reported as a likely WAF block', async () => {
+    const c = { id: 'x', route: () => '/x', paths: [], invariants: [] };
+    const waf = async () => ({ ok: false, status: 403, contentType: 'application/json; charset=utf-8', json: null,
+        bodySnippet: '<!DOCTYPE html><title>Access Denied</title>' });
+    const r = await check.runContract(c, {}, waf);
+    assert.equal(r.status, 'fail');
+    assert.match(r.failures[0], /^HTTP 403: upstream returned HTML \(likely WAF block\)/);
+});
+
 test('runContract: warn-severity and offseason invariant failures become warnings', async () => {
     const c = { id: 'x', route: () => '/x', paths: [], invariants: [
         lib.minCount('events', 5, { severity: 'warn' }),

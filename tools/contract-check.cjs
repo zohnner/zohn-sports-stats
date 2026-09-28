@@ -18,6 +18,8 @@ const { ContractError, parsePath, checkPath } = require('./contract-lib.cjs');
 const SPORT_FILES = ['nfl', 'ncaaf', 'mlb'];
 const WALK_BACK_DAYS = 10;
 
+const looksLikeHtml = snippet => /^\s*</.test(snippet || '');
+
 function dateBack(today, n) {
     const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - n));
     const iso = d.toISOString().slice(0, 10);
@@ -71,7 +73,11 @@ async function runContract(c, ctx, fetchJson) {
     const r = result(c.id, url);
     const res = await fetchJson(url);
     if (!res.ok) {
-        r.failures.push(`HTTP ${res.status}: ${res.bodySnippet}`);
+        if (looksLikeHtml(res.bodySnippet)) {
+            r.failures.push(`HTTP ${res.status}: upstream returned HTML (likely WAF block): ${res.bodySnippet}`);
+        } else {
+            r.failures.push(`HTTP ${res.status}: ${res.bodySnippet}`);
+        }
         return settle(r);
     }
     if (!res.json) {
