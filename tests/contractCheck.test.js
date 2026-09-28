@@ -269,3 +269,12 @@ test('exitCodeFor: fail beats warn beats pass; skip is neutral', () => {
     assert.equal(check.exitCodeFor(rep(['pass', 'warn'])), 1);
     assert.equal(check.exitCodeFor(rep(['warn', 'fail'])), 2);
 });
+
+test('shipped contract files load, validate, and use unique ids', () => {
+    const sports = ['nfl', 'ncaaf', 'mlb'].map(f => require(`../tools/contracts/${f}.cjs`));
+    check.validateSports(sports);
+    const ids = sports.flatMap(s => s.contracts.map(c => c.id));
+    assert.equal(new Set(ids).size, ids.length);
+    assert.equal(ids.length, 12);
+    for (const s of sports) for (const c of s.contracts) assert.ok(c.mirrors, `${c.id} needs a mirrors note`);
+});
