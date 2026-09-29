@@ -3406,3 +3406,11 @@ Picked up the deferred cleanup of `js/players.js`/`js/leaderboards.js`/`js/playe
 **Applied to every chart whose team encoding is color:** NCAAF scores-card Game Flow bars + viewer win probability/game flow/field graphic (`_nclgMatchupColors`); NFL Game Flow bars, viewer win probability/game flow/win projection (`_nlgMatchupColors` — no NFL secondaries exist, so collisions go gray); shared basketball viewer win probability/game flow (`_blgMatchupColors`); MLB pregame bar, `_buildWinProb`, `_lgRenderWinProbChart`, season-series bar. Out of scope by design: headers, logos, scorebug, standings-row tints, the MLB bullpen title (single-team identity, not comparison).
 
 **Verified** on a local `wrangler pages dev` build against live upstreams: NAVY @ UAB renders NAVY in gold `#b5a67c` vs UAB green in both viewer charts and the scores card; the other five finals that day kept their brand colors; dark and light themes both resolve DET/SEA (orange vs teal/navy) and CWS/PIT (silver vs gold/black). Same pass fixed `/deploy-check`'s test list, which had never included `tests/powerRankings.test.js`.
+
+## D-167 — Edge-rendered content pages were overwritten by the SPA; `static-page-<sport>` route hint
+**Status:** shipped | **Date:** 2026-09-29
+
+**Bug, live-confirmed in a real browser 2026-09-28:** `/glossary` showed human visitors the home page. `functions/glossary.js` injected the glossary into `#playersGrid`, set no `__SS_ROUTE`, and the SPA then booted to `home` and overwrote both the content and `<title>`. `/nfl/glossary` (D-149) copied the same pattern. Google renders JavaScript, so both pages were likely indexed as near-duplicates of the homepage.
+
+**Fix:** a route hint `window.__SS_ROUTE = 'static-page-<sport>'`. `_loadFromHash` (js/navigation.js) renders nav chrome for that sport via `_applySportUI` and returns before `navigateTo()` — which is the only path that calls `_updatePageMeta` and renders into `#playersGrid` — so the prerendered page and `<head>` survive. Both glossaries set it. SportStrata Stories (D-166 spec) will reuse it for `/nfl/stories/*`. Any future edge-rendered page with no SPA view behind it must set it too.
+
