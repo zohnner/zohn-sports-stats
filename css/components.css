@@ -4933,3 +4933,27 @@
 .md-title,
 .detail-section-title,
 .player-detail-name { font-family: var(--font-brand); }
+
+/* ── Edge-rendered content pages (D-166/D-167): glossaries, SportStrata Stories ── */
+.ss-prerender { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-12); color: var(--text-primary); font-family: var(--font-sans); line-height: 1.6; }
+.ss-prerender h1 { font-family: var(--font-display); font-size: var(--text-3xl); line-height: 1.15; margin: 0 0 var(--space-3); }
+.ss-prerender h2 { font-size: var(--text-xl); margin: var(--space-8) 0 var(--space-3); }
+.ss-prerender p, .ss-prerender ul, .ss-prerender ol, .ss-prerender dl { margin: 0 0 var(--space-4); }
+.ss-prerender a { color: var(--accent); }
+.ss-prerender dt { font-weight: 700; margin-top: var(--space-4); }
+.ss-prerender dd { margin: var(--space-1) 0 0; color: var(--text-secondary); }
+.ss-story__eyebrow { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.ss-story__eyebrow a { color: inherit; }
+.ss-story__dek { font-size: var(--text-lg); color: var(--text-secondary); }
+.ss-story__meta { font-size: var(--text-sm); color: var(--text-muted); border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-4); }
+.ss-story__disclosure { font-size: var(--text-sm); color: var(--text-muted); border-top: 1px solid var(--border-default); padding-top: var(--space-4); margin-top: var(--space-8); }
+.ss-stories__list { list-style: none; padding: 0; }
+.ss-stories__list li { padding: var(--space-4) 0; border-bottom: 1px solid var(--border-default); }
+.ss-stories__list li > a { font-weight: 700; font-size: var(--text-lg); text-decoration: none; }
+.stories-block { margin-bottom: var(--space-4); }
+.stories-block__hdr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); }
+.stories-block__more { font-size: var(--text-sm); color: var(--accent); text-decoration: none; }
+.story-row { display: block; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); text-decoration: none; color: inherit; }
+.story-row:hover .story-row__title { color: var(--accent); }
+.story-row__title { display: block; font-weight: 600; color: var(--text-primary); }
+.story-row__dek { display: block; font-size: var(--text-sm); color: var(--text-secondary); }

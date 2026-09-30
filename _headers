@@ -41,6 +41,13 @@
 /data/*
   Cache-Control: public, max-age=300, must-revalidate
 
+# SportStrata Stories source files (D-166). Served so each story page can link
+# its facts file, but kept out of search results -- the rendered
+# /nfl/stories/<slug> page is the canonical, indexable version.
+/content/*
+  Cache-Control: public, max-age=300, must-revalidate
+  X-Robots-Tag: noindex
+
 # js/*.js and css/*.css had no dedicated cache rule either, so they rode
 # Cloudflare's same default long per-file-type edge caching /data/*.json
 # and /sw.js already got bitten by (see above, D-116) -- confirmed

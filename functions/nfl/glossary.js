@@ -8,8 +8,8 @@
 // never found in the NFL surface at all), so this page never promises data the
 // product doesn't have.
 //
-// Fail-safe to the shell. Does NOT set window.__SS_ROUTE -- same reasoning as
-// functions/glossary.js: no interactive SPA view behind it, the snapshot IS the page.
+// Fail-safe to the shell. Sets window.__SS_ROUTE='static-page-nfl' (D-167) so the SPA
+// renders nav chrome only and leaves the snapshot -- which IS the page -- in place.
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -79,7 +79,7 @@ export async function onRequest(context) {
             .replace(/(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, `$1${esc(desc)}$2`)
             .replace(/(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, `$1${esc(title)}$2`)
             .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script></head>`)
+            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify('static-page-nfl')};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 

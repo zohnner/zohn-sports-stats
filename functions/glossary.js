@@ -5,9 +5,9 @@
 // makes them indexable. Mirrors the team/leaders templates: real SPA shell + per-page
 // <head> + a crawlable snapshot + DefinedTermSet JSON-LD. Fail-safe to the shell.
 //
-// Design note (flagged, not silently decided): this page does NOT set window.__SS_ROUTE.
-// Unlike team/player/leaders pages, there's no interactive SPA view behind it yet — the
-// prerendered snapshot below IS the page, for humans and crawlers alike. A future
+// D-167: sets window.__SS_ROUTE='static-page-mlb'. There's no interactive SPA view behind
+// this page — the prerendered snapshot below IS the page — and without the hint the SPA
+// booted to home and overwrote it (live-confirmed 2026-09-28: humans saw the home page). A future
 // interactive glossary (search/filter/grouping) is a Kael+Vera visual/UX call, not an
 // SEO-plumbing one; this ships the indexable content now rather than waiting on that.
 //
@@ -108,7 +108,7 @@ export async function onRequest(context) {
             .replace(/(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, `$1${esc(desc)}$2`)
             .replace(/(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, `$1${esc(title)}$2`)
             .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script></head>`)
+            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify('static-page-mlb')};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 

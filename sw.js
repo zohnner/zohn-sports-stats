@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v302';
+const CACHE_NAME    = 'sportstrata-v306';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -148,7 +148,9 @@ self.addEventListener('fetch', e => {
     // freshness, same as this file's existing posture of failing loud (via
     // the app's own ErrorHandler) rather than silently serving something
     // wrong on a network hiccup.
-    if (url.pathname.startsWith('/api/')) {
+    // /content/ (SportStrata Stories source files + index.json, D-166) is the same
+    // kind of data: a newly published story must appear on the next load, not the one after.
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/content/')) {
         e.respondWith(fetch(e.request));
         return;
     }
