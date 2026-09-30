@@ -96,34 +96,42 @@ function indexEntry(slug, meta) {
 const ALLOWED_PHRASES = [
     /\b[1-4](?:st|nd|rd|th)[- ](?:down|quarter)\b/gi,
     /\b[1-4](?:st|nd|rd|th)-and-\d+\b/gi,
-    /\bweeks? \d+(?:\s?[-–]\s?\d+)?\b/gi,
+    /\b(?:19|20)\d{2}(?:-\d{2})? (?:season|regular season|postseason|draft)\b/gi,
+    /\b(?:49ers|76ers)\b/gi,
     /\b\d{4}-\d{2}-\d{2}\b/g,
     /\bQ[1-4]\b/g,
     /\b(?:two-point|two-minute|four-down)\b/gi,
 ];
 const SPELLED_RE = /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen)\b/gi;
-const NUM_RE = /(?<![\w.])(#)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(%|st|nd|rd|th)?(?!\w)/g;
+const WEEK_RE = /\bweeks? (\d+)(?:\s?[-–]\s?(\d+))?\b/gi;
+const NUM_RE = /(?<![\w.])([+\-−])?(#)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(%|st|nd|rd|th)?/g;
 
-function scrubText(text) {
+function scrubText(text, maxWeek) {
     let t = String(text).replace(/\]\([^)]*\)/g, ']').replace(/https?:\/\/\S+/g, ' ');
+    t = t.replace(WEEK_RE, (whole, a, b) =>
+        [a, b].filter(Boolean).every(n => Number(n) >= 1 && Number(n) <= maxWeek) ? ' ' : whole);
     for (const re of ALLOWED_PHRASES) t = t.replace(re, ' ');
     return t;
+}
+
+function isValidFact(f) {
+    return !!f && typeof f.key === 'string' && typeof f.value === 'number' && Number.isFinite(f.value)
+        && typeof f.source === 'string' && f.source.trim() !== '';
 }
 
 function factProblems(factsDoc) {
     if (!factsDoc || !Array.isArray(factsDoc.facts)) throw new StoryError('facts file must be {"facts":[...]}');
     const problems = [];
     factsDoc.facts.forEach((f, i) => {
-        const ok = f && typeof f.key === 'string' && typeof f.value === 'number' && Number.isFinite(f.value)
-            && typeof f.source === 'string' && f.source.trim() !== '';
-        if (!ok) problems.push({ where: 'facts', token: String((f && f.key) || `#${i}`), message: `fact ${i} needs key, numeric value and source` });
+        if (!isValidFact(f)) problems.push({ where: 'facts', token: String((f && f.key) || `#${i}`), message: `fact ${i} needs key, numeric value and source` });
     });
     return problems;
 }
 
 function tokenOf(m) {
-    const numStr = m[2].replace(/,/g, '');
-    return { raw: m[0], value: Number(numStr), decimals: (numStr.split('.')[1] || '').length, percent: m[3] === '%' };
+    const numStr = m[3].replace(/,/g, '');
+    const sign = m[1] === '-' || m[1] === '−' ? -1 : 1;
+    return { raw: m[0], value: sign * Number(numStr), decimals: (numStr.split('.')[1] || '').length, percent: m[4] === '%' };
 }
 
 function matchesFact(tok, values) {
@@ -133,17 +141,16 @@ function matchesFact(tok, values) {
 
 function checkStory(story, factsDoc, socialText) {
     const problems = factProblems(factsDoc);
-    const values = factsDoc.facts.map(f => f && f.value).filter(v => typeof v === 'number' && Number.isFinite(v));
-    const allowed = [story.meta.season, story.meta.week].filter(Number.isInteger);
+    const values = factsDoc.facts.filter(isValidFact).map(f => f.value);
+    const maxWeek = Number.isInteger(story.meta.week) ? story.meta.week + 1 : 0;
     const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText]];
     for (const [where, text] of fields) {
-        const clean = scrubText(text == null ? '' : text);
+        const clean = scrubText(text == null ? '' : text, maxWeek);
         for (const w of clean.match(SPELLED_RE) || []) {
             problems.push({ where, token: w, message: `spelled-out number "${w}" — use numerals` });
         }
         for (const m of clean.matchAll(NUM_RE)) {
             const tok = tokenOf(m);
-            if (!tok.percent && tok.decimals === 0 && allowed.includes(tok.value)) continue;
             if (!matchesFact(tok, values)) problems.push({ where, token: tok.raw, message: `"${tok.raw}" is not in the facts file` });
         }
     }

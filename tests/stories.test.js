@@ -134,7 +134,7 @@ test('checkStory checks title, dek, hero_stat and social too', () => {
 test('checkStory requires a well-formed facts file with sources', () => {
     assert.throws(() => core.checkStory(draft('x'), { nope: [] }, ''), core.StoryError);
     const probs = core.checkStory(draft('9 trips'), { facts: [{ key: 'a', value: 9 }] }, '');
-    assert.deepEqual(probs.map(p => p.where), ['facts']);
+    assert.deepEqual(probs.map(p => p.where), ['facts', 'body']);
 });
 
 test('check-numbers CLI exits 0 on a clean story and 2 on an unsourced number', (t) => {
@@ -152,4 +152,19 @@ test('check-numbers CLI exits 0 on a clean story and 2 on an unsourced number', 
     assert.equal(cli.main([md]), 0);
     fs.writeFileSync(path.join(dir, '2026-09-30-x.social.md'), 'Detroit: 11 of 12.');
     assert.equal(cli.main([md]), 2);
+});
+
+test('checkStory sees numbers attached to letters but exempts 49ers/76ers', () => {
+    assert.deepEqual(tokensOf(core.checkStory(draft('A 4x jump and 88yds for the 49ers.'), FACTS, '')), ['4', '88']);
+});
+
+test('checkStory makes the sign count', () => {
+    const facts = { facts: [{ key: 'pd', value: -6, source: '/api/x' }, { key: 'g', value: 9, source: '/api/x' }] };
+    assert.deepEqual(core.checkStory(draft('They are -6 in differential and +9 in wins, a 27-9 score? no: 9.'), facts, '').map(p => p.token), ['27']);
+    assert.deepEqual(tokensOf(core.checkStory(draft('They are -9 in differential.'), facts, '')), ['-9']);
+});
+
+test('checkStory only exempts plausible week references and year-season phrases', () => {
+    assert.deepEqual(core.checkStory(draft('In Week 4, after Weeks 1-3 and before Week 5, the 2026 season turned.'), FACTS, ''), []);
+    assert.deepEqual(tokensOf(core.checkStory(draft('In Week 88 he needed 4 more catches and sold 2026 tickets.'), FACTS, '')), ['88', '4', '2026']);
 });
