@@ -62,9 +62,10 @@ End with a summary count and the next recommended action.
 
 **9. Unit tests pass**
 ```bash
-node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/powerRankings.test.js tests/teamColors.test.js tests/contractCheck.test.js
+node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/powerRankings.test.js tests/teamColors.test.js tests/stories.test.js tests/contractCheck.test.js
+node tools/stories/build-index.cjs --check
 ```
-FAIL if any test fails. These guard the computed-stat math (wOBA/wRC+/FIP) and the VBD implied-value model against regressions.
+FAIL if any test fails, or if the Stories gate fails (a story is invalid, has a number missing from its `.facts.json`, or `content/nfl/stories/index.json` is stale — D-166). These guard the computed-stat math (wOBA/wRC+/FIP) and the VBD implied-value model against regressions.
 
 **10. Delivery manifest in sync**
 ```bash

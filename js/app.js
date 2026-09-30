@@ -195,6 +195,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
         if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
         if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
+        if (typeof _loadLandingStories === 'function') _loadLandingStories();
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('nfl', 'Latest NFL');
     },
     ncaaf: () => {
@@ -291,6 +292,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         <div class="sl-layout">
             <div class="sl-primary">
                 <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
+                ${sport === 'nfl' ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
                 ${slots.games ? `<div id="slGames"></div>` : ''}
                 ${slots.leaders ? `<div id="slLeaders"></div>` : ''}
@@ -2588,14 +2590,18 @@ async function _renderHomeHeadlines() {
     if (!host) return;
     const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
     try {
-        const allArticles = await _fetchHomeNewsArticles();
+        const [allArticles, stories] = await Promise.all([
+            _fetchHomeNewsArticles(),
+            typeof fetchStoriesIndex === 'function' ? fetchStoriesIndex() : Promise.resolve([]),
+        ]);
         const articles = allArticles
             .filter(a => a && a.headline && a.links?.web?.href)
             .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
             .slice(0, 8);
         if (!host.isConnected) return;
-        if (!articles.length) { host.innerHTML = `<p class="pct-caption">No headlines right now.</p>`; return; }
-        host.innerHTML = articles.map(a => {
+        const storiesHtml = typeof storiesBlockHtml === 'function' ? storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories') : '';
+        if (!articles.length) { host.innerHTML = `${storiesHtml}<p class="pct-caption">No wire headlines right now.</p>`; return; }
+        host.innerHTML = storiesHtml + `<div class="stories-block__hdr"><span class="eyebrow">Wire · via ESPN</span></div>` + articles.map(a => {
             const when = _ago(a.published || a.lastModified);
             const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[a._sport]) || {};
             return `<a class="rail-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
@@ -2603,7 +2609,7 @@ async function _renderHomeHeadlines() {
                 <span class="rail-hl-text">${_escHtml(a.headline)}</span>
                 ${when ? `<span class="rail-hl-time">${_escHtml(when)}</span>` : ''}
             </a>`;
-        }).join('') + `<p class="pct-caption">Headlines via ESPN &amp; MLB Stats API · tap to read the full story</p>`;
+        }).join('') + `<p class="pct-caption">Wire headlines via ESPN &amp; MLB Stats API · tap to read the full story</p>`;
     } catch (err) {
         if (window.Logger) Logger.warn('home headlines failed', err, 'APP');
         if (host.isConnected) host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
@@ -3797,6 +3803,16 @@ async function _loadNFLLandingSpotlight() {
 // `sport` (cache key + fetch param) and `label` (the eyebrow text) instead of
 // re-cloned per sport -- same "shared function over copy-pasted markup"
 // approach as _renderEditorialLanding above.
+// SportStrata Stories on the NFL landing (D-166) -- above the ESPN wire module.
+// Removes its host when there are no stories rather than showing an empty box.
+async function _loadLandingStories() {
+    const host = document.getElementById('slStories');
+    if (!host || typeof fetchStoriesIndex !== 'function') return;
+    const stories = await fetchStoriesIndex();
+    if (!host.isConnected) return;
+    if (!stories.length) { host.remove(); return; }
+    host.innerHTML = `<section class="sl-section sl-section--flush">${storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories')}</section>`;
+}
 async function _loadSportLandingNews(sport, label) {
     const host = document.getElementById('slNews');
     if (!host) return;
