@@ -23,7 +23,7 @@ const STORY = [
     '## A heading',
     '',
     '- one item',
-    '- second item',
+    '- another item',
 ].join('\n');
 
 test('parseStory reads frontmatter types and body', () => {
@@ -169,6 +169,37 @@ test('checkStory only exempts plausible week references and year-season phrases'
     assert.deepEqual(tokensOf(core.checkStory(draft('In Week 88 he needed 4 more catches and sold 2026 tickets.'), FACTS, '')), ['88', '4', '2026']);
 });
 
+test('checkStory sees a number hidden inside a malformed link but drops a real link target', () => {
+    assert.deepEqual(tokensOf(core.checkStory(draft('See [the table](x 99 points) now'), FACTS, '')), ['99']);
+    assert.deepEqual(core.checkStory(draft('[49ers](/nfl/team/sf?v=77)'), FACTS, ''), []);
+});
+
+test('checkStory rejects zero, multiplier words and ordinals, but allows real football phrasing', () => {
+    assert.deepEqual(
+        tokensOf(core.checkStory(draft('It ranks second, their third straight win, zero touchdowns, twice.'), FACTS, '')),
+        ['second', 'third', 'zero', 'twice']);
+    assert.deepEqual(
+        core.checkStory(draft('a second-half comeback on third down in the fourth quarter, facing second-and-8'), FACTS, ''),
+        []);
+});
+
+test('checkStory treats an en dash as a minus sign', () => {
+    const facts46 = { facts: [{ key: 'm', value: 46, source: '/api/x' }] };
+    assert.deepEqual(tokensOf(core.checkStory(draft('a –46 margin'), facts46, '')), ['–46']);
+    const factsNeg46 = { facts: [{ key: 'm', value: -46, source: '/api/x' }] };
+    assert.deepEqual(core.checkStory(draft('a –46 margin'), factsNeg46, ''), []);
+    const facts3410 = { facts: [{ key: 'a', value: 34, source: '/api/x' }, { key: 'b', value: 10, source: '/api/x' }] };
+    assert.deepEqual(core.checkStory(draft('won 34–10'), facts3410, ''), []);
+});
+
+test('validateMeta rejects a title over 80 characters (og card limit)', () => {
+    const base = { dek: 'd', date: '2026-09-30', season: 2026, week: 1, teams: [], hero_stat: 'h' };
+    const probs = core.validateMeta({ ...base, title: 'x'.repeat(81) });
+    assert.ok(probs.includes('title must be 80 characters or fewer (og card limit)'));
+    const okProbs = core.validateMeta({ ...base, title: 'x'.repeat(80) });
+    assert.ok(!okProbs.includes('title must be 80 characters or fewer (og card limit)'));
+});
+
 const indexCli = require('../tools/stories/build-index.cjs');
 
 function storyDir(files) {
@@ -202,6 +233,18 @@ test('loadStories reports missing files, unsourced numbers and a filename/date m
     assert.ok(problems.some(p => p.startsWith('2026-09-30-nofacts: missing 2026-09-30-nofacts.facts.json')));
     assert.ok(problems.some(p => p.startsWith('2026-09-30-badnum: [body]') && p.includes('"77"')));
     assert.ok(problems.some(p => p.startsWith('2026-10-01-wrongdate: filename date must match')));
+});
+
+test('loadStories flags a misnamed story filename but leaves README and social files alone', () => {
+    const dir = storyDir({ '2026-09-30-Bad.md': STORY, 'README.md': '# not a story', 'x.social.md': 'y' });
+    const { problems } = indexCli.loadStories(dir);
+    assert.ok(problems.some(p => p.startsWith('2026-09-30-Bad.md: not a valid story filename')));
+});
+
+test('loadStories reports nothing extra for README.md and a lone social file', () => {
+    const dir = storyDir({ 'README.md': '# not a story', 'x.social.md': 'y' });
+    const { problems } = indexCli.loadStories(dir);
+    assert.deepEqual(problems, []);
 });
 
 test('main --check fails on a stale index and passes after a rebuild', (t) => {

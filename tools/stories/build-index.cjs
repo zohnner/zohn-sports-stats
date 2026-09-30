@@ -18,7 +18,12 @@ const STORY_FILE = /^(\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*)\.md$/;
 function loadStories(dir) {
     const problems = [];
     const stories = [];
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => STORY_FILE.test(f)).sort() : [];
+    const allFiles = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    for (const f of allFiles) {
+        if (!f.endsWith('.md') || f === 'README.md' || f.endsWith('.social.md') || STORY_FILE.test(f)) continue;
+        problems.push(`${f}: not a valid story filename (expected YYYY-MM-DD-lowercase-slug.md)`);
+    }
+    const files = allFiles.filter(f => STORY_FILE.test(f)).sort();
     for (const file of files) {
         const slug = STORY_FILE.exec(file)[1];
         const read = ext => {

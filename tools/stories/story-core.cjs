@@ -51,6 +51,7 @@ function validateMeta(meta) {
     if (meta.week !== undefined && !Number.isInteger(meta.week)) problems.push('week must be an integer');
     if (meta.teams !== undefined && !Array.isArray(meta.teams)) problems.push('teams must be a [list]');
     if (meta.players !== undefined && !Array.isArray(meta.players)) problems.push('players must be a [list]');
+    if (typeof meta.title === 'string' && meta.title.length > 80) problems.push('title must be 80 characters or fewer (og card limit)');
     return problems;
 }
 
@@ -101,13 +102,16 @@ const ALLOWED_PHRASES = [
     /\b\d{4}-\d{2}-\d{2}\b/g,
     /\bQ[1-4]\b/g,
     /\b(?:two-point|two-minute|four-down)\b/gi,
+    /\b(?:first|second)[- ]half\b/gi,
+    /\b(?:first|second|third|fourth)[- ](?:quarter|down)\b/gi,
+    /\b(?:first|second|third|fourth)-and-\d+\b/gi,
 ];
-const SPELLED_RE = /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen)\b/gi;
+const SPELLED_RE = /\b(?:zero|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen|twice|thrice|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\b/gi;
 const WEEK_RE = /\bweeks? (\d+)(?:\s?[-–]\s?(\d+))?\b/gi;
-const NUM_RE = /(?<![\w.])([+\-−])?(#)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(%|st|nd|rd|th)?/g;
+const NUM_RE = /(?<![\w.])([+\-−–])?(#)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(%|st|nd|rd|th)?/g;
 
 function scrubText(text, maxWeek) {
-    let t = String(text).replace(/\]\([^)]*\)/g, ']').replace(/https?:\/\/\S+/g, ' ');
+    let t = String(text).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1').replace(/https?:\/\/\S+/g, ' ');
     t = t.replace(WEEK_RE, (whole, a, b) =>
         [a, b].filter(Boolean).every(n => Number(n) >= 1 && Number(n) <= maxWeek) ? ' ' : whole);
     for (const re of ALLOWED_PHRASES) t = t.replace(re, ' ');
@@ -130,7 +134,7 @@ function factProblems(factsDoc) {
 
 function tokenOf(m) {
     const numStr = m[3].replace(/,/g, '');
-    const sign = m[1] === '-' || m[1] === '−' ? -1 : 1;
+    const sign = m[1] === '-' || m[1] === '−' || m[1] === '–' ? -1 : 1;
     return { raw: m[0], value: sign * Number(numStr), decimals: (numStr.split('.')[1] || '').length, percent: m[4] === '%' };
 }
 

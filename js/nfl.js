@@ -2325,7 +2325,8 @@ function _renderTeamPage(m) {
         ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
-    return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>`;
+    const storiesHost = m.playerPrefix === 'nfl-player-' ? '<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>' : '';
+    return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}${storiesHost}`;
 }
 
 // SportStrata Stories that name this team in their frontmatter (D-166).
