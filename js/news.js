@@ -146,9 +146,10 @@ function displayNews(data, sport) {
     </div>`;
 
     if (sport === 'nfl' && typeof fetchStoriesIndex === 'function') {
+        const storiesHost = document.getElementById('newsStories');
         fetchStoriesIndex().then(stories => {
-            const host = document.getElementById('newsStories');
-            if (host && host.isConnected) host.innerHTML = storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories');
+            if (!storiesHost || !storiesHost.isConnected || AppState.currentSport !== 'nfl') return;
+            storiesHost.innerHTML = storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories');
         });
     }
 
@@ -171,7 +172,7 @@ function fetchStoriesIndex() {
         _storiesIndexPromise = fetch('/content/nfl/stories/index.json')
             .then(r => (r.ok ? r.json() : { stories: [] }))
             .then(d => (d && Array.isArray(d.stories) ? d.stories : []))
-            .catch(err => { Logger.warn('stories index unavailable', err && err.message, 'NEWS'); return []; });
+            .catch(err => { if (window.Logger) Logger.warn('stories index unavailable', err && err.message, 'NEWS'); return []; });
     }
     return _storiesIndexPromise;
 }
