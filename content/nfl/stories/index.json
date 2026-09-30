@@ -1,0 +1,23 @@
+{
+  "stories": [
+    {
+      "slug": "2026-09-30-jaguars-fewest-points-allowed",
+      "title": "The Jaguars have allowed 36 points through Week 3, the fewest in the NFL",
+      "dek": "Jacksonville is 2-1, and its +46 point differential trails only unbeaten San Francisco's.",
+      "date": "2026-09-30",
+      "season": 2026,
+      "week": 3,
+      "teams": [
+        "JAX",
+        "MIN",
+        "CLE",
+        "DEN",
+        "NE",
+        "SF"
+      ],
+      "players": [],
+      "hero_stat": "36 points allowed in 3 games",
+      "url": "/nfl/stories/2026-09-30-jaguars-fewest-points-allowed"
+    }
+  ]
+}
