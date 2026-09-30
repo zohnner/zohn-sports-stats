@@ -10,7 +10,7 @@ Jacksonville is 2-1 and has allowed 12 points per game; the league average is 22
 
 It doesn't look like a soft-schedule mirage, at least not yet. Those 3 opponents scored 114 points in their other 6 games (19 per game), versus 12 per game against Jacksonville. Cleveland and New England both had their season-low scores against the Jaguars.
 
-The +46 point differential trails only San Francisco (+48). The offense is middle of the pack by comparison: 82 points, 10th in the league. Small sample, obviously; 3 games is 3 games.
+The +46 point differential trails only San Francisco (+48). The offense is good but not elite by comparison: 82 points, 10th in the league. Small sample, obviously; 3 games is 3 games.
 
 Full breakdown, with every number sourced: https://sportstrata.cc/nfl/stories/2026-09-30-jaguars-fewest-points-allowed
 

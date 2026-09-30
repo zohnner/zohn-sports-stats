@@ -1,6 +1,6 @@
 # SportStrata Stories (NFL) — Design
 
-**Date:** 2026-09-29 · **Status:** design approved in brainstorm, awaiting spec review · **Decision:** D-166 (to be recorded in DECISIONS.md when implementation lands)
+**Date:** 2026-09-29 · **Status:** approved; rollout step 2 implemented · **Decision:** D-166 (to be recorded in DECISIONS.md when implementation lands)
 
 ## Problem
 
@@ -64,7 +64,7 @@ Selection: novelty (not already covered this season — dedup against committed 
 - `<same>.social.md` — a Reddit-appropriate version (value first, link last, no link-only posts) and an X version. Not rendered on the site.
 
 ### 4. Number checker — `tools/stories/check-numbers.cjs` (zero deps)
-Extracts every numeric token from title, dek, body and social drafts: integers, decimals, percentages, `.900`-style rates, `9-of-10` / `9 of 10`, ordinals (`3rd`, `#3`). Each must match a value in the facts file after normalization (`90%` ≡ `0.9` ≡ `.900`; `9 of 10` → parts `9`, `10`; `#3` ≡ `3rd` ≡ `3`). Allowlist: dates, the frontmatter `season` and `week`. Spelled-out numbers above "one" are rejected outright. Exit 0 pass / 2 fail with each offending token and its location. Runs in CI on any PR touching `content/`.
+Extracts every numeric token from title, dek, body and social drafts: integers, decimals, percentages, `.900`-style rates, `9-of-10` / `9 of 10`, ordinals (`3rd`, `#3`). Each must match a value in the facts file after normalization (`90%` ≡ `0.9` ≡ `.900`; `9 of 10` → parts `9`, `10`; `#3` ≡ `3rd` ≡ `3`). Exempt: ISO dates; `Week N`/`Weeks N-M` only when every N is between 1 and `week`+1; years only in `<year> season|regular season|postseason|draft`; football phrasing (`3rd down`, `4th-and-2`, `second half`, …). Spelled-out numbers above "one" are rejected outright. Exit 0 pass / 2 fail with each offending token and its location. Runs in CI on any PR touching `content/`.
 
 ### 5. Edge rendering — `functions/nfl/stories/[slug].js` and `functions/nfl/stories/index.js`
 - Fetch the `.md` via `env.ASSETS`, parse frontmatter, render the body with a small hand-written renderer (~60 lines) that escapes all text and emits only the allowed subset.
