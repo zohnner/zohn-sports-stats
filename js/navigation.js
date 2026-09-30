@@ -936,6 +936,15 @@ function _loadFromHash() {
     if (window.__SS_ROUTE) {
         const _r = window.__SS_ROUTE; window.__SS_ROUTE = '';
         let _m;
+        // Edge-rendered content pages with no SPA view behind them (glossaries,
+        // stories): render nav chrome for the sport and return before navigateTo(),
+        // which would overwrite the prerendered #playersGrid and <head> (D-167).
+        if ((_m = /^static-page-(mlb|nfl|ncaaf|ncaab|wnba|nba)$/.exec(_r))) {
+            AppState.currentSport = _m[1];
+            AppState.currentView = 'static-page';
+            if (typeof _applySportUI === 'function') _applySportUI(_m[1]);
+            return;
+        }
         if ((_m = /^mlb-team-(\d+)$/.exec(_r))) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
