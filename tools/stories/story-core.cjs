@@ -93,7 +93,64 @@ function indexEntry(slug, meta) {
     };
 }
 
+const ALLOWED_PHRASES = [
+    /\b[1-4](?:st|nd|rd|th)[- ](?:down|quarter)\b/gi,
+    /\b[1-4](?:st|nd|rd|th)-and-\d+\b/gi,
+    /\bweeks? \d+(?:\s?[-–]\s?\d+)?\b/gi,
+    /\b\d{4}-\d{2}-\d{2}\b/g,
+    /\bQ[1-4]\b/g,
+    /\b(?:two-point|two-minute|four-down)\b/gi,
+];
+const SPELLED_RE = /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen)\b/gi;
+const NUM_RE = /(?<![\w.])(#)?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(%|st|nd|rd|th)?(?!\w)/g;
+
+function scrubText(text) {
+    let t = String(text).replace(/\]\([^)]*\)/g, ']').replace(/https?:\/\/\S+/g, ' ');
+    for (const re of ALLOWED_PHRASES) t = t.replace(re, ' ');
+    return t;
+}
+
+function factProblems(factsDoc) {
+    if (!factsDoc || !Array.isArray(factsDoc.facts)) throw new StoryError('facts file must be {"facts":[...]}');
+    const problems = [];
+    factsDoc.facts.forEach((f, i) => {
+        const ok = f && typeof f.key === 'string' && typeof f.value === 'number' && Number.isFinite(f.value)
+            && typeof f.source === 'string' && f.source.trim() !== '';
+        if (!ok) problems.push({ where: 'facts', token: String((f && f.key) || `#${i}`), message: `fact ${i} needs key, numeric value and source` });
+    });
+    return problems;
+}
+
+function tokenOf(m) {
+    const numStr = m[2].replace(/,/g, '');
+    return { raw: m[0], value: Number(numStr), decimals: (numStr.split('.')[1] || '').length, percent: m[3] === '%' };
+}
+
+function matchesFact(tok, values) {
+    const tol = 0.5 * Math.pow(10, -tok.decimals) + 1e-9;
+    return values.some(f => Math.abs(f - tok.value) <= tol || (tok.percent && Math.abs(f * 100 - tok.value) <= tol));
+}
+
+function checkStory(story, factsDoc, socialText) {
+    const problems = factProblems(factsDoc);
+    const values = factsDoc.facts.map(f => f && f.value).filter(v => typeof v === 'number' && Number.isFinite(v));
+    const allowed = [story.meta.season, story.meta.week].filter(Number.isInteger);
+    const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText]];
+    for (const [where, text] of fields) {
+        const clean = scrubText(text == null ? '' : text);
+        for (const w of clean.match(SPELLED_RE) || []) {
+            problems.push({ where, token: w, message: `spelled-out number "${w}" — use numerals` });
+        }
+        for (const m of clean.matchAll(NUM_RE)) {
+            const tok = tokenOf(m);
+            if (!tok.percent && tok.decimals === 0 && allowed.includes(tok.value)) continue;
+            if (!matchesFact(tok, values)) problems.push({ where, token: tok.raw, message: `"${tok.raw}" is not in the facts file` });
+        }
+    }
+    return problems;
+}
+
 module.exports = {
     StoryError, SLUG_RE, BYLINE, DISCLOSURE,
-    parseStory, validateMeta, renderBody, storyUrl, indexEntry,
+    parseStory, validateMeta, renderBody, storyUrl, indexEntry, checkStory,
 };

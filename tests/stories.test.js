@@ -23,7 +23,7 @@ const STORY = [
     '## A heading',
     '',
     '- one item',
-    '- two item',
+    '- second item',
 ].join('\n');
 
 test('parseStory reads frontmatter types and body', () => {
@@ -95,4 +95,61 @@ test('slug, url and index-entry helpers', () => {
         season: 2026, week: 4, teams: ['DET', 'NYJ'], players: [],
         hero_stat: '9 of 10 red-zone trips', url: '/nfl/stories/2026-09-30-x',
     });
+});
+
+const FACTS = { facts: [
+    { key: 'rz_td', value: 9, source: '/api/x' },
+    { key: 'rz_trips', value: 10, source: '/api/x' },
+    { key: 'rz_rate', value: 0.9048, source: '/api/x' },
+    { key: 'rating', value: 6.4, source: 'computeSRS' },
+    { key: 'yards', value: 1234, source: '/api/x' },
+    { key: 'rank', value: 3, source: '/api/x' },
+] };
+const draft = (body, meta = {}) => ({ meta: { title: 'T', dek: 'D', hero_stat: 'H', season: 2026, week: 4, ...meta }, body });
+const tokensOf = probs => probs.map(p => p.token);
+
+test('checkStory passes when every number is a fact', () => {
+    assert.deepEqual(core.checkStory(draft('Detroit scored on 9 of 10 trips, 1,234 yards, #3 overall.'), FACTS, ''), []);
+});
+
+test('checkStory matches percents, rates and rounding within the stated precision', () => {
+    assert.deepEqual(core.checkStory(draft('That is 90%, or 90.5%, a .905 clip, with a 6.4 rating (about 6).'), FACTS, ''), []);
+    assert.deepEqual(tokensOf(core.checkStory(draft('A 7 rating and 91%.'), FACTS, '')), ['7', '91%']);
+});
+
+test('checkStory ignores week refs, the season, link targets, football phrases and team names', () => {
+    const body = 'In Week 4 of the 2026 season the [49ers](/nfl/team/sf?v=77) faced a 3rd down, then a 4th-and-2, and went for two-point. See https://x.com/12345.';
+    assert.deepEqual(core.checkStory(draft(body), FACTS, ''), []);
+});
+
+test('checkStory rejects spelled-out numbers', () => {
+    assert.deepEqual(tokensOf(core.checkStory(draft('They won three straight and ten of eleven.'), FACTS, '')), ['three', 'ten', 'eleven']);
+});
+
+test('checkStory checks title, dek, hero_stat and social too', () => {
+    const probs = core.checkStory(draft('ok', { title: 'Up 12 spots', dek: 'A 5-game run', hero_stat: '44 yards' }), FACTS, 'Reddit: 88 points');
+    assert.deepEqual(probs.map(p => [p.where, p.token]), [['title', '12'], ['dek', '5'], ['hero_stat', '44'], ['social', '88']]);
+});
+
+test('checkStory requires a well-formed facts file with sources', () => {
+    assert.throws(() => core.checkStory(draft('x'), { nope: [] }, ''), core.StoryError);
+    const probs = core.checkStory(draft('9 trips'), { facts: [{ key: 'a', value: 9 }] }, '');
+    assert.deepEqual(probs.map(p => p.where), ['facts']);
+});
+
+test('check-numbers CLI exits 0 on a clean story and 2 on an unsourced number', (t) => {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const cli = require('../tools/stories/check-numbers.cjs');
+    t.mock.method(console, 'error', () => {});
+    t.mock.method(console, 'log', () => {});
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stories-'));
+    const md = path.join(dir, '2026-09-30-x.md');
+    fs.writeFileSync(md, STORY);
+    fs.writeFileSync(path.join(dir, '2026-09-30-x.facts.json'), JSON.stringify(FACTS));
+    fs.writeFileSync(path.join(dir, '2026-09-30-x.social.md'), 'Detroit: 9 of 10.');
+    assert.equal(cli.main([md]), 0);
+    fs.writeFileSync(path.join(dir, '2026-09-30-x.social.md'), 'Detroit: 11 of 12.');
+    assert.equal(cli.main([md]), 2);
 });
