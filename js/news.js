@@ -129,7 +129,7 @@ function displayNews(data, sport) {
         else grid.innerHTML = `<div class="news-empty">No recent news right now.</div>`;
         return;
     }
-    const label = sport === 'mlb' ? 'MLB' : sport === 'ncaaf' ? 'NCAAF' : 'NFL';
+    const label = (typeof SPORTS_META !== 'undefined' && SPORTS_META[sport] && SPORTS_META[sport].label) || String(sport || '').toUpperCase();
     const injuryCount = articles.filter(_isNewsInjuryRelated).length;
     const shown = _newsInjuryOnly ? articles.filter(_isNewsInjuryRelated) : articles;
 
@@ -139,10 +139,18 @@ function displayNews(data, sport) {
 
     grid.innerHTML = `<div class="news-page">
         <h2 class="news-page__title">${label} — Latest</h2>
+        <div id="newsStories"></div>
         ${_newsFilterBar(sport, injuryCount, articles.length)}
         ${list}
-        <p class="pct-caption">Headlines via ESPN · tap a story to read the full article${sport === 'ncaaf' ? '. No structured CFB injury report exists anywhere (ESPN, Sleeper, CollegeFootballData.com) — "Injury-Related" is a keyword match over real headlines, not an official report.' : ''}</p>
+        <p class="pct-caption">Wire headlines via ESPN · tap a story to read the full article${sport === 'ncaaf' ? '. No structured CFB injury report exists anywhere (ESPN, Sleeper, CollegeFootballData.com) — "Injury-Related" is a keyword match over real headlines, not an official report.' : ''}</p>
     </div>`;
+
+    if (sport === 'nfl' && typeof fetchStoriesIndex === 'function') {
+        fetchStoriesIndex().then(stories => {
+            const host = document.getElementById('newsStories');
+            if (host && host.isConnected) host.innerHTML = storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories');
+        });
+    }
 
     document.getElementById('newsFilterAll')?.addEventListener('click', () => { _newsInjuryOnly = false; displayNews(data, sport); });
     document.getElementById('newsFilterInjury')?.addEventListener('click', () => { _newsInjuryOnly = true; displayNews(data, sport); });
@@ -151,4 +159,31 @@ function displayNews(data, sport) {
 if (typeof window !== 'undefined') {
     window.loadNews = loadNews;
     window.displayNews = displayNews;
+}
+
+// ── SportStrata Stories (D-166) ──────────────────────────────
+// Committed, human-reviewed stories listed in /content/nfl/stories/index.json
+// (built by tools/stories/build-index.cjs). One shared promise per page load;
+// every surface (home rail, NFL landing, team pages, News) reads it.
+let _storiesIndexPromise = null;
+function fetchStoriesIndex() {
+    if (!_storiesIndexPromise) {
+        _storiesIndexPromise = fetch('/content/nfl/stories/index.json')
+            .then(r => (r.ok ? r.json() : { stories: [] }))
+            .then(d => (d && Array.isArray(d.stories) ? d.stories : []))
+            .catch(err => { Logger.warn('stories index unavailable', err && err.message, 'NEWS'); return []; });
+    }
+    return _storiesIndexPromise;
+}
+
+function storiesBlockHtml(stories, heading) {
+    if (!stories || !stories.length) return '';
+    const rows = stories.map(s => `<a class="story-row" href="${_escHtml(s.url)}">
+            <span class="story-row__title">${_escHtml(s.title)}</span>
+            <span class="story-row__dek">${_escHtml(s.dek)}</span>
+        </a>`).join('');
+    return `<section class="stories-block">
+        <div class="stories-block__hdr"><span class="eyebrow">${_escHtml(heading)}</span><a class="stories-block__more" href="/nfl/stories">All stories →</a></div>
+        ${rows}
+    </section>`;
 }
