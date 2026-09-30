@@ -168,3 +168,47 @@ test('checkStory only exempts plausible week references and year-season phrases'
     assert.deepEqual(core.checkStory(draft('In Week 4, after Weeks 1-3 and before Week 5, the 2026 season turned.'), FACTS, ''), []);
     assert.deepEqual(tokensOf(core.checkStory(draft('In Week 88 he needed 4 more catches and sold 2026 tickets.'), FACTS, '')), ['88', '4', '2026']);
 });
+
+const indexCli = require('../tools/stories/build-index.cjs');
+
+function storyDir(files) {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stories-idx-'));
+    for (const [name, text] of Object.entries(files)) fs.writeFileSync(path.join(dir, name), text);
+    return dir;
+}
+const storyAt = (date, title) => STORY.replace('date: 2026-09-30', `date: ${date}`).replace('Detroit keeps finishing drives', title);
+
+test('loadStories indexes valid stories newest first and ignores non-story files', () => {
+    const dir = storyDir({
+        '2026-09-23-older.md': storyAt('2026-09-23', 'Older'), '2026-09-23-older.facts.json': JSON.stringify(FACTS), '2026-09-23-older.social.md': 'x',
+        '2026-09-30-newer.md': storyAt('2026-09-30', 'Newer'), '2026-09-30-newer.facts.json': JSON.stringify(FACTS), '2026-09-30-newer.social.md': 'x',
+        'README.md': '# not a story',
+    });
+    const { stories, problems } = indexCli.loadStories(dir);
+    assert.deepEqual(problems, []);
+    assert.deepEqual(stories.map(s => s.slug), ['2026-09-30-newer', '2026-09-23-older']);
+});
+
+test('loadStories reports missing files, unsourced numbers and a filename/date mismatch', () => {
+    const dir = storyDir({
+        '2026-09-30-nofacts.md': STORY,
+        '2026-09-30-badnum.md': STORY.replace('First paragraph.', 'They scored 77 points.'), '2026-09-30-badnum.facts.json': JSON.stringify(FACTS), '2026-09-30-badnum.social.md': 'x',
+        '2026-10-01-wrongdate.md': STORY, '2026-10-01-wrongdate.facts.json': JSON.stringify(FACTS), '2026-10-01-wrongdate.social.md': 'x',
+    });
+    const { problems } = indexCli.loadStories(dir);
+    assert.ok(problems.some(p => p.startsWith('2026-09-30-nofacts: missing 2026-09-30-nofacts.facts.json')));
+    assert.ok(problems.some(p => p.startsWith('2026-09-30-badnum: [body]') && p.includes('"77"')));
+    assert.ok(problems.some(p => p.startsWith('2026-10-01-wrongdate: filename date must match')));
+});
+
+test('main --check fails on a stale index and passes after a rebuild', (t) => {
+    t.mock.method(console, 'error', () => {});
+    t.mock.method(console, 'log', () => {});
+    const dir = storyDir({ '2026-09-30-x.md': STORY, '2026-09-30-x.facts.json': JSON.stringify(FACTS), '2026-09-30-x.social.md': 'x' });
+    assert.equal(indexCli.main(['--check', '--dir', dir]), 2);
+    assert.equal(indexCli.main(['--dir', dir]), 0);
+    assert.equal(indexCli.main(['--check', '--dir', dir]), 0);
+});
