@@ -77,6 +77,13 @@ test('renderBody keeps safe links and neutralizes unsafe ones', () => {
         '<p>bad) proto http</p>');
 });
 
+test('renderBody rejects backslash, protocol-relative and userinfo link tricks', () => {
+    assert.equal(core.renderBody('[a](/\\evil.com) [b](/\\/evil.com) [c](https://sportstrata.cc@evil.com/) [d](/nfl\\x)'),
+        '<p>a b c d</p>');
+    assert.equal(core.renderBody('[ok](/) [ok2](/nfl/stories/x)'),
+        '<p><a href="/">ok</a> <a href="/nfl/stories/x">ok2</a></p>');
+});
+
 test('slug, url and index-entry helpers', () => {
     assert.ok(core.SLUG_RE.test('2026-09-30-detroit-red-zone'));
     assert.ok(!core.SLUG_RE.test('../etc/passwd'));

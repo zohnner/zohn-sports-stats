@@ -14,7 +14,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const REQUIRED = ['title', 'dek', 'date', 'season', 'week', 'teams', 'hero_stat'];
 const BYLINE = 'SportStrata Data Desk';
 const DISCLOSURE = "Written with AI assistance from SportStrata's own data; every number above is listed with its source in this story's data file.";
-const SAFE_URL = /^(?:https:\/\/|\/)[^\s<>"']*$/;
+const SAFE_URL = /^(?:https:\/\/[^\s<>"'\\@]+|\/(?![\/\\])[^\s<>"'\\]*)$/;
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -61,7 +61,7 @@ function renderBold(escaped) {
 function renderInline(text) {
     const links = [];
     const withSlots = String(text).replace(/\u0000/g, '').replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
-        const safe = SAFE_URL.test(url) && !url.startsWith('//');
+        const safe = SAFE_URL.test(url);
         links.push(safe ? `<a href="${esc(url)}">${renderBold(esc(label))}</a>` : renderBold(esc(label)));
         return `\u0000${links.length - 1}\u0000`;
     });
