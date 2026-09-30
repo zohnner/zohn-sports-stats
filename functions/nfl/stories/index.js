@@ -8,6 +8,9 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
+function setAttr(html, re, value) {
+    return html.replace(re, (_, open, close) => `${open}${value}${close}`);
+}
 function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 function prettyDate(iso) {
     return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -39,17 +42,16 @@ export async function onRequest(context) {
             `<p><a href="/nfl">NFL Home</a></p></section>`;
 
         let html = await (await shell(env, request.url)).text();
-        html = html
-            .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
-            .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace(/(<link id="canonicalLink" rel="canonical"\s*href=")[^"]*(">)/, `$1${canonical}$2`)
-            .replace(/(<meta id="ogUrl"\s*property="og:url"\s*content=")[^"]*(">)/, `$1${canonical}$2`)
-            .replace(/(<meta id="ogTitle"\s*property="og:title"\s*content=")[^"]*(">)/, `$1${esc(title)}$2`)
-            .replace(/(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace(/(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, `$1${esc(title)}$2`)
-            .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, '\\u003c')}</script><script>window.__SS_ROUTE=${JSON.stringify('static-page-nfl')};</script></head>`)
-            .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
+        html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(title)}</title>`);
+        html = setAttr(html, /(<meta name="description" content=")[^"]*(">)/, esc(desc));
+        html = setAttr(html, /(<link id="canonicalLink" rel="canonical"\s*href=")[^"]*(">)/, canonical);
+        html = setAttr(html, /(<meta id="ogUrl"\s*property="og:url"\s*content=")[^"]*(">)/, canonical);
+        html = setAttr(html, /(<meta id="ogTitle"\s*property="og:title"\s*content=")[^"]*(">)/, esc(title));
+        html = setAttr(html, /(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, esc(desc));
+        html = setAttr(html, /(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, esc(title));
+        html = setAttr(html, /(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, esc(desc));
+        html = html.replace('</head>', () => `<script type="application/ld+json">${jsonld.replace(/</g, '\\u003c')}</script><script>window.__SS_ROUTE=${JSON.stringify('static-page-nfl')};</script></head>`);
+        html = html.replace('<div id="playersGrid" class="players-grid"></div>', () => `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
         return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=600' } });
