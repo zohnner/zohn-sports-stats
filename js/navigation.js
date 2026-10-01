@@ -943,6 +943,7 @@ function _loadFromHash() {
             AppState.currentSport = _m[1];
             AppState.currentView = 'static-page';
             if (typeof _applySportUI === 'function') _applySportUI(_m[1]);
+            document.getElementById('searchBar')?.style.setProperty('display', 'none');
             return;
         }
         if ((_m = /^mlb-team-(\d+)$/.exec(_r))) {
