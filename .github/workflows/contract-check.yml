@@ -1,0 +1,45 @@
+name: Contract Check
+
+# Nightly check of production /api/* proxies against tools/contracts/*.cjs.
+# Spec: docs/superpowers/specs/2026-09-28-contract-monitor-design.md
+# 11:00 UTC = after overnight finals settle (last West Coast MLB/NFL games).
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run contract check
+        id: check
+        run: |
+          set +e
+          node tools/contract-check.cjs https://sportstrata.cc --json contract-report.json
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Sync contract-drift issues
+        if: always() && hashFiles('contract-report.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/contract-issues.cjs contract-report.json
+
+      - name: Set job result
+        if: always()
+        run: |
+          code='${{ steps.check.outputs.code }}'
+          if [ "$code" = "1" ]; then echo "::warning::Contract warnings — see the 'Run contract check' step log"; fi
+          if [ "$code" != "0" ] && [ "$code" != "1" ]; then exit 1; fi
