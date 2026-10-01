@@ -26,6 +26,8 @@
     <url><loc>https://sportstrata.cc/nba/leaders</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
     <url><loc>https://sportstrata.cc/glossary</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/nfl/glossary</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/stories</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/stories/2026-09-30-jaguars-fewest-points-allowed</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/ath</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/pit</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/mlb/team/sd</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
@@ -182,21 +184,6 @@
     <url><loc>https://sportstrata.cc/mlb/player/605400/aaron-nola</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/518876/merrill-kelly</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/607625/seth-lugo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824382</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823004</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823655</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822763</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824467</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822926</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823332</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822680</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823576</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824626</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822846</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824140</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824306</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823979</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/825031</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/823334</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/824464</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/822924</loc><changefreq>never</changefreq><priority>0.4</priority></url>
@@ -350,6 +337,9 @@
     <url><loc>https://sportstrata.cc/mlb/game/849846</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/849848</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/849842</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/849844</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/849847</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/849840</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2000/abilene-christian-wildcats</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2001/adams-state-grizzlies</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2003/adrian-bulldogs</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
