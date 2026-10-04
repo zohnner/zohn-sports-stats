@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastPlayArrowId: null, lastTimeouts: { home: null, away: null }, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, lastDown: null, fvLastPositions: null, fvPendingPositions: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null, lastBreakKey: undefined };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -138,7 +138,7 @@ async function showNFLGame(eventId) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; }
+    if (isNewGame) { _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastTimeouts = { home: null, away: null }; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastDown = null; _nlg.fvLastPositions = null; _nlg.fvPendingPositions = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; _nlg.lastBreakKey = undefined; }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Self-set currentView rather than relying on navigateTo() having done it —
@@ -411,9 +411,16 @@ function _nlgRenderHeader(comp, home, away) {
     const sitPossTeamName = possResolves
         ? (String(sit.possession) === String(homeTeamId) ? (home?.team?.shortDisplayName || home?.team?.name) : (away?.team?.shortDisplayName || away?.team?.name))
         : null;
-    const fieldHtml = sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
-        ? _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc)
-        : '';
+    // Break card (2026-10-04): takes the field's slot during dead time. Also
+    // wins over a field the scoreboard still thinks is live when the summary
+    // already shows a score (see _nlgBreakInfo's lag note).
+    const breakInfo = live && _nlg.lastData ? _nlgBreakInfo(_nlg.lastData, sit) : null;
+    if (!breakInfo) _nlg.lastBreakKey = null;
+    const fieldHtml = breakInfo
+        ? _nlgBreakCardHtml(breakInfo, _nlg.lastData, home, away, tc)
+        : (sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && possResolves
+            ? _nlgFieldViewerHtml(sit, homeTeamId, awayTeamId, home, away, tc)
+            : '');
     // D-1xx (2026-09-09): live-verified with a synthetic-but-real live
     // situation that this bar was rendering directly under the field
     // viewer showing the exact same possession + down/distance the field
@@ -453,7 +460,10 @@ function _nlgRenderHeader(comp, home, away) {
     if (isBattle && !_nlg.lastBattleState) _nlgPlayTone('battle');
     _nlg.lastBattleState = isBattle;
 
-    const sitLine = sit
+    const summaryLastPlay = breakInfo ? _nlgAllPlaysFlat(_nlg.lastData).slice(-1)[0] : null;
+    const sitLine = breakInfo
+        ? (summaryLastPlay?.text ? `<div class="nlg-situation"><span class="nlg-lastplay">${_escHtml(summaryLastPlay.text)}</span></div>` : '')
+        : sit
         ? (fieldHtml
             ? (sit.lastPlay && sit.lastPlay.text
                 ? `<div class="nlg-situation${sitFlashCls}"><span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span></div>`
@@ -492,7 +502,7 @@ function _nlgRenderHeader(comp, home, away) {
           ${sitLine}
         </div>
         ${fieldHtml}`;
-    if (fieldHtml) _nlgAnimateFieldMotion();
+    if (fieldHtml && !breakInfo) _nlgAnimateFieldMotion();
 }
 
 // D-105/Phase-1 field redesign: ESPN Gamecast-style live field position
@@ -2011,40 +2021,75 @@ function _nlgSidebarHtml(data, comp, home, away) {
 // chronological list -- shared by Key Plays and Catch Me Up (below) so this
 // isn't duplicated a second time. Already-fetched data (Play-by-Play/Box
 // Score need it too), no new fetch either place.
-function _nlgAllPlaysFlat(data) {
-    return [
-        ...((data.drives?.previous || []).flatMap(d => d.plays || [])),
-        ...((data.drives?.current?.plays) || []),
-    ];
+// Chronological drive list, deduped the same way _nlgAllDrives is: ESPN
+// repeats the in-progress drive as both drives.current and the last
+// drives.previous entry (re-confirmed live 2026-10-04, NE@BUF). Without the
+// dedup every play in that drive appeared twice here -- the cause of Catch
+// Me Up listing the same kickoff return twice.
+function _nlgDrivesChrono(data) {
+    const drivesObj = data.drives || {};
+    const cur = drivesObj.current;
+    const prev = (drivesObj.previous || []).filter(d => !cur || d.id !== cur.id);
+    return cur ? [...prev, cur] : prev;
 }
 
-function _nlgKeyPlays(data) {
-    const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
-    if (wp.length < 2) return '';
+function _nlgAllPlaysFlat(data) {
+    return _nlgDrivesChrono(data).flatMap(d => d.plays || []);
+}
 
-    const allPlays = _nlgAllPlaysFlat(data);
-    if (!allPlays.length) return '';
-    const playById = new Map(allPlays.map(p => [String(p.id), p]));
+// The one win-probability series every consumer reads (chart, Key Plays,
+// break card) -- so a dot's index on the chart and a swing's wpIndex always
+// refer to the same entry.
+function _nlgWpSeries(data) {
+    return (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number' && w.playId);
+}
 
-    // ESPN's own type.text lies here -- a "*** play under review ***"
-    // administrative marker (not a real snap) is categorized as a plain
-    // "Rush," so the play-arrow's own type.text-based admin filter doesn't
-    // catch it. Found live: it tied for #2 in a real ranking, right behind
-    // an actual touchdown. Filtered on the literal asterisk-wrapped marker
-    // text instead, the only reliable signal ESPN gives for this case.
+// Every play's win-probability swing, in game order. ESPN's own type.text
+// lies here -- a "*** play under review ***" administrative marker (not a
+// real snap) is categorized as a plain "Rush," so the play-arrow's own
+// type.text-based admin filter doesn't catch it. Found live: it tied for #2
+// in a real ranking, right behind an actual touchdown. Filtered on the
+// literal asterisk-wrapped marker text instead, the only reliable signal
+// ESPN gives for this case.
+function _nlgWpSwings(data) {
+    const wp = _nlgWpSeries(data);
+    if (wp.length < 2) return [];
+    const playById = new Map(_nlgAllPlaysFlat(data).map(p => [String(p.id), p]));
     const swings = [];
     for (let i = 1; i < wp.length; i++) {
         const play = playById.get(String(wp[i].playId));
         if (!play || !play.text) continue; // no play text to show -- skip rather than render a bare percentage
         if (/^\s*\*{3}.*\*{3}\s*$/.test(play.text)) continue;
-        swings.push({ delta: Math.abs(wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage), play });
+        swings.push({ delta: Math.abs(wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage), play, wpIndex: i });
     }
-    if (!swings.length) return '';
+    return swings;
+}
 
-    const top = swings.sort((a, b) => b.delta - a.delta).slice(0, 5);
-    const rows = top.map(({ delta, play }, i) => `
-        <div class="nlg-keyplay-row">
-            <span class="nlg-keyplay-rank">${i + 1}</span>
+// Top 5, numbered -- shared by the Key Plays list and the chart's numbered
+// dots so the two can never disagree about which play is #3.
+function _nlgKeyPlaySwings(data) {
+    return _nlgWpSwings(data)
+        .sort((a, b) => b.delta - a.delta)
+        .slice(0, 5)
+        .map((s, i) => ({ ...s, rank: i + 1 }));
+}
+
+// Chart dot click -> scroll to and briefly highlight the matching Key Plays row.
+function _nlgFocusKeyPlay(rank) {
+    const row = document.getElementById('nlg-kp-' + rank);
+    if (!row) return;
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    row.classList.remove('nlg-keyplay-row--focus');
+    void row.offsetWidth;
+    row.classList.add('nlg-keyplay-row--focus');
+}
+
+function _nlgKeyPlays(data) {
+    const top = _nlgKeyPlaySwings(data);
+    if (!top.length) return '';
+    const rows = top.map(({ delta, play, rank }) => `
+        <div class="nlg-keyplay-row" id="nlg-kp-${rank}">
+            <span class="nlg-keyplay-rank">${rank}</span>
             <span class="nlg-keyplay-text">${_escHtml(play.text)}</span>
             <span class="nlg-keyplay-wp">${Math.round(delta * 100)}<span class="nlg-keyplay-wp-unit">% WP</span></span>
         </div>`).join('');
@@ -2283,37 +2328,218 @@ function _nlgMatchupColors(homeAbbr, awayAbbr) {
     return { home: r.home || 'var(--accent)', away: r.away || 'var(--text-muted)' };
 }
 
-function _nlgWinProbability(data, home, away) {
-    const wp = (data.winprobability || []).filter(w => typeof w.homeWinPercentage === 'number');
+// One renderer, two sizes (2026-10-04 break card): 'small' in the sidebar,
+// 'large' in the break card. Both carry quarter ticks, team labels, and the
+// top-5 Key Plays as numbered dots (same numbers as the Key Plays list --
+// both read _nlgKeyPlaySwings). Lines live in a stretched SVG
+// (preserveAspectRatio="none" + non-scaling strokes); dots and labels are
+// HTML positioned over it in %, the same split D-148 made for the field's
+// team logos -- text or circles inside a stretched SVG smear into ovals, and
+// inside a uniformly-scaled one they shrink to ~4px on a phone. clipPath ids
+// carry the size so both charts can share a page.
+const _NLG_WP_DIMS = {
+    small: { w: 220, h: 56, padX: 4, padY: 5, nudgeDx: 9, nudgeDy: 30 },
+    large: { w: 640, h: 120, padX: 6, padY: 8, nudgeDx: 3.5, nudgeDy: 20 },
+};
+
+function _nlgWpChartSvg(data, home, away, opts = {}) {
+    const wp = _nlgWpSeries(data);
     if (wp.length < 2) return '';
+    const size = opts.size === 'large' ? 'large' : 'small';
+    const D = _NLG_WP_DIMS[size];
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
     const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
     const n = wp.length;
-    const w = 220, hgt = 56, pad = 4;
-    const midY = hgt / 2;
-    const xFor = (i) => pad + (i / (n - 1)) * (w - pad * 2);
-    const yFor = (pct) => pad + (1 - pct) * (hgt - pad * 2);
+    const midY = D.h / 2;
+    const xFor = (i) => D.padX + (i / (n - 1)) * (D.w - D.padX * 2);
+    const yFor = (pct) => D.padY + (1 - pct) * (D.h - D.padY * 2);
     const pts = wp.map((p, i) => `${xFor(i).toFixed(1)},${yFor(p.homeWinPercentage).toFixed(1)}`).join(' ');
-    const cur = wp[n - 1].homeWinPercentage;
+
+    const playById = new Map(_nlgAllPlaysFlat(data).map(p => [String(p.id), p]));
+    const periodAt = (i) => playById.get(String(wp[i].playId))?.period?.number;
+    let qticks = '';
+    for (let i = 1; i < n; i++) {
+        const a = periodAt(i - 1), b = periodAt(i);
+        if (a && b && b !== a) {
+            const x = ((xFor(i - 1) + xFor(i)) / 2).toFixed(1);
+            qticks += `<line class="nlg-wp-qtick" x1="${x}" y1="${D.padY}" x2="${x}" y2="${D.h - D.padY}" vector-effect="non-scaling-stroke"/>`;
+        }
+    }
+
+    let driveShade = '';
+    if (opts.driveId) {
+        const drive = _nlgDrivesChrono(data).find(d => String(d.id) === String(opts.driveId));
+        const ids = new Set((drive?.plays || []).map(p => String(p.id)));
+        const idx = wp.map((w, i) => (ids.has(String(w.playId)) ? i : -1)).filter(i => i >= 0);
+        if (idx.length) {
+            const x0 = xFor(Math.max(0, idx[0] - 1)), x1 = xFor(idx[idx.length - 1]);
+            driveShade = `<rect class="nlg-wp-drive" x="${x0.toFixed(1)}" y="${D.padY}" width="${Math.max(1, x1 - x0).toFixed(1)}" height="${D.h - D.padY * 2}"/>`;
+        }
+    }
+
+    // Plays a few snaps apart land on top of each other (live-observed: #1
+    // and #3 on one CHI goal-line stand). Each dot that crowds an earlier one
+    // steps TOWARD the 50% line by one dot-height per crowding neighbour --
+    // a lopsided game hugs the chart's edge, so the open space is inward;
+    // stepping outward pushed a dot clean off the sidebar chart (live-seen).
+    const placed = [];
+    const dots = _nlgKeyPlaySwings(data)
+        .sort((a, b) => a.wpIndex - b.wpIndex)
+        .map(({ rank, wpIndex, play }) => {
+            const left = (xFor(wpIndex) / D.w) * 100;
+            const top = (yFor(wp[wpIndex].homeWinPercentage) / D.h) * 100;
+            const nudge = placed.filter(p => Math.abs(p.left - left) < D.nudgeDx && Math.abs(p.top - top) < D.nudgeDy).length;
+            placed.push({ left, top });
+            const dir = top <= 50 ? 1 : -1;
+            return `<button type="button" class="nlg-wp-dot" data-rank="${rank}" style="left:${left.toFixed(2)}%;top:${top.toFixed(2)}%;--nudge:${nudge * dir}" title="${_escHtml(`#${rank}: ${play.text}`)}" aria-label="${_escHtml(`Key play ${rank}: ${play.text}`)}" onclick="_nlgFocusKeyPlay(${rank})">${rank}</button>`;
+        }).join('');
+
+    const clipA = `nlg-wp-clip-above-${size}`, clipB = `nlg-wp-clip-below-${size}`;
+    return `<div class="nlg-wp-chart nlg-wp-chart--${size}">
+        <svg class="nlg-wp-svg nlg-wp-svg--${size}" viewBox="0 0 ${D.w} ${D.h}" preserveAspectRatio="none" role="img" aria-label="Win probability chart">
+            <defs>
+                <clipPath id="${clipA}"><rect x="0" y="0" width="${D.w}" height="${midY}"/></clipPath>
+                <clipPath id="${clipB}"><rect x="0" y="${midY}" width="${D.w}" height="${D.h - midY}"/></clipPath>
+            </defs>
+            ${driveShade}
+            ${qticks}
+            <line class="nlg-wp-mid" x1="${D.padX}" y1="${midY}" x2="${D.w - D.padX}" y2="${midY}" vector-effect="non-scaling-stroke"/>
+            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2" vector-effect="non-scaling-stroke" clip-path="url(#${clipA})"/>
+            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" vector-effect="non-scaling-stroke" clip-path="url(#${clipB})"/>
+        </svg>
+        <span class="nlg-wp-team nlg-wp-team--home" style="color:${_escHtml(hColor)}">${_escHtml(homeAbbr)}</span>
+        <span class="nlg-wp-team nlg-wp-team--away" style="color:${_escHtml(aColor)}">${_escHtml(awayAbbr)}</span>
+        ${dots}
+    </div>`;
+}
+
+function _nlgWinProbability(data, home, away) {
+    const wp = _nlgWpSeries(data);
+    if (wp.length < 2) return '';
+    const homeAbbr = (home.team || {}).abbreviation || '';
+    const awayAbbr = (away.team || {}).abbreviation || '';
+    const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
+    const cur = wp[wp.length - 1].homeWinPercentage;
     const curAbbr = cur >= 0.5 ? homeAbbr : awayAbbr;
     const curColor = cur >= 0.5 ? hColor : aColor;
     const curVal = Math.round((cur >= 0.5 ? cur : 1 - cur) * 100);
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Win Probability</h3>
-        <svg class="nlg-wp-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
-            <defs>
-                <clipPath id="nlg-wp-clip-above"><rect x="0" y="0" width="${w}" height="${midY}"/></clipPath>
-                <clipPath id="nlg-wp-clip-below"><rect x="0" y="${midY}" width="${w}" height="${hgt - midY}"/></clipPath>
-            </defs>
-            <line x1="${pad}" y1="${midY}" x2="${w - pad}" y2="${midY}" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3,3"/>
-            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2" clip-path="url(#nlg-wp-clip-above)"/>
-            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" clip-path="url(#nlg-wp-clip-below)"/>
-        </svg>
+        ${_nlgWpChartSvg(data, home, away, { size: 'small' })}
         <div class="nlg-wp-legend">
             <span style="color:${_escHtml(curColor)}">${_escHtml(curAbbr)} ${curVal}%</span>
             <span class="pct-caption">Win probability</span>
         </div>
     </div>`;
+}
+
+// -- Break card (2026-10-04) — replaces the field graphic during dead time
+// (after scores, punts, turnovers, timeouts, quarter ends, halftime), which
+// is exactly when a second-screen fan looks over and the field used to
+// vanish, leaving a bare "Official Timeout at 14:15." line. Recaps the drive
+// that just ended and how much it moved the game. Everything comes from the
+// /summary payload already polled every 20s -- no new fetch.
+//
+// Drive results observed live: TD, PUNT (2026-10-04). The rest of the map
+// is ESPN's documented vocabulary; any result NOT in it omits the "next
+// possession" line rather than guessing (a pick-six's possession logic, for
+// one, is the reverse of a plain INT's).
+const _NLG_NEXT_POSS = {
+    TD: 'receives', FG: 'receives',
+    PUNT: 'ball', INT: 'ball', FUMBLE: 'ball', DOWNS: 'ball', 'MISSED FG': 'ball', 'BLOCKED FG': 'ball', 'BLOCKED PUNT': 'ball',
+};
+const _NLG_ORDINAL = { 1: '1ST', 2: '2ND', 3: '3RD', 4: '4TH' };
+
+function _nlgBreakInfo(data, sit) {
+    const comp = _nlgComp(data);
+    const statusName = comp.status?.type?.name;
+    const isHalftime = statusName === 'STATUS_HALFTIME';
+    const isEndPeriod = statusName === 'STATUS_END_PERIOD';
+    const plays = _nlgAllPlaysFlat(data);
+    // The summary and the scoreboard update at different moments: for one
+    // poll after a score the scoreboard can still report the pre-snap down
+    // (live-observed 2026-10-04 -- header said 7-6 while the field still
+    // showed 1st & Goal). A scoring play as the summary's latest play wins
+    // over a stale down. A missing situation is NOT treated as a break --
+    // a failed scoreboard fetch mid-drive shouldn't flip the card on.
+    const justScored = !!plays[plays.length - 1]?.scoringPlay;
+    const downLive = sit && typeof sit.down === 'number' && sit.down >= 1;
+    if (!isHalftime && !isEndPeriod && !justScored && (!sit || downLive)) return null;
+
+    const drives = _nlgDrivesChrono(data);
+    const drive = [...drives].reverse().find(d => d.result);
+    if (!drive || !(drive.plays || []).length) return null;
+
+    const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
+    const homeAbbr = home.team?.abbreviation || '', awayAbbr = away.team?.abbreviation || '';
+    const teamAbbr = drive.team?.abbreviation || '';
+    const oppAbbr = teamAbbr === homeAbbr ? awayAbbr : (teamAbbr === awayAbbr ? homeAbbr : '');
+
+    const headline = isHalftime ? 'HALFTIME'
+        : isEndPeriod ? `END OF ${_NLG_ORDINAL[comp.status?.period] || 'QUARTER'}`
+        : `${teamAbbr} ${String(drive.displayResult || drive.result).toUpperCase()}`.trim();
+
+    const driveLine = [
+        String(drive.description || '').split(', ').filter(Boolean).join(' · '),
+        drive.start?.text ? `from ${drive.start.text}` : '',
+    ].filter(Boolean).join(' · ');
+
+    // Swing measured from the entry just BEFORE the drive's first play (each
+    // winprobability entry is the state AFTER its playId -- D-106) to now,
+    // framed around whoever leads now, same convention as Catch Me Up.
+    const wp = _nlgWpSeries(data);
+    const driveIds = new Set(drive.plays.map(p => String(p.id)));
+    const firstIdx = wp.findIndex(w => driveIds.has(String(w.playId)));
+    let wpBeforePct = null, wpAfterPct = null, leaderAbbr = null;
+    if (firstIdx > 0) {
+        const before = wp[firstIdx - 1].homeWinPercentage;
+        const after = wp[wp.length - 1].homeWinPercentage;
+        const leaderIsHome = after >= 0.5;
+        leaderAbbr = leaderIsHome ? homeAbbr : awayAbbr;
+        wpBeforePct = Math.round((leaderIsHome ? before : 1 - before) * 100);
+        wpAfterPct = Math.round((leaderIsHome ? after : 1 - after) * 100);
+    }
+
+    const driveSwings = _nlgWpSwings(data).filter(s => driveIds.has(String(s.play.id)));
+    const biggest = driveSwings.sort((a, b) => b.delta - a.delta)[0];
+    const keyRank = biggest ? (_nlgKeyPlaySwings(data).find(k => String(k.play.id) === String(biggest.play.id))?.rank || null) : null;
+    const swingPlay = biggest ? { text: biggest.play.text, rank: keyRank, deltaPct: Math.round(biggest.delta * 100) } : null;
+
+    const nextVerb = _NLG_NEXT_POSS[String(drive.result || '').toUpperCase()];
+    const nextPoss = (!isHalftime && !isEndPeriod && nextVerb && oppAbbr) ? `${oppAbbr} ${nextVerb}` : null;
+
+    return { headline, driveId: String(drive.id), driveTeam: teamAbbr, driveLine, leaderAbbr, wpBeforePct, wpAfterPct, swingPlay, nextPoss };
+}
+
+function _nlgBreakCardHtml(info, data, home, away, tc) {
+    // Entrance animation only when the break itself changes (new drive or
+    // new status headline) -- the header rebuilds every 20s poll, and a
+    // long official timeout shouldn't re-flash the card on every tick.
+    const key = `${info.driveId}|${info.headline}`;
+    const flash = _nlg.lastBreakKey !== undefined && _nlg.lastBreakKey !== key ? ' nlg-break--enter' : '';
+    _nlg.lastBreakKey = key;
+    const wpLine = info.wpBeforePct != null
+        ? (() => {
+            const diff = info.wpAfterPct - info.wpBeforePct;
+            const sign = diff > 0 ? '+' : diff < 0 ? '−' : '±';
+            return `<div class="nlg-break-wp"><span>${_escHtml(info.leaderAbbr)} win probability</span>
+                <span class="nlg-break-wp-vals">${info.wpBeforePct}% → ${info.wpAfterPct}%</span>
+                <span class="nlg-break-wp-delta">${sign}${Math.abs(diff)}</span></div>`;
+        })()
+        : '';
+    const swing = info.swingPlay
+        ? `<p class="nlg-break-swing"><span class="nlg-break-label">Biggest play${info.swingPlay.rank ? ` · Key Play #${info.swingPlay.rank}` : ''}</span>${_escHtml(info.swingPlay.text)}</p>`
+        : '';
+    return `<section class="nlg-break${flash}" style="--tc:${_escHtml(tc(info.driveTeam))}" aria-live="polite">
+        <div class="nlg-break-head">
+            <span class="nlg-break-kicker">${_escHtml(info.headline)}</span>
+            ${info.nextPoss ? `<span class="nlg-break-next">Next: ${_escHtml(info.nextPoss)}</span>` : ''}
+        </div>
+        ${info.driveLine ? `<div class="nlg-break-drive">${_escHtml(info.driveLine)}</div>` : ''}
+        ${wpLine}
+        ${_nlgWpChartSvg(data, home, away, { size: 'large', driveId: info.driveId })}
+        ${swing}
+    </section>`;
 }
 
 // Playoff-race context (data.standings.groups[], live-verified 2026-08-09):
