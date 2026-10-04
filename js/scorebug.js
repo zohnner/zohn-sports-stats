@@ -101,8 +101,22 @@
         return `${etH % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
     }
 
+    // ESPN's displayClock sits at "0:00" through halftime and every quarter
+    // break (live-observed 2026-10-04: seven games at once read "0:00" in the
+    // ticker while the Scores cards correctly said "Halftime"). A stopped
+    // clock defers to the status text; anything unrecognized says LIVE rather
+    // than a 0:00 that reads like the game clock ran out mid-quarter.
+    function _footballLivePill(g) {
+        if (g.clock && g.clock !== '0:00') return g.clock;
+        const st = String(g.statusText || '').trim();
+        if (/^half/i.test(st)) return 'HALF';
+        const end = st.match(/^end of (\w+)/i);
+        if (end) return `END ${end[1].toUpperCase()}`;
+        return 'LIVE';
+    }
+
     // ── Normalizer: football (NFL / NCAAF share the same scoreboard shape) → model ──
-    // g: { id, date, isFinal, isLive, clock?, broadcast?, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
+    // g: { id, date, isFinal, isLive, clock?, statusText?, broadcast?, homeTeam:{abbr,name,score,logo,winner,rank?}, awayTeam:{...} }
     function _normalizeFootball(g, sport) {
         const mk = t => ({
             abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
@@ -117,7 +131,7 @@
             sport, key: `${sport}-${g.id}`, id: g.id,
             status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
             pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
-            pillLabel: isLive ? (g.clock || 'LIVE') : isFinal ? 'Final' : _kickoffLabel(g.date),
+            pillLabel: isLive ? _footballLivePill(g) : isFinal ? 'Final' : _kickoffLabel(g.date),
             hasScore: true,
             home: mk(g.homeTeam), away: mk(g.awayTeam),
             liveHtml: '', matchHtml, ariaExtra: '',

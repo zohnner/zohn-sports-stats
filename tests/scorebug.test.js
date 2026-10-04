@@ -91,6 +91,28 @@ test('normalizeNFLGame: final + live', () => {
     const l = S.normalizeNFLGame(nflLive);
     assert.equal(l.status, 'live'); assert.equal(l.pillLabel, 'Q3 5:20');
 });
+// Real NFL scoreboard shapes (live-observed 2026-10-04): g.clock is ESPN's bare
+// displayClock, which reads "0:00" through halftime and quarter breaks;
+// g.statusText is ESPN's shortDetail ("Halftime", "End of 1st", "12:42 - 3rd").
+const nflBreak = (clock, statusText) => ({ id: '403', isLive: true, clock, statusText,
+    homeTeam: { abbr: 'BUF', score: 17, logo: 'buf.png' }, awayTeam: { abbr: 'NE', score: 14, logo: 'ne.png' } });
+test('normalizeNFLGame: halftime pill says HALF, not the 0:00 clock', () => {
+    const S = load();
+    assert.equal(S.normalizeNFLGame(nflBreak('0:00', 'Halftime')).pillLabel, 'HALF');
+});
+test('normalizeNFLGame: end-of-quarter pill names the quarter', () => {
+    const S = load();
+    assert.equal(S.normalizeNFLGame(nflBreak('0:00', 'End of 1st')).pillLabel, 'END 1ST');
+    assert.equal(S.normalizeNFLGame(nflBreak('0:00', 'End of 3rd')).pillLabel, 'END 3RD');
+});
+test('normalizeNFLGame: a running clock still shows as-is', () => {
+    const S = load();
+    assert.equal(S.normalizeNFLGame(nflBreak('12:42', '12:42 - 3rd')).pillLabel, '12:42');
+});
+test('normalizeNFLGame: 0:00 with no recognizable status falls back to LIVE, never 0:00', () => {
+    const S = load();
+    assert.equal(S.normalizeNFLGame(nflBreak('0:00', '')).pillLabel, 'LIVE');
+});
 test('renderTickerItem: NFL uses data-game-id', () => {
     const S = load(); const html = S.renderTickerItem(S.normalizeNFLGame(nflFinal));
     assert.match(html, /data-game-id="401"/); assert.doesNotMatch(html, /data-game-pk/);
