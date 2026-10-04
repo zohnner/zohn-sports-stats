@@ -184,21 +184,6 @@
     <url><loc>https://sportstrata.cc/mlb/player/605400/aaron-nola</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/518876/merrill-kelly</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/mlb/player/607625/seth-lugo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824545</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824788</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822921</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823571</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824380</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824461</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823330</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/822843</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824137</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823003</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/824304</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/825029</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823249</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823899</loc><changefreq>never</changefreq><priority>0.4</priority></url>
-    <url><loc>https://sportstrata.cc/mlb/game/823976</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/823570</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/823329</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/824462</loc><changefreq>never</changefreq><priority>0.4</priority></url>
@@ -318,6 +303,8 @@
     <url><loc>https://sportstrata.cc/mlb/game/849828</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/849835</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/mlb/game/849830</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/849825</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+    <url><loc>https://sportstrata.cc/mlb/game/849823</loc><changefreq>never</changefreq><priority>0.4</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2000/abilene-christian-wildcats</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2001/adams-state-grizzlies</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/2003/adrian-bulldogs</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
@@ -718,46 +705,46 @@
     <url><loc>https://sportstrata.cc/ncaaf/team/272/wisconsin-platteville-pioneers</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/402/worcester-state-lancers</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/team/43/yale-bulldogs</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/4801307/tayven-jackson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/4878822/jaylon-tolbert</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5212654/braden-atkinson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5404620/riley-warzynski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/4685454/jayden-maiava</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/4869817/cole-pennington</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/4878822/jaylon-tolbert</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5154962/kamden-sixkiller</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5155528/jerry-kaminski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5302115/austyn-modrzewski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5121169/darian-mensah</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5177084/kamario-taylor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5089859/floyd-chalk</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5087687/eli-gillman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5164332/nate-sheppard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5152699/luke-yoder</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5304537/mason-pickett-hicks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5087687/eli-gillman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5225901/jaden-green</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5405043/kamerin-mcdowell-moore</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5079322/jadan-baugh</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5079465/michael-hawkins-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/4923282/cj-hester</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/4912342/wayne-knight</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5079720/jeremiah-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5207620/xavier-johnson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5225211/brooks-davis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5289510/jesse-legree</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5086505/samuel-gbatu-jr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5225211/brooks-davis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5229962/noah-kjar</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/4923226/collin-dixon</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5084771/kj-duff</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5230376/aaron-enterline</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5152333/jacary-lightsey</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5138451/luke-reynolds</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/4923226/collin-dixon</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5146735/charlie-becker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5229962/noah-kjar</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/4896289/gavin-freeman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5152333/jacary-lightsey</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5226710/trevor-barry</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5223903/mikey-d-amato</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5224151/ashtyn-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5296359/ej-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5435653/tre-yanez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5226951/omari-bursey</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5085367/dillon-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5132628/dj-barber</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/4917971/princewill-umanmielen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5079689/colin-simmons</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5301615/khalid-bueno</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/4917971/princewill-umanmielen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5166484/xavier-esqillion</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5178979/avery-howard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/ncaaf/player/5201870/daeden-hopkins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/ncaaf/player/5087950/kingston-lopa</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5226853/xaden-benson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5219666/cameron-goggins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/ncaaf/player/5227488/makai-frisby</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/team/ari/arizona-cardinals</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/nfl/team/atl/atlanta-falcons</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
     <url><loc>https://sportstrata.cc/nfl/team/bal/baltimore-ravens</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
@@ -798,8 +785,8 @@
     <url><loc>https://sportstrata.cc/nfl/player/6813/jonathan-taylor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9493/puka-nacua</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8138/james-cook</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/3198/derrick-henry</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9488/jaxon-smith-njigba</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/3198/derrick-henry</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7547/amon-ra-st-brown</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9226/de-von-achane</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4881/lamar-jackson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -823,10 +810,10 @@
     <url><loc>https://sportstrata.cc/nfl/player/8130/trey-mcbride</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8137/george-pickens</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11604/brock-bowers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/6904/jalen-hurts</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/2315/todd-gurley</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8155/breece-hall</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11632/malik-nabers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/6904/jalen-hurts</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8144/chris-olave</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/10229/rashee-rice</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7588/javonte-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -856,8 +843,8 @@
     <url><loc>https://sportstrata.cc/nfl/player/11563/bo-nix</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12512/quinshon-judkins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/2133/davante-adams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/4983/dj-moore</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12518/tyler-warren</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/4983/dj-moore</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8228/jaylen-warren</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13286/jadarian-price</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8148/jameson-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -919,9 +906,9 @@
     <url><loc>https://sportstrata.cc/nfl/player/5991/maxx-crosby</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5022/dallas-goedert</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/10880/jack-campbell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/4960/roquan-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12533/jacory-croskey-merritt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5012/mark-andrews</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/4960/roquan-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8110/jake-ferguson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5001/dalton-schultz</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9756/jordan-addison</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -939,8 +926,8 @@
     <url><loc>https://sportstrata.cc/nfl/player/9480/brenton-strange</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8126/wan-dale-robinson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12474/woody-marks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/6819/michael-pittman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8131/isaiah-likely</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/6819/michael-pittman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13269/fernando-mendoza</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13330/kenyon-sadiq</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4070/t-j-watt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -955,12 +942,12 @@
     <url><loc>https://sportstrata.cc/nfl/player/5041/fred-warner</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8121/romeo-doubs</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/515/rob-gronkowski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/8259/cameron-dicker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12501/matthew-golden</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13345/jonah-coleman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3157/william-fuller</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4035/alvin-kamara</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8161/malik-willis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/8259/cameron-dicker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8134/khalil-shakir</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8339/kyle-hamilton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9508/tyjae-spears</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -989,11 +976,11 @@
     <url><loc>https://sportstrata.cc/nfl/player/11646/jalen-coker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11786/cam-little</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9228/bryce-young</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/6949/jordyn-brooks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11576/braelon-allen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/967/robert-quinn</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5816/nick-bosa</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6865/colby-parkinson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/6949/jordyn-brooks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6815/zack-baun</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8210/chig-okonkwo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12498/mason-taylor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1051,11 +1038,11 @@
     <url><loc>https://sportstrata.cc/nfl/player/11627/troy-franklin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/110/stephen-gostkowski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12492/pat-bryant</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/2393/danielle-hunter</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11792/will-reichard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12504/kaleb-johnson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5189/eddy-pineiro</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11643/jaylen-wright</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/2393/danielle-hunter</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12540/chimere-dike</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/138/ben-roethlisberger</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8266/quay-walker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1075,12 +1062,12 @@
     <url><loc>https://sportstrata.cc/nfl/player/2309/amari-cooper</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12535/isaac-teslaa</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/1479/keenan-allen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/10213/tre-tucker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12499/elic-ayomanor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13320/zachariah-branch</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/96/aaron-rodgers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/232/frank-gore</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9502/tank-dell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/10213/tre-tucker</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12457/jaydon-blue</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/2020/cairo-santos</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11579/audric-estime</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1112,12 +1099,12 @@
     <url><loc>https://sportstrata.cc/nfl/player/12597/nick-emmanwori</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13340/rueben-bain</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12483/jack-bech</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/1373/geno-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7672/ernest-jones</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11742/cedric-gray</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11834/devaughn-vele</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/695/ted-ginn</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4950/christian-kirk</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/1373/geno-smith</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/10898/tuli-tuipulotu</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/1825/jarvis-landry</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/2291/dontrelle-inman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1203,20 +1190,20 @@
     <url><loc>https://sportstrata.cc/nfl/player/3200/sterling-shepard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3233/kevin-byard</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7237/scotty-washington</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/5843/devin-bush</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13388/cj-allen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3318/kevin-hogan</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4149/jamaal-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/5843/devin-bush</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7503/connor-davis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6845/zack-moss</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8198/charleston-rambo</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12567/malaki-starks</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7811/talanoa-hufanga</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8107/nikola-kalinic</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/2617/alex-singleton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6302/kaden-elliss</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/8040/quinn-nordin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13310/miller-moss</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/2617/alex-singleton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/8040/quinn-nordin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11225/noah-gindorff</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7627/greg-rousseau</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12743/junior-bergen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1234,12 +1221,12 @@
     <url><loc>https://sportstrata.cc/nfl/player/10891/devon-witherspoon</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/391/ryan-succop</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7016/jeremy-chinn</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/12566/jihaad-campbell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3156/joey-bosa</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11544/avery-davis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7933/alex-kessman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8008/josh-imatorbhebhe</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11192/malik-flowers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/12566/jihaad-campbell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/1848/james-white</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11851/carter-bradley</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5128/logan-woodside</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1289,12 +1276,12 @@
     <url><loc>https://sportstrata.cc/nfl/player/13453/jacob-rodriguez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5017/jessie-bates</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6967/aaron-fuller</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/11685/kamari-lassiter</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11267/aron-cruickshank</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11640/jermaine-burton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12168/zach-mathis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8343/boye-mafe</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8707/tayon-fleet-davis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/11685/kamari-lassiter</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/58/greg-olsen</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11863/leon-johnson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4421/jacob-hollister</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1318,11 +1305,11 @@
     <url><loc>https://sportstrata.cc/nfl/player/1895/aj-mccarron</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7918/a-j-rose</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12126/isaac-rex</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/13384/aj-haulcy</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6214/quincy-williams</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7351/kirk-merritt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11216/holton-ahlers</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/10921/yaya-diaby</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/13384/aj-haulcy</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3827/aldrick-rosas</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8560/davis-cheek</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/10947/ventrell-miller</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1330,11 +1317,11 @@
     <url><loc>https://sportstrata.cc/nfl/player/11918/ahmarean-brown</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6598/trenton-irwin</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/3297/tajae-sharpe</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/6124/montez-sweat</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11223/john-hall</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11682/cole-bishop</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12772/courtney-jackson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/1426/deandre-hopkins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/6124/montez-sweat</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11261/andre-szmyt</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6119/devin-white</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/6298/chandler-cox</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1364,11 +1351,11 @@
     <url><loc>https://sportstrata.cc/nfl/player/5409/tanner-hudson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11387/sean-ryan</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8258/cade-york</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/13341/akheem-mesidor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5975/alize-mack</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13222/montana-lemonious-craig</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13833/dominic-zvada</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12156/james-turner</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/13341/akheem-mesidor</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5839/rashan-gary</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7635/jaelan-phillips</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/1817/sammy-watkins</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1415,9 +1402,9 @@
     <url><loc>https://sportstrata.cc/nfl/player/6450/david-blough</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7352/matt-cole</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7641/pat-surtain</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/10881/christian-gonzalez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12007/nathaniel-peat</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12966/moose-muhammad</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/10881/christian-gonzalez</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12033/oj-hiliare</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7062/rodrigo-blankenship</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8632/javonta-payton</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1519,6 +1506,7 @@
     <url><loc>https://sportstrata.cc/nfl/player/6919/thaddeus-moss</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11633/jamari-thrash</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/9498/jadon-haselwood</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/13402/skyler-bell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13816/mark-gronowski</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/2749/raheem-mostert</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/5828/diontae-spencer</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1528,7 +1516,6 @@
     <url><loc>https://sportstrata.cc/nfl/player/13013/mark-redman</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13202/dalevon-campbell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7581/kellen-mond</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/13402/skyler-bell</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/4741/dan-arnold</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8175/reggie-roberson</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/8385/george-karlaftis</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
@@ -1540,9 +1527,9 @@
     <url><loc>https://sportstrata.cc/nfl/player/14082/alex-tecza</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7808/ben-mason</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7980/john-raine</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+    <url><loc>https://sportstrata.cc/nfl/player/11017/dee-winters</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13424/seth-mcgowan</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/7921/christian-elliss</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-    <url><loc>https://sportstrata.cc/nfl/player/11017/dee-winters</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/13303/cade-klubnik</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/11115/terrell-bynum</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
     <url><loc>https://sportstrata.cc/nfl/player/12940/tre-stewart</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
