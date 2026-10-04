@@ -2479,7 +2479,12 @@ function _nlgBreakInfo(data, sit) {
         : isEndPeriod ? `END OF ${_NLG_ORDINAL[comp.status?.period] || 'QUARTER'}`
         : `${teamAbbr} ${String(drive.displayResult || drive.result).toUpperCase()}`.trim();
 
+    // A status headline (HALFTIME / END OF 2ND) doesn't name the drive, so the
+    // drive line has to -- live-seen at GB@TB halftime, where "3 plays · 4
+    // yards" read as a mystery until the 58-yard FG three lines further down.
+    const statusHeadline = isHalftime || isEndPeriod;
     const driveLine = [
+        statusHeadline ? `Last drive: ${teamAbbr} ${drive.displayResult || drive.result}`.trim() : '',
         String(drive.description || '').split(', ').filter(Boolean).join(' · '),
         drive.start?.text ? `from ${drive.start.text}` : '',
     ].filter(Boolean).join(' · ');

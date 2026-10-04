@@ -96,6 +96,8 @@ test('break info at halftime uses a status headline and omits next possession', 
     const info = ctx._nlgBreakInfo(data, null);
     assert.equal(info.headline, 'HALFTIME');
     assert.equal(info.nextPoss, null);
+    // The status headline no longer names the drive, so the drive line must.
+    assert.equal(info.driveLine, 'Last drive: BUF Touchdown · 13 plays · 62 yards · 7:46 · from BUF 38');
 });
 
 test('break info at end of a quarter names the quarter', () => {
