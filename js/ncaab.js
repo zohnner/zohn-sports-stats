@@ -26,13 +26,15 @@ function _ncaabIsOffseason() {
     return m >= 5 && m <= 10;
 }
 
-async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
+// `fresh` skips the cache READ but still writes the result back (D-170):
+// a live poll gets current data and every other caller benefits from it.
+async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
     const url = new URL('/api/ncaab', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `ncaab:${path}:${url.searchParams.toString()}`;
 
-    const hit = ApiCache.get(cacheKey);
+    const hit = fresh ? null : ApiCache.get(cacheKey);
     if (hit) return hit;
 
     Logger.debug(`NCAAB → ${url.pathname}`, undefined, 'NCAAB');
@@ -64,7 +66,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
 async function fetchNCAABScoreboard(opts = {}) {
     const params = { groups: 50 };
     if (opts.dates) params.dates = opts.dates;
-    const data = await espnNCAABFetch('/scoreboard', params, ApiCache.TTL.SHORT);
+    const data = await espnNCAABFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -203,7 +205,7 @@ async function showNCAABGame(id) { return _blgShow('ncaab', id); }
 window.fetchNCAABGameSummary = fetchNCAABGameSummary;
 window.showNCAABGame         = showNCAABGame;
 
-async function displayNCAABScores() {
+async function displayNCAABScores(opts = {}) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -228,7 +230,7 @@ async function displayNCAABScores() {
         </div>`;
 
     try {
-        const games = await fetchNCAABScoreboard();
+        const games = await fetchNCAABScoreboard({ fresh: !!opts.fresh });
         AppState.ncaabGames = games;
         const cell = document.getElementById('ncaabScoresGrid');
         if (!cell) return;
