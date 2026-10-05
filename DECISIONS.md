@@ -3470,3 +3470,17 @@ Traffic is minimal and the only editorial surface was ESPN's wire, which every s
 **Sitemap:** a sport's `/stories` index is listed only once it has a story, so a new sport never publishes an empty indexable page.
 
 **Numbering note:** D-169 was taken on the unmerged `feat/nfl-break-card` branch and D-168 on `fix/private-paths`; this is D-171 to avoid a collision.
+
+## D-172 — Break card: the two-minute warning is a break
+**Status:** shipping | **Date:** 2026-10-04
+
+**Live-observed DET @ CAR, 2026-10-04:** at the Q2 two-minute warning ESPN still reported a live down (1st & 10 at CAR 41), so D-169's "no valid down" rule never fired and the field graphic stayed up through what is, for a second-screen fan, a TV timeout — the exact moment the break card exists for.
+
+**Fix (js/nflLiveGame.js):** `_nlgBreakInfo` treats a latest play of type id `"75"` ("Two-minute warning", the id confirmed in that game's real payload — not matched on text) as a break regardless of the reported down. Because it is mid-drive, it differs from D-169's other breaks:
+- headline "TWO-MINUTE WARNING"; the drive recapped is the one **in progress**, summarized by `_nlgDriveSoFarLine` from real snaps only (down ≥ 1, excluding kickoffs, timeouts and the warning itself): "CAR drive so far: 1 play · 11 yards · from CAR 30" — an in-progress drive has no final description to reuse;
+- win-probability swing and biggest play measured across the drive so far (same code as D-169);
+- no "next possession" line;
+- `keepSituation: true` makes the header keep the full possession + down-and-distance line instead of D-169's last-play line, since the field graphic is hidden and a fan returning from the commercial needs the down.
+Once the next snap lands, the latest play is no longer type 75 and the field returns.
+
+**Tests:** 6 new cases in `tests/nflBreakCard.test.js` (4 failed before the fix) against `tests/fixtures/nfl-summary-det-car-2min.json` — the real DET @ CAR `/summary`, cut at the warning (CAR's drive truncated to kickoff + one snap + warning, its later result removed, win probability truncated to that play). Rendered in headless Chrome on the local build against the same fixture: card + kept down line, field hidden.
