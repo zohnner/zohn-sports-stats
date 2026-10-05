@@ -17,13 +17,15 @@ function _ncaafIsOffseason() {
     return m >= 2 && m <= 7;
 }
 
-async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
+// `fresh` skips the cache READ but still writes the result back (D-170):
+// a live poll gets current data and every other caller benefits from it.
+async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
     const url = new URL('/api/ncaaf', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `ncaaf:${path}:${url.searchParams.toString()}`;
 
-    const hit = ApiCache.get(cacheKey);
+    const hit = fresh ? null : ApiCache.get(cacheKey);
     if (hit) return hit;
 
     Logger.debug(`NCAAF → ${url.pathname}`, undefined, 'NCAAF');
@@ -196,7 +198,7 @@ async function fetchNCAAFScoreboard(opts = {}) {
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
-    const data = await espnNCAAFFetch('/scoreboard', params, ApiCache.TTL.SHORT);
+    const data = await espnNCAAFFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -572,7 +574,7 @@ function _ncaafGameCard(g) {
     </div>`;
 }
 
-async function displayNCAAFScores() {
+async function displayNCAAFScores(opts = {}) {
     const grid = document.getElementById('playersGrid');
     const main = document.querySelector('main');
     if (!grid || !main) return;
@@ -584,7 +586,7 @@ async function displayNCAAFScores() {
     grid.innerHTML = Array.from({ length: 6 }, () => `<div class="skeleton-card" style="min-height:200px"></div>`).join('');
 
     try {
-        const games = await fetchNCAAFScoreboard(_ncaafScoresFilter || {});
+        const games = await fetchNCAAFScoreboard({ ...(_ncaafScoresFilter || {}), fresh: !!opts.fresh });
         AppState.ncaafGames = games;
 
         if (!games.length) {

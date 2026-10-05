@@ -3484,3 +3484,18 @@ Traffic is minimal and the only editorial surface was ESPN's wire, which every s
 Once the next snap lands, the latest play is no longer type 75 and the field returns.
 
 **Tests:** 6 new cases in `tests/nflBreakCard.test.js` (4 failed before the fix) against `tests/fixtures/nfl-summary-det-car-2min.json` — the real DET @ CAR `/summary`, cut at the warning (CAR's drive truncated to kickoff + one snap + warning, its later result removed, win probability truncated to that play). Rendered in headless Chrome on the local build against the same fixture: card + kept down line, field hidden.
+
+## D-173 — Live refreshes read stale cache on every non-NFL sport, and the home hero never refreshed at all
+**Status:** shipping | **Date:** 2026-10-04
+
+**Found while closing out D-170.** D-170 fixed NFL's 60s live poll reading its 5-minute `ApiCache` entry. The same helper shape exists in `espnNCAAFFetch` / `espnNCAABFetch` / `espnWNBAFetch` / `espnNBAFetch`, and all four sport-page polls had the identical bug — including through `display*Scores()`, which re-fetched internally through the cache. Separately, the home page: `setupHomeTickerPolling` ran every 30s but fetched through the same cache, and `_renderHomeHero` only refetches a sport when its `AppState` array is empty, so the hero kept whatever it first loaded for the whole game (live-observed 2026-10-04: hero at "9:27 1st" while `/api/nfl` said 9:18).
+
+**Fix:**
+- All five ESPN fetch helpers take `{ fresh }` (skip the cache read, still write back); each `fetch*Scoreboard` and `display*Scores` threads it; the four sport-page polls pass it on both paths.
+- Home poll: `HomeLive.liveSports()` (new `js/homeLive.js`) picks sports with a game in progress; only those fetch fresh, under a separate in-flight key so a fresh request never joins a cached one. Idle sports ride the cache, whose expiry still discovers a game that just started — ~2 requests/minute per live sport, not 12/minute across all.
+- Hero: re-rendered only when `HomeLive.signature()` (status, clock text, score) changed — it's rebuilt from innerHTML and would flicker otherwise. First call records a baseline.
+- Every live-score poll in `js/app.js` (MLB, NFL, NCAAF, NCAAB, WNBA, NBA, home) now returns early while `document.hidden` — a background tab was polling all game long.
+
+**Tests:** `tests/scoreboardFetch.test.js` (20: the D-170 contract asserted for all five sports — replaces the NFL-only `tests/nflScoreboardFetch.test.js`; the 4 new sports failed before the fix), `tests/homeLive.test.js` (7, each mutation-checked). Wiring verified in a real headless Chrome on the local build: a simulated live NFL game produced a fresh scoreboard request on the poll tick and stopped once the real (final) data replaced it; a hidden tab produced 0 requests over 65s. A real live-game check (MNF 2026-10-05) is pending before merge.
+
+**Known, not fixed here:** NCAAB and WNBA still derive `isLive` from the old `STATUS_IN_PROGRESS`/`STATUS_HALFTIME` allowlist that D-129 replaced with `status.type.state === 'in'` for football — it misses `STATUS_END_PERIOD`, so a game between periods reads as not live (and the home poll stops fetching it fresh until it resumes).

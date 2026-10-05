@@ -402,6 +402,7 @@ setupNavigation();
 
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'mlb') return;
             const cached = AppState.mlbGames || [];
             const hasLive = cached.some(g => g.status?.abstractGameState === 'Live');
@@ -453,6 +454,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'nfl') return;
             if (typeof fetchNFLScoreboard !== 'function') return;
             const cached = AppState.nflGames || [];
@@ -490,6 +492,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'ncaaf') return;
             if (typeof fetchNCAAFScoreboard !== 'function') return;
             const cached = AppState.ncaafGames || [];
@@ -504,9 +507,9 @@ setupNavigation();
                 // it lands on fetchNCAAFScoreboard's own ApiCache.TTL.SHORT (5 min)
                 // entry for these exact params, so this isn't a second real
                 // network round-trip, just a second cache read.
-                await displayNCAAFScores();
+                await displayNCAAFScores({ fresh: true });
             } else {
-                const games = await fetchNCAAFScoreboard(_ncaafScoresFilter || {});
+                const games = await fetchNCAAFScoreboard({ ...(_ncaafScoresFilter || {}), fresh: true });
                 AppState.ncaafGames = games;
                 // Same home-ownership rule as the MLB/NFL loops — merged ticker owns
                 // #scoreTicker while on Home, and only the real "Today" default
@@ -535,6 +538,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'ncaab') return;
             if (typeof fetchNCAABScoreboard !== 'function') return;
             const cached = AppState.ncaabGames || [];
@@ -542,9 +546,9 @@ setupNavigation();
             const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
             if (cached.length > 0 && !hasLive && !dueForRecheck) return;
             if (AppState.currentView === 'ncaab-scores' && typeof displayNCAABScores === 'function') {
-                await displayNCAABScores();
+                await displayNCAABScores({ fresh: true });
             } else {
-                const games = await fetchNCAABScoreboard();
+                const games = await fetchNCAABScoreboard({ fresh: true });
                 AppState.ncaabGames = games;
                 if (AppState.currentView !== 'home' && typeof updateNCAABTicker === 'function') updateNCAABTicker(games);
             }
@@ -561,6 +565,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'wnba') return;
             if (typeof fetchWNBAScoreboard !== 'function') return;
             const cached = AppState.wnbaGames || [];
@@ -568,9 +573,9 @@ setupNavigation();
             const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
             if (cached.length > 0 && !hasLive && !dueForRecheck) return;
             if (AppState.currentView === 'wnba-scores' && typeof displayWNBAScores === 'function') {
-                await displayWNBAScores();
+                await displayWNBAScores({ fresh: true });
             } else {
-                const games = await fetchWNBAScoreboard();
+                const games = await fetchWNBAScoreboard({ fresh: true });
                 AppState.wnbaGames = games;
                 if (AppState.currentView !== 'home' && typeof updateWNBATicker === 'function') updateWNBATicker(games);
             }
@@ -587,6 +592,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'nba') return;
             if (typeof fetchNBAScoreboard !== 'function') return;
             const cached = AppState.nbaGames || [];
@@ -594,9 +600,9 @@ setupNavigation();
             const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
             if (cached.length > 0 && !hasLive && !dueForRecheck) return;
             if (AppState.currentView === 'nba-scores' && typeof displayNBAScores === 'function') {
-                await displayNBAScores();
+                await displayNBAScores({ fresh: true });
             } else {
-                const games = await fetchNBAScoreboard();
+                const games = await fetchNBAScoreboard({ fresh: true });
                 AppState.nbaGames = games;
                 if (AppState.currentView !== 'home' && typeof updateNBATicker === 'function') updateNBATicker(games);
             }
@@ -615,10 +621,11 @@ setupNavigation();
 (function setupHomeTickerPolling() {
     const INTERVAL = 30_000;
     async function _poll() {
+        if (document.hidden) return; // background tab: no one is watching (D-173)
         if (AppState.currentView !== 'home') return;
         if (typeof _updateHomeTicker !== 'function') return;
         try {
-            await _updateHomeTicker();
+            await _updateHomeTicker({ live: true });
         } catch (err) {
             if (window.Logger) Logger.warn('Home ticker poll failed', err.message, 'POLL');
         }
@@ -715,9 +722,21 @@ function _homeSkeletonCards(n = 6) {
 // (D-047 S2) — a data-merge over fetches every sport already makes elsewhere,
 // not a new component. NCAAB has no Scorebug normalizer yet (D-052 shipped
 // its own standalone ticker fn) and NHL is preview-only — both out of scope.
-async function _updateHomeTicker() {
+// D-173: `live` is set only by the 30s home poll. On those ticks any sport
+// with a game in progress fetches fresh (bypassing its 5-minute cache) under
+// its own in-flight key, so it never joins a cached request already running;
+// idle sports keep the cache. The first render on page load stays cached.
+function _homeGuestGames() {
+    return { nfl: AppState.nflGames, ncaaf: AppState.ncaafGames, ncaab: AppState.ncaabGames, wnba: AppState.wnbaGames, nba: AppState.nbaGames };
+}
+
+async function _updateHomeTicker({ live = false } = {}) {
     const ticker = document.getElementById('scoreTicker');
     if (!ticker || typeof Scorebug === 'undefined') return;
+    const freshSports = new Set(live && typeof HomeLive !== 'undefined' ? HomeLive.liveSports(_homeGuestGames()) : []);
+    const guestFetch = (sport, cacheKey, fetchFn) => freshSports.has(sport)
+        ? _homeInflightFetch(cacheKey + ':fresh', () => fetchFn({ fresh: true }))
+        : _homeInflightFetch(cacheKey, () => fetchFn());
 
     const [mlbGames, nflGames, ncaafGames, ncaabGames, wnbaGames, nbaGames] = await Promise.all([
         (async () => {
@@ -741,7 +760,7 @@ async function _updateHomeTicker() {
                 // fetch racing this at page-load time) -- it does NOT skip
                 // fetching when a value is already cached, so this ticker
                 // keeps refreshing on every poll tick exactly as before.
-                const g = await _homeInflightFetch('nflGames', fetchNFLScoreboard);
+                const g = await guestFetch('nfl', 'nflGames', fetchNFLScoreboard);
                 AppState.nflGames = g;
                 return g;
             } catch (_) { return AppState.nflGames || []; }
@@ -749,7 +768,7 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchNCAAFScoreboard !== 'function') return AppState.ncaafGames || [];
             try {
-                const g = await _homeInflightFetch('ncaafGames', fetchNCAAFScoreboard);
+                const g = await guestFetch('ncaaf', 'ncaafGames', fetchNCAAFScoreboard);
                 AppState.ncaafGames = g;
                 return g;
             } catch (_) { return AppState.ncaafGames || []; }
@@ -766,7 +785,7 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchNCAABScoreboard !== 'function') return AppState.ncaabGames || [];
             try {
-                const g = await _homeInflightFetch('ncaabGames', fetchNCAABScoreboard);
+                const g = await guestFetch('ncaab', 'ncaabGames', fetchNCAABScoreboard);
                 AppState.ncaabGames = g;
                 return g;
             } catch (_) { return AppState.ncaabGames || []; }
@@ -774,7 +793,7 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchWNBAScoreboard !== 'function') return AppState.wnbaGames || [];
             try {
-                const g = await _homeInflightFetch('wnbaGames', fetchWNBAScoreboard);
+                const g = await guestFetch('wnba', 'wnbaGames', fetchWNBAScoreboard);
                 AppState.wnbaGames = g;
                 return g;
             } catch (_) { return AppState.wnbaGames || []; }
@@ -782,7 +801,7 @@ async function _updateHomeTicker() {
         (async () => {
             if (typeof fetchNBAScoreboard !== 'function') return AppState.nbaGames || [];
             try {
-                const g = await _homeInflightFetch('nbaGames', fetchNBAScoreboard);
+                const g = await guestFetch('nba', 'nbaGames', fetchNBAScoreboard);
                 AppState.nbaGames = g;
                 return g;
             } catch (_) { return AppState.nbaGames || []; }
@@ -798,6 +817,19 @@ async function _updateHomeTicker() {
     // piggyback the sport-picker's live/today counts on it rather than adding
     // a second fetch cycle just for the picker cards.
     if (typeof _renderSportPicker === 'function') _renderSportPicker();
+
+    // _renderHomeHero only refetches a sport when its AppState cache is empty,
+    // so before D-173 the hero kept whatever it first loaded all game long
+    // (live-observed: 9:27 1st while /api/nfl said 9:18). Re-render it when
+    // the guest-sport data it draws from actually changed -- comparing first
+    // because the hero is rebuilt from innerHTML and would flicker otherwise.
+    // The first call only records a baseline: loadHome already rendered it.
+    if (typeof HomeLive !== 'undefined') {
+        const sig = HomeLive.signature(_homeGuestGames());
+        const prev = _updateHomeTicker._heroSig;
+        _updateHomeTicker._heroSig = sig;
+        if (prev !== undefined && prev !== sig && typeof _renderHomeHero === 'function') _renderHomeHero();
+    }
 
     const entries = [];
     (mlbGames || []).forEach(g => {

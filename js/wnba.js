@@ -35,13 +35,15 @@ function _wnbaIsOffseason() {
 const WNBA_LAST_SEASON = (_wnbaNow.getMonth() + 1 <= 3) ? _wnbaNow.getFullYear() - 1 : _wnbaNow.getFullYear();
 const _wnba = { season: WNBA_LAST_SEASON };
 
-async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
+// `fresh` skips the cache READ but still writes the result back (D-170):
+// a live poll gets current data and every other caller benefits from it.
+async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
     const url = new URL('/api/wnba', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `wnba:${path}:${url.searchParams.toString()}`;
 
-    const hit = ApiCache.get(cacheKey);
+    const hit = fresh ? null : ApiCache.get(cacheKey);
     if (hit) return hit;
 
     Logger.debug(`WNBA → ${url.pathname}`, undefined, 'WNBA');
@@ -60,8 +62,8 @@ async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
     return json;
 }
 
-async function fetchWNBAScoreboard() {
-    const data = await espnWNBAFetch('/scoreboard', {}, ApiCache.TTL.SHORT);
+async function fetchWNBAScoreboard(opts = {}) {
+    const data = await espnWNBAFetch('/scoreboard', {}, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -116,7 +118,7 @@ function _wnbaGameCard(g) {
     </div>`;
 }
 
-async function displayWNBAScores() {
+async function displayWNBAScores(opts = {}) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -141,7 +143,7 @@ async function displayWNBAScores() {
         </div>`;
 
     try {
-        const games = await fetchWNBAScoreboard();
+        const games = await fetchWNBAScoreboard({ fresh: !!opts.fresh });
         AppState.wnbaGames = games;
         const cell = document.getElementById('wnbaScoresGrid');
         if (!cell) return;

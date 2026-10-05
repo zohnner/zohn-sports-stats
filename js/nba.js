@@ -46,13 +46,15 @@ function _nbaIsOffseason() {
 const NBA_LAST_SEASON = (_nbaNow.getMonth() + 1 >= 10) ? _nbaNow.getFullYear() + 1 : _nbaNow.getFullYear();
 const _nba = { season: NBA_LAST_SEASON };
 
-async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
+// `fresh` skips the cache READ but still writes the result back (D-170):
+// a live poll gets current data and every other caller benefits from it.
+async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
     const url = new URL('/api/nba', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `nba:${path}:${url.searchParams.toString()}`;
 
-    const hit = ApiCache.get(cacheKey);
+    const hit = fresh ? null : ApiCache.get(cacheKey);
     if (hit) return hit;
 
     Logger.debug(`NBA → ${url.pathname}`, undefined, 'NBA');
@@ -71,8 +73,8 @@ async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT) {
     return json;
 }
 
-async function fetchNBAScoreboard() {
-    const data = await espnNBAFetch('/scoreboard', {}, ApiCache.TTL.SHORT);
+async function fetchNBAScoreboard(opts = {}) {
+    const data = await espnNBAFetch('/scoreboard', {}, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -133,7 +135,7 @@ function _nbaGameCard(g) {
     </div>`;
 }
 
-async function displayNBAScores() {
+async function displayNBAScores(opts = {}) {
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     grid.className = 'home-container';
@@ -158,7 +160,7 @@ async function displayNBAScores() {
         </div>`;
 
     try {
-        const games = await fetchNBAScoreboard();
+        const games = await fetchNBAScoreboard({ fresh: !!opts.fresh });
         AppState.nbaGames = games;
         const cell = document.getElementById('nbaScoresGrid');
         if (!cell) return;
