@@ -179,3 +179,56 @@ test('WP chart: empty string when fewer than 2 entries', () => {
     const { home, away } = sides(data);
     assert.equal(ctx._nlgWpChartSvg(data, home, away, { size: 'small' }), '');
 });
+
+// ---- Two-minute warning (D-172) ---------------------------------------
+// Real DET @ CAR summary (event 401872978), 2026-10-04, cut at the moment
+// of the Q2 two-minute warning: CAR's drive in progress (kickoff, one
+// 11-yard snap, then the warning). ESPN keeps a live down through it, so
+// the "no valid down" rule alone never fired -- the field stayed up
+// through what is effectively a TV timeout.
+const TWO_MIN = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nfl-summary-det-car-2min.json'), 'utf8'));
+const twoMin = () => JSON.parse(JSON.stringify(TWO_MIN));
+const LIVE_DOWN_2MW = { down: 1, yardLine: 59, distance: 10, possession: '29' };
+
+test('two-minute warning forces a break even though ESPN still reports a live down', () => {
+    const ctx = load();
+    const info = ctx._nlgBreakInfo(twoMin(), LIVE_DOWN_2MW);
+    assert.ok(info);
+    assert.equal(info.headline, 'TWO-MINUTE WARNING');
+});
+
+test('two-minute warning recaps the drive in progress, not the last finished one', () => {
+    const ctx = load();
+    const data = twoMin();
+    const info = ctx._nlgBreakInfo(data, LIVE_DOWN_2MW);
+    assert.equal(info.driveId, String(data.drives.current.id));
+    assert.match(info.driveLine, /^CAR drive so far: 1 play · 11 yards/);
+    assert.equal(info.nextPoss, null);
+});
+
+test('two-minute warning keeps the down-and-distance line visible', () => {
+    const ctx = load();
+    const info = ctx._nlgBreakInfo(twoMin(), LIVE_DOWN_2MW);
+    assert.equal(info.keepSituation, true);
+});
+
+test('two-minute warning: WP swing is measured across the drive so far', () => {
+    const ctx = load();
+    const info = ctx._nlgBreakInfo(twoMin(), LIVE_DOWN_2MW);
+    assert.equal(typeof info.wpBeforePct, 'number');
+    assert.equal(typeof info.wpAfterPct, 'number');
+    assert.ok(info.leaderAbbr === 'CAR' || info.leaderAbbr === 'DET');
+});
+
+test('once play resumes after the warning, the field comes back', () => {
+    const ctx = load();
+    const data = twoMin();
+    data.drives.current.plays = data.drives.current.plays.filter(p => p.type.id !== '75');
+    assert.equal(ctx._nlgBreakInfo(data, LIVE_DOWN_2MW), null);
+});
+
+test('ordinary breaks do not keep the situation line', () => {
+    const ctx = load();
+    const info = ctx._nlgBreakInfo(fixture(), TIMEOUT_SIT);
+    assert.ok(!info.keepSituation);
+});

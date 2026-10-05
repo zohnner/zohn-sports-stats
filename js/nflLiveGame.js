@@ -461,10 +461,12 @@ function _nlgRenderHeader(comp, home, away) {
     _nlg.lastBattleState = isBattle;
 
     const summaryLastPlay = breakInfo ? _nlgAllPlaysFlat(_nlg.lastData).slice(-1)[0] : null;
-    const sitLine = breakInfo
+    // A two-minute-warning break (keepSituation, D-172) is mid-drive: keep the
+    // full possession + down-and-distance line, since the field is hidden.
+    const sitLine = breakInfo && !breakInfo.keepSituation
         ? (summaryLastPlay?.text ? `<div class="nlg-situation"><span class="nlg-lastplay">${_escHtml(summaryLastPlay.text)}</span></div>` : '')
         : sit
-        ? (fieldHtml
+        ? (fieldHtml && !breakInfo
             ? (sit.lastPlay && sit.lastPlay.text
                 ? `<div class="nlg-situation${sitFlashCls}"><span class="nlg-lastplay">${_escHtml(sit.lastPlay.text)}</span></div>`
                 : '')
@@ -2450,6 +2452,18 @@ const _NLG_NEXT_POSS = {
 };
 const _NLG_ORDINAL = { 1: '1ST', 2: '2ND', 3: '3RD', 4: '4TH' };
 
+// "CAR drive so far: 1 play · 11 yards · from CAR 30". Counts real snaps
+// only: kickoffs (down 0), timeouts and the warning itself are excluded.
+function _nlgDriveSoFarLine(drive, teamAbbr) {
+    const snaps = (drive.plays || []).filter(p =>
+        (p.start?.down || 0) >= 1 && String(p.type?.id) !== '75' && !/timeout/i.test(p.type?.text || ''));
+    const yards = snaps.reduce((sum, p) => sum + (Number(p.statYardage) || 0), 0);
+    return [
+        `${teamAbbr} drive so far: ${snaps.length} play${snaps.length === 1 ? '' : 's'} · ${yards} yard${Math.abs(yards) === 1 ? '' : 's'}`,
+        drive.start?.text ? `from ${drive.start.text}` : '',
+    ].filter(Boolean).join(' · ');
+}
+
 function _nlgBreakInfo(data, sit) {
     const comp = _nlgComp(data);
     const statusName = comp.status?.type?.name;
@@ -2462,12 +2476,21 @@ function _nlgBreakInfo(data, sit) {
     // showed 1st & Goal). A scoring play as the summary's latest play wins
     // over a stale down. A missing situation is NOT treated as a break --
     // a failed scoreboard fetch mid-drive shouldn't flip the card on.
-    const justScored = !!plays[plays.length - 1]?.scoringPlay;
+    const lastPlay = plays[plays.length - 1];
+    const justScored = !!lastPlay?.scoringPlay;
+    // Two-minute warning (D-172): a TV timeout in all but name, but ESPN keeps
+    // a live down through it (live-observed DET @ CAR 2026-10-04: 1st & 10),
+    // so the no-valid-down rule never fired. Keyed on play type id 75, not
+    // the text. Mid-drive, so it recaps the drive IN PROGRESS, not the last
+    // finished one, and leaves the down-and-distance on screen.
+    const isTwoMinute = String(lastPlay?.type?.id) === '75';
     const downLive = sit && typeof sit.down === 'number' && sit.down >= 1;
-    if (!isHalftime && !isEndPeriod && !justScored && (!sit || downLive)) return null;
+    if (!isHalftime && !isEndPeriod && !justScored && !isTwoMinute && (!sit || downLive)) return null;
 
     const drives = _nlgDrivesChrono(data);
-    const drive = [...drives].reverse().find(d => d.result);
+    const drive = isTwoMinute
+        ? drives.find(d => (d.plays || []).some(p => String(p.id) === String(lastPlay.id)))
+        : [...drives].reverse().find(d => d.result);
     if (!drive || !(drive.plays || []).length) return null;
 
     const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
@@ -2475,7 +2498,8 @@ function _nlgBreakInfo(data, sit) {
     const teamAbbr = drive.team?.abbreviation || '';
     const oppAbbr = teamAbbr === homeAbbr ? awayAbbr : (teamAbbr === awayAbbr ? homeAbbr : '');
 
-    const headline = isHalftime ? 'HALFTIME'
+    const headline = isTwoMinute ? 'TWO-MINUTE WARNING'
+        : isHalftime ? 'HALFTIME'
         : isEndPeriod ? `END OF ${_NLG_ORDINAL[comp.status?.period] || 'QUARTER'}`
         : `${teamAbbr} ${String(drive.displayResult || drive.result).toUpperCase()}`.trim();
 
@@ -2483,7 +2507,7 @@ function _nlgBreakInfo(data, sit) {
     // drive line has to -- live-seen at GB@TB halftime, where "3 plays · 4
     // yards" read as a mystery until the 58-yard FG three lines further down.
     const statusHeadline = isHalftime || isEndPeriod;
-    const driveLine = [
+    const driveLine = isTwoMinute ? _nlgDriveSoFarLine(drive, teamAbbr) : [
         statusHeadline ? `Last drive: ${teamAbbr} ${drive.displayResult || drive.result}`.trim() : '',
         String(drive.description || '').split(', ').filter(Boolean).join(' · '),
         drive.start?.text ? `from ${drive.start.text}` : '',
@@ -2511,9 +2535,9 @@ function _nlgBreakInfo(data, sit) {
     const swingPlay = biggest ? { text: biggest.play.text, rank: keyRank, deltaPct: Math.round(biggest.delta * 100) } : null;
 
     const nextVerb = _NLG_NEXT_POSS[String(drive.result || '').toUpperCase()];
-    const nextPoss = (!isHalftime && !isEndPeriod && nextVerb && oppAbbr) ? `${oppAbbr} ${nextVerb}` : null;
+    const nextPoss = (!isHalftime && !isEndPeriod && !isTwoMinute && nextVerb && oppAbbr) ? `${oppAbbr} ${nextVerb}` : null;
 
-    return { headline, driveId: String(drive.id), driveTeam: teamAbbr, driveLine, leaderAbbr, wpBeforePct, wpAfterPct, swingPlay, nextPoss };
+    return { headline, driveId: String(drive.id), driveTeam: teamAbbr, driveLine, leaderAbbr, wpBeforePct, wpAfterPct, swingPlay, nextPoss, keepSituation: isTwoMinute };
 }
 
 function _nlgBreakCardHtml(info, data, home, away, tc) {

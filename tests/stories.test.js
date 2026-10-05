@@ -93,7 +93,7 @@ test('slug, url and index-entry helpers', () => {
         slug: '2026-09-30-x', title: 'Detroit keeps finishing drives',
         dek: 'The Lions turn red-zone trips into touchdowns.', date: '2026-09-30',
         season: 2026, week: 4, teams: ['DET', 'NYJ'], players: [],
-        hero_stat: '9 of 10 red-zone trips', url: '/nfl/stories/2026-09-30-x',
+        hero_stat: '9 of 10 red-zone trips', url: '/nfl/stories/2026-09-30-x', sport: 'nfl',
     });
 });
 
@@ -254,4 +254,93 @@ test('main --check fails on a stale index and passes after a rebuild', (t) => {
     assert.equal(indexCli.main(['--check', '--dir', dir]), 2);
     assert.equal(indexCli.main(['--dir', dir]), 0);
     assert.equal(indexCli.main(['--check', '--dir', dir]), 0);
+});
+
+// ── MLB (D-171) ──────────────────────────────────────────────
+const MLB_STORY = [
+    '---',
+    'title: Seattle keeps winning late',
+    'dek: The Mariners own the 9th inning.',
+    'date: 2026-10-04',
+    'season: 2026',
+    'round: ALDS',
+    'teams: [SEA, NYY]',
+    'players: []',
+    'hero_stat: 9 of 10 one-run games',
+    '---',
+    '',
+    'First paragraph.',
+].join('\n');
+const mlbDraft = (body, meta = {}) => ({ meta: { title: 'T', dek: 'D', hero_stat: 'H', season: 2026, ...meta }, body });
+
+test('validateMeta: MLB needs no week, NFL still does, unknown sports are rejected', () => {
+    const meta = core.parseStory(MLB_STORY).meta;
+    assert.deepEqual(core.validateMeta(meta, 'mlb'), []);
+    assert.ok(core.validateMeta(meta, 'nfl').includes('missing week'));
+    assert.ok(core.validateMeta(meta, 'nhl').includes('unknown sport nhl'));
+});
+
+test('validateMeta: round is plain text with no digits (it is never number-checked)', () => {
+    const meta = { ...core.parseStory(MLB_STORY).meta, round: 'Game 7' };
+    assert.ok(core.validateMeta(meta, 'mlb').includes('round must not contain digits'));
+});
+
+test('url, index entry and eyebrow are per sport', () => {
+    const meta = core.parseStory(MLB_STORY).meta;
+    assert.equal(core.storyUrl('2026-10-04-x', 'mlb'), '/mlb/stories/2026-10-04-x');
+    const e = core.indexEntry('2026-10-04-x', meta, 'mlb');
+    assert.equal(e.url, '/mlb/stories/2026-10-04-x');
+    assert.equal(e.sport, 'mlb');
+    assert.equal(e.week, undefined);
+    assert.equal(e.round, 'ALDS');
+    assert.equal(core.storyEyebrow(meta, 'mlb'), 'MLB · 2026 ALDS');
+    assert.equal(core.storyEyebrow({ season: 2026 }, 'mlb'), 'MLB · 2026 Season');
+    assert.equal(core.storyEyebrow({ week: 4 }, 'nfl'), 'NFL Week 4');
+});
+
+test('checkStory allows real baseball phrasing in MLB stories', () => {
+    const body = 'A two-out, 3-2 slider in the 9th inning of Game 5 in the 2026 ALDS, the seventh-inning stretch long gone, '
+        + 'snared by the third baseman on a 0-2 pitch with 2-out pressure in the 2026 postseason.';
+    assert.deepEqual(core.checkStory(mlbDraft(body), FACTS, '', 'mlb'), []);
+});
+
+test('checkStory still flags unsourced MLB stats', () => {
+    assert.deepEqual(tokensOf(core.checkStory(mlbDraft('He hit .312 with 44 homers in the 9th inning, a 5-4 win.'), FACTS, '', 'mlb')),
+        ['.312', '44', '5', '4']);
+});
+
+test('checkStory keeps each sport to its own phrase list', () => {
+    assert.deepEqual(tokensOf(core.checkStory(draft('Game 5 in the 8th inning'), FACTS, '', 'nfl')), ['5', '8th']);
+    assert.deepEqual(tokensOf(core.checkStory(mlbDraft('on 2nd down in Week 4'), FACTS, '', 'mlb')), ['2nd', '4']);
+});
+
+test('sportFromPath reads the content/<sport>/stories folder', () => {
+    const path = require('node:path');
+    assert.equal(core.sportFromPath(path.join('x', 'content', 'mlb', 'stories', 'a.md')), 'mlb');
+    assert.equal(core.sportFromPath('content/nfl/stories'), 'nfl');
+    assert.equal(core.sportFromPath('/tmp/whatever'), null);
+});
+
+test('loadStories validates an MLB folder with MLB rules', () => {
+    const files = { '2026-10-04-x.md': MLB_STORY, '2026-10-04-x.facts.json': JSON.stringify(FACTS), '2026-10-04-x.social.md': 'x' };
+    const mlb = indexCli.loadStories(storyDir(files), 'mlb');
+    assert.deepEqual(mlb.problems, []);
+    assert.equal(mlb.stories[0].url, '/mlb/stories/2026-10-04-x');
+    assert.ok(indexCli.loadStories(storyDir(files), 'nfl').problems.some(p => p.includes('missing week')));
+});
+
+test('check-numbers CLI infers MLB from the story path', (t) => {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const path = require('node:path');
+    const cli = require('../tools/stories/check-numbers.cjs');
+    t.mock.method(console, 'error', () => {});
+    t.mock.method(console, 'log', () => {});
+    const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'stories-')), 'content', 'mlb', 'stories');
+    fs.mkdirSync(dir, { recursive: true });
+    const md = path.join(dir, '2026-10-04-x.md');
+    fs.writeFileSync(md, MLB_STORY.replace('First paragraph.', 'A 3-2 count in the 9th inning.'));
+    fs.writeFileSync(path.join(dir, '2026-10-04-x.facts.json'), JSON.stringify(FACTS));
+    fs.writeFileSync(path.join(dir, '2026-10-04-x.social.md'), 'Seattle: 9 of 10.');
+    assert.equal(cli.main([md]), 0);
 });

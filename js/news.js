@@ -145,11 +145,11 @@ function displayNews(data, sport) {
         <p class="pct-caption">Wire headlines via ESPN · tap a story to read the full article${sport === 'ncaaf' ? '. No structured CFB injury report exists anywhere (ESPN, Sleeper, CollegeFootballData.com) — "Injury-Related" is a keyword match over real headlines, not an official report.' : ''}</p>
     </div>`;
 
-    if (sport === 'nfl' && typeof fetchStoriesIndex === 'function') {
+    if (STORY_SPORTS.includes(sport)) {
         const storiesHost = document.getElementById('newsStories');
-        fetchStoriesIndex().then(stories => {
-            if (!storiesHost || !storiesHost.isConnected || AppState.currentSport !== 'nfl') return;
-            storiesHost.innerHTML = storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories');
+        fetchStoriesIndex(sport).then(stories => {
+            if (!storiesHost || !storiesHost.isConnected || AppState.currentSport !== sport) return;
+            storiesHost.innerHTML = storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories', sport);
         });
     }
 
@@ -162,29 +162,41 @@ if (typeof window !== 'undefined') {
     window.displayNews = displayNews;
 }
 
-// ── SportStrata Stories (D-166) ──────────────────────────────
-// Committed, human-reviewed stories listed in /content/nfl/stories/index.json
-// (built by tools/stories/build-index.cjs). One shared promise per page load;
-// every surface (home rail, NFL landing, team pages, News) reads it.
-let _storiesIndexPromise = null;
-function fetchStoriesIndex() {
-    if (!_storiesIndexPromise) {
-        _storiesIndexPromise = fetch('/content/nfl/stories/index.json')
+// ── SportStrata Stories (D-166, MLB added D-171) ─────────────
+// Committed, human-reviewed stories listed in /content/<sport>/stories/index.json
+// (built by tools/stories/build-index.cjs). One shared promise per sport per page
+// load; every surface (home rail, landings, team pages, News) reads it.
+// Must match STORY_SPORTS in tools/stories/story-core.cjs.
+const STORY_SPORTS = ['nfl', 'mlb'];
+const _storiesIndexPromises = {};
+function fetchStoriesIndex(sport = 'nfl') {
+    if (!_storiesIndexPromises[sport]) {
+        _storiesIndexPromises[sport] = fetch(`/content/${sport}/stories/index.json`)
             .then(r => (r.ok ? r.json() : { stories: [] }))
             .then(d => (d && Array.isArray(d.stories) ? d.stories : []))
             .catch(err => { if (window.Logger) Logger.warn('stories index unavailable', err && err.message, 'NEWS'); return []; });
     }
-    return _storiesIndexPromise;
+    return _storiesIndexPromises[sport];
 }
 
-function storiesBlockHtml(stories, heading) {
+// Every sport's stories, newest first — the home rail's cross-sport feed.
+function fetchAllStories() {
+    return Promise.all(STORY_SPORTS.map(sp => fetchStoriesIndex(sp)))
+        .then(lists => lists.flat().sort((a, b) => String(b.date).localeCompare(String(a.date))));
+}
+
+// sport set → "All stories" links to that sport's index. Omitted for a
+// mixed-sport list (no cross-sport index page exists), which also tags each row.
+function storiesBlockHtml(stories, heading, sport) {
     if (!stories || !stories.length) return '';
+    const tag = s => (!sport && s.sport ? `<span class="story-row__sport">${_escHtml(String(s.sport).toUpperCase())}</span>` : '');
     const rows = stories.map(s => `<a class="story-row" href="${_escHtml(s.url)}">
-            <span class="story-row__title">${_escHtml(s.title)}</span>
+            <span class="story-row__title">${tag(s)}${_escHtml(s.title)}</span>
             <span class="story-row__dek">${_escHtml(s.dek)}</span>
         </a>`).join('');
+    const more = sport ? `<a class="stories-block__more" href="/${_escHtml(sport)}/stories">All stories →</a>` : '';
     return `<section class="stories-block">
-        <div class="stories-block__hdr"><span class="eyebrow">${_escHtml(heading)}</span><a class="stories-block__more" href="/nfl/stories">All stories →</a></div>
+        <div class="stories-block__hdr"><span class="eyebrow">${_escHtml(heading)}</span>${more}</div>
         ${rows}
     </section>`;
 }

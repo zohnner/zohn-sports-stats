@@ -1,0 +1,21 @@
+{
+  "stories": [
+    {
+      "slug": "2026-10-04-white-sox-unbeaten-october",
+      "title": "From 121 losses to 3-0 in October: the White Sox have yet to lose",
+      "dek": "Chicago has won all 3 of its postseason games on the road, and its bullpen has recorded 52 of the 81 outs.",
+      "date": "2026-10-04",
+      "season": 2026,
+      "round": "ALDS",
+      "teams": [
+        "CWS",
+        "HOU",
+        "CLE"
+      ],
+      "players": [],
+      "hero_stat": "3-0 in October, all on the road",
+      "url": "/mlb/stories/2026-10-04-white-sox-unbeaten-october",
+      "sport": "mlb"
+    }
+  ]
+}
