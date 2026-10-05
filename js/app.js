@@ -195,7 +195,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNFLLandingSignature === 'function') _loadNFLLandingSignature();
         if (typeof _loadNFLLandingFantasyPulse === 'function') _loadNFLLandingFantasyPulse();
         if (typeof _loadNFLLandingMatchup === 'function') _loadNFLLandingMatchup();
-        if (typeof _loadLandingStories === 'function') _loadLandingStories();
+        if (typeof _loadLandingStories === 'function') _loadLandingStories('nfl');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('nfl', 'Latest NFL');
     },
     ncaaf: () => {
@@ -209,6 +209,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadMLBLandingGames === 'function') _loadMLBLandingGames();
         if (typeof _loadMLBLandingLeaders === 'function') _loadMLBLandingLeaders();
         if (typeof _loadMLBLandingSignature === 'function') _loadMLBLandingSignature();
+        if (typeof _loadLandingStories === 'function') _loadLandingStories('mlb');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('mlb', 'Latest MLB');
     },
     ncaab: () => {
@@ -292,7 +293,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         <div class="sl-layout">
             <div class="sl-primary">
                 <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
-                ${sport === 'nfl' ? `<div id="slStories"></div>` : ''}
+                ${sport === 'nfl' || sport === 'mlb' ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
                 ${slots.games ? `<div id="slGames"></div>` : ''}
                 ${slots.leaders ? `<div id="slLeaders"></div>` : ''}
@@ -2596,7 +2597,7 @@ async function _renderHomeHeadlines() {
     try {
         const [allArticles, stories] = await Promise.all([
             _fetchHomeNewsArticles(),
-            typeof fetchStoriesIndex === 'function' ? fetchStoriesIndex() : Promise.resolve([]),
+            typeof fetchAllStories === 'function' ? fetchAllStories() : Promise.resolve([]),
         ]);
         const articles = allArticles
             .filter(a => a && a.headline && a.links?.web?.href)
@@ -3807,15 +3808,15 @@ async function _loadNFLLandingSpotlight() {
 // `sport` (cache key + fetch param) and `label` (the eyebrow text) instead of
 // re-cloned per sport -- same "shared function over copy-pasted markup"
 // approach as _renderEditorialLanding above.
-// SportStrata Stories on the NFL landing (D-166) -- above the ESPN wire module.
-// Removes its host when there are no stories rather than showing an empty box.
-async function _loadLandingStories() {
+// SportStrata Stories on the NFL/MLB landing (D-166/D-171) -- above the ESPN wire
+// module. Removes its host when there are no stories rather than showing an empty box.
+async function _loadLandingStories(sport) {
     const host = document.getElementById('slStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
-    const stories = await fetchStoriesIndex();
+    const stories = await fetchStoriesIndex(sport);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
-    host.innerHTML = `<section class="sl-section sl-section--flush">${storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories')}</section>`;
+    host.innerHTML = `<section class="sl-section sl-section--flush">${storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories', sport)}</section>`;
 }
 async function _loadSportLandingNews(sport, label) {
     const host = document.getElementById('slNews');

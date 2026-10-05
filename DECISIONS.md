@@ -3457,6 +3457,20 @@ Traffic is minimal and the only editorial surface was ESPN's wire, which every s
 
 **Tests:** `tests/scorebug.test.js` (+4, real ESPN status strings), `tests/nflScoreboardFetch.test.js` (4, real cache semantics with a counted network stub).
 
+## D-171 — SportStrata Stories extended to MLB; one shared renderer, per-sport number-checker rules
+
+**Owner-directed, 2026-10-04.** Stories (D-166) were NFL-only by construction: `content/nfl/stories`, `/nfl/stories/*` and `static-page-nfl` were hard-coded across the core, both CLIs, both Pages Functions, the client fetch and the sitemap, and frontmatter required `week`.
+
+**What changed.** Sport is now a parameter. `STORY_SPORTS` in `tools/stories/story-core.cjs` holds per-sport required fields, eyebrow and phrase allowlist; `validateMeta`/`storyUrl`/`indexEntry`/`checkStory` take the sport (default `nfl`, so D-166 behavior is unchanged). Both Functions' rendering moved to `functions/_stories.js`; `functions/{nfl,mlb}/stories/*` are one-line wrappers. MLB stories have no `week`; an optional digit-free `round` (e.g. `ALDS`) feeds the eyebrow. Index entries carry `sport`. The client fetches one index per sport; the home rail merges them with a sport tag. MLB stories surface on the MLB landing, MLB News and MLB team pages (new `_loadMLBTeamStories`, `js/mlb.js`).
+
+**The non-obvious part: the number checker's allowlist had to split, not grow.** Its exemptions were all football (`4th-and-2`, `Q3`, `Week N`). Ordinary baseball prose — "a 3-2 slider in the 9th inning of Game 5" — would fail CI on 4 numbers that are structure, not stats. A single merged list would have let football stories exempt `Game 7` and baseball stories exempt `Week 4`, widening the hole the checker exists to close. Each sport now gets only its own list; tests assert the cross-sport cases fail.
+
+**First MLB story** (`2026-10-04-white-sox-unbeaten-october`): every number traced to a Stats API standings, team-stats or boxscore call recorded in its `.facts.json`. Drafted for owner review before merge, per D-166.
+
+**Sitemap:** a sport's `/stories` index is listed only once it has a story, so a new sport never publishes an empty indexable page.
+
+**Numbering note:** D-169 was taken on the unmerged `feat/nfl-break-card` branch and D-168 on `fix/private-paths`; this is D-171 to avoid a collision.
+
 ## D-172 — Break card: the two-minute warning is a break
 **Status:** shipping | **Date:** 2026-10-04
 
