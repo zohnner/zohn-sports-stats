@@ -1,5 +1,5 @@
 // ============================================================
-// Home live refresh — pure decisions behind the home poll (D-171):
+// Home live refresh — pure decisions behind the home poll (D-173):
 // which sports need a fresh scoreboard, and whether anything changed
 // enough to re-render the hero.
 // Run: node --test tests/homeLive.test.js

@@ -401,7 +401,7 @@ setupNavigation();
 
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'mlb') return;
             const cached = AppState.mlbGames || [];
             const hasLive = cached.some(g => g.status?.abstractGameState === 'Live');
@@ -453,7 +453,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'nfl') return;
             if (typeof fetchNFLScoreboard !== 'function') return;
             const cached = AppState.nflGames || [];
@@ -491,7 +491,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'ncaaf') return;
             if (typeof fetchNCAAFScoreboard !== 'function') return;
             const cached = AppState.ncaafGames || [];
@@ -537,7 +537,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'ncaab') return;
             if (typeof fetchNCAABScoreboard !== 'function') return;
             const cached = AppState.ncaabGames || [];
@@ -564,7 +564,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'wnba') return;
             if (typeof fetchWNBAScoreboard !== 'function') return;
             const cached = AppState.wnbaGames || [];
@@ -591,7 +591,7 @@ setupNavigation();
     let _lastFetchAt = 0;
     async function _poll() {
         try {
-            if (document.hidden) return; // background tab: no one is watching (D-171)
+            if (document.hidden) return; // background tab: no one is watching (D-173)
             if (AppState.currentSport !== 'nba') return;
             if (typeof fetchNBAScoreboard !== 'function') return;
             const cached = AppState.nbaGames || [];
@@ -620,7 +620,7 @@ setupNavigation();
 (function setupHomeTickerPolling() {
     const INTERVAL = 30_000;
     async function _poll() {
-        if (document.hidden) return; // background tab: no one is watching (D-171)
+        if (document.hidden) return; // background tab: no one is watching (D-173)
         if (AppState.currentView !== 'home') return;
         if (typeof _updateHomeTicker !== 'function') return;
         try {
@@ -721,7 +721,7 @@ function _homeSkeletonCards(n = 6) {
 // (D-047 S2) — a data-merge over fetches every sport already makes elsewhere,
 // not a new component. NCAAB has no Scorebug normalizer yet (D-052 shipped
 // its own standalone ticker fn) and NHL is preview-only — both out of scope.
-// D-171: `live` is set only by the 30s home poll. On those ticks any sport
+// D-173: `live` is set only by the 30s home poll. On those ticks any sport
 // with a game in progress fetches fresh (bypassing its 5-minute cache) under
 // its own in-flight key, so it never joins a cached request already running;
 // idle sports keep the cache. The first render on page load stays cached.
@@ -818,7 +818,7 @@ async function _updateHomeTicker({ live = false } = {}) {
     if (typeof _renderSportPicker === 'function') _renderSportPicker();
 
     // _renderHomeHero only refetches a sport when its AppState cache is empty,
-    // so before D-171 the hero kept whatever it first loaded all game long
+    // so before D-173 the hero kept whatever it first loaded all game long
     // (live-observed: 9:27 1st while /api/nfl said 9:18). Re-render it when
     // the guest-sport data it draws from actually changed -- comparing first
     // because the hero is rebuilt from innerHTML and would flicker otherwise.

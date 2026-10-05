@@ -1,5 +1,5 @@
 // ============================================================
-// HomeLive — pure decisions behind the home page's live refresh (D-171).
+// HomeLive — pure decisions behind the home page's live refresh (D-173).
 // No DOM, no fetch: setupHomeTickerPolling (js/app.js) asks these two
 // questions every tick, and they're kept here so they can be unit-tested
 // (tests/homeLive.test.js) — app.js itself can't load outside a browser.

@@ -3457,7 +3457,7 @@ Traffic is minimal and the only editorial surface was ESPN's wire, which every s
 
 **Tests:** `tests/scorebug.test.js` (+4, real ESPN status strings), `tests/nflScoreboardFetch.test.js` (4, real cache semantics with a counted network stub).
 
-## D-171 — Live refreshes read stale cache on every non-NFL sport, and the home hero never refreshed at all
+## D-173 — Live refreshes read stale cache on every non-NFL sport, and the home hero never refreshed at all
 **Status:** shipping | **Date:** 2026-10-04
 
 **Found while closing out D-170.** D-170 fixed NFL's 60s live poll reading its 5-minute `ApiCache` entry. The same helper shape exists in `espnNCAAFFetch` / `espnNCAABFetch` / `espnWNBAFetch` / `espnNBAFetch`, and all four sport-page polls had the identical bug — including through `display*Scores()`, which re-fetched internally through the cache. Separately, the home page: `setupHomeTickerPolling` ran every 30s but fetched through the same cache, and `_renderHomeHero` only refetches a sport when its `AppState` array is empty, so the hero kept whatever it first loaded for the whole game (live-observed 2026-10-04: hero at "9:27 1st" while `/api/nfl` said 9:18).
