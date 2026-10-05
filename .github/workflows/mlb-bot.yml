@@ -5,7 +5,10 @@ name: SportStrata Social Digest
 
 on:
   schedule:
-    - cron: '0 11 * * *'    # ~7 AM ET — digest of yesterday's finals
+    # ~7 AM ET — digest of yesterday's finals. Off the top of the hour on
+    # purpose: at '0 11' GitHub's scheduled-job queue started this 4-8.5h late
+    # (15:04-19:31 UTC over 2026-09-30..10-05) — :00 is the busiest slot.
+    - cron: '17 11 * * *'
   workflow_dispatch:
     inputs:
       date:
@@ -15,6 +18,10 @@ on:
 jobs:
   digest:
     runs-on: ubuntu-latest
+    # A healthy run takes ~30s. Without this, a hung step could hold the job
+    # for GitHub's 6-hour default. (It would not have saved 2026-10-05: that
+    # run was cancelled because no hosted runner ever picked it up.)
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
