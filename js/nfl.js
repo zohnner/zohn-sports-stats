@@ -2337,10 +2337,10 @@ async function _loadNFLTeamStories(abbr) {
     const host = document.getElementById('nflTeamStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
     const code = String(abbr || '').toUpperCase();
-    const stories = (await fetchStoriesIndex()).filter(s => (s.teams || []).includes(code)).slice(0, 3);
+    const stories = (await fetchStoriesIndex('nfl')).filter(s => (s.teams || []).includes(code)).slice(0, 3);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
-    host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories');
+    host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', 'nfl');
 }
 
 function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {

@@ -3768,6 +3768,17 @@ function displayMLBTeams(teams, standings = {}) {
 
 // ── View: Team Detail ─────────────────────────────────────────
 
+// SportStrata Stories that name this team in their frontmatter (D-171).
+async function _loadMLBTeamStories(abbr) {
+    const host = document.getElementById('mlbTeamStories');
+    if (!host || typeof fetchStoriesIndex !== 'function') return;
+    const code = String(abbr || '').toUpperCase();
+    const stories = (await fetchStoriesIndex('mlb')).filter(s => (s.teams || []).includes(code)).slice(0, 3);
+    if (!host.isConnected) return;
+    if (!stories.length) { host.remove(); return; }
+    host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', 'mlb');
+}
+
 async function showMLBTeamDetail(teamId, push = true) {
     window.scrollTo({ top: 0, behavior: 'instant' });
     const grid = document.getElementById('playersGrid');
@@ -3844,7 +3855,9 @@ async function showMLBTeamDetail(teamId, push = true) {
             ${_mlbTeamUpcomingCard(upcomingGames, teamId, colors)}
             ${_mlbRecentGamesCard(recentGames, teamId)}
             ${_mlbRosterCard(roster, colors)}
+            <div class="mlb-team-stories" id="mlbTeamStories" style="grid-column:1/-1"></div>
         `;
+        _loadMLBTeamStories(team?.abbreviation);
 
         // If player stats haven't been loaded yet (user came straight to team detail),
         // fetch them in the background and refresh just the roster card when ready.
