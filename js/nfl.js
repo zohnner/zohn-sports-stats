@@ -104,7 +104,9 @@ function _nflOffseasonState(surface) {
 
 // ── Fetch helper ──────────────────────────────────────────────
 
-async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM) {
+// `fresh` skips the cache READ but still writes the result back, so a live
+// poll gets current data and every other caller benefits from it.
+async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fresh = false } = {}) {
     // Route through our same-origin Pages Function proxy (functions/api/nfl.js):
     // a server-side fetch fixes ESPN's browser CORS on /teams and /leaders.
     const url = new URL('/api/nfl', location.origin);
@@ -112,7 +114,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const cacheKey = `nfl:${path}:${url.searchParams.toString()}`;
 
-    const hit = ApiCache.get(cacheKey);
+    const hit = fresh ? null : ApiCache.get(cacheKey);
     if (hit) return hit;
 
     Logger.debug(`NFL → ${url.pathname}`, undefined, 'NFL');
@@ -185,7 +187,7 @@ async function fetchNFLScoreboard(opts = {}) {
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
-    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT);
+    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
     // Only trust this response for _nflRealSeasonType when it's genuinely
     // "whatever ESPN considers current right now" -- an explicit historical
     // week/seasontype browse (opts.seasontype/opts.week set) describes

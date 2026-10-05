@@ -458,7 +458,11 @@ setupNavigation();
             const hasLive = cached.some(g => g.isLive);
             const dueForRecheck = (Date.now() - _lastFetchAt) >= FORCE_REFRESH_MS;
             if (cached.length > 0 && !hasLive && !dueForRecheck) return;
-            const games = await fetchNFLScoreboard();
+            // fresh: the 60s tick used to hit fetchNFLScoreboard's 5-minute
+            // ApiCache entry 4 ticks out of 5, so live scores advanced every
+            // ~5 minutes (live-observed 2026-10-04: home hero at 9:27 while
+            // /api/nfl already said 9:18).
+            const games = await fetchNFLScoreboard({ fresh: true });
             _lastFetchAt = Date.now();
             AppState.nflGames = games;
             // Same home-ownership rule as the MLB loop above — merged ticker owns

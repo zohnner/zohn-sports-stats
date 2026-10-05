@@ -3444,4 +3444,15 @@ Traffic is minimal and the only editorial surface was ESPN's wire, which every s
 
 **Tests:** `tests/nflBreakCard.test.js` (14), against `tests/fixtures/nfl-summary-ne-buf-break.json` — today's real NE @ BUF `/summary`, trimmed, captured during the post-TD timeout. Verified live via `wrangler pages dev` against the real NYJ @ CHI Q2 field-goal break ("CHI FIELD GOAL · Next: NYJ receives · CHI win probability 76% → 80%").
 
-**Not done:** NCAAF's viewer (`js/ncaafLiveGame.js`) has the same dead-time gap and its own chart copy — a scoped follow-up. The production Scores-page/ticker 5-minute refresh bug found in the same monitoring session (live poll fires every 60s but `fetchNFLScoreboard` serves `ApiCache.TTL.SHORT`) is separate and not fixed here.
+**Not done:** NCAAF's viewer (`js/ncaafLiveGame.js`) has the same dead-time gap and its own chart copy — a scoped follow-up. The 5-minute Scores-page refresh bug found in the same monitoring session is fixed separately in D-170.
+
+## D-170 — NFL live scores refreshed every 5 minutes, not 60s; ticker said "0:00" at halftime
+**Status:** shipping | **Date:** 2026-10-04
+
+**Bug 1, live-observed during Week 4's early games:** `setupNFLLivePolling` (js/app.js) ticks every 60s, but `fetchNFLScoreboard` reads `ApiCache.TTL.SHORT` (5 min), so 4 ticks of 5 re-rendered the same cached scoreboard. The Scores page and ticker advanced roughly every 5 minutes; seen as a home hero at "9:27 1st" while `/api/nfl` already returned 9:18 and 4th & Goal. Fix: `espnNFLFetch` takes `{ fresh }`, which skips the cache read but still writes the result back; `fetchNFLScoreboard({ fresh: true })` is used only by the live poll. Every other caller keeps the cache.
+
+**Bug 2, live-observed at halftime (7 games at once):** the ticker pill (`Scorebug._normalizeFootball`) rendered ESPN's bare `displayClock`, which sits at "0:00" through halftime and quarter breaks, while the Scores cards correctly showed "Halftime" from `shortDetail`. A stopped clock now defers to the status text: "HALF", "END 1ST", else "LIVE" — never "0:00". NCAAF shares the normalizer but never sets `clock`, so its ticker already said "LIVE" and is unchanged.
+
+**Not fixed — the home page has no NFL live refresh at all.** The home hero and merged ticker render once at load from whatever ≤5-minute-old cache exists. Adding a home live poll is a larger, separate change. The NCAAF live poll (`setupNCAAFLivePolling`) very likely has Bug 1's exact cache shape too; not verified or changed here.
+
+**Tests:** `tests/scorebug.test.js` (+4, real ESPN status strings), `tests/nflScoreboardFetch.test.js` (4, real cache semantics with a counted network stub).
