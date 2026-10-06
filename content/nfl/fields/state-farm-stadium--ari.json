@@ -1,0 +1,22 @@
+{
+  "venueId": "3970",
+  "homeTeam": "ARI",
+  "name": "State Farm Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#7F2432",
+      "text": " ",
+      "textColor": "#D28B42"
+    },
+    "right": {
+      "fill": "#7F2432",
+      "text": " ",
+      "textColor": "#D28B42"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#D4D8DE",
+  "signature": []
+}

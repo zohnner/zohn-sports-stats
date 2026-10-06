@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.azfamily.com/2026/04/23/arizona-cardinals-host-free-draft-day-party-state-farm-stadium/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.text": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.text": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.azcardinals.com/photos/photos-cardinals-top-pics-vs-seahawks-x1699",
+      "photo": "https://static.clubs.nfl.com/image/upload/cardinals/uobbonedkvigumu5jomz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}

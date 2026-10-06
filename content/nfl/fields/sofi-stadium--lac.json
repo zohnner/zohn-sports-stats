@@ -1,0 +1,22 @@
+{
+  "venueId": "7065",
+  "homeTeam": "LAC",
+  "name": "SoFi Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#0850AD",
+      "text": "LOS ANGELES",
+      "textColor": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#0850AD",
+      "text": "CHARGERS",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#ECF0EB",
+  "signature": []
+}
