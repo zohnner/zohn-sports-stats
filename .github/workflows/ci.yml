@@ -88,3 +88,6 @@ jobs:
             fi
           done < <(git ls-files -z -- '*.js' '*.css' '*.html' '*.md')
           exit $found
+
+      - name: NFL home fields — all 32 researched, sourced, approved; index current
+        run: node tools/fields/build-index.cjs --check
