@@ -86,21 +86,27 @@ test('end zone glyphs: one per non-space char, inside the end zone, shrinking to
         const g = FV.geometry(w, h);
         const left = FV.layoutEndzoneText(g, 'GREEN BAY', 'left');
         assert.equal(left.length, 8);
-        for (const t of left) {
-            const yF = (t.y - g.bottomY) / (g.topY - g.bottomY);
-            assert.ok(t.x > g.proj(-10, yF).x && t.x < g.proj(0, yF).x, `left glyph ${t.ch} outside end zone`);
-            assert.ok(t.angle < -20 && t.angle > -135, `left reads upward, got ${t.angle}`);
-        }
+        // The angle flattens on wide fields (~33deg at 1148x240), so only its sign/quadrant is asserted.
+        for (const t of left) assert.ok(t.angle < -20 && t.angle > -135, `left reads upward, got ${t.angle}`);
         for (let i = 1; i < left.length; i++) {
             assert.ok(left[i].y < left[i - 1].y, 'left glyphs advance toward the far sideline');
-            assert.ok(left[i].sy < left[i - 1].sy, 'left glyphs shrink with depth');
+            assert.ok(Math.abs(left[i].m[2]) < Math.abs(left[i - 1].m[2]), 'left glyphs shrink with depth');
         }
         const right = FV.layoutEndzoneText(g, 'PACKERS', 'right');
         assert.equal(right.length, 7);
-        for (const t of right) {
-            const yF = (t.y - g.bottomY) / (g.topY - g.bottomY);
-            assert.ok(t.x > g.proj(100, yF).x && t.x < g.proj(110, yF).x, `right glyph ${t.ch} outside end zone`);
-            assert.ok(t.angle > 20 && t.angle < 135, `right reads downward, got ${t.angle}`);
+        for (const t of right) assert.ok(t.angle > 20 && t.angle < 135, `right reads downward, got ${t.angle}`);
+        // Every corner of every glyph cell (font-size 100 cell: 55 wide x 70 tall,
+        // centered) must land inside its end zone -- the bug the prototype caught.
+        for (const [glyphs, x0, x1] of [[left, -10, 0], [right, 100, 110]]) {
+            for (const t of glyphs) {
+                const [a, b, c, d] = t.m;
+                for (const [lx, ly] of [[-27.5, -35], [27.5, -35], [-27.5, 35], [27.5, 35]]) {
+                    const X = t.x + a * lx + c * ly, Y = t.y + b * lx + d * ly;
+                    const yF = (Y - g.bottomY) / (g.topY - g.bottomY);
+                    assert.ok(yF > 0 && yF < 1, `${t.ch} corner off the field depth at ${w}px`);
+                    assert.ok(X > g.proj(x0, yF).x && X < g.proj(x1, yF).x, `${t.ch} corner outside end zone at ${w}px`);
+                }
+            }
         }
         for (let i = 1; i < right.length; i++) assert.ok(right[i].y > right[i - 1].y, 'right glyphs advance toward the near sideline');
     }

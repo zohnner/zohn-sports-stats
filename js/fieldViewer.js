@@ -50,7 +50,11 @@ const FieldViewer = (() => {
     }
 
     // Lettering runs sideline to sideline with letter tops toward the end
-    // line: the left end zone reads near->far, the right far->near.
+    // line: the left end zone reads near->far, the right far->near. Each glyph
+    // gets an affine matrix, not rotate+scale: its width follows the slanted
+    // reading line while its height stays along the field length (horizontal
+    // on screen) -- paint lying on the turf, which never leans out of the
+    // end zone however steep the slant gets on wide fields.
     function layoutEndzoneText(g, text, side) {
         const chars = Array.from(String(text || '').toUpperCase());
         if (!chars.length) return [];
@@ -64,11 +68,13 @@ const FieldViewer = (() => {
             const c = g.proj(xF, yF);
             const a = g.proj(xF, yF - (step / 2) * dir), b = g.proj(xF, yF + (step / 2) * dir);
             const cellPx = Math.hypot(b.x - a.x, b.y - a.y);
+            const wS = (cellPx * 0.82) / GLYPH_ADV;
+            const hS = (EZ_LETTER_YDS * g.lengthPxPerYard(yF)) / GLYPH_CAP;
+            const ux = (b.x - a.x) / cellPx, uy = (b.y - a.y) / cellPx;
             out.push({
                 ch, x: c.x, y: c.y,
-                angle: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI,
-                sx: (cellPx * 0.82) / GLYPH_ADV,
-                sy: (EZ_LETTER_YDS * g.lengthPxPerYard(yF)) / GLYPH_CAP,
+                angle: Math.atan2(uy, ux) * 180 / Math.PI,
+                m: [ux * wS, uy * wS, dir * hS, 0],
             });
         });
         return out;
