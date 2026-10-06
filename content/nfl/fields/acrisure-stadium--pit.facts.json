@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.steelers.com/news/asked-and-answered-aug-18-x1490",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-falcons-x0415",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/gmxz2imrmv6vceikb8kb.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/ep8nmtezglohprqczrxv.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/ep8nmtezglohprqczrxv.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/ep8nmtezglohprqczrxv.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/r1oqbunkacsj8zpri9ve.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/r1oqbunkacsj8zpri9ve.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/r1oqbunkacsj8zpri9ve.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-falcons-x0415",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/irg09za42m8jplwwl7bq.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",
+      "photo": "https://static.clubs.nfl.com/image/upload/steelers/vlr28npusdyee5epabzx.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "venueId": "3493",
+  "homeTeam": "NO",
+  "name": "Caesars Superdome",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#587341",
+      "text": "SAINTS",
+      "textColor": "#928A58"
+    },
+    "right": {
+      "fill": "#587341",
+      "text": "SAINTS",
+      "textColor": "#928A58"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EEF0EE",
+  "signature": []
+}

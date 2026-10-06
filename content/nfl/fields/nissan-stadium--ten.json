@@ -1,0 +1,22 @@
+{
+  "venueId": "3810",
+  "homeTeam": "TEN",
+  "name": "Nissan Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#4A80C8",
+      "text": "TITANS",
+      "textColor": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#4A80C8",
+      "text": "TITANS",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EFF1F1",
+  "signature": []
+}

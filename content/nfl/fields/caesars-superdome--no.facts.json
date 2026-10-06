@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.caesarssuperdome.com/about",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.neworleanssaints.com/video/caesars-superdome-turf-installation-new-orleans-saints-2023-nfl-season",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "mow": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.raiders.com/photos/pregame-sights-from-week-3-vs-saints",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/hw9hfbua7extayplzv1s.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.atlantafalcons.com/photos/game-photos-week-4-falcons-vs-saints-x3886",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/xdivtrkbju9m9ht5tmtt.jpg",
+      "photoDate": "2026-10-05",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    }
+  }
+}

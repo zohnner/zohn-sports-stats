@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/jets-giants-have-new-turf-at-metlife-stadium",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "mow": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/za7mkrsrzpuylaxnt2bs.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "midfield": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/jets/xkllhzsc0uldivuvto9z.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    }
+  }
+}
