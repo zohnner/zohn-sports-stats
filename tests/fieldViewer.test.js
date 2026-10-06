@@ -112,3 +112,36 @@ test('end zone glyphs: one per non-space char, inside the end zone, shrinking to
     }
     assert.deepEqual(Array.from(FV.layoutEndzoneText(FV.geometry(800, 240), '', 'left')), []);
 });
+
+const INDEX = {
+    version: 1,
+    teams: { '3798--GB': { name: 'Lambeau Field' }, '3839--NYG': { name: 'MetLife (NYG)' }, '3839--NYJ': { name: 'MetLife (NYJ)' } },
+    neutral: { '401872965': { name: 'Tottenham (game paint)' } },
+};
+
+test('resolveField: researched neutral, generated neutral, team, generated — in that order', () => {
+    const FV = load();
+    const r = (o) => FV.resolveField({ index: INDEX, venueId: '3798', homeAbbr: 'GB', eventId: '1', neutralSite: false, ...o });
+    assert.equal(r({ neutralSite: true, eventId: '401872965' }).source, 'neutral-researched');
+    assert.equal(r({ neutralSite: true, eventId: '401872965' }).profile.name, 'Tottenham (game paint)');
+    assert.equal(r({ neutralSite: true, eventId: '999' }).source, 'neutral-generated');
+    assert.equal(r({ neutralSite: true, eventId: '999' }).profile, null);
+    assert.equal(r({}).profile.name, 'Lambeau Field');
+    assert.equal(r({ venueId: '3839', homeAbbr: 'NYJ' }).profile.name, 'MetLife (NYJ)');
+    assert.equal(r({ venueId: '9999' }).source, 'generated');
+    assert.equal(FV.resolveField({ index: null, venueId: '3798', homeAbbr: 'GB', eventId: '1', neutralSite: false }).source, 'generated');
+});
+
+test('generatedProfile paints both end zones in home colors with city and nickname', () => {
+    const FV = load();
+    const p = FV.generatedProfile({ homeLocation: 'Green Bay', homeName: 'Packers', homeColor: '#203731', neutral: false });
+    assert.equal(p.generated, true);
+    assert.equal(p.endzones.left.text, 'GREEN BAY');
+    assert.equal(p.endzones.right.text, 'PACKERS');
+    assert.equal(p.endzones.left.fill, '#203731');
+    assert.equal(p.endzones.right.fill, '#203731');
+    assert.equal(p.midfield, 'primary-logo');
+    const n = FV.generatedProfile({ homeLocation: 'Washington', homeName: 'Commanders', homeColor: '#5A1414', neutral: true });
+    assert.equal(n.midfield, 'none');
+    assert.equal(n.mow, 'none');
+});

@@ -87,6 +87,30 @@ const FieldViewer = (() => {
         return { x: c.x, y: c.y, size: MIDFIELD_YARDS * g.lengthPxPerYard(0.5), squash: g.depthPxPerYard / g.lengthPxPerYard(0.5) };
     }
 
-    return { GLYPH_REF, MIDFIELD_YARDS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement };
+    function resolveField({ index, venueId, homeAbbr, eventId, neutralSite }) {
+        if (neutralSite) {
+            const p = index && index.neutral && index.neutral[String(eventId)];
+            return p ? { source: 'neutral-researched', profile: p } : { source: 'neutral-generated', profile: null };
+        }
+        const p = index && index.teams && index.teams[`${venueId}--${homeAbbr}`];
+        return p ? { source: 'team', profile: p } : { source: 'generated', profile: null };
+    }
+
+    // Built only from facts true of any team's field (its colors, names, logo),
+    // so it never claims stadium-specific paint.
+    function generatedProfile({ homeLocation, homeName, homeColor, neutral }) {
+        const ez = (text) => ({ fill: homeColor || '#3a3f47', text: String(text || '').toUpperCase(), textColor: '#ffffff' });
+        return {
+            generated: true,
+            surface: 'natural',
+            mow: neutral ? 'none' : 'stripes-5',
+            endzones: { left: ez(homeLocation), right: ez(homeName) },
+            midfield: neutral ? 'none' : 'primary-logo',
+            border: '#2a2f37',
+            signature: [],
+        };
+    }
+
+    return { GLYPH_REF, MIDFIELD_YARDS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement, resolveField, generatedProfile };
 })();
 window.FieldViewer = FieldViewer;
