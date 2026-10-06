@@ -341,12 +341,17 @@ const FieldViewer = (() => {
         const topEl = root.querySelector('.fv-topline'), legEl = root.querySelector('.fv-legend');
         const $ = (key) => svg.querySelector(`[data-fv="${key}"]`);
         const st = { profile: o.profile, g: null, sit: null, prev: null, lastTimeouts: { home: null, away: null }, lastDown: null, lastPlayId: null };
-        let lastW = 0, lastH = 0, raf = 0;
+        let lastW = 0, lastH = 0, raf = 0, motionRaf = 0, destroyed = false;
 
         function apply(sit, instant) {
             const g = st.g;
             if (!g || !sit) return;
             const d = dynamicState(g, sit, o.homeTeamId);
+
+            // First apply after build: remove motion to prevent glide from origin
+            const isFirstApply = st.prev === null && !instant;
+            if (isFirstApply) root.classList.remove('fv-motion');
+
             const move = (key, transform, distPx) => {
                 const el = $(key);
                 el.style.setProperty('--fv-glide', `${glideMs(distPx)}ms`);
@@ -385,6 +390,12 @@ const FieldViewer = (() => {
 
             topEl.innerHTML = toplineHtml(sit, o, d.possHome);
             legEl.innerHTML = legendHtml(sit, o, st);
+
+            // Re-enable motion after first apply
+            if (isFirstApply) {
+                cancelAnimationFrame(motionRaf);
+                motionRaf = requestAnimationFrame(() => root.classList.add('fv-motion'));
+            }
         }
 
         function build() {
@@ -399,7 +410,8 @@ const FieldViewer = (() => {
             svg.setAttribute('height', String(h));
             svg.innerHTML = buildStaticSvg(st.g, st.profile, { idp, homeLogo: o.home.logo, awayLogo: o.away.logo });
             apply(st.sit, true);
-            requestAnimationFrame(() => root.classList.add('fv-motion'));
+            cancelAnimationFrame(motionRaf);
+            motionRaf = requestAnimationFrame(() => root.classList.add('fv-motion'));
         }
 
         const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
@@ -413,9 +425,9 @@ const FieldViewer = (() => {
 
         return {
             host,
-            update(sit) { st.sit = sit; if (!st.g) build(); else apply(sit, false); },
-            setProfile(profile) { st.profile = profile; build(); },
-            destroy() { if (ro) ro.disconnect(); cancelAnimationFrame(raf); host.innerHTML = ''; },
+            update(sit) { if (destroyed) return; st.sit = sit; if (!st.g) build(); else apply(sit, false); },
+            setProfile(profile) { if (destroyed) return; st.profile = profile; build(); },
+            destroy() { destroyed = true; if (ro) ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(motionRaf); host.innerHTML = ''; },
         };
     }
 
