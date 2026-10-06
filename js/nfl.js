@@ -406,6 +406,7 @@ async function fetchNFLLiveSituation(eventId) {
         situation:  comp.situation || null,
         homeTeamId: home?.team?.id || null,
         awayTeamId: away?.team?.id || null,
+        venueIndoor: comp.venue?.indoor === true,
     };
 }
 
