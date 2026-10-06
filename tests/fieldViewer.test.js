@@ -145,3 +145,64 @@ test('generatedProfile paints both end zones in home colors with city and nickna
     assert.equal(n.midfield, 'none');
     assert.equal(n.mow, 'none');
 });
+
+const PROFILE = {
+    surface: 'artificial', mow: 'checker', border: '#123456', midfield: 'primary-logo', signature: [],
+    endzones: { left: { fill: '#203731', text: 'GREEN BAY', textColor: '#FFFFFF' }, right: { fill: '#203731', text: 'PACK<ERS', textColor: '#FFB612' } },
+};
+
+test('static SVG: instance-prefixed ids, escaped text, one glyph per letter, midfield image, all placeholders', () => {
+    const FV = load();
+    const g = FV.geometry(773, 240);
+    const s = FV.buildStaticSvg(g, PROFILE, { idp: 'fv7-', homeLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', awayLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png' });
+    for (const m of s.matchAll(/\bid="([^"]+)"/g)) assert.ok(m[1].startsWith('fv7-'), `unprefixed id ${m[1]}`);
+    assert.ok(!/preserveAspectRatio="none"/.test(s));
+    assert.ok(s.includes('&lt;'), 'end zone text escaped');
+    assert.ok(!s.includes('PACK<ERS'));
+    assert.equal((s.match(/<text class="fv-ez-glyph"/g) || []).length, 8 + 8);
+    assert.ok(s.includes('class="fv-midfield"') && s.includes('gb.png'));
+    assert.ok(s.includes('chi.png'), 'away defended-goal badge');
+    for (const k of ['rz', 'rz-clip', 'fd', 'fd-line', 'scrim', 'arrow', 'ball', 'ball-fill']) assert.ok(s.includes(`data-fv="${k}"`), `placeholder ${k}`);
+    assert.ok(s.includes('fill="#123456"'), 'border color');
+});
+
+test('static SVG: midfield none draws no midfield image; mow none draws no bands', () => {
+    const FV = load();
+    const g = FV.geometry(773, 240);
+    const s = FV.buildStaticSvg(g, { ...PROFILE, midfield: 'none', mow: 'none' }, { idp: 'a-', homeLogo: 'x', awayLogo: '' });
+    assert.ok(!s.includes('fv-midfield'));
+    assert.ok(!s.includes('data-fv-band'));
+});
+
+test('dynamicState matches the D-148 positions for both possessions', () => {
+    const FV = load();
+    const [w, h] = [1148, 240];
+    const g = FV.geometry(w, h);
+    // Home (id 9) has the ball at yardLine 58 (home-anchored), driving toward 100; 1st & 10.
+    const homeSit = { yardLine: 58, distance: 10, possession: '9', down: 1, isRedZone: false };
+    const d = FV.dynamicState(g, homeSit, '9');
+    assert.equal(d.possHome, true);
+    close(d.ball.x, oldProjPx(100 - 58, 0.5, w, h).x);
+    close(d.firstDown.bottomX, oldProjPx(100 - 68, 0, w, h).x);
+    assert.equal(d.redZone, null);
+    // Away has the ball, 1st & Goal at the home 19: first down clamps to the home goal line.
+    const awaySit = { yardLine: 19, distance: 19, possession: '3', down: 1, isRedZone: true };
+    const a = FV.dynamicState(g, awaySit, '9');
+    assert.equal(a.possHome, false);
+    close(a.firstDown.bottomX, oldProjPx(100, 0, w, h).x);
+    close(a.redZone[0].x, oldProjPx(80, 0, w, h).x);
+    close(a.redZone[1].x, oldProjPx(100, 0, w, h).x);
+    assert.equal(FV.dynamicState(g, { ...awaySit, down: 4 }, '9').isDown4, true);
+});
+
+test('arrowSvg skips administrative plays and badges incompletions', () => {
+    const FV = load();
+    const g = FV.geometry(773, 240);
+    const play = (text) => ({ lastPlay: { id: 'p1', type: { text }, start: { yardLine: 30 }, end: { yardLine: 42 } } });
+    assert.equal(FV.arrowSvg(g, play('Timeout'), false, 'm'), '');
+    assert.equal(FV.arrowSvg(g, play('Penalty'), false, 'm'), '');
+    assert.ok(FV.arrowSvg(g, play('Pass Incompletion'), false, 'm').includes('fv-arrow-badge-ring'));
+    const pass = FV.arrowSvg(g, play('Pass Reception'), true, 'fv1-arrow');
+    assert.ok(pass.includes('fv-arrow--pass') && pass.includes('fv-arrow--entering') && pass.includes('url(#fv1-arrow)'));
+    assert.equal(FV.arrowSvg(g, {}, false, 'm'), '');
+});
