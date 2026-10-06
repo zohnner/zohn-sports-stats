@@ -131,12 +131,11 @@ const FieldViewer = (() => {
         return bands;
     }
 
-    function endzoneSvg(g, ez, side, clipId, hatchId) {
+    function endzoneSvg(g, ez, side) {
         const [x0, x1] = side === 'left' ? [-10, 0] : [100, 110];
         const glyphs = layoutEndzoneText(g, ez.text, side).map(t =>
             `<text class="fv-ez-glyph" font-size="${GLYPH_REF}" text-anchor="middle" dominant-baseline="central" transform="matrix(${t.m.map(v => v.toFixed(4)).join(',')},${f1(t.x)},${f1(t.y)})">${_escHtml(t.ch)}</text>`).join('');
         return `<polygon points="${quad(g, x0, x1, 0, 1)}" fill="${_escHtml(ez.fill)}"/>`
-            + `<rect width="${g.w}" height="${g.h}" fill="url(#${hatchId})" clip-path="url(#${clipId})"/>`
             + `<g class="fv-ez-text" fill="${_escHtml(ez.textColor)}">${glyphs}</g>`;
     }
 
@@ -230,8 +229,6 @@ const FieldViewer = (() => {
         })() : '';
         return `<defs>`
             + `<pattern id="${id('hatch')}" width="${f1(14 * u)}" height="${f1(14 * u)}" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="${f1(7 * u)}" height="${f1(14 * u)}" fill="rgba(255,255,255,0.09)"/></pattern>`
-            + `<clipPath id="${id('ezL')}"><polygon points="${quad(g, -10, 0, 0, 1)}"/></clipPath>`
-            + `<clipPath id="${id('ezR')}"><polygon points="${quad(g, 100, 110, 0, 1)}"/></clipPath>`
             + `<clipPath id="${id('rz')}"><polygon data-fv="rz-clip" points=""/></clipPath>`
             + `<linearGradient id="${id('sheen')}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity="0.4"/><stop offset="45%" stop-color="#fff" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.28"/></linearGradient>`
             + `<marker id="${id('arrow')}" markerUnits="userSpaceOnUse" markerWidth="${f1(14 * u)}" markerHeight="${f1(14 * u)}" refX="${f1(10.5 * u)}" refY="${f1(7 * u)}" orient="auto"><path d="M0,0 L${f1(14 * u)},${f1(7 * u)} L0,${f1(14 * u)} Z" class="fv-arrow-head"/></marker>`
@@ -239,8 +236,8 @@ const FieldViewer = (() => {
             + `<polygon points="${quad(g, -11, 111, -0.05, 1.05)}" fill="${_escHtml(profile.border)}"/>`
             + `<polygon points="${quad(g, -10, 110, 0, 1)}" fill="${turf.base}"/>`
             + mowBands(profile.mow).map(b => `<polygon data-fv-band points="${quad(g, b.x0, b.x1, b.y0, b.y1)}" fill="${b.dark ? turf.dark : turf.light}"/>`).join('')
-            + endzoneSvg(g, profile.endzones.left, 'left', id('ezL'), id('hatch'))
-            + endzoneSvg(g, profile.endzones.right, 'right', id('ezR'), id('hatch'))
+            + endzoneSvg(g, profile.endzones.left, 'left')
+            + endzoneSvg(g, profile.endzones.right, 'right')
             + midfieldSvg(g, profile, opts)
             + `<g data-fv="rz"></g>`
             + linesSvg(g) + numbersSvg(g)

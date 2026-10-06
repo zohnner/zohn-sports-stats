@@ -164,6 +164,8 @@ test('static SVG: instance-prefixed ids, escaped text, one glyph per letter, mid
     assert.ok(s.includes('chi.png'), 'away defended-goal badge');
     for (const k of ['rz', 'rz-clip', 'fd', 'fd-line', 'scrim', 'arrow', 'ball', 'ball-fill']) assert.ok(s.includes(`data-fv="${k}"`), `placeholder ${k}`);
     assert.ok(s.includes('fill="#123456"'), 'border color');
+    assert.ok(!s.includes('url(#fv7-hatch)'), 'end zones are flat paint, no hatch overlay');
+    assert.ok(!s.includes('fv7-ezL') && !s.includes('fv7-ezR'), 'unused end zone clip paths removed');
 });
 
 test('static SVG: midfield none draws no midfield image; mow none draws no bands', () => {
