@@ -62,7 +62,7 @@ All paths below are relative to the worktree root `c:\Users\zohnw\Documents\Proj
   - `lineTransform(g, xF)` → `{ tx, skewDeg, bottomX }`
   - `lineCss(t)` → CSS transform string
   - `glideMs(px)` → integer ms in [220, 640]
-  - `layoutEndzoneText(g, text, side)` → `Array<{ ch, x, y, angle, sx, sy }>`; `side` is `'left' | 'right'`
+  - `layoutEndzoneText(g, text, side)` → `Array<{ ch, x, y, angle, m: [a, b, c, d] }>`; `side` is `'left' | 'right'`. Render each glyph at font-size `GLYPH_REF`, centered, with `transform="matrix(a,b,c,d,x,y)"`.
   - `midfieldPlacement(g)` → `{ x, y, size, squash }`
   - Constants: `GLYPH_REF` (100), `MIDFIELD_YARDS` (12)
 
@@ -159,21 +159,27 @@ test('end zone glyphs: one per non-space char, inside the end zone, shrinking to
         const g = FV.geometry(w, h);
         const left = FV.layoutEndzoneText(g, 'GREEN BAY', 'left');
         assert.equal(left.length, 8);
-        for (const t of left) {
-            const yF = (t.y - g.bottomY) / (g.topY - g.bottomY);
-            assert.ok(t.x > g.proj(-10, yF).x && t.x < g.proj(0, yF).x, `left glyph ${t.ch} outside end zone`);
-            assert.ok(t.angle < -45 && t.angle > -135, `left reads upward, got ${t.angle}`);
-        }
+        // The angle flattens on wide fields (~33deg at 1148x240), so only its sign/quadrant is asserted.
+        for (const t of left) assert.ok(t.angle < -20 && t.angle > -135, `left reads upward, got ${t.angle}`);
         for (let i = 1; i < left.length; i++) {
             assert.ok(left[i].y < left[i - 1].y, 'left glyphs advance toward the far sideline');
-            assert.ok(left[i].sy < left[i - 1].sy, 'left glyphs shrink with depth');
+            assert.ok(Math.abs(left[i].m[2]) < Math.abs(left[i - 1].m[2]), 'left glyphs shrink with depth');
         }
         const right = FV.layoutEndzoneText(g, 'PACKERS', 'right');
         assert.equal(right.length, 7);
-        for (const t of right) {
-            const yF = (t.y - g.bottomY) / (g.topY - g.bottomY);
-            assert.ok(t.x > g.proj(100, yF).x && t.x < g.proj(110, yF).x, `right glyph ${t.ch} outside end zone`);
-            assert.ok(t.angle > 45 && t.angle < 135, `right reads downward, got ${t.angle}`);
+        for (const t of right) assert.ok(t.angle > 20 && t.angle < 135, `right reads downward, got ${t.angle}`);
+        // Every corner of every glyph cell (font-size 100 cell: 55 wide x 70 tall,
+        // centered) must land inside its end zone -- the bug the prototype caught.
+        for (const [glyphs, x0, x1] of [[left, -10, 0], [right, 100, 110]]) {
+            for (const t of glyphs) {
+                const [a, b, c, d] = t.m;
+                for (const [lx, ly] of [[-27.5, -35], [27.5, -35], [-27.5, 35], [27.5, 35]]) {
+                    const X = t.x + a * lx + c * ly, Y = t.y + b * lx + d * ly;
+                    const yF = (Y - g.bottomY) / (g.topY - g.bottomY);
+                    assert.ok(yF > 0 && yF < 1, `${t.ch} corner off the field depth at ${w}px`);
+                    assert.ok(X > g.proj(x0, yF).x && X < g.proj(x1, yF).x, `${t.ch} corner outside end zone at ${w}px`);
+                }
+            }
         }
         for (let i = 1; i < right.length; i++) assert.ok(right[i].y > right[i - 1].y, 'right glyphs advance toward the near sideline');
     }
@@ -243,7 +249,11 @@ const FieldViewer = (() => {
     }
 
     // Lettering runs sideline to sideline with letter tops toward the end
-    // line: the left end zone reads near->far, the right far->near.
+    // line: the left end zone reads near->far, the right far->near. Each glyph
+    // gets an affine matrix, not rotate+scale: its width follows the slanted
+    // reading line while its height stays along the field length (horizontal
+    // on screen) -- paint lying on the turf, which never leans out of the
+    // end zone however steep the slant gets on wide fields.
     function layoutEndzoneText(g, text, side) {
         const chars = Array.from(String(text || '').toUpperCase());
         if (!chars.length) return [];
@@ -257,11 +267,13 @@ const FieldViewer = (() => {
             const c = g.proj(xF, yF);
             const a = g.proj(xF, yF - (step / 2) * dir), b = g.proj(xF, yF + (step / 2) * dir);
             const cellPx = Math.hypot(b.x - a.x, b.y - a.y);
+            const wS = (cellPx * 0.82) / GLYPH_ADV;
+            const hS = (EZ_LETTER_YDS * g.lengthPxPerYard(yF)) / GLYPH_CAP;
+            const ux = (b.x - a.x) / cellPx, uy = (b.y - a.y) / cellPx;
             out.push({
                 ch, x: c.x, y: c.y,
-                angle: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI,
-                sx: (cellPx * 0.82) / GLYPH_ADV,
-                sy: (EZ_LETTER_YDS * g.lengthPxPerYard(yF)) / GLYPH_CAP,
+                angle: Math.atan2(uy, ux) * 180 / Math.PI,
+                m: [ux * wS, uy * wS, dir * hS, 0],
             });
         });
         return out;
@@ -334,7 +346,7 @@ for (const w of [421, 773, 1148]) {
     const h = w <= 640 ? 190 : 240, g = FieldViewer.geometry(w, h);
     const quad = (x0, x1) => [g.proj(x0,0), g.proj(x1,0), g.proj(x1,1), g.proj(x0,1)].map(p => `${p.x},${p.y}`).join(' ');
     const glyphs = (t, side) => FieldViewer.layoutEndzoneText(g, t, side).map(c =>
-      `<text font-size="${FieldViewer.GLYPH_REF}" text-anchor="middle" dominant-baseline="central" fill="#fff" transform="translate(${c.x},${c.y}) rotate(${c.angle}) scale(${c.sx},${c.sy})">${c.ch}</text>`).join('');
+      `<text font-size="${FieldViewer.GLYPH_REF}" text-anchor="middle" dominant-baseline="central" fill="#fff" transform="matrix(${c.m.join(',')},${c.x},${c.y})">${c.ch}</text>`).join('');
     const m = FieldViewer.midfieldPlacement(g);
     out.insertAdjacentHTML('beforeend', `<p>${w}px — ${l} / ${r}</p><div class="box" style="width:${w}px;height:${h}px"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
       <polygon points="${quad(-10,110)}" fill="#1f6f37"/>
@@ -1095,7 +1107,7 @@ In `js/fieldViewer.js`, insert immediately above the `return {` line:
     function endzoneSvg(g, ez, side, clipId, hatchId) {
         const [x0, x1] = side === 'left' ? [-10, 0] : [100, 110];
         const glyphs = layoutEndzoneText(g, ez.text, side).map(t =>
-            `<text class="fv-ez-glyph" font-size="${GLYPH_REF}" text-anchor="middle" dominant-baseline="central" transform="translate(${f1(t.x)},${f1(t.y)}) rotate(${t.angle.toFixed(2)}) scale(${t.sx.toFixed(4)},${t.sy.toFixed(4)})">${_escHtml(t.ch)}</text>`).join('');
+            `<text class="fv-ez-glyph" font-size="${GLYPH_REF}" text-anchor="middle" dominant-baseline="central" transform="matrix(${t.m.map(v => v.toFixed(4)).join(',')},${f1(t.x)},${f1(t.y)})">${_escHtml(t.ch)}</text>`).join('');
         return `<polygon points="${quad(g, x0, x1, 0, 1)}" fill="${_escHtml(ez.fill)}"/>`
             + `<rect width="${g.w}" height="${g.h}" fill="url(#${hatchId})" clip-path="url(#${clipId})"/>`
             + `<g class="fv-ez-text" fill="${_escHtml(ez.textColor)}">${glyphs}</g>`;
