@@ -295,6 +295,130 @@ const FieldViewer = (() => {
         return `<g class="${cls} fv-arrow--${kind}"><path d="${d}" class="fv-arrow-path" marker-end="url(#${markerId})"/></g>`;
     }
 
-    return { GLYPH_REF, MIDFIELD_YARDS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement, resolveField, generatedProfile, buildStaticSvg, dynamicState, arrowSvg };
+    let seq = 0;
+
+    function retrigger(el, cls) {
+        el.classList.remove(cls);
+        void el.getBoundingClientRect();
+        el.classList.add(cls);
+    }
+
+    function toplineHtml(sit, o, possHome) {
+        const t = possHome ? o.home : o.away;
+        const mark = t.logo
+            ? `<img class="fv-poss-logo" src="${_escHtml(t.logo)}" alt="" data-hide-on-error>`
+            : `<span class="fv-poss-dot" style="background:${_escHtml(t.color)}"></span>`;
+        const label = t.name ? `${_escHtml(t.name)} ball` : _escHtml(sit.possessionText || '');
+        return `<span class="fv-dd">${_escHtml(sit.downDistanceText || sit.shortDownDistanceText || '')}</span><span class="fv-poss">${mark}${label}</span>`;
+    }
+
+    // A burned timeout flashes once (count dropped since the last render).
+    function legendHtml(sit, o, st) {
+        const dots = (n, team) => {
+            const prev = st.lastTimeouts[team];
+            const used = (typeof n === 'number' && typeof prev === 'number' && n < prev) ? n : -1;
+            if (typeof n === 'number') st.lastTimeouts[team] = n;
+            return Array.from({ length: 3 }, (_, i) =>
+                `<div class="fv-to-dot${i < (n ?? 3) ? ' fv-to-dot--on' : ''}${i === used ? ' fv-to-dot--used' : ''}"></div>`).join('');
+        };
+        return `<div class="fv-timeouts"><span class="fv-to-label">${_escHtml(o.away.abbr)} TO</span><div class="fv-to-dots">${dots(sit.awayTimeouts, 'away')}</div></div>`
+            + `<div class="fv-key"><span><i style="background:var(--color-scrimmage)"></i>Scrimmage</span>`
+            + (sit.isRedZone ? `<span><i style="background:var(--color-loss)"></i>Red zone</span>` : `<span><i style="background:var(--color-first-down)"></i>1st down</span>`)
+            + (o.venueLabel ? `<span class="fv-venue">${_escHtml(o.venueLabel)}</span>` : '')
+            + `</div>`
+            + `<div class="fv-timeouts"><div class="fv-to-dots">${dots(sit.homeTimeouts, 'home')}</div><span class="fv-to-label">${_escHtml(o.home.abbr)} TO</span></div>`;
+    }
+
+    function mount(host, o) {
+        const idp = `fv${++seq}-`;
+        const id = (s) => `${idp}${s}`;
+        host.innerHTML = `<div class="field-viewer">`
+            + `<div class="fv-topline"></div>`
+            + `<div class="fv-field3d${o.indoor ? ' fv-field3d--indoor' : ''}"><svg class="fv-field3d-svg" xmlns="http://www.w3.org/2000/svg"></svg></div>`
+            + `<div class="fv-legend"></div></div>`;
+        const root = host.firstElementChild;
+        const box = root.querySelector('.fv-field3d'), svg = root.querySelector('svg');
+        const topEl = root.querySelector('.fv-topline'), legEl = root.querySelector('.fv-legend');
+        const $ = (key) => svg.querySelector(`[data-fv="${key}"]`);
+        const st = { profile: o.profile, g: null, sit: null, prev: null, lastTimeouts: { home: null, away: null }, lastDown: null, lastPlayId: null };
+        let lastW = 0, lastH = 0, raf = 0;
+
+        function apply(sit, instant) {
+            const g = st.g;
+            if (!g || !sit) return;
+            const d = dynamicState(g, sit, o.homeTeamId);
+            const move = (key, transform, distPx) => {
+                const el = $(key);
+                el.style.setProperty('--fv-glide', `${glideMs(distPx)}ms`);
+                el.style.transform = transform;
+            };
+            const p = st.prev;
+            move('scrim', lineCss(d.scrim), p ? d.scrim.bottomX - p.scrimX : 0);
+            move('fd', lineCss(d.firstDown), p ? d.firstDown.bottomX - p.fdX : 0);
+            move('ball', `translate(${f1(d.ball.x)}px,${f1(d.ball.y)}px) scale(${d.ball.scale.toFixed(3)})`, p ? Math.hypot(d.ball.x - p.ballX, d.ball.y - p.ballY) : 0);
+            st.prev = { scrimX: d.scrim.bottomX, fdX: d.firstDown.bottomX, ballX: d.ball.x, ballY: d.ball.y };
+
+            const fdLine = $('fd-line');
+            fdLine.setAttribute('stroke', d.isDown4 ? 'var(--color-loss)' : 'var(--color-first-down)');
+            fdLine.classList.toggle('fv-down4-line', d.isDown4);
+            $('ball-fill').setAttribute('fill', d.possHome ? o.home.color : o.away.color);
+
+            if (d.redZone) {
+                const rp = pts(d.redZone), u = g.unit;
+                $('rz-clip').setAttribute('points', rp);
+                $('rz').innerHTML = `<polygon points="${rp}" fill="rgba(229,72,77,0.22)"/>`
+                    + `<rect width="${g.w}" height="${g.h}" fill="url(#${id('hatch')})" clip-path="url(#${id('rz')})"/>`
+                    + `<polygon points="${rp}" fill="none" stroke="rgba(229,72,77,0.6)" stroke-width="${(2 * u).toFixed(2)}" stroke-dasharray="${f1(6 * u)} ${f1(5 * u)}"/>`;
+            } else {
+                $('rz').innerHTML = '';
+            }
+
+            const playId = sit.lastPlay && sit.lastPlay.id;
+            const isNewPlay = !instant && !!playId && st.lastPlayId !== null && playId !== st.lastPlayId;
+            $('arrow').innerHTML = arrowSvg(g, sit, isNewPlay, id('arrow'));
+            if (!instant) {
+                if (sit.down === 1 && st.lastDown != null && st.lastDown !== 1) retrigger($('fd'), 'fv-fd-flash');
+                if (isNewPlay && /interception|fumble/.test((sit.lastPlay.type?.text || '').toLowerCase())) retrigger($('ball'), 'fv-ball--turnover');
+            }
+            if (playId) st.lastPlayId = playId;
+            if (typeof sit.down === 'number') st.lastDown = sit.down;
+
+            topEl.innerHTML = toplineHtml(sit, o, d.possHome);
+            legEl.innerHTML = legendHtml(sit, o, st);
+        }
+
+        function build() {
+            const w = Math.round(box.clientWidth), h = Math.round(box.clientHeight);
+            if (!w || !h) return;
+            lastW = w; lastH = h;
+            st.g = geometry(w, h);
+            st.prev = null;
+            root.classList.remove('fv-motion');
+            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            svg.setAttribute('width', String(w));
+            svg.setAttribute('height', String(h));
+            svg.innerHTML = buildStaticSvg(st.g, st.profile, { idp, homeLogo: o.home.logo, awayLogo: o.away.logo });
+            apply(st.sit, true);
+            requestAnimationFrame(() => root.classList.add('fv-motion'));
+        }
+
+        const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => {
+                if (Math.round(box.clientWidth) !== lastW || Math.round(box.clientHeight) !== lastH) build();
+            });
+        }) : null;
+        if (ro) ro.observe(box);
+        build();
+
+        return {
+            host,
+            update(sit) { st.sit = sit; if (!st.g) build(); else apply(sit, false); },
+            setProfile(profile) { st.profile = profile; build(); },
+            destroy() { if (ro) ro.disconnect(); cancelAnimationFrame(raf); host.innerHTML = ''; },
+        };
+    }
+
+    return { GLYPH_REF, MIDFIELD_YARDS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement, resolveField, generatedProfile, buildStaticSvg, dynamicState, arrowSvg, mount };
 })();
 window.FieldViewer = FieldViewer;
