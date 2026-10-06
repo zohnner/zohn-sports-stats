@@ -72,4 +72,35 @@ function lowConfidenceCount(f) {
     return Object.values((f && f.facts) || {}).filter(x => x && x.confidence === 'low').length;
 }
 
-module.exports = { NFL_TEAMS, SURFACES, MOWS, MIDFIELDS, REQUIRED_FACTS, PAINT_FACTS, PROFILE_FILE, validateProfile, validateFacts, lowConfidenceCount, nflSeasonStart };
+const fs = require('node:fs');
+const path = require('node:path');
+
+function readFieldIndex() {
+    try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'content', 'nfl', 'fields', 'index.json'), 'utf8')); }
+    catch (_) { return { version: 1, teams: {}, neutral: {} }; }
+}
+
+const homeAbbr = (comp) => ((comp && comp.competitors) || []).find(t => t.homeAway === 'home')?.team?.abbreviation;
+
+function missingFieldProfiles(scoreboard, index) {
+    const missing = [];
+    for (const e of (scoreboard && scoreboard.events) || []) {
+        const c = e.competitions && e.competitions[0];
+        if (!c || c.neutralSite) continue;
+        const key = `${c.venue && c.venue.id}--${homeAbbr(c)}`;
+        if (!(index.teams || {})[key]) missing.push(key);
+    }
+    return missing;
+}
+
+// natural and hybrid are grass to ESPN; artificial is not.
+function surfaceMismatch(summary, index) {
+    const comp = summary && summary.header && summary.header.competitions && summary.header.competitions[0];
+    const venue = summary && summary.gameInfo && summary.gameInfo.venue;
+    if (!comp || comp.neutralSite || !venue || typeof venue.grass !== 'boolean') return null;
+    const p = (index.teams || {})[`${venue.id}--${homeAbbr(comp)}`];
+    if (!p) return null;
+    return (p.surface !== 'artificial') === venue.grass ? null : `${p.name}: profile surface "${p.surface}" but ESPN grass=${venue.grass}`;
+}
+
+module.exports = { NFL_TEAMS, SURFACES, MOWS, MIDFIELDS, REQUIRED_FACTS, PAINT_FACTS, PROFILE_FILE, validateProfile, validateFacts, lowConfidenceCount, nflSeasonStart, readFieldIndex, missingFieldProfiles, surfaceMismatch };

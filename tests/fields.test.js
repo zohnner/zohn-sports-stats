@@ -144,3 +144,20 @@ test('approve stamps a valid facts file and refuses an invalid one', () => {
     writeField(dir, 'soldier-field--chi', profile({ venueId: '3933', homeTeam: 'CHI' }), bad);
     assert.equal(approveCli.approve(dir, 'soldier-field--chi', '2026-10-08'), 2);
 });
+
+const IDX = { version: 1, teams: { '3798--GB': profile({ surface: 'hybrid' }), '3933--CHI': profile({ venueId: '3933', homeTeam: 'CHI', surface: 'artificial', name: 'Soldier Field' }) }, neutral: {} };
+const ev = (venueId, home, neutralSite = false) => ({ competitions: [{ neutralSite, venue: { id: venueId }, competitors: [{ homeAway: 'home', team: { abbreviation: home } }] }] });
+
+test('missingFieldProfiles skips neutral games and reports unknown venue/home pairs', () => {
+    const sb = { events: [ev('3798', 'GB'), ev('5534', 'WSH', true), ev('3839', 'NYG')] };
+    assert.deepEqual(core.missingFieldProfiles(sb, IDX), ['3839--NYG']);
+});
+
+test('surfaceMismatch compares ESPN grass with profile surface', () => {
+    const sum = (venueId, home, grass, neutralSite = false) => ({ gameInfo: { venue: { id: venueId, grass } }, header: { competitions: [{ neutralSite, competitors: [{ homeAway: 'home', team: { abbreviation: home } }] }] } });
+    assert.equal(core.surfaceMismatch(sum('3798', 'GB', true), IDX), null);
+    assert.match(core.surfaceMismatch(sum('3933', 'CHI', true), IDX), /Soldier Field/);
+    assert.equal(core.surfaceMismatch(sum('3933', 'CHI', undefined), IDX), null);
+    assert.equal(core.surfaceMismatch(sum('3933', 'CHI', true, true), IDX), null);
+    assert.equal(core.surfaceMismatch(sum('1', 'ARI', true), IDX), null);
+});
