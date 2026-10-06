@@ -66,7 +66,7 @@ jobs:
           echo "OK: .env is not tracked"
 
       - name: Unit tests (deploy-check #9)
-        run: node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/scorebug.test.js tests/entitlement.test.js tests/powerRankings.test.js tests/nflBreakCard.test.js tests/stories.test.js tests/contractCheck.test.js tests/scoreboardFetch.test.js tests/homeLive.test.js tests/fieldViewer.test.js
+        run: node --test tests/stats.test.js tests/vbd.test.js tests/query.test.js tests/odds.test.js tests/scorebug.test.js tests/entitlement.test.js tests/powerRankings.test.js tests/nflBreakCard.test.js tests/stories.test.js tests/contractCheck.test.js tests/scoreboardFetch.test.js tests/homeLive.test.js tests/fieldViewer.test.js tests/fields.test.js
 
       - name: SportStrata Stories — valid, every number sourced, index current (D-166)
         run: node tools/stories/build-index.cjs --check
