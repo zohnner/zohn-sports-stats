@@ -1,0 +1,22 @@
+{
+  "venueId": "3738",
+  "homeTeam": "NE",
+  "name": "Gillette Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#3A5A26",
+      "text": "NEW ENGLAND",
+      "textColor": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#3A5A26",
+      "text": "PATRIOTS",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#D5DEDC",
+  "signature": []
+}

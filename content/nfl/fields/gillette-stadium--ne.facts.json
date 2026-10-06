@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/patriots-scramble-to-replace-turf-field-before-thursdays-preseason-opener-vs-colts",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/p4rm0umzzkh7qn0sezer.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-win-over-the-steelers-regular-season-game-2-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/sue6iaaxaf3modrj0eeh.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-win-over-the-steelers-regular-season-game-2-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/sue6iaaxaf3modrj0eeh.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "border": {
+      "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/eepuwll5fufi5iewp4rz.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    }
+  }
+}
