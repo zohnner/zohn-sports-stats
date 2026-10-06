@@ -47,8 +47,9 @@ function render(row, host, width) {
   host._fv.update(SAMPLE);
 }
 
-fetch('gallery-data.json').then(r => r.json()).then(({ rows }) => {
+fetch('gallery-data.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(({ rows }) => {
   const out = document.getElementById('rows');
+  if (!rows || !rows.length) { out.textContent = 'No field profiles yet.'; return; }
   out.innerHTML = rows.map((row, i) => {
     const f = row.facts.facts || {};
     const photos = [...new Set(Object.values(f).map(x => x.photo).filter(Boolean))];
@@ -70,5 +71,7 @@ fetch('gallery-data.json').then(r => r.json()).then(({ rows }) => {
       e.target.replaceWith(Object.assign(document.createElement('span'), { textContent: 'photo blocked hotlinking — use the link' }));
     }
   }, true);
+}).catch((err) => {
+  document.getElementById('rows').textContent = 'Could not load gallery-data.json (' + err.message + '). Run `node tools/fields/build-index.cjs --gallery` from the repo root, then reload.';
 });
 </script></body></html>
