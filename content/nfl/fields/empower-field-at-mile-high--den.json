@@ -1,0 +1,22 @@
+{
+  "venueId": "3937",
+  "homeTeam": "DEN",
+  "name": "Empower Field at Mile High",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#FC4523",
+      "text": "BRONCOS",
+      "textColor": "#001C43"
+    },
+    "right": {
+      "fill": "#FC4523",
+      "text": "BRONCOS",
+      "textColor": "#001C43"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#E2E1D7",
+  "signature": []
+}

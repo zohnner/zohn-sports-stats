@@ -21,7 +21,7 @@
     "endzones.left.fill": {
       "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
       "photo": "https://static.clubs.nfl.com/image/upload/patriots/kcftqhe1jelux8fldbjp.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "medium"
     },
@@ -35,28 +35,28 @@
     "endzones.left.textColor": {
       "source": "https://www.seahawks.com/photos/2026-week-1-seahawks-patriots-must-see-game-action-photos",
       "photo": "https://static.clubs.nfl.com/image/upload/seahawks/dtaix24czi9rudfythcz.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "low"
     },
     "endzones.right.fill": {
       "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
       "photo": "https://static.clubs.nfl.com/image/upload/patriots/hfz4oeuh3grmxqsnxdsq.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "medium"
     },
     "endzones.right.text": {
       "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
       "photo": "https://static.clubs.nfl.com/image/upload/patriots/rgmknth3gv9ie5ef8uui.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "low"
     },
     "endzones.right.textColor": {
       "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
       "photo": "https://static.clubs.nfl.com/image/upload/patriots/rgmknth3gv9ie5ef8uui.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "low"
     },
@@ -70,7 +70,7 @@
     "border": {
       "source": "https://www.seahawks.com/photos/2026-week-1-seahawks-patriots-must-see-game-action-photos",
       "photo": "https://static.clubs.nfl.com/image/upload/seahawks/dtaix24czi9rudfythcz.jpg",
-      "photoDate": "2026-09-10",
+      "photoDate": "2026-09-09",
       "checked": "2026-10-06",
       "confidence": "medium"
     }

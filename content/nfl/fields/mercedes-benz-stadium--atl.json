@@ -1,0 +1,22 @@
+{
+  "venueId": "5348",
+  "homeTeam": "ATL",
+  "name": "Mercedes-Benz Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#67A63C",
+      "text": "ATLANTA",
+      "textColor": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#67A63C",
+      "text": "FALCONS",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EBF2F1",
+  "signature": []
+}
