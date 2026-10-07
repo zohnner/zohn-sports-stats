@@ -6,17 +6,17 @@
   "mow": "none",
   "endzones": {
     "left": {
-      "fill": "#2F3137",
-      "text": "JACKSONVILLE",
-      "textColor": "#D3D8DA"
+      "fill": "#658132",
+      "text": "JAGUARS",
+      "textColor": "#CCD5D9"
     },
     "right": {
-      "fill": "#2F3137",
-      "text": "JACKSONVILLE",
-      "textColor": "#D3D8DA"
+      "fill": "#658132",
+      "text": "JAGUARS",
+      "textColor": "#CCD5D9"
     }
   },
   "midfield": "primary-logo",
-  "border": "#D6D9DC",
+  "border": "#90A49E",
   "signature": []
 }
