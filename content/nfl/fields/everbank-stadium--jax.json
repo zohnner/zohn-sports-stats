@@ -1,0 +1,22 @@
+{
+  "venueId": "3712",
+  "homeTeam": "JAX",
+  "name": "EverBank Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#2F3137",
+      "text": "JACKSONVILLE",
+      "textColor": "#D3D8DA"
+    },
+    "right": {
+      "fill": "#2F3137",
+      "text": "JACKSONVILLE",
+      "textColor": "#D3D8DA"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#D6D9DC",
+  "signature": []
+}

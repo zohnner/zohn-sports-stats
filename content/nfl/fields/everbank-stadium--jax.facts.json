@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/ayii4syedmtcwqou8ytn.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots https://www.jaguars.com/photos/frames-of-the-game-photos-week-3-patriots-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/kkcjud0lret1l8skw0nb.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/kkcjud0lret1l8skw0nb.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots https://www.jaguars.com/photos/frames-of-the-game-photos-week-3-patriots-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/kkcjud0lret1l8skw0nb.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-3-patriots-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pwkebuwsp3ndkwkhficn.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots https://www.jaguars.com/photos/frames-of-the-game-photos-week-3-patriots-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/da1uo4xlvkgvidmkihcr.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-3-patriots-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pwkebuwsp3ndkwkhficn.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/e6xk9uuzzsnpwumlik44.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/kkcjud0lret1l8skw0nb.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}
