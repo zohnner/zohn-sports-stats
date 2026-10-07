@@ -1,0 +1,22 @@
+{
+  "venueId": "3727",
+  "homeTeam": "DET",
+  "name": "Ford Field",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#0271BA",
+      "text": "DETROIT",
+      "textColor": "#D7D9DD"
+    },
+    "right": {
+      "fill": "#0271BA",
+      "text": "LIONS",
+      "textColor": "#D7D9DD"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#E5E7ED",
+  "signature": []
+}

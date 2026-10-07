@@ -1,0 +1,22 @@
+{
+  "venueId": "3628",
+  "homeTeam": "CAR",
+  "name": "Bank of America Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#191B1B",
+      "text": "PANTHERS",
+      "textColor": "#03A4E5"
+    },
+    "right": {
+      "fill": "#191B1B",
+      "text": "PANTHERS",
+      "textColor": "#03A4E5"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#DCE4D4",
+  "signature": []
+}

@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/q7qjtmr67jkf8qj2yefn.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/rzp5sntj5g7trqwlprsg.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/q7qjtmr67jkf8qj2yefn.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/rzp5sntj5g7trqwlprsg.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/u8cniuvpj6xu3pvm53hp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.right.text": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/u8cniuvpj6xu3pvm53hp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/u8cniuvpj6xu3pvm53hp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/rzp5sntj5g7trqwlprsg.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.vikings.com/photos/dolphins-pregame-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/vikings/q7qjtmr67jkf8qj2yefn.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    }
+  }
+}

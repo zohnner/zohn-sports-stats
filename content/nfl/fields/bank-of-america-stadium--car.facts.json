@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ugihzfa4t4bywuwmpk0q.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/fw5a59j53wdaj4edmckp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/fw5a59j53wdaj4edmckp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/fw5a59j53wdaj4edmckp.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/xq6nwz2e8u1cr3i2snro.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.right.text": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/xq6nwz2e8u1cr3i2snro.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/xq6nwz2e8u1cr3i2snro.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ugihzfa4t4bywuwmpk0q.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-vs-lions-october-4-2026-x4654",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/hov21rh1gtnpuushnlot.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    }
+  }
+}

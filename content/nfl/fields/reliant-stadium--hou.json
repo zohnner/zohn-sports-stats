@@ -1,0 +1,22 @@
+{
+  "venueId": "3891",
+  "homeTeam": "HOU",
+  "name": "Reliant Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#040404",
+      "text": "HOUSTON",
+      "textColor": "#DEE1E6"
+    },
+    "right": {
+      "fill": "#040404",
+      "text": "TEXANS",
+      "textColor": "#DEE1E6"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#F3F3F0",
+  "signature": []
+}
