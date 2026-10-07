@@ -1,0 +1,22 @@
+{
+  "venueId": "3839",
+  "homeTeam": "NYG",
+  "name": "MetLife Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#AF5C57",
+      "text": "GIANTS",
+      "textColor": "#536E98"
+    },
+    "right": {
+      "fill": "#AF5C57",
+      "text": "GIANTS",
+      "textColor": "#536E98"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EAE9EB",
+  "signature": []
+}

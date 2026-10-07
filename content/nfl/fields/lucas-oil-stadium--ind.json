@@ -1,0 +1,22 @@
+{
+  "venueId": "3812",
+  "homeTeam": "IND",
+  "name": "Lucas Oil Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#304AA2",
+      "text": "COLTS",
+      "textColor": "#FCFBF7"
+    },
+    "right": {
+      "fill": "#304AA2",
+      "text": "COLTS",
+      "textColor": "#FCFBF7"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#E6E4DB",
+  "signature": []
+}

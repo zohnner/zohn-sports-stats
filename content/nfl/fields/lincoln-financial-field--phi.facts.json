@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/yi9c6xrotdfdhnwie1cx.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/ejlsxlql83ilroayfvws.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026 https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/hujv3midaafzeevdqabu.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/ejlsxlql83ilroayfvws.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/kojedywj6u1wt0dptaji.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/kojedywj6u1wt0dptaji.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/kojedywj6u1wt0dptaji.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/bufqqoilihf9g0ntrw8a.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.philadelphiaeagles.com/photos/rams-vs-eagles-gameday-photo-gallery-october-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/eagles/ejlsxlql83ilroayfvws.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-buccaneers-pregame-warmups-week-4-2026",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-buccaneers-pregame-warmups-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/rrgr1mncrju3fcnbfv4y.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-buccaneers-pregame-warmups-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/rrgr1mncrju3fcnbfv4y.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery https://www.packers.com/photos/best-photos-from-packers-buccaneers-pregame-warmups-week-4-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/n5ysvndkpm3fmiwhbjre.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/buccaneers/wmtuwkgb0teggubd2l6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/buccaneers/siexge8hzggii3ssiabx.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/buccaneers/wmtuwkgb0teggubd2l6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/buccaneers/wmtuwkgb0teggubd2l6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-buccaneers-for-2026-week-2",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/fkaevby01szm9flvlkg6.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.buccaneers.com/photos/packers-vs-bucs-week-4-2026-top-images-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/buccaneers/wmtuwkgb0teggubd2l6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}
