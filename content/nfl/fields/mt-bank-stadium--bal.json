@@ -1,0 +1,22 @@
+{
+  "venueId": "3814",
+  "homeTeam": "BAL",
+  "name": "M&T Bank Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#38333E",
+      "text": "BALTIMORE",
+      "textColor": "#E8EBED"
+    },
+    "right": {
+      "fill": "#38333E",
+      "text": "RAVENS",
+      "textColor": "#E8EBED"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#DCE2E4",
+  "signature": []
+}

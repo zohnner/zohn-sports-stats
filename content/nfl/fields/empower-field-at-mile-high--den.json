@@ -6,14 +6,14 @@
   "mow": "none",
   "endzones": {
     "left": {
-      "fill": "#FC4523",
+      "fill": "#2B3942",
       "text": "BRONCOS",
-      "textColor": "#001C43"
+      "textColor": "#CFD8D5"
     },
     "right": {
-      "fill": "#FC4523",
+      "fill": "#2B3942",
       "text": "BRONCOS",
-      "textColor": "#001C43"
+      "textColor": "#CFD8D5"
     }
   },
   "midfield": "primary-logo",

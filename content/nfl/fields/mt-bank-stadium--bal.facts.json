@@ -1,0 +1,78 @@
+{
+  "approved": null,
+  "facts": {
+    "name": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/ https://en.wikipedia.org/wiki/M%26T_Bank_Stadium",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/eycd7czhsp4tnttujn6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/lf7yb4wewe5ixab8vn5g.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens https://en.wikipedia.org/wiki/M%26T_Bank_Stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/eycd7czhsp4tnttujn6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.text": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens https://en.wikipedia.org/wiki/M%26T_Bank_Stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/eycd7czhsp4tnttujn6h.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}
