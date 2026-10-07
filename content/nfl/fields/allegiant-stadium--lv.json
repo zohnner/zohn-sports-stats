@@ -1,0 +1,22 @@
+{
+  "venueId": "6501",
+  "homeTeam": "LV",
+  "name": "Allegiant Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#283332",
+      "text": "RAIDERS",
+      "textColor": "#596B71"
+    },
+    "right": {
+      "fill": "#283332",
+      "text": "RAIDERS",
+      "textColor": "#596B71"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#A7BEBA",
+  "signature": []
+}

@@ -1,0 +1,22 @@
+{
+  "venueId": "3933",
+  "homeTeam": "CHI",
+  "name": "Soldier Field",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#4D6A54",
+      "text": "BEARS",
+      "textColor": "#DD9154"
+    },
+    "right": {
+      "fill": "#4D6A54",
+      "text": "BEARS",
+      "textColor": "#DD9154"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#DED9CE",
+  "signature": []
+}
