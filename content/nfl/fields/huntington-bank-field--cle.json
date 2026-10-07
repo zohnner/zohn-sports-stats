@@ -1,0 +1,22 @@
+{
+  "venueId": "3679",
+  "homeTeam": "CLE",
+  "name": "Huntington Bank Field",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#586729",
+      "text": "CLEVELAND",
+      "textColor": "#E0E1DA"
+    },
+    "right": {
+      "fill": "#586729",
+      "text": "BROWNS",
+      "textColor": "#E0E1DA"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#E0E1DA",
+  "signature": []
+}
