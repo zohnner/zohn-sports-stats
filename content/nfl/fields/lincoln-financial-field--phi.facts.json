@@ -73,6 +73,34 @@
       "photoDate": "2026-10-04",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/hujv3midaafzeevdqabu.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/hujv3midaafzeevdqabu.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/hujv3midaafzeevdqabu.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-eagles-week-1-pregame",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/hujv3midaafzeevdqabu.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "low"
     }
   }
 }

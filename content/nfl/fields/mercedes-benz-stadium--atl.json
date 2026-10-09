@@ -8,12 +8,14 @@
     "left": {
       "fill": "#67A63C",
       "text": "ATLANTA",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "squared"
     },
     "right": {
       "fill": "#67A63C",
       "text": "FALCONS",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "squared"
     }
   },
   "midfield": "primary-logo",

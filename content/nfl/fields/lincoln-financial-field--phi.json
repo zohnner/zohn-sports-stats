@@ -8,12 +8,16 @@
     "left": {
       "fill": "#254E45",
       "text": "EAGLES",
-      "textColor": "#DBDDD7"
+      "textColor": "#DBDDD7",
+      "font": "squared",
+      "outline": "#000000"
     },
     "right": {
       "fill": "#254E45",
       "text": "EAGLES",
-      "textColor": "#DBDDD7"
+      "textColor": "#DBDDD7",
+      "font": "squared",
+      "outline": "#000000"
     }
   },
   "midfield": "primary-logo",

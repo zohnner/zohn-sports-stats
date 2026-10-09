@@ -73,6 +73,20 @@
       "photoDate": "2026-09-20",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/w6j7e0c30ajlolfzcaow.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }
