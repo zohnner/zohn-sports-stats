@@ -73,6 +73,20 @@
       "photoDate": "2026-09-11",
       "checked": "2026-10-07",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/dlrkelx22gnkcozxh48e.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }

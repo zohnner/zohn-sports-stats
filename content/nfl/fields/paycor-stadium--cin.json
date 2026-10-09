@@ -8,12 +8,14 @@
     "left": {
       "fill": "#CA4F0D",
       "text": "BENGALS",
-      "textColor": "#111014"
+      "textColor": "#111014",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#CA4F0D",
       "text": "BENGALS",
-      "textColor": "#111014"
+      "textColor": "#111014",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",

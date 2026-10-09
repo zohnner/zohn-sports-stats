@@ -73,6 +73,20 @@
       "photoDate": "2026-10-04",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-4-jaguars-vs-bengals https://news.sportslogos.net/2024/05/02/cincinnati-bengals-reveal-updated-turf-design/football/",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/dkf6fltcybcp4mhpwcdh.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.jaguars.com/photos/game-action-jaguars-vs-bengals-2026-season-week-4 https://news.sportslogos.net/2024/05/02/cincinnati-bengals-reveal-updated-turf-design/football/",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/p8tgzg33wma63c4875bw.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }

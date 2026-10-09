@@ -8,12 +8,14 @@
     "left": {
       "fill": "#040404",
       "text": "HOUSTON",
-      "textColor": "#DEE1E6"
+      "textColor": "#DEE1E6",
+      "font": "display"
     },
     "right": {
       "fill": "#040404",
       "text": "TEXANS",
-      "textColor": "#DEE1E6"
+      "textColor": "#DEE1E6",
+      "font": "display"
     }
   },
   "midfield": "primary-logo",
