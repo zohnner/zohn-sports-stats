@@ -73,6 +73,20 @@
       "photoDate": "2026-10-04",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-4-at-baltimore-ravens",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/xrbvy8hzia7vhupjvzqi.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "low"
     }
   }
 }

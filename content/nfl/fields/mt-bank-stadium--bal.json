@@ -8,12 +8,14 @@
     "left": {
       "fill": "#38333E",
       "text": "BALTIMORE",
-      "textColor": "#E8EBED"
+      "textColor": "#E8EBED",
+      "outline": "#9E7C0C"
     },
     "right": {
       "fill": "#38333E",
       "text": "RAVENS",
-      "textColor": "#E8EBED"
+      "textColor": "#E8EBED",
+      "outline": "#9E7C0C"
     }
   },
   "midfield": "primary-logo",

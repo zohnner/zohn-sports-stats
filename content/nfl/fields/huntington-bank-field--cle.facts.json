@@ -73,6 +73,34 @@
       "photoDate": "2026-10-01",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-steelers-for-2026-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/mo633vd8hjyn3ibwums6.jpg",
+      "photoDate": "2026-10-01",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-steelers-for-2026-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/mo633vd8hjyn3ibwums6.jpg",
+      "photoDate": "2026-10-01",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-steelers-for-2026-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/mo633vd8hjyn3ibwums6.jpg",
+      "photoDate": "2026-10-01",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-steelers-for-2026-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/mo633vd8hjyn3ibwums6.jpg",
+      "photoDate": "2026-10-01",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }

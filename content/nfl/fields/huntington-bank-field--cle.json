@@ -8,12 +8,16 @@
     "left": {
       "fill": "#586729",
       "text": "CLEVELAND",
-      "textColor": "#E0E1DA"
+      "textColor": "#E0E1DA",
+      "font": "squared",
+      "outline": "#311D00"
     },
     "right": {
       "fill": "#586729",
       "text": "BROWNS",
-      "textColor": "#E0E1DA"
+      "textColor": "#E0E1DA",
+      "font": "squared",
+      "outline": "#311D00"
     }
   },
   "midfield": "primary-logo",
