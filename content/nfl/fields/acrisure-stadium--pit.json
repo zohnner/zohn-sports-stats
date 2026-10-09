@@ -8,12 +8,16 @@
     "left": {
       "fill": "#71843C",
       "text": "PITTSBURGH",
-      "textColor": "#C3AA23"
+      "textColor": "#C3AA23",
+      "font": "squared",
+      "outline": "#101820"
     },
     "right": {
       "fill": "#71843C",
       "text": "STEELERS",
-      "textColor": "#C3AA23"
+      "textColor": "#C3AA23",
+      "font": "squared",
+      "outline": "#101820"
     }
   },
   "midfield": "primary-logo",

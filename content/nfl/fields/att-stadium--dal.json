@@ -8,12 +8,16 @@
     "left": {
       "fill": "#333A6B",
       "text": "COWBOYS",
-      "textColor": "#9C9C99"
+      "textColor": "#9C9C99",
+      "font": "squared",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#333A6B",
       "text": "COWBOYS",
-      "textColor": "#9C9C99"
+      "textColor": "#9C9C99",
+      "font": "squared",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",
