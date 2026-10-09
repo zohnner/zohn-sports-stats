@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.patriots.com/photos/patriots-warm-ups-and-inside-the-locker-room-ahead-of-week-2-game-against-the-steelers-presented-by-gillette-pregame",

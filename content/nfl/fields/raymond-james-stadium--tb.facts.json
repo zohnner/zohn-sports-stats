@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.packers.com/photos/best-photos-from-packers-buccaneers-pregame-warmups-week-4-2026",

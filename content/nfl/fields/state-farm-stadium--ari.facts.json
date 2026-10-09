@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.azfamily.com/2026/04/23/arizona-cardinals-host-free-draft-day-party-state-farm-stadium/",

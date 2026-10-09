@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs",

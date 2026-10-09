@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.newyorkjets.com/photos/through-the-lens-jets-packers-best-photos-09-21-2026",

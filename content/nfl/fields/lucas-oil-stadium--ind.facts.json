@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.colts.com/photos/indianapolis-colts-arrive-at-lucas-oil-stadium-for-week-3-matchup-vs-houston-texans-nike-rivalries-uniform",

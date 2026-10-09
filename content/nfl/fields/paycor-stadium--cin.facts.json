@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-4-jaguars-vs-bengals",

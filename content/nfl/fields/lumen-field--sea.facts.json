@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.seahawks.com/photos/photos-must-see-game-action-shots-from-seahawks-vs-chargers-in-week-4",

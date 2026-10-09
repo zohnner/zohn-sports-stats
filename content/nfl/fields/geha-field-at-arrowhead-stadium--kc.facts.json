@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",

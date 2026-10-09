@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.clevelandbrowns.com/news/browns-kick-off-2026-home-slate-with-new-experiences-and-updates-at-huntington-bank-field",

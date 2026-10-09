@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",

@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",

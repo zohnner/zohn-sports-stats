@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.steelers.com/photos/photos-karl-s-top-pics-steelers-vs-bengals-x5711",

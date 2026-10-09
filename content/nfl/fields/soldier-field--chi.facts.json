@@ -1,5 +1,7 @@
 {
-  "approved": null,
+  "approved": {
+    "date": "2026-10-08"
+  },
   "facts": {
     "name": {
       "source": "https://www.chicagobears.com/photos/gameday-gallery-jets-vs-bears-2026-week-4",
