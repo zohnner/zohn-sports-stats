@@ -8,12 +8,14 @@
     "left": {
       "fill": "#304AA2",
       "text": "COLTS",
-      "textColor": "#FCFBF7"
+      "textColor": "#FCFBF7",
+      "font": "slab"
     },
     "right": {
       "fill": "#304AA2",
       "text": "COLTS",
-      "textColor": "#FCFBF7"
+      "textColor": "#FCFBF7",
+      "font": "slab"
     }
   },
   "midfield": "primary-logo",

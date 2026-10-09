@@ -73,6 +73,20 @@
       "photoDate": "2026-09-20",
       "checked": "2026-10-05",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }
