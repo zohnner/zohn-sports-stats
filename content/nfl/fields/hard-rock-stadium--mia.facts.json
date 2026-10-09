@@ -73,6 +73,34 @@
       "photoDate": "2026-09-27",
       "checked": "2026-10-05",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.miamidolphins.com/photos/2026-game-day-photos-miami-dolphins-vs-kansas-city-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/dolphins/xlw1zczfrxjfz20bz06y.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.miamidolphins.com/photos/2026-game-day-photos-miami-dolphins-vs-kansas-city-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/dolphins/xlw1zczfrxjfz20bz06y.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.miamidolphins.com/photos/2026-game-day-photos-miami-dolphins-vs-kansas-city-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/dolphins/t2sv1udaov1bqdsimcqs.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.miamidolphins.com/photos/2026-game-day-photos-miami-dolphins-vs-kansas-city-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/dolphins/xlw1zczfrxjfz20bz06y.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "low"
     }
   }
 }

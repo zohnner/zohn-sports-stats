@@ -8,12 +8,16 @@
     "left": {
       "fill": "#5B7236",
       "text": "MIAMI",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "display",
+      "outline": "#FC4C02"
     },
     "right": {
       "fill": "#5B7236",
       "text": "MIAMI",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "display",
+      "outline": "#FC4C02"
     }
   },
   "midfield": "primary-logo",
