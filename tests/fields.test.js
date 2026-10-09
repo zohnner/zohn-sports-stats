@@ -161,3 +161,17 @@ test('surfaceMismatch compares ESPN grass with profile surface', () => {
     assert.equal(core.surfaceMismatch(sum('3933', 'CHI', true, true), IDX), null);
     assert.equal(core.surfaceMismatch(sum('1', 'ARI', true), IDX), null);
 });
+
+test('optional font/outline: schema-checked and need photo-backed facts once set', () => {
+    const p = { ...profile(), endzones: { left: { fill: '#203731', text: 'GREEN BAY', textColor: '#FFFFFF', font: 'comic', outline: 'gold' }, right: { fill: '#203731', text: 'PACKERS', textColor: '#FFFFFF', outline2: '#FFB612' } } };
+    const errs = core.validateProfile(p);
+    assert.ok(errs.some(m => m.includes('left.font')));
+    assert.ok(errs.some(m => m.includes('left.outline must')));
+    assert.ok(errs.some(m => m.includes('right.outline2 needs outline')));
+    const ok = { ...profile(), endzones: { left: { fill: '#203731', text: 'GREEN BAY', textColor: '#FFFFFF', font: 'slab', outline: '#FFB612' }, right: profile().endzones.right } };
+    assert.deepEqual(core.validateProfile(ok), []);
+    const missing = core.validateFacts(facts(), ok);
+    assert.ok(missing.some(m => m.includes('endzones.left.font: no source')));
+    assert.ok(missing.some(m => m.includes('endzones.left.outline: no source')));
+    assert.deepEqual(core.validateFacts(facts(), profile()), []);
+});

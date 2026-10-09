@@ -18,7 +18,7 @@ Differentiation. Every NFL game shows a field that represents the home team's ac
 
 | Question | Decision |
 |---|---|
-| Fidelity | **C** — recognizably theirs in SportStrata's visual language (colors, end zone text in our display font, turf, mow, midfield, border) now; a `signature` slot for replica-level detail at select venues later, only where licensing is confirmed. No official team fonts. |
+| Fidelity | **C** — recognizably theirs in SportStrata's visual language (colors, end zone text in our display font, turf, mow, midfield, border) now; a `signature` slot for replica-level detail at select venues later, only where licensing is confirmed. No official team fonts. **Amended 2026-10-08 (owner):** end zone lettering may use a free lookalike font per team (`endzones.<side>.font`, a fixed style set mapped to Google Fonts) plus real outline colors (`outline`, `outline2`), each sourced like any paint fact. |
 | Neutral-site games | **C** — a generated neutral field by default; upgraded per game when a researched profile exists. Never present an invented field as real. |
 | Launch bar | **A** — ship only when all 32 team fields are researched and approved. |
 | Interim logo fix | **None.** The oversized-logo bug stays live until this ships. |

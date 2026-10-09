@@ -208,3 +208,22 @@ test('arrowSvg skips administrative plays and badges incompletions', () => {
     assert.ok(pass.includes('fv-arrow--pass') && pass.includes('fv-arrow--entering') && pass.includes('url(#fv1-arrow)'));
     assert.equal(FV.arrowSvg(g, {}, false, 'm'), '');
 });
+
+test('static SVG: lettering font variable and outline rings drawn under the fill', () => {
+    const FV = load();
+    const g = FV.geometry(773, 240);
+    const ez = { fill: '#00338D', text: 'BILLS', textColor: '#FFFFFF', font: 'slab', outline: '#C60C30', outline2: '#00338D' };
+    const s = FV.buildStaticSvg(g, { ...PROFILE, endzones: { left: ez, right: ez } }, { idp: 'b-', homeLogo: '', awayLogo: '' });
+    assert.ok(s.includes(`--fv-ez-font:'Alfa Slab One'`));
+    assert.ok(s.indexOf('stroke-width="16"') < s.indexOf('stroke-width="8"'), 'outer ring first');
+    assert.ok(s.indexOf('stroke="#C60C30"') < s.indexOf('fill="#FFFFFF"'), 'fill painted last');
+    assert.equal((s.match(/<text class="fv-ez-glyph"/g) || []).length, 3 * 5 * 2);
+    const plain = FV.buildStaticSvg(g, PROFILE, { idp: 'p-', homeLogo: '', awayLogo: '' });
+    assert.ok(!plain.includes('stroke-width="8"') && !plain.includes('--fv-ez-font'));
+});
+
+test('every lettering style the schema allows has a renderer font entry', () => {
+    const FV = load();
+    const core = require('../tools/fields/field-core.cjs');
+    for (const k of core.EZ_FONT_STYLES) assert.ok(k in FV.EZ_FONTS, k);
+});

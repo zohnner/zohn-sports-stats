@@ -15,6 +15,30 @@ const FieldViewer = (() => {
     const GLYPH_REF = 100, GLYPH_ADV = 55, GLYPH_CAP = 70;
     const EZ_TEXT_Y0 = 0.1, EZ_TEXT_Y1 = 0.9, EZ_LETTER_YDS = 6;
     const GLIDE_MIN_MS = 220, GLIDE_MAX_MS = 640, GLIDE_REF_PX = 400;
+    // Free lookalikes for each team's end zone lettering style. Official team
+    // typefaces are licensed and never ship (spec 2026-10-05).
+    const EZ_FONTS = {
+        display:   null,
+        slab:      { family: 'Alfa Slab One', css: 'Alfa+Slab+One' },
+        block:     { family: 'Graduate', css: 'Graduate' },
+        squared:   { family: 'Russo One', css: 'Russo+One' },
+        condensed: { family: 'Oswald', css: 'Oswald:wght@700' },
+        serif:     { family: 'Playfair Display', css: 'Playfair+Display:wght@900' },
+        italic:    { family: 'Kanit', css: 'Kanit:ital,wght@1,800', italic: true },
+    };
+    const loadedFonts = new Set();
+    function ensureFonts(profile) {
+        if (typeof document === 'undefined' || !profile || !profile.endzones) return;
+        for (const ez of [profile.endzones.left, profile.endzones.right]) {
+            const f = ez && EZ_FONTS[ez.font];
+            if (!f || loadedFonts.has(f.css)) continue;
+            loadedFonts.add(f.css);
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${f.css}&display=swap`;
+            document.head.appendChild(link);
+        }
+    }
 
     function geometry(w, h) {
         const cx = w / 2;
@@ -135,8 +159,14 @@ const FieldViewer = (() => {
         const [x0, x1] = side === 'left' ? [-10, 0] : [100, 110];
         const glyphs = layoutEndzoneText(g, ez.text, side).map(t =>
             `<text class="fv-ez-glyph" font-size="${GLYPH_REF}" text-anchor="middle" dominant-baseline="central" transform="matrix(${t.m.map(v => v.toFixed(4)).join(',')},${f1(t.x)},${f1(t.y)})">${_escHtml(t.ch)}</text>`).join('');
+        const f = EZ_FONTS[ez.font];
+        const fontAttr = f ? ` style="--fv-ez-font:'${f.family}'"${f.italic ? ' font-style="italic"' : ''}` : '';
+        // Strokes are centred on the glyph edge, so outline2 at twice the width
+        // shows as a second ring outside the first.
+        const rings = [[ez.outline2, 16], [ez.outline, 8]].filter(([c]) => c).map(([c, w]) =>
+            `<g class="fv-ez-text" fill="${_escHtml(c)}" stroke="${_escHtml(c)}" stroke-width="${w}" stroke-linejoin="round">${glyphs}</g>`).join('');
         return `<polygon points="${quad(g, x0, x1, 0, 1)}" fill="${_escHtml(ez.fill)}"/>`
-            + `<g class="fv-ez-text" fill="${_escHtml(ez.textColor)}">${glyphs}</g>`;
+            + `<g${fontAttr}>${rings}<g class="fv-ez-text" fill="${_escHtml(ez.textColor)}">${glyphs}</g></g>`;
     }
 
     function midfieldSvg(g, profile, opts) {
@@ -405,6 +435,7 @@ const FieldViewer = (() => {
             svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
             svg.setAttribute('width', String(w));
             svg.setAttribute('height', String(h));
+            ensureFonts(st.profile);
             svg.innerHTML = buildStaticSvg(st.g, st.profile, { idp, homeLogo: o.home.logo, awayLogo: o.away.logo });
             apply(st.sit, true);
             cancelAnimationFrame(motionRaf);
@@ -428,6 +459,6 @@ const FieldViewer = (() => {
         };
     }
 
-    return { GLYPH_REF, MIDFIELD_YARDS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement, resolveField, generatedProfile, buildStaticSvg, dynamicState, arrowSvg, mount };
+    return { GLYPH_REF, MIDFIELD_YARDS, EZ_FONTS, geometry, lineTransform, lineCss, glideMs, layoutEndzoneText, midfieldPlacement, resolveField, generatedProfile, buildStaticSvg, dynamicState, arrowSvg, mount };
 })();
 window.FieldViewer = FieldViewer;

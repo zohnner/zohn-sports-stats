@@ -17,7 +17,8 @@ function approve(dir, slug, today = localToday()) {
     const file = path.join(dir, `${slug}.facts.json`);
     if (!fs.existsSync(file)) { console.error(`✗ no ${file}`); return 2; }
     const facts = JSON.parse(fs.readFileSync(file, 'utf8'));
-    const problems = core.validateFacts({ ...facts, approved: null });
+    const profile = JSON.parse(fs.readFileSync(path.join(dir, `${slug}.json`), 'utf8'));
+    const problems = [...core.validateProfile(profile), ...core.validateFacts({ ...facts, approved: null }, profile)];
     if (problems.length) { problems.forEach(p => console.error(`✗ ${slug}: ${p}`)); return 2; }
     facts.approved = { date: today };
     fs.writeFileSync(file, JSON.stringify(facts, null, 2) + '\n');

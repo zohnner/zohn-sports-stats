@@ -7,6 +7,9 @@ const NFL_TEAMS = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL'
 const SURFACES = ['natural', 'artificial', 'hybrid'];
 const MOWS = ['stripes-5', 'stripes-10', 'checker', 'none'];
 const MIDFIELDS = ['primary-logo', 'alt-logo', 'wordmark', 'none'];
+// Lettering styles; js/fieldViewer.js EZ_FONTS maps each to a free lookalike font.
+const EZ_FONT_STYLES = ['display', 'slab', 'block', 'squared', 'condensed', 'serif', 'italic'];
+const EZ_OPTIONAL = ['font', 'outline', 'outline2'];
 const CONFIDENCE = ['high', 'medium', 'low'];
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -32,6 +35,9 @@ function validateProfile(p) {
         if (!HEX.test(ez.fill || '')) out.push(`endzones.${side}.fill must be #RRGGBB`);
         if (!HEX.test(ez.textColor || '')) out.push(`endzones.${side}.textColor must be #RRGGBB`);
         if (!EZ_TEXT.test(ez.text || '')) out.push(`endzones.${side}.text must be 1-16 uppercase letters/digits/space/.'&-`);
+        if (ez.font != null && !EZ_FONT_STYLES.includes(ez.font)) out.push(`endzones.${side}.font must be one of ${EZ_FONT_STYLES.join('|')}`);
+        for (const k of ['outline', 'outline2']) if (ez[k] != null && !HEX.test(ez[k])) out.push(`endzones.${side}.${k} must be #RRGGBB`);
+        if (ez.outline2 != null && ez.outline == null) out.push(`endzones.${side}.outline2 needs outline`);
     }
     if (!MIDFIELDS.includes(p.midfield)) out.push(`midfield must be one of ${MIDFIELDS.join('|')}`);
     if ((p.midfield === 'alt-logo' || p.midfield === 'wordmark') && !/^https:\/\/a\.espncdn\.com\//.test(p.midfieldImage || '')) {
@@ -47,16 +53,28 @@ function nflSeasonStart(dateStr) {
     return `${m >= 3 ? y : y - 1}-08-01`;
 }
 
-function validateFacts(f) {
+// Optional end zone attributes need the same photo-backed sourcing as
+// required paint once a profile sets them.
+function optionalPaintFacts(profile) {
+    const keys = [];
+    for (const side of ['left', 'right']) {
+        const ez = profile && profile.endzones && profile.endzones[side];
+        for (const k of EZ_OPTIONAL) if (ez && ez[k] != null) keys.push(`endzones.${side}.${k}`);
+    }
+    return keys;
+}
+
+function validateFacts(f, profile) {
     const out = [];
     const facts = (f && f.facts) || {};
-    for (const key of REQUIRED_FACTS) {
+    const extra = optionalPaintFacts(profile);
+    for (const key of [...REQUIRED_FACTS, ...extra]) {
         const x = facts[key];
         if (!x) { out.push(`${key}: no source`); continue; }
         if (!/^https:\/\//.test(x.source || '')) out.push(`${key}: source must be an https URL`);
         if (!DATE.test(x.checked || '')) out.push(`${key}: checked must be YYYY-MM-DD`);
         if (!CONFIDENCE.includes(x.confidence)) out.push(`${key}: confidence must be ${CONFIDENCE.join('|')}`);
-        if (PAINT_FACTS.includes(key)) {
+        if (PAINT_FACTS.includes(key) || extra.includes(key)) {
             if (!/^https:\/\//.test(x.photo || '')) out.push(`${key}: paint facts need an https photo`);
             if (!DATE.test(x.photoDate || '')) out.push(`${key}: photoDate must be YYYY-MM-DD`);
             else if (DATE.test(x.checked || '') && x.photoDate < nflSeasonStart(x.checked)) {
@@ -103,4 +121,4 @@ function surfaceMismatch(summary, index) {
     return (p.surface !== 'artificial') === venue.grass ? null : `${p.name}: profile surface "${p.surface}" but ESPN grass=${venue.grass}`;
 }
 
-module.exports = { NFL_TEAMS, SURFACES, MOWS, MIDFIELDS, REQUIRED_FACTS, PAINT_FACTS, PROFILE_FILE, validateProfile, validateFacts, lowConfidenceCount, nflSeasonStart, readFieldIndex, missingFieldProfiles, surfaceMismatch };
+module.exports = { EZ_FONT_STYLES, NFL_TEAMS, SURFACES, MOWS, MIDFIELDS, REQUIRED_FACTS, PAINT_FACTS, PROFILE_FILE, validateProfile, validateFacts, lowConfidenceCount, nflSeasonStart, readFieldIndex, missingFieldProfiles, surfaceMismatch };

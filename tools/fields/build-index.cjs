@@ -33,7 +33,7 @@ function loadDir(dir, neutral, problems) {
             const factsFile = path.join(dir, `${slug}.facts.json`);
             if (!fs.existsSync(factsFile)) { problems.push(`${slug}: missing ${slug}.facts.json`); continue; }
             const facts = readJson(factsFile);
-            core.validateFacts(facts).forEach(p => problems.push(`${slug}: ${p}`));
+            core.validateFacts(facts, profile).forEach(p => problems.push(`${slug}: ${p}`));
             const key = neutral ? slug : `${profile.venueId}--${profile.homeTeam}`;
             entries.push({ key, slug, profile, facts, file: path.join(dir, f) });
         } catch (e) {

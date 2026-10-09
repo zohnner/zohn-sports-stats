@@ -388,6 +388,7 @@
 .fv-dyn { transform-box: view-box; transform-origin: 0 0; }
 .fv-motion .fv-dyn { transition: transform var(--fv-glide, 420ms) cubic-bezier(0.16, 1, 0.3, 1); }
 .fv-ez-glyph, .fv-yardnum { font-family: var(--font-display); font-weight: 800; }
+.fv-ez-glyph { font-family: var(--fv-ez-font, var(--font-display)); }
 .fv-yardnum { fill: rgba(255,255,255,0.78); }
 .fv-fd-flash line { animation: fvFdFlash 900ms ease-out; }
 @keyframes fvFdFlash { 30% { filter: drop-shadow(0 0 8px var(--color-first-down-glow)); } }
