@@ -8,12 +8,14 @@
     "left": {
       "fill": "#4D6A54",
       "text": "BEARS",
-      "textColor": "#DD9154"
+      "textColor": "#DD9154",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#4D6A54",
       "text": "BEARS",
-      "textColor": "#DD9154"
+      "textColor": "#DD9154",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",

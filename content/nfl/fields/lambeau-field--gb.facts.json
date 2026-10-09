@@ -73,6 +73,34 @@
       "photoDate": "2026-09-24",
       "checked": "2026-10-05",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-falcons-pregame-warmups-week-3-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/xtuokxoy4w1m5wercguf.jpg",
+      "photoDate": "2026-09-24",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-falcons-pregame-warmups-week-3-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/xtuokxoy4w1m5wercguf.jpg",
+      "photoDate": "2026-09-24",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-falcons-pregame-warmups-week-3-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/yzixesy5sp0qhlyfrci5.jpg",
+      "photoDate": "2026-09-24",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.packers.com/photos/best-photos-from-packers-falcons-pregame-warmups-week-3-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/packers/yzixesy5sp0qhlyfrci5.jpg",
+      "photoDate": "2026-09-24",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }

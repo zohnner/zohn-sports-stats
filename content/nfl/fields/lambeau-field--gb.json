@@ -8,12 +8,16 @@
     "left": {
       "fill": "#2D4314",
       "text": "GREEN BAY",
-      "textColor": "#FFB612"
+      "textColor": "#FFB612",
+      "font": "slab",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#2D4314",
       "text": "PACKERS",
-      "textColor": "#FFB612"
+      "textColor": "#FFB612",
+      "font": "slab",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",
