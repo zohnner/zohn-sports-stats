@@ -8,12 +8,14 @@
     "left": {
       "fill": "#AF5C57",
       "text": "GIANTS",
-      "textColor": "#536E98"
+      "textColor": "#536E98",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#AF5C57",
       "text": "GIANTS",
-      "textColor": "#536E98"
+      "textColor": "#536E98",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",

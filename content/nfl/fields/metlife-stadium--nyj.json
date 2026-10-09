@@ -8,12 +8,14 @@
     "left": {
       "fill": "#375132",
       "text": "JETS",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "italic"
     },
     "right": {
       "fill": "#26482E",
       "text": "JETS",
-      "textColor": "#FFFFFF"
+      "textColor": "#FFFFFF",
+      "font": "italic"
     }
   },
   "midfield": "primary-logo",

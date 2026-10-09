@@ -73,6 +73,20 @@
       "photoDate": "2026-10-04",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.giants.com/photos/game-photos-giants-take-on-cardinals-x5893",
+      "photo": "https://static.clubs.nfl.com/image/upload/giants/bteuefi4d6927ta2w1kx.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.giants.com/photos/game-photos-giants-take-on-cardinals-x5893",
+      "photo": "https://static.clubs.nfl.com/image/upload/giants/xxzttpbubemj6lro6nk3.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }
