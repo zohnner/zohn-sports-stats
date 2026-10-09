@@ -1,0 +1,24 @@
+{
+  "venueId": "3874",
+  "homeTeam": "CIN",
+  "name": "Paycor Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#CA4F0D",
+      "text": "BENGALS",
+      "textColor": "#111014",
+      "outline": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#CA4F0D",
+      "text": "BENGALS",
+      "textColor": "#111014",
+      "outline": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#ECE8E8",
+  "signature": []
+}

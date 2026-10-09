@@ -1,0 +1,108 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/kzs2zvlz7vevqwny5yzk.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/eq55zlef0xohcvfvkxdy.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/eq55zlef0xohcvfvkxdy.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/axknt4uagmy1apu5je0l.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/eq55zlef0xohcvfvkxdy.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/eq55zlef0xohcvfvkxdy.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.chiefs.com/photos/photos-game-action-from-regular-season-week-2-colts-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/chiefs/mythgc7ovay9efwtcixe.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

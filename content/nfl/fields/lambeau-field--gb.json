@@ -1,0 +1,26 @@
+{
+  "venueId": "3798",
+  "homeTeam": "GB",
+  "name": "Lambeau Field",
+  "surface": "hybrid",
+  "mow": "stripes-5",
+  "endzones": {
+    "left": {
+      "fill": "#2D4314",
+      "text": "GREEN BAY",
+      "textColor": "#FFB612",
+      "font": "slab",
+      "outline": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#2D4314",
+      "text": "PACKERS",
+      "textColor": "#FFB612",
+      "font": "slab",
+      "outline": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#F0F0F0",
+  "signature": []
+}

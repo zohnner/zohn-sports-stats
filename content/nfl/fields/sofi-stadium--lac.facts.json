@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.chargers.com/photos/2026-top-shots-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/hzsckfmtt7vfgqb9amf9.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-1-cardinals",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ylknyvkhhrfdnhjgjki2.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-1-cardinals",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ylknyvkhhrfdnhjgjki2.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-1-cardinals",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ylknyvkhhrfdnhjgjki2.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/jbniuzfnr0fo5kuke2tn.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/lm4g9uvbadbkkaufg45a.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/jbniuzfnr0fo5kuke2tn.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "midfield": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ybh8iity7qggybsfg4mf.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.chargers.com/photos/2026-top-shots-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/iu8eddd23hjqsydmhjkn.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-1-cardinals",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ylknyvkhhrfdnhjgjki2.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/lm4g9uvbadbkkaufg45a.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

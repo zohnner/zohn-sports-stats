@@ -1,0 +1,26 @@
+{
+  "venueId": "3752",
+  "homeTeam": "PIT",
+  "name": "Acrisure Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#71843C",
+      "text": "PITTSBURGH",
+      "textColor": "#C3AA23",
+      "font": "squared",
+      "outline": "#101820"
+    },
+    "right": {
+      "fill": "#71843C",
+      "text": "STEELERS",
+      "textColor": "#C3AA23",
+      "font": "squared",
+      "outline": "#101820"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#E5E9E5",
+  "signature": []
+}

@@ -1,0 +1,108 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-at-san-francisco-49ers-game-action-gallery-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/jwvpbw4kbnaspqlhaqin.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-at-san-francisco-49ers-game-action-gallery-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/jwvpbw4kbnaspqlhaqin.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-at-san-francisco-49ers-game-action-gallery-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/jwvpbw4kbnaspqlhaqin.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-at-san-francisco-49ers-game-action-gallery-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/jwvpbw4kbnaspqlhaqin.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-at-san-francisco-49ers-game-action-gallery-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/jwvpbw4kbnaspqlhaqin.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.font": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.denverbroncos.com/photos/2026-week-4-denver-broncos-san-francisco-49ers-game-pregame-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/broncos/txug8z5fnvedjacqfbc9.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    }
+  }
+}

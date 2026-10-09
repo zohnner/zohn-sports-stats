@@ -1,0 +1,80 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.jaguars.com/photos/throwback-field-painting-ahead-of-week-3-vs-patriots",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.clevelandbrowns.com/photos/browns-players-prep-for-kickoff-vs-jaguars-for-2026-week-1",
+      "photo": "https://static.clubs.nfl.com/image/upload/browns/aazipu9kslohnxaumeoy.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars https://www.jaguars.com/photos/roar-of-the-jaguars-cleveland-vs-jaguars-week-1",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.jaguars.com/photos/roar-of-the-jaguars-cleveland-vs-jaguars-week-1 https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/avfjxwiabge0jclzhrsk.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.jaguars.com/photos/frames-of-the-game-photos-week-1-browns-vs-jaguars",
+      "photo": "https://static.clubs.nfl.com/image/upload/jaguars/pcpdeg89feiujaw6svvs.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    }
+  }
+}

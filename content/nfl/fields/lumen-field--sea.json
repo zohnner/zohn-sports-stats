@@ -1,0 +1,22 @@
+{
+  "venueId": "3673",
+  "homeTeam": "SEA",
+  "name": "Lumen Field",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#1F2C37",
+      "text": "SEAHAWKS",
+      "textColor": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#1F2C37",
+      "text": "SEAHAWKS",
+      "textColor": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#CFDDD2",
+  "signature": []
+}

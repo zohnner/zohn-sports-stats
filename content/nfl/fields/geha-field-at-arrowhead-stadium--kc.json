@@ -1,0 +1,26 @@
+{
+  "venueId": "3622",
+  "homeTeam": "KC",
+  "name": "GEHA Field at Arrowhead Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#537B34",
+      "text": "CHIEFS",
+      "textColor": "#81381C",
+      "font": "squared",
+      "outline": "#FFFFFF"
+    },
+    "right": {
+      "fill": "#537B34",
+      "text": "CHIEFS",
+      "textColor": "#81381C",
+      "font": "squared",
+      "outline": "#FFFFFF"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#DDE3D7",
+  "signature": []
+}

@@ -1,5 +1,6 @@
 'use strict';
 const L = require('../contract-lib.cjs');
+const fields = require('../fields/field-core.cjs');
 
 const scoreboard = d => `/api/nfl?path=/scoreboard&dates=${d.yyyymmdd}`;
 
@@ -86,6 +87,25 @@ module.exports = {
                 const bad = data.filter(x => !x || !x.player_id || typeof x.count !== 'number').length;
                 return bad ? `${bad} entries missing player_id/count` : null;
             })],
+        },
+        {
+            id: 'nfl-fields-venues',
+            needs: 'probe',
+            mirrors: 'js/nflLiveGame.js _nlgFieldProfileFor (content/nfl/fields/index.json lookup)',
+            route: scoreboard,
+            paths: ['events[].competitions[0].venue.id'],
+            invariants: [L.predicate('every non-neutral home venue has a researched field profile', data => {
+                const missing = fields.missingFieldProfiles(data, fields.readFieldIndex());
+                return missing.length ? `no field profile for ${missing.join(', ')}` : null;
+            })],
+        },
+        {
+            id: 'nfl-fields-surface',
+            needs: 'final',
+            mirrors: 'content/nfl/fields/*.json surface (cross-checked against ESPN gameInfo.venue.grass)',
+            route: c => `/api/nfl?path=/summary&event=${c.finalId}`,
+            paths: ['gameInfo.venue.id'],
+            invariants: [L.predicate('field profile surface agrees with ESPN grass flag', data => fields.surfaceMismatch(data, fields.readFieldIndex()))],
         },
     ],
 };

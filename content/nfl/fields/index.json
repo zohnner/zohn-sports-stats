@@ -1,0 +1,770 @@
+{
+  "version": 1,
+  "teams": {
+    "11938--BUF": {
+      "venueId": "11938",
+      "homeTeam": "BUF",
+      "name": "Highmark Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#A00102",
+          "text": "BILLS",
+          "textColor": "#CAD2CF",
+          "font": "slab"
+        },
+        "right": {
+          "fill": "#A00102",
+          "text": "BILLS",
+          "textColor": "#CAD2CF",
+          "font": "slab"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#C3CEC6",
+      "signature": []
+    },
+    "3493--NO": {
+      "venueId": "3493",
+      "homeTeam": "NO",
+      "name": "Caesars Superdome",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#587341",
+          "text": "SAINTS",
+          "textColor": "#928A58"
+        },
+        "right": {
+          "fill": "#587341",
+          "text": "SAINTS",
+          "textColor": "#928A58"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EEF0EE",
+      "signature": []
+    },
+    "3622--KC": {
+      "venueId": "3622",
+      "homeTeam": "KC",
+      "name": "GEHA Field at Arrowhead Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#537B34",
+          "text": "CHIEFS",
+          "textColor": "#81381C",
+          "font": "squared",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#537B34",
+          "text": "CHIEFS",
+          "textColor": "#81381C",
+          "font": "squared",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DDE3D7",
+      "signature": []
+    },
+    "3628--CAR": {
+      "venueId": "3628",
+      "homeTeam": "CAR",
+      "name": "Bank of America Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#191B1B",
+          "text": "PANTHERS",
+          "textColor": "#03A4E5"
+        },
+        "right": {
+          "fill": "#191B1B",
+          "text": "PANTHERS",
+          "textColor": "#03A4E5"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DCE4D4",
+      "signature": []
+    },
+    "3673--SEA": {
+      "venueId": "3673",
+      "homeTeam": "SEA",
+      "name": "Lumen Field",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#1F2C37",
+          "text": "SEAHAWKS",
+          "textColor": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#1F2C37",
+          "text": "SEAHAWKS",
+          "textColor": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#CFDDD2",
+      "signature": []
+    },
+    "3679--CLE": {
+      "venueId": "3679",
+      "homeTeam": "CLE",
+      "name": "Huntington Bank Field",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#586729",
+          "text": "CLEVELAND",
+          "textColor": "#E0E1DA",
+          "font": "squared",
+          "outline": "#311D00"
+        },
+        "right": {
+          "fill": "#586729",
+          "text": "BROWNS",
+          "textColor": "#E0E1DA",
+          "font": "squared",
+          "outline": "#311D00"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E0E1DA",
+      "signature": []
+    },
+    "3687--DAL": {
+      "venueId": "3687",
+      "homeTeam": "DAL",
+      "name": "AT&T Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#333A6B",
+          "text": "COWBOYS",
+          "textColor": "#9C9C99",
+          "font": "squared",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#333A6B",
+          "text": "COWBOYS",
+          "textColor": "#9C9C99",
+          "font": "squared",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E9EBE0",
+      "signature": []
+    },
+    "3712--JAX": {
+      "venueId": "3712",
+      "homeTeam": "JAX",
+      "name": "EverBank Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#658132",
+          "text": "JAGUARS",
+          "textColor": "#CCD5D9"
+        },
+        "right": {
+          "fill": "#658132",
+          "text": "JAGUARS",
+          "textColor": "#CCD5D9"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#90A49E",
+      "signature": []
+    },
+    "3719--WSH": {
+      "venueId": "3719",
+      "homeTeam": "WSH",
+      "name": "Northwest Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#647A13",
+          "text": "WASHINGTON",
+          "textColor": "#652618",
+          "outline": "#FFB612"
+        },
+        "right": {
+          "fill": "#647A13",
+          "text": "COMMANDERS",
+          "textColor": "#652618",
+          "outline": "#FFB612"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EFFAFB",
+      "signature": []
+    },
+    "3727--DET": {
+      "venueId": "3727",
+      "homeTeam": "DET",
+      "name": "Ford Field",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#0271BA",
+          "text": "DETROIT",
+          "textColor": "#D7D9DD"
+        },
+        "right": {
+          "fill": "#0271BA",
+          "text": "LIONS",
+          "textColor": "#D7D9DD"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E5E7ED",
+      "signature": []
+    },
+    "3738--NE": {
+      "venueId": "3738",
+      "homeTeam": "NE",
+      "name": "Gillette Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#3A5A26",
+          "text": "NEW ENGLAND",
+          "textColor": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#3A5A26",
+          "text": "PATRIOTS",
+          "textColor": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#D5DEDC",
+      "signature": []
+    },
+    "3752--PIT": {
+      "venueId": "3752",
+      "homeTeam": "PIT",
+      "name": "Acrisure Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#71843C",
+          "text": "PITTSBURGH",
+          "textColor": "#C3AA23",
+          "font": "squared",
+          "outline": "#101820"
+        },
+        "right": {
+          "fill": "#71843C",
+          "text": "STEELERS",
+          "textColor": "#C3AA23",
+          "font": "squared",
+          "outline": "#101820"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E5E9E5",
+      "signature": []
+    },
+    "3798--GB": {
+      "venueId": "3798",
+      "homeTeam": "GB",
+      "name": "Lambeau Field",
+      "surface": "hybrid",
+      "mow": "stripes-5",
+      "endzones": {
+        "left": {
+          "fill": "#2D4314",
+          "text": "GREEN BAY",
+          "textColor": "#FFB612",
+          "font": "slab",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#2D4314",
+          "text": "PACKERS",
+          "textColor": "#FFB612",
+          "font": "slab",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#F0F0F0",
+      "signature": []
+    },
+    "3806--PHI": {
+      "venueId": "3806",
+      "homeTeam": "PHI",
+      "name": "Lincoln Financial Field",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#254E45",
+          "text": "EAGLES",
+          "textColor": "#DBDDD7",
+          "font": "squared",
+          "outline": "#000000"
+        },
+        "right": {
+          "fill": "#254E45",
+          "text": "EAGLES",
+          "textColor": "#DBDDD7",
+          "font": "squared",
+          "outline": "#000000"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DBDDD7",
+      "signature": []
+    },
+    "3810--TEN": {
+      "venueId": "3810",
+      "homeTeam": "TEN",
+      "name": "Nissan Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#4A80C8",
+          "text": "TITANS",
+          "textColor": "#FFFFFF",
+          "font": "display"
+        },
+        "right": {
+          "fill": "#4A80C8",
+          "text": "TITANS",
+          "textColor": "#FFFFFF",
+          "font": "display"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EFF1F1",
+      "signature": []
+    },
+    "3812--IND": {
+      "venueId": "3812",
+      "homeTeam": "IND",
+      "name": "Lucas Oil Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#304AA2",
+          "text": "COLTS",
+          "textColor": "#FCFBF7",
+          "font": "slab"
+        },
+        "right": {
+          "fill": "#304AA2",
+          "text": "COLTS",
+          "textColor": "#FCFBF7",
+          "font": "slab"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E6E4DB",
+      "signature": []
+    },
+    "3814--BAL": {
+      "venueId": "3814",
+      "homeTeam": "BAL",
+      "name": "M&T Bank Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#38333E",
+          "text": "BALTIMORE",
+          "textColor": "#E8EBED",
+          "outline": "#9E7C0C"
+        },
+        "right": {
+          "fill": "#38333E",
+          "text": "RAVENS",
+          "textColor": "#E8EBED",
+          "outline": "#9E7C0C"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DCE2E4",
+      "signature": []
+    },
+    "3839--NYG": {
+      "venueId": "3839",
+      "homeTeam": "NYG",
+      "name": "MetLife Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#AF5C57",
+          "text": "GIANTS",
+          "textColor": "#536E98",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#AF5C57",
+          "text": "GIANTS",
+          "textColor": "#536E98",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EAE9EB",
+      "signature": []
+    },
+    "3839--NYJ": {
+      "venueId": "3839",
+      "homeTeam": "NYJ",
+      "name": "MetLife Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#375132",
+          "text": "JETS",
+          "textColor": "#FFFFFF",
+          "font": "italic"
+        },
+        "right": {
+          "fill": "#26482E",
+          "text": "JETS",
+          "textColor": "#FFFFFF",
+          "font": "italic"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E3E9E3",
+      "signature": []
+    },
+    "3874--CIN": {
+      "venueId": "3874",
+      "homeTeam": "CIN",
+      "name": "Paycor Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#CA4F0D",
+          "text": "BENGALS",
+          "textColor": "#111014",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#CA4F0D",
+          "text": "BENGALS",
+          "textColor": "#111014",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#ECE8E8",
+      "signature": []
+    },
+    "3886--TB": {
+      "venueId": "3886",
+      "homeTeam": "TB",
+      "name": "Raymond James Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#5E6832",
+          "text": "BUCCANEERS",
+          "textColor": "#B3403D"
+        },
+        "right": {
+          "fill": "#5E6832",
+          "text": "BUCCANEERS",
+          "textColor": "#B3403D"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#CFD1D3",
+      "signature": []
+    },
+    "3891--HOU": {
+      "venueId": "3891",
+      "homeTeam": "HOU",
+      "name": "Reliant Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#040404",
+          "text": "HOUSTON",
+          "textColor": "#DEE1E6",
+          "font": "display"
+        },
+        "right": {
+          "fill": "#040404",
+          "text": "TEXANS",
+          "textColor": "#DEE1E6",
+          "font": "display"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#F3F3F0",
+      "signature": []
+    },
+    "3933--CHI": {
+      "venueId": "3933",
+      "homeTeam": "CHI",
+      "name": "Soldier Field",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#4D6A54",
+          "text": "BEARS",
+          "textColor": "#DD9154",
+          "outline": "#FFFFFF"
+        },
+        "right": {
+          "fill": "#4D6A54",
+          "text": "BEARS",
+          "textColor": "#DD9154",
+          "outline": "#FFFFFF"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DED9CE",
+      "signature": []
+    },
+    "3937--DEN": {
+      "venueId": "3937",
+      "homeTeam": "DEN",
+      "name": "Empower Field at Mile High",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#2B3942",
+          "text": "BRONCOS",
+          "textColor": "#CFD8D5",
+          "font": "display",
+          "outline": "#FB4F14"
+        },
+        "right": {
+          "fill": "#2B3942",
+          "text": "BRONCOS",
+          "textColor": "#CFD8D5",
+          "font": "display",
+          "outline": "#FB4F14"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#E2E1D7",
+      "signature": []
+    },
+    "3948--MIA": {
+      "venueId": "3948",
+      "homeTeam": "MIA",
+      "name": "Hard Rock Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#5B7236",
+          "text": "MIAMI",
+          "textColor": "#FFFFFF",
+          "font": "display",
+          "outline": "#FC4C02"
+        },
+        "right": {
+          "fill": "#5B7236",
+          "text": "MIAMI",
+          "textColor": "#FFFFFF",
+          "font": "display",
+          "outline": "#FC4C02"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#F0F0F0",
+      "signature": []
+    },
+    "3970--ARI": {
+      "venueId": "3970",
+      "homeTeam": "ARI",
+      "name": "State Farm Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#7F2432",
+          "text": " ",
+          "textColor": "#D28B42"
+        },
+        "right": {
+          "fill": "#7F2432",
+          "text": " ",
+          "textColor": "#D28B42"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#D4D8DE",
+      "signature": []
+    },
+    "4738--SF": {
+      "venueId": "4738",
+      "homeTeam": "SF",
+      "name": "Levi's Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#899942",
+          "text": "49ERS",
+          "textColor": "#9F6043",
+          "font": "serif",
+          "outline": "#B3995D"
+        },
+        "right": {
+          "fill": "#899942",
+          "text": "49ERS",
+          "textColor": "#9F6043",
+          "font": "serif",
+          "outline": "#B3995D"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#D9DBCB",
+      "signature": []
+    },
+    "5239--MIN": {
+      "venueId": "5239",
+      "homeTeam": "MIN",
+      "name": "U.S. Bank Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#865387",
+          "text": "VIKINGS",
+          "textColor": "#F1EBDE"
+        },
+        "right": {
+          "fill": "#865387",
+          "text": "VIKINGS",
+          "textColor": "#F1EBDE"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EDE3E1",
+      "signature": []
+    },
+    "5348--ATL": {
+      "venueId": "5348",
+      "homeTeam": "ATL",
+      "name": "Mercedes-Benz Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#67A63C",
+          "text": "ATLANTA",
+          "textColor": "#FFFFFF",
+          "font": "squared"
+        },
+        "right": {
+          "fill": "#67A63C",
+          "text": "FALCONS",
+          "textColor": "#FFFFFF",
+          "font": "squared"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#EBF2F1",
+      "signature": []
+    },
+    "6501--LV": {
+      "venueId": "6501",
+      "homeTeam": "LV",
+      "name": "Allegiant Stadium",
+      "surface": "natural",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#283332",
+          "text": "RAIDERS",
+          "textColor": "#596B71"
+        },
+        "right": {
+          "fill": "#283332",
+          "text": "RAIDERS",
+          "textColor": "#596B71"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#A7BEBA",
+      "signature": []
+    },
+    "7065--LAC": {
+      "venueId": "7065",
+      "homeTeam": "LAC",
+      "name": "SoFi Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#0850AD",
+          "text": "LOS ANGELES",
+          "textColor": "#FFFFFF",
+          "font": "display"
+        },
+        "right": {
+          "fill": "#0850AD",
+          "text": "CHARGERS",
+          "textColor": "#FFFFFF",
+          "font": "display"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#ECF0EB",
+      "signature": []
+    },
+    "7065--LAR": {
+      "venueId": "7065",
+      "homeTeam": "LAR",
+      "name": "SoFi Stadium",
+      "surface": "artificial",
+      "mow": "none",
+      "endzones": {
+        "left": {
+          "fill": "#1B3287",
+          "text": "RAMS",
+          "textColor": "#F2E13A"
+        },
+        "right": {
+          "fill": "#1B3287",
+          "text": "RAMS",
+          "textColor": "#F2E13A"
+        }
+      },
+      "midfield": "primary-logo",
+      "border": "#DEE2E8",
+      "signature": []
+    }
+  },
+  "neutral": {}
+}

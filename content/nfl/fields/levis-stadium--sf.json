@@ -1,0 +1,26 @@
+{
+  "venueId": "4738",
+  "homeTeam": "SF",
+  "name": "Levi's Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#899942",
+      "text": "49ERS",
+      "textColor": "#9F6043",
+      "font": "serif",
+      "outline": "#B3995D"
+    },
+    "right": {
+      "fill": "#899942",
+      "text": "49ERS",
+      "textColor": "#9F6043",
+      "font": "serif",
+      "outline": "#B3995D"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#D9DBCB",
+  "signature": []
+}

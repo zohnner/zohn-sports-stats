@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.atlantafalcons.com/photos/bird-s-eye-view-falcons-vs-panthers-x1353",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/abr8lddye2nmm7ide8dc.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/w6j7e0c30ajlolfzcaow.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/w6j7e0c30ajlolfzcaow.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/w6j7e0c30ajlolfzcaow.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "midfield": {
+      "source": "https://www.atlantafalcons.com/photos/bird-s-eye-view-falcons-vs-panthers-x1353",
+      "photo": "https://static.clubs.nfl.com/image/upload/falcons/wut7ajkz7frkuirejkpt.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/w6j7e0c30ajlolfzcaow.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.panthers.com/photos/game-action-gallery-panthers-at-falcons-september-20-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/panthers/ewxcfk8j1zecbl48f5fd.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

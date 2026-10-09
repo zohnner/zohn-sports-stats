@@ -1,0 +1,22 @@
+{
+  "venueId": "3886",
+  "homeTeam": "TB",
+  "name": "Raymond James Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#5E6832",
+      "text": "BUCCANEERS",
+      "textColor": "#B3403D"
+    },
+    "right": {
+      "fill": "#5E6832",
+      "text": "BUCCANEERS",
+      "textColor": "#B3403D"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#CFD1D3",
+  "signature": []
+}

@@ -1,0 +1,22 @@
+{
+  "venueId": "5239",
+  "homeTeam": "MIN",
+  "name": "U.S. Bank Stadium",
+  "surface": "artificial",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#865387",
+      "text": "VIKINGS",
+      "textColor": "#F1EBDE"
+    },
+    "right": {
+      "fill": "#865387",
+      "text": "VIKINGS",
+      "textColor": "#F1EBDE"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EDE3E1",
+  "signature": []
+}

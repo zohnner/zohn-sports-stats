@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3-pregame",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.commanders.com/photos/photos-top-shots-from-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/dujie1pndiibp5o7chmp.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.seahawks.com/photos/photos-best-pregame-warmup-shots-from-the-seahawks-at-commanders-week-3-matchup",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/dtmnommkztpiikr8z4xf.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.seahawks.com/photos/photos-best-pregame-warmup-shots-from-the-seahawks-at-commanders-week-3-matchup",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/y4svlq1vbzq6d09xhqjo.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.commanders.com/photos/photos-top-shots-from-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/dujie1pndiibp5o7chmp.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.seahawks.com/photos/photos-best-pregame-warmup-shots-from-the-seahawks-at-commanders-week-3-matchup",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/xnwl41skazhifsplmbid.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://hoodline.com/2026/09/nissan-stadium-turf-hits-157-degrees-melts-titans-safety-s-cleats/",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/chnnrxsppwsakibpxrpt.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "border": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.tennesseetitans.com/photos/gameday-photos-2026-week-2-vs-philadelphia-eagles",
+      "photo": "https://static.clubs.nfl.com/image/upload/titans/hdin0cw8madsm4pkcqqp.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

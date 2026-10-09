@@ -1,0 +1,24 @@
+{
+  "venueId": "11938",
+  "homeTeam": "BUF",
+  "name": "Highmark Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#A00102",
+      "text": "BILLS",
+      "textColor": "#CAD2CF",
+      "font": "slab"
+    },
+    "right": {
+      "fill": "#A00102",
+      "text": "BILLS",
+      "textColor": "#CAD2CF",
+      "font": "slab"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#C3CEC6",
+  "signature": []
+}

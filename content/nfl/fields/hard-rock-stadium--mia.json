@@ -1,0 +1,26 @@
+{
+  "venueId": "3948",
+  "homeTeam": "MIA",
+  "name": "Hard Rock Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#5B7236",
+      "text": "MIAMI",
+      "textColor": "#FFFFFF",
+      "font": "display",
+      "outline": "#FC4C02"
+    },
+    "right": {
+      "fill": "#5B7236",
+      "text": "MIAMI",
+      "textColor": "#FFFFFF",
+      "font": "display",
+      "outline": "#FC4C02"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#F0F0F0",
+  "signature": []
+}

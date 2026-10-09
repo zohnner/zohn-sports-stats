@@ -1,0 +1,22 @@
+{
+  "venueId": "3712",
+  "homeTeam": "JAX",
+  "name": "EverBank Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#658132",
+      "text": "JAGUARS",
+      "textColor": "#CCD5D9"
+    },
+    "right": {
+      "fill": "#658132",
+      "text": "JAGUARS",
+      "textColor": "#CCD5D9"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#90A49E",
+  "signature": []
+}

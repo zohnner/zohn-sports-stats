@@ -1,0 +1,80 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.seahawks.com/photos/photos-must-see-game-action-shots-from-seahawks-vs-chargers-in-week-4",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.seahawks.com/photos/photos-must-see-game-action-shots-from-seahawks-vs-chargers-in-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/kx0irzdetgzhxfkeyyq4.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/kcftqhe1jelux8fldbjp.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.seahawks.com/photos/photos-must-see-game-action-shots-from-seahawks-vs-chargers-in-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/txdre8fatuqqisg9zu8x.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.seahawks.com/photos/2026-week-1-seahawks-patriots-must-see-game-action-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/dtaix24czi9rudfythcz.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/hfz4oeuh3grmxqsnxdsq.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/rgmknth3gv9ie5ef8uui.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.patriots.com/photos/game-photos-from-the-patriots-vs-the-seahawks-regular-season-game-1-presented-by-sony",
+      "photo": "https://static.clubs.nfl.com/image/upload/patriots/rgmknth3gv9ie5ef8uui.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.seahawks.com/photos/photos-best-pregame-warmup-shots-from-the-seahawks-vs-chargers-week-4-matchup",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/qvyks7gqif0d7tgf5i4q.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.seahawks.com/photos/2026-week-1-seahawks-patriots-must-see-game-action-photos",
+      "photo": "https://static.clubs.nfl.com/image/upload/seahawks/dtaix24czi9rudfythcz.jpg",
+      "photoDate": "2026-09-09",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "venueId": "3806",
+  "homeTeam": "PHI",
+  "name": "Lincoln Financial Field",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#254E45",
+      "text": "EAGLES",
+      "textColor": "#DBDDD7",
+      "font": "squared",
+      "outline": "#000000"
+    },
+    "right": {
+      "fill": "#254E45",
+      "text": "EAGLES",
+      "textColor": "#DBDDD7",
+      "font": "squared",
+      "outline": "#000000"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#DBDDD7",
+  "signature": []
+}

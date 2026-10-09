@@ -54,3 +54,6 @@ diff_out.txt
 # Python bytecode cache (bot/) — never commit compiled artifacts
 __pycache__/
 *.pyc
+
+# NFL home fields — gallery data index (generated, not committed)
+tools/fields/gallery-data.json

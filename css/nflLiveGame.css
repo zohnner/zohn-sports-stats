@@ -382,45 +382,25 @@
    element's OWN ::after so it sits above the svg AND the endzone/midfield
    <img> logos (all earlier in DOM order) without needing z-index bookkeeping. */
 .fv-field3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 90% at 50% 15%, rgba(255,255,255,0.12), transparent 60%), linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.28) 100%); }
-/* Team logos live OUTSIDE .fv-field3d-svg on purpose (D-148) --
-   real bug, not a style choice: that SVG's preserveAspectRatio="none" is
-   what makes the trapezoid converge, but the SAME non-uniform stretch also
-   warped every embedded raster <image> into a visibly distorted oval.
-   Nesting another <svg> does not fix this (SVG transforms compose down the
-   tree -- a nested viewport's own preserveAspectRatio is resolved against
-   its own local width/height numbers, not the final on-screen aspect
-   ratio, so it does not shield content from an ancestor's distortion). The
-   only fix that actually holds: keep logos out of the distorted coordinate
-   space entirely -- plain <img> positioned by percentage (left/top set
-   inline per-logo in js/nflLiveGame.js's logoPct()) over this real,
-   undistorted box, sized in true CSS px so they stay circular/square
-   regardless of the field's own aspect ratio. */
-/* width was a flat 42px (28px below the one 640px breakpoint) -- reported
-   live 2026-09-10 as overflowing the endzone at mobile widths, and measured:
-   .fv-field3d only shrinks to ~421px on real phone viewports (there's a
-   layout floor below that), where the endzone itself is ~28px wide at this
-   logo's own depth -- a 28px-wide logo there has ~zero margin and visibly
-   spills past the goal line onto the turf. Same 42px also crowds a ~773px
-   tablet-width endzone (~51px wide) far more tightly than it does the
-   ~1148px desktop case (~76px wide) it was tuned against, since a single
-   breakpoint jump can only ever be right at two widths. clamp() ties the
-   logo to a constant fraction of .fv-field3d's own width instead, which
-   preserves the same ~55% fill of the endzone at ANY container width (both
-   the logo and the endzone scale together, so their ratio doesn't drift);
-   the 20px floor is a deliberate legibility exception below that ratio's
-   own ~15px prediction at the narrowest real phone width -- a team crest
-   that small stops reading as anything -- and even at 20px it fits with
-   room to spare where 28px did not. Upper bound (42px) preserves the
-   existing, unchanged desktop size exactly. */
-.fv-ez-logo { position: absolute; width: clamp(20px, 3.7%, 42px); aspect-ratio: 1; transform: translate(-50%, -50%); object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)); z-index: 2; }
-/* Midfield watermark -- real team colors at partial opacity (a genuine
-   painted stadium logo, not the flat white silhouette this used to be
-   inside the SVG, which read as "just an opaque outline" -- reported bug).
-   Sits UNDER .fv-field3d-svg in DOM order (see js/nflLiveGame.js) so the
-   yard lines/ball/etc. still draw over it, matching how a real broadcast
-   shot shows the yard markings crossing over turf art, not floating above it. */
-.fv-mid-logo { position: absolute; width: 26%; max-width: 130px; aspect-ratio: 1; transform: translate(-50%, -50%); object-fit: contain; opacity: 0.5; pointer-events: none; }
-@media (max-width: 640px) { .fv-field3d { height: 190px; } .fv-mid-logo { width: 22%; } }
+/* Pixel-space renderer (js/fieldViewer.js): dynamic markers are persistent and
+   moved by transform, so a CSS transition does the glide. transform-box/origin
+   pin SVG transforms to the field's own px coordinates. */
+.fv-dyn { transform-box: view-box; transform-origin: 0 0; }
+.fv-motion .fv-dyn { transition: transform var(--fv-glide, 420ms) cubic-bezier(0.16, 1, 0.3, 1); }
+.fv-ez-glyph, .fv-yardnum { font-family: var(--font-display); font-weight: 800; }
+.fv-ez-glyph { font-family: var(--fv-ez-font, var(--font-display)); }
+.fv-yardnum { fill: rgba(255,255,255,0.78); }
+.fv-fd-flash line { animation: fvFdFlash 900ms ease-out; }
+@keyframes fvFdFlash { 30% { filter: drop-shadow(0 0 8px var(--color-first-down-glow)); } }
+.fv-ball--turnover [data-fv="ball-fill"] { animation: fvTurnover 900ms ease-out; }
+@keyframes fvTurnover { from { fill: var(--color-loss); } }
+.fv-field3d--indoor::after { background: radial-gradient(ellipse 80% 100% at 50% 0%, rgba(255,255,255,0.06), transparent 70%), linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 30%, transparent 75%, rgba(0,0,0,0.30) 100%); }
+.fv-venue { color: var(--text-subtle); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) {
+    .fv-motion .fv-dyn { transition: none; }
+    .fv-fd-flash line, .fv-ball--turnover [data-fv="ball-fill"] { animation: none; }
+}
+@media (max-width: 640px) { .fv-field3d { height: 190px; } }
 /* Border = team identity, badge = state (D-038 K2) — live shows as glow + badge */
 .game-card--live { box-shadow: var(--shadow-live); }
 .nfl-gameday-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-live); margin: 0.2rem 0 0; }

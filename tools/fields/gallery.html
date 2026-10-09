@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Review Gallery</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../../css/variables.css">
+<link rel="stylesheet" href="../../css/nflLiveGame.css">
+<style>
+  body { background: var(--bg-base); color: var(--text-primary); font: 14px/1.45 system-ui, sans-serif; margin: 0; padding: 16px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .note { color: var(--text-muted); margin: 0 0 16px; }
+  .row { border: 1px solid var(--border-default); border-radius: 8px; padding: 14px; margin: 0 0 20px; background: var(--bg-card); }
+  .row h2 { font-size: 16px; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .low { color: var(--color-loss); font-size: 12px; font-weight: 700; }
+  .ok { color: var(--color-win); font-size: 12px; font-weight: 700; }
+  .widths button { margin: 0 6px 8px 0; }
+  .pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .stage { overflow-x: auto; }
+  .photo img { max-width: 100%; border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 10px; }
+  td, th { border-top: 1px solid var(--border-default); padding: 4px 6px; text-align: left; vertical-align: top; word-break: break-word; }
+  tr.lowrow td { background: color-mix(in srgb, var(--color-loss) 12%, transparent); }
+  code { font-size: 12px; }
+  a { color: var(--accent); }
+</style></head><body>
+<h1>NFL Home Fields — Review</h1>
+<p class="note">Compare each render to its photo. Approve by running the command shown (it stamps the facts file). Sorted by low-confidence facts first.</p>
+<div id="rows"></div>
+<script>
+window._escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+</script>
+<script src="../../js/fieldViewer.js"></script>
+<script>
+const esc = window._escHtml;
+const logo = (abbr) => `https://a.espncdn.com/i/teamlogos/nfl/500/${abbr.toLowerCase()}.png`;
+const SAMPLE = { down: 2, distance: 7, yardLine: 63, possession: 'H', isRedZone: false, downDistanceText: '2nd & 7 at OPP 37', homeTimeouts: 3, awayTimeouts: 2,
+  lastPlay: { id: 'x', type: { text: 'Pass Reception' }, start: { yardLine: 55 }, end: { yardLine: 63 } } };
+
+function render(row, host, width) {
+  host.style.width = width + 'px';
+  if (host._fv) host._fv.destroy();
+  const away = row.profile.homeTeam === 'DAL' ? 'NYG' : 'DAL';
+  host._fv = FieldViewer.mount(host, {
+    profile: row.profile, homeTeamId: 'H', indoor: false, venueLabel: '',
+    home: { abbr: row.profile.homeTeam, name: row.profile.homeTeam, logo: logo(row.profile.homeTeam), color: row.profile.endzones.left.fill },
+    away: { abbr: away, name: away, logo: logo(away), color: '#888888' },
+  });
+  host._fv.update(SAMPLE);
+}
+
+fetch('gallery-data.json').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(({ rows }) => {
+  const out = document.getElementById('rows');
+  if (!rows || !rows.length) { out.textContent = 'No field profiles yet.'; return; }
+  out.innerHTML = rows.map((row, i) => {
+    const f = row.facts.facts || {};
+    const photos = [...new Set(Object.values(f).map(x => x.photo).filter(Boolean))];
+    const factRows = Object.entries(f).map(([k, x]) => `<tr class="${x.confidence === 'low' ? 'lowrow' : ''}"><td>${esc(k)}</td><td>${esc(JSON.stringify(k.split('.').reduce((o, p) => o && o[p], row.profile)))}</td><td>${esc(x.confidence)}</td><td><a href="${esc(x.source)}" target="_blank" rel="noopener">source</a>${x.photo ? ` · <a href="${esc(x.photo)}" target="_blank" rel="noopener">photo ${esc(x.photoDate || '')}</a>` : ''}</td></tr>`).join('');
+    const approved = row.facts.approved ? `<span class="ok">approved ${esc(row.facts.approved.date)}</span>` : `<code>node tools/fields/approve.cjs ${esc(row.slug)}</code>`;
+    return `<section class="row"><h2>${esc(row.profile.name)} <small>${esc(row.key)}</small> ${row.low ? `<span class="low">${row.low} low-confidence</span>` : ''} ${approved}</h2>
+      <div class="widths">${[421, 773, 1148].map(w => `<button type="button" data-i="${i}" data-w="${w}">${w}px</button>`).join('')}</div>
+      <div class="pair"><div class="stage"><div class="fvhost" id="fv${i}"></div></div>
+      <div class="photo">${photos.map(p => `<a href="${esc(p)}" target="_blank" rel="noopener"><img src="${esc(p)}" alt="source photo" loading="lazy" data-hide-on-error></a>`).join('')}</div></div>
+      <table><tr><th>attribute</th><th>value</th><th>confidence</th><th>evidence</th></tr>${factRows}</table></section>`;
+  }).join('');
+  rows.forEach((row, i) => render(row, document.getElementById('fv' + i), 773));
+  out.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-w]');
+    if (b) render(rows[+b.dataset.i], document.getElementById('fv' + b.dataset.i), +b.dataset.w);
+  });
+  document.addEventListener('error', (e) => {
+    if (e.target.matches && e.target.matches('img[data-hide-on-error]')) {
+      e.target.replaceWith(Object.assign(document.createElement('span'), { textContent: 'photo blocked hotlinking — use the link' }));
+    }
+  }, true);
+}).catch((err) => {
+  document.getElementById('rows').textContent = 'Could not load gallery-data.json (' + err.message + '). Run `node tools/fields/build-index.cjs --gallery` from the repo root, then reload.';
+});
+</script></body></html>

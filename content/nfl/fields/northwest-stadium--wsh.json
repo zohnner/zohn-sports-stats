@@ -1,0 +1,24 @@
+{
+  "venueId": "3719",
+  "homeTeam": "WSH",
+  "name": "Northwest Stadium",
+  "surface": "natural",
+  "mow": "none",
+  "endzones": {
+    "left": {
+      "fill": "#647A13",
+      "text": "WASHINGTON",
+      "textColor": "#652618",
+      "outline": "#FFB612"
+    },
+    "right": {
+      "fill": "#647A13",
+      "text": "COMMANDERS",
+      "textColor": "#652618",
+      "outline": "#FFB612"
+    }
+  },
+  "midfield": "primary-logo",
+  "border": "#EFFAFB",
+  "signature": []
+}

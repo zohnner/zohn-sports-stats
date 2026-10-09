@@ -1,0 +1,80 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/swxplh1jmhpkfz6ohtar.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/tbrqndrmtiotupr4dmpz.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/tbrqndrmtiotupr4dmpz.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/tbrqndrmtiotupr4dmpz.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/gg1opluvt5krulb1exbu.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/gg1opluvt5krulb1exbu.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.raiders.com/photos/pregame-sights-from-week-4-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/gg1opluvt5krulb1exbu.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/g7wlsaq8ewsyrkz9nrxl.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.raiders.com/photos/177-feet-up-the-30-best-photos-from-the-catwalk-raiders-vs-chiefs",
+      "photo": "https://static.clubs.nfl.com/image/upload/raiders/swxplh1jmhpkfz6ohtar.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}

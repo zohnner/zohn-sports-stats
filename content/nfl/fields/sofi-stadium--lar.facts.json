@@ -1,0 +1,80 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.giants.com/photos/game-photos-giants-take-on-rams-x4118",
+      "photo": "https://static.clubs.nfl.com/image/upload/giants/tm9uzy11c65irds4clc2.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.giants.com/photos/game-photos-giants-take-on-rams-x4118",
+      "photo": "https://static.clubs.nfl.com/image/upload/giants/vxdhvyh8expje4kde0hm.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/mknxlezvubkyazemhxbp.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.giants.com/photos/game-photos-giants-take-on-rams-x4118",
+      "photo": "https://static.clubs.nfl.com/image/upload/giants/vxdhvyh8expje4kde0hm.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/lbdfutvdpk8icif5wikc.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/gugybyzcugkolg8aisjb.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/lbdfutvdpk8icif5wikc.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "midfield": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-saints-preseason-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/snoozgu974cb3hv1uv0t.jpg",
+      "photoDate": "2026-08-22",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "border": {
+      "source": "https://www.therams.com/photos/game-action-rams-vs-giants-week-2-sofi-stadium-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/rams/mquc7g00h9o8rkpzwfi8.jpg",
+      "photoDate": "2026-09-21",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    }
+  }
+}

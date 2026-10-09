@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting https://abc13.com/post/nrg-stadium-home-houston-texans-rodeo-renamed-reliant-august-2026-company-announces/18893525/",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/bcphe212h84dthihcqwc.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting https://www.dallascowboys.com/photos/pregame-gallery-vs-texans-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting https://www.dallascowboys.com/photos/pregame-gallery-vs-texans-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/dlrkelx22gnkcozxh48e.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/dlrkelx22gnkcozxh48e.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting https://www.dallascowboys.com/photos/pregame-gallery-vs-texans-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/j3ubkh4plviay29c2upj.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.dallascowboys.com/photos/pregame-gallery-vs-texans-2026 https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/zsluumgtmbxbfdinace5.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "border": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-07",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/jclma3owhuuntlwvc1au.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.houstontexans.com/photos/behind-the-scenes-kickoff-field-painting",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/dlrkelx22gnkcozxh48e.jpg",
+      "photoDate": "2026-09-11",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}

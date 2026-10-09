@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.buffalobills.com/news/why-are-the-bills-replacing-the-grass-at-highmark-stadium-it-wasn-t-up-to-their-standards",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/xfrc2lfgoawwhzmlzl97.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4 https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ctqkptduy5zvcbosn4sx.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4 https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ctqkptduy5zvcbosn4sx.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4 https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ctqkptduy5zvcbosn4sx.jpg",
+      "photoDate": "2026-10-04",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "border": {
+      "source": "https://www.buffalobills.com/photos/photos-first-look-at-the-home-opener-field-painting-at-highmark-stadium",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-08",
+      "confidence": "high"
+    },
+    "endzones.right.font": {
+      "source": "https://www.buffalobills.com/photos/game-frames-bills-vs-patriots-week-4",
+      "photo": "https://static.clubs.nfl.com/image/upload/bills/ljw0dw8gnagoiiorbppa.jpg",
+      "photoDate": "2026-09-16",
+      "checked": "2026-10-08",
+      "confidence": "high"
+    }
+  }
+}

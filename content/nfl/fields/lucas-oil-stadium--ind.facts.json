@@ -1,0 +1,94 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.colts.com/photos/indianapolis-colts-arrive-at-lucas-oil-stadium-for-week-3-matchup-vs-houston-texans-nike-rivalries-uniform",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://www.nbcdfw.com/news/sports/nfl/nfl-stadiums-artificial-turf-real-grass/4056191/",
+      "checked": "2026-10-06",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.colts.com/photos/game-photos-colts-vs-texans-x9910",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/xruouctqdwhyrcu2wkyt.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.baltimoreravens.com/photos/game-action-gallery-ravens-at-colts-week-1",
+      "photo": "https://static.clubs.nfl.com/image/upload/ravens/r0rilmihxgpfkjcuqo02.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.colts.com/photos/player-tunnel-intros-colts-vs-texans-week-3-photo-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/rlf6rixr37qhzjstz6cd.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.baltimoreravens.com/photos/game-action-gallery-ravens-at-colts-week-1",
+      "photo": "https://static.clubs.nfl.com/image/upload/ravens/r0rilmihxgpfkjcuqo02.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.houstontexans.com/photos/gameday-action-texans-at-colts-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/s7byrbysnanf7qynzh1m.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.colts.com/photos/player-tunnel-intros-colts-vs-texans-week-3-photo-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/rlf6rixr37qhzjstz6cd.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.houstontexans.com/photos/gameday-action-texans-at-colts-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/texans/s7byrbysnanf7qynzh1m.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.colts.com/photos/indianapolis-colts-game-highlights-photo-gallery-colts-vs-texans-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/gcrn5yxtjsvc7kalzj3g.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "border": {
+      "source": "https://www.baltimoreravens.com/photos/game-action-gallery-ravens-at-colts-week-1",
+      "photo": "https://static.clubs.nfl.com/image/upload/ravens/r0rilmihxgpfkjcuqo02.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-06",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.colts.com/photos/player-tunnel-intros-colts-vs-texans-week-3-photo-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/rlf6rixr37qhzjstz6cd.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.font": {
+      "source": "https://www.colts.com/photos/player-tunnel-intros-colts-vs-texans-week-3-photo-gallery",
+      "photo": "https://static.clubs.nfl.com/image/upload/colts/rlf6rixr37qhzjstz6cd.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    }
+  }
+}

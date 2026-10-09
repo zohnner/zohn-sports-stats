@@ -1,0 +1,108 @@
+{
+  "approved": {
+    "date": "2026-10-08"
+  },
+  "facts": {
+    "name": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "surface": {
+      "source": "https://clutchpoints.com/nfl/dallas-cowboys/cowboys-news-att-stadiums-world-cup-grass-replaced-turf-already",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "mow": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/zoy1uql2nio3laz6mjmw.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.fill": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/s8y7mqlp2tiw8jsv8ukg.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.text": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/co5cqd6ruuxktase6rv2.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-05",
+      "confidence": "high"
+    },
+    "endzones.left.textColor": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/s8y7mqlp2tiw8jsv8ukg.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.fill": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/xsznlehm79yes1qyl3uf.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.right.text": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/v1km3fhoszq1hf2tgxms.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-05",
+      "confidence": "low"
+    },
+    "endzones.right.textColor": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/xsznlehm79yes1qyl3uf.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "midfield": {
+      "source": "https://www.dallascowboys.com/photos/game-day-gallery-cowboys-vs-commanders-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/zoy1uql2nio3laz6mjmw.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "border": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/co5cqd6ruuxktase6rv2.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-05",
+      "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/co5cqd6ruuxktase6rv2.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/co5cqd6ruuxktase6rv2.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/v1km3fhoszq1hf2tgxms.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-08",
+      "confidence": "low"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.dallascowboys.com/photos/photo-gallery-preseason-cowboys-vs-saints-2026",
+      "photo": "https://static.clubs.nfl.com/image/upload/cowboys/v1km3fhoszq1hf2tgxms.jpg",
+      "photoDate": "2026-08-28",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    }
+  }
+}
