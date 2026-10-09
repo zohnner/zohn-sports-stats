@@ -8,12 +8,16 @@
     "left": {
       "fill": "#2B3942",
       "text": "BRONCOS",
-      "textColor": "#CFD8D5"
+      "textColor": "#CFD8D5",
+      "font": "display",
+      "outline": "#FB4F14"
     },
     "right": {
       "fill": "#2B3942",
       "text": "BRONCOS",
-      "textColor": "#CFD8D5"
+      "textColor": "#CFD8D5",
+      "font": "display",
+      "outline": "#FB4F14"
     }
   },
   "midfield": "primary-logo",

@@ -8,12 +8,14 @@
     "left": {
       "fill": "#A00102",
       "text": "BILLS",
-      "textColor": "#CAD2CF"
+      "textColor": "#CAD2CF",
+      "font": "slab"
     },
     "right": {
       "fill": "#A00102",
       "text": "BILLS",
-      "textColor": "#CAD2CF"
+      "textColor": "#CAD2CF",
+      "font": "slab"
     }
   },
   "midfield": "primary-logo",
