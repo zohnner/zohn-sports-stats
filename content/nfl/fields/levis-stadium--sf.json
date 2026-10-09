@@ -8,12 +8,16 @@
     "left": {
       "fill": "#899942",
       "text": "49ERS",
-      "textColor": "#9F6043"
+      "textColor": "#9F6043",
+      "font": "serif",
+      "outline": "#B3995D"
     },
     "right": {
       "fill": "#899942",
       "text": "49ERS",
-      "textColor": "#9F6043"
+      "textColor": "#9F6043",
+      "font": "serif",
+      "outline": "#B3995D"
     }
   },
   "midfield": "primary-logo",

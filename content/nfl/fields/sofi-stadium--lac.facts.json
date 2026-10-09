@@ -73,6 +73,20 @@
       "photoDate": "2026-09-20",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.font": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-1-cardinals",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/ylknyvkhhrfdnhjgjki2.jpg",
+      "photoDate": "2026-09-13",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.font": {
+      "source": "https://www.chargers.com/photos/2026-game-action-photos-week-2-raiders",
+      "photo": "https://static.clubs.nfl.com/image/upload/chargers/lm4g9uvbadbkkaufg45a.jpg",
+      "photoDate": "2026-09-20",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }

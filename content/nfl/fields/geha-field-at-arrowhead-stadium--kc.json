@@ -8,12 +8,16 @@
     "left": {
       "fill": "#537B34",
       "text": "CHIEFS",
-      "textColor": "#81381C"
+      "textColor": "#81381C",
+      "font": "squared",
+      "outline": "#FFFFFF"
     },
     "right": {
       "fill": "#537B34",
       "text": "CHIEFS",
-      "textColor": "#81381C"
+      "textColor": "#81381C",
+      "font": "squared",
+      "outline": "#FFFFFF"
     }
   },
   "midfield": "primary-logo",

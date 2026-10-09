@@ -73,6 +73,20 @@
       "photoDate": "2026-09-27",
       "checked": "2026-10-06",
       "confidence": "medium"
+    },
+    "endzones.left.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
+    },
+    "endzones.right.outline": {
+      "source": "https://www.commanders.com/photos/photos-commanders-vs-seahawks-week-3",
+      "photo": "https://static.clubs.nfl.com/image/upload/commanders/qendqsqkxc4txta9ba04.jpg",
+      "photoDate": "2026-09-27",
+      "checked": "2026-10-08",
+      "confidence": "medium"
     }
   }
 }
