@@ -931,7 +931,7 @@ class StatsCharts {
     /**
      * MLB live win-probability graph (D-117 competitive-audit follow-up,
      * 2026-09-10) — home team's win % across the game so far, one point per
-     * completed play (js/liveGame.js's _lgRecordWinProbHistory builds the
+     * completed play (js/liveGame.js's _lgWinProbSeries builds the
      * series; this only draws it). Two-toned above/below the 50% line, same
      * visual grammar FanGraphs' own live win-expectancy graph uses: color
      * itself tells you who's favored at a glance, not just the number.

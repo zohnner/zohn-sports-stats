@@ -51,8 +51,6 @@ let _lgLastHeroBatterId = null; // batter id from previous poll — hero entranc
 let _lgSeasonStatCache  = {};   // { playerId: seasonHittingStatObj | null } — hero batter AVG/OPS cache (D-117 Phase 1)
 let _lgPregameHtml    = '';     // cached rendered pregame-preview HTML (page mode only)
 let _lgPregameGamePk  = null;   // gamePk _lgPregameHtml belongs to / is being fetched for
-let _lgWinProbHistory       = new Map(); // gamePk → [{playCount, label, homePct}] — win-prob graph series, built forward from whenever this game was first polled (not reconstructed from before that — see _lgRecordWinProbHistory)
-let _lgWinProbRecordedCount = new Map(); // gamePk → count of completed plays already recorded, so a poll that re-fetches the same state doesn't duplicate a point
 let _lgLastSituationKey = null; // `${outs}_${balls}_${strikes}_${baseState}` from previous render — situation-flash gate (2026-09-10 tension-cue pass)
 let _lgLastCountKey     = null; // `${balls}-${strikes}-${outs}` from previous render, same batter — hero count-pop gate
 
@@ -207,8 +205,6 @@ function stopLiveGamePolling() {
     _lgZoneLastPitchCount.clear();
     _lgPregameHtml    = '';
     _lgPregameGamePk  = null;
-    _lgWinProbHistory.clear();
-    _lgWinProbRecordedCount.clear();
     _lgLastSituationKey = null;
     _lgLastCountKey     = null;
 }
@@ -337,7 +333,6 @@ async function _doPoll(gamePk) {
         if (!feedRes.ok) throw new Error(`Feed ${feedRes.status}`);
         const feed = await feedRes.json();
         _lgFeedCache = feed;
-        _lgRecordWinProbHistory(feed, gamePk);
 
         const prevPbpCount = panel.querySelectorAll('.lg-pbp-entry').length;
         const curAway      = ls.teams?.away?.runs ?? 0;
@@ -1622,8 +1617,13 @@ function _buildBaseDiamond(feed) {
 // half: 0 = visitor batting ("V" — top half), 1 = home batting ("H" — bottom
 // half); baseState: 3-bit runner encoding, bit0=1B(1) bit1=2B(2) bit2=3B(4),
 // 0=empty..7=loaded, identical to _lgOccupiedBases' own encoding so the two
-// features can't disagree; scoreDiff: home score minus away score;
-// homeWinPermille: home team's empirical win probability * 1000, rounded.
+// features can't disagree; scoreDiff and permille are from the BATTING
+// team's side: batting score minus fielding score, and the batting team's
+// empirical win probability * 1000, rounded. (Corrected 2026-10-11: this
+// said "home" for both, which is only true in bottom halves. The data
+// proves it: top-of-1st rows exist only for scoreDiff >= 0, impossible if
+// it meant home minus away. The live bar was inverted in every top half
+// until _lgWinProbFromRawState started translating.)
 //
 // Capped at inning 9 (innings 10+ summed into the inning-9 bucket — summing
 // raw counts, not averaging percentages, is the statistically correct way
@@ -1659,10 +1659,11 @@ function _lgBaseStateIndex(offense) {
 // Raw-state lookup, split out from _lgWinProbability (2026-09-10) so the
 // leverage-index estimate below can reuse the exact same table against
 // HYPOTHETICAL states (this play's possible outcomes), not just the feed's
-// live one. half/inning/outs/baseState/diff use the identical encoding
-// LG_WE_TABLE itself does; inning/outs/diff are clamped the same way the
-// original inline version always did.
+// live one. Callers pass diff as home minus away and get the HOME team's
+// probability back; the batting-side translation for top halves happens here.
 function _lgWinProbFromRawState(half, inning, outs, baseState, diff) {
+    const visitorBatting = half === 0;
+    if (visitorBatting) diff = -diff;
     inning = Math.min(inning, LG_WE_MAX_INNING);
     outs   = Math.min(outs, 2);
     diff   = Math.max(-LG_WE_MAX_DIFF, Math.min(LG_WE_MAX_DIFF, diff));
@@ -1674,7 +1675,7 @@ function _lgWinProbFromRawState(half, inning, outs, baseState, diff) {
     }
     if (permille === undefined) return null;
 
-    return permille / 1000;
+    return visitorBatting ? 1 - permille / 1000 : permille / 1000;
 }
 
 function _lgWinProbability(feed) {
@@ -1692,46 +1693,49 @@ function _lgWinProbability(feed) {
     return _lgWinProbFromRawState(half, ls.currentInning, ls.outs, baseState, homeScore - awayScore);
 }
 
-// Win-probability HISTORY — the graph competitive research (2026-09-10)
-// flagged as the single most-checked feature SportStrata's live viewer was
-// missing next to FanGraphs' and MLB.com's own live win-expectancy graphs.
-// Deliberately built FORWARD from whenever this game was first polled, not
-// reconstructed backward to first pitch: MLB's live feed has no per-play
-// win-probability field of its own (confirmed — searched the raw feed JSON
-// for one), and reconstructing historical base-occupancy for every earlier
-// play would mean replaying each play's runners[] movements play-by-play, a
-// real state machine with real edge cases (caught stealing, wild pitches,
-// pickoffs) — a correctness risk not worth taking for a first version.
-// Omission (a graph that starts where you opened it) over an invented
-// "full game" history that might silently be wrong for early innings.
-const LG_WINPROB_HISTORY_CAP = 500; // generous ceiling — real safety cap, not an expected size
+// Win-probability HISTORY, one point per completed play, replayed from first
+// pitch through LG_WE_TABLE. No runners[] state machine is needed: every play
+// carries its own post-play state (count.outs, result.home/awayScore, and
+// matchup.postOnFirst/Second/Third, omitted when the base is empty). Checked
+// 2026-10-11 against three real Final games: final scores match the
+// linescore and outs never decrease within a half-inning. On a fielder's
+// choice that a naive runners[].movement.end read gets wrong, postOn* agreed
+// with the next play's outcome. Baserunning between plays (a steal mid-at-bat)
+// shows up on the next play's point, the same play-level granularity
+// FanGraphs uses.
+function _lgWinProbSeries(feed) {
+    const plays = (feed.liveData?.plays?.allPlays || []).filter(p => p.about?.isComplete);
+    if (!plays.length) return [];
 
-function _lgRecordWinProbHistory(feed, gamePk) {
-    const homeProb = _lgWinProbability(feed);
-    if (homeProb == null) return; // not Live, or state outside the WE table's range
+    const series = [];
+    const first = _lgWinProbFromRawState(0, 1, 0, 0, 0);
+    if (first != null) series.push({ label: '▲1', homePct: Math.round(first * 100) });
 
-    const key = String(gamePk);
-    const allPlays = feed.liveData?.plays?.allPlays || [];
-    const completed = allPlays.filter(p => p.about?.isComplete);
-    if (!completed.length) return; // nothing has happened yet this game
+    const isFinal = feed.gameData?.status?.abstractGameState === 'Final';
+    plays.forEach((p, i) => {
+        const top   = !!p.about?.isTopInning;
+        const inn   = p.about?.inning ?? 1;
+        const diff  = (p.result?.homeScore ?? 0) - (p.result?.awayScore ?? 0);
+        const label = `${top ? '▲' : '▼'}${inn}`;
 
-    // One point per completed PLAY (matches FanGraphs' own granularity), not
-    // per poll — _doPoll's stateKey already changes on every ball/strike, so
-    // without this count-based gate a single at-bat would spam several
-    // near-duplicate points before it resolves.
-    const count = completed.length;
-    const lastRecorded = _lgWinProbRecordedCount.get(key) ?? -1;
-    if (count <= lastRecorded) return;
+        if (isFinal && i === plays.length - 1 && diff !== 0) {
+            series.push({ label, homePct: diff > 0 ? 100 : 0 });
+            return;
+        }
 
-    const lastPlay = completed[completed.length - 1];
-    const half  = lastPlay.about?.isTopInning ? '▲' : '▼';
-    const label = `${half}${lastPlay.about?.inning ?? '?'}`;
-
-    if (!_lgWinProbHistory.has(key)) _lgWinProbHistory.set(key, []);
-    const hist = _lgWinProbHistory.get(key);
-    hist.push({ playCount: count, label, homePct: Math.round(homeProb * 100) });
-    if (hist.length > LG_WINPROB_HISTORY_CAP) hist.shift();
-    _lgWinProbRecordedCount.set(key, count);
+        const outs = p.count?.outs ?? 0;
+        let prob;
+        if (outs >= 3) {
+            prob = top ? _lgWinProbFromRawState(1, inn, 0, 0, diff)
+                       : _lgWinProbFromRawState(0, inn + 1, 0, 0, diff);
+        } else {
+            const m = p.matchup || {};
+            const bases = (m.postOnFirst ? 1 : 0) + (m.postOnSecond ? 2 : 0) + (m.postOnThird ? 4 : 0);
+            prob = _lgWinProbFromRawState(top ? 0 : 1, inn, outs, bases, diff);
+        }
+        if (prob != null) series.push({ label, homePct: Math.round(prob * 100) });
+    });
+    return series;
 }
 
 // Leverage estimate (competitive-audit item #3, 2026-09-10) — "how much
@@ -1924,21 +1928,8 @@ function _buildWinProb(feed) {
 function _buildWinProbChartHost(feed, gamePk) {
     // Unlike the current-state bar (and everything else in this tab that
     // goes blank on Final), the graph is a look-BACK, so it deliberately
-    // survives a game finishing — if this session recorded any history
-    // while the game was live, viewing the complete swing after the final
-    // out is exactly the FanGraphs-style use case, not something to hide.
-    // A game that was never polled live this session (opened cold, already
-    // Final) has no history to show, which is the correct "we don't
-    // reconstruct the past" behavior documented above.
-    const isLive = feed.gameData?.status?.abstractGameState === 'Live';
-    const hist = _lgWinProbHistory.get(String(gamePk)) || [];
-    if (!isLive && hist.length < 2) return '';
-    if (hist.length < 2) {
-        return `<div class="lg-side-card" style="margin:var(--space-3) 0">
-            <div class="lg-box-section-title">Win Probability</div>
-            <div class="lg-matchup-empty">Building win-probability history — check back after the next few plays.</div>
-        </div>`;
-    }
+    // survives a game finishing.
+    if (_lgWinProbSeries(feed).length < 2) return '';
     return `<div class="lg-side-card" style="margin:var(--space-3) 0">
         <div class="lg-box-section-title">Win Probability</div>
         <div class="chart-wrap" style="height:150px">
@@ -1949,7 +1940,7 @@ function _buildWinProbChartHost(feed, gamePk) {
 
 function _lgRenderWinProbChart(feed, gamePk) {
     if (typeof StatsCharts?.winProbability !== 'function') return;
-    const hist = _lgWinProbHistory.get(String(gamePk)) || [];
+    const hist = _lgWinProbSeries(feed);
     if (hist.length < 2) return;
     const canvas = document.getElementById(`lg-wp-chart-${gamePk}`);
     if (!canvas) return;
