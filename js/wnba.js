@@ -517,7 +517,7 @@ async function displayWNBALeaders() {
         const cacheKey = `wnba:leaders:${_wnba.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/wnbastats?season=${_wnba.season}`);
+            const res = await _espnFetch(`/api/wnbastats?season=${_wnba.season}`);
             if (!res.ok) throw new Error('leaders ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -564,7 +564,7 @@ async function showWNBAPlayer(id) {
         const cacheKey = `wnba:athlete:${id}:${_wnba.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/wnbaathlete?id=${encodeURIComponent(id)}&season=${_wnba.season}`);
+            const res = await _espnFetch(`/api/wnbaathlete?id=${encodeURIComponent(id)}&season=${_wnba.season}`);
             if (!res.ok) throw new Error('athlete ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);

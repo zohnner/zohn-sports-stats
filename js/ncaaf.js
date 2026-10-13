@@ -975,7 +975,7 @@ async function displayNCAAFLeaders() {
         const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`);
+            const res = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`);
             if (!res.ok) throw new Error('leaders ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1022,7 +1022,7 @@ async function showNCAAFPlayer(id) {
         const cacheKey = `ncaaf:athlete:${id}:${_ncaaf.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${_ncaaf.season}`);
+            const res = await _espnFetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${_ncaaf.season}`);
             if (!res.ok) throw new Error('athlete ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1134,7 +1134,7 @@ async function showNCAAFTeam(id) {
     let roster = [], sched = [], stats = null, stdRow = null;
     try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
     try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (err) { Logger.warn('NCAAF schedule fetch failed', err, 'NCAAF'); }
-    try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
+    try { stats = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
     // Team Record card (mirrors MLB's _mlbTeamStatsCard) — reuses the same
     // fetchNCAAFStandings() the Standings view already calls, ApiCache-backed,
     // no new data source. A miss here (team not found, or preseason with no
@@ -1255,7 +1255,7 @@ async function _loadNCAAFRadar(groups) {
     try {
         const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
         stats = ApiCache.get(cacheKey);
-        if (!stats) { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); ApiCache.set(cacheKey, stats, ApiCache.TTL.DAILY); }
+        if (!stats) { stats = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); ApiCache.set(cacheKey, stats, ApiCache.TTL.DAILY); }
     } catch (_) { return; }
     const max = {};
     (stats.categories || []).forEach(cat => {
