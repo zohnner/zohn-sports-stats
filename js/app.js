@@ -2609,7 +2609,7 @@ async function _fetchHomeNewsArticles() {
         try {
             const results = await Promise.all(sports.map(async sport => {
                 try {
-                    const res = await fetch(`/api/news?sport=${sport}`);
+                    const res = await _espnFetch(`/api/news?sport=${sport}`);
                     if (!res.ok) return [];
                     const json = await res.json();
                     return ((json && json.articles) || []).map(a => ({ ...a, _sport: sport }));
@@ -3856,7 +3856,7 @@ async function _loadSportLandingNews(sport, label) {
     try {
         let data = (typeof _newsCache !== 'undefined') ? _newsCache[sport] : null;
         if (!data) {
-            const res = await fetch(`/api/news?sport=${sport}`);
+            const res = await _espnFetch(`/api/news?sport=${sport}`);
             if (!res.ok) throw new Error(`news ${res.status}`);
             data = await res.json();
             if (typeof _newsCache !== 'undefined') _newsCache[sport] = data;

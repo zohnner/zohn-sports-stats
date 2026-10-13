@@ -51,7 +51,7 @@ async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fres
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -245,7 +245,7 @@ async function fetchWNBAStandings(season) {
     const cacheKey = `wnba:standings:${season}`;
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
-    const res = await fetch(`/api/wnbastandings?season=${season}`);
+    const res = await _espnFetch(`/api/wnbastandings?season=${season}`);
     if (!res.ok) throw new Error(`WNBA standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');
@@ -647,7 +647,7 @@ window.displayWNBAPlayerDetail = displayWNBAPlayerDetail;
 // boxscore.teams[].statistics being genuine this-game data (not season
 // averages) is the one part of the original finding that still holds.
 async function fetchWNBAGameSummary(eventId) {
-    const res = await fetch(`/api/wnba?path=/summary&event=${encodeURIComponent(eventId)}`);
+    const res = await _espnFetch(`/api/wnba?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!res.ok) throw new Error('summary ' + res.status);
     return res.json();
 }

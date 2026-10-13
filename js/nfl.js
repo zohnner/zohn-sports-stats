@@ -122,7 +122,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -394,7 +394,7 @@ async function fetchNFLPriorSeasonGames() {
 // function's own /scoreboard cache (60s, functions/api/nfl.js's ttlFor) is
 // what actually throttles the real upstream ESPN calls.
 async function fetchNFLLiveSituation(eventId) {
-    const r = await fetch('/api/nfl?path=/scoreboard');
+    const r = await _espnFetch('/api/nfl?path=/scoreboard');
     if (!r.ok) return null;
     const data = await r.json();
     const ev = (data.events || []).find(e => e.id === eventId);
