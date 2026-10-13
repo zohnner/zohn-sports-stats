@@ -1508,7 +1508,7 @@ async function loadNFLStatLeaders() {
         const cacheKey = `nfl:statleaders:${_nflLeaderSeason || 'cur'}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch('/api/nflstats' + qs);
+            const res = await _espnFetch('/api/nflstats' + qs);
             if (!res.ok) throw new Error(`Stat leaders ${res.status}`);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);

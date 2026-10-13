@@ -445,7 +445,7 @@ async function displayNBALeaders() {
         const cacheKey = `nba:leaders:${_nba.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nbastats?season=${_nba.season}`);
+            const res = await _espnFetch(`/api/nbastats?season=${_nba.season}`);
             if (!res.ok) throw new Error('leaders ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -492,7 +492,7 @@ async function showNBAPlayer(id) {
         const cacheKey = `nba:athlete:${id}:${_nba.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nbaathlete?id=${encodeURIComponent(id)}&season=${_nba.season}`);
+            const res = await _espnFetch(`/api/nbaathlete?id=${encodeURIComponent(id)}&season=${_nba.season}`);
             if (!res.ok) throw new Error('athlete ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
