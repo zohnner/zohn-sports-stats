@@ -72,7 +72,7 @@ export async function onRequest(context) {
     let upstream;
     try {
         upstream = await fetch(target.toString(), {
-            headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA },
+            headers: { 'Accept': 'application/json' },
             cf: { cacheTtl: ttl, cacheEverything: true },
         });
     } catch {
