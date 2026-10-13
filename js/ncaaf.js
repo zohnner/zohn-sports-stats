@@ -33,7 +33,7 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -378,7 +378,7 @@ async function fetchNCAAFLiveSituation(eventId) {
     // ranked team (#25 MIZ) so it always appeared regardless -- an unranked-
     // vs-unranked live game would have been the one this bug actually broke,
     // and wasn't available to test against tonight.
-    const r = await fetch('/api/ncaaf?path=/scoreboard&groups=80');
+    const r = await _espnFetch('/api/ncaaf?path=/scoreboard&groups=80');
     if (!r.ok) return null;
     const data = await r.json();
     const ev = (data.events || []).find(e => e.id === eventId);
@@ -808,7 +808,7 @@ async function fetchNCAAFStandings(season) {
     const cacheKey = `ncaaf:standings:${season}`;
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
-    const res = await fetch(`/api/ncaafstandings?season=${season}`);
+    const res = await _espnFetch(`/api/ncaafstandings?season=${season}`);
     if (!res.ok) throw new Error(`NCAAF standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');

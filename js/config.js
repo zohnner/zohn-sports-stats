@@ -360,3 +360,60 @@ const SITE_DOMAIN = 'sportstrata.cc';
 // (see worker/wrangler-push.toml) — a mismatch fails PushManager.subscribe()
 // silently on the client with no useful error.
 const VAPID_PUBLIC_KEY = 'BNUV8cn_g-ssNXVYxfiCQTGYA5WXRu9vvcOyukWKrQCjutno7ovvMZqR6jVSJ7n1KxBPqC3SBnJ49mMt2VeTXbA';
+
+// ESPN refuses requests from Cloudflare's egress (403 on site.web.api, 502 on
+// sports.core.api, first seen 2026-10-13), so the /api/* ESPN proxies can fail
+// or return a 200 {ok:false} envelope (standings). The endpoints below send
+// Access-Control-Allow-Origin: *, so on proxy failure the browser fetches ESPN
+// itself and gets the identical raw JSON the proxy would have passed through.
+// Not covered: /teams (no CORS header) and the server-resolved stats/athlete
+// proxies, which stay down until a server-side data source is sorted out.
+const _ESPN_DIRECT = 'https://site.web.api.espn.com/apis';
+const _ESPN_LEAGUE = {
+    nfl: 'football/nfl', ncaaf: 'football/college-football',
+    ncaab: 'basketball/mens-college-basketball', wnba: 'basketball/wnba',
+    nba: 'basketball/nba', mlb: 'baseball/mlb',
+};
+
+function _espnDirectUrl(proxyUrl) {
+    const u = new URL(proxyUrl, location.origin);
+    const m = u.pathname.match(/^\/api\/(nfl|ncaaf|ncaab|wnba|nba|news)(standings)?$/);
+    if (!m) return null;
+    if (m[1] === 'news') {
+        const lg = _ESPN_LEAGUE[u.searchParams.get('sport')];
+        return lg ? `${_ESPN_DIRECT}/site/v2/sports/${lg}/news` : null;
+    }
+    const lg = _ESPN_LEAGUE[m[1]];
+    if (m[2]) {
+        const q = new URLSearchParams({
+            region: 'us', lang: 'en', contentorigin: 'espn', seasontype: '2',
+            level: u.searchParams.get('level') || (m[1] === 'wnba' ? '2' : '3'),
+            sort: 'winpercent:desc,gamesbehind:asc',
+        });
+        if (u.searchParams.get('season')) q.set('season', u.searchParams.get('season'));
+        return `${_ESPN_DIRECT}/v2/sports/${lg}/standings?${q}`;
+    }
+    const path = u.searchParams.get('path') || '/scoreboard';
+    if (/^\/teams\/?$/.test(path)) return null;
+    const q = new URLSearchParams(u.searchParams);
+    q.delete('path');
+    const qs = q.toString();
+    return `${_ESPN_DIRECT}/site/v2/sports/${lg}${path}${qs ? '?' + qs : ''}`;
+}
+
+async function _espnFetch(proxyUrl, init) {
+    let res = null;
+    try { res = await fetch(proxyUrl, init); } catch (err) { if (init?.signal?.aborted) throw err; }
+    if (res && res.ok) {
+        if (!/standings/.test(String(proxyUrl))) return res;
+        const body = await res.clone().json().catch(() => null);
+        if (body && body.ok !== false) return res;
+    }
+    const direct = _espnDirectUrl(String(proxyUrl));
+    if (!direct) {
+        if (res) return res;
+        throw new Error(`ESPN proxy unreachable: ${proxyUrl}`);
+    }
+    Logger.warn('ESPN proxy failed, fetching direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
+    return fetch(direct, init);
+}

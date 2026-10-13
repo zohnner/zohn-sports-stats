@@ -59,7 +59,7 @@ async function loadNews(sport) {
     try {
         let data = _newsCache[sport];
         if (!data) {
-            const res = await fetch(`/api/news?sport=${encodeURIComponent(sport)}`);
+            const res = await _espnFetch(`/api/news?sport=${encodeURIComponent(sport)}`);
             if (!res.ok) throw new Error(`news ${res.status}`);
             data = await res.json();
             _newsCache[sport] = data;

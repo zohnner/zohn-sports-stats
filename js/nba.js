@@ -62,7 +62,7 @@ async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -267,7 +267,7 @@ async function fetchNBAStandings(season) {
     const cacheKey = `nba:standings:${season}`;
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
-    const res = await fetch(`/api/nbastandings?season=${season}`);
+    const res = await _espnFetch(`/api/nbastandings?season=${season}`);
     if (!res.ok) throw new Error(`NBA standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');
@@ -575,7 +575,7 @@ window.displayNBAPlayerDetail = displayNBAPlayerDetail;
 // code change. injuries[] is also populated for NBA (unlike NCAAB, which
 // has none) — a bonus, not required for this to work.
 async function fetchNBAGameSummary(eventId) {
-    const res = await fetch(`/api/nba?path=/summary&event=${encodeURIComponent(eventId)}`);
+    const res = await _espnFetch(`/api/nba?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!res.ok) throw new Error('summary ' + res.status);
     return res.json();
 }

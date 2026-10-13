@@ -39,6 +39,9 @@ function load(file) {
             return { ok: true, json: async () => ({ season: { type: 2, year: 2026 }, events: [] }) };
         },
     };
+    // config.js (not loaded here) owns the ESPN direct fallback; the proxy
+    // always succeeds in this sandbox, so a passthrough is the same behavior.
+    ctx._espnFetch = (u, init) => ctx.fetch(u, init);
     ctx.globalThis = ctx; ctx.window = ctx;
     vm.createContext(ctx);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', `${file}.js`), 'utf8'), ctx, { filename: `${file}.js` });
