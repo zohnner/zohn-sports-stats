@@ -4935,7 +4935,10 @@
 .player-detail-name { font-family: var(--font-brand); }
 
 /* ── Edge-rendered content pages (D-166/D-167): glossaries, SportStrata Stories ── */
-.ss-prerender { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-12); color: var(--text-primary); font-family: var(--font-sans); line-height: 1.6; }
+/* Edge snapshots land in #playersGrid, a card grid; a snapshot that stays on
+   screen (stories, glossaries) would otherwise render as one 240px card. */
+.players-grid:has(> .ss-prerender) { display: block; }
+.ss-prerender { max-width: 720px; min-width: 0; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-12); color: var(--text-primary); font-family: var(--font-sans); line-height: 1.6; overflow-wrap: break-word; }
 .ss-prerender h1 { font-family: var(--font-display); font-size: var(--text-3xl); line-height: 1.15; margin: 0 0 var(--space-3); }
 .ss-prerender h2 { font-size: var(--text-xl); margin: var(--space-8) 0 var(--space-3); }
 .ss-prerender p, .ss-prerender ul, .ss-prerender ol, .ss-prerender dl { margin: 0 0 var(--space-4); }
