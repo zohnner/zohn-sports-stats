@@ -3555,3 +3555,16 @@ Between 2026-10-12 20:03 and 2026-10-13 17:51 UTC (bracketed by the contract mon
 **Setup (this PR):** `tools/stories/PLAYBOOK.md` (standing run instructions), this entry, CLAUDE.md sync.
 
 **Numbering note:** D-176 was taken by the ESPN browser-fallback entry (merged while this PR was being prepared); checked origin/main (highest D-176) and open PRs (none) before taking D-177.
+
+## D-178 — X auto-post for SportStrata Stories
+**Status:** shipped, inert until the X secrets are added | **Date:** 2026-10-13
+
+Stories (D-166) already carry an approved X post: the `## X` section of each `.social.md`, reviewed in the same PR as the story. Posting it by hand after every merge was the step that would get skipped, so `.github/workflows/x-post.yml` does it.
+
+**Flow.** On a push to main touching `content/*/stories/*.md`, only stories *added* in `before..after` (`git diff --diff-filter=A`) qualify, so editing a published story never re-posts. The job sleeps 30 minutes, re-fetches main, and per story skips with a logged reason unless the file still exists (a revert is the kill switch), the frontmatter has no `x: hold`, the live story URL returns 200 *and* renders the story, and the slug isn't in the ledger. The `## X` text is posted verbatim; over 280 weighted characters (twitter-text v3 weighting, every link = 23) fails loudly rather than trimming. Each successful post appends `{sport, slug, tweetId, postedAt}` to `content/x-posted.json`, committed to main with the same deploy key `sitemap-refresh.yml` uses. `workflow_dispatch` with a `slug` is the manual post/retry path and skips the wait.
+
+**Implementation.** `tools/stories/post-x.cjs`, no dependencies: OAuth 1.0a user-context signing (HMAC-SHA1 via `node:crypto`) against `POST https://api.x.com/2/tweets`. Secrets `X_API_KEY`/`X_API_SECRET`/`X_ACCESS_TOKEN`/`X_ACCESS_TOKEN_SECRET`; if any is missing it logs "X credentials not configured" and exits 0, so the workflow could merge before they exist. Pure helpers are covered by `tests/postX.test.js` with no network (signing against the OAuth reference base string, the POST against fixture responses).
+
+**Two checks beyond the approved design, both cheap:** the live check doesn't follow redirects and requires the page to contain the story's own URL, because `functions/_stories.js` serves the plain shell with a 200 on render errors and 302s on bad input, so a bare 200 doesn't prove the story is up; and the `## X` text must contain the story's own URL, which catches a post pasted from another story.
+
+**Known limits.** The ledger is the only duplicate guard: if a tweet posts but the ledger push fails three times, the job errors and the entry must be added by hand before any retry. X's current free-tier posting limits were not verified when this shipped. `content/x-posted.json` sits under `/content/`, already `noindex` and network-only in `sw.js`; tweet ids are public anyway.

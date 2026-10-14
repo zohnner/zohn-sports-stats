@@ -1,0 +1,102 @@
+name: SportStrata Stories X Post
+
+# Posts each newly merged story's approved "## X" text (from its .social.md)
+# to X, verbatim, then records it in content/x-posted.json (D-178).
+#
+# Kill switches during the 30-minute wait after merge: revert the story, or
+# add `x: hold` to its frontmatter. Only stories ADDED in the push qualify, so
+# editing a published story never re-posts it. workflow_dispatch with a slug
+# is the manual post/retry path; the ledger still prevents a duplicate.
+#
+# Without the four X_* secrets, post-x.cjs logs "X credentials not
+# configured" and exits 0.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/*/stories/*.md'
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Story slug to post or retry, e.g. 2026-09-30-jaguars-fewest-points-allowed'
+        required: true
+        type: string
+
+concurrency:
+  group: x-post
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # Same deploy-key push as sitemap-refresh.yml: the "main: CI must pass"
+      # ruleset can bypass deploy keys but not the GitHub Actions app.
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SITEMAP_DEPLOY_KEY }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find new stories
+        id: find
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          SLUG: ${{ inputs.slug }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node tools/stories/post-x.cjs candidates --slug "$SLUG"
+          else
+            node tools/stories/post-x.cjs candidates "$BEFORE" "$AFTER"
+          fi
+
+      # A manual dispatch is itself the owner's go-ahead, so it skips the wait.
+      - name: "Wait 30 minutes (revert or `x: hold` to cancel)"
+        if: steps.find.outputs.targets != '' && github.event_name == 'push'
+        run: sleep 1800
+
+      - name: Refresh main
+        if: steps.find.outputs.targets != ''
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+
+      - name: Post to X
+        if: steps.find.outputs.targets != ''
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          TARGETS: ${{ steps.find.outputs.targets }}
+        run: node tools/stories/post-x.cjs post $TARGETS
+
+      # always(): a story that fails after an earlier one posted must not
+      # lose that earlier tweet's ledger entry.
+      - name: Commit ledger
+        if: always() && steps.find.outputs.targets != ''
+        run: |
+          if git diff --quiet -- content/x-posted.json; then
+            echo "content/x-posted.json unchanged, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/x-posted.json
+          git commit -m "chore: record X posts in content/x-posted.json [automated]"
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && exit 0
+            echo "push rejected (attempt $attempt), rebasing onto main"
+            git pull --rebase origin main
+          done
+          echo "::error::Tweet posted but content/x-posted.json could not be pushed. Add the entry by hand before any retry, or it will post again."
+          exit 1
