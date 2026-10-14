@@ -72,6 +72,11 @@ test('xIntentUrl round-trips the exact text, newlines included', () => {
     const u = new URL(sl.xIntentUrl(text));
     assert.equal(u.origin + u.pathname, 'https://x.com/intent/post');
     assert.equal(u.searchParams.get('text'), text);
+
+    const paren = 'scored 58 (11.6 vs 23.3) https://sportstrata.cc/x';
+    const link = sl.xIntentUrl(paren);
+    assert.ok(!/[()]/.test(link), 'no raw parentheses to break a Markdown link');
+    assert.equal(new URL(link).searchParams.get('text'), paren);
 });
 
 test('shareBlock links the prefilled composer and the Reddit copy blocks', () => {

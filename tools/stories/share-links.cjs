@@ -88,7 +88,8 @@ function liveUrl(sport, slug) {
 }
 
 function xIntentUrl(text) {
-    return 'https://x.com/intent/post?text=' + encodeURIComponent(text);
+    // Parentheses must be encoded too: a raw ")" ends the Markdown link early.
+    return 'https://x.com/intent/post?text=' + encodeURIComponent(text).replace(/[()]/g, c => (c === '(' ? '%28' : '%29'));
 }
 
 function fence(text) {
