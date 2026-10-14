@@ -360,3 +360,251 @@ const SITE_DOMAIN = 'sportstrata.cc';
 // (see worker/wrangler-push.toml) — a mismatch fails PushManager.subscribe()
 // silently on the client with no useful error.
 const VAPID_PUBLIC_KEY = 'BNUV8cn_g-ssNXVYxfiCQTGYA5WXRu9vvcOyukWKrQCjutno7ovvMZqR6jVSJ7n1KxBPqC3SBnJ49mMt2VeTXbA';
+
+// ESPN refuses requests from Cloudflare's egress (403 on site.web.api, 502 on
+// sports.core.api, first seen 2026-10-13), so the /api/* ESPN proxies can fail
+// or return a 200 {ok:false} envelope (standings). The endpoints below send
+// Access-Control-Allow-Origin: *, so on proxy failure the browser fetches ESPN
+// itself and gets the identical raw JSON the proxy would have passed through.
+// Not covered: /teams (no CORS header) and the server-resolved stats/athlete
+// proxies, which stay down until a server-side data source is sorted out.
+const _ESPN_DIRECT = 'https://site.web.api.espn.com/apis';
+const _ESPN_LEAGUE = {
+    nfl: 'football/nfl', ncaaf: 'football/college-football',
+    ncaab: 'basketball/mens-college-basketball', wnba: 'basketball/wnba',
+    nba: 'basketball/nba', mlb: 'baseball/mlb',
+};
+
+function _espnDirectUrl(proxyUrl) {
+    const u = new URL(proxyUrl, location.origin);
+    const m = u.pathname.match(/^\/api\/(nfl|ncaaf|ncaab|wnba|nba|news)(standings)?$/);
+    if (!m) return null;
+    if (m[1] === 'news') {
+        const lg = _ESPN_LEAGUE[u.searchParams.get('sport')];
+        return lg ? `${_ESPN_DIRECT}/site/v2/sports/${lg}/news` : null;
+    }
+    const lg = _ESPN_LEAGUE[m[1]];
+    if (m[2]) {
+        const q = new URLSearchParams({
+            region: 'us', lang: 'en', contentorigin: 'espn', seasontype: '2',
+            level: u.searchParams.get('level') || (m[1] === 'wnba' ? '2' : '3'),
+            sort: 'winpercent:desc,gamesbehind:asc',
+        });
+        if (u.searchParams.get('season')) q.set('season', u.searchParams.get('season'));
+        return `${_ESPN_DIRECT}/v2/sports/${lg}/standings?${q}`;
+    }
+    const path = u.searchParams.get('path') || '/scoreboard';
+    if (/^\/teams\/?$/.test(path)) return null;
+    const q = new URLSearchParams(u.searchParams);
+    q.delete('path');
+    const qs = q.toString();
+    return `${_ESPN_DIRECT}/site/v2/sports/${lg}${path}${qs ? '?' + qs : ''}`;
+}
+
+async function _espnFetch(proxyUrl, init) {
+    let res = null;
+    try { res = await fetch(proxyUrl, init); } catch (err) { if (init?.signal?.aborted) throw err; }
+    if (res && res.ok) {
+        if (!/standings|athlete/.test(String(proxyUrl))) return res;
+        const body = await res.clone().json().catch(() => null);
+        if (body && body.ok !== false && body.found !== false) return res;
+    }
+    const am = String(proxyUrl).match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
+    if (am) {
+        const q = new URL(proxyUrl, location.origin).searchParams;
+        Logger.warn('ESPN athlete proxy failed, fetching core API direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
+        return _espnAthleteResponse(am[1], q.get('id'), q.get('season'), init);
+    }
+    const lm = String(proxyUrl).match(/\/api\/(nfl|ncaaf|wnba|nba)stats/);
+    if (lm) {
+        Logger.warn('ESPN leaders proxy failed, building from site/v3', { proxy: String(proxyUrl), status: res?.status }, 'API');
+        return _espnLeadersResponse(lm[1], new URL(proxyUrl, location.origin).searchParams.get('season'), init);
+    }
+    const direct = _espnDirectUrl(String(proxyUrl));
+    if (!direct) {
+        if (res) return res;
+        throw new Error(`ESPN proxy unreachable: ${proxyUrl}`);
+    }
+    Logger.warn('ESPN proxy failed, fetching direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
+    return fetch(direct, init);
+}
+
+// /api/{sport}stats resolves each leader's athlete server-side (1 + up to 45
+// requests). site/v3 /leaders carries names, positions and teams inline in one
+// response, so the browser fallback rebuilds the proxy's exact shape from that.
+// seasontype=2 is required: v3 defaults to the postseason once one exists, while
+// the proxies (core types/2) show the regular season.
+const _FB_LEADER_CATS = [
+    ['passingYards', 'Passing Yards', 'YDS'], ['passingTouchdowns', 'Passing TDs', 'TD'],
+    ['rushingYards', 'Rushing Yards', 'YDS'], ['rushingTouchdowns', 'Rushing TDs', 'TD'],
+    ['receivingYards', 'Receiving Yards', 'YDS'], ['receivingTouchdowns', 'Receiving TDs', 'TD'],
+    ['receptions', 'Receptions', 'REC'],
+];
+const _BB_LEADER_CATS = [
+    ['pointsPerGame', 'Points Per Game', 'PPG'], ['reboundsPerGame', 'Rebounds Per Game', 'RPG'],
+    ['assistsPerGame', 'Assists Per Game', 'APG'], ['stealsPerGame', 'Steals Per Game', 'SPG'],
+    ['blocksPerGame', 'Blocks Per Game', 'BPG'], ['fieldGoalPercentage', 'Field Goal %', 'FG%'],
+    ['FreeThrowPct', 'Free Throw %', 'FT%'],
+];
+const _ESPN_LEADER_CATS = {
+    nfl: [..._FB_LEADER_CATS, ['sacks', 'Sacks', 'SCK'], ['interceptions', 'Interceptions', 'INT']],
+    ncaaf: [..._FB_LEADER_CATS, ['totalTackles', 'Tackles', 'TOT'], ['sacks', 'Sacks', 'SCK'], ['interceptions', 'Interceptions', 'INT']],
+    wnba: _BB_LEADER_CATS,
+    nba: _BB_LEADER_CATS,
+};
+
+function _espnLeaderRow(sport, l) {
+    const a = l.athlete || {};
+    const t = l.team || a.team || {};
+    const id = a.id ? String(a.id) : '';
+    const row = {
+        id,
+        name: a.displayName || a.fullName || '',
+        pos: (a.position && a.position.abbreviation) || '',
+        team: t.abbreviation || '',
+    };
+    if (sport === 'ncaaf') row.logo = (t.logos && t.logos[0] && t.logos[0].href) || '';
+    row.headshot = (a.headshot && a.headshot.href)
+        || (id && sport !== 'ncaaf' ? `https://a.espncdn.com/i/headshots/${sport}/players/full/${id}.png` : '');
+    row.value = l.displayValue;
+    return row;
+}
+
+async function _espnLeadersResponse(sport, season, init) {
+    const load = async (s) => {
+        const q = `?seasontype=2${s ? `&season=${encodeURIComponent(s)}` : ''}`;
+        const r = await fetch(`${_ESPN_DIRECT}/site/v3/sports/${_ESPN_LEAGUE[sport]}/leaders${q}`, init);
+        if (!r.ok) return null;
+        const j = await r.json();
+        const byKey = new Map(((j.leaders && j.leaders.categories) || []).map(c => [c.name, c]));
+        const categories = _ESPN_LEADER_CATS[sport].map(([key, label, unit]) => ({
+            key, label, unit,
+            leaders: ((byKey.get(key) || {}).leaders || []).slice(0, 5).map(l => _espnLeaderRow(sport, l)).filter(x => x.name),
+        })).filter(c => c.leaders.length);
+        const yr = Number(s || (j.requestedSeason && j.requestedSeason.year) || (j.currentSeason && j.currentSeason.year));
+        return categories.length ? { season: yr, categories } : null;
+    };
+    let body = await load(season);
+    if (!body && season && /^\d{4}$/.test(season)) body = await load(String(Number(season) - 1));
+    return new Response(JSON.stringify(body || { error: 'leaders unavailable' }), {
+        status: body ? 200 : 502, headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+// /api/{ncaaf,wnba,nba}athlete: a browser port of the proxies' three core-API
+// calls (athlete, team, season stats), which all allow CORS. Same output shape.
+const _BB_ATHLETE_GROUPS = [
+    { key: 'offensive', label: 'Offense', cat: 'offensive', primary: 'points', stats: [
+        ['avgPoints', 'PPG'], ['fieldGoalPct', 'FG%'], ['threePointFieldGoalPct', '3P%'],
+        ['freeThrowPct', 'FT%'], ['avgAssists', 'APG'], ['avgTurnovers', 'TOPG']] },
+    { key: 'defensive', label: 'Defense & Rebounding', cat: 'defensive', primary: 'totalRebounds', stats: [
+        ['avgRebounds', 'RPG'], ['avgDefensiveRebounds', 'DRPG'], ['avgSteals', 'SPG'], ['avgBlocks', 'BPG']] },
+    { key: 'general', label: 'General', cat: 'general', primary: 'gamesPlayed', stats: [
+        ['gamesPlayed', 'GP'], ['gamesStarted', 'GS'], ['avgMinutes', 'MPG'], ['doubleDouble', 'DD2']] },
+];
+const _ESPN_ATHLETE = {
+    nba: {
+        core: 'basketball/leagues/nba', groups: _BB_ATHLETE_GROUPS,
+        defaultSeason: (y, m) => (m >= 10 ? y + 1 : y),
+    },
+    wnba: {
+        core: 'basketball/leagues/wnba', groups: _BB_ATHLETE_GROUPS,
+        defaultSeason: (y, m) => (m <= 3 ? y - 1 : y),
+    },
+    ncaaf: {
+        core: 'football/leagues/college-football', classYr: true,
+        defaultSeason: (y, m) => (m >= 8 ? y : y - 1),
+        groups: [
+            { key: 'passing', label: 'Passing', cat: 'passing', primary: 'passingYards', stats: [
+                ['completions', 'CMP'], ['passingAttempts', 'ATT'], ['passingYards', 'YDS'],
+                ['passingTouchdowns', 'TD'], ['interceptions', 'INT'], ['quarterbackRating', 'RTG']] },
+            { key: 'rushing', label: 'Rushing', cat: 'rushing', primary: 'rushingAttempts', stats: [
+                ['rushingAttempts', 'CAR'], ['rushingYards', 'YDS'], ['rushingTouchdowns', 'TD'],
+                ['yardsPerRushAttempt', 'AVG'], ['longRushing', 'LNG']] },
+            { key: 'receiving', label: 'Receiving', cat: 'receiving', primary: 'receptions', stats: [
+                ['receptions', 'REC'], ['receivingYards', 'YDS'], ['receivingTouchdowns', 'TD'],
+                ['yardsPerReception', 'AVG'], ['longReception', 'LNG']] },
+            { key: 'defense', label: 'Defense', cat: 'defensive', primary: 'totalTackles', stats: [
+                ['totalTackles', 'TOT'], ['soloTackles', 'SOLO'], ['sacks', 'SACK'],
+                ['tacklesForLoss', 'TFL'], ['passesDefended', 'PD']] },
+        ],
+    },
+};
+
+async function _espnAthleteResponse(sport, id, seasonParam, init) {
+    const cfg = _ESPN_ATHLETE[sport];
+    const core = `https://sports.core.api.espn.com/v2/sports/${cfg.core}`;
+    const now = new Date();
+    const dflt = cfg.defaultSeason(now.getUTCFullYear(), now.getUTCMonth() + 1);
+    const season = /^\d{4}$/.test(seasonParam || '') ? seasonParam : String(dflt);
+    const reply = (body) => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const getJson = async (url) => { try { const r = await fetch(url, init); return r.ok ? await r.json() : null; } catch { return null; } };
+    id = String(id || '').replace(/[^0-9]/g, '');
+    if (!id) return reply({ found: false, reason: 'missing id' });
+
+    const a = await getJson(`${core}/seasons/${season}/athletes/${id}?lang=en&region=us`);
+    if (!a) return reply({ found: false, reason: 'athlete not found', season: Number(season) });
+    const ex = a.experience;
+    const bio = {
+        name: a.fullName || a.displayName || '',
+        pos: (a.position && a.position.abbreviation) || '',
+        jersey: a.jersey || '',
+        height: a.displayHeight || '',
+        weight: a.displayWeight || '',
+        ...(cfg.classYr
+            ? { classYr: (ex && ex.displayValue) || '' }
+            : { exp: (ex && Number.isFinite(ex.years)) ? `${ex.years} yr${ex.years === 1 ? '' : 's'}` : '' }),
+        headshot: (a.headshot && a.headshot.href) || '',
+    };
+    const tm = /\/teams\/(\d+)/.exec((a.team && a.team.$ref) || '');
+    if (tm) {
+        const t = await getJson(`${core}/seasons/${season}/teams/${tm[1]}?lang=en&region=us`);
+        if (t) {
+            bio.team = t.abbreviation || t.name || '';
+            bio.teamId = tm[1];
+            bio.teamLogo = (t.logos && t.logos[0] && t.logos[0].href) || '';
+        }
+    }
+
+    const statsFor = async (s) => {
+        const j = await getJson(`${core}/seasons/${s}/types/2/athletes/${id}/statistics?lang=en&region=us`);
+        return j && j.splits;
+    };
+    let statsSeason = season;
+    let splits = await statsFor(season);
+    if ((!splits || !(splits.categories || []).length) && Number(season) === dflt) {
+        const fb = await statsFor(String(Number(season) - 1));
+        if (fb && (fb.categories || []).length) { splits = fb; statsSeason = String(Number(season) - 1); }
+    }
+
+    const cats = {};
+    ((splits && splits.categories) || []).forEach(c => {
+        const m = {};
+        (c.stats || []).forEach(s => { m[s.name] = { d: s.displayValue, v: s.value }; });
+        cats[c.name] = m;
+    });
+    const gp = cats.general && cats.general.gamesPlayed ? cats.general.gamesPlayed.d : null;
+    const di = cats.defensiveInterceptions;
+    const groups = [];
+    for (const g of cfg.groups) {
+        const cm = cats[g.cat];
+        if (!cm) continue;
+        let show = !!(cm[g.primary] && cm[g.primary].v > 0);
+        if (sport === 'ncaaf' && g.key === 'defense') {
+            show = (cm.totalTackles && cm.totalTackles.v >= 10)
+                || (cm.sacks && cm.sacks.v > 0)
+                || (cm.passesDefended && cm.passesDefended.v > 0)
+                || (di && di.interceptions && di.interceptions.v > 0);
+        }
+        if (!show) continue;
+        const line = g.stats.map(([n, l]) => [l, cm[n] ? cm[n].d : '—']);
+        const raw = {};
+        g.stats.forEach(([n]) => { if (cm[n] && typeof cm[n].v === 'number') raw[n] = cm[n].v; });
+        if (sport === 'ncaaf' && g.key === 'defense' && di && di.interceptions) {
+            line.push(['INT', di.interceptions.d]);
+            raw.interceptions = di.interceptions.v;
+        }
+        groups.push({ key: g.key, label: g.label, stats: line, raw });
+    }
+    return reply({ found: groups.length > 0, season: Number(statsSeason), id, bio, gp, groups });
+}

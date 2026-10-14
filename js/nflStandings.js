@@ -36,7 +36,7 @@ const _nstdStat = (stats, ...names) => { for (const n of names) if (stats[n]) re
 
 async function fetchNFLStandings(season) {
     season = season || _nstdSeasonDefault();
-    const res = await fetch(`/api/nflstandings?season=${season}`);
+    const res = await _espnFetch(`/api/nflstandings?season=${season}`);
     if (!res.ok) throw new Error(`standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');
@@ -99,7 +99,7 @@ async function fetchNFLPostseason(season) {
     const isReal = (g) => g && g.teams.every(t => t.abbr && t.abbr.length <= 3 && t.abbr !== 'AFC' && t.abbr !== 'NFC');
     const fetchWk = async (wk) => {
         try {
-            const r = await fetch(`/api/nfl?path=/scoreboard&seasontype=3&week=${wk}&dates=${season}`);
+            const r = await _espnFetch(`/api/nfl?path=/scoreboard&seasontype=3&week=${wk}&dates=${season}`);
             if (!r.ok) return [];
             const j = await r.json();
             return (j.events || []).map(parseGame).filter(isReal);

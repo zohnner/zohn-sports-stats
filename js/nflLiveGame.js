@@ -125,7 +125,7 @@ const _NLG_TABS = [
 ];
 
 async function fetchNFLSummary(eventId) {
-    const r = await fetch(`/api/nfl?path=/summary&event=${encodeURIComponent(eventId)}`);
+    const r = await _espnFetch(`/api/nfl?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!r.ok) throw new Error(`summary ${r.status}`);
     return r.json();
 }

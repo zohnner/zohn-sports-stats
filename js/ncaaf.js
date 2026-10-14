@@ -33,7 +33,7 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -378,7 +378,7 @@ async function fetchNCAAFLiveSituation(eventId) {
     // ranked team (#25 MIZ) so it always appeared regardless -- an unranked-
     // vs-unranked live game would have been the one this bug actually broke,
     // and wasn't available to test against tonight.
-    const r = await fetch('/api/ncaaf?path=/scoreboard&groups=80');
+    const r = await _espnFetch('/api/ncaaf?path=/scoreboard&groups=80');
     if (!r.ok) return null;
     const data = await r.json();
     const ev = (data.events || []).find(e => e.id === eventId);
@@ -808,7 +808,7 @@ async function fetchNCAAFStandings(season) {
     const cacheKey = `ncaaf:standings:${season}`;
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
-    const res = await fetch(`/api/ncaafstandings?season=${season}`);
+    const res = await _espnFetch(`/api/ncaafstandings?season=${season}`);
     if (!res.ok) throw new Error(`NCAAF standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');
@@ -975,7 +975,7 @@ async function displayNCAAFLeaders() {
         const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`);
+            const res = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`);
             if (!res.ok) throw new Error('leaders ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1022,7 +1022,7 @@ async function showNCAAFPlayer(id) {
         const cacheKey = `ncaaf:athlete:${id}:${_ncaaf.season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${_ncaaf.season}`);
+            const res = await _espnFetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${_ncaaf.season}`);
             if (!res.ok) throw new Error('athlete ' + res.status);
             data = await res.json();
             ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1134,7 +1134,7 @@ async function showNCAAFTeam(id) {
     let roster = [], sched = [], stats = null, stdRow = null;
     try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
     try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (err) { Logger.warn('NCAAF schedule fetch failed', err, 'NCAAF'); }
-    try { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
+    try { stats = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
     // Team Record card (mirrors MLB's _mlbTeamStatsCard) — reuses the same
     // fetchNCAAFStandings() the Standings view already calls, ApiCache-backed,
     // no new data source. A miss here (team not found, or preseason with no
@@ -1255,7 +1255,7 @@ async function _loadNCAAFRadar(groups) {
     try {
         const cacheKey = `ncaaf:leaders:${_ncaaf.season}`;
         stats = ApiCache.get(cacheKey);
-        if (!stats) { stats = await fetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); ApiCache.set(cacheKey, stats, ApiCache.TTL.DAILY); }
+        if (!stats) { stats = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); ApiCache.set(cacheKey, stats, ApiCache.TTL.DAILY); }
     } catch (_) { return; }
     const max = {};
     (stats.categories || []).forEach(cat => {

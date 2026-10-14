@@ -42,7 +42,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     const tid = setTimeout(() => controller.abort(), 10_000);
     let res;
     try {
-        res = await fetch(url.toString(), { signal: controller.signal });
+        res = await _espnFetch(url.toString(), { signal: controller.signal });
     } finally {
         clearTimeout(tid);
     }
@@ -197,7 +197,7 @@ function _ncaabGameCard(g) {
 // winprobability[], standings). NCAAB had no game-detail route at all
 // before this — score cards above were previously not clickable.
 async function fetchNCAABGameSummary(eventId) {
-    const res = await fetch(`/api/ncaab?path=/summary&event=${encodeURIComponent(eventId)}`);
+    const res = await _espnFetch(`/api/ncaab?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!res.ok) throw new Error('summary ' + res.status);
     return res.json();
 }
@@ -429,7 +429,7 @@ async function fetchNCAABStandings(season) {
     const cacheKey = `ncaab:standings:${season}`;
     const hit = ApiCache.get(cacheKey);
     if (hit) return hit;
-    const res = await fetch(`/api/ncaabstandings?season=${season}`);
+    const res = await _espnFetch(`/api/ncaabstandings?season=${season}`);
     if (!res.ok) throw new Error(`NCAAB standings ${res.status}`);
     const data = await res.json();
     if (data && data.ok === false) throw new Error(data.reason || 'standings unavailable');

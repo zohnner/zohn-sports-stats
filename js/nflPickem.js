@@ -50,13 +50,13 @@ function _pkBlend(a, b) {
 function _pkFetchScoreboard(params) {
     const qs = new URLSearchParams({ path: '/scoreboard' });
     Object.keys(params || {}).forEach(k => { if (params[k] != null && params[k] !== '') qs.set(k, params[k]); });
-    return fetch('/api/nfl?' + qs.toString()).then(r => {
+    return _espnFetch('/api/nfl?' + qs.toString()).then(r => {
         if (!r.ok) throw new Error('scoreboard ' + r.status);
         return r.json();
     });
 }
 function _pkFetchSummary(eventId) {
-    return fetch('/api/nfl?' + new URLSearchParams({ path: '/summary', event: eventId }).toString())
+    return _espnFetch('/api/nfl?' + new URLSearchParams({ path: '/summary', event: eventId }).toString())
         .then(r => { if (!r.ok) throw new Error('summary ' + r.status); return r.json(); })
         .catch(() => null);
 }

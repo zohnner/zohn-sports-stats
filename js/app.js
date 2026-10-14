@@ -1247,7 +1247,7 @@ async function _renderHomeFollowingHydrate(bySport, resolved) {
             const cacheKey = `ncaaf:athlete:${id}:${season}`;
             let data = ApiCache.get(cacheKey);
             if (!data) {
-                const res = await fetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                const res = await _espnFetch(`/api/ncaafathlete?id=${encodeURIComponent(id)}&season=${season}`);
                 if (!res.ok) return;
                 data = await res.json();
                 ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1264,7 +1264,7 @@ async function _renderHomeFollowingHydrate(bySport, resolved) {
             const cacheKey = `wnba:athlete:${id}:${season}`;
             let data = ApiCache.get(cacheKey);
             if (!data) {
-                const res = await fetch(`/api/wnbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                const res = await _espnFetch(`/api/wnbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
                 if (!res.ok) return;
                 data = await res.json();
                 ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -1283,7 +1283,7 @@ async function _renderHomeFollowingHydrate(bySport, resolved) {
             const cacheKey = `nba:athlete:${id}:${season}`;
             let data = ApiCache.get(cacheKey);
             if (!data) {
-                const res = await fetch(`/api/nbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
+                const res = await _espnFetch(`/api/nbaathlete?id=${encodeURIComponent(id)}&season=${season}`);
                 if (!res.ok) return;
                 data = await res.json();
                 ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
@@ -2609,7 +2609,7 @@ async function _fetchHomeNewsArticles() {
         try {
             const results = await Promise.all(sports.map(async sport => {
                 try {
-                    const res = await fetch(`/api/news?sport=${sport}`);
+                    const res = await _espnFetch(`/api/news?sport=${sport}`);
                     if (!res.ok) return [];
                     const json = await res.json();
                     return ((json && json.articles) || []).map(a => ({ ...a, _sport: sport }));
@@ -2953,7 +2953,7 @@ async function _wnbaStatMoments() {
         let data = ApiCache.get(cacheKey);
         if (!data) {
             data = await _homeInflightFetch(cacheKey, async () => {
-                const res = await fetch(`/api/wnbastats?season=${season}`);
+                const res = await _espnFetch(`/api/wnbastats?season=${season}`);
                 if (!res.ok) throw new Error(`wnbastats ${res.status}`);
                 const d = await res.json();
                 ApiCache.set(cacheKey, d, ApiCache.TTL.SHORT);
@@ -3856,7 +3856,7 @@ async function _loadSportLandingNews(sport, label) {
     try {
         let data = (typeof _newsCache !== 'undefined') ? _newsCache[sport] : null;
         if (!data) {
-            const res = await fetch(`/api/news?sport=${sport}`);
+            const res = await _espnFetch(`/api/news?sport=${sport}`);
             if (!res.ok) throw new Error(`news ${res.status}`);
             data = await res.json();
             if (typeof _newsCache !== 'undefined') _newsCache[sport] = data;
@@ -4379,7 +4379,7 @@ async function _loadWNBALandingLeaders() {
     if (!host) return;
     try {
         const season = (typeof _wnba !== 'undefined') ? _wnba.season : (typeof WNBA_LAST_SEASON !== 'undefined' ? WNBA_LAST_SEASON : new Date().getFullYear());
-        const res = await fetch(`/api/wnbastats?season=${season}`);
+        const res = await _espnFetch(`/api/wnbastats?season=${season}`);
         if (!res.ok) throw new Error(`wnbastats ${res.status}`);
         const data = await res.json();
         if (!host.isConnected) return;
@@ -4470,7 +4470,7 @@ async function _loadNBALandingLeaders() {
     if (!host) return;
     try {
         const season = (typeof _nba !== 'undefined') ? _nba.season : (typeof NBA_LAST_SEASON !== 'undefined' ? NBA_LAST_SEASON : new Date().getFullYear());
-        const res = await fetch(`/api/nbastats?season=${season}`);
+        const res = await _espnFetch(`/api/nbastats?season=${season}`);
         if (!res.ok) throw new Error(`nbastats ${res.status}`);
         const data = await res.json();
         if (!host.isConnected) return;
