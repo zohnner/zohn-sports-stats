@@ -3540,6 +3540,22 @@ Between 2026-10-12 20:03 and 2026-10-13 17:51 UTC (bracketed by the contract mon
 
 **Follow-up (same day): leaders and player pages.** `_espnFetch` now also covers `/api/{nfl,ncaaf,wnba,nba}stats` and `/api/{ncaaf,wnba,nba}athlete`. Leaders rebuild the proxy's exact shape from one `site/v3/.../leaders?seasontype=2` call (names/teams inline) instead of the proxy's 1 + up to 45 athlete lookups. `seasontype=2` is load-bearing: without it v3 silently returns *postseason* leaders once a postseason exists (caught by cross-checking against core: Brunson 28.4 playoff PPG vs Dončić 33.5 regular season). Athletes port the proxies' three core-API calls verbatim. The athlete proxies report a blocked upstream as HTTP 200 `{found:false}`, so `_espnFetch` peeks the body for those as it already did for standings. CSP `connect-src` gains `https://sports.core.api.espn.com`. Known difference: NCAAF v3 leaders are FBS-only, while the core proxy mixes in FCS players (shown with a blank team, since its team map is FBS) — the fallback is the more correct of the two, and matches the "% of FBS leader" radar framing. Found, not fixed: `_loadFromHash` has no `nba-player-*` pattern, so a fresh load of an NBA player URL doesn't route (in-app navigation works).
 
+## D-177 — Stories drafting moves to Muse (scheduled agent); detectors dropped, angle proof in PR body
+**Status:** shipping (setup PR) | **Date:** 2026-10-13
+
+**Amends D-166.** The planned Claude Code drafting routine becomes a scheduled Muse agent routine. Changes from the D-166 rollout:
+- **No deterministic detectors** (rollout step 3 dropped). The agent explores the week's data freely instead of reading detector packets.
+- **Angle proof moves into the PR body.** Every story carries its comparison ("36 pts allowed, 1st of 32; next is 41"), base rate / sample-size context, and its weakest claim with why it holds; dropped candidates are listed with reasons. This replaces detector packets as the review surface.
+- **Scope:** NFL weekly plus MLB postseason; MLB goes quiet after the World Series.
+- **No agent reviewer.** CI (`build-index.cjs --check`) plus owner review; merge = publish, owner merges.
+- **Standing authorization:** the scheduled run may push a `stories/*` branch and open one PR per run. It may never push to `main`, never merge, and never touch files outside `content/{nfl,mlb}/stories/**`. Anything else needs the owner's explicit go.
+
+**Data sources while the ESPN proxies are blocked (D-176).** The agent doesn't run on Cloudflare, so ESPN doesn't block it. For any number whose sportstrata.cc route is down, the agent fetches ESPN directly and cites the exact ESPN URL as that fact's source (`site.web.api.espn.com` scoreboard/summary/news/teams and `/apis/v2` standings; `site/v3/.../leaders?seasontype=2` — always with `seasontype=2`; `sports.core.api.espn.com` athletes/stats). A working sportstrata.cc route is preferred when one exists. The checker only requires `source` to be a non-empty string, so direct ESPN URLs pass (verified in `story-core.cjs`).
+
+**Setup (this PR):** `tools/stories/PLAYBOOK.md` (standing run instructions), this entry, CLAUDE.md sync.
+
+**Numbering note:** D-176 was taken by the ESPN browser-fallback entry (merged while this PR was being prepared); checked origin/main (highest D-176) and open PRs (none) before taking D-177.
+
 ## D-178 — X auto-post for SportStrata Stories
 **Status:** shipped, inert until the X secrets are added | **Date:** 2026-10-13
 
