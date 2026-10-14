@@ -3526,3 +3526,19 @@ Once the next snap lands, the latest play is no longer type 75 and the field ret
 **Tests.** `tests/winProbSeries.test.js`: orientation regressions (home favored at first pitch, visitor outs help home, home lead helps home in both halves) plus replay cases (empty, base state, half-inning rollover, Final pinning, Live not pinned).
 
 **Follow-up, not built.** A cross-sport homepage "biggest swing of the day" module reuses this replay for MLB and ESPN's `winprobability[]` for the others. It should be one edge-cached Pages Function rather than per-visitor fan-out to every game's feed.
+
+## D-177 — Stories drafting moves to Muse (scheduled agent); detectors dropped, angle proof in PR body
+**Status:** shipping (setup PR) | **Date:** 2026-10-13
+
+**Amends D-166.** The planned Claude Code drafting routine becomes a scheduled Muse agent routine. Changes from the D-166 rollout:
+- **No deterministic detectors** (rollout step 3 dropped). The agent explores the week's data freely instead of reading detector packets.
+- **Angle proof moves into the PR body.** Every story carries its comparison ("36 pts allowed, 1st of 32; next is 41"), base rate / sample-size context, and its weakest claim with why it holds; dropped candidates are listed with reasons. This replaces detector packets as the review surface.
+- **Scope:** NFL weekly plus MLB postseason; MLB goes quiet after the World Series.
+- **No agent reviewer.** CI (`build-index.cjs --check`) plus owner review; merge = publish, owner merges.
+- **Standing authorization:** the scheduled run may push a `stories/*` branch and open one PR per run. It may never push to `main`, never merge, and never touch files outside `content/{nfl,mlb}/stories/**`. Anything else needs the owner's explicit go.
+
+**Data sources while the ESPN proxies are blocked (D-176).** The agent doesn't run on Cloudflare, so ESPN doesn't block it. For any number whose sportstrata.cc route is down, the agent fetches ESPN directly and cites the exact ESPN URL as that fact's source (`site.web.api.espn.com` scoreboard/summary/news/teams and `/apis/v2` standings; `site/v3/.../leaders?seasontype=2` — always with `seasontype=2`; `sports.core.api.espn.com` athletes/stats). A working sportstrata.cc route is preferred when one exists. The checker only requires `source` to be a non-empty string, so direct ESPN URLs pass (verified in `story-core.cjs`).
+
+**Setup (this PR):** `tools/stories/PLAYBOOK.md` (standing run instructions), this entry, CLAUDE.md sync.
+
+**Numbering note:** D-176 was taken by the ESPN browser-fallback entry (merged while this PR was being prepared); checked origin/main (highest D-176) and open PRs (none) before taking D-177.
