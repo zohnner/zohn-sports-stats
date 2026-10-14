@@ -1,6 +1,22 @@
 {
   "stories": [
     {
+      "slug": "2026-10-13-guardians-alds-comeback",
+      "title": "Down 0-2, the Guardians won 3 straight elimination games to take the ALDS",
+      "dek": "Cleveland scored 3 runs in the first 2 games, then 20 over the next 3 — including a 6-run 6th inning in Game 4.",
+      "date": "2026-10-13",
+      "season": 2026,
+      "round": "ALDS",
+      "teams": [
+        "CLE",
+        "CWS"
+      ],
+      "players": [],
+      "hero_stat": "3 straight elimination wins after an 0-2 deficit",
+      "url": "/mlb/stories/2026-10-13-guardians-alds-comeback",
+      "sport": "mlb"
+    },
+    {
       "slug": "2026-10-04-white-sox-unbeaten-october",
       "title": "From 121 losses to 3-0 in October: the White Sox have yet to lose",
       "dek": "Chicago has won all 3 of its postseason games on the road, and its bullpen has recorded 52 of the 81 outs.",
