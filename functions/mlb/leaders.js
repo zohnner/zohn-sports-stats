@@ -8,12 +8,13 @@
 // outbound links, one of the reasons GSC's Links report showed only 7 internal
 // links site-wide despite ~1,500 pages in the sitemap.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // MLB full-name → abbreviation, live-verified against
 // https://statsapi.mlb.com/api/v1/teams?sportId=1&season=<current> (D-114).
@@ -100,7 +101,7 @@ export async function onRequest(context) {
             `<p><a href="/mlb">MLB Home</a></p>` +
             sections.map(s => s.html).join('') + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

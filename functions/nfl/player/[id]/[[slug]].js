@@ -8,6 +8,8 @@
 // team page does (e.g. legacy "WAS"/"JAC"/"OAK"/"SD"/"STL" codes) — normalize the known
 // cases and otherwise only link when the code is in the confirmed 32-team set, so an
 // unrecognized code fails safe to plain text instead of a dead link.
+import { shell, rawShell } from '../../../_shell.js';
+
 const SLEEPER = 'https://api.sleeper.app/v1/players/nfl';
 
 function esc(s) {
@@ -15,7 +17,6 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // ESPN's live NFL abbreviation set (matches /nfl/team/:abbr) — verified via
 // https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams (D-114).
@@ -60,7 +61,7 @@ export async function onRequest(context) {
             `<p>${esc(name)} NFL season stats, fantasy value, advanced metrics and game logs on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

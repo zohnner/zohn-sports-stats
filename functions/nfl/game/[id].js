@@ -5,12 +5,13 @@
 // hash route _loadFromHash already resolves to showNFLGame(id) in nflLiveGame.js.
 // Same HTML for humans and bots; any error falls back to the untouched app.
 
+import { shell, rawShell } from '../../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // D-062 fix (found live while verifying D-114): site.api.espn.com is Cloudflare-
 // egress-blocked (Akamai 403) -- this file predates that discovery and was never
@@ -74,7 +75,7 @@ export async function onRequest(context) {
             `<p>${esc(statusLabel)}${dateStr ? ' · ' + esc(dateStr) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
             `<p>Live box score, scoring plays, and matchup analysis for ${esc(aName)} vs ${esc(hName)} on SportStrata — free, no login, no ads.</p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

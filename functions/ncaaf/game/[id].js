@@ -10,12 +10,13 @@
 // resolves on a fresh load instead of falling through to home.
 // Same HTML for humans and bots; any error falls back to the untouched app.
 
+import { shell, rawShell } from '../../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // Same site.api.espn.com -> site.web.api.espn.com host swap functions/api/ncaaf.js
 // already uses (D-062) — using the blocked host here would silently fall back to
@@ -79,7 +80,7 @@ export async function onRequest(context) {
             `<p>${esc(statusLabel)}${dateStr ? ' · ' + esc(dateStr) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
             `<p>Live box score, scoring plays, and matchup analysis for ${esc(aName)} vs ${esc(hName)} on SportStrata — free, no login, no ads.</p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

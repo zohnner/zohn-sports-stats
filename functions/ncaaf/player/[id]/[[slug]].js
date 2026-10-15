@@ -1,6 +1,8 @@
 // Pages Function: /ncaaf/player/:id(/:slug) — crawlable, prerendered NCAAF player page (D-045 P2).
 // Clones the D-041 pattern: SPA shell via env.ASSETS + per-player head (Person JSON-LD) +
 // crawlable snapshot + __SS_ROUTE=ncaaf-player-{id}. Same HTML for humans and bots; fail-safe.
+import { shell, rawShell } from '../../../_shell.js';
+
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 
 function esc(s) {
@@ -8,7 +10,6 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 function season() { const n = new Date(); return (n.getUTCMonth() + 1 >= 8) ? n.getUTCFullYear() : n.getUTCFullYear() - 1; }
 
 export async function onRequest(context) {
@@ -48,7 +49,7 @@ export async function onRequest(context) {
             `<p>${esc([pos, team].filter(Boolean).join(' · '))}</p>` +
             `<p>${esc(name)} ${yr} college football season stats on SportStrata — free, no login, no ads.</p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

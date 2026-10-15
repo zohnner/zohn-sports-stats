@@ -7,6 +7,7 @@
 // Both set __SS_ROUTE='static-page-<sport>' (D-167) so the SPA keeps the page.
 // Unknown slug → the shell with HTTP 404. Any other error → the plain shell.
 import core from '../tools/stories/story-core.cjs';
+import { shell, rawShell } from './_shell.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -16,9 +17,8 @@ function esc(s) {
 function setAttr(html, re, value) {
     return html.replace(re, (_, open, close) => `${open}${value}${close}`);
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 async function notFound(env, url) {
-    const html = await (await shell(env, url)).text();
+    const html = await (await rawShell(env, url)).text();
     return new Response(html, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } });
 }
 function prettyDate(iso) {
@@ -92,7 +92,7 @@ export async function renderStoryPage(context, sport) {
             `<p class="ss-story__more"><a href="/${sport}/stories">More SportStrata Stories</a> · <a href="/${sport}">${label} Home</a></p>` +
             `</article>`;
 
-        const html = await (await shell(env, request.url)).text();
+        const html = await (await rawShell(env, request.url)).text();
         return htmlResponse(fillHead(html, { title, desc, canonical, ogImage, jsonld, sport, snapshot }));
     } catch (e) {
         return failSafe(env, request.url, sport);
@@ -125,7 +125,7 @@ export async function renderStoriesIndex(context, sport) {
             (stories.length ? `<ol class="ss-stories__list">${items}</ol>` : `<p>The first stories are on the way.</p>`) +
             `<p><a href="/${sport}">${label} Home</a></p></section>`;
 
-        const html = await (await shell(env, request.url)).text();
+        const html = await (await rawShell(env, request.url)).text();
         return htmlResponse(fillHead(html, { title, desc, canonical, ogImage: null, jsonld, sport, snapshot }));
     } catch (e) {
         return failSafe(env, request.url, sport);

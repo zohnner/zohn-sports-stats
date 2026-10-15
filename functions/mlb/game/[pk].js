@@ -5,6 +5,8 @@
 // so the SPA boots straight into the game panel. Any error falls back to the
 // untouched app, so a broken render never produces a dead page.
 
+import { shell, rawShell } from '../../_shell.js';
+
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function esc(s) {
@@ -13,9 +15,6 @@ function esc(s) {
     }[c]));
 }
 
-function shell(env, url) {
-    return env.ASSETS.fetch(new URL('/index.html', url));
-}
 
 function fmtDate(iso) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
@@ -69,7 +68,7 @@ export async function onRequest(context) {
             `<p>${esc(statusLabel)}${dateStr ? ' · ' + esc(dateStr) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
             `<p>Live box score, scoring plays, and matchup analysis for ${esc(aName)} vs ${esc(hName)} on SportStrata — free, no login, no ads.</p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

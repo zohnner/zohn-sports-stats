@@ -9,12 +9,13 @@
 // (see D-056's ncaafstats fix) is inherited automatically rather than
 // duplicated at the edge.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // Mirrors js/ncaaf.js's _ncafCollectConfs — flattens the conference/division
 // tree into { name, teams: [{name, record}] } leaves. Trimmed to what the
@@ -73,7 +74,7 @@ export async function onRequest(context) {
             `<p>Conferences: <ul>${confItems}</ul></p>` +
             sectionHtml + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

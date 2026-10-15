@@ -12,12 +12,13 @@
 // games (bye weeks between seasons, the one week between postseason rounds
 // with no games on the slate yet, etc.) rather than blanking the whole page.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // -- Same probability math as js/nflPickem.js (client) -- duplicated, not
 // imported: every Pages Function in this repo is self-contained, no shared
@@ -150,7 +151,7 @@ export async function onRequest(context) {
             (weekSnapshot || '') +
             `<p><a href="/nfl">NFL Home</a></p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

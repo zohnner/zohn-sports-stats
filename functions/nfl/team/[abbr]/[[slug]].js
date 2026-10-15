@@ -9,6 +9,9 @@
 // this file was never updated with the host-swap fix already applied everywhere
 // else in functions/api/*.js, so every NFL team page silently fell back to the
 // plain shell. site.web.api.espn.com serves the identical response shape.
+import { shell, rawShell } from '../../../_shell.js';
+import { nflverseTeams, NFLVERSE_CREDIT } from '../../../_nflverse.js';
+
 const TEAMS = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
@@ -17,18 +20,18 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 export async function onRequest(context) {
     const { request, env, params } = context;
     const abbr = String(params.abbr || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     try {
         if (!abbr || !env.ASSETS) return shell(env, request.url);
-        const r = await fetch(TEAMS, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
-        const list = (data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];
-        const team = (list.find(w => w.team && String(w.team.abbreviation || '').toUpperCase() === abbr) || {}).team;
+        const data = await fetch(TEAMS, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } })
+            .then(r => r.ok ? r.json() : null).catch(() => null);
+        const espn = (data && data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];
+        const fromNflverse = !espn.length;
+        const list = fromNflverse ? await nflverseTeams() : espn.map(w => w.team).filter(Boolean);
+        const team = list.find(t => String(t.abbreviation || '').toUpperCase() === abbr);
         if (!team) return shell(env, request.url);
 
         const A     = team.abbreviation || abbr;
@@ -40,7 +43,7 @@ export async function onRequest(context) {
         const desc  = `${name} — NFL roster and depth chart, schedule, standings, and top fantasy assets by ADP. Free, no login.`;
         const jsonld = JSON.stringify({ '@context': 'https://schema.org', '@type': 'SportsTeam', name, sport: 'American Football', url: canonical });
 
-        const otherTeams = list.map(w => w.team)
+        const otherTeams = list
             .filter(t => t && t.abbreviation && t.displayName && String(t.abbreviation).toUpperCase() !== A.toUpperCase())
             .slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
         const teamLinks = otherTeams.map(t =>
@@ -50,9 +53,9 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc(name)} NFL roster, depth chart, schedule, standings and fantasy assets on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
-            `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul></section>`;
+            `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul>` + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

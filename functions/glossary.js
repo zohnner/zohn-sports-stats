@@ -14,12 +14,13 @@
 // D-114 update: added back-links to / and /mlb (and /mlb/leaders) — this page
 // previously had zero outbound links, a dead end for any crawler that reached it.
 
+import { shell, rawShell } from './_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // Mirrors StatGlossary.MLB in js/glossary.js. Duplicated deliberately — Pages Functions
 // run in an isolated edge worker with no access to the client JS bundle, so there is no
@@ -98,7 +99,7 @@ export async function onRequest(context) {
             `<p><a href="/">SportStrata Home</a> · <a href="/mlb">MLB Stats</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p>` +
             `<dl>${rows}</dl></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

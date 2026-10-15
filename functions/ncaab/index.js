@@ -13,12 +13,13 @@
 // set __SS_ROUTE to a view that doesn't exist client-side — verified against
 // js/navigation.js/js/ncaab.js directly before writing this, not assumed.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 const TITLE = "College Basketball Scores, Rankings & Standings | SportStrata";
 const DESC  = "Free NCAA men's college basketball coverage: AP/Coaches rankings, conference standings, team pages and live scores. No login, no ads.";
@@ -42,7 +43,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(DESC)}</p><ul>${links}</ul></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(TITLE)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(DESC)}$2`)

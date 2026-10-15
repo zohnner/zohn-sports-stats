@@ -10,15 +10,14 @@
 // zero extra cost) — team pages previously had zero outbound links, so a crawler
 // that reached one had no way to discover any other page on the site.
 
+import { shell, rawShell } from '../../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
 
-function shell(env, url) {
-    return env.ASSETS.fetch(new URL('/index.html', url));
-}
 
 export async function onRequest(context) {
     const { request, env, params } = context;
@@ -65,7 +64,7 @@ export async function onRequest(context) {
             `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a> · <a href="/mlb/standings">MLB Standings</a></p>` +
             `<h2>Other MLB Teams</h2><ul>${teamLinks}</ul></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
 
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
