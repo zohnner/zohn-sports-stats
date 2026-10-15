@@ -1,0 +1,48 @@
+name: SportStrata NBA Standings Refresh
+
+# Daily NBA standings from Ball Don't Lie for /nba/standings while ESPN blocks
+# Cloudflare (D-176, D-181). The BDL key allows ~5 requests a minute, so
+# tools/nba-standings.cjs paces itself (~13s per page, ~3 min for a full
+# season) and fails rather than writing anything short of all 30 teams.
+# Same commit pattern and deploy key as sitemap-refresh.yml: the output is
+# deterministic script output, committed only when it changes.
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # 7 AM ET — after the last West Coast finals settle
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nba-standings
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SITEMAP_DEPLOY_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Compute standings
+        run: node tools/nba-standings.cjs
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- content/nba/standings.json && git ls-files --error-unmatch content/nba/standings.json >/dev/null 2>&1; then
+            echo "standings unchanged, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/nba/standings.json
+          git commit -m "chore: refresh NBA standings [automated]"
+          git push
