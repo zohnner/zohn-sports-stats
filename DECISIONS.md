@@ -3557,7 +3557,7 @@ Between 2026-10-12 20:03 and 2026-10-13 17:51 UTC (bracketed by the contract mon
 **Numbering note:** D-176 was taken by the ESPN browser-fallback entry (merged while this PR was being prepared); checked origin/main (highest D-176) and open PRs (none) before taking D-177.
 
 ## D-178 — X auto-post for SportStrata Stories
-**Status:** shipped, inert until the X secrets are added | **Date:** 2026-10-13
+**Status:** superseded by D-179 (removed before it ever ran) | **Date:** 2026-10-13
 
 Stories (D-166) already carry an approved X post: the `## X` section of each `.social.md`, reviewed in the same PR as the story. Posting it by hand after every merge was the step that would get skipped, so `.github/workflows/x-post.yml` does it.
 
@@ -3568,3 +3568,14 @@ Stories (D-166) already carry an approved X post: the `## X` section of each `.s
 **Two checks beyond the approved design, both cheap:** the live check doesn't follow redirects and requires the page to contain the story's own URL, because `functions/_stories.js` serves the plain shell with a 200 on render errors and 302s on bad input, so a bare 200 doesn't prove the story is up; and the `## X` text must contain the story's own URL, which catches a post pasted from another story.
 
 **Known limits.** The ledger is the only duplicate guard: if a tweet posts but the ledger push fails three times, the job errors and the entry must be added by hand before any retry. X's current free-tier posting limits were not verified when this shipped. `content/x-posted.json` sits under `/content/`, already `noindex` and network-only in `sw.js`; tweet ids are public anyway.
+
+## D-179 — Stories share manually, from a prefilled link (replaces D-178's auto-post)
+**Status:** shipped | **Date:** 2026-10-14
+
+D-178's API auto-post was removed before it ever ran (no X secrets were ever added). Owner's call: posting stays manual. The API route also needed an X developer account owned by the SportStrata X account (tokens from the portal always belong to the developer account's owner, so reusing the developer account from another project would have posted from the wrong handle), plus its free-tier limits.
+
+**What replaced it.** `.github/workflows/story-share.yml` runs on the same trigger (a push to main that adds `content/*/stories/*.md`, plus `workflow_dispatch` with a `slug`). It waits up to 20 minutes for each story to be live, then opens one GitHub issue per push with a **Post to X** link (`https://x.com/intent/post?text=…`, X's own composer prefilled with the `.social.md` `## X` text) and the Reddit title and body in copy blocks. The owner taps the link, checks the text, posts, and closes the issue; an open "📣 Share" issue is a story not yet shared. No API, no keys, no ledger, no rate limits. Uses `GITHUB_TOKEN` with `issues: write`, so no deploy key either.
+
+**Warnings, not blocks.** A human posts, so problems become warnings in the issue instead of failures: not live after waiting, over 280 weighted characters (the composer lets you trim), or `## X` text missing the story's own URL. The live check and the twitter-text weighting carried over from D-178 (`tools/stories/share-links.cjs`, tests in `tests/shareLinks.test.js`).
+
+**Not used: a Reddit submit link.** The drafts are text posts and the subreddit varies; I couldn't confirm Reddit's submit URL prefills a text-post body, so the issue gives copy blocks instead of a link that might not work.

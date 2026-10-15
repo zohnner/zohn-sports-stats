@@ -1,0 +1,71 @@
+name: SportStrata Stories Share Links
+
+# When a story merges, waits for it to go live, then opens one issue per push
+# with a "Post to X" link (X's composer, prefilled with the approved ## X text
+# from the .social.md) and copy-ready Reddit text. Posting stays manual (D-179,
+# replacing D-178's API auto-post): no X developer account, no secrets.
+# Close the issue once you've posted; an open one is a story not yet shared.
+# workflow_dispatch with a slug regenerates the links for any story.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'content/*/stories/*.md'
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Story slug, e.g. 2026-09-30-jaguars-fewest-points-allowed'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  share:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find new stories
+        id: find
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          SLUG: ${{ inputs.slug }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node tools/stories/share-links.cjs candidates --slug "$SLUG"
+          else
+            node tools/stories/share-links.cjs candidates "$BEFORE" "$AFTER"
+          fi
+
+      - name: Wait for live and build share links
+        if: steps.find.outputs.targets != ''
+        env:
+          TARGETS: ${{ steps.find.outputs.targets }}
+        run: node tools/stories/share-links.cjs comment share.md $TARGETS
+
+      - name: Open share issue
+        if: steps.find.outputs.targets != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGETS: ${{ steps.find.outputs.targets }}
+        run: |
+          if [ ! -s share.md ]; then
+            echo "Nothing to share"
+            exit 0
+          fi
+          count=$(echo $TARGETS | wc -w)
+          if [ "$count" -eq 1 ]; then title="📣 Share: ${TARGETS#*/}"; else title="📣 Share: $count new stories"; fi
+          cat share.md >> "$GITHUB_STEP_SUMMARY"
+          gh issue create --title "$title" --body-file share.md
