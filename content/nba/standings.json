@@ -1,0 +1,159 @@
+{
+  "season": 2027,
+  "seasonLabel": "2026-27",
+  "throughDate": null,
+  "gamesCounted": 0,
+  "source": "balldontlie",
+  "sections": [
+    {
+      "name": "Eastern Conference — Atlantic",
+      "teams": [
+        {
+          "name": "Boston Celtics",
+          "record": "0-0"
+        },
+        {
+          "name": "Brooklyn Nets",
+          "record": "0-0"
+        },
+        {
+          "name": "New York Knicks",
+          "record": "0-0"
+        },
+        {
+          "name": "Philadelphia 76ers",
+          "record": "0-0"
+        },
+        {
+          "name": "Toronto Raptors",
+          "record": "0-0"
+        }
+      ]
+    },
+    {
+      "name": "Eastern Conference — Central",
+      "teams": [
+        {
+          "name": "Chicago Bulls",
+          "record": "0-0"
+        },
+        {
+          "name": "Cleveland Cavaliers",
+          "record": "0-0"
+        },
+        {
+          "name": "Detroit Pistons",
+          "record": "0-0"
+        },
+        {
+          "name": "Indiana Pacers",
+          "record": "0-0"
+        },
+        {
+          "name": "Milwaukee Bucks",
+          "record": "0-0"
+        }
+      ]
+    },
+    {
+      "name": "Eastern Conference — Southeast",
+      "teams": [
+        {
+          "name": "Atlanta Hawks",
+          "record": "0-0"
+        },
+        {
+          "name": "Charlotte Hornets",
+          "record": "0-0"
+        },
+        {
+          "name": "Miami Heat",
+          "record": "0-0"
+        },
+        {
+          "name": "Orlando Magic",
+          "record": "0-0"
+        },
+        {
+          "name": "Washington Wizards",
+          "record": "0-0"
+        }
+      ]
+    },
+    {
+      "name": "Western Conference — Northwest",
+      "teams": [
+        {
+          "name": "Denver Nuggets",
+          "record": "0-0"
+        },
+        {
+          "name": "Minnesota Timberwolves",
+          "record": "0-0"
+        },
+        {
+          "name": "Oklahoma City Thunder",
+          "record": "0-0"
+        },
+        {
+          "name": "Portland Trail Blazers",
+          "record": "0-0"
+        },
+        {
+          "name": "Utah Jazz",
+          "record": "0-0"
+        }
+      ]
+    },
+    {
+      "name": "Western Conference — Pacific",
+      "teams": [
+        {
+          "name": "Golden State Warriors",
+          "record": "0-0"
+        },
+        {
+          "name": "LA Clippers",
+          "record": "0-0"
+        },
+        {
+          "name": "Los Angeles Lakers",
+          "record": "0-0"
+        },
+        {
+          "name": "Phoenix Suns",
+          "record": "0-0"
+        },
+        {
+          "name": "Sacramento Kings",
+          "record": "0-0"
+        }
+      ]
+    },
+    {
+      "name": "Western Conference — Southwest",
+      "teams": [
+        {
+          "name": "Dallas Mavericks",
+          "record": "0-0"
+        },
+        {
+          "name": "Houston Rockets",
+          "record": "0-0"
+        },
+        {
+          "name": "Memphis Grizzlies",
+          "record": "0-0"
+        },
+        {
+          "name": "New Orleans Pelicans",
+          "record": "0-0"
+        },
+        {
+          "name": "San Antonio Spurs",
+          "record": "0-0"
+        }
+      ]
+    }
+  ]
+}

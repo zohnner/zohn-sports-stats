@@ -36,14 +36,23 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/nbastandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
-        if (data && data.ok === false) return shell(env, request.url);
-
         const confs = [];
-        for (const c of (data.children || [])) collectConfs(c, [], confs);
-        const sections = confs.filter(c => c.teams.length).slice(0, 8);
+        const data = await fetch(new URL('/api/nbastandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } })
+            .then(r => r.ok ? r.json() : null).catch(() => null);
+        if (data && data.ok !== false) for (const c of (data.children || [])) collectConfs(c, [], confs);
+        let sections = confs.filter(c => c.teams.length).slice(0, 8);
+        // D-181: ESPN blocks Cloudflare (D-176). Fall back to the standings a daily
+        // job computes from Ball Don't Lie (tools/nba-standings.cjs).
+        let fallbackNote = '';
+        if (!sections.length) {
+            const fb = await env.ASSETS.fetch(new URL('/content/nba/standings.json', request.url))
+                .then(r => r.ok ? r.json() : null).catch(() => null);
+            if (fb && Array.isArray(fb.sections)) {
+                sections = fb.sections.slice(0, 8);
+                fallbackNote = `<p>${esc(fb.seasonLabel || '')} regular season${fb.throughDate ? `, games through ${esc(fb.throughDate)}` : ''}. ` +
+                    `Data: <a href="https://www.balldontlie.io">balldontlie</a>.</p>`;
+            }
+        }
         if (!sections.length) return shell(env, request.url);
 
         const canonical = 'https://sportstrata.cc/nba/standings';
@@ -66,7 +75,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>NBA Standings</h1>` +
             `<p>Eastern and Western Conference standings by division, with win-loss records, updated throughout the season on SportStrata — free, no login, no ads.</p>` +
             `<p>Divisions: <ul>${confItems}</ul></p>` +
-            sectionHtml + `</section>`;
+            sectionHtml + fallbackNote + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html

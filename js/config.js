@@ -420,6 +420,10 @@ async function _espnFetch(proxyUrl, init) {
         Logger.warn('ESPN leaders proxy failed, building from site/v3', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnLeadersResponse(lm[1], new URL(proxyUrl, location.origin).searchParams.get('season'), init);
     }
+    if (/\/api\/nfl\?(.*&)?path=(%2F|\/)teams(&|$)/.test(String(proxyUrl))) {
+        Logger.warn('ESPN teams proxy failed, building from core API', { proxy: String(proxyUrl), status: res?.status }, 'API');
+        return _espnNFLTeamsResponse(init);
+    }
     const direct = _espnDirectUrl(String(proxyUrl));
     if (!direct) {
         if (res) return res;
@@ -473,7 +477,12 @@ function _espnLeaderRow(sport, l) {
 async function _espnLeadersResponse(sport, season, init) {
     const load = async (s) => {
         const q = `?seasontype=2${s ? `&season=${encodeURIComponent(s)}` : ''}`;
-        const r = await fetch(`${_ESPN_DIRECT}/site/v3/sports/${_ESPN_LEAGUE[sport]}/leaders${q}`, init);
+        const url = `${_ESPN_DIRECT}/site/v3/sports/${_ESPN_LEAGUE[sport]}/leaders${q}`;
+        // v3 intermittently 500s per query variant (2026-10-14: NBA 2026 and NCAAF
+        // unlimited 500'd while &limit=5 returned 200, and limit=10 500'd steadily).
+        // Ask for the 5 rows we render, and retry the other variant once on failure.
+        let r = await fetch(`${url}&limit=5`, init);
+        if (!r.ok) r = await fetch(url, init);
         if (!r.ok) return null;
         const j = await r.json();
         const byKey = new Map(((j.leaders && j.leaders.categories) || []).map(c => [c.name, c]));
@@ -530,6 +539,30 @@ const _ESPN_ATHLETE = {
         ],
     },
 };
+
+// site/v2 /teams sends no CORS header (checked 2026-10-14; /teams/{abbr}/schedule
+// does), so the browser can't read it directly. The core API can: one list call
+// plus one per team, rebuilt into the proxy's sports[0].leagues[0].teams[].team
+// shape so fetchNFLTeams() reads it unchanged. The proxy's list carries no record
+// either, so none is fetched here.
+async function _espnNFLTeamsResponse(init) {
+    const core = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/teams';
+    const list = await fetch(`${core}?limit=40`, init).then(r => r.ok ? r.json() : null).catch(() => null);
+    const ids = ((list && list.items) || [])
+        .map(i => (/\/teams\/(\d+)/.exec(i.$ref || '') || [])[1]).filter(Boolean);
+    const teams = (await Promise.all(ids.map(id =>
+        fetch(`${core}/${id}`, init).then(r => r.ok ? r.json() : null).catch(() => null))))
+        .filter(t => t && t.abbreviation)
+        .map(t => ({ team: {
+            id: String(t.id), abbreviation: t.abbreviation, displayName: t.displayName,
+            shortDisplayName: t.shortDisplayName, name: t.name,
+            color: t.color, alternateColor: t.alternateColor, logos: t.logos || [],
+        } }));
+    const ok = teams.length > 0;
+    return new Response(JSON.stringify(ok ? { sports: [{ leagues: [{ teams }] }] } : { error: 'teams unavailable' }), {
+        status: ok ? 200 : 502, headers: { 'Content-Type': 'application/json' },
+    });
+}
 
 async function _espnAthleteResponse(sport, id, seasonParam, init) {
     const cfg = _ESPN_ATHLETE[sport];
