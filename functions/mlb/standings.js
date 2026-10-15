@@ -7,6 +7,8 @@
 // /mlb/leaders — this page previously rendered plain-text team names with zero
 // outbound links.
 
+import { shell, rawShell } from '../_shell.js';
+
 const DIV = { 200: 'AL West', 201: 'AL East', 202: 'AL Central', 203: 'NL West', 204: 'NL East', 205: 'NL Central' };
 const DIV_ORDER = [201, 202, 200, 204, 205, 203];
 
@@ -15,7 +17,6 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // MLB full-name → abbreviation, live-verified against
 // https://statsapi.mlb.com/api/v1/teams?sportId=1&season=<current> (D-114).
@@ -79,7 +80,7 @@ export async function onRequest(context) {
         const snapshot = `<section class="ss-prerender"><h1>${season} MLB Standings</h1>` +
             `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p>${tables}</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

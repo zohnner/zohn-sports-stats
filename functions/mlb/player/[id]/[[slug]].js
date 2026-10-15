@@ -7,13 +7,12 @@
 // /mlb and /mlb/leaders — this page previously rendered the team as plain text with
 // zero outbound links.
 
+import { shell, rawShell } from '../../../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
-}
-function shell(env, url) {
-    return env.ASSETS.fetch(new URL('/index.html', url));
 }
 
 function mlbSeason() {
@@ -102,7 +101,7 @@ export async function onRequest(context) {
             `<p>${esc(name)} season stats, advanced metrics, splits and game logs on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a></p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

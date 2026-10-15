@@ -7,12 +7,13 @@
 // paths (both Functions already existed) — Leaders/Scores stay hash-only since
 // no real path exists for either yet.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 const TITLE = "College Football Rankings, Standings, Leaders & Scores | SportStrata";
 const DESC  = "Free college football coverage: AP/Coaches/CFP rankings, conference standings, stat leaders (passing, rushing, receiving, defense), and the Top 25 scoreboard. No login.";
@@ -36,7 +37,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(DESC)}</p><ul>${links}</ul></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(TITLE)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(DESC)}$2`)

@@ -11,20 +11,23 @@
 // matching the team page's :abbr param directly — no name→abbr map needed here),
 // plus a back-link to /nfl.
 
+import { shell, rawShell } from '../_shell.js';
+import { nflverseLeaders, NFLVERSE_CREDIT } from '../_nflverse.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/nflstats', request.url), { cf: { cacheTtl: 900, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
+        let data = await fetch(new URL('/api/nflstats', request.url), { cf: { cacheTtl: 900, cacheEverything: true } })
+            .then(r => r.ok ? r.json() : null).catch(() => null);
+        const fromNflverse = !(data && data.categories && data.categories.length);
+        if (fromNflverse) data = await nflverseLeaders();
         const categories = data.categories || [];
         if (!categories.length) return shell(env, request.url);
         const season = data.season;
@@ -59,9 +62,9 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>NFL Stat Leaders — ${season}</h1>` +
             `<p>Current ${season} NFL leaders across passing, rushing, receiving and defensive categories. Full leaderboards for every stat on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a></p>` +
-            sections.map(s => s.html).join('') + `</section>`;
+            sections.map(s => s.html).join('') + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

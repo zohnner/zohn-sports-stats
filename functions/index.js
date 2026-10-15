@@ -5,12 +5,13 @@
 // current content instead of an empty shell — the single biggest SEO lever.
 // Same HTML for humans and bots. Any error fails safe to the untouched app.
 
+import { shell, rawShell } from './_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 const CANON = 'https://sportstrata.cc/';
 const H1    = 'Serious Stats for Serious Fans';
@@ -71,7 +72,7 @@ export async function onRequest(context) {
             `<li><a href="/glossary">Stat Glossary</a></li>` +
             `<li><a href="/nfl">NFL</a></li><li><a href="/ncaaf">College Football</a></li></ul></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

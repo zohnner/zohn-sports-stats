@@ -10,12 +10,13 @@
 // No team-page link (unlike the NFL template) — there is no WNBA
 // team-detail route yet, confirmed against js/wnba.js before writing this.
 
+import { shell, rawShell } from '../../../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 export async function onRequest(context) {
     const { request, env, params } = context;
@@ -54,7 +55,7 @@ export async function onRequest(context) {
             statsHtml +
             `<p><a href="/wnba">WNBA Home</a> · <a href="/wnba/leaders">WNBA Stat Leaders</a></p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

@@ -11,6 +11,8 @@
 // else in functions/api/*.js, so every NCAAF team page silently fell back to the
 // plain shell. site.web.api.espn.com serves the identical response shape (live-
 // verified against this exact college-football/teams/:id path before switching).
+import { shell, rawShell } from '../../../_shell.js';
+
 const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
@@ -19,7 +21,6 @@ function esc(s) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 export async function onRequest(context) {
     const { request, env, params } = context;
@@ -48,7 +49,7 @@ export async function onRequest(context) {
             `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p>` +
             `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

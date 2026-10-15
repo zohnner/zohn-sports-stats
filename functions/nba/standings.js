@@ -6,12 +6,13 @@
 // each, confirmed live 2026-09-14), so this naturally yields 6 sections
 // instead of WNBA's 2. Same HTML for humans and bots; fail-safe.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 function collectConfs(node, trail, out) {
     const nm = node.name || node.abbreviation;
@@ -67,7 +68,7 @@ export async function onRequest(context) {
             `<p>Divisions: <ul>${confItems}</ul></p>` +
             sectionHtml + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

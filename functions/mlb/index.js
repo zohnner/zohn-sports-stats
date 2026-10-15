@@ -9,12 +9,13 @@
 // site wasn't surfacing in search wasn't a technical block — it was a
 // crawlable-but-disconnected page graph: hub pages with no spokes.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 const TITLE = "MLB Stats, Standings, Leaders & Playoff Odds | SportStrata";
 const DESC  = "Free MLB analytics: leaders (AVG, OPS, ERA, FIP, wRC+), standings with Monte Carlo playoff odds, Statcast player profiles, and game prep. No login, no ads.";
@@ -58,7 +59,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(DESC)}</p><ul>${links}</ul>${teams}</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(TITLE)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(DESC)}$2`)

@@ -9,12 +9,13 @@
 // since that filter lives client-side today — one behavior, described twice
 // only because one half runs at the edge and one in the browser.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 const fbsPoll = (n) => !!n && !/\bFCS\b|Div(ision)?\s*(II|III)\b/i.test(n);
 
 export async function onRequest(context) {
@@ -57,7 +58,7 @@ export async function onRequest(context) {
             `<p>Full Top 25 college football rankings with records and movement, updated weekly on SportStrata — free, no login, no ads.</p>` +
             `<ol>${items}</ol></section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

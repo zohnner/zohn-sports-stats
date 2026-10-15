@@ -10,12 +10,14 @@
 // Self-fetches /api/nflstandings (same-origin) so season-default logic
 // (Sept+ = current year, else prior) lives in one place, not duplicated here.
 
+import { shell, rawShell } from '../_shell.js';
+import { nflverseStandings, NFLVERSE_CREDIT } from '../_nflverse.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 function collectConfs(node, trail, out) {
     const nm = node.name || node.abbreviation;
@@ -39,14 +41,13 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/nflstandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
-        if (data && data.ok === false) return shell(env, request.url);
-
         const confs = [];
-        for (const c of (data.children || [])) collectConfs(c, [], confs);
-        const sections = confs.filter(c => c.teams.length).slice(0, 8);
+        const data = await fetch(new URL('/api/nflstandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } })
+            .then(r => r.ok ? r.json() : null).catch(() => null);
+        if (data && data.ok !== false) for (const c of (data.children || [])) collectConfs(c, [], confs);
+        let sections = confs.filter(c => c.teams.length).slice(0, 8);
+        const fromNflverse = !sections.length;
+        if (fromNflverse) sections = (await nflverseStandings()).slice(0, 8);
         if (!sections.length) return shell(env, request.url);
 
         const canonical = 'https://sportstrata.cc/nfl/standings';
@@ -70,9 +71,9 @@ export async function onRequest(context) {
             `<p>Division-by-division standings with win-loss records for every NFL team, updated throughout the season on SportStrata — free, no login, no ads.</p>` +
             `<p>Divisions: <ul>${confItems}</ul></p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
-            sectionHtml + `</section>`;
+            sectionHtml + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)

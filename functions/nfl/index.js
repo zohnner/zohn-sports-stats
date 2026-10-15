@@ -7,12 +7,13 @@
 // real path existed for standings yet, so that card stays hash-only) plus a
 // full 32-team directory linking down into /nfl/team/:abbr.
 
+import { shell, rawShell } from '../_shell.js';
+
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
 }
-function shell(env, url) { return env.ASSETS.fetch(new URL('/index.html', url)); }
 
 // D-062: site.api.espn.com is Cloudflare-egress-blocked (Akamai 403); every
 // functions/api/*.js proxy already swaps to site.web.api.espn.com (byte-identical
@@ -61,7 +62,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(DESC)}</p><ul>${links}</ul>${teams}</section>`;
 
-        let html = await (await shell(env, request.url)).text();
+        let html = await (await rawShell(env, request.url)).text();
         html = html
             .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(TITLE)}</title>`)
             .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(DESC)}$2`)
