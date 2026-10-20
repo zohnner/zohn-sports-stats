@@ -2431,11 +2431,16 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
         ...(stdRow.awayRec ? [['Away', stdRow.awayRec]] : []),
     ] : [];
     const recordSeason = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : '';
+    // The team list never carries a record, so the header said "Enters the 2026
+    // season" over a 4-1 Team Record card. Mar-Aug, stdRow is last season's
+    // final record (NFL_STATS_SEASON lags NFL_FANTASY_SEASON), which the header
+    // would present as current, so it's used only once the two seasons agree.
+    const headerRecord = team.record || (stdHasPlayed && recordSeason === NFL_FANTASY_SEASON ? recordChips[0][1] : '');
 
     grid.innerHTML = _renderTeamPage({
         sport: 'nfl', abbr, name: team.name, logo: team.logo, teamColor: team.color,
-        division, record: team.record || '',
-        seasonLabel: team.record ? '' : `Enters the ${NFL_FANTASY_SEASON} season`,
+        division, record: headerRecord,
+        seasonLabel: headerRecord ? '' : `Enters the ${NFL_FANTASY_SEASON} season`,
         facts: [
             { label: 'Players',       value: roster.length },
             { label: 'Offense',       value: _sideCount('off') },
