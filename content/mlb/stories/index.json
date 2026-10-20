@@ -1,6 +1,38 @@
 {
   "stories": [
     {
+      "slug": "2026-10-20-brewers-sweep-dodgers",
+      "title": "The Brewers swept the Dodgers 4-0 to reach the World Series",
+      "dek": "Los Angeles scored 11 runs in the 4 games — 2.75 per game, against a regular-season rate of 4.94.",
+      "date": "2026-10-20",
+      "season": 2026,
+      "round": "NLCS",
+      "teams": [
+        "MIL",
+        "LAD"
+      ],
+      "players": [],
+      "hero_stat": "4-0 sweep, 21-11 run margin",
+      "url": "/mlb/stories/2026-10-20-brewers-sweep-dodgers",
+      "sport": "mlb"
+    },
+    {
+      "slug": "2026-10-20-rays-alcs-win",
+      "title": "Tampa Bay held Cleveland to 11 runs over 5 games to win the ALCS",
+      "dek": "The Guardians scored 20 runs in 3 games to win the ALDS, then managed 11 in 5 against the Rays, who took the series 4-2.",
+      "date": "2026-10-20",
+      "season": 2026,
+      "round": "ALCS",
+      "teams": [
+        "TB",
+        "CLE"
+      ],
+      "players": [],
+      "hero_stat": "11 runs allowed over the final 5 ALCS games",
+      "url": "/mlb/stories/2026-10-20-rays-alcs-win",
+      "sport": "mlb"
+    },
+    {
       "slug": "2026-10-13-guardians-alds-comeback",
       "title": "Down 0-2, the Guardians won 3 straight elimination games to take the ALDS",
       "dek": "Cleveland scored 3 runs in the first 2 games, then 20 over the next 3 — including a 6-run 6th inning in Game 4.",
