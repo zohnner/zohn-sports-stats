@@ -3627,3 +3627,23 @@ Cache v319. Tests: `tests/nbaStandings.test.js`.
 **D-168 lands 19 days late.** Its private-path middleware was written 2026-10-02 but never committed; production served DECISIONS.md, CLAUDE.md, ISSUES.md, `tools/`, `tests/`, `worker/` and CI workflows the whole time. Merged onto main in this pass with the D-140/D-142 comment renumbers and the NCAAB/WNBA `isLive` + NCAAB ticker-normalizer fixes that rode with it. CI and `/deploy-check` now run `tests/*.test.js` instead of a hand-kept list, which had drifted: `tests/winProbSeries.test.js` was never in it (it passes; it now CRLF-normalizes its source read so it also passes in a Windows checkout).
 
 Cache v321. Tests: `tests/contractCheck.test.js` (+7).
+
+## D-183 — New-visitor signal on the page-view log
+**Status:** shipping | **Date:** 2026-10-09 (written), 2026-10-21 (landed; renumbered from D-175, which main gave to MLB win probability while this sat uncommitted)
+
+**Problem.** The D-149 `page_views` log answers "which sport gets traffic" but nothing about new users: it can't tell a first visit from a return, where a visitor came from, or whether anyone clicked past the first page. That made the D-166 Stories and the SEO templates unmeasurable — each story ships Reddit/X drafts with no way to see whether they bring anyone in. Reading the code for this also found two pre-existing data-quality bugs: `_trackPageView` bucketed every unprefixed view (news, arcade, account, dashboard) as `nba`, and cold loads that bypass `navigateTo()` — story/glossary static pages (D-167) and MLB team/player/compare/scorecard restores, i.e. most search-engine entry pages — logged nothing at all.
+
+**Decision (owner, 2026-10-09).** Add three fields to the existing beacon, staying anonymous by construction (GOALS.md "no trackers"): no identifier leaves the browser, only derived values.
+- **`is_new`** — 1 when this tab's session began with no `zs_seen` bit in localStorage. Held for the whole session (sessionStorage `zs_sess_new`) so a new visitor's later pages still count as new. NULL when storage is blocked.
+- **`seq`** — nth navigation in the tab (sessionStorage, so it survives full page loads between edge-rendered path URLs; in-memory fallback). Bounce/click-through comes from counts alone: `SUM(seq=2)/SUM(seq=1)`.
+- **`ref` + `entry_path`** — on the entry row only: a fixed channel bucket (`direct/internal/google/search/reddit/x/meta/ai/other`, utm_source mapped into the same buckets) and `location.pathname`. The raw referrer and utm value are never sent.
+
+Same change: unprefixed views now log as `shared`, and the five cold-load paths above call `_trackPageView` explicitly. `functions/api/track.js` validates every field (`parseRow`), drops invalid optional fields to NULL rather than failing the row, and falls back to the D-149 insert until migration 0009 is applied, so deploy order can't drop logging.
+
+**Rejected for now.** A days-since-first-visit retention bucket (closest of the ideas to a tracker — owner's call later), activation events, unanswered-search logging, device class.
+
+**Owner action.** Apply `migrations/0009_page_views_visit.sql` to `USER_DB` (`wrangler d1 migrations apply USER_DB --remote`). The file includes the ready-made queries. Until then the endpoint stores the D-149 columns only.
+
+**Tests.** `tests/visitBeacon.test.js` (9: sport bucketing incl. the old `nba` fallback, referrer/utm buckets incl. lookalike hosts, new-vs-returning across sessions, seq across a page reload, blocked storage, server validation). Mutation-checked: restoring the `nba` fallback and dropping the sessionStorage carry-over each fail.
+
+**Known limits.** Rows before D-183 count news/arcade as `nba` and miss those entry pages — compare windows on the same side of the deploy. In-app MLB player/team detail clicks still don't go through `navigateTo()` and stay unlogged (a pre-existing gap, out of scope). Clearing site data makes a returning visitor look new; the reverse can't happen.
