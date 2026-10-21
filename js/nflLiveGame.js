@@ -418,7 +418,7 @@ function _nlgRenderHeader(comp, home, away) {
     const breakInfo = live && _nlg.lastData ? _nlgBreakInfo(_nlg.lastData, sit) : null;
     if (!breakInfo) _nlg.lastBreakKey = null;
     const showField = !breakInfo && !!sit && typeof sit.down === 'number' && sit.down >= 1 && typeof sit.yardLine === 'number' && !!possResolves;
-    // D-1xx (2026-09-09): live-verified with a synthetic-but-real live
+    // D-142 (2026-09-09): live-verified with a synthetic-but-real live
     // situation that this bar was rendering directly under the field
     // viewer showing the exact same possession + down/distance the field
     // viewer's own .fv-topline had just shown a few pixels above it --
@@ -1704,7 +1704,7 @@ function _nlgCatchupHtml(home, away) {
 
 // -- Your Roster in This Game — live fantasy points for the signed-in
 // user's own Sleeper starters, cross-referenced against whichever two teams
-// are actually playing (D-1xx, 2026-09-09). Deliberately separate from the
+// are actually playing (D-140, 2026-09-09). Deliberately separate from the
 // Fantasy tab/Fantasy Watch above: those answer "who's doing well in this
 // game" / "who's been hot lately" for anyone; this answers "do I need to
 // check on my guy" for a specific signed-in user, so it has to actually

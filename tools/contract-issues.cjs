@@ -34,7 +34,9 @@ function planIssueActions(report, openIssues, runUrl) {
             if (r.status === 'fail') {
                 const body = failureBody(r, report, runUrl);
                 actions.push(number ? { type: 'comment', number, body } : { type: 'create', title, body });
-            } else if ((r.status === 'pass' || r.status === 'warn') && number) {
+            } else if ((r.status === 'pass' || r.status === 'warn') && number && !r.proxyBlocked) {
+                // Passed only via the direct-ESPN fallback: the proxy is still down,
+                // so the issue stays open as that record, but gets no daily comment.
                 actions.push({ type: 'close', number, body: `Passing again as of ${report.generatedAt.slice(0, 10)}. Closing.` });
             }
         }

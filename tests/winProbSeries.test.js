@@ -8,7 +8,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const SRC = fs.readFileSync(path.join(__dirname, '..', 'js', 'liveGame.js'), 'utf8');
+// CRLF-normalized so the '\n}\n' section search also works in a Windows checkout.
+const SRC = fs.readFileSync(path.join(__dirname, '..', 'js', 'liveGame.js'), 'utf8').replace(/\r\n/g, '\n');
 
 // liveGame.js touches the DOM at load, so pull out only the self-contained
 // win-expectancy section: the table, its lookup, and the series replay.

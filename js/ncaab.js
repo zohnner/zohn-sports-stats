@@ -75,7 +75,7 @@ async function fetchNCAABScoreboard(opts = {}) {
         const status = comp.status;
         const stName = status?.type?.name || 'STATUS_SCHEDULED';
         const isFinal = stName.startsWith('STATUS_FINAL');
-        const isLive  = stName === 'STATUS_IN_PROGRESS' || stName === 'STATUS_HALFTIME';
+        const isLive  = status?.type?.state === 'in';
         const mk = (t) => ({
             abbr:   t?.team?.abbreviation || '?',
             name:   t?.team?.displayName  || '',
@@ -277,7 +277,7 @@ function updateNCAABTicker(games) {
         return;
     }
     const items = [...scored, ...scored]
-        .map(g => Scorebug.renderTickerItem ? Scorebug.renderTickerItem(Scorebug.normalizeNCAAFGame ? Scorebug.normalizeNCAAFGame(g) : g) : '')
+        .map(g => Scorebug.renderTickerItem ? Scorebug.renderTickerItem(Scorebug.normalizeNCAABGame(g)) : '')
         .join('');
     if (!items) return;
     ticker.classList.remove('ticker--idle');
