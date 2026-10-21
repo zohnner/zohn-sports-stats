@@ -384,3 +384,54 @@ test('planIssueActions leaves skipped routes and unrelated issues alone', () => 
     const open = [{ number: 9, title: 'contract-drift: nfl-summary' }, { number: 10, title: 'something else' }];
     assert.deepEqual(issues.planIssueActions(report([R('nfl-summary', 'skip')]), open, null), []);
 });
+
+// -- D-176 browser fallback: while ESPN blocks the proxies, check what readers get
+const viaFallback = (json, proxyStatus = 403) => async () =>
+    ({ ok: true, status: 200, contentType: 'application/json', json, bodySnippet: '', viaDirect: true, proxyStatus });
+
+test('runContract: data served by the browser fallback is checked and warns proxyBlocked', async () => {
+    const c = { id: 'x', route: () => '/x', paths: ['events[].id'], invariants: [] };
+    const r = await check.runContract(c, {}, viaFallback({ events: [{ id: 1 }] }));
+    assert.equal(r.status, 'warn');
+    assert.equal(r.proxyBlocked, true);
+    assert.match(r.warnings[0], /proxy failed \(HTTP 403\)/);
+});
+
+test('runContract: real drift in fallback data still fails', async () => {
+    const c = { id: 'x', route: () => '/x', paths: ['events[].id'], invariants: [] };
+    const r = await check.runContract(c, {}, viaFallback({ events: [{}] }));
+    assert.equal(r.status, 'fail');
+});
+
+test('runContract: a standings {ok:false} proxy is described as an upstream error, not HTTP 200', async () => {
+    const c = { id: 'x', route: () => '/x', paths: [], invariants: [] };
+    const r = await check.runContract(c, {}, viaFallback({}, 200));
+    assert.match(r.warnings[0], /upstream error inside a 200/);
+});
+
+test('runSport: a probe that only works via the fallback warns and is marked proxyBlocked', async () => {
+    const fallback = async p => ({ ...(await stubFetch({ '/sb?d=20260927': sb(['a']) })(p)), viaDirect: true, proxyStatus: 403 });
+    const out = await check.runSport(nflLike(), fallback, TUE);
+    assert.equal(out.results[0].status, 'warn');
+    assert.equal(out.results[0].proxyBlocked, true);
+});
+
+test('fetchJsonFrom sends ESPN proxy routes through the fallback and everything else direct', async () => {
+    const seen = [];
+    const get = async u => { seen.push(['get', u]); return { ok: true }; };
+    const espn = async u => { seen.push(['espn', u]); return { ok: true }; };
+    const f = check.fetchJsonFrom('https://s', get, espn);
+    for (const p of ['/api/nfl?path=/scoreboard', '/api/ncaafstandings?season=2026', '/api/nflstats', '/api/sleeper?path=/x', '/api/mlb?url=x', '/api/nflx'])
+        await f(p);
+    assert.deepEqual(seen.map(s => s[0]), ['espn', 'espn', 'espn', 'get', 'get', 'get']);
+});
+
+test('browserFallbackFrom loads the real js/config.js _espnFetch under Node', () => {
+    assert.equal(typeof check.browserFallbackFrom('https://s'), 'function');
+});
+
+test('planIssueActions keeps a proxyBlocked route\'s issue open, without a daily comment', () => {
+    const blocked = { ...R('nfl-probe', 'warn'), proxyBlocked: true };
+    const acts = issues.planIssueActions(report([blocked]), [{ number: 15, title: 'contract-drift: nfl-probe' }], null);
+    assert.deepEqual(acts, []);
+});

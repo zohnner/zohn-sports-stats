@@ -13,6 +13,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const { ContractError, parsePath, checkPath } = require('./contract-lib.cjs');
 
 const SPORT_FILES = ['nfl', 'ncaaf', 'mlb'];
@@ -31,40 +32,105 @@ function dateBack(today, n) {
     return { iso, yyyymmdd: iso.replace(/-/g, ''), dow: d.getUTCDay() };
 }
 
-function fetchJsonFrom(base) {
-    return async p => {
+async function getJson(url) {
+    try {
+        const r = await fetch(url, {
+            headers: { 'User-Agent': 'SportStrata-ContractCheck/1.0' },
+            signal: AbortSignal.timeout(20000),
+        });
+        const text = await r.text();
+        let json = null;
+        try { json = JSON.parse(text); } catch { json = null; }
+        return { ok: r.ok, status: r.status, contentType: r.headers.get('content-type') || '', json, bodySnippet: text.slice(0, 200) };
+    } catch (e) {
+        return { ok: false, status: 0, contentType: '', json: null, bodySnippet: String(e && e.message) };
+    }
+}
+
+// While ESPN blocks Cloudflare egress (D-176), readers get NFL/NCAAF data from
+// js/config.js _espnFetch: proxy first, then ESPN directly from the browser
+// (leaders rebuilt from site/v3). Running that real function here keeps this
+// check on the code readers run, not a copy that can drift from it.
+const ESPN_ROUTE = /^\/api\/(nfl|ncaaf)(standings|stats)?(\?|$)/;
+
+function browserFallbackFrom(base) {
+    const noop = () => {};
+    const inert = new Proxy(function () {}, { get: () => inert, apply: () => inert });
+    let calls = [];
+    const ctx = {
+        URL, URLSearchParams, Response, Headers, AbortSignal, AbortController, setTimeout, clearTimeout,
+        location: { origin: base, href: base + '/' },
+        Logger: { warn: noop, info: noop, debug: noop, error: noop },
+        document: inert, navigator: {}, localStorage: { getItem: () => null, setItem: noop },
+        fetch: async (u, init) => {
+            const own = String(u).startsWith(base);
+            try {
+                const r = await fetch(u, {
+                    ...init,
+                    headers: own ? { 'User-Agent': 'SportStrata-ContractCheck/1.0' } : undefined,
+                    signal: AbortSignal.timeout(20000),
+                });
+                calls.push({ own, status: r.status });
+                return r;
+            } catch (e) {
+                calls.push({ own, status: 0 });
+                throw e;
+            }
+        },
+    };
+    ctx.window = ctx;
+    ctx.globalThis = ctx;
+    vm.createContext(ctx);
+    const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'config.js'), 'utf8');
+    vm.runInContext(`${src}\n;globalThis.__espnFetch = _espnFetch;`, ctx, { filename: 'js/config.js' });
+    return async url => {
+        calls = [];
         try {
-            const r = await fetch(base + p, {
-                headers: { 'User-Agent': 'SportStrata-ContractCheck/1.0' },
-                signal: AbortSignal.timeout(20000),
-            });
+            const r = await ctx.__espnFetch(url);
             const text = await r.text();
             let json = null;
             try { json = JSON.parse(text); } catch { json = null; }
-            return { ok: r.ok, status: r.status, contentType: r.headers.get('content-type') || '', json, bodySnippet: text.slice(0, 200) };
+            const proxy = calls.find(c => c.own);
+            return {
+                ok: r.ok, status: r.status, contentType: r.headers.get('content-type') || '', json,
+                bodySnippet: text.slice(0, 200),
+                viaDirect: calls.some(c => !c.own), proxyStatus: proxy ? proxy.status : 0,
+            };
         } catch (e) {
             return { ok: false, status: 0, contentType: '', json: null, bodySnippet: String(e && e.message) };
         }
     };
 }
 
+function fetchJsonFrom(base, get = getJson, espn = null) {
+    return async p => {
+        if (!ESPN_ROUTE.test(p)) return get(base + p);
+        espn = espn || browserFallbackFrom(base);
+        return espn(base + p);
+    };
+}
+
+const blockedNote = status => `proxy failed (${status === 200 ? 'upstream error inside a 200' : status ? `HTTP ${status}` : 'network error'}); checked via the browser fallback readers get (D-176)`;
+
 async function resolveProbe(sport, fetchJson, today) {
     let reachable = 0;
     let fallback = null;
+    let blocked = null;
     for (let n = 1; n <= WALK_BACK_DAYS; n++) {
         const date = dateBack(today, n);
         const res = await fetchJson(sport.probe.route(date));
         if (!res.ok || !res.json) continue;
         reachable++;
+        if (res.viaDirect) blocked = res.proxyStatus;
         const info = sport.probe.read(res.json);
         if (!info.finalIds.length) continue;
         const isGameDay = sport.gameDay === null || sport.gameDay === undefined || date.dow === sport.gameDay;
-        const probe = { date, ...info, isGameDay };
+        const probe = { date, ...info, isGameDay, ...(blocked != null && { blocked }) };
         if (isGameDay) return probe;
         if (!fallback) fallback = probe;
     }
     if (fallback) return fallback;
-    return reachable ? { offseason: true } : { unreachable: true };
+    return reachable ? { offseason: true, ...(blocked != null && { blocked }) } : { unreachable: true };
 }
 
 function result(id, url) {
@@ -91,6 +157,10 @@ async function runContract(c, ctx, fetchJson) {
     if (!res.json) {
         r.failures.push(`upstream returned ${res.contentType || 'non-JSON'} (likely WAF block): ${res.bodySnippet}`);
         return settle(r);
+    }
+    if (res.viaDirect) {
+        r.warnings.push(blockedNote(res.proxyStatus));
+        r.proxyBlocked = true;
     }
     for (const p of c.paths || []) {
         const miss = checkPath(res.json, p);
@@ -137,6 +207,10 @@ async function runSport(sport, fetchJson, today) {
         }
         probeResult.url = sport.probe.route(probe.date);
         label = `${probe.date.iso} (${probe.isGameDay ? 'game day' : 'off day'}, ${probe.regularSeason ? 'regular season' : 'non-regular season'}) · ${probe.finalIds.length} final(s) · full slate: ${ctx.fullSlate ? 'on' : 'off'}`;
+    }
+    if (probe.blocked != null) {
+        probeResult.warnings.push(blockedNote(probe.blocked));
+        probeResult.proxyBlocked = true;
     }
     settle(probeResult);
     const results = [probeResult];
@@ -230,4 +304,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { dateBack, fetchJsonFrom, resolveProbe, runContract, runSport, validateSports, exitCodeFor, main };
+module.exports = { dateBack, browserFallbackFrom, fetchJsonFrom, resolveProbe, runContract, runSport, validateSports, exitCodeFor, main };
