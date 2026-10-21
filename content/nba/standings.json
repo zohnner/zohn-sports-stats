@@ -1,16 +1,20 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": null,
-  "gamesCounted": 0,
+  "throughDate": "2026-10-20",
+  "gamesCounted": 3,
   "source": "balldontlie",
   "sections": [
     {
       "name": "Eastern Conference — Atlantic",
       "teams": [
         {
+          "name": "Philadelphia 76ers",
+          "record": "1-0"
+        },
+        {
           "name": "Boston Celtics",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Brooklyn Nets",
@@ -18,11 +22,7 @@
         },
         {
           "name": "New York Knicks",
-          "record": "0-0"
-        },
-        {
-          "name": "Philadelphia 76ers",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Toronto Raptors",
@@ -34,15 +34,15 @@
       "name": "Eastern Conference — Central",
       "teams": [
         {
+          "name": "Detroit Pistons",
+          "record": "1-0"
+        },
+        {
           "name": "Chicago Bulls",
           "record": "0-0"
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "0-0"
-        },
-        {
-          "name": "Detroit Pistons",
           "record": "0-0"
         },
         {
@@ -84,15 +84,15 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
+          "name": "Oklahoma City Thunder",
+          "record": "1-0"
+        },
+        {
           "name": "Denver Nuggets",
           "record": "0-0"
         },
         {
           "name": "Minnesota Timberwolves",
-          "record": "0-0"
-        },
-        {
-          "name": "Oklahoma City Thunder",
           "record": "0-0"
         },
         {
@@ -151,7 +151,7 @@
         },
         {
           "name": "San Antonio Spurs",
-          "record": "0-0"
+          "record": "0-1"
         }
       ]
     }
