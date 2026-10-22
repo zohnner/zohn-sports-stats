@@ -3628,6 +3628,8 @@ Cache v319. Tests: `tests/nbaStandings.test.js`.
 
 Cache v321. Tests: `tests/contractCheck.test.js` (+7).
 
+**Follow-up, production check after merge (2026-10-21).** Every plain private URL now returns the 404 page with `noindex`, and the public surface (home, assets, `/content`, `/data`, edge pages, `/api/mlb`) is unchanged. D-168's residual gap is wider than it said: the edge does **not** normalize unreserved escapes before routing. `/%44ECISIONS.md` and `/DECISIONS%2Emd` return the real DECISIONS.md, `/%77orker/push-game-alerts.js` the Worker source, and `/docs%2F...` a spec. Percent-encoding any character bypasses the route rules while the static layer decodes and serves the file. (`/tools/..%2FCLAUDE.md` does 404.) Low stakes, since crawlers only follow plain links and the repo is public on GitHub anyway, but it means D-168 hides these files, it doesn't lock them. Only a zone WAF custom rule on `url_decode(http.request.uri.path)` closes it, and that is a dashboard change, so it is filed as ISSUES.md P2-008 with the expression generated from `functions/_private-paths.cjs`.
+
 ## D-183 — New-visitor signal on the page-view log
 **Status:** shipping | **Date:** 2026-10-09 (written), 2026-10-21 (landed; renumbered from D-175, which main gave to MLB win probability while this sat uncommitted)
 

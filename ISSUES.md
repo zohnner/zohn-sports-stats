@@ -10,7 +10,13 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 | ID | File | Description |
 |---|---|---|
-| — | — | (none currently open) |
+| P2-008 | Cloudflare dashboard (zone WAF) | Percent-encoded paths bypass D-168's private-path 404s (`/%44ECISIONS.md` serves DECISIONS.md; live 2026-10-21, D-182). Owner action: Security → WAF → Custom rules → new rule, action **Block**, expression below (regenerate from `functions/_private-paths.cjs` if its lists change). `url_decode()` availability on this zone's plan is unconfirmed; if the editor rejects it, the fallback is an allowlist build output dir (D-168). Verify after: `curl -s -o /dev/null -w "%{http_code}" https://sportstrata.cc/%44ECISIONS.md` should not be 200. |
+
+P2-008 WAF expression:
+
+```
+starts_with(url_decode(http.request.uri.path), "/.claude/") or starts_with(url_decode(http.request.uri.path), "/.github/") or starts_with(url_decode(http.request.uri.path), "/Documentation/") or starts_with(url_decode(http.request.uri.path), "/Themes/") or starts_with(url_decode(http.request.uri.path), "/bot/") or starts_with(url_decode(http.request.uri.path), "/docs/") or starts_with(url_decode(http.request.uri.path), "/migrations/") or starts_with(url_decode(http.request.uri.path), "/misc_documentation/") or starts_with(url_decode(http.request.uri.path), "/tests/") or starts_with(url_decode(http.request.uri.path), "/tools/") or starts_with(url_decode(http.request.uri.path), "/worker/") or url_decode(http.request.uri.path) in {"/.cfignore" "/.gitignore" "/AGENTS.md" "/BRAND-KIT.md" "/CLAUDE.md" "/DECISIONS.md" "/DESIGN.md" "/GOALS.md" "/ISSUES.md" "/LICENSE" "/README.md" "/package.json" "/package-lock.json" "/schema.sql" "/wrangler.toml"}
+```
 
 Historical detail (P2-007, NFL Highlight Card Studio showed college-football names for one Aug 21 preseason game): investigated 2026-09-09, not fixed because no code-level cause could be found or reproduced — see the full writeup below (retained rather than deleted, since "investigated, no bug found here" is a real, useful finding, not a resolved fix). Row removed from the active table per this file's own house rule; full detail below.
 
