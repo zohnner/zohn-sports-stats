@@ -3629,3 +3629,23 @@ Cache v319. Tests: `tests/nbaStandings.test.js`.
 Cache v321. Tests: `tests/contractCheck.test.js` (+7).
 
 **Follow-up, production check after merge (2026-10-21).** Every plain private URL now returns the 404 page with `noindex`, and the public surface (home, assets, `/content`, `/data`, edge pages, `/api/mlb`) is unchanged. D-168's residual gap is wider than it said: the edge does **not** normalize unreserved escapes before routing. `/%44ECISIONS.md` and `/DECISIONS%2Emd` return the real DECISIONS.md, `/%77orker/push-game-alerts.js` the Worker source, and `/docs%2F...` a spec. Percent-encoding any character bypasses the route rules while the static layer decodes and serves the file. (`/tools/..%2FCLAUDE.md` does 404.) Low stakes, since crawlers only follow plain links and the repo is public on GitHub anyway, but it means D-168 hides these files, it doesn't lock them. Only a zone WAF custom rule on `url_decode(http.request.uri.path)` closes it, and that is a dashboard change, so it is filed as ISSUES.md P2-008 with the expression generated from `functions/_private-paths.cjs`.
+
+## D-183 — New-visitor signal on the page-view log
+**Status:** shipping | **Date:** 2026-10-09 (written), 2026-10-21 (landed; renumbered from D-175, which main gave to MLB win probability while this sat uncommitted)
+
+**Problem.** The D-149 `page_views` log answers "which sport gets traffic" but nothing about new users: it can't tell a first visit from a return, where a visitor came from, or whether anyone clicked past the first page. That made the D-166 Stories and the SEO templates unmeasurable — each story ships Reddit/X drafts with no way to see whether they bring anyone in. Reading the code for this also found two pre-existing data-quality bugs: `_trackPageView` bucketed every unprefixed view (news, arcade, account, dashboard) as `nba`, and cold loads that bypass `navigateTo()` — story/glossary static pages (D-167) and MLB team/player/compare/scorecard restores, i.e. most search-engine entry pages — logged nothing at all.
+
+**Decision (owner, 2026-10-09).** Add three fields to the existing beacon, staying anonymous by construction (GOALS.md "no trackers"): no identifier leaves the browser, only derived values.
+- **`is_new`** — 1 when this tab's session began with no `zs_seen` bit in localStorage. Held for the whole session (sessionStorage `zs_sess_new`) so a new visitor's later pages still count as new. NULL when storage is blocked.
+- **`seq`** — nth navigation in the tab (sessionStorage, so it survives full page loads between edge-rendered path URLs; in-memory fallback). Bounce/click-through comes from counts alone: `SUM(seq=2)/SUM(seq=1)`.
+- **`ref` + `entry_path`** — on the entry row only: a fixed channel bucket (`direct/internal/google/search/reddit/x/meta/ai/other`, utm_source mapped into the same buckets) and `location.pathname`. The raw referrer and utm value are never sent.
+
+Same change: unprefixed views now log as `shared`, and the five cold-load paths above call `_trackPageView` explicitly. `functions/api/track.js` validates every field (`parseRow`), drops invalid optional fields to NULL rather than failing the row, and falls back to the D-149 insert until migration 0009 is applied, so deploy order can't drop logging.
+
+**Rejected for now.** A days-since-first-visit retention bucket (closest of the ideas to a tracker — owner's call later), activation events, unanswered-search logging, device class.
+
+**Owner action.** Apply `migrations/0009_page_views_visit.sql` to `USER_DB` (`wrangler d1 migrations apply USER_DB --remote`). The file includes the ready-made queries. Until then the endpoint stores the D-149 columns only.
+
+**Tests.** `tests/visitBeacon.test.js` (9: sport bucketing incl. the old `nba` fallback, referrer/utm buckets incl. lookalike hosts, new-vs-returning across sessions, seq across a page reload, blocked storage, server validation). Mutation-checked: restoring the `nba` fallback and dropping the sessionStorage carry-over each fail.
+
+**Known limits.** Rows before D-183 count news/arcade as `nba` and miss those entry pages — compare windows on the same side of the deploy. In-app MLB player/team detail clicks still don't go through `navigateTo()` and stay unlogged (a pre-existing gap, out of scope). Clearing site data makes a returning visitor look new; the reverse can't happen.
