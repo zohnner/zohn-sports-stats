@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-10-20",
-  "gamesCounted": 3,
+  "throughDate": "2026-10-21",
+  "gamesCounted": 14,
   "source": "balldontlie",
   "sections": [
     {
@@ -13,20 +13,20 @@
           "record": "1-0"
         },
         {
+          "name": "Toronto Raptors",
+          "record": "1-0"
+        },
+        {
           "name": "Boston Celtics",
           "record": "0-1"
         },
         {
           "name": "Brooklyn Nets",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "New York Knicks",
           "record": "0-1"
-        },
-        {
-          "name": "Toronto Raptors",
-          "record": "0-0"
         }
       ]
     },
@@ -38,20 +38,20 @@
           "record": "1-0"
         },
         {
+          "name": "Indiana Pacers",
+          "record": "1-0"
+        },
+        {
           "name": "Chicago Bulls",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Cleveland Cavaliers",
           "record": "0-0"
         },
         {
-          "name": "Indiana Pacers",
-          "record": "0-0"
-        },
-        {
           "name": "Milwaukee Bucks",
-          "record": "0-0"
+          "record": "0-1"
         }
       ]
     },
@@ -60,23 +60,23 @@
       "teams": [
         {
           "name": "Atlanta Hawks",
-          "record": "0-0"
+          "record": "1-0"
         },
         {
           "name": "Charlotte Hornets",
-          "record": "0-0"
-        },
-        {
-          "name": "Miami Heat",
-          "record": "0-0"
-        },
-        {
-          "name": "Orlando Magic",
-          "record": "0-0"
+          "record": "1-0"
         },
         {
           "name": "Washington Wizards",
-          "record": "0-0"
+          "record": "1-0"
+        },
+        {
+          "name": "Miami Heat",
+          "record": "0-1"
+        },
+        {
+          "name": "Orlando Magic",
+          "record": "0-1"
         }
       ]
     },
@@ -84,7 +84,15 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
+          "name": "Minnesota Timberwolves",
+          "record": "1-0"
+        },
+        {
           "name": "Oklahoma City Thunder",
+          "record": "1-0"
+        },
+        {
+          "name": "Portland Trail Blazers",
           "record": "1-0"
         },
         {
@@ -92,16 +100,8 @@
           "record": "0-0"
         },
         {
-          "name": "Minnesota Timberwolves",
-          "record": "0-0"
-        },
-        {
-          "name": "Portland Trail Blazers",
-          "record": "0-0"
-        },
-        {
           "name": "Utah Jazz",
-          "record": "0-0"
+          "record": "0-1"
         }
       ]
     },
@@ -109,24 +109,24 @@
       "name": "Western Conference — Pacific",
       "teams": [
         {
-          "name": "Golden State Warriors",
-          "record": "0-0"
-        },
-        {
           "name": "LA Clippers",
-          "record": "0-0"
+          "record": "1-0"
         },
         {
           "name": "Los Angeles Lakers",
-          "record": "0-0"
+          "record": "1-0"
+        },
+        {
+          "name": "Golden State Warriors",
+          "record": "0-1"
         },
         {
           "name": "Phoenix Suns",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Sacramento Kings",
-          "record": "0-0"
+          "record": "0-1"
         }
       ]
     },
@@ -134,20 +134,20 @@
       "name": "Western Conference — Southwest",
       "teams": [
         {
-          "name": "Dallas Mavericks",
-          "record": "0-0"
-        },
-        {
           "name": "Houston Rockets",
-          "record": "0-0"
+          "record": "1-0"
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "0-0"
+          "record": "1-0"
+        },
+        {
+          "name": "Dallas Mavericks",
+          "record": "0-1"
         },
         {
           "name": "New Orleans Pelicans",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "San Antonio Spurs",
