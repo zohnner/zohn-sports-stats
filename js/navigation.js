@@ -257,19 +257,19 @@ function _closeSportSwitchMenu() {
 // (no custom dimensions, and unconfirmed support for the hash-based routing every
 // in-app nav uses). Fire-and-forget via sendBeacon so it never delays rendering (G1).
 // sendBeacon can't set a custom header, so a Blob with an explicit type is what makes
-// the request arrive as JSON on the Function side.
+// the request arrive as JSON on the Function side. D-183 adds seq/isNew/ref/path via
+// VisitBeacon.payload() (js/visitBeacon.js).
 function _trackPageView(view) {
-    if (typeof navigator === 'undefined' || !navigator.sendBeacon) return;
-    const sport = view === 'home' ? 'home'
-        : view.startsWith('mlb-') ? 'mlb'
-        : view.startsWith('nfl-') ? 'nfl'
-        : view.startsWith('ncaaf-') ? 'ncaaf'
-        : view.startsWith('ncaab-') ? 'ncaab'
-        : view.startsWith('wnba-') ? 'wnba'
-        : view.startsWith('nhl-') ? 'nhl'
-        : view.startsWith('nba-') ? 'nba'
-        : 'nba';
-    const blob = new Blob([JSON.stringify({ sport, view })], { type: 'application/json' });
+    if (typeof navigator === 'undefined' || !navigator.sendBeacon || typeof VisitBeacon === 'undefined') return;
+    let local = null, session = null;
+    try { local = window.localStorage; } catch { /* blocked storage -> isNew stays null */ }
+    try { session = window.sessionStorage; } catch { /* in-memory seq fallback */ }
+    const body = VisitBeacon.payload(view, {
+        local, session,
+        referrer: document.referrer, host: location.hostname,
+        pathname: location.pathname, search: location.search,
+    });
+    const blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
     navigator.sendBeacon('/api/track', blob);
 }
 
@@ -944,16 +944,17 @@ function _loadFromHash() {
             AppState.currentView = 'static-page';
             if (typeof _applySportUI === 'function') _applySportUI(_m[1]);
             document.getElementById('searchBar')?.style.setProperty('display', 'none');
+            _trackPageView(_r);
             return;
         }
         if ((_m = /^mlb-team-(\d+)$/.exec(_r))) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
-            if (typeof _restoreMLBTeamDetail === 'function') { _restoreMLBTeamDetail(parseInt(_m[1], 10)); return; }
+            if (typeof _restoreMLBTeamDetail === 'function') { _trackPageView(_r); _restoreMLBTeamDetail(parseInt(_m[1], 10)); return; }
         } else if ((_m = /^mlb-player-(\d+)(?:-(hitting|pitching))?$/.exec(_r))) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
-            if (typeof _restoreMLBPlayerDetail === 'function') { _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
+            if (typeof _restoreMLBPlayerDetail === 'function') { _trackPageView(_r); _restoreMLBPlayerDetail(parseInt(_m[1], 10), _m[2] || 'hitting'); return; }
         } else if ((_m = /^mlb-live-(\d+)$/.exec(_r))) {
             AppState.currentSport = 'mlb';
             if (typeof _applySportUI === 'function') _applySportUI('mlb');
@@ -1011,6 +1012,9 @@ function _loadFromHash() {
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
     const ncaabGameMatch     = hash.match(/^ncaab-game-([A-Za-z0-9]+)$/);
+
+    // Cold-load restores below that bypass navigateTo() still log the entry view.
+    if (mlbCompareMatch || mlbScorecardMatch || mlbPlayerMatch || mlbTeamMatch) _trackPageView(hash);
 
     if (mlbCompareMatch) {
         _restoreMLBComparison(mlbCompareMatch[1], parseInt(mlbCompareMatch[2]), parseInt(mlbCompareMatch[3]));
