@@ -1,6 +1,21 @@
 {
   "stories": [
     {
+      "slug": "2026-10-22-josh-simmons-ir-timeline",
+      "title": "Josh Simmons hit IR 66 days after the Chiefs found his herniated disc",
+      "dek": "Kansas City called its left tackle week-to-week for most of that span, and the gap between the medical file and the public line let fans decide a player rehabbing daily did not want to play.",
+      "date": "2026-10-22",
+      "season": 2026,
+      "week": 7,
+      "teams": [
+        "KC"
+      ],
+      "players": [],
+      "hero_stat": "66 days from MRI to injured reserve",
+      "url": "/nfl/stories/2026-10-22-josh-simmons-ir-timeline",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-10-13-titans-fewest-points-scored",
       "title": "The Titans have scored 58 points through Week 5, the fewest in the NFL",
       "dek": "Tennessee is 0-5, but its defense has allowed 109 points, tied for 10th-fewest — the offense is scoring at half the league rate.",
