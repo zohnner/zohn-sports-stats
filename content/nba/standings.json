@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-10-21",
-  "gamesCounted": 14,
+  "throughDate": "2026-10-22",
+  "gamesCounted": 16,
   "source": "balldontlie",
   "sections": [
     {
@@ -10,7 +10,7 @@
       "teams": [
         {
           "name": "Philadelphia 76ers",
-          "record": "1-0"
+          "record": "2-0"
         },
         {
           "name": "Toronto Raptors",
@@ -47,7 +47,7 @@
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Milwaukee Bucks",
@@ -84,11 +84,11 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
-          "name": "Minnesota Timberwolves",
-          "record": "1-0"
+          "name": "Oklahoma City Thunder",
+          "record": "2-0"
         },
         {
-          "name": "Oklahoma City Thunder",
+          "name": "Minnesota Timberwolves",
           "record": "1-0"
         },
         {
@@ -97,7 +97,7 @@
         },
         {
           "name": "Denver Nuggets",
-          "record": "0-0"
+          "record": "0-1"
         },
         {
           "name": "Utah Jazz",
