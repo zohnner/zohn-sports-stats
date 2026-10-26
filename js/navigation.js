@@ -1764,6 +1764,19 @@ const _PAGE_META = {
     'ncaaf-leaders':   { title: 'SportStrata — College Football Leaders', desc: 'NCAA college football statistical leaders by category.' },
 };
 
+// The edge templates write the canonical server-side (with the entity's real
+// slug). Read via getAttribute: the .href property resolves an empty value to
+// the current URL, query string included.
+const _SERVER_CANON = (typeof document !== 'undefined')
+    ? (document.getElementById('canonicalLink')?.getAttribute('href') || '')
+    : '';
+
+// Never echo the query string: utm/fbclid variants each claimed to be their own
+// canonical, which Search Console reported as "Google chose different canonical".
+function _canonicalUrl(serverCanon, host, pathname) {
+    return serverCanon || `https://${host}${pathname}`;
+}
+
 function _updatePageMeta(view) {
     const m = _PAGE_META[view] || _PAGE_META['home'];
     document.title = m.title;
@@ -1772,7 +1785,7 @@ function _updatePageMeta(view) {
     document.getElementById('ogTitle')?.setAttribute('content', m.title);
     document.getElementById('ogDescription')?.setAttribute('content', m.desc);
     const _canonHost = (typeof SITE_DOMAIN !== 'undefined') ? SITE_DOMAIN : location.host;
-    const _canonUrl = `https://${_canonHost}${location.pathname}${location.search}`;
+    const _canonUrl = _canonicalUrl(_SERVER_CANON, _canonHost, location.pathname);
     document.getElementById('ogUrl')?.setAttribute('content', _canonUrl);
     document.getElementById('canonicalLink')?.setAttribute('href', _canonUrl);
 }

@@ -3649,3 +3649,17 @@ Same change: unprefixed views now log as `shared`, and the five cold-load paths 
 **Tests.** `tests/visitBeacon.test.js` (9: sport bucketing incl. the old `nba` fallback, referrer/utm buckets incl. lookalike hosts, new-vs-returning across sessions, seq across a page reload, blocked storage, server validation). Mutation-checked: restoring the `nba` fallback and dropping the sessionStorage carry-over each fail.
 
 **Known limits.** Rows before D-183 count news/arcade as `nba` and miss those entry pages — compare windows on the same side of the deploy. In-app MLB player/team detail clicks still don't go through `navigateTo()` and stay unlogged (a pre-existing gap, out of scope). Clearing site data makes a returning visitor look new; the reverse can't happen.
+
+## D-184 — Canonical tags: no query strings, no client override of the server canonical, no fail-safe "/"
+**Status:** shipping | **Date:** 2026-10-26
+
+**Problem.** Search Console reports "Duplicate, Google chose different canonical". Three causes in the code, all confirmed by reading it (the share of the GSC report each one explains is not measured):
+- `_updatePageMeta` (`js/navigation.js`) wrote `https://host + pathname + search` into the canonical and `og:url` on every navigation, so every `?utm_…`/`?fbclid=` variant declared itself canonical.
+- The same call overwrote the canonical the edge templates had already set. Slug templates canonicalize to `/{sport}/player/{id}/{slug}`; a crawl of the slugless or a stale-slug URL got its own path back after JS ran, contradicting the server HTML.
+- `shell()` (`functions/_shell.js`, D-180's fail-safe) passes `index.html` through `absolutize()`, whose relative-ref rewrite also matches the empty `href=""` canonical and turns it into `href="/"`: every fail-safe page's raw HTML named the home page as its canonical. During the ESPN block (D-176) that was every ESPN-backed edge page.
+
+**Fix.** `shell()` writes `https://sportstrata.cc{pathname}` into the canonical and `og:url` (`setCanonical`). The client reads the server canonical once at load (`getAttribute`, not `.href`, which resolves an empty value to the current URL) and keeps it; only when none was set does it write `https://host + pathname`, never the query. `index.html` keeps its empty tags: a hard-coded default would make any path served without a template claim the home page.
+
+**Known limits.** A fail-safe page reached at a slugless or wrong-slug URL canonicalizes to that path (no data to compute the real slug during an outage). Hash views reached in-app keep the entry page's canonical, as before.
+
+Cache v323. Tests: `tests/edgeFallback.test.js` (+2, each mutation-checked).

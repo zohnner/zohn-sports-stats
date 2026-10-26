@@ -51,6 +51,37 @@ test('absolutize rewrites relative asset refs only', () => {
         '<link href="/css/main.css"><script src="/js/app.js"></script><a href="/nfl">x</a><a href="https://x.y">y</a><a href="#top">z</a>');
 });
 
+// Search Console "Google chose different canonical": the fail-safe shell's empty
+// canonical was absolutized to href="/" (the home page), and the client echoed
+// the query string into the canonical it wrote.
+const INDEX_HTML = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const canonOf = html => html.match(/<link id="canonicalLink"[^>]*href="([^"]*)"/)[1];
+const ogUrlOf = html => html.match(/<meta id="ogUrl"[^>]*content="([^"]*)"/)[1];
+
+test('fail-safe shell canonicalizes to its own path, never home or a query variant', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'functions', '_shell.js'), 'utf8').replace(/^export /gm, '');
+    const ctx = { URL, Response };
+    vm.createContext(ctx);
+    vm.runInContext(`${src}\n;globalThis.__shell = shell;`, ctx);
+    const env = { ASSETS: { fetch: async () => new Response(INDEX_HTML) } };
+    const res = await ctx.__shell(env, 'https://sportstrata.cc/nfl/team/jax?utm_source=x&fbclid=1');
+    const html = await res.text();
+    assert.equal(canonOf(html), 'https://sportstrata.cc/nfl/team/jax');
+    assert.equal(ogUrlOf(html), 'https://sportstrata.cc/nfl/team/jax');
+});
+
+test('client canonical keeps the server canonical and drops the query string', () => {
+    const nav = fs.readFileSync(path.join(__dirname, '..', 'js', 'navigation.js'), 'utf8');
+    const fn = nav.match(/^function _canonicalUrl\([\s\S]*?^}/m)[0];
+    const ctx = {};
+    vm.createContext(ctx);
+    vm.runInContext(`${fn}\n;globalThis.__c = _canonicalUrl;`, ctx);
+    const slugged = 'https://sportstrata.cc/mlb/player/592450/aaron-judge';
+    assert.equal(ctx.__c(slugged, 'sportstrata.cc', '/mlb/player/592450'), slugged);
+    assert.equal(ctx.__c('', 'sportstrata.cc', '/'), 'https://sportstrata.cc/');
+    assert.equal(ctx.__c('', 'sportstrata.cc', '/mlb'), 'https://sportstrata.cc/mlb');
+});
+
 test('parseCSV keeps quoted commas inside one field', () => {
     const rows = parseCSV('a,b,c\n1,"x,y",3\n');
     assert.deepEqual(rows[1], ['1', 'x,y', '3']);
