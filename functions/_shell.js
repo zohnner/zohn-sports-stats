@@ -54,12 +54,23 @@ export function failSafeRoute(pathname) {
     return null;
 }
 
+// index.html ships an empty canonical, which a crawler resolves to the request
+// URL, query string included -- so every ?utm_ variant of a fail-safe page
+// declared itself canonical.
+export function setCanonical(html, canonical) {
+    return html
+        .replace(/(<link id="canonicalLink" rel="canonical"\s*href=")[^"]*(">)/, `$1${canonical}$2`)
+        .replace(/(<meta id="ogUrl"\s*property="og:url"\s*content=")[^"]*(">)/, `$1${canonical}$2`);
+}
+
 // Fail-safe: a working SPA shell that boots to the view this URL names.
 export async function shell(env, url) {
     const res = await rawShell(env, url);
     if (!res.ok) return res;
     let html = absolutize(await res.text());
-    const route = failSafeRoute(new URL(url).pathname);
+    const { pathname } = new URL(url);
+    html = setCanonical(html, `https://sportstrata.cc${pathname}`);
+    const route = failSafeRoute(pathname);
     if (route) html = html.replace('</head>', `<script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`);
     // Short TTL so the page returns to its full server render soon after the upstream recovers.
     return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' } });
