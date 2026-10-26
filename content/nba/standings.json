@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-10-24",
-  "gamesCounted": 36,
+  "throughDate": "2026-10-25",
+  "gamesCounted": 43,
   "source": "balldontlie",
   "sections": [
     {
@@ -10,11 +10,11 @@
       "teams": [
         {
           "name": "Philadelphia 76ers",
-          "record": "3-0"
+          "record": "3-1"
         },
         {
           "name": "Toronto Raptors",
-          "record": "2-0"
+          "record": "2-1"
         },
         {
           "name": "Boston Celtics",
@@ -22,11 +22,11 @@
         },
         {
           "name": "Brooklyn Nets",
-          "record": "0-2"
+          "record": "0-3"
         },
         {
           "name": "New York Knicks",
-          "record": "0-2"
+          "record": "0-3"
         }
       ]
     },
@@ -35,14 +35,14 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "2-0"
-        },
-        {
-          "name": "Cleveland Cavaliers",
-          "record": "1-1"
+          "record": "3-0"
         },
         {
           "name": "Indiana Pacers",
+          "record": "2-1"
+        },
+        {
+          "name": "Cleveland Cavaliers",
           "record": "1-1"
         },
         {
@@ -71,12 +71,12 @@
           "record": "2-1"
         },
         {
-          "name": "Miami Heat",
-          "record": "0-3"
+          "name": "Orlando Magic",
+          "record": "1-2"
         },
         {
-          "name": "Orlando Magic",
-          "record": "0-2"
+          "name": "Miami Heat",
+          "record": "0-3"
         }
       ]
     },
@@ -85,11 +85,11 @@
       "teams": [
         {
           "name": "Minnesota Timberwolves",
-          "record": "2-0"
+          "record": "3-0"
         },
         {
           "name": "Oklahoma City Thunder",
-          "record": "2-0"
+          "record": "3-0"
         },
         {
           "name": "Portland Trail Blazers",
@@ -101,7 +101,7 @@
         },
         {
           "name": "Utah Jazz",
-          "record": "1-1"
+          "record": "1-2"
         }
       ]
     },
@@ -110,15 +110,15 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "2-0"
-        },
-        {
-          "name": "LA Clippers",
-          "record": "1-1"
+          "record": "3-0"
         },
         {
           "name": "Phoenix Suns",
           "record": "1-1"
+        },
+        {
+          "name": "LA Clippers",
+          "record": "1-2"
         },
         {
           "name": "Golden State Warriors",
@@ -126,7 +126,7 @@
         },
         {
           "name": "Sacramento Kings",
-          "record": "0-2"
+          "record": "0-3"
         }
       ]
     },
@@ -139,7 +139,7 @@
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "2-0"
+          "record": "3-0"
         },
         {
           "name": "Dallas Mavericks",
