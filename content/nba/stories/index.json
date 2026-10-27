@@ -1,3 +1,18 @@
 {
-  "stories": []
+  "stories": [
+    {
+      "slug": "2026-10-27-thunder-fewest-points-allowed",
+      "title": "The Thunder are 4-0 and allow 100.8 points a game, fewest in the NBA",
+      "dek": "Their 4 opponents averaged 117.4 points in their other games and 100.8 against Oklahoma City.",
+      "date": "2026-10-27",
+      "season": 2027,
+      "teams": [
+        "OKC"
+      ],
+      "players": [],
+      "hero_stat": "100.8 points allowed per game, 1st of 30",
+      "url": "/nba/stories/2026-10-27-thunder-fewest-points-allowed",
+      "sport": "nba"
+    }
+  ]
 }
