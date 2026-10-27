@@ -74,3 +74,28 @@ Two weeks. Daily Story-to-Video (format 1) + two Clip + Data Says per week (form
 ## Decision log
 
 **2026-10-27 — Voice route: THE DESK (owner's call).** Daily story videos use a locked synthetic desk voice (measured analyst register, same voice every video, treated as a cast member). Zohn records voiceover himself for occasional bigger pieces only (weekly deep-dives, rivalry weeks). First desk video produced 2026-10-27 from that day's Buccaneers story ("2-5 with a +11 differential") as the format proof. Remaining open items: verdict stamp wording (SIGNAL/NOISE proposed), revive-vs-fresh account call, format-2 sourcing rules as standing policy.
+
+## Visual language — beyond the stat card (brainstorm, 2026-10-27)
+
+Desk #001 was static cards. The menu for what moves next time:
+
+**1. Animated data viz (our own data, zero rights risk — the core upgrade)**
+- Margin bars that fill in sequence as the desk lists them (the Bucs losses 6-4-7-3-7 landing one at a time, then the wins counter-punching)
+- A season line that draws itself week by week (differential climbing to +11)
+- Shot charts building dot by dot (NBA courts already drafted + coordinate-validated)
+- Win-probability / margin lines drawing in sync with the narration of the flip moment
+- Counting numbers and odometer flips for records; bar-chart races for leaderboards
+- Scorebug replays: a game's scoring runs re-told as an animated bug
+
+**2. Free stock B-roll for texture (license-checked + logged per clip)**
+- Pexels / Pixabay: stadium floodlights, crowd silhouettes, rain on a field, tunnel walks, a literal coin flip for a "losing coin flips" verdict line
+- Wikimedia Commons CC photos where a specific place/team context needs a still (credit per file, in caption)
+- Never league or broadcast footage. Ever.
+
+**3. Generated motion graphics in the telemetry style**
+- Wireframe court/field renders, radar sweeps, terminal boot sequences ("loading the chart…")
+- AI B-roll only for abstract/texture shots — never anything that pretends to be real game footage
+
+**4. Layout upgrades**
+- Split screen: stat card left, live chart right; chart picture-in-picture under the verdict card
+- End frame loops into frame 1 for rewatches
