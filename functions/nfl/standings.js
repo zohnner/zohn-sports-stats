@@ -30,7 +30,7 @@ function collectConfs(node, trail, out) {
             const stat = (names) => (e.stats || []).find(x => names.includes(x.name) || names.includes(x.type)) || null;
             const w = stat(['wins']), l = stat(['losses']);
             const record = (w && l) ? `${w.displayValue}-${l.displayValue}` : '';
-            return { name: t.displayName || t.name || t.location || '?', record };
+            return { name: t.displayName || t.name || t.location || '?', abbr: t.abbreviation || '', record };
         }).filter(t => t.name && t.name !== '?');
         if (teams.length) out.push({ name: label, teams });
     }
@@ -62,7 +62,10 @@ export async function onRequest(context) {
         });
 
         const sectionHtml = sections.map(s => {
-            const rows = s.teams.slice(0, 8).map(t => `<li>${esc(t.name)}${t.record ? ` (${esc(t.record)})` : ''}</li>`).join('');
+            const rows = s.teams.slice(0, 8).map(t => {
+                const name = t.abbr ? `<a href="/nfl/team/${esc(t.abbr.toLowerCase())}">${esc(t.name)}</a>` : esc(t.name);
+                return `<li>${name}${t.record ? ` (${esc(t.record)})` : ''}</li>`;
+            }).join('');
             return `<h2>${esc(s.name)}</h2><ol>${rows}</ol>`;
         }).join('');
 

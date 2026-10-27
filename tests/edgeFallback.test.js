@@ -112,12 +112,12 @@ test('standings group by division and order by win% then point differential', ()
     ], teams);
     assert.deepEqual(sections.map(s => s.name), ['AFC South', 'NFC West']);
     assert.deepEqual(sections[0].teams, [
-        { name: 'Houston Texans', record: '1-0' },
-        { name: 'Jacksonville Jaguars', record: '1-0-1' },
-        { name: 'Tennessee Titans', record: '0-1-1' },
+        { name: 'Houston Texans', abbr: 'HOU', record: '1-0' },
+        { name: 'Jacksonville Jaguars', abbr: 'JAX', record: '1-0-1' },
+        { name: 'Tennessee Titans', abbr: 'TEN', record: '0-1-1' },
     ]);
-    // A franchise with no game this season (STL) is left out.
-    assert.deepEqual(sections[1].teams, [{ name: 'Los Angeles Rams', record: '0-1' }]);
+    // A franchise with no game this season (STL) is left out; nflverse's LA links as /nfl/team/lar.
+    assert.deepEqual(sections[1].teams, [{ name: 'Los Angeles Rams', abbr: 'LAR', record: '0-1' }]);
 });
 
 test('leaders drop unattributed aggregate rows and map nflverse team codes to ESPN URL codes', () => {
@@ -142,4 +142,30 @@ test('nflverse season follows the /api/nflstats calendar', () => {
     assert.equal(nflverseSeason(new Date(Date.UTC(2026, 9, 14))), 2026);
     assert.equal(nflverseSeason(new Date(Date.UTC(2027, 0, 20))), 2026);
     assert.equal(nflverseSeason(new Date(Date.UTC(2027, 7, 31))), 2026);
+});
+
+const { sleeperIds, nameKey } = load('_sleeper.js', ['sleeperIds', 'nameKey']);
+
+test('leader names map to Sleeper ids by name + team, and ambiguous names stay unlinked', () => {
+    const players = {
+        '1': { full_name: 'Kenneth Walker', team: 'KC', active: true },
+        '2': { full_name: 'C.J. Stroud', team: 'HOU', active: true },
+        '3': { full_name: 'Jayden Daniels', team: 'WAS', active: true },
+        '4': { full_name: 'Josh Allen', team: 'BUF', active: true },
+        '5': { full_name: 'Josh Allen', team: 'JAX', active: true },
+        '6': { full_name: 'Retired Guy', team: null, active: false },
+        '7': { full_name: 'Traded Player', team: 'NYJ', active: true },
+    };
+    assert.deepEqual(sleeperIds(players, [
+        { name: 'Kenneth Walker III', team: 'KC' },   // suffix dropped
+        { name: 'CJ Stroud', team: 'HOU' },           // punctuation ignored
+        { name: 'Jayden Daniels', team: 'WSH' },      // Sleeper WAS == ESPN WSH
+        { name: 'Josh Allen', team: 'BUF' },          // same name, team decides
+        { name: 'Josh Allen', team: 'LV' },           // same name, no team match: ambiguous
+        { name: 'Retired Guy', team: 'DAL' },         // inactive players never match
+        { name: 'Traded Player', team: 'MIA' },       // unique name still links after a trade
+        { name: '', team: 'KC' },
+    ]), ['1', '2', '3', '4', null, null, '7', null]);
+    assert.equal(nameKey('Marvin Harrison Jr.'), nameKey('Marvin Harrison'));
+    assert.equal(nameKey('Jevón Holland'), nameKey('Jevon Holland'));
 });
