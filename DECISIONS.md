@@ -3684,3 +3684,18 @@ Shipped for NBA: routed card/hero clicks and cold-load `#nba-game-`/`#nba-player
 **Known limits.** Zone splits rest on integer coordinates, so shots within ~0.5 ft of a zone boundary can land on either side. Possessions/pace/ratings are box-score estimates (labeled `est`). The fixture for the final game is 61 KB (trimmed from 491 KB).
 
 Cache v324. Tests: `tests/bballGameMath.test.js` (20).
+
+## D-186 — Game Center for WNBA and NCAAB
+**Status:** stacked on D-185 (PR #36) | **Date:** 2026-10-27
+
+**Decision.** Turn on the D-185 Game Center for WNBA and NCAAB, after the same data checks NBA passed, with per-court geometry in `BballMath.COURTS`. NBA's values are unchanged. WNBA links to its player pages; NCAAB has none, so it gets no player links. WNBA and NCAAB game cards now route through `#wnba-game-`/`#ncaab-game-` (they called the viewer directly, the same bug D-185 fixed for NBA).
+
+**Verified** on finals (no WNBA/NCAAB game was live): WNBA 401857180, 401918308, 401918309; NCAAB 401851388, 401851571, 401856523, 401856529, 401856530, 401856532.
+- Hoop origin (25, 0.25) for both, least-squares against stated distances: WNBA 290 shots RMSE 0.44 ft, NCAAB 523 shots RMSE 0.39 ft, zero off by more than 1.6 ft. Shortest 3PA 22.0-22.1 ft, matching the 22.15-ft arc.
+- Lane width measured, not assumed: zones built on a 16-ft lane reproduce ESPN `pointsInPaint` exactly for NBA (control) and WNBA (6 team-games); NCAAB fits best at 12 ft (mean 0.8 pts off over 12 team-games, vs 1.5 at 16 ft).
+- Play-derived FG/3P/FT, points and biggest leads reconcile exactly for all 9 games, after the two D-185 `BballMath` fixes this work surfaced (free throws by `pointsAttempted`, revoked baskets).
+- Not measured: corner-3 distance (21.65 ft) and foul-out limits (WNBA 6, NCAAB 5) are the published rules. The live strip runs on NBA-verified field shapes; NCAAB's bonus semantics (1-and-1 vs double bonus) were not seen live, so the strip only says "over limit".
+
+**Scorer variance.** One WNBA Finals crew (401918309) logged layups as 4-7 ft, in both the coordinates and the play text ("makes 6-foot layup"), where other crews log 1-3 ft. The data is internally consistent, so the chart shows it as charted, and the zone caption says to compare zones within a game, not across games.
+
+Also: a pregame header shows the date when tip-off isn't today. Cache v325. Tests: `tests/bballGameMath.test.js` +4 (per-court zones, NCAAB fixture reconciliation and paint), `tests/fixtures/ncaab-summary-final-trim.json` (39 KB).

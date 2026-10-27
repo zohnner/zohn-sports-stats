@@ -17,14 +17,31 @@
 //   - Free throws carry sentinel coordinates (~-2.1e8). Non-shot plays
 //     (fouls) carry real-looking coordinates too, so shots are selected by
 //     shootingPlay, never by "has a coordinate".
-// WNBA and NCAAB also carry coordinates but have shorter 3PT lines and
-// were not fitted; the shot chart is gated to NBA by _BLG_SPORTS.
+// WNBA and NCAAB were fitted the same way (2026-10-27): 290 WNBA shots
+// over 3 games and 523 NCAAB shots over 6, both hoop (25, 0.25), RMSE
+// 0.44 / 0.39 ft, zero shots off their stated distance by > 1.6 ft. Their
+// origin differs from NBA's, so geometry is per court (COURTS below).
 // ============================================================
 
 const BballMath = (() => {
-    const HOOP = { x: 25, y: 0.75 };
-    // ESPN y of the baseline: hoop sits 5.25 ft off it on an NBA court.
-    const BASELINE_Y = HOOP.y - 5.25;
+    // Per-court geometry, feet. hoopY is ESPN's fitted hoop y; the hoop sits
+    // 5.25 ft off the baseline on all three courts. arc is the 3PT radius,
+    // corner the straight corner distance, cornerDy where the corner segment
+    // meets the arc (past the hoop). laneHalf was measured: zones built on
+    // it reproduce ESPN's pointsInPaint exactly for NBA and WNBA (16-ft lane,
+    // 8 team-games) and best for NCAAB at 12 ft (mean 0.8 pts off over 12
+    // team-games, vs 1.5 at 16 ft). arc matches each sport's shortest 3PA
+    // in the data (22.0-22.1 ft for WNBA/NCAAB). corner and foulOut for
+    // WNBA/NCAAB are the published rules, not measured here.
+    const COURTS = {
+        nba:   { hoopY: 0.75, arc: 23.75, corner: 22,    cornerDy: 9, laneHalf: 8, foulOut: 6, laneFt: 16 },
+        wnba:  { hoopY: 0.25, arc: 22.15, corner: 21.65, cornerDy: 5, laneHalf: 8, foulOut: 6, laneFt: 16 },
+        ncaab: { hoopY: 0.25, arc: 22.15, corner: 21.65, cornerDy: 5, laneHalf: 6, foulOut: 5, laneFt: 12 },
+    };
+    const HOOP_FROM_BASELINE = 5.25;
+    const HOOP = { x: 25, y: COURTS.nba.hoopY };
+    const BASELINE_Y = HOOP.y - HOOP_FROM_BASELINE;
+    const courtOf = (court) => court || COURTS.nba;
 
     function parseClock(s) {
         if (s == null) return 0;
@@ -100,46 +117,48 @@ const BballMath = (() => {
 
     // -- Shots ---------------------------------------------------------
 
-    function validCoord(c) {
-        return !!c && isFinite(c.x) && isFinite(c.y) && c.x >= 0 && c.x <= 50 && c.y >= BASELINE_Y - 1 && c.y <= 94;
+    function validCoord(c, court) {
+        const base = courtOf(court).hoopY - HOOP_FROM_BASELINE;
+        return !!c && isFinite(c.x) && isFinite(c.y) && c.x >= 0 && c.x <= 50 && c.y >= base - 1 && c.y <= 94;
     }
 
-    function shotGeom(c) {
-        const dx = c.x - HOOP.x, dy = c.y - HOOP.y;
+    function shotGeom(c, court) {
+        const dx = c.x - HOOP.x, dy = c.y - courtOf(court).hoopY;
         return { dx, dy, dist: Math.hypot(dx, dy) };
     }
 
-    // Zone definitions (NBA court, feet from the hoop center):
+    // Zone definitions (feet from the hoop center; court values in COURTS):
     //   rim     2PA within 4 ft (the restricted-area radius)
-    //   paint   other 2PA inside the 16-ft-wide lane, up to the FT line
-    //           (lane runs 19 ft from the baseline = 13.75 ft past the hoop)
+    //   paint   other 2PA inside the lane (laneHalf each side), up to the FT
+    //           line (19 ft from the baseline = 13.75 ft past the hoop)
     //   mid     every other 2PA
-    //   corner3 3PA with |dx| >= 21 and dy <= 9 (the straight corner segment
-    //           ends 14 ft from the baseline, 8.75 ft past the hoop)
+    //   corner3 3PA within 1 ft of the corner distance or wider, below the
+    //           point where the straight corner segment meets the arc
     //   atb3    every other 3PA (heaves are excluded upstream, see isHeave)
     // 2 vs 3 comes from ESPN's pointsAttempted, not from geometry.
     const ZONES = ['rim', 'paint', 'mid', 'corner3', 'atb3'];
     const ZONE_LABEL = { rim: 'At rim', paint: 'Paint (non-RA)', mid: 'Midrange', corner3: 'Corner 3', atb3: 'Above-break 3' };
 
-    function shotZone(three, c) {
-        const { dx, dy, dist } = shotGeom(c);
-        if (three) return (Math.abs(dx) >= 21 && dy <= 9) ? 'corner3' : 'atb3';
+    function shotZone(three, c, court) {
+        const k = courtOf(court);
+        const { dx, dy, dist } = shotGeom(c, k);
+        if (three) return (Math.abs(dx) >= k.corner - 1 && dy <= k.cornerDy) ? 'corner3' : 'atb3';
         if (dist <= 4) return 'rim';
-        if (Math.abs(dx) <= 8 && dy <= 13.75) return 'paint';
+        if (Math.abs(dx) <= k.laneHalf && dy <= 13.75) return 'paint';
         return 'mid';
     }
 
-    function validShots(plays) {
+    function validShots(plays, court) {
         const out = [];
         (plays || []).forEach(p => {
-            if (!isFGA(p) || !validCoord(p.coordinate)) return;
+            if (!isFGA(p) || !validCoord(p.coordinate, court)) return;
             const c = p.coordinate;
             const three = isThree(p);
             const shooter = p.participants && p.participants[0] && p.participants[0].athlete;
             out.push({
                 id: p.id, teamId: teamIdOf(p), shooterId: shooter ? String(shooter.id) : null,
-                made: !!p.scoringPlay, three, zone: shotZone(three, c),
-                x: c.x, y: c.y, dist: shotGeom(c).dist,
+                made: !!p.scoringPlay, three, zone: shotZone(three, c, court),
+                x: c.x, y: c.y, dist: shotGeom(c, court).dist,
                 period: playPeriod(p), clock: playClock(p), text: p.text || '',
             });
         });
@@ -147,7 +166,7 @@ const BballMath = (() => {
     }
 
     // Court position in feet from the baseline/left sideline, for drawing.
-    function toCourt(shot) { return { cx: shot.x, cy: shot.y - BASELINE_Y }; }
+    function toCourt(shot, court) { return { cx: shot.x, cy: shot.y - (courtOf(court).hoopY - HOOP_FROM_BASELINE) }; }
 
     function zoneSplits(shots) {
         const z = {};
@@ -382,7 +401,7 @@ const BballMath = (() => {
 
     return {
         teamSituation,
-        HOOP, BASELINE_Y, ZONES, ZONE_LABEL,
+        HOOP, BASELINE_Y, HOOP_FROM_BASELINE, COURTS, ZONES, ZONE_LABEL,
         parseClock, fmtSec, gameFormat, periodLabel, periodLen, periodStart, elapsedAt, clockAt,
         isFreeThrow, isFGA, validCoord, shotGeom, shotZone, validShots, toCourt, zoneSplits,
         scoringEvents, runs, leads, droughts,

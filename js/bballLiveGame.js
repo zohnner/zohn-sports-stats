@@ -43,10 +43,10 @@
 //     viewer. Corrected 2026-10-26 (D-185): this line used to say no
 //     spatial payload at all, which is wrong for NBA. NBA plays[] carry
 //     per-shot coordinates and competitors carry fouls/timeouts; both
-//     were verified against real NBA games and power the NBA-only Game
-//     Center (js/bballGameCenter.js, gated by the gameCenter/shotChart
-//     flags below). WNBA/NCAAB payloads also carry coordinates, but their
-//     court geometry was not fitted, so they stay off.
+//     were verified against real NBA games and power the Game Center
+//     (js/bballGameCenter.js, gated by the gameCenter/shotChart flags
+//     below). WNBA/NCAAB coordinates were fitted the same way afterwards
+//     and all three sports now run it, each with its own court geometry.
 //   - injuries[] exists for WNBA (ESPN's own league-wide injury feed —
 //     unlike NFL, this isn't a Sleeper depth-chart join) but is
 //     confirmed ABSENT on the NCAAB game checked, the same "no free
@@ -77,15 +77,18 @@ const _blg = {
 };
 
 const _BLG_SPORTS = {
-    wnba:  { label: 'WNBA',  scoresView: 'wnba-scores',  gamePrefix: 'wnba-game-',  fetchSummary: (id) => fetchWNBAGameSummary(id) },
-    ncaab: { label: 'NCAAB', scoresView: 'ncaab-scores', gamePrefix: 'ncaab-game-', fetchSummary: (id) => fetchNCAABGameSummary(id) },
+    // gameCenter/shotChart/court/playerView (D-185): see js/bballGameCenter.js.
+    // NCAAB has no player-detail page, so no playerView.
+    wnba:  { label: 'WNBA',  scoresView: 'wnba-scores',  gamePrefix: 'wnba-game-',  fetchSummary: (id) => fetchWNBAGameSummary(id),
+             gameCenter: true, shotChart: true, court: 'wnba', playerView: 'wnba-player-' },
+    ncaab: { label: 'NCAAB', scoresView: 'ncaab-scores', gamePrefix: 'ncaab-game-', fetchSummary: (id) => fetchNCAABGameSummary(id),
+             gameCenter: true, shotChart: true, court: 'ncaab' },
     // nba (D-161, 2026-09-14): exactly the "one config entry, not new viewer
     // work" the file header above predicted — but verified against a real
     // completed NBA /summary before trusting that, not assumed. See
     // js/nba.js's fetchNBAGameSummary comment for the live-check details.
-    // gameCenter/shotChart/playerView (D-185): NBA-only, see js/bballGameCenter.js.
     nba:   { label: 'NBA',   scoresView: 'nba-scores',   gamePrefix: 'nba-game-',   fetchSummary: (id) => fetchNBAGameSummary(id),
-             gameCenter: true, shotChart: true, playerView: 'nba-player-' },
+             gameCenter: true, shotChart: true, court: 'nba', playerView: 'nba-player-' },
 };
 
 const _BLG_TABS = [
@@ -253,7 +256,8 @@ function _blgRenderHeader(comp, home, away) {
     // ESPN's pregame text is fixed to Eastern ("10/26 - 8:00 PM EDT").
     const tip = new Date(comp.date);
     if (state === 'pre' && _BLG_SPORTS[_blg.sport].gameCenter && !isNaN(tip)) {
-        statusText = tip.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+        const today = tip.toDateString() === new Date().toDateString();
+        statusText = tip.toLocaleString([], { weekday: 'short', ...(today ? {} : { month: 'short', day: 'numeric' }), hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     }
 
     // Plain divs, not nav buttons — neither WNBA nor NCAAB has a team-detail
