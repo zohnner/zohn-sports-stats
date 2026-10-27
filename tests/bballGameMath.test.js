@@ -349,3 +349,55 @@ test('a revoked basket (score goes down) is not counted twice', () => {
     assert.equal(s.home.pts, 2);
     assert.equal(s.away.pts, 3);
 });
+
+// -- Per-court geometry (WNBA/NCAAB fitted 2026-10-27) ------------------------------
+
+test('NBA court geometry is unchanged by the per-court refactor', () => {
+    const k = M.COURTS.nba;
+    assert.deepEqual([k.hoopY, k.arc, k.corner, k.laneHalf, k.foulOut], [0.75, 23.75, 22, 8, 6]);
+    assert.equal(M.shotZone(true, { x: 3, y: 1 }), M.shotZone(true, { x: 3, y: 1 }, k));
+    assert.equal(M.toCourt({ x: 25, y: 0.75 }).cy, 5.25);
+});
+
+test('WNBA/NCAAB courts: shifted hoop origin, shorter corners, NCAAB 12-ft lane', () => {
+    const w = M.COURTS.wnba, n = M.COURTS.ncaab;
+    assert.equal(M.toCourt({ x: 25, y: 0.25 }, n).cy, 5.25, 'NCAAB hoop at (25, 0.25)');
+    assert.equal(M.shotGeom({ x: 25, y: 4.25 }, w).dist, 4);
+    assert.equal(M.shotZone(true, { x: 4, y: 3 }, n), 'corner3', '21 ft wide, under the break');
+    assert.equal(M.shotZone(true, { x: 4, y: 7 }, n), 'atb3', 'NCAAB corner segment ends ~4.7 ft past the hoop');
+    assert.equal(M.shotZone(true, { x: 4, y: 7 }), 'corner3', 'the same spot is still corner on an NBA court');
+    assert.equal(M.shotZone(false, { x: 32, y: 8 }, n), 'mid', '7 ft wide is outside a 12-ft lane');
+    assert.equal(M.shotZone(false, { x: 32, y: 8 }, w), 'paint', 'but inside a 16-ft one');
+    assert.equal(n.foulOut, 5);
+});
+
+test('NCAAB fixture: play-derived totals reconcile exactly despite FT typing and a revoked basket', () => {
+    const d = fixture('ncaab-summary-final-trim.json');
+    const { h, a, ids } = sides(d);
+    const all = M.splitWhere(d.plays, ids, M.gameFormat(d), () => true);
+    for (const [side, c] of [['home', h], ['away', a]]) {
+        const b = box(d, c.team.id);
+        const s = all[side];
+        assert.deepEqual([s.fgm, s.fga, s.tpm, s.tpa, s.ftm, s.fta], [b.fgm, b.fga, b.tpm, b.tpa, b.ftm, b.fta], side);
+        assert.equal(s.pts, Number(c.score), side + ' points');
+    }
+    const l = M.leads(d.plays);
+    const espn = (id) => Number(d.boxscore.teams.find(t => String(t.team.id) === String(id)).statistics.find(s => s.name === 'largestLead').displayValue);
+    assert.equal(l.home.lead, espn(h.team.id));
+    assert.equal(l.away.lead, espn(a.team.id));
+    assert.equal(M.gameFormat(d).periods, 2, 'halves');
+});
+
+test('NCAAB fixture: shots fit the NCAAB court and paint points track ESPN', () => {
+    const d = fixture('ncaab-summary-final-trim.json');
+    const shots = M.validShots(d.plays, M.COURTS.ncaab);
+    const stated = shots.filter(s => /^\d+-foot$/.test(s.text));
+    assert.ok(stated.length > 50);
+    assert.deepEqual(own(stated.filter(s => Math.abs(parseInt(s.text, 10) - s.dist) > 1.6).map(s => s.text)), []);
+    assert.ok(shots.filter(s => s.three).every(s => s.dist >= 21.5));
+    for (const t of d.boxscore.teams) {
+        const paint = shots.filter(s => s.teamId === String(t.team.id) && s.made && !s.three && (s.zone === 'rim' || s.zone === 'paint')).length * 2;
+        const espnPaint = Number(t.statistics.find(s => s.name === 'pointsInPaint').displayValue);
+        assert.ok(Math.abs(paint - espnPaint) <= 4, `paint ${paint} vs ESPN ${espnPaint}`);
+    }
+});
