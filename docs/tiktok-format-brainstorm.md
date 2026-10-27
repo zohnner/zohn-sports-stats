@@ -99,3 +99,5 @@ Desk #001 was static cards. The menu for what moves next time:
 **4. Layout upgrades**
 - Split screen: stat card left, live chart right; chart picture-in-picture under the verdict card
 - End frame loops into frame 1 for rewatches
+
+**2026-10-27 — Tagline outro LOCKED (owner's request).** Every desk video ends with the same ~5s outro: SPORTSTRATA wordmark, the desk voice saying the site's own tagline — "Serious stats. For serious fans. SportStrata dot cc." — big orange sportstrata.cc, and the subline FREE - NO LOGIN - NO ADS. Built once as a reusable template (sportstrata-tiktok/template/outro.mp4 + outro.py) and appended to every desk video, starting with Desk #001 v3. Desk #001 v2 (animated: counting numbers, sequential margin bars, self-drawing differential line, verdict stamp) + outro = the reference episode for the format.
