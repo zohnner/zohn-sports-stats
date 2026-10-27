@@ -1,6 +1,73 @@
 {
   "stories": [
     {
+      "slug": "2026-10-27-buccaneers-2-5-positive-differential",
+      "title": "The 2-5 Buccaneers have outscored their opponents, the only 2-5 team to do so",
+      "dek": "Tampa Bay is plus-11 on the season, because all 5 of its losses came by 7 or fewer points.",
+      "date": "2026-10-27",
+      "season": 2026,
+      "week": 7,
+      "teams": [
+        "TB",
+        "CIN",
+        "CLE",
+        "MIN",
+        "GB",
+        "DAL",
+        "PIT",
+        "CAR"
+      ],
+      "players": [],
+      "hero_stat": "2-5 record with a plus-11 point differential",
+      "url": "/nfl/stories/2026-10-27-buccaneers-2-5-positive-differential",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-10-27-cardinals-most-points-allowed",
+      "title": "The Cardinals have allowed 208 points through Week 7, the most in the NFL",
+      "dek": "Arizona allows 29.7 points per game, and has given up 30 or more in 5 of its 7 games.",
+      "date": "2026-10-27",
+      "season": 2026,
+      "week": 7,
+      "teams": [
+        "ARI",
+        "LAC",
+        "SEA",
+        "SF",
+        "NYG",
+        "DET",
+        "LAR",
+        "DEN",
+        "LV"
+      ],
+      "players": [],
+      "hero_stat": "208 points allowed in 7 games",
+      "url": "/nfl/stories/2026-10-27-cardinals-most-points-allowed",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-10-27-vikings-only-unbeaten-below-average-scoring",
+      "title": "The 6-0 Vikings are the NFL's only unbeaten team, scoring 20.8 a game",
+      "dek": "Minnesota scores 20.8 points per game and allows 12.3, against a league average of 23.2.",
+      "date": "2026-10-27",
+      "season": 2026,
+      "week": 7,
+      "teams": [
+        "MIN",
+        "GB",
+        "CHI",
+        "TB",
+        "MIA",
+        "NO",
+        "IND",
+        "SF"
+      ],
+      "players": [],
+      "hero_stat": "6-0 with 20.8 points scored per game",
+      "url": "/nfl/stories/2026-10-27-vikings-only-unbeaten-below-average-scoring",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-10-13-titans-fewest-points-scored",
       "title": "The Titans have scored 58 points through Week 5, the fewest in the NFL",
       "dek": "Tennessee is 0-5, but its defense has allowed 109 points, tied for 10th-fewest — the offense is scoring at half the league rate.",
