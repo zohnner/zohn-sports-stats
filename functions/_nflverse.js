@@ -77,20 +77,20 @@ export function computeRecords(games) {
 const recordText = r => `${r.w}-${r.l}${r.t ? '-' + r.t : ''}`;
 const winPct = r => (r.w + r.l + r.t) ? (r.w + r.t / 2) / (r.w + r.l + r.t) : 0;
 
-// Pure: same {name, teams:[{name, record}]} sections the ESPN collector produces.
+// Pure: same {name, teams:[{name, abbr, record}]} sections the ESPN collector produces.
 // Ordered by win% then point differential -- no tiebreakers or playoff seeds.
 export function buildStandingsSections(games, teams) {
     const rec = computeRecords(games);
     const byDiv = {};
     for (const t of teams) {
         if (!rec[t.team_abbr] || !t.team_division) continue;
-        (byDiv[t.team_division] = byDiv[t.team_division] || []).push({ name: t.team_name, r: rec[t.team_abbr] });
+        (byDiv[t.team_division] = byDiv[t.team_division] || []).push({ name: t.team_name, abbr: espnAbbr(t.team_abbr), r: rec[t.team_abbr] });
     }
     return Object.keys(byDiv).sort().map(div => ({
         name: div,
         teams: byDiv[div]
             .sort((a, b) => winPct(b.r) - winPct(a.r) || (b.r.pf - b.r.pa) - (a.r.pf - a.r.pa))
-            .map(t => ({ name: t.name, record: recordText(t.r) })),
+            .map(t => ({ name: t.name, abbr: t.abbr, record: recordText(t.r) })),
     }));
 }
 

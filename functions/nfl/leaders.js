@@ -6,6 +6,9 @@
 // season default the client itself uses) rather than re-implementing ESPN's
 // two-stage leaders->athlete resolution here — one definition of "NFL leaders."
 //
+// Each leader's name links to /nfl/player/:sleeperId (functions/_sleeper.js);
+// names that don't match exactly one Sleeper player stay plain text.
+//
 // D-114 update: each leader's team now links to /nfl/team/:abbr (confirmed live
 // that /api/nflstats already returns ESPN-style abbreviations like "LAR"/"KC",
 // matching the team page's :abbr param directly — no name→abbr map needed here),
@@ -13,6 +16,7 @@
 
 import { shell, rawShell } from '../_shell.js';
 import { nflverseLeaders, NFLVERSE_CREDIT } from '../_nflverse.js';
+import { fetchSleeperPlayers, sleeperIds, playerSlug } from '../_sleeper.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -24,6 +28,7 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
+        const sleeper = fetchSleeperPlayers();
         let data = await fetch(new URL('/api/nflstats', request.url), { cf: { cacheTtl: 900, cacheEverything: true } })
             .then(r => r.ok ? r.json() : null).catch(() => null);
         const fromNflverse = !(data && data.categories && data.categories.length);
@@ -32,13 +37,19 @@ export async function onRequest(context) {
         if (!categories.length) return shell(env, request.url);
         const season = data.season;
 
+        const top = categories.flatMap(c => (c.leaders || []).slice(0, 5));
+        const ids = sleeperIds(await sleeper, top.map(l => ({ name: l.name, team: l.team })));
+        const idOf = new Map(top.map((l, i) => [l, ids[i]]));
+
         const sections = categories.map(c => {
             const leaders = (c.leaders || []).slice(0, 5);
             if (!leaders.length) return null;
             const items = leaders.map(l => {
                 const teamCode = String(l.team || '').toUpperCase();
                 const teamHtml = teamCode ? `<a href="/nfl/team/${esc(teamCode.toLowerCase())}">${esc(teamCode)}</a>` : '';
-                return `<li>${esc(l.name)}${teamHtml ? ` (${teamHtml})` : ''} — ${esc(l.value)} ${esc(c.unit)}</li>`;
+                const id = idOf.get(l);
+                const nameHtml = id ? `<a href="/nfl/player/${esc(id)}/${playerSlug(l.name)}">${esc(l.name)}</a>` : esc(l.name);
+                return `<li>${nameHtml}${teamHtml ? ` (${teamHtml})` : ''} — ${esc(l.value)} ${esc(c.unit)}</li>`;
             }).join('');
             return { c, leaders, html: `<h2>${esc(c.label)} Leaders</h2><ol>${items}</ol>` };
         }).filter(Boolean);

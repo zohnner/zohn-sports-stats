@@ -1183,6 +1183,7 @@ const SUB_NAV_TABS = {
                 { v: 'mlb-highlight-card', l: 'Highlight' }, { v: 'arcade', l: 'Arcade' },
             ] },
         ] },
+        { href: '/mlb/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
     ],
     nfl: [
@@ -1208,6 +1209,7 @@ const SUB_NAV_TABS = {
                 { v: 'nfl-pickem', l: "Pick'em" },
             ] },
         ] },
+        { href: '/nfl/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
     ],
     ncaaf: [
@@ -1217,6 +1219,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaaf-rankings', l: 'Rankings' },
         { v: 'ncaaf-leaders', l: 'Leaders' },
         { v: 'ncaaf-powerrankings', l: 'Power Rankings' },
+        { href: '/ncaaf/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
     ],
     ncaab: [
@@ -1225,6 +1228,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaab-teams', l: 'Teams' },
         { v: 'ncaab-rankings', l: 'Rankings' },
         { v: 'ncaab-powerrankings', l: 'Power Rankings' },
+        { href: '/ncaab/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
     ],
     wnba: [
@@ -1245,9 +1249,16 @@ const SUB_NAV_TABS = {
         { v: 'nba-teams', l: 'Teams' },
         { v: 'nba-leaders', l: 'Leaders' },
         { v: 'nba-powerrankings', l: 'Power Rankings' },
+        { href: '/nba/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
     ],
 };
+
+// Nav items with an href are edge-rendered pages (Stories), not SPA views:
+// navigateTo() never sees them, so their active state comes from the path.
+function _navLinkCurrent(href) {
+    return location.pathname === href || location.pathname.startsWith(href + '/');
+}
 
 function _renderSubNav(sport) {
     const nav = document.getElementById('subNav');
@@ -1270,6 +1281,7 @@ function _renderSubNav(sport) {
                 <div class="sub-nav-menu mega-panel" id="${menuId}" role="menu" hidden><div class="mega-grid" style="--cols:${t.cols.length}">${cols}</div></div>
             </div>`;
         }
+        if (t.href) return `<a class="nav-tab sub-nav-item${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}">${t.l}</a>`;
         return `<button class="nav-tab sub-nav-item" data-view="${t.v}">${t.l}</button>`;
     }).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
@@ -1328,7 +1340,7 @@ const MENU_TABS = {
         { group:'Stats & Leaders' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
         { v:'mlb-teams', l:'Teams', i:'teams' }, { v:'mlb-standings', l:'Standings', i:'standings' },
-        { v:'mlb-games', l:'Scores', i:'scores' }, { v:'mlb-compare', l:'Compare', i:'compare' }, { v:'news', l:'News', i:'extra' },
+        { v:'mlb-games', l:'Scores', i:'scores' }, { v:'mlb-compare', l:'Compare', i:'compare' }, { href:'/mlb/stories', l:'Stories', i:'extra' }, { v:'news', l:'News', i:'extra' },
         { group:'Tools' },
         { v:'mlb-builder', l:'Builder', i:'builder' },
         { v:'mlb-prep', l:'Prep', i:'extra' }, { v:'mlb-highlight-card', l:'Highlight', i:'extra' }, { v:'arcade', l:'Arcade', i:'arcade' },
@@ -1338,7 +1350,7 @@ const MENU_TABS = {
         { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' },
-        { v:'nfl-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
+        { v:'nfl-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/nfl/stories', l:'Stories', i:'extra' }, { v:'news', l:'News', i:'extra' },
         { group:'Draft Prep' },
         { v:'nfl-draftkit', l:'Draft HQ', i:'extra' }, { v:'nfl-rankings', l:'ADP Rankings', i:'extra' },
         { v:'nfl-sos', l:'Schedule', i:'extra' }, { v:'nfl-mock', l:'Mock Draft', i:'extra' },
@@ -1355,13 +1367,14 @@ const MENU_TABS = {
         { v:'ncaaf-scores', l:'Scores', i:'scores' }, { v:'ncaaf-standings', l:'Standings', i:'standings' },
         { v:'ncaaf-teams', l:'Teams', i:'teams' }, { v:'ncaaf-rankings', l:'Rankings', i:'leaders' },
         { v:'ncaaf-leaders', l:'Leaders', i:'leaders' }, { v:'ncaaf-powerrankings', l:'Power Rankings', i:'leaders' },
-        { v:'news', l:'News', i:'extra' },
+        { href:'/ncaaf/stories', l:'Stories', i:'extra' }, { v:'news', l:'News', i:'extra' },
     ],
     ncaab: [
         { group:'College Basketball' },
         { v:'ncaab-scores', l:'Scores', i:'scores' }, { v:'ncaab-standings', l:'Standings', i:'standings' },
         { v:'ncaab-teams', l:'Teams', i:'teams' }, { v:'ncaab-rankings', l:'Rankings', i:'leaders' },
-        { v:'ncaab-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
+        { v:'ncaab-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/ncaab/stories', l:'Stories', i:'extra' },
+        { v:'news', l:'News', i:'extra' },
     ],
     wnba: [
         { group:'WNBA' },
@@ -1374,7 +1387,8 @@ const MENU_TABS = {
         { group:'NBA' },
         { v:'nba-scores', l:'Scores', i:'scores' }, { v:'nba-standings', l:'Standings', i:'standings' },
         { v:'nba-teams', l:'Teams', i:'teams' }, { v:'nba-leaders', l:'Leaders', i:'leaders' },
-        { v:'nba-powerrankings', l:'Power Rankings', i:'leaders' }, { v:'news', l:'News', i:'extra' },
+        { v:'nba-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/nba/stories', l:'Stories', i:'extra' },
+        { v:'news', l:'News', i:'extra' },
     ],
 };
 
@@ -1386,7 +1400,9 @@ function _renderMenuPanel(sport) {
     grid.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
     grid.innerHTML = tabs.map(t => t.group
         ? `<div class="menu-section" role="presentation">${t.group}</div>`
-        : `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
+        : t.href
+            ? `<a class="nav-tab menu-item${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></a>`
+            : `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
     ).join('');
     grid.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
 }

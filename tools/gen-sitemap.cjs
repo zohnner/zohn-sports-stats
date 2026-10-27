@@ -54,8 +54,13 @@ function isoDate(d) { return d.toISOString().slice(0, 10); }
 function slug(s) {
     return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
-function urlTag(loc, changefreq = 'weekly', priority = '0.6') {
-    return `    <url><loc>${BASE}${loc}</loc><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
+// lastmod only where a real date exists: a story's publish date and a game's
+// date (a finished game page never changes). Live-data pages (standings, leaders,
+// teams, players) are re-rendered on every request, so they carry none rather
+// than a fake "today" that would teach crawlers to ignore every lastmod here.
+function urlTag(loc, changefreq = 'weekly', priority = '0.6', lastmod = null) {
+    const lm = /^\d{4}-\d{2}-\d{2}$/.test(lastmod || '') && lastmod <= isoDate(now) ? `<lastmod>${lastmod}</lastmod>` : '';
+    return `    <url><loc>${BASE}${loc}</loc>${lm}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
 }
 async function jget(url) {
     const r = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -91,8 +96,9 @@ async function main() {
         try {
             const idx = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', sport, 'stories', 'index.json'), 'utf8'));
             const stories = idx.stories || [];
-            if (stories.length) add(urlTag(`/${sport}/stories`, 'daily', '0.7'));
-            for (const s of stories) add(urlTag(s.url, 'monthly', '0.6'));
+            const newest = stories.map(s => s.date).sort().pop();
+            if (stories.length) add(urlTag(`/${sport}/stories`, 'daily', '0.7', newest));
+            for (const s of stories) add(urlTag(s.url, 'monthly', '0.6', s.date));
         } catch (e) {
             console.warn(`${sport} stories index unreadable, skipping story URLs: ${e.message}`);
         }
@@ -130,7 +136,7 @@ async function main() {
         const sc = await jget(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=${isoDate(start)}&endDate=${isoDate(end)}`);
         for (const d of (sc.dates || [])) {
             for (const g of (d.games || [])) {
-                if (g.gamePk) add(urlTag(`/mlb/game/${g.gamePk}`, 'never', '0.4'));
+                if (g.gamePk) add(urlTag(`/mlb/game/${g.gamePk}`, 'never', '0.4', d.date));
             }
         }
     } catch (e) { console.error('MLB games:', e.message); }
@@ -184,7 +190,7 @@ async function main() {
         const range = `${isoDate(start).replace(/-/g, '')}-${isoDate(end).replace(/-/g, '')}`;
         const sb = await jget(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${range}`);
         for (const ev of (sb.events || [])) {
-            if (ev.id) add(urlTag(`/ncaaf/game/${ev.id}`, 'never', '0.4'));
+            if (ev.id) add(urlTag(`/ncaaf/game/${ev.id}`, 'never', '0.4', String(ev.date || '').slice(0, 10)));
         }
     } catch (e) { console.error('NCAAF games:', e.message); }
 
@@ -210,7 +216,7 @@ async function main() {
         const range = `${isoDate(start).replace(/-/g, '')}-${isoDate(end).replace(/-/g, '')}`;
         const sb = await jget(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${range}`);
         for (const ev of (sb.events || [])) {
-            if (ev.id) add(urlTag(`/nfl/game/${ev.id}`, 'never', '0.4'));
+            if (ev.id) add(urlTag(`/nfl/game/${ev.id}`, 'never', '0.4', String(ev.date || '').slice(0, 10)));
         }
     } catch (e) { console.error('NFL games:', e.message); }
 
