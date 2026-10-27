@@ -85,7 +85,10 @@ const BballMath = (() => {
     const playClock = (p) => (p.clock && p.clock.displayValue) || '0:00';
     const playT = (p, fmt) => elapsedAt(playPeriod(p), playClock(p), fmt);
     const hasScore = (p) => typeof p.homeScore === 'number' && typeof p.awayScore === 'number';
-    const isFreeThrow = (p) => /free throw/i.test((p.type && p.type.text) || '');
+    // NBA types read "Free Throw - 1 of 2"; NCAAB uses "MadeFreeThrow" for
+    // every attempt, misses included, and gives them a real-looking (25, 0)
+    // coordinate instead of NBA's sentinel. pointsAttempted 1 catches both.
+    const isFreeThrow = (p) => p.pointsAttempted === 1 || /free ?throw/i.test((p.type && p.type.text) || '');
     // End-of-period heaves are shootingPlay but the official box score does
     // not count them as attempts (verified: 401909861's two home heaves were
     // exactly the 97-vs-95 FGA gap). Excluding them keeps every split here
@@ -155,6 +158,19 @@ const BballMath = (() => {
 
     // -- Score timeline --------------------------------------------------
 
+    // A score can go DOWN when officials revoke a basket (NCAAB 401856530:
+    // Duke 42 -> 40 at a TV timeout, then re-scored later). The revoked
+    // points come off that side's most recent events, so the basket isn't
+    // counted twice.
+    function _revoke(ev, side, pts) {
+        for (let i = ev.length - 1; i >= 0 && pts > 0; i--) {
+            if (ev[i].side !== side) continue;
+            const take = Math.min(ev[i].pts, pts);
+            ev[i].pts -= take; pts -= take;
+            if (ev[i].pts === 0) ev.splice(i, 1);
+        }
+    }
+
     // One event per side whose score moved, read from score deltas rather
     // than play.team so a mis-tagged play can't credit the wrong side.
     function scoringEvents(plays, fmt) {
@@ -164,7 +180,9 @@ const BballMath = (() => {
             if (!hasScore(p)) return;
             const t = playT(p, fmt);
             if (p.homeScore > h) ev.push({ side: 'home', pts: p.homeScore - h, t, play: p, home: p.homeScore, away: p.awayScore });
+            else if (p.homeScore < h) _revoke(ev, 'home', h - p.homeScore);
             if (p.awayScore > a) ev.push({ side: 'away', pts: p.awayScore - a, t, play: p, home: p.homeScore, away: p.awayScore });
+            else if (p.awayScore < a) _revoke(ev, 'away', a - p.awayScore);
             h = p.homeScore; a = p.awayScore;
         });
         return ev;
@@ -307,8 +325,9 @@ const BballMath = (() => {
             if (keep(p, ctx)) {
                 out.plays++;
                 if (hasScore(p)) {
-                    if (p.homeScore > h) out.home.pts += p.homeScore - h;
-                    if (p.awayScore > a) out.away.pts += p.awayScore - a;
+                    // Signed deltas, so a revoked basket comes back off.
+                    out.home.pts += p.homeScore - h;
+                    out.away.pts += p.awayScore - a;
                 }
                 const tid = teamIdOf(p);
                 const side = tid === ids.home ? 'home' : tid === ids.away ? 'away' : null;

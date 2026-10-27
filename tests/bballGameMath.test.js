@@ -328,3 +328,24 @@ test('teamSituation on the real live fixture reads cleanly', () => {
     assert.equal(s.fouls, h.fouls.teamFoulsCurrent);
     assert.equal(s.timeouts, h.timeoutsRemaining);
 });
+
+// -- Cross-sport play quirks (verified on NCAAB 401856530) ----------------------
+
+test('NCAAB-style free throws ("MadeFreeThrow", real coordinate) never count as shots', () => {
+    const ft = (made) => ({ id: String(++seq), type: { text: 'MadeFreeThrow' }, shootingPlay: true, scoringPlay: made,
+        pointsAttempted: 1, coordinate: { x: 25, y: 0 }, team: { id: 'H' }, period: { number: 1 }, clock: { displayValue: '5:00' } });
+    assert.equal(M.validShots([ft(true), ft(false)]).length, 0, 'not plotted as rim shots');
+    const s = M.splitWhere([ft(true), ft(false)], { home: 'H', away: 'A' }, NBA, () => true);
+    assert.deepEqual(own(s.home), { pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 1, fta: 2 });
+});
+
+test('a revoked basket (score goes down) is not counted twice', () => {
+    // Home scores 2, officials take it back, then home scores 2 again.
+    const plays = [play(1, '10:00', 0, 2), play(1, '9:00', 0, 0), play(1, '8:00', 0, 2), play(1, '7:00', 3, 2)];
+    const ev = M.scoringEvents(plays, NBA);
+    assert.equal(ev.filter(e => e.side === 'home').reduce((n, e) => n + e.pts, 0), 2);
+    assert.equal(M.runs(ev).biggest.home.pts, 2);
+    const s = M.splitWhere(plays, { home: 'H', away: 'A' }, NBA, () => true);
+    assert.equal(s.home.pts, 2);
+    assert.equal(s.away.pts, 3);
+});
