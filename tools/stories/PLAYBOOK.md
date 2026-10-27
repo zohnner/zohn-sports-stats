@@ -55,9 +55,10 @@ WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in 
    - Headlines from the last 24 hours: `site.web.api.espn.com/apis/site/v2/sports/{sport}/{league}/news`, plus a social/web search of the sport's main subreddit hot list (r/nfl, r/CFB, r/nba, r/CollegeBasketball). Those headlines are candidate **hooks**.
    - A candidate is relevant if it answers a current headline with data, or covers a game from the last 36 hours. Anything else needs an unusually strong angle.
 5. **Prove every angle before writing.** Rank the candidate across the whole league, find the next-closest value, check the base rate. If it's only "interesting" without a comparison that holds up, drop it.
-6. **For each sport with surviving stories:** branch `stories/YYYY-MM-DD-<sport>` from fresh `origin/main`, write each story as three files (format below), run `node tools/stories/check-numbers.cjs <story.md>` on each, then `node tools/stories/build-index.cjs` and `node tools/stories/build-index.cjs --check`. Fix a failing number **at its source** or drop the story. **Never edit a fact to make a sentence pass.**
-7. Push and open **one PR per sport** titled `Stories: <SPORT> YYYY-MM-DD` with the PR body template below. Don't open it as a draft (drafts never auto-merge).
-8. **Report** to the owner in your chat: per sport, what shipped (titles + URLs `https://sportstrata.cc/<sport>/stories/<slug>`), what was dropped, anything skipped. That report is the owner's daily audit.
+6. **One open PR per sport.** Every sport has a single `index.json`, so two open PRs for the same sport conflict and the second can never merge. Before branching for a sport, close any open `stories/*` PR of yours for that sport and carry its stories that are still dated within 3 days into today's branch.
+7. **For each sport with surviving stories:** branch `stories/YYYY-MM-DD-<sport>` from fresh `origin/main`, write each story as three files (format below), run `node tools/stories/check-numbers.cjs <story.md>` on each, then `node tools/stories/build-index.cjs` and `node tools/stories/build-index.cjs --check`. Fix a failing number **at its source** or drop the story. **Never edit a fact to make a sentence pass.**
+8. Push and open **one PR per sport** titled `Stories: <SPORT> YYYY-MM-DD` with the PR body template below. Don't open it as a draft (drafts never auto-merge).
+9. **Report** to the owner in your chat: per sport, what shipped (titles + URLs `https://sportstrata.cc/<sport>/stories/<slug>`), what was dropped, anything skipped, plus how long the run took and any limit you hit. That report is the owner's daily audit.
 
 ## The news hook (D-187)
 
@@ -87,6 +88,15 @@ You don't run on Cloudflare, so ESPN doesn't block you. For any number whose spo
 - NCAAF scoreboard: always pass `groups=80` (FBS) or you get ~25 ranked-leaning games (D-135). NCAAB: `groups=50` (Division I).
 
 Prefer a working sportstrata.cc route whenever one exists. Never invent a URL. If a needed number is unreachable, drop the angle.
+
+## Data gotchas (learned the hard way)
+
+- **NCAAF "current week" is the upcoming week.** ESPN's default scoreboard and its `week` field point at the next slate; the weekend just played is week N−1. Check that games are `completed` before writing a word.
+- **NCAAF rank and record fields.** `curatedRank.current` of 99 means unranked. Records on a past scoreboard are *today's* records, not the record at game time; say "now 5-2", never "a 5-2 team beat…".
+- **NBA scoreboard rejects date ranges** (`dates=YYYYMMDD-YYYYMMDD` returns no events). Loop one day at a time.
+- **NBA standings `differential` is per game**, not a season total (`pointsFor`/`pointsAgainst` are totals). NBA and NCAAB `season` is the end year: 2027 = 2026-27.
+- **The soft-schedule test.** When a team's early numbers might just reflect weak opponents, compare what those same opponents did in their *other* games (opponent `pointsFor` from standings minus their points in this team's games). It answers the skeptic with data; use it by default for early-season offense/defense stories.
+- **Counts need a rate.** "Most X this season" can be an artifact of a bigger slate; give the denominator and the prior weeks' rate (e.g. 5 of 15 vs 12 of 118).
 
 ## Story files
 
