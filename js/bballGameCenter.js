@@ -18,8 +18,18 @@
 //     fouls: 1 to give, NONE), so the strip says "over the limit", never
 //     "in the bonus".
 //   - timeoutsRemaining reads 0 for both teams at halftime (two games
-//     checked, one had shown 5 minutes earlier), so timeouts are hidden
-//     during a break instead of showing a false zero.
+//     checked, one had shown 5 minutes earlier), so a break that reads 0
+//     for both hides timeouts instead of showing a false zero. Other
+//     breaks keep them: at the end of regulation in a tied game (401909869)
+//     both read 2, the real overtime allotment.
+//   - During a break the foul fields mix periods: the ended period's count
+//     next to the next period's foulsToGive/bonusState (5 PF beside
+//     "4 to give" entering OT). Breaks show the count only.
+//   - The same glitches persist into the first instant of the next period:
+//     at OT 5:00 with no plays run, both teams read 0 PF yet "over the
+//     limit" and 0 timeouts (401909869, a minute after reading 2 each).
+//     So "between periods" (ctx.handoff) also covers a clock that still
+//     shows the full period length.
 // ============================================================
 
 const BGC_TABS = [
@@ -81,7 +91,8 @@ function _bgcCtx(data) {
         // Live games keep the tab while shots trickle in so the tab row
         // doesn't jump mid-game; a final with too few located shots hides it.
         shotsTab: shotsAllowed && (state === 'in' || shots.length >= BGC_MIN_SHOTS),
-        inBreak: /HALFTIME|END_PERIOD/.test(stType.name || ''),
+        handoff: /HALFTIME|END_PERIOD/.test(stType.name || '') ||
+            (state === 'in' && st.period > 0 && M.parseClock(st.displayClock) >= M.periodLen(st.period, fmt)),
         colors: _blgMatchupColors(home.team, away.team),
         abbr: { home: (home.team || {}).abbreviation || '', away: (away.team || {}).abbreviation || '' },
     };
@@ -240,16 +251,17 @@ function _bgcStripHtml(ctx) {
             <span class="bgc-strip-sub">${_escHtml(_bgcScoreLine(ctx, lp.awayScore, lp.homeScore))}</span>
         </div>`);
     }
+    const zeroTimeoutHandoff = ctx.handoff && ctx.home.timeoutsRemaining === 0 && ctx.away.timeoutsRemaining === 0;
     const teamRow = (side) => {
         const c = ctx[side];
         const f = c.fouls;
         const bits = [];
         if (f && f.teamFoulsCurrent != null) {
             bits.push(`<span title="Team fouls this period (game total)">${_escHtml(String(f.teamFoulsCurrent))} PF <span class="bgc-muted">(${_escHtml(String(f.teamFouls != null ? f.teamFouls : '—'))})</span></span>`);
-            if (f.bonusState && f.bonusState !== 'NONE') bits.push('<span class="bgc-tag" title="This team is over the foul limit: the opponent shoots free throws on non-shooting fouls">Over limit</span>');
-            else if (f.foulsToGive > 0) bits.push(`<span class="bgc-muted" title="Fouls this team can commit before the opponent shoots free throws">${_escHtml(String(f.foulsToGive))} to give</span>`);
+            if (!ctx.handoff && f.teamFoulsCurrent > 0 && f.bonusState && f.bonusState !== 'NONE') bits.push('<span class="bgc-tag" title="This team is over the foul limit: the opponent shoots free throws on non-shooting fouls">Over limit</span>');
+            else if (!ctx.handoff && f.foulsToGive > 0) bits.push(`<span class="bgc-muted" title="Fouls this team can commit before the opponent shoots free throws">${_escHtml(String(f.foulsToGive))} to give</span>`);
         }
-        if (!ctx.inBreak && c.timeoutsRemaining != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(c.timeoutsRemaining))} TO</span>`);
+        if (!zeroTimeoutHandoff && c.timeoutsRemaining != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(c.timeoutsRemaining))} TO</span>`);
         if (!bits.length) return '';
         return `<div class="bgc-strip-team">${_bgcTeamDot(ctx, side)}<strong>${_escHtml(ctx.abbr[side])}</strong>${bits.join('')}</div>`;
     };
