@@ -68,3 +68,9 @@ Two weeks. Daily Story-to-Video (format 1) + two Clip + Data Says per week (form
 2. Account: revive the existing SportStrata TikTok or fresh start?
 3. Whether format 2's clip sourcing rules (team/reporter media only, credit + takedown honor) are the standing policy.
 4. Verdict stamp wording: "SIGNAL / NOISE" or something more SportStrata-native.
+
+---
+
+## Decision log
+
+**2026-10-27 — Voice route: THE DESK (owner's call).** Daily story videos use a locked synthetic desk voice (measured analyst register, same voice every video, treated as a cast member). Zohn records voiceover himself for occasional bigger pieces only (weekly deep-dives, rivalry weeks). First desk video produced 2026-10-27 from that day's Buccaneers story ("2-5 with a +11 differential") as the format proof. Remaining open items: verdict stamp wording (SIGNAL/NOISE proposed), revive-vs-fresh account call, format-2 sourcing rules as standing policy.
