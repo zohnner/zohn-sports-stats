@@ -1,0 +1,138 @@
+/* NBA Game Center (D-185) — styles for js/bballGameCenter.js. Everything is
+   .bgc- scoped; it sits on top of the .nlg- and .gv- shell classes in
+   css/nflLiveGame.css, which the basketball viewer already reuses. Colors are tokens only: team
+   colors arrive as inline data (DESIGN.md's one sanctioned inline style). */
+
+.bgc-muted { color: var(--text-muted); font-weight: 500; }
+.bgc-pad { padding-left: 1rem; padding-right: 1rem; }
+.bgc-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--radius-full); margin-right: 0.35rem; vertical-align: 1px; flex-shrink: 0; }
+.bgc-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.bgc-when { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--text-subtle); white-space: nowrap; }
+.bgc-score { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+.bgc-stat { display: block; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.bgc-stat-sub { display: block; font-size: 0.66rem; color: var(--text-subtle); font-weight: 600; }
+.bgc-est { display: inline-block; margin-left: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--border-default); border-radius: var(--radius-sm); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; text-transform: lowercase; color: var(--text-muted); background: var(--bg-subtle); vertical-align: 1px; }
+.bgc-better { font-weight: 800; color: var(--text-primary); }
+.bgc-link, .bgc-plink { background: none; border: 0; padding: 0; font: inherit; color: var(--text-primary); cursor: pointer; text-align: left; }
+.bgc-link { font-size: 0.74rem; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.bgc-plink { font-weight: 600; }
+.bgc-plink:hover, .bgc-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.bgc-plink:focus-visible, .bgc-link:focus-visible, .bgc-chip:focus-visible, .bgc-chart:focus-visible, .bgc-newplays:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Freshness receipt, right side of the topbar */
+.bgc-fresh { font-size: 0.68rem; font-weight: 600; color: var(--text-subtle); font-variant-numeric: tabular-nums; }
+.bgc-fresh--stale { color: var(--color-loss); }
+
+/* Game-state strip */
+.bgc-strip { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1px; margin: -0.4rem 0 1rem; background: var(--border-default); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
+.bgc-strip-cell { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.55rem 0.8rem; background: var(--bg-card); min-width: 0; }
+.bgc-strip-play { font-size: 0.8rem; color: var(--text-primary); line-height: 1.3; }
+.bgc-strip-sub { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); }
+.bgc-strip-big { display: flex; align-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--text-primary); }
+.bgc-strip-team { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.74rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.bgc-strip-team strong { color: var(--text-primary); min-width: 2.4rem; }
+.bgc-tag { padding: 0 0.35rem; border-radius: var(--radius-sm); background: var(--bg-subtle); border: 1px solid var(--border-strong); color: var(--text-primary); font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+@media (max-width: 900px) { .bgc-strip { grid-template-columns: 1fr 1fr; } .bgc-strip-cell--play { grid-column: 1 / -1; } }
+
+/* Game Story */
+.bgc-now-body, .bgc-recap-body { padding: 0 1rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.bgc-now-play { display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem; align-items: baseline; font-size: 0.86rem; color: var(--text-primary); }
+.bgc-now-run { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; font-size: 0.82rem; color: var(--text-primary); }
+.bgc-recap-row { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.84rem; color: var(--text-primary); }
+.bgc-recap-row:last-child { border-bottom: none; }
+.bgc-recap-row .bgc-link { align-self: flex-start; margin-top: 0.15rem; }
+.bgc-kp-row { grid-template-columns: 1.2rem 1fr auto; align-items: start; }
+.bgc-kp-main { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.bgc-kp-wp { font-family: var(--font-display); font-weight: 800; font-size: 0.8rem; color: var(--text-primary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bgc-leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1.2rem; padding: 0 1rem 0.8rem; }
+.bgc-leader-team .nlg-leader-team-title { display: flex; align-items: center; }
+.bgc-leader { display: grid; grid-template-columns: 5rem 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.25rem 0; font-size: 0.8rem; border-bottom: 1px solid var(--border-subtle); }
+.bgc-leader:last-child { border-bottom: none; }
+.bgc-leader-val { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .bgc-leaders { grid-template-columns: 1fr; } .bgc-now-play { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+/* Shared stat tables */
+.bgc-table-wrap { overflow-x: auto; padding: 0 1rem 0.4rem; }
+.bgc-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.bgc-table th, .bgc-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); text-align: left; vertical-align: top; }
+.bgc-table thead th { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
+.bgc-table tbody th { font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.bgc-table td { color: var(--text-secondary); }
+.bgc-table--num td, .bgc-table--num thead th:not(:first-child) { text-align: right; }
+.bgc-table tr:last-child th, .bgc-table tr:last-child td { border-bottom: none; }
+.bgc-subhead { margin: 0.6rem 0 0.2rem; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); }
+.bgc-subhead .bgc-muted { text-transform: none; letter-spacing: 0; font-size: 0.7rem; }
+.bgc-subhead + .bgc-table-wrap { padding: 0; }
+.bgc-kv { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; padding: 0 1rem 0.6rem; }
+.bgc-kv > div { display: flex; flex-direction: column; gap: 0.2rem; }
+@media (max-width: 640px) { .bgc-kv { grid-template-columns: 1fr 1fr; } }
+
+/* Filters (Shots + Play-by-Play) */
+.bgc-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0 1rem 0.7rem; }
+.gv-tabpanel > .bgc-filters { padding: 0 0 0.8rem; }
+.bgc-filters label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.bgc-filters select { font: inherit; font-size: 0.78rem; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--text-primary); background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: 0.25rem 0.4rem; max-width: 12rem; }
+.bgc-chips { display: flex; gap: 0.3rem; }
+.bgc-chip { font: inherit; font-size: 0.74rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); border: 1px solid var(--border-default); background: var(--bg-raised); color: var(--text-secondary); cursor: pointer; }
+.bgc-chip--on { background: var(--text-primary); color: var(--bg-base); border-color: var(--text-primary); }
+
+/* Shot chart */
+.bgc-court-wrap { padding: 0 1rem; max-width: 520px; margin: 0 auto; }
+.bgc-court { display: block; width: 100%; height: auto; background: var(--bg-raised); border-radius: var(--radius-md); }
+.bgc-court-lines { stroke: var(--border-strong); stroke-width: 2; }
+.bgc-shot { stroke-width: 1.5; }
+.bgc-shot--made { fill-opacity: 0.85; }
+.bgc-shot--miss { stroke-width: 2.2; }
+.bgc-shot-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1rem; padding: 0.6rem 1rem 0.2rem; font-size: 0.7rem; color: var(--text-secondary); }
+.bgc-shot-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.bgc-legend-mark { fill: var(--text-secondary); stroke: var(--text-secondary); stroke-width: 1.5; }
+.bgc-legend-mark--miss { fill: none; stroke-width: 2; }
+
+/* Scrubbable charts */
+.bgc-chart { position: relative; height: 70px; cursor: crosshair; touch-action: pan-y; border-radius: var(--radius-sm); }
+.bgc-chart--large { height: 180px; }
+.bgc-chart-svg { display: block; width: 100%; height: 100%; }
+.bgc-chart-tick { stroke: var(--border-subtle); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.bgc-chart-mid { stroke: var(--border-strong); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.bgc-chart-area { fill-opacity: 0.16; }
+.bgc-chart-axis { position: absolute; left: 0.3rem; font-size: 0.6rem; font-weight: 700; color: var(--text-subtle); pointer-events: none; }
+.bgc-chart-axis--top { top: 0.15rem; }
+.bgc-chart-axis--bot { bottom: 0.15rem; }
+.bgc-chart-dot { position: absolute; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: var(--radius-full); background: var(--bg-card); border: 1px solid var(--text-primary); color: var(--text-primary); font-size: 0.56rem; font-weight: 800; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.bgc-chart-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-primary); pointer-events: none; }
+.bgc-chart-periods { position: relative; height: 1rem; font-size: 0.6rem; font-weight: 700; color: var(--text-subtle); }
+.bgc-chart-periods span { position: absolute; transform: translateX(-50%); }
+.bgc-readout { min-height: 2.4em; margin-top: 0.3rem; font-size: 0.72rem; line-height: 1.35; color: var(--text-secondary); }
+.nlg-side .bgc-readout { font-size: 0.66rem; }
+
+/* Box score */
+.bgc-bx-scroll { overflow-x: auto; padding: 0 0 0.4rem; }
+.bgc-bx { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+.bgc-bx th, .bgc-bx td { padding: 0.3rem 0.45rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.bgc-bx thead th, .bgc-bx-sep th { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--text-subtle); }
+.bgc-bx .bgc-bx-name { position: sticky; left: 0; z-index: 1; text-align: left; background: var(--bg-card); min-width: 9.5rem; max-width: 13rem; white-space: normal; }
+.bgc-bx-who { display: flex; align-items: baseline; gap: 0.35rem; }
+.bgc-bx-who .bgc-plink, .bgc-bx-who > span:first-child { color: var(--text-primary); white-space: nowrap; }
+.bgc-bx-meta { font-size: 0.62rem; color: var(--text-subtle); white-space: nowrap; }
+.bgc-bx-row--court .bgc-bx-name { box-shadow: inset 2px 0 0 var(--text-primary); }
+.bgc-bx-sep th { padding-top: 0.7rem; }
+.bgc-bx-total th, .bgc-bx-total td { font-weight: 800; color: var(--text-primary); border-bottom: none; }
+.bgc-bx .bgc-bx-dnp { text-align: left; color: var(--text-subtle); font-style: italic; }
+.bgc-badge { display: inline-block; margin: 0.15rem 0.3rem 0 0; padding: 0 0.3rem; border-radius: var(--radius-sm); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; background: var(--bg-subtle); border: 1px solid var(--border-default); color: var(--text-secondary); white-space: nowrap; }
+.bgc-badge--court { color: var(--text-primary); border-color: var(--text-primary); }
+.bgc-badge--warn { color: var(--color-loss); border-color: var(--color-loss); }
+
+/* Play-by-play */
+.bgc-pbp-play .nlg-pbp-text { line-height: 1.4; }
+.bgc-pbp-play .bgc-badge { margin-top: 0; vertical-align: 1px; }
+.bgc-newplays { position: sticky; top: calc(var(--header-height) + var(--ticker-height) + var(--header-sub-h) + 0.5rem); z-index: 3; display: block; margin: 0 auto 0.6rem; padding: 0.35rem 0.9rem; border-radius: var(--radius-full); border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-primary); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-md); }
+
+/* Pregame */
+.bgc-info { padding: 0 1rem 0.6rem; display: flex; flex-direction: column; }
+.bgc-info-row { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.6rem; align-items: baseline; padding: 0.45rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.84rem; color: var(--text-primary); }
+.bgc-info-row:last-child { border-bottom: none; }
+.bgc-countdown { margin-left: 0.4rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+@media (max-width: 640px) { .bgc-info-row { grid-template-columns: 1fr; gap: 0.1rem; } }
+
+/* Scoreboard: close-game badge (state lives in a badge, never the border) */
+.nba-close-badge { margin-left: 0.35rem; padding: 1px 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-strong); background: var(--bg-subtle); color: var(--text-primary); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; }

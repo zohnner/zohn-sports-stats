@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v323';
+const CACHE_NAME    = 'sportstrata-v324';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
     '/css/shareCard.css',
     '/css/nflStandings.css',
     '/css/nflLiveGame.css',
+    '/css/bballGameCenter.css',
     '/css/auth.css',
     '/css/nflPickem.css',
     '/js/math.min.js',
@@ -63,6 +64,8 @@ const STATIC_ASSETS = [
     '/js/ncaab.js',
     '/js/wnba.js',
     '/js/nba.js',
+    '/js/bballGameMath.js',
+    '/js/bballGameCenter.js',
     '/js/bballLiveGame.js',
     '/js/powerRankings.js',
     '/js/glossary.js',

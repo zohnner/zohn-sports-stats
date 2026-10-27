@@ -2337,7 +2337,7 @@ function _heroFromNBAGame(g, kind) {
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
         <div class="hero-visual">${board}</div>`;
-    return { kind, html, onClick: () => { if (typeof showNBAGame === 'function') showNBAGame(g.id); } };
+    return { kind, html, onClick: () => navigateTo('nba-game-' + g.id) };
 }
 
 // _renderHomeHeroNFL(host) lived here -- removed 2026-08-15 (D-100). It was

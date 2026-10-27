@@ -38,10 +38,15 @@
 //     of a hardcoded Q1-4 list — NFL's viewer hardcodes that because
 //     every NFL game has exactly 4 quarters; basketball's period count
 //     varies by sport, so this file reads it from the data instead.
-//   - No live spatial/situation payload (shot clock, court position)
-//     was found on either sport's /summary — no attempt made to build
-//     a court-position graphic. NFL/NCAAF's field viewer has no
-//     basketball counterpart here; left out honestly rather than faked.
+//   - No live court-position payload (shot clock, where the ball is) was
+//     found on either sport's /summary, so there is no NFL-style field
+//     viewer. Corrected 2026-10-26 (D-185): this line used to say no
+//     spatial payload at all, which is wrong for NBA. NBA plays[] carry
+//     per-shot coordinates and competitors carry fouls/timeouts; both
+//     were verified against real NBA games and power the NBA-only Game
+//     Center (js/bballGameCenter.js, gated by the gameCenter/shotChart
+//     flags below). WNBA/NCAAB payloads also carry coordinates, but their
+//     court geometry was not fitted, so they stay off.
 //   - injuries[] exists for WNBA (ESPN's own league-wide injury feed —
 //     unlike NFL, this isn't a Sleeper depth-chart join) but is
 //     confirmed ABSENT on the NCAAB game checked, the same "no free
@@ -62,7 +67,14 @@
 // (.fv-*) classes used.
 // ============================================================
 
-const _blg = { sport: null, eventId: null, timer: null, activeTab: 'summary', lastData: null };
+const _blg = {
+    sport: null, eventId: null, timer: null, activeTab: 'summary', lastData: null,
+    // D-185: last successful fetch time (freshness receipt), the Game Center's
+    // per-render context, Play-by-Play periods the user has open, and the
+    // Game Center's filter / new-play state. All reset when the game changes.
+    lastOkAt: 0, freshTimer: null, ctx: null, pbpOpen: null, pbpLatest: 0,
+    pbpFilter: null, shotFilter: null, pbpCount: 0, pbpSeen: null, pbpNew: 0, scrubbing: false, mainMode: null, tabsSig: '',
+};
 
 const _BLG_SPORTS = {
     wnba:  { label: 'WNBA',  scoresView: 'wnba-scores',  gamePrefix: 'wnba-game-',  fetchSummary: (id) => fetchWNBAGameSummary(id) },
@@ -71,7 +83,9 @@ const _BLG_SPORTS = {
     // work" the file header above predicted — but verified against a real
     // completed NBA /summary before trusting that, not assumed. See
     // js/nba.js's fetchNBAGameSummary comment for the live-check details.
-    nba:   { label: 'NBA',   scoresView: 'nba-scores',   gamePrefix: 'nba-game-',   fetchSummary: (id) => fetchNBAGameSummary(id) },
+    // gameCenter/shotChart/playerView (D-185): NBA-only, see js/bballGameCenter.js.
+    nba:   { label: 'NBA',   scoresView: 'nba-scores',   gamePrefix: 'nba-game-',   fetchSummary: (id) => fetchNBAGameSummary(id),
+             gameCenter: true, shotChart: true, playerView: 'nba-player-' },
 };
 
 const _BLG_TABS = [
@@ -90,7 +104,13 @@ async function _blgShow(sport, eventId) {
     _blgStop();
     const isNewGame = _blg.sport !== sport || _blg.eventId !== eventId;
     _blg.sport = sport; _blg.eventId = eventId;
-    if (isNewGame) { _blg.activeTab = 'summary'; _blg.lastData = null; }
+    if (isNewGame) {
+        Object.assign(_blg, {
+            activeTab: cfg.gameCenter ? 'story' : 'summary', lastData: null, lastOkAt: 0, ctx: null,
+            pbpOpen: null, pbpLatest: 0, pbpFilter: null, shotFilter: null, pbpCount: 0, pbpSeen: null, pbpNew: 0,
+            scrubbing: false, mainMode: null, tabsSig: '',
+        });
+    }
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
     // Same D-075/D-080 lesson: own currentView here rather than trusting the
@@ -105,8 +125,10 @@ async function _blgShow(sport, eventId) {
     }
     try {
         const data = await cfg.fetchSummary(eventId);
+        _blg.lastOkAt = Date.now();
         _blgRender(data);
         _blgMaybePoll(data);
+        if (cfg.gameCenter) _bgcEnsureTicker();
     } catch (err) {
         if (window.ErrorHandler && ErrorHandler.handle) ErrorHandler.handle(grid, err, () => _blgShow(sport, eventId), { tag: cfg.label, title: 'Failed to Load Game' });
         else grid.innerHTML = `<div class="nlg-empty"><p>Couldn't load this game.</p><button class="md-btn" onclick="navigateTo('${cfg.scoresView}')">Back to scores</button></div>`;
@@ -117,19 +139,23 @@ async function _blgShow(sport, eventId) {
 function _blgMaybePoll(data) {
     const state = _blgState(data);
     _blgStop();
-    if (state !== 'in') return;
     const cfg = _BLG_SPORTS[_blg.sport];
     // 20s matches functions/api/wnba.js's and functions/api/ncaab.js's own
     // ttlFor('/summary') edge-cache TTL — polling faster just re-serves the
-    // same cached response, same reasoning as NFL's viewer.
+    // same cached response, same reasoning as NFL's viewer. Game Center
+    // sports also poll pregame (60s, NFL's NLG_PREGAME_POLL_MS cadence) so a
+    // fan on the preview sees tip-off without reloading.
+    const ms = state === 'in' ? 20000 : (state === 'pre' && cfg.gameCenter ? 60000 : 0);
+    if (!ms) return;
     _blg.timer = setInterval(async () => {
         if (AppState.currentView !== cfg.gamePrefix + _blg.eventId) { _blgStop(); return; }
         try {
             const d = await cfg.fetchSummary(_blg.eventId);
+            _blg.lastOkAt = Date.now();
             _blgRender(d);
-            if (_blgState(d) !== 'in') _blgStop();
-        } catch (_) { /* keep last good render on a transient poll failure */ }
-    }, 20000);
+            if (_blgState(d) !== state) _blgMaybePoll(d);
+        } catch (_) { /* keep last good render; the freshness receipt goes stale after 60s */ }
+    }, ms);
 }
 
 function _blgState(data) {
@@ -174,30 +200,42 @@ function _blgRender(data) {
     const awayAbbr = (away.team && away.team.abbreviation) || '';
     if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb(cfg.scoresView, `${awayAbbr} @ ${homeAbbr}`);
 
+    const gc = !!cfg.gameCenter;
+    if (gc) _bgcCtx(data);
     const isFirstRender = grid.className !== 'blg-shell-mounted';
     if (isFirstRender) {
         grid.className = 'blg-shell-mounted'; grid.style.cssText = '';
+        _blg.mainMode = null; _blg.tabsSig = '';
         grid.innerHTML = `
           <div class="nlg-wrap">
             <div class="nlg-topbar">
               <button onclick="navigateTo('${cfg.scoresView}')" class="back-button">← Scores</button>
+              ${gc ? '<span class="bgc-fresh"></span>' : ''}
             </div>
             <div class="nlg-header"></div>
+            ${gc ? '<div class="bgc-strip-host"></div>' : ''}
             <div class="nlg-layout">
               <div class="nlg-main">
-                ${_blgTabsHtml()}
-                <div class="gv-tabpanel"></div>
+                ${gc ? '' : `${_blgTabsHtml()}<div class="gv-tabpanel"></div>`}
               </div>
               ${_blgSidebarHtml(data, comp, home, away)}
             </div>
             <p class="pct-caption nlg-venue-caption"></p>
           </div>`;
+        // Capture phase: <details> toggle events don't bubble.
+        grid.querySelector('.nlg-main').addEventListener('toggle', _blgOnPbpToggle, true);
     } else {
         const sideEl = grid.querySelector('.nlg-side');
-        if (sideEl) sideEl.outerHTML = _blgSidebarHtml(data, comp, home, away);
+        if (sideEl && !_blgUserBusy(sideEl)) sideEl.outerHTML = _blgSidebarHtml(data, comp, home, away);
     }
 
     _blgRenderHeader(comp, home, away);
+    if (gc) {
+        const strip = grid.querySelector('.bgc-strip-host');
+        if (strip) strip.innerHTML = _bgcStripHtml(_blg.ctx);
+        _blgMountMain(grid);
+        if (_blg.freshTimer) _bgcTick();
+    }
     _blgRenderActiveTabBody();
 
     const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
@@ -211,7 +249,12 @@ function _blgRenderHeader(comp, home, away) {
     const st = (comp.status && comp.status.type) || {};
     const state = st.state || 'post';
     const live = state === 'in';
-    const statusText = st.shortDetail || st.detail || (state === 'pre' ? 'Scheduled' : 'Final');
+    let statusText = st.shortDetail || st.detail || (state === 'pre' ? 'Scheduled' : 'Final');
+    // ESPN's pregame text is fixed to Eastern ("10/26 - 8:00 PM EDT").
+    const tip = new Date(comp.date);
+    if (state === 'pre' && _BLG_SPORTS[_blg.sport].gameCenter && !isNaN(tip)) {
+        statusText = tip.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    }
 
     // Plain divs, not nav buttons — neither WNBA nor NCAAB has a team-detail
     // page yet (confirmed: no showWNBATeam/showNCAABTeam anywhere), unlike
@@ -241,10 +284,66 @@ function _blgRenderHeader(comp, home, away) {
         </div>`;
 }
 
+// Game Center main column: a pregame preview replaces the tabs entirely
+// (mirrors NFL's pregame rearchitecture, re-evaluated every render so the
+// tabs appear on the first poll after tip). Tabs are only rebuilt when the
+// set changes, so a focused tab button survives a poll.
+function _blgMountMain(grid) {
+    const main = grid.querySelector('.nlg-main');
+    const ctx = _blg.ctx;
+    if (!main || !ctx) return;
+    if (ctx.state === 'pre') {
+        if (!_blgUserBusy(main)) main.innerHTML = `<div class="bgc-preview">${_bgcPreview(ctx)}</div>`;
+        _blg.mainMode = 'preview'; _blg.tabsSig = '';
+        return;
+    }
+    const sig = _bgcTabs(ctx).map(t => t.id).join(',');
+    if (!_bgcTabs(ctx).some(t => t.id === _blg.activeTab)) _blg.activeTab = 'story';
+    if (_blg.mainMode !== 'tabs') {
+        main.innerHTML = `${_blgTabsHtml()}<div class="gv-tabpanel"></div>`;
+    } else if (sig !== _blg.tabsSig) {
+        const tabsEl = main.querySelector('.gv-tabs');
+        if (tabsEl) tabsEl.outerHTML = _blgTabsHtml();
+    }
+    _blg.mainMode = 'tabs'; _blg.tabsSig = sig;
+}
+
+// True while the user is mid-interaction inside el: scrubbing a chart or
+// with a filter dropdown/chart focused. A poll skips re-rendering el then
+// and catches up on the next one, instead of closing the dropdown or
+// snapping the scrubber back to "latest".
+function _blgUserBusy(el) {
+    if (_blg.scrubbing && el.querySelector('.bgc-chart')) return true;
+    const a = document.activeElement;
+    return !!(a && el.contains(a) && (a.tagName === 'SELECT' || a.classList.contains('bgc-chart')));
+}
+
+// Play-by-Play keeps whichever periods the user opened across polls. Until
+// the user touches one, only the latest period is open; when a new period
+// starts, it opens too if the previous latest was open (following along).
+function _blgPbpOpenSet(latest) {
+    if (_blg.pbpOpen && latest > _blg.pbpLatest && _blg.pbpOpen.has(_blg.pbpLatest)) _blg.pbpOpen.add(latest);
+    _blg.pbpLatest = latest;
+    return _blg.pbpOpen || new Set([latest]);
+}
+
+function _blgOnPbpToggle(ev) {
+    const d = ev.target;
+    if (!d || d.tagName !== 'DETAILS' || !d.dataset.period) return;
+    if (!_blg.pbpOpen) _blg.pbpOpen = new Set([_blg.pbpLatest]);
+    const n = Number(d.dataset.period);
+    if (d.open) _blg.pbpOpen.add(n); else _blg.pbpOpen.delete(n);
+}
+
 // -- Tabs ---------------------------------------------------------------
 
+function _blgTabList() {
+    const cfg = _BLG_SPORTS[_blg.sport];
+    return cfg && cfg.gameCenter && _blg.ctx ? _bgcTabs(_blg.ctx) : _BLG_TABS;
+}
+
 function _blgTabsHtml() {
-    return `<div class="gv-tabs" role="tablist">${_BLG_TABS.map(t => `<button type="button" id="gv-tab-${t.id}" class="gv-tab ${_blg.activeTab === t.id ? 'gv-tab--active' : ''}" role="tab" aria-selected="${_blg.activeTab === t.id}" aria-controls="gv-tabpanel" onclick="_blgSwitchTab('${t.id}')">${_escHtml(t.label)}</button>`).join('')}</div>`;
+    return `<div class="gv-tabs" role="tablist">${_blgTabList().map(t => `<button type="button" id="gv-tab-${t.id}" class="gv-tab ${_blg.activeTab === t.id ? 'gv-tab--active' : ''}" role="tab" aria-selected="${_blg.activeTab === t.id}" aria-controls="gv-tabpanel" onclick="_blgSwitchTab('${t.id}')">${_escHtml(t.label)}</button>`).join('')}</div>`;
 }
 
 function _blgSwitchTab(tab) {
@@ -252,13 +351,18 @@ function _blgSwitchTab(tab) {
     _blg.activeTab = tab;
     const tabsEl = document.querySelector('.gv-tabs');
     if (tabsEl) tabsEl.outerHTML = _blgTabsHtml();
-    _blgRenderActiveTabBody();
+    _blg.pbpSeen = null; _blg.pbpNew = 0;
+    _blgRenderActiveTabBody(true);
 }
 
-function _blgRenderActiveTabBody() {
+// force: a user action (tab click, filter change) rather than a poll, so
+// render even while a dropdown in the panel still has focus.
+function _blgRenderActiveTabBody(force) {
     const data = _blg.lastData;
     const panel = document.querySelector('.gv-tabpanel');
     if (!data || !panel) return;
+    const cfg = _BLG_SPORTS[_blg.sport];
+    if (cfg && cfg.gameCenter) { _blgRenderGameCenterTab(panel, data, !!force); return; }
     const comp = _blgComp(data);
     const home = _blgSide(comp, 'home'), away = _blgSide(comp, 'away');
     const scrollTop = panel.scrollTop;
@@ -276,6 +380,28 @@ function _blgRenderActiveTabBody() {
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-labelledby', 'gv-tab-' + _blg.activeTab);
     panel.scrollTop = scrollTop;
+}
+
+function _blgRenderGameCenterTab(panel, data, force) {
+    const ctx = _bgcCtx(data);
+    if (ctx.state === 'pre' || (!force && _blgUserBusy(panel))) return;
+    const isPbp = _blg.activeTab === 'pbp';
+    const anchor = isPbp && !force ? _bgcPbpAnchor(panel) : null;
+    if (isPbp) {
+        const total = ctx.plays.length;
+        if (anchor) {
+            if (_blg.pbpSeen == null) _blg.pbpSeen = _blg.pbpCount || total;
+            _blg.pbpNew = Math.max(0, total - _blg.pbpSeen);
+        } else if (!force) {
+            _blg.pbpSeen = null; _blg.pbpNew = 0;
+        }
+        _blg.pbpCount = total;
+    }
+    panel.innerHTML = _bgcRenderTab(ctx, _blg.activeTab);
+    panel.id = 'gv-tabpanel';
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', 'gv-tab-' + _blg.activeTab);
+    if (anchor) _bgcPbpRestore(panel, anchor);
 }
 
 // -- Summary tab (linescore + injuries + news — no scoringPlays card: -------
@@ -371,7 +497,10 @@ function _blgRenderPbp(data) {
         (byPeriod[num] = byPeriod[num] || []).push(p);
     });
     const periods = Object.keys(byPeriod).map(Number).sort((a, b) => b - a);
-    const periodHtml = (num, i) => {
+    // D-185: was `i < 1 ? 'open'`, so every 20s poll collapsed any period
+    // the user had expanded. The open set survives polls (_blgPbpOpenSet).
+    const open = _blgPbpOpenSet(periods[0]);
+    const periodHtml = (num) => {
         const list = byPeriod[num].slice().reverse();
         const disp = (list[0] && list[0].period && list[0].period.displayValue) || ('Period ' + num);
         const playsHtml = list.map(p => `<div class="nlg-pbp-play ${p.scoringPlay ? 'nlg-pbp-play--score' : ''}">
@@ -379,7 +508,7 @@ function _blgRenderPbp(data) {
                 <span class="nlg-pbp-text">${_escHtml(p.text || p.shortDescription || '')}</span>
                 <span class="nlg-pbp-score">${p.awayScore != null ? p.awayScore : ''}–${p.homeScore != null ? p.homeScore : ''}</span>
             </div>`).join('');
-        return `<details class="nlg-card" ${i < 1 ? 'open' : ''}>
+        return `<details class="nlg-card" data-period="${num}"${open.has(num) ? ' open' : ''}>
             <summary class="nlg-sum">${_escHtml(disp)}</summary>
             <div class="nlg-pbp-plays">${playsHtml}</div>
         </details>`;
@@ -478,6 +607,8 @@ function _blgRenderAnalyticsTab(data, home, away) {
 // -- Sidebar: win probability + game leaders + game flow + standings --------
 
 function _blgSidebarHtml(data, comp, home, away) {
+    const cfg = _BLG_SPORTS[_blg.sport];
+    if (cfg && cfg.gameCenter) return _bgcSidebarHtml(_bgcCtx(data));
     return `<aside class="nlg-side">
         ${_blgWinProbability(data, home, away)}
         ${_blgSidebarLeaders(data)}

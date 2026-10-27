@@ -3663,3 +3663,23 @@ Same change: unprefixed views now log as `shared`, and the five cold-load paths 
 **Known limits.** A fail-safe page reached at a slugless or wrong-slug URL canonicalizes to that path (no data to compute the real slug during an outage). Hash views reached in-app keep the entry page's canonical, as before.
 
 Cache v323. Tests: `tests/edgeFallback.test.js` (+2, each mutation-checked).
+
+## D-185 — NBA Game Center: the basketball viewer's NBA mode
+**Status:** local branch `nba-game-center-overhaul`, not pushed | **Date:** 2026-10-26
+
+**Problem.** The NBA game page (the shared `js/bballLiveGame.js` viewer) used little of ESPN's NBA `/summary`: Summary was a linescore plus league news, Analytics six ESPN totals. Verified live on production: card clicks skipped the route (no shareable `#nba-game-{id}`, and that hash fell through to home on refresh); live cards said only "LIVE"; scheduled cards showed ESPN's fixed Eastern time; no freshness indicator; sidebar cards appeared and disappeared with data thresholds; every 20s poll collapsed the Play-by-Play periods a reader had opened.
+
+**Decision.** Capability flags on `_BLG_SPORTS` (`gameCenter`, `shotChart`, `playerView`), set for NBA only. A flagged sport renders through `js/bballGameCenter.js`; pure math lives in `js/bballGameMath.js` (`BballMath`). WNBA/NCAAB keep the original viewer and get only the Play-by-Play open-state fix. No new hosts, endpoints, or dependencies.
+
+Shipped for NBA: routed card/hero clicks and cold-load `#nba-game-`/`#nba-player-` branches in `_loadFromHash`; freshness receipt (ESPN `meta.lastUpdatedAt` plus "checked Ns ago", stale after 60s of failed polls, last good render kept); a live state strip (last play, team fouls/limit/fouls to give, timeouts, WP, broadcasts); Game Story (live "right now" + current run, or a final recap: turning point, biggest run, top scorers, eFG% teaser; then runs/leads/droughts, top-5 Key Plays by WP swing joined on `playId`, leaders, injuries, league news); a Shots tab (half-court chart, team/player/period/result filters, five-zone splits); Analytics (Four Factors, est. possessions/pace/ratings, shot profile, scrubbable margin and WP charts with keyboard stepping, Last 5:00 and clutch splits, ESPN-tracked totals); box score with ON COURT, starters/bench, jersey/position, 4+ PF and foul-out/ejected flags, sticky name column, player links; Play-by-Play filters (scoring, key, team, player), WP-swing badges, shot distance/zone, kept place plus a "new plays" banner; pregame preview (local tip time and countdown, venue, broadcasts, officials, season series, ESPN predictor, recent form, season leaders, injuries, news, one provider-labeled line) with 60s pregame polling; a sidebar of the same four cards in every state.
+
+**Data verified on real NBA games** (401909861 final, 401909868-71 live, 401909872/74 pregame):
+- Shot coordinates are feet on the attacking half; hoop origin least-squares fitted at ESPN (25, 0.75) against 201 shots with a stated distance, RMSE 0.5 ft (integer rounding floor). Every 3PA ≥ 22.0 ft, every 2PA ≤ 20.0 ft. Left/right orientation is ESPN's and was not checked against video.
+- Play-derived FG/3P/FT and points reconcile exactly with the box score once end-of-period heaves are excluded (the two heaves were exactly a 97-vs-95 FGA gap). Biggest leads match ESPN `largestLead` exactly.
+- `fouls.bonusState`/`foulsToGive` describe the fouling team. `timeoutsRemaining` reads 0 for both teams at halftime, so timeouts are hidden during breaks. `possession` was false for both teams and is unused.
+- Top-level `broadcasts` can be `[]` while the competition lists one.
+- WNBA/NCAAB payloads also carry coordinates, but their 3PT geometry was not fitted; flipping their flags needs that check first.
+
+**Known limits.** Zone splits rest on integer coordinates, so shots within ~0.5 ft of a zone boundary can land on either side. Possessions/pace/ratings are box-score estimates (labeled `est`). The fixture for the final game is 61 KB (trimmed from 491 KB).
+
+Cache v324. Tests: `tests/bballGameMath.test.js` (20).
