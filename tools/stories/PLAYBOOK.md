@@ -1,68 +1,115 @@
 # SportStrata Stories — Drafting Playbook
 
-Standing instructions for the scheduled drafting agent (Muse). Read this file at the start of every run. Decisions: D-166 (NFL stories), D-171 (MLB extension), D-177 (this routine).
+Cadence: daily
 
-## Hard rules (D-166, non-negotiable)
+Standing instructions for the scheduled drafting agent (Muse). Read this file from `origin/main` at the start of every run. Decisions: D-166 (NFL stories), D-171 (MLB), D-177 (Muse routine), D-187 (daily runs, more sports, news hooks, auto-publish).
 
-- **Not news.** No injuries, trades, signings, quotes, or rumors. Only analysis computed from data. The checker rejects the obvious words (injury, IR, MRI, surgery, traded, signing, free agent, reportedly, press conference, quoted passages) in every field, with no override. A false hit gets rephrased. Passing it does not make a story analysis.
-- **Every number** in the title, dek, hero_stat, body, and social copy must appear in the story's `.facts.json` with its source route. The checker enforces provenance only — it cannot tell when a sourced number supports a false or misleading claim. Correctness of claims is on you.
-- **0–4 stories per run. Zero is valid. Never pad.**
+## What changed in D-187 (read once)
+
+- **You run daily** at 08:00 America/New_York, not weekly.
+- **Merge = publish, and a workflow now merges for you.** `.github/workflows/story-automerge.yml` merges a `stories/*` PR as soon as CI passes, if it touches only `content/<sport>/stories/**` and every new story is dated within 3 days. There is no owner review before publish. The owner audits afterwards. Whatever you push green goes live. Write accordingly.
+- **More sports:** NFL, NCAAF, NBA, NCAAB, MLB (postseason) — each only while in season. See *Sports and caps*.
+- **News may be the hook, never the story.** See *The news hook*.
+- **One PR per sport per run.**
+
+## Hard rules (non-negotiable)
+
+- **Data analysis only.** The story is always a finding computed from data. Injuries, trades, signings, firings may appear only as the declared `hook` (below); the title, dek, hero_stat, body and social copy never report or forecast them. No quotes, rumors, return timelines, or medical detail anywhere. The checker rejects the obvious words (injury, IR, MRI, surgery, traded, signing, free agent, reportedly, press conference, expected to, timeline, day-to-day, sidelined, quoted passages) in every field except `hook`, with no override. A false hit gets rephrased. Passing it does not make a story analysis.
+- **Every number** in the title, dek, hero_stat, hook, body, and social copy must appear in the story's `.facts.json` with its source. The checker enforces provenance only — it cannot tell when a sourced number supports a false or misleading claim. Correctness of claims is on you, and with auto-publish nobody else checks before readers do.
+- **Never pad.** Zero stories for a sport is a valid run.
 - **Small samples get named as small samples.** ("3 games is 3 games.")
-- Byline "SportStrata Data Desk" and the AI-assistance disclosure are rendered by the template (`story-core.cjs`); do not add them to the `.md`.
-- Merge to main = publish. The owner reviews and merges every story. You never merge.
+- Byline "SportStrata Data Desk" and the AI-assistance disclosure are rendered by the template; do not add them to the `.md`.
+- Never push to `main`, never merge, never touch files outside `content/<sport>/stories/**`.
+
+## Sports and caps (max stories per sport per run)
+
+| Sport | In season | Cap | `season` value | Extra frontmatter |
+|---|---|---|---|---|
+| NFL | Sep–Feb | 3 | start year (2026) | `week` (required) |
+| NCAAF | late Aug–Jan | 3 | start year (2026) | `week` (required) |
+| NBA | late Oct–June | 3 | **end year** (2027 = 2026-27) | optional digit-free `round` |
+| NCAAB | Nov–early Apr | 2 | **end year** (2027 = 2026-27) | optional digit-free `round` |
+| MLB | postseason only for now | 2 | year | optional digit-free `round` (e.g. `ALDS`) |
+
+WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in season when its scoreboard had completed games in the last 36 hours.
+
+**Ramp (D-187):** start with NFL, NCAAF and NBA (plus MLB through the World Series). Add NCAAB once its first full week of games is played *and* the previous 7 daily runs all finished cleanly. If a run can't finish every sport, finish the ones you can and say which you skipped and why — a half-checked story is never pushed.
 
 ## Preflight (run first; stop and report to the owner if any fail)
 
 1. `node --version` works.
-2. `git fetch origin` — branch from a fresh `origin/main`.
-3. Verify **each** `/api/*` route the run will need — do not assume. Since 2026-10-13 ESPN refuses all Cloudflare-egress requests (D-176): the sportstrata.cc ESPN proxies (`/api/nfl`, `/api/ncaaf`, `/api/*standings`, `/api/*stats`, `/api/*athlete`, `/api/news`, `/api/nflplayer`, `/api/nflgamelog`) still fail server-side even though the site's browser fallback works for visitors. Routes that don't touch ESPN (`/api/nfladv` nflverse, `/api/mlb` statsapi) should work — verify anyway.
+2. `git fetch origin` — every branch starts from a fresh `origin/main`.
+3. Verify each data route the run will need — do not assume. While ESPN refuses Cloudflare egress (D-176), the sportstrata.cc ESPN proxies fail server-side; fetch ESPN directly (below). `/api/mlb` (statsapi) and `/api/nfladv` (nflverse) don't touch ESPN — verify anyway.
 4. `node tools/stories/build-index.cjs --check` exits 0 on the fresh tree.
+
+## Run procedure
+
+1. **Gate.** If this file on `origin/main` lacks the line `Cadence: daily`, stop (the old weekly procedure applies).
+2. **Clean up your own open PRs first.** List open PRs whose branch starts with `stories/`:
+   - CI red → fix at the source on that branch, re-run the checker, push. If unfixable this run, close it with a one-line reason.
+   - A comment "Not auto-published (D-187)" → read the reason. Stale stories (dated more than 3 days back) are closed, not refreshed: a stale story stays dead.
+   - Anything open more than 2 days → close it with a one-line reason.
+3. **Read what you already rejected.** Read the "Dropped candidates" section of your own PR bodies from the last 14 days, and the frontmatter of every committed story this season. Don't re-pitch a dropped angle unless the data changed, and don't repeat a covered angle.
+4. **Gather relevance inputs, per in-season sport:**
+   - Games completed in the last 36 hours (scoreboard). Note margins, upsets (by ranking or record), overtimes, streaks extended or broken.
+   - Headlines from the last 24 hours: `site.web.api.espn.com/apis/site/v2/sports/{sport}/{league}/news`, plus a social/web search of the sport's main subreddit hot list (r/nfl, r/CFB, r/nba, r/CollegeBasketball). Those headlines are candidate **hooks**.
+   - A candidate is relevant if it answers a current headline with data, or covers a game from the last 36 hours. Anything else needs an unusually strong angle.
+5. **Prove every angle before writing.** Rank the candidate across the whole league, find the next-closest value, check the base rate. If it's only "interesting" without a comparison that holds up, drop it.
+6. **For each sport with surviving stories:** branch `stories/YYYY-MM-DD-<sport>` from fresh `origin/main`, write each story as three files (format below), run `node tools/stories/check-numbers.cjs <story.md>` on each, then `node tools/stories/build-index.cjs` and `node tools/stories/build-index.cjs --check`. Fix a failing number **at its source** or drop the story. **Never edit a fact to make a sentence pass.**
+7. Push and open **one PR per sport** titled `Stories: <SPORT> YYYY-MM-DD` with the PR body template below. Don't open it as a draft (drafts never auto-merge).
+8. **Report** to the owner in your chat: per sport, what shipped (titles + URLs `https://sportstrata.cc/<sport>/stories/<slug>`), what was dropped, anything skipped. That report is the owner's daily audit.
+
+## The news hook (D-187)
+
+When a story answers a news event, declare it:
+
+```
+hook: Chiefs place Josh Simmons on injured reserve
+hook_url: https://www.espn.com/nfl/story/_/id/...
+```
+
+- `hook` and `hook_url` go together; `hook_url` is the exact https URL of the report you read. The page shows it as "The news: …" under the dek.
+- The hook is the **only** place news words are allowed. Numbers in the hook still need facts.
+- The story itself is data: "Kansas City has allowed 14 pressures in the 2 games since Week 6, after 9 in the 5 before" — not "Simmons is expected back in…". Refer to the event neutrally in the body ("since Week 6", "without him in the lineup").
+- No hook is needed for a plain statistical finding.
+
+## Unpublishing
+
+If the owner asks you to unpublish a story: branch `stories/YYYY-MM-DD-unpublish-<slug>`, delete its `.md`, `.facts.json` and `.social.md`, run `build-index.cjs`, open a PR titled `Stories: unpublish <slug>`. It auto-merges like any story PR (the sitemap drops it on its next daily refresh).
 
 ## Data sources while the ESPN proxies are blocked (D-176/D-177)
 
 You don't run on Cloudflare, so ESPN doesn't block you. For any number whose sportstrata.cc route is down, fetch ESPN directly and cite **the exact ESPN URL you fetched** as that fact's source in `.facts.json`:
-- `site.web.api.espn.com/apis/site/v2/sports/{league}/...` — scoreboard, summary, news, teams
-- `site.web.api.espn.com/apis/v2/sports/{league}/standings`
-- `site.web.api.espn.com/apis/site/v3/sports/{league}/leaders?season=YYYY&seasontype=2` — **always pass `seasontype=2`**; without it v3 silently returns postseason leaders once a postseason exists
+- `site.web.api.espn.com/apis/site/v2/sports/{sport}/{league}/...` — scoreboard, summary, news, teams (`football/nfl`, `football/college-football`, `basketball/nba`, `basketball/mens-college-basketball`)
+- `site.web.api.espn.com/apis/v2/sports/{sport}/{league}/standings`
+- `site.web.api.espn.com/apis/site/v3/sports/{sport}/{league}/leaders?season=YYYY&seasontype=2` — **always pass `seasontype=2`**
 - `sports.core.api.espn.com/v2/sports/{sport}/leagues/{league}/...` — athletes, stats
+- NCAAF scoreboard: always pass `groups=80` (FBS) or you get ~25 ranked-leaning games (D-135). NCAAB: `groups=50` (Division I).
 
-Rules: prefer a working sportstrata.cc route whenever one exists (it's the site's own data and the better citation). The checker only requires `source` to be a non-empty string — it does not validate the format — so direct ESPN URLs pass. Never invent a URL: cite the exact URL you fetched. If a needed number is unreachable from both the site and ESPN directly, drop the angle.
-
-## Run procedure
-
-1. Fetch `origin/main` fresh. Create branch `stories/YYYY-MM-DD`.
-2. Explore the past week through `sportstrata.cc/api/*`: NFL standings, scores, `nflstats`, `nfladv` (Next Gen Stats), `nflsos`, Sleeper trends, power rankings, plus MLB postseason games while any were played that week.
-3. **Prove every angle before writing.** Rank the candidate across the whole league, find the next-closest value, check the base rate. If it's only "interesting" without a comparison that holds up, drop it.
-4. Dedup: read committed stories' frontmatter first — no repeating an angle already covered this season.
-5. Write each story as three files (format below), matching the samples' frontmatter and structure exactly. In `.social.md`, the `## X` section must be ≤280 characters **including the story URL**.
-6. `node tools/stories/check-numbers.cjs <story.md>` on each story, then `node tools/stories/build-index.cjs`, then `node tools/stories/build-index.cjs --check`. Fix a failing number **at its source** or drop the story. **Never edit a fact to make a sentence pass.**
-7. **File fence:** change only `content/{nfl,mlb}/stories/**` (including each `index.json`). If anything else needs changing (tool bug, broken API route), don't touch it — note it in the PR body or tell the owner.
-8. Zero surviving stories: no branch, no PR. Log a one-line run summary.
-9. Otherwise push and open **one** PR titled `Stories: week of YYYY-MM-DD`.
+Prefer a working sportstrata.cc route whenever one exists. Never invent a URL. If a needed number is unreachable, drop the angle.
 
 ## Story files
 
-- `<yyyy-mm-dd>-<slug>.md` — frontmatter + restricted Markdown body (paragraphs, `##` headings, `-` lists, `**bold**`, `[text](url)`). No raw HTML.
-  - NFL frontmatter: `title`, `dek`, `date`, `season`, `week`, `teams: []`, `players: []`, `hero_stat`.
-  - MLB frontmatter: same minus `week`; optional digit-free `round` (e.g. `ALDS`) feeds the eyebrow.
-- `<same>.facts.json` — `{"facts": [{"key", "value", "label", "source"}]}`. Every number used, each with value and source route. Write every number you use into this file **as you draft**, not after.
+- `<yyyy-mm-dd>-<slug>.md` — frontmatter + restricted Markdown body (paragraphs, `##` headings, `-` lists, `**bold**`, `[text](url)`). No raw HTML. `date` is the run date.
+  - Frontmatter: `title` (≤80 chars), `dek`, `date`, `season`, `teams: []`, `players: []`, `hero_stat`, plus the sport's extra fields (table above) and optional `hook`/`hook_url`.
+- `<same>.facts.json` — `{"facts": [{"key", "value", "label", "source"}]}`. Every number used. Write each number into this file **as you draft**, not after.
 - `<same>.social.md` — `## Reddit` (title + value-first body, link last) and `## X` (≤280 chars incl. URL).
 
 ## Number checker notes (what it does and doesn't do)
 
-- Extracts numeric tokens from title/dek/hero_stat/body/social: integers, decimals, percentages, `.900`-style rates, `9-of-10`/`9 of 10`, ordinals (`3rd`, `#3`). Each must match a facts value after normalization (`90%` ≡ `0.9` ≡ `.900`; `#3` ≡ `3rd` ≡ `3`).
-- Exempt: ISO dates; `Week N` only when every N is 1..`week`+1; years only in `<year> season|regular season|postseason|draft`; per-sport phrase lists (`STORY_SPORTS` in `story-core.cjs`) — football phrases for NFL only, baseball structure (`9th inning`, `Game 5`, `3-2 count`) for MLB only. Never borrow the other sport's list.
+- Extracts numeric tokens from title/dek/hero_stat/hook/body/social: integers, decimals, percentages, `.900`-style rates, `9-of-10`/`9 of 10`, ordinals (`3rd`, `#3`). Each must match a facts value after normalization (`90%` ≡ `0.9` ≡ `.900`; `#3` ≡ `3rd` ≡ `3`).
+- Exempt: ISO dates; `Week N` only when every N is 1..`week`+1 (NFL/NCAAF); years only in `<year> season|regular season|postseason|draft`; per-sport phrase lists (`STORY_SPORTS` in `story-core.cjs`) — football (NFL, NCAAF), baseball (MLB), basketball (NBA, NCAAB: `4th quarter`, `second half`, `Game 3`, `3-pointer`, `2026-27 season`). Never borrow another sport's list.
 - Spelled-out numbers above "one" are rejected outright — write `$55M`, not "55 million".
-- **What it can't catch:** two facts of equal magnitude are indistinguishable to it; a whole number within 0.5 of any fact passes; a sourced-but-misleading claim passes clean. Re-read every sentence against its fact before shipping.
+- **What it can't catch:** two facts of equal magnitude are indistinguishable to it; a whole number within 0.5 of any fact passes; a sourced-but-misleading claim passes clean. Re-read every sentence against its fact before pushing.
 
-## House voice (from the two published stories)
+## House voice
 
 - **Headline states the finding as a plain fact**, with the scope in it: "The Jaguars have allowed 36 points through Week 3, the fewest in the NFL."
 - **Dek is one sentence**, a second number that deepens the headline.
 - **Open with the core number + attribution**: "…the fewest of the league's 32 teams, per SportStrata's standings data." Never a bare number — always "X, the fewest of 32" or "vs the league average of Y".
 - **Numerals always.** No hype adjectives (no "incredible", "stunning", "shocking").
-- **Structure that repeats:** Game by game (score list) → the mechanism (where the number comes from — bullpen outs, point differential decomposition) → the skeptic's objection, answered with data ("Not just a soft schedule", "Not quite an upset") → **The caveat** (name the small sample, state what can and can't be said).
-- **Internal links** to team pages on first mention: `[Jacksonville Jaguars](/nfl/team/jax)`.
+- **Structure that repeats:** Game by game → the mechanism → the skeptic's objection, answered with data → **The caveat** (name the small sample, state what can and can't be said).
+- **Internal links** on first mention where the site has the page: NFL/MLB/NCAAF teams (`[Jacksonville Jaguars](/nfl/team/jax)`); NBA/NCAAF players (`/nba/player/<id>/<slug>`); otherwise the sport's standings or leaders page.
 - **One idea per story.** 300–450 words.
 - **Social:** Reddit is value-first with the link last; X is the finding in one breath plus URL.
 
@@ -74,18 +121,15 @@ For each story:
 Angle proof: <the comparison, e.g. "36 pts allowed, 1st of 32; next is 41 (SF)">
 Base rate / context: <league average, historical norm, or sample-size caveat>
 Weakest claim: <the one sentence a skeptic would attack first, and why it holds>
+Relevance: <the game (date) or headline (URL) this answers>
 ```
 Then:
 ```
 ### Dropped candidates
 - <angle>: <why it didn't hold up>
 ```
-Write the body so checking each angle takes seconds: proof first, prose second.
+Write the body so checking each angle takes seconds: proof first, prose second. The next runs read it.
 
-## Standing authorization (D-177)
+## Standing authorization (D-177, D-187)
 
-The scheduled run may: push a `stories/*` branch, open one PR per run. It may never: push to `main`, merge, touch files outside `content/{nfl,mlb}/stories/**`. Anything else needs the owner's explicit go. No agent reviewer — CI checker plus owner review.
-
-## Schedule
-
-Every Tuesday 09:00 America/New_York (after Monday Night Football is final; the timezone handles DST). NFL weekly + MLB postseason; MLB goes quiet after the World Series.
+The scheduled run may: push `stories/*` branches, open one PR per sport per run, push fixes to its own open `stories/*` PRs, close its own stale or unfixable `stories/*` PRs, and open unpublish PRs the owner asked for. It may never: push to `main`, merge, or touch files outside `content/<sport>/stories/**`. Anything else needs the owner's explicit go.

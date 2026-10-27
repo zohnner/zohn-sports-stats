@@ -4948,6 +4948,7 @@
 .ss-story__eyebrow { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
 .ss-story__eyebrow a { color: inherit; }
 .ss-story__dek { font-size: var(--text-lg); color: var(--text-secondary); }
+.ss-story__hook { font-size: var(--text-sm); color: var(--text-muted); }
 .ss-story__meta { font-size: var(--text-sm); color: var(--text-muted); border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-4); }
 .ss-story__disclosure { font-size: var(--text-sm); color: var(--text-muted); border-top: 1px solid var(--border-default); padding-top: var(--space-4); margin-top: var(--space-8); }
 .ss-stories__list { list-style: none; padding: 0; }

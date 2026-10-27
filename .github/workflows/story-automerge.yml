@@ -1,0 +1,91 @@
+name: SportStrata Stories Auto-Publish
+
+# D-187: Muse's story PRs publish themselves once CI passes; the owner audits
+# after the fact (a PR deleting the story unpublishes it). Runs after
+# "SportStrata CI" finishes on a pull_request. Never checks out or runs PR code:
+# it reads the PR's file list and story text through git, then merges through
+# the API. A PR that touches anything outside content/<sport>/stories/, or adds
+# a story dated more than 3 days back, gets a comment and stays open for the
+# owner. The merge pins the head SHA CI checked, so a later push can't ride in.
+#
+# A merge made with GITHUB_TOKEN doesn't fire push-triggered workflows, so this
+# dispatches story-share.yml itself.
+
+on:
+  workflow_run:
+    workflows: ['SportStrata CI']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: story-automerge
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'stories/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find the PR CI just passed
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list --head "$HEAD_BRANCH" --state open --json number,headRefOid,isDraft \
+            --jq "map(select(.headRefOid == \"$HEAD_SHA\" and (.isDraft | not))) | .[0].number // empty")
+          if [ -z "$pr" ]; then
+            echo "No open, non-draft PR at $HEAD_SHA (a newer push is pending, or it's a draft)."
+            exit 0
+          fi
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+
+      - name: Check story fence and freshness
+        id: check
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate \
+            --jq '.[] | {filename, status, previous_filename}' | jq -s . > "$RUNNER_TEMP/files.json"
+          git fetch -q origin "$HEAD_SHA"
+          if ! node tools/stories/automerge-check.cjs "$RUNNER_TEMP/files.json" "$HEAD_SHA" 2> "$RUNNER_TEMP/why.txt"; then
+            cat "$RUNNER_TEMP/why.txt"
+            { echo "Not auto-published (D-187). Left open for the owner:"; echo; cat "$RUNNER_TEMP/why.txt"; } > "$RUNNER_TEMP/comment.md"
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
+            exit 1
+          fi
+
+      - name: Merge
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/pulls/$PR/merge" -f sha="$HEAD_SHA" -f merge_method=merge
+
+      - name: Open the share issue
+        if: steps.pr.outputs.number != '' && steps.check.outputs.targets != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGETS: ${{ steps.check.outputs.targets }}
+        run: gh workflow run story-share.yml --ref main -f slug="$TARGETS"

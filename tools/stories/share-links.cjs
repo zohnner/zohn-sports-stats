@@ -136,13 +136,18 @@ function writeOutput(targets) {
 
 function candidates(args) {
     if (args[0] === '--slug') {
-        const slug = args[1] || '';
-        const sport = Object.keys(core.STORY_SPORTS).find(s => fs.existsSync(storyFiles(s, slug).md));
-        if (!core.SLUG_RE.test(slug) || !sport) {
-            console.error(`No story file found for slug "${slug}"`);
-            process.exit(1);
+        // D-187: several slugs (space-separated) when an auto-merged PR dispatches this.
+        const slugs = args.slice(1).join(' ').split(/\s+/).filter(Boolean);
+        const targets = [];
+        for (const slug of slugs) {
+            const sport = Object.keys(core.STORY_SPORTS).find(s => fs.existsSync(storyFiles(s, slug).md));
+            if (!core.SLUG_RE.test(slug) || !sport) {
+                console.error(`No story file found for slug "${slug}"`);
+                process.exit(1);
+            }
+            targets.push({ sport, slug });
         }
-        return writeOutput([{ sport, slug }]);
+        return writeOutput(targets);
     }
     let [before, after] = args;
     // A branch-creating push reports an all-zero "before".

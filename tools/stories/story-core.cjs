@@ -5,6 +5,7 @@
 // Pages Functions via functions/_stories.js (the Functions bundler
 // imports .cjs). Spec: docs/superpowers/specs/2026-09-29-nfl-stories-design.md
 // D-171 added MLB: per-sport required fields, eyebrow and phrase allowlist.
+// D-187 added NCAAF/NBA/NCAAB and the optional news hook (hook + hook_url).
 // ============================================================
 'use strict';
 
@@ -56,6 +57,8 @@ function validateMeta(meta, sport = 'nfl') {
     if (meta.teams !== undefined && !Array.isArray(meta.teams)) problems.push('teams must be a [list]');
     if (meta.players !== undefined && !Array.isArray(meta.players)) problems.push('players must be a [list]');
     if (typeof meta.title === 'string' && meta.title.length > 80) problems.push('title must be 80 characters or fewer (og card limit)');
+    if ((meta.hook === undefined) !== (meta.hook_url === undefined)) problems.push('hook and hook_url go together');
+    if (meta.hook_url !== undefined && !/^https:\/\/[^\s<>"'\\@]+$/.test(String(meta.hook_url))) problems.push('hook_url must be an https URL');
     return problems;
 }
 
@@ -98,6 +101,7 @@ function indexEntry(slug, meta, sport = 'nfl') {
     return {
         slug, title: meta.title, dek: meta.dek, date: String(meta.date),
         season: meta.season,
+        ...(meta.hook !== undefined && { hook: meta.hook, hook_url: meta.hook_url }),
         ...(meta.week !== undefined && { week: meta.week }),
         ...(meta.round !== undefined && { round: meta.round }),
         teams: meta.teams || [], players: meta.players || [],
@@ -140,9 +144,25 @@ const BASEBALL_PHRASES = [
     /\b(?:19|20)\d{2} (?:season|regular season|postseason|World Series|ALCS|NLCS|ALDS|NLDS|AL Wild Card Series|NL Wild Card Series|Wild Card Series|draft)\b/gi,
 ];
 
+// Basketball structure: quarters, halves, playoff games, shot types, season spans.
+const BASKETBALL_PHRASES = [
+    /\b[1-4](?:st|nd|rd|th)[- ]quarter\b/gi,
+    /\b(?:first|second|third|fourth)[- ](?:quarter|half)\b/gi,
+    /\bQ[1-4]\b/g,
+    /\bGame [1-7]\b/gi,
+    /\b3-point(?:er|ers)?\b/gi,
+    /\b(?:19|20)\d{2}(?:-\d{2})? (?:season|regular season|postseason|draft|tournament|NCAA Tournament)\b/gi,
+    /\b76ers\b/gi,
+];
+// NBA/NCAAB seasons are labeled by end year (js/nba.js NBA_SEASON): 2027 = 2026-27.
+const seasonSpan = y => `${y - 1}-${String(y % 100).padStart(2, '0')}`;
+
 const STORY_SPORTS = {
     nfl: { label: 'NFL', required: ['week'], weeks: true, phrases: FOOTBALL_PHRASES, eyebrow: m => `NFL Week ${m.week}` },
     mlb: { label: 'MLB', required: [], weeks: false, phrases: BASEBALL_PHRASES, eyebrow: m => `MLB · ${m.season} ${m.round || 'Season'}` },
+    ncaaf: { label: 'NCAAF', required: ['week'], weeks: true, phrases: FOOTBALL_PHRASES, eyebrow: m => `NCAAF Week ${m.week}` },
+    nba: { label: 'NBA', required: [], weeks: false, phrases: BASKETBALL_PHRASES, eyebrow: m => `NBA · ${seasonSpan(m.season)} ${m.round || 'Season'}` },
+    ncaab: { label: 'NCAAB', required: [], weeks: false, phrases: BASKETBALL_PHRASES, eyebrow: m => `NCAAB · ${seasonSpan(m.season)} ${m.round || 'Season'}` },
 };
 const SPELLED_RE = /\b(?:zero|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen|twice|thrice|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\b/gi;
 const WEEK_RE = /\bweeks? (\d+)(?:\s?[-–]\s?(\d+))?\b/gi;
@@ -167,6 +187,10 @@ const OFF_LIMITS = [
     /\brumou?r\w*/gi, /\breportedly\b/gi, /\bsources? (?:said|say|told)\b/gi, /\btold reporters\b/gi,
     /\bpress conference\b/gi,
     /“[^”\n]*”|"[^"\n]{3,}"/g,
+    // D-187: a story may take a news event as its hook (frontmatter `hook`, exempt
+    // from this list), but the story itself never forecasts the event.
+    /\bexpected to\b/gi, /\btimeline\b/gi, /\bday-to-day\b/gi, /\bweek-to-week\b/gi,
+    /\bout (?:for|indefinitely)\b/gi, /\bsidelined\b/gi,
 ];
 
 function topicProblems(where, text) {
@@ -207,9 +231,9 @@ function checkStory(story, factsDoc, socialText, sport = 'nfl') {
     const problems = factProblems(factsDoc);
     const values = factsDoc.facts.filter(isValidFact).map(f => f.value);
     const maxWeek = cfg.weeks && Number.isInteger(story.meta.week) ? story.meta.week + 1 : 0;
-    const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText]];
+    const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText], ['hook', story.meta.hook]];
     for (const [where, text] of fields) {
-        problems.push(...topicProblems(where, text == null ? '' : text));
+        if (where !== 'hook') problems.push(...topicProblems(where, text == null ? '' : text));
         const clean = scrubText(text == null ? '' : text, maxWeek, cfg.phrases);
         for (const w of clean.match(SPELLED_RE) || []) {
             problems.push({ where, token: w, message: `spelled-out number "${w}" — use numerals` });

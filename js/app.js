@@ -202,6 +202,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadFootballLandingData === 'function') _loadFootballLandingData('ncaaf');
         if (typeof _loadNCAAFLandingSpotlight === 'function') _loadNCAAFLandingSpotlight();
         if (typeof _loadPollRankingsSignature === 'function') _loadPollRankingsSignature(fetchNCAAFRankings, 'ncaaf-rankings', 'NCAAF');
+        if (typeof _loadLandingStories === 'function') _loadLandingStories('ncaaf');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaaf', 'Latest NCAAF');
     },
     mlb: () => {
@@ -217,6 +218,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNCAABLandingGames === 'function') _loadNCAABLandingGames();
         if (typeof _loadNCAABLandingConferenceLeaders === 'function') _loadNCAABLandingConferenceLeaders();
         if (typeof _loadPollRankingsSignature === 'function') _loadPollRankingsSignature(fetchNCAABRankings, 'ncaab-rankings', 'NCAAB');
+        if (typeof _loadLandingStories === 'function') _loadLandingStories('ncaab');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('ncaab', 'Latest NCAAB');
     },
     wnba: () => {
@@ -230,6 +232,7 @@ const _EDITORIAL_LOADERS = {
         if (typeof _loadNBALandingSpotlight === 'function') _loadNBALandingSpotlight();
         if (typeof _loadNBALandingGames === 'function') _loadNBALandingGames();
         if (typeof _loadNBALandingLeaders === 'function') _loadNBALandingLeaders();
+        if (typeof _loadLandingStories === 'function') _loadLandingStories('nba');
         if (typeof _loadSportLandingNews === 'function') _loadSportLandingNews('nba', 'Latest NBA');
     },
 };
@@ -293,7 +296,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         <div class="sl-layout">
             <div class="sl-primary">
                 <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
-                ${sport === 'nfl' || sport === 'mlb' ? `<div id="slStories"></div>` : ''}
+                ${STORY_SPORTS.includes(sport) ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
                 ${slots.games ? `<div id="slGames"></div>` : ''}
                 ${slots.leaders ? `<div id="slLeaders"></div>` : ''}
