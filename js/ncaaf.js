@@ -508,7 +508,7 @@ function _ncaafGameCard(g) {
     const teamBlock = (t, won, extraCls) => `
         <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" ${t.id ? `onclick="event.stopPropagation(); navigateTo('ncaaf-team-${_escHtml(String(t.id))}')" role="button" tabindex="0"` : ''} aria-label="${_escHtml(t.name || t.abbr)}">
             <div class="game-team-logo" ${t.color ? `style="background:linear-gradient(135deg,#${_escHtml(t.color)}cc,#${_escHtml(t.color)}55)"` : ''}>
-                ${t.logo ? `<img class="game-logo-img" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${t.logo ? `<img class="game-logo-img" src="${_escHtml(t.logo)}" alt="${_escHtml(t.abbr)}" loading="lazy" data-remove-on-error>` : ''}
                 <span class="game-logo-text">${_escHtml(t.abbr)}</span>
             </div>
             <div class="game-team-abbr">${t.rank ? `<span class="game-team-rank">#${t.rank}</span> ` : ''}${_escHtml(t.abbr)}</div>
@@ -655,15 +655,10 @@ function updateNCAAFTicker(games) {
         ticker.innerHTML = `<div class="ticker__item">${idleMsg}</div>`;
         return;
     }
-    const items = [...scored, ...scored]
+    const items = scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNCAAFGame(g)))
         .join('');
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-    }));
+    Scorebug.fillTicker(ticker, items);
 }
 
 function _renderNCAAFView(view) {

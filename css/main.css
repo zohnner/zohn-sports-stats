@@ -470,10 +470,24 @@ header {
     border-top: 1px solid var(--border-default);
     flex-shrink: 0;
 }
-.header-ticker .ticker {
+/* The clip box is fixed and starts at the SCORES pill's right edge, so items
+   never slide under it. The track inside is as wide as its content: the
+   tickerScroll loop moves it by -50% of its own width, which is only one
+   copy of the items if the track isn't squeezed to the strip's width. */
+.ticker-viewport {
     flex: 1;
     min-width: 0;
+    display: flex;
     overflow: hidden;
+}
+.header-ticker .ticker {
+    flex: none;
+    width: max-content;
+}
+@media (prefers-reduced-motion: reduce) {
+    .header-ticker .ticker { animation: none; }
+    .ticker-viewport { overflow-x: auto; scrollbar-width: none; }
+    .ticker-viewport::-webkit-scrollbar { display: none; }
 }
 
 /* ── Menu button (mobile only) ──────────────────────────────── */

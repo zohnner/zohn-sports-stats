@@ -3305,7 +3305,7 @@ function _createMLBGameCard(game) {
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${homeTeam.name || homeAbbr}">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
-                    ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" loading="lazy" data-hide-on-error>` : ''}
+                    ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" alt="${_escHtml(homeAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${homeAbbr}</span>
                 </div>
                 <div class="game-team-abbr">${homeAbbr}</div>
@@ -3318,7 +3318,7 @@ function _createMLBGameCard(game) {
             </div>
             <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}" data-team-id="${awayTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${awayTeam.name || awayAbbr}">
                 <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
-                    ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" loading="lazy" data-hide-on-error>` : ''}
+                    ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" alt="${_escHtml(awayAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${awayAbbr}</span>
                 </div>
                 <div class="game-team-abbr">${awayAbbr}</div>
@@ -3329,12 +3329,6 @@ function _createMLBGameCard(game) {
         ${scorecardBtn}
         <div class="game-weather" data-weather-team="${homeTeam.id}"></div>
     `;
-
-    card.querySelectorAll('.game-logo-img').forEach(img => {
-        img.addEventListener('load', () => {
-            img.parentElement.querySelector('.game-logo-text')?.style.setProperty('display', 'none');
-        }, { once: true });
-    });
 
     card.querySelectorAll('.game-team[data-team-id]').forEach(el => {
         const handler = e => {
@@ -5484,20 +5478,9 @@ function updateMLBTicker(games) {
         return;
     }
 
-    const items = [...scored, ...scored]
+    Scorebug.fillTicker(ticker, scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeMLBGame(g)))
-        .join('');
-
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-
-    // Proportional scroll speed — same logic as NBA ticker in games.js
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) {
-            ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-        }
-    }));
+        .join(''));
 }
 
 // ── Standings ─────────────────────────────────────────────────

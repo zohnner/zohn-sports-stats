@@ -770,7 +770,7 @@ function _createNFLGameCard(game, isTopLeverage) {
         return `
         <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" data-team-abbr="${_escHtml(team.abbr)}" style="cursor:pointer" role="button" tabindex="0" aria-label="${_escHtml(team.name || team.abbr)}">
             <div class="game-team-logo" ${color ? `style="background:linear-gradient(135deg,${color}cc,${color}55)"` : ''}>
-                ${team.logo ? `<img class="game-logo-img" src="${_escHtml(team.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
+                ${team.logo ? `<img class="game-logo-img" src="${_escHtml(team.logo)}" alt="${_escHtml(team.abbr)}" loading="lazy" data-remove-on-error>` : ''}
                 <span class="game-logo-text">${_escHtml(team.abbr)}</span>
             </div>
             <div class="game-team-abbr">${_escHtml(team.abbr)}</div>
@@ -862,12 +862,6 @@ function _createNFLGameCard(game, isTopLeverage) {
             `<div class="game-leader-row"><span class="game-leader-cat">${_escHtml(l.cat)}</span> ${_escHtml(l.teamAbbr)} ${_escHtml(l.name)} — ${_escHtml(l.stat)}</div>`
         ).join('')}</div>` : ''}
     `;
-
-    card.querySelectorAll('.game-logo-img').forEach(img => {
-        img.addEventListener('load', () => {
-            img.parentElement.querySelector('.game-logo-text')?.style.setProperty('display', 'none');
-        }, { once: true });
-    });
 
     // Per-team click-through to that team's page (mirrors MLB's card), same
     // stopPropagation-guarded pattern so it doesn't fight the card-level
@@ -1476,16 +1470,10 @@ function updateNFLTicker(games) {
         return;
     }
 
-    const items = [...scored, ...scored]
+    const items = scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNFLGame(g)))
         .join('');
-
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-    }));
+    Scorebug.fillTicker(ticker, items);
 }
 
 // ── Display: Stat Leaders (real season stats via /api/nflstats) ──
