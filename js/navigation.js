@@ -1012,6 +1012,10 @@ function _loadFromHash() {
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
     const ncaabGameMatch     = hash.match(/^ncaab-game-([A-Za-z0-9]+)$/);
+    // D-185: neither had a branch, so a refreshed or shared #nba-game-{id} /
+    // #nba-player-{id} landed on home.
+    const nbaGameMatch       = hash.match(/^nba-game-([A-Za-z0-9]+)$/);
+    const nbaPlayerMatch     = hash.match(/^nba-player-(\d+)$/);
 
     // Cold-load restores below that bypass navigateTo() still log the entry view.
     if (mlbCompareMatch || mlbScorecardMatch || mlbPlayerMatch || mlbTeamMatch) _trackPageView(hash);
@@ -1057,6 +1061,10 @@ function _loadFromHash() {
         AppState.currentSport = 'ncaab';
         _applySportUI('ncaab');
         navigateTo('ncaab-game-' + ncaabGameMatch[1], false);
+    } else if (nbaGameMatch || nbaPlayerMatch) {
+        AppState.currentSport = 'nba';
+        _applySportUI('nba');
+        navigateTo(hash, false);
     } else if (ncaafTeamMatch) {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');
