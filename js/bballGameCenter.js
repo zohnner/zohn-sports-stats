@@ -30,6 +30,11 @@
 //     limit" and 0 timeouts (401909869, a minute after reading 2 each).
 //     So "between periods" (ctx.handoff) also covers a clock that still
 //     shows the full period length.
+//   - Through the rest of that OT both teams read timeoutsRemaining 0 AND
+//     timeoutsUsed 0, though each had used exactly 7 in regulation and
+//     none in OT: ESPN blanks the whole block. 0 remaining with 0 used is
+//     impossible, so that pair hides the team's timeouts; a real late-game
+//     0 always has used > 0 and still shows.
 // ============================================================
 
 const BGC_TABS = [
@@ -251,7 +256,11 @@ function _bgcStripHtml(ctx) {
             <span class="bgc-strip-sub">${_escHtml(_bgcScoreLine(ctx, lp.awayScore, lp.homeScore))}</span>
         </div>`);
     }
+    // 0 remaining with 0 used is impossible (unused timeouts are remaining
+    // ones), so it marks a blanked block. Without timeoutsUsed, fall back to
+    // the between-periods both-zero signature.
     const zeroTimeoutHandoff = ctx.handoff && ctx.home.timeoutsRemaining === 0 && ctx.away.timeoutsRemaining === 0;
+    const timeoutsBlank = (c) => c.timeoutsRemaining === 0 && (c.timeoutsUsed === 0 || (c.timeoutsUsed == null && zeroTimeoutHandoff));
     const teamRow = (side) => {
         const c = ctx[side];
         const f = c.fouls;
@@ -261,7 +270,7 @@ function _bgcStripHtml(ctx) {
             if (!ctx.handoff && f.teamFoulsCurrent > 0 && f.bonusState && f.bonusState !== 'NONE') bits.push('<span class="bgc-tag" title="This team is over the foul limit: the opponent shoots free throws on non-shooting fouls">Over limit</span>');
             else if (!ctx.handoff && f.foulsToGive > 0) bits.push(`<span class="bgc-muted" title="Fouls this team can commit before the opponent shoots free throws">${_escHtml(String(f.foulsToGive))} to give</span>`);
         }
-        if (!zeroTimeoutHandoff && c.timeoutsRemaining != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(c.timeoutsRemaining))} TO</span>`);
+        if (!timeoutsBlank(c) && c.timeoutsRemaining != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(c.timeoutsRemaining))} TO</span>`);
         if (!bits.length) return '';
         return `<div class="bgc-strip-team">${_bgcTeamDot(ctx, side)}<strong>${_escHtml(ctx.abbr[side])}</strong>${bits.join('')}</div>`;
     };
