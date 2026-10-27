@@ -4,7 +4,7 @@ Standing instructions for the scheduled drafting agent (Muse). Read this file at
 
 ## Hard rules (D-166, non-negotiable)
 
-- **Not news.** No injuries, trades, signings, quotes, or rumors. Only analysis computed from data.
+- **Not news.** No injuries, trades, signings, quotes, or rumors. Only analysis computed from data. The checker rejects the obvious words (injury, IR, MRI, surgery, traded, signing, free agent, reportedly, press conference, quoted passages) in every field, with no override. A false hit gets rephrased. Passing it does not make a story analysis.
 - **Every number** in the title, dek, hero_stat, body, and social copy must appear in the story's `.facts.json` with its source route. The checker enforces provenance only — it cannot tell when a sourced number supports a false or misleading claim. Correctness of claims is on you.
 - **0–4 stories per run. Zero is valid. Never pad.**
 - **Small samples get named as small samples.** ("3 games is 3 games.")
