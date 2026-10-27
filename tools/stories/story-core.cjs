@@ -156,6 +156,26 @@ function scrubText(text, maxWeek, phrases) {
     return t;
 }
 
+// PLAYBOOK "Not news": no injuries, transactions, reporting or quotes. A word
+// list cannot judge a story, but it stops the obvious cases (the Simmons IR
+// story passed the number checker). No override: a false hit gets rephrased.
+const OFF_LIMITS = [
+    /\binjur(?:y|ies|ed)\b/gi, /\binjured reserve\b/gi, /\bIR\b/g, /\bherniat\w*/gi, /\bMRI\b/g,
+    /\bsurger(?:y|ies)\b/gi, /\bconcussion\w*/gi, /\btorn\b/gi, /\bsprain\w*/gi,
+    /\btrad(?:ed|es)\b/gi, /\btrade (?:for|with|to)\b/gi, /\bsign(?:ed|ing|s)\b/gi,
+    /\bcontract extension\b/gi, /\bfree agen\w*/gi,
+    /\brumou?r\w*/gi, /\breportedly\b/gi, /\bsources? (?:said|say|told)\b/gi, /\btold reporters\b/gi,
+    /\bpress conference\b/gi,
+    /“[^”\n]*”|"[^"\n]{3,}"/g,
+];
+
+function topicProblems(where, text) {
+    const t = String(text).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1').replace(/https?:\/\/\S+/g, ' ');
+    const seen = new Set();
+    for (const re of OFF_LIMITS) for (const m of t.match(re) || []) seen.add(m);
+    return [...seen].map(token => ({ where, token, message: `off-limits topic "${token}" — Stories are data analysis only (PLAYBOOK: not news)` }));
+}
+
 function isValidFact(f) {
     return !!f && typeof f.key === 'string' && typeof f.value === 'number' && Number.isFinite(f.value)
         && typeof f.source === 'string' && f.source.trim() !== '';
@@ -189,6 +209,7 @@ function checkStory(story, factsDoc, socialText, sport = 'nfl') {
     const maxWeek = cfg.weeks && Number.isInteger(story.meta.week) ? story.meta.week + 1 : 0;
     const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText]];
     for (const [where, text] of fields) {
+        problems.push(...topicProblems(where, text == null ? '' : text));
         const clean = scrubText(text == null ? '' : text, maxWeek, cfg.phrases);
         for (const w of clean.match(SPELLED_RE) || []) {
             problems.push({ where, token: w, message: `spelled-out number "${w}" — use numerals` });
