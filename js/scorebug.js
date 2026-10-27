@@ -264,9 +264,31 @@
             </div>`;
     }
 
+    // tickerScroll moves the track by -50% of its own width, so the track holds
+    // two identical halves, and each half must be at least as wide as the
+    // screen or the loop shows empty space before it wraps. A poll that
+    // brings back the same items leaves the DOM alone, so the scroll and any
+    // hover pause carry on undisturbed; the first-child check catches another
+    // writer (skeleton, idle message) having replaced the items since.
+    function fillTicker(ticker, itemsHtml) {
+        if (!ticker || !itemsHtml) return;
+        ticker.classList.remove('ticker--idle');
+        if (ticker._ssItems === itemsHtml && ticker._ssFirst && ticker._ssFirst.parentNode === ticker) return;
+        ticker.innerHTML = itemsHtml;
+        const reduce = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const oneW = ticker.scrollWidth;
+        if (!reduce && oneW > 0) {
+            const half = itemsHtml.repeat(Math.max(1, Math.ceil((global.innerWidth || 0) / oneW)));
+            ticker.innerHTML = half + half;
+            ticker.style.animationDuration = Math.max(15, Math.round(ticker.scrollWidth / 2 / 60)) + 's';
+        }
+        ticker._ssItems = itemsHtml;
+        ticker._ssFirst = ticker.firstElementChild;
+    }
+
     global.Scorebug = {
         normalizeMLBGame, normalizeNFLGame, normalizeNCAAFGame,
         normalizeNBAGame, normalizeNCAABGame, normalizeWNBAGame,
-        renderScoreCard, renderTickerItem,
+        renderScoreCard, renderTickerItem, fillTicker,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

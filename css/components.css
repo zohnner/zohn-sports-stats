@@ -1012,6 +1012,11 @@
     position: relative;
     z-index: 0;
 }
+/* A logo that fails to load is removed (data-remove-on-error), which is what
+   lets the abbreviation show. Hiding it whenever the img is present also
+   works for cards rendered as HTML strings, where there's no element to
+   hang a load listener on. */
+.game-logo-img + .game-logo-text { display: none; }
 
 .game-team-abbr {
     font-size: var(--text-sm);

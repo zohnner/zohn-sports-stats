@@ -302,12 +302,16 @@ function _iconSvg(key, size = 16) {
 }
 
 // Single capture-phase listener replaces all inline onerror="this.style.display='none'" handlers.
-// Mark any <img> with data-hide-on-error to opt in.
+// Mark any <img> with data-hide-on-error to opt in. data-remove-on-error takes the
+// img out of the DOM instead, for markup whose CSS shows a fallback sibling only
+// once the img is gone (.game-logo-img + .game-logo-text).
 if (typeof window !== 'undefined') {
     document.addEventListener('error', e => {
         if (e.target.tagName !== 'IMG') return;
         if ('hideOnError' in e.target.dataset) {
             e.target.style.display = 'none';
+        } else if ('removeOnError' in e.target.dataset) {
+            e.target.remove();
         } else if ('logoFallback' in e.target.dataset) {
             const span = document.createElement('span');
             span.style.cssText = 'font-size:1.4rem;font-weight:800;color:#fff';

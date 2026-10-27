@@ -210,7 +210,7 @@ function updateNBATicker(games) {
     const row = (t, cls) => `
         <span class="ticker-team">${_escHtml(t.abbr)}</span>
         <span class="ticker-score${cls}">${t.score ?? 0}</span>`;
-    const items = [...scored, ...scored].map(g => {
+    const items = scored.map(g => {
         const pillCls = g.isLive ? 'live' : g.isFinal ? 'final' : 'sched';
         const pillLbl = g.isLive ? 'LIVE' : g.isFinal ? 'F' : 'SCH';
         return `<div class="ticker__item${g.isLive ? ' ticker__item--live' : g.isFinal ? ' ticker__item--final' : ''}" data-game-id="${_escHtml(g.id)}" data-sport="nba" style="cursor:pointer">
@@ -224,12 +224,7 @@ function updateNBATicker(games) {
         </div>`;
     }).join('');
     if (!items) return;
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-    }));
+    Scorebug.fillTicker(ticker, items);
 }
 
 function _renderNBAView(view) {

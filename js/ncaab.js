@@ -276,16 +276,11 @@ function updateNCAABTicker(games) {
         ticker.innerHTML = `<div class="ticker__item">${idleMsg}</div>`;
         return;
     }
-    const items = [...scored, ...scored]
+    const items = scored
         .map(g => Scorebug.renderTickerItem ? Scorebug.renderTickerItem(Scorebug.normalizeNCAABGame(g)) : '')
         .join('');
     if (!items) return;
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-    }));
+    Scorebug.fillTicker(ticker, items);
 }
 
 function _renderNCAABView(view) {

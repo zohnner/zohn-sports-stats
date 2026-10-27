@@ -880,15 +880,7 @@ async function _updateHomeTicker({ live = false } = {}) {
         return a.ts - b.ts;
     });
 
-    const items = [...entries, ...entries].map(e => Scorebug.renderTickerItem(e.model)).join('');
-    ticker.classList.remove('ticker--idle');
-    ticker.innerHTML = items;
-
-    // Proportional scroll speed — same logic updateMLBTicker already uses.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const w = ticker.scrollWidth;
-        if (w > 0) ticker.style.animationDuration = Math.max(15, Math.round(w / 2 / 60)) + 's';
-    }));
+    Scorebug.fillTicker(ticker, entries.map(e => Scorebug.renderTickerItem(e.model)).join(''));
 }
 
 function loadHome() {
