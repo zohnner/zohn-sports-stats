@@ -256,21 +256,15 @@ function _bgcStripHtml(ctx) {
             <span class="bgc-strip-sub">${_escHtml(_bgcScoreLine(ctx, lp.awayScore, lp.homeScore))}</span>
         </div>`);
     }
-    // 0 remaining with 0 used is impossible (unused timeouts are remaining
-    // ones), so it marks a blanked block. Without timeoutsUsed, fall back to
-    // the between-periods both-zero signature.
-    const zeroTimeoutHandoff = ctx.handoff && ctx.home.timeoutsRemaining === 0 && ctx.away.timeoutsRemaining === 0;
-    const timeoutsBlank = (c) => c.timeoutsRemaining === 0 && (c.timeoutsUsed === 0 || (c.timeoutsUsed == null && zeroTimeoutHandoff));
     const teamRow = (side) => {
-        const c = ctx[side];
-        const f = c.fouls;
+        const t = BballMath.teamSituation(ctx[side], ctx[side === 'home' ? 'away' : 'home'], ctx.handoff);
         const bits = [];
-        if (f && f.teamFoulsCurrent != null) {
-            bits.push(`<span title="Team fouls this period (game total)">${_escHtml(String(f.teamFoulsCurrent))} PF <span class="bgc-muted">(${_escHtml(String(f.teamFouls != null ? f.teamFouls : '—'))})</span></span>`);
-            if (!ctx.handoff && f.teamFoulsCurrent > 0 && f.bonusState && f.bonusState !== 'NONE') bits.push('<span class="bgc-tag" title="This team is over the foul limit: the opponent shoots free throws on non-shooting fouls">Over limit</span>');
-            else if (!ctx.handoff && f.foulsToGive > 0) bits.push(`<span class="bgc-muted" title="Fouls this team can commit before the opponent shoots free throws">${_escHtml(String(f.foulsToGive))} to give</span>`);
+        if (t.fouls != null) {
+            bits.push(`<span title="Team fouls this period (game total)">${_escHtml(String(t.fouls))} PF <span class="bgc-muted">(${_escHtml(String(t.gameFouls != null ? t.gameFouls : '—'))})</span></span>`);
+            if (t.overLimit) bits.push('<span class="bgc-tag" title="This team is over the foul limit: the opponent shoots free throws on non-shooting fouls">Over limit</span>');
+            else if (t.toGive != null) bits.push(`<span class="bgc-muted" title="Fouls this team can commit before the opponent shoots free throws">${_escHtml(String(t.toGive))} to give</span>`);
         }
-        if (!timeoutsBlank(c) && c.timeoutsRemaining != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(c.timeoutsRemaining))} TO</span>`);
+        if (t.timeouts != null) bits.push(`<span title="Timeouts remaining">${_escHtml(String(t.timeouts))} TO</span>`);
         if (!bits.length) return '';
         return `<div class="bgc-strip-team">${_bgcTeamDot(ctx, side)}<strong>${_escHtml(ctx.abbr[side])}</strong>${bits.join('')}</div>`;
     };

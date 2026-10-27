@@ -281,3 +281,50 @@ test('pregame fixture: every helper degrades to empty, never throws', () => {
     assert.equal(M.efficiency(box(d, h.team.id), box(d, a.team.id), 0, 0, 0, fmt), null);
     assert.equal(M.clutch(d.plays, ids, fmt).plays, 0);
 });
+
+// -- Live foul/timeout trust (all seen live on 401909869, MIN @ CLE, OT) -------
+
+const team = (rem, used, cur, toGive, bonus, total = 17) => ({
+    timeoutsRemaining: rem, ...(used === undefined ? {} : { timeoutsUsed: used }),
+    fouls: { teamFouls: total, teamFoulsCurrent: cur, foulsToGive: toGive, bonusState: bonus },
+});
+const sit = (t, o, handoff) => own(M.teamSituation(t, o, handoff));
+
+test('teamSituation passes clean mid-period values through', () => {
+    const t = team(1, 6, 6, 0, 'DOUBLE', 20);
+    assert.deepEqual(sit(t, t, false), { fouls: 6, gameFouls: 20, overLimit: true, toGive: null, timeouts: 1 });
+    assert.deepEqual(sit(team(3, 4, 4, 1, 'NONE'), team(3, 4, 4, 1, 'NONE'), false).toGive, 1);
+});
+
+test('teamSituation keeps a real late-game 0 timeouts (used > 0)', () => {
+    const t = team(0, 7, 2, 2, 'NONE');
+    assert.equal(sit(t, t, false).timeouts, 0);
+});
+
+test('teamSituation hides the impossible 0 remaining / 0 used block', () => {
+    const t = team(0, 0, 0, 0, 'NONE');
+    assert.equal(sit(t, t, false).timeouts, null, 'mid-OT, not a handoff');
+});
+
+test('teamSituation never reports over the limit at 0 team fouls', () => {
+    const t = team(2, 0, 0, 0, 'DOUBLE');
+    assert.equal(sit(t, t, false).overLimit, false);
+});
+
+test('teamSituation shows counts only between periods', () => {
+    // End of regulation: the ended quarter's 5 PF beside OT's "4 to give".
+    const t = team(2, 7, 5, 4, 'NONE');
+    assert.deepEqual(sit(t, t, true), { fouls: 5, gameFouls: 17, overLimit: false, toGive: null, timeouts: 2 });
+    // Halftime 0/0 with no timeoutsUsed field: hidden by the both-zero fallback.
+    const h = team(0, undefined, 5, 0, 'DOUBLE', 10);
+    assert.equal(sit(h, h, true).timeouts, null);
+    assert.equal(sit(h, team(3, undefined, 2, 2, 'NONE'), true).timeouts, 0, 'one side at 0 is believable');
+});
+
+test('teamSituation on the real live fixture reads cleanly', () => {
+    const d = fixture('nba-summary-live-trim.json');
+    const { h, a } = sides(d);
+    const s = sit(h, a, false);
+    assert.equal(s.fouls, h.fouls.teamFoulsCurrent);
+    assert.equal(s.timeouts, h.timeoutsRemaining);
+});

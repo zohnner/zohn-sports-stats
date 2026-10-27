@@ -336,7 +336,33 @@ const BballMath = (() => {
         return splitWhere(plays, ids, fmt, (p, c) => c.t >= endT - 300);
     }
 
+    // -- Live foul/timeout trust ------------------------------------------
+
+    // ESPN's competitor fouls/timeouts are unreliable between periods (all
+    // seen live on 401909869, which went to OT): breaks pair the ended
+    // period's foul count with the next period's foulsToGive/bonusState;
+    // the first instant of a period can read "over the limit" at 0 PF; and
+    // the timeout block can read 0 remaining with 0 used, which is
+    // impossible. handoff = a break status, or a clock still showing the
+    // full period length. Returns what the strip may show for one team.
+    function teamSituation(team, other, handoff) {
+        const f = team.fouls || {};
+        const hasFouls = f.teamFoulsCurrent != null;
+        const bothZeroBetween = handoff && team.timeoutsRemaining === 0 && other.timeoutsRemaining === 0;
+        const blank = team.timeoutsRemaining === 0 &&
+            (team.timeoutsUsed === 0 || (team.timeoutsUsed == null && bothZeroBetween));
+        const overLimit = hasFouls && !handoff && f.teamFoulsCurrent > 0 && !!f.bonusState && f.bonusState !== 'NONE';
+        return {
+            fouls: hasFouls ? f.teamFoulsCurrent : null,
+            gameFouls: hasFouls && f.teamFouls != null ? f.teamFouls : null,
+            overLimit,
+            toGive: hasFouls && !handoff && !overLimit && f.foulsToGive > 0 ? f.foulsToGive : null,
+            timeouts: team.timeoutsRemaining != null && !blank ? team.timeoutsRemaining : null,
+        };
+    }
+
     return {
+        teamSituation,
         HOOP, BASELINE_Y, ZONES, ZONE_LABEL,
         parseClock, fmtSec, gameFormat, periodLabel, periodLen, periodStart, elapsedAt, clockAt,
         isFreeThrow, isFGA, validCoord, shotGeom, shotZone, validShots, toCourt, zoneSplits,
