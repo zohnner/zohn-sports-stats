@@ -1,0 +1,28 @@
+{
+  "stories": [
+    {
+      "slug": "2026-10-27-ranked-teams-road-losses-week-8",
+      "title": "Ranked teams lost 5 times to unranked opponents in Week 8, the most this season",
+      "dek": "All 5 losses came on the road, where ranked teams went 3-5; at home they went 7-0.",
+      "date": "2026-10-27",
+      "season": 2026,
+      "week": 8,
+      "teams": [
+        "BYU",
+        "TTU",
+        "TENN",
+        "IOWA",
+        "USC",
+        "UCF",
+        "CIN",
+        "SC",
+        "MINN",
+        "WIS"
+      ],
+      "players": [],
+      "hero_stat": "5 of 15 ranked teams lost to unranked opponents",
+      "url": "/ncaaf/stories/2026-10-27-ranked-teams-road-losses-week-8",
+      "sport": "ncaaf"
+    }
+  ]
+}

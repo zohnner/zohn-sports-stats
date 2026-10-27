@@ -944,7 +944,9 @@ function _loadFromHash() {
             AppState.currentView = 'static-page';
             if (typeof _applySportUI === 'function') _applySportUI(_m[1]);
             document.getElementById('searchBar')?.style.setProperty('display', 'none');
-            _trackPageView(_r);
+            // D-187: per-story reads, not just the first page of a visit (D-183 entry_path).
+            const _story = /^/[a-z]+/stories/([a-z0-9-]+)$/.exec(location.pathname);
+            _trackPageView(_story ? `story:${_story[1]}`.slice(0, 64) : _r);
             return;
         }
         if ((_m = /^mlb-team-(\d+)$/.exec(_r))) {

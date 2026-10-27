@@ -167,7 +167,7 @@ if (typeof window !== 'undefined') {
 // (built by tools/stories/build-index.cjs). One shared promise per sport per page
 // load; every surface (home rail, landings, team pages, News) reads it.
 // Must match STORY_SPORTS in tools/stories/story-core.cjs.
-const STORY_SPORTS = ['nfl', 'mlb'];
+const STORY_SPORTS = ['nfl', 'mlb', 'ncaaf', 'nba', 'ncaab'];
 const _storiesIndexPromises = {};
 function fetchStoriesIndex(sport = 'nfl') {
     if (!_storiesIndexPromises[sport]) {

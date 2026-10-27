@@ -1,0 +1,136 @@
+{
+  "facts": [
+    {
+      "key": "okc_wins",
+      "value": 4,
+      "label": "OKC wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_losses",
+      "value": 0,
+      "label": "OKC losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_pa_per_game",
+      "value": 100.75,
+      "label": "OKC points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_pa_rank",
+      "value": 1,
+      "label": "OKC rank in fewest points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "nba_teams",
+      "value": 30,
+      "label": "NBA teams",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "league_avg_pa",
+      "value": 114.5865,
+      "label": "League average points allowed per team-game (11,917 points allowed / 104 team-games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_pf_per_game",
+      "value": 111.25,
+      "label": "OKC points scored per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_avg_margin",
+      "value": 10.5,
+      "label": "OKC average point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "okc_pa_below_avg",
+      "value": 13.8365,
+      "label": "League average allowed minus OKC allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "opp_other_ppg",
+      "value": 117.375,
+      "label": "SA/DEN/LAC/PHX points per game in their 8 non-OKC games: standings pointsFor (336+339+339+328) minus points vs OKC (104+84+101+114) = 939 / 8",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2 ; https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "opp_other_games",
+      "value": 8,
+      "label": "Non-OKC games played by the 4 opponents",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "opp_drop",
+      "value": 16.625,
+      "label": "117.375 minus 100.75",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "g1_okc",
+      "value": 116,
+      "label": "OKC at SA",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g1_opp",
+      "value": 104,
+      "label": "SA vs OKC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g2_okc",
+      "value": 96,
+      "label": "OKC vs DEN",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g2_opp",
+      "value": 84,
+      "label": "DEN at OKC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g3_okc",
+      "value": 108,
+      "label": "OKC vs LAC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g3_opp",
+      "value": 101,
+      "label": "LAC at OKC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g4_okc",
+      "value": 125,
+      "label": "OKC vs PHX",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "g4_opp",
+      "value": 114,
+      "label": "PHX at OKC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/okc/schedule?season=2027&seasontype=2"
+    },
+    {
+      "key": "por_pa_per_game",
+      "value": 101.5,
+      "label": "POR points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    },
+    {
+      "key": "por_games",
+      "value": 2,
+      "label": "POR games played",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2"
+    }
+  ]
+}

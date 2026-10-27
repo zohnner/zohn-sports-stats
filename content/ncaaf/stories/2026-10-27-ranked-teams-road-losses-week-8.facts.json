@@ -1,0 +1,268 @@
+{
+  "facts": [
+    {
+      "key": "w8_losses",
+      "value": 5,
+      "label": "Week 8 ranked losses to unranked FBS opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_games",
+      "value": 15,
+      "label": "Week 8 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_wins",
+      "value": 10,
+      "label": "Week 8 ranked wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_loss_rate",
+      "value": 0.3333,
+      "label": "5 / 15",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w1_7_losses",
+      "value": 12,
+      "label": "Weeks 1-7 ranked losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "w1_7_games",
+      "value": 118,
+      "label": "Weeks 1-7 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "w1_7_rate",
+      "value": 0.1017,
+      "label": "12 / 118",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "byu_rank",
+      "value": 2,
+      "label": "BYU rank entering Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "byu_pts",
+      "value": 31,
+      "label": "BYU points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "ucf_pts",
+      "value": 39,
+      "label": "UCF points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "ttu_rank",
+      "value": 8,
+      "label": "Texas Tech rank entering Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "ttu_pts",
+      "value": 24,
+      "label": "Texas Tech points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "cin_pts",
+      "value": 37,
+      "label": "Cincinnati points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "tenn_rank",
+      "value": 11,
+      "label": "Tennessee rank entering Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "tenn_pts",
+      "value": 24,
+      "label": "Tennessee points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "sc_pts",
+      "value": 27,
+      "label": "South Carolina points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "iowa_rank",
+      "value": 15,
+      "label": "Iowa rank entering Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "iowa_pts",
+      "value": 10,
+      "label": "Iowa points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "minn_pts",
+      "value": 13,
+      "label": "Minnesota points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "usc_rank",
+      "value": 16,
+      "label": "USC rank entering Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "usc_pts",
+      "value": 7,
+      "label": "USC points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "wis_pts",
+      "value": 24,
+      "label": "Wisconsin points",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "byu_new_rank",
+      "value": 8,
+      "label": "BYU AP rank after Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/rankings (AP Top 25, released 2026-10-25)"
+    },
+    {
+      "key": "ttu_new_rank",
+      "value": 13,
+      "label": "Texas Tech AP rank after Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/rankings (AP Top 25, released 2026-10-25)"
+    },
+    {
+      "key": "tenn_new_rank",
+      "value": 16,
+      "label": "Tennessee AP rank after Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/rankings (AP Top 25, released 2026-10-25)"
+    },
+    {
+      "key": "top25",
+      "value": 25,
+      "label": "AP Top 25 (Iowa and USC absent)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/rankings (AP Top 25, released 2026-10-25)"
+    },
+    {
+      "key": "w8_home_wins",
+      "value": 7,
+      "label": "Week 8 ranked home wins vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_home_losses",
+      "value": 0,
+      "label": "Week 8 ranked home losses vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_road_wins",
+      "value": 3,
+      "label": "Week 8 ranked road wins vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_road_losses",
+      "value": 5,
+      "label": "Week 8 ranked road losses vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w8_road_games",
+      "value": 8,
+      "label": "Week 8 ranked road games vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "w1_7_road_losses",
+      "value": 3,
+      "label": "Weeks 1-7 ranked road losses vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "w1_7_road_games",
+      "value": 34,
+      "label": "Weeks 1-7 ranked road games vs unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "w1_7_road_rate",
+      "value": 0.0882,
+      "label": "3 / 34",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "w1_games",
+      "value": 24,
+      "label": "Week 1 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1"
+    },
+    {
+      "key": "w2_games",
+      "value": 23,
+      "label": "Week 2 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2"
+    },
+    {
+      "key": "w6_losses",
+      "value": 4,
+      "label": "Week 6 ranked losses to unranked",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6"
+    },
+    {
+      "key": "w6_games",
+      "value": 17,
+      "label": "Week 6 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6"
+    },
+    {
+      "key": "winner_w_a",
+      "value": 4,
+      "label": "UCF and South Carolina record 4-3 (wins)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "winner_l_a",
+      "value": 3,
+      "label": "UCF and South Carolina record 4-3 (losses)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "winner_w_b",
+      "value": 5,
+      "label": "Cincinnati, Minnesota, Wisconsin record 5-2 (wins)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "winner_l_b",
+      "value": 2,
+      "label": "Cincinnati, Minnesota, Wisconsin record 5-2 (losses)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    },
+    {
+      "key": "weeks_with_more_games",
+      "value": 4,
+      "label": "Weeks 1-7 with more ranked-vs-unranked games than Week 8 (Weeks 1, 2, 3, 6)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6 ; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "prior_weeks",
+      "value": 7,
+      "label": "Weeks before Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=8"
+    }
+  ]
+}

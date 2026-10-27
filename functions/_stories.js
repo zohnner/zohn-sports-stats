@@ -86,6 +86,7 @@ export async function renderStoryPage(context, sport) {
             `<p class="ss-story__eyebrow"><a href="/${sport}/stories">SportStrata Stories</a> · ${esc(eyebrow)}</p>` +
             `<h1>${esc(meta.title)}</h1>` +
             `<p class="ss-story__dek">${esc(meta.dek)}</p>` +
+            (meta.hook ? `<p class="ss-story__hook">The news: <a href="${esc(meta.hook_url)}" rel="noopener">${esc(meta.hook)}</a></p>` : '') +
             `<p class="ss-story__meta">By ${esc(core.BYLINE)} · <time datetime="${esc(meta.date)}">${esc(prettyDate(meta.date))}</time></p>` +
             `<div class="ss-story__body">${core.renderBody(body)}</div>` +
             `<p class="ss-story__disclosure">${esc(core.DISCLOSURE)} <a href="/content/${sport}/stories/${esc(slug)}.facts.json">See the data behind this story</a>.</p>` +

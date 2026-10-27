@@ -5,7 +5,8 @@ name: SportStrata Stories Share Links
 # from the .social.md) and copy-ready Reddit text. Posting stays manual (D-179,
 # replacing D-178's API auto-post): no X developer account, no secrets.
 # Close the issue once you've posted; an open one is a story not yet shared.
-# workflow_dispatch with a slug regenerates the links for any story.
+# workflow_dispatch with a slug regenerates the links for any story; story-automerge.yml
+# dispatches it too (D-187), since its GITHUB_TOKEN merge doesn't fire the push trigger.
 
 on:
   push:
@@ -15,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       slug:
-        description: 'Story slug, e.g. 2026-09-30-jaguars-fewest-points-allowed'
+        description: 'Story slug(s), space-separated, e.g. 2026-09-30-jaguars-fewest-points-allowed'
         required: true
         type: string
 
