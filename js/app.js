@@ -1943,16 +1943,22 @@ async function _heroFromStandings() {
 // already made for _nflLeverage/_ncaafLeverage (used by both the home hero
 // and each sport's own landing Spotlight) and for _mlbPowerScore above.
 // _renderHomeHero below now calls these instead of its own local closures.
+// Team-quality term shared by both. In the postseason leagueRecord is the
+// series W-L, so a 3-0 series read as 1.000 + .000 and scored a World Series
+// game like two .500 clubs; the round and a possible clincher stand in there.
+function _mlbHeroQuality(g) {
+    const tier = HomeLive.mlbTier(g);
+    if (tier) return 4 + tier * 3 + (HomeLive.mlbCanClinch(g) ? 2 : 0);
+    return (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0)) * 4;
+}
 function _mlbHeroLeverage(g) {
     const inn  = g.linescore?.currentInning || 1;
     const diff = Math.abs((g.teams?.home?.score ?? 0) - (g.teams?.away?.score ?? 0));
-    const combinedPct = (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
-    return inn + (5 - Math.min(diff, 5)) * 2 + combinedPct * 4
+    return inn + (5 - Math.min(diff, 5)) * 2 + _mlbHeroQuality(g)
         + (_gameHasFav(g) ? 100 : 0);
 }
 function _mlbHeroMarquee(g) {
-    const combinedPct = (parseFloat(g.teams?.away?.leagueRecord?.pct || 0) + parseFloat(g.teams?.home?.leagueRecord?.pct || 0));
-    return combinedPct * 4
+    return _mlbHeroQuality(g)
         + ((g.teams?.away?.team?.division?.id && g.teams?.away?.team?.division?.id === g.teams?.home?.team?.division?.id) ? 1.5 : 0)
         + (_gameHasFav(g) ? 100 : 0);
 }
@@ -2459,6 +2465,10 @@ function _nbaLeverage(g) {
 function _nbaMarquee(g) {
     return (_nbaGameHasFav(g) ? 100 : 0);
 }
+// Ranking moved to HomeLive.pickHero (2026-10-27): postseason round first,
+// then live over upcoming. Before that, "live always wins" put a live unranked
+// college game over a World Series game an hour from first pitch.
+//
 // D-100 (supersedes the _homeHeroSport() calendar gate above): whichever
 // sport has the more compelling live game wins the hero slot, any day of the
 // year, scored on a shared currency instead of gated by a fixed window. This
@@ -2506,45 +2516,23 @@ async function _renderHomeHero(games) {
     // fetch, no new hydrate machinery.
     if (typeof _renderSportPicker === 'function') _renderSportPicker();
 
-    let hero = null;
-    const mlbLive = list.filter(isLive);
-    const guestLive = {};
-    Object.keys(_HOME_HERO_GUEST_SPORTS).forEach(sport => {
-        guestLive[sport] = (guestGames[sport] || []).filter(g => g.isLive);
+    // Every live game and every not-yet-started one goes in; HomeLive.pickHero
+    // ranks postseason round first, then live over upcoming, then the score,
+    // and drops upcoming games that aren't today. Leverage and marquee scores
+    // are on different scales, but they only ever compare like with like.
+    const candidates = [];
+    const add = (g, live, start, tier, cfg, heroFn) =>
+        candidates.push({ g, live, start: Date.parse(start), tier, score: live ? cfg.leverage(g) : cfg.marquee(g), heroFn });
+    list.forEach(g => {
+        if (isLive(g) || isUpcoming(g)) add(g, isLive(g), g.gameDate, HomeLive.mlbTier(g), { leverage: mlbLeverage, marquee: mlbMarquee }, _heroFromGame);
     });
-    const anyLive = mlbLive.length || Object.values(guestLive).some(arr => arr.length);
-    if (anyLive) {
-        const candidates = [];
-        if (mlbLive.length) {
-            const g = mlbLive.slice().sort((x, y) => mlbLeverage(y) - mlbLeverage(x))[0];
-            candidates.push({ sport: 'mlb', g, score: mlbLeverage(g), heroFn: _heroFromGame });
-        }
-        Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
-            const arr = guestLive[sport];
-            if (!arr.length) return;
-            const g = arr.slice().sort((x, y) => cfg.leverage(y) - cfg.leverage(x))[0];
-            candidates.push({ sport, g, score: cfg.leverage(g), heroFn: cfg.heroFn });
+    Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
+        (guestGames[sport] || []).forEach(g => {
+            if (g.isLive || !g.isFinal) add(g, !!g.isLive, g.date, 0, cfg, cfg.heroFn);
         });
-        const winner = candidates.sort((a, b) => b.score - a.score)[0];
-        hero = winner.heroFn(winner.g, 'live');
-    } else {
-        const mlbUp = list.filter(isUpcoming);
-        const candidates = [];
-        if (mlbUp.length) {
-            const g = mlbUp.slice().sort((x, y) => mlbMarquee(y) - mlbMarquee(x))[0];
-            candidates.push({ sport: 'mlb', g, score: mlbMarquee(g), heroFn: _heroFromGame });
-        }
-        Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
-            const arr = (guestGames[sport] || []).filter(g => !g.isLive && !g.isFinal);
-            if (!arr.length) return;
-            const g = arr.slice().sort((x, y) => cfg.marquee(y) - cfg.marquee(x))[0];
-            candidates.push({ sport, g, score: cfg.marquee(g), heroFn: cfg.heroFn });
-        });
-        if (candidates.length) {
-            const winner = candidates.sort((a, b) => b.score - a.score)[0];
-            hero = winner.heroFn(winner.g, 'upcoming');
-        }
-    }
+    });
+    const winner = HomeLive.pickHero(candidates, Date.now());
+    let hero = winner ? winner.heroFn(winner.g, winner.live ? 'live' : 'upcoming') : null;
     if (!hero) hero = await _heroFromStandings().catch(() => null);
 
     if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
