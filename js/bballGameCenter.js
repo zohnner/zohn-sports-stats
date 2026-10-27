@@ -1,10 +1,12 @@
 // ============================================================
 // NBA Game Center (D-185) — the capability layer js/bballLiveGame.js
 // switches to when a sport's _BLG_SPORTS entry sets gameCenter: true.
-// Only NBA does: every surface here was built and checked against real
-// NBA /summary payloads (2026-10-26: final 401909861, live 401909868-71,
-// pregame 401909872). WNBA/NCAAB keep the original viewer until someone
-// verifies their payloads the same way and flips the flag.
+// Built and checked against real NBA /summary payloads (2026-10-26: final
+// 401909861, live 401909868-71, pregame 401909872); WNBA and NCAAB were
+// enabled after the same checks on their finals (2026-10-27: WNBA
+// 401918308/09 and 401857180, NCAAB 401851388/571 and 401856523-32), with
+// per-court geometry from BballMath.COURTS. Neither had a live game to
+// check, so their live strip runs on NBA-verified field shapes.
 //
 // Pure math lives in js/bballGameMath.js (BballMath); this file only
 // renders. Every computed number carries its receipt (DESIGN.md house
@@ -88,9 +90,10 @@ function _bgcCtx(data) {
     const swingById = new Map();
     for (let i = 1; i < tl.length; i++) swingById.set(String(tl[i].play.id), tl[i].home - tl[i - 1].home);
     const shotsAllowed = !!cfg.shotChart && comp.shotChartAvailable !== false;
-    const shots = shotsAllowed ? M.validShots(plays) : [];
+    const court = M.COURTS[cfg.court] || M.COURTS.nba;
+    const shots = shotsAllowed ? M.validShots(plays, court) : [];
     const ctx = {
-        data, cfg, comp, home, away, ids, state, fmt, plays, endT, tl, swingById, shots,
+        data, cfg, comp, home, away, ids, state, fmt, plays, endT, tl, swingById, shots, court,
         events: M.scoringEvents(plays, fmt),
         athletes: _bgcAthletes(data),
         // Live games keep the tab while shots trickle in so the tab row
@@ -472,20 +475,24 @@ function _bgcFilteredShots(ctx) {
         (f.result === 'all' || (f.result === 'made') === s.made));
 }
 
-// Half court in feet x10, baseline at the top. Markings follow NBA
-// dimensions (50x47 half court, 16-ft lane to a 19-ft FT line, 23.75-ft arc,
-// 22-ft corners, 4-ft restricted area). Left/right is ESPN's x as given.
-function _bgcCourtSvg(markers) {
-    const hy = 52.5;
+// Half court in feet x10, baseline at the top, drawn from the sport's
+// BballMath.COURTS entry (lane width, 3PT arc and corners; 19-ft FT line,
+// 4-ft restricted area on all three). Left/right is ESPN's x as given.
+function _bgcCourtSvg(markers, court) {
+    const k = court || BballMath.COURTS.nba;
+    const hy = BballMath.HOOP_FROM_BASELINE * 10;
+    const laneX = 250 - k.laneFt * 5;
+    const cornerX = 250 - k.corner * 10, cornerEnd = hy + Math.sqrt(k.arc ** 2 - k.corner ** 2) * 10;
+    const f = (n) => n.toFixed(1);
     return `<svg class="bgc-court" viewBox="0 0 500 470" role="img" aria-label="Shot chart, half court with the hoop at the top">
         <g class="bgc-court-lines" fill="none">
             <rect x="0" y="0" width="500" height="470"/>
-            <rect x="170" y="0" width="160" height="190"/>
+            <rect x="${f(laneX)}" y="0" width="${f(k.laneFt * 10)}" height="190"/>
             <circle cx="250" cy="190" r="60"/>
             <line x1="220" y1="40" x2="280" y2="40"/>
             <circle cx="250" cy="${hy}" r="7.5"/>
             <path d="M210,${hy} A40,40 0 0 0 290,${hy}"/>
-            <path d="M30,0 L30,142 A237.5,237.5 0 0 0 470,142 L470,0"/>
+            <path d="M${f(cornerX)},0 L${f(cornerX)},${f(cornerEnd)} A${f(k.arc * 10)},${f(k.arc * 10)} 0 0 0 ${f(500 - cornerX)},${f(cornerEnd)} L${f(500 - cornerX)},0"/>
             <path d="M190,470 A60,60 0 0 1 310,470"/>
         </g>
         ${markers}
@@ -493,7 +500,7 @@ function _bgcCourtSvg(markers) {
 }
 
 function _bgcShotMarker(ctx, s) {
-    const { cx, cy } = BballMath.toCourt(s);
+    const { cx, cy } = BballMath.toCourt(s, ctx.court);
     const x = cx * 10, y = Math.min(cy, 46.5) * 10;
     const color = _escHtml(ctx.colors[ctx.sideOf(s.teamId) || 'home']);
     const paint = s.made ? `fill="${color}" stroke="${color}"` : `fill="none" stroke="${color}"`;
@@ -556,14 +563,14 @@ function _bgcShotsTab(ctx) {
     return `<div class="nlg-card">
         <div class="nlg-sum">Shot chart <span class="nlg-sum-teams">${made}-${shots.length} FG${shots.length ? ' · ' + _bgcPct(made / shots.length) : ''}</span></div>
         ${controls}
-        <div class="bgc-court-wrap">${_bgcCourtSvg(shots.map(s => _bgcShotMarker(ctx, s)).join(''))}</div>
+        <div class="bgc-court-wrap">${_bgcCourtSvg(shots.map(s => _bgcShotMarker(ctx, s)).join(''), ctx.court)}</div>
         ${legend}
         <p class="pct-caption bgc-pad">${shots.length} field-goal attempts placed from ESPN play-by-play coordinates (feet, rounded to the nearest foot; hoop at top, left/right as ESPN reports it). Free throws and end-of-period heaves are excluded, matching the official box score.</p>
     </div>
     <div class="nlg-card">
         <div class="nlg-sum">Zone splits <span class="nlg-sum-teams">current filter</span></div>
         ${_bgcZoneTable(ctx, shots)}
-        <p class="pct-caption bgc-pad">At rim: 2-pt tries within 4 ft of the hoop. Paint: other 2-pt tries inside the 16-ft lane, up to the free-throw line. Midrange: every other 2. Corner 3: threes from 21+ ft to the side, below the break of the arc. Above-break 3: every other three. 2 vs 3 comes from ESPN's scoring, not from position.</p>
+        <p class="pct-caption bgc-pad">At rim: 2-pt tries within 4 ft of the hoop. Paint: other 2-pt tries inside the ${ctx.court.laneFt}-ft lane, up to the free-throw line. Midrange: every other 2. Corner 3: threes from ${ctx.court.corner - 1}+ ft to the side, below the break of the arc. Above-break 3: every other three. 2 vs 3 comes from ESPN's scoring, not from position. Locations are as each arena's scorers chart them, and crews differ (one WNBA Finals crew logged layups as 4-7 ft), so compare zones within a game rather than across games.</p>
     </div>`;
 }
 
@@ -837,6 +844,7 @@ function _bgcBox(ctx) {
         if (!g) return '';
         const labels = g.labels || g.names || [];
         const pfIdx = (g.keys || []).indexOf('fouls');
+        const foulOut = ctx.court.foulOut;
         const nameCell = (a) => {
             const ath = a.athlete || {};
             const meta = [ath.jersey ? '#' + ath.jersey : '', ath.position && ath.position.abbreviation].filter(Boolean).join(' · ');
@@ -844,8 +852,8 @@ function _bgcBox(ctx) {
             const badges = [];
             if (live && a.active) badges.push('<span class="bgc-badge bgc-badge--court">On court</span>');
             if (a.ejected) badges.push('<span class="bgc-badge bgc-badge--warn">Ejected</span>');
-            else if (pf >= 6) badges.push('<span class="bgc-badge bgc-badge--warn">Fouled out</span>');
-            else if (pf >= 4 && live) badges.push(`<span class="bgc-badge bgc-badge--warn" title="${pf} personal fouls">${pf} PF</span>`);
+            else if (pf >= foulOut) badges.push('<span class="bgc-badge bgc-badge--warn">Fouled out</span>');
+            else if (pf >= foulOut - 2 && live) badges.push(`<span class="bgc-badge bgc-badge--warn" title="${pf} personal fouls">${pf} PF</span>`);
             return `<th scope="row" class="bgc-bx-name"><span class="bgc-bx-who">${_bgcPlayerLink(ctx, ath.id, ath.shortName || ath.displayName || '')}<span class="bgc-bx-meta">${_escHtml(meta)}</span></span>${badges.join('')}</th>`;
         };
         const rowHtml = (a) => {
@@ -870,7 +878,7 @@ function _bgcBox(ctx) {
         </div>`;
     };
     return team('away') + team('home') +
-        `<p class="pct-caption">${live ? 'On court = the five players ESPN lists as active right now. Foul-trouble flag at 4+ personal fouls. ' : ''}6 personal fouls is a foul-out.</p>`;
+        `<p class="pct-caption">${live ? 'On court = the five players ESPN lists as active right now. Foul-trouble flag at ${ctx.court.foulOut - 2}+ personal fouls. ' : ''}${ctx.court.foulOut} personal fouls is a foul-out.</p>`;
 }
 
 // -- Play-by-play --------------------------------------------------------
@@ -887,8 +895,8 @@ function _bgcSetPbp(key, value) {
     _blgRenderActiveTabBody(true);
 }
 
-function _bgcPbpShotContext(p) {
-    const s = BballMath.validShots([p])[0];
+function _bgcPbpShotContext(ctx, p) {
+    const s = BballMath.validShots([p], ctx.court)[0];
     return s ? `${Math.round(s.dist)} ft · ${BballMath.ZONE_LABEL[s.zone]}` : '';
 }
 
@@ -933,7 +941,7 @@ function _bgcPbp(ctx) {
             const sw = ctx.swingById.get(String(p.id));
             const key = sw != null && Math.abs(sw) >= BGC_KEY_SWING;
             const side = key ? (sw > 0 ? 'home' : 'away') : null;
-            const shotCtx = _bgcPbpShotContext(p);
+            const shotCtx = _bgcPbpShotContext(ctx, p);
             const ts = p.team && ctx.sideOf(p.team.id);
             return `<div class="nlg-pbp-play bgc-pbp-play${p.scoringPlay ? ' nlg-pbp-play--score' : ''}" data-play-id="${_escHtml(String(p.id))}">
                 <span class="nlg-pbp-dd">${_escHtml((p.clock && p.clock.displayValue) || '')}</span>
