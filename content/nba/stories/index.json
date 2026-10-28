@@ -1,6 +1,39 @@
 {
   "stories": [
     {
+      "slug": "2026-10-28-celtics-35-then-1",
+      "title": "The Celtics won by 35 points, then by 1 the next night",
+      "dek": "Boston beat Chicago 134-99, then beat Brooklyn 125-124 in overtime behind Jayson Tatum's 40 points.",
+      "date": "2026-10-28",
+      "season": 2027,
+      "teams": [
+        "BOS",
+        "CHI",
+        "BKN"
+      ],
+      "players": [],
+      "hero_stat": "35-point win, then a 1-point overtime win",
+      "url": "/nba/stories/2026-10-28-celtics-35-then-1",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-10-28-trail-blazers-league-best-offense",
+      "title": "The Trail Blazers score 129.3 points a game, the most in the NBA",
+      "dek": "Portland is 3-0 after a 136-129 win at Los Angeles, the highest-scoring game of the last 2 nights.",
+      "date": "2026-10-28",
+      "season": 2027,
+      "teams": [
+        "POR",
+        "LAL",
+        "PHX",
+        "SAC"
+      ],
+      "players": [],
+      "hero_stat": "129.3 points per game, 1st of 30",
+      "url": "/nba/stories/2026-10-28-trail-blazers-league-best-offense",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-10-27-thunder-fewest-points-allowed",
       "title": "The Thunder are 4-0 and allow 100.8 points a game, fewest in the NBA",
       "dek": "Their 4 opponents averaged 117.4 points in their other games and 100.8 against Oklahoma City.",
