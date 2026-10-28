@@ -1803,6 +1803,27 @@ function _canonicalUrl(serverCanon, host, pathname) {
     return serverCanon || `https://${host}${pathname}`;
 }
 
+// The edge-rendered path URL a hash view has (functions/_shell.js failSafeRoute,
+// inverted), or null. Navigation only rewrites the hash, so without this every
+// view reached in-app would keep the canonical of the page the visit began on.
+const _PATH_SINGLE_VIEWS = new Set(['mlb-leaders', 'mlb-standings', 'nfl-leaders', 'nfl-standings', 'nfl-pickem',
+    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
+function _viewPath(view) {
+    const v = String(view || '');
+    if (v === 'home') return '/';
+    let m = /^(mlb|nfl|ncaaf|ncaab|wnba|nba)-home$/.exec(v);
+    if (m) return `/${m[1]}`;
+    if (_PATH_SINGLE_VIEWS.has(v)) return '/' + v.replace('-', '/');
+    if ((m = /^nfl-team-([A-Z0-9]{2,4})$/i.exec(v))) return `/nfl/team/${m[1].toLowerCase()}`;
+    if ((m = /^nfl-(game|player)-([a-z0-9]+)$/i.exec(v))) return `/nfl/${m[1]}/${m[2]}`;
+    if ((m = /^ncaaf-(team|player|game)-(\d+)$/.exec(v))) return `/ncaaf/${m[1]}/${m[2]}`;
+    if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
+    if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;
+    return null;
+}
+
+let _canonBootView = null;
+
 function _updatePageMeta(view) {
     const m = _PAGE_META[view] || _PAGE_META['home'];
     document.title = m.title;
@@ -1811,7 +1832,10 @@ function _updatePageMeta(view) {
     document.getElementById('ogTitle')?.setAttribute('content', m.title);
     document.getElementById('ogDescription')?.setAttribute('content', m.desc);
     const _canonHost = (typeof SITE_DOMAIN !== 'undefined') ? SITE_DOMAIN : location.host;
-    const _canonUrl = _canonicalUrl(_SERVER_CANON, _canonHost, location.pathname);
+    if (_canonBootView === null) _canonBootView = view;
+    // A path page's first view keeps the server canonical (it carries the slug).
+    const _path = (view === _canonBootView && location.pathname !== '/') ? null : _viewPath(view);
+    const _canonUrl = _path ? `https://${_canonHost}${_path}` : _canonicalUrl(_SERVER_CANON, _canonHost, location.pathname);
     document.getElementById('ogUrl')?.setAttribute('content', _canonUrl);
     document.getElementById('canonicalLink')?.setAttribute('href', _canonUrl);
 }

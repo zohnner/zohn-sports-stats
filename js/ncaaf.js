@@ -1230,13 +1230,14 @@ function displayNCAAFTeamDetail(team, roster, sched, stats, stdRow) {
         recordChips, recordSeasonLabel: recordChips.length ? `${_ncaaf.season} Season` : '',
         assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String((stats && stats.season) || _ncaaf.season),
         groups, rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtmlTop: scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
+        scheduleHtmlTop: scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-', storiesSport: 'ncaaf',
     };
 
     grid.className = 'player-detail-container';
     grid.innerHTML = (typeof _renderTeamPage === 'function')
         ? _renderTeamPage(model)
         : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
+    if (typeof _loadTeamStories === 'function') _loadTeamStories('ncaaf', abbr);
 }
 
 // ── Player season profile radar (honest: % of FBS leader per stat) ──

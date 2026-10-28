@@ -1643,6 +1643,7 @@ main {
    matches; skeleton-populated .home-zone sections (Today's Games, the
    Latest rail) are never actually empty, so this can't hide real content. */
 .home-zone:empty { display: none; }
+.home-stories .stories-block { margin-bottom: 0; }
 
 .home-section-hdr {
     display: flex;

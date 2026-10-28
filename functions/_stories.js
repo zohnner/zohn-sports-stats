@@ -8,6 +8,7 @@
 // Unknown slug → the shell with HTTP 404. Any other error → the plain shell.
 import core from '../tools/stories/story-core.cjs';
 import { shell, rawShell } from './_shell.js';
+import { readStories, siblingStories, storyListHtml } from './_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -65,6 +66,7 @@ export async function renderStoryPage(context, sport) {
         if (core.validateMeta(meta, sport).length) return shell(env, request.url);
 
         const eyebrow = core.storyEyebrow(meta, sport);
+        const siblings = siblingStories(await readStories(env, request.url, sport), slug);
         const canonical = `https://sportstrata.cc${core.storyUrl(slug, sport)}`;
         const title = `${meta.title} | SportStrata`;
         const desc = String(meta.dek);
@@ -90,6 +92,7 @@ export async function renderStoryPage(context, sport) {
             `<p class="ss-story__meta">By ${esc(core.BYLINE)} · <time datetime="${esc(meta.date)}">${esc(prettyDate(meta.date))}</time></p>` +
             `<div class="ss-story__body">${core.renderBody(body)}</div>` +
             `<p class="ss-story__disclosure">${esc(core.DISCLOSURE)} <a href="/content/${sport}/stories/${esc(slug)}.facts.json">See the data behind this story</a>.</p>` +
+            storyListHtml(siblings, `More ${label} stories`, { sport, more: false }) +
             `<p class="ss-story__more"><a href="/${sport}/stories">More SportStrata Stories</a> · <a href="/${sport}">${label} Home</a></p>` +
             `</article>`;
 

@@ -11,6 +11,7 @@
 // that reached one had no way to discover any other page on the site.
 
 import { shell, rawShell } from '../../_shell.js';
+import { readStories, storiesForTeam, storyListHtml } from '../../_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -57,11 +58,13 @@ export async function onRequest(context) {
         const teamLinks = otherTeams.map(t =>
             `<li><a href="/mlb/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.name)}</a></li>`).join('');
 
+        const stories = storyListHtml(storiesForTeam(await readStories(env, request.url, 'mlb'), team.abbreviation || abbr).slice(0, 5), `SportStrata Stories featuring the ${name}`, { sport: 'mlb' });
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc(lg)}${div ? ' · ' + esc(div) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
             `<p>Live ${esc(name)} team stats, roster, schedule, standings and playoff odds on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/mlb">MLB Home</a> · <a href="/mlb/leaders">MLB Stat Leaders</a> · <a href="/mlb/standings">MLB Standings</a></p>` +
+            stories +
             `<h2>Other MLB Teams</h2><ul>${teamLinks}</ul></section>`;
 
         let html = await (await rawShell(env, request.url)).text();

@@ -3716,3 +3716,16 @@ Also: a pregame header shows the date when tip-off isn't today. Cache v325. Test
 **Known limits.** The `main: CI must pass` ruleset lets admins and deploy keys bypass it. If Muse's token is the owner's personal token, Muse *is* an admin to GitHub, so "never push to main" remains a rule Muse follows, not a lock; a GitHub App or separate account would make it one. Muse's token should not carry Workflows permission, or it could edit the workflow that publishes its own work. Share issues still need a human tap; at full volume most stories will rely on search.
 
 Cache v326. Tests: `tests/storyAutomerge.test.js` (gate, hook, new sports, basketball phrases).
+
+## D-188 — Stories distribution: home zone, crawlable story links, sitemap on publish, canonical
+**Status:** shipping | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 1). PR #47 had already landed three of its items the same day (NFL leaders/standings anchors, a Stories sub-nav tab, sitemap `<lastmod>`), so this covers what remained.
+
+- **Home.** Stories moved out of the Headlines rail tab, which is hidden until clicked (Insights is the default), into an always-visible `#homeStories` zone after Today's Games. Verified on production before the change: zero visible story rows on `/`.
+- **Crawlable links.** The SPA already listed stories on landings and NFL/MLB team pages, but the served HTML had none anywhere. `functions/_storyLinks.js` adds them to the edge snapshot of `/` (newest 6, all sports), each story sport's landing (newest 5), NFL/MLB/NCAAF team pages (stories whose `teams` name the team), and each story page (3 same-sport siblings, shared-team first). NCAAF team detail in the SPA gains the same stories block NFL has (`_loadTeamStories`, generalized from `_loadNFLTeamStories`).
+- **Sitemap.** Root cause: `gen-sitemap.cjs` already handled every story sport; `sitemap-refresh.yml` ran only on a 12:30 UTC cron, and Auto-Publish's GITHUB_TOKEN merge fires no push workflows. The five 2026-10-27 stories merged at 19:33 UTC and would have waited ~17 h. The workflow now also runs on `workflow_run` of Stories Auto-Publish and on pushes touching a story `index.json`, gated by `tools/sitemap-missing-stories.cjs` so the ordinary CI → Auto-Publish chain doesn't regenerate on every PR. It rebases before pushing. Chain depth is CI → Auto-Publish → sitemap, three levels, GitHub's documented maximum for `workflow_run` (inferred from the docs, not yet observed running).
+- **Canonical.** The query-string echo was already fixed (PR #47 era). `index.html` now ships `https://sportstrata.cc/` instead of an empty href (every template and `shell()` overwrite it; a check found no template that doesn't), and in-app navigation sets the canonical to the view's path URL via `_viewPath`.
+
+Not done here: `sitemap.xml` itself is not regenerated in this branch (it's automated output); after merge, run the workflow once by hand or let the next story publish trigger it.
+

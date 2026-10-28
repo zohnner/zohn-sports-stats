@@ -12,6 +12,7 @@
 // plain shell. site.web.api.espn.com serves the identical response shape (live-
 // verified against this exact college-football/teams/:id path before switching).
 import { shell, rawShell } from '../../../_shell.js';
+import { readStories, storiesForTeam, storyListHtml } from '../../../_storyLinks.js';
 
 const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
 const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
@@ -43,10 +44,12 @@ export async function onRequest(context) {
         const jsonld = JSON.stringify({
             '@context': 'https://schema.org', '@type': 'SportsTeam', name, sport: 'American Football', url: canonical
         });
+        const stories = storyListHtml(storiesForTeam(await readStories(env, request.url, 'ncaaf'), abbr).slice(0, 5), `SportStrata Stories featuring the ${name}`, { sport: 'ncaaf' });
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc([abbr, summary].filter(Boolean).join(' · '))}</p>` +
             `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p>` +
+            stories +
             `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p></section>`;
 
         let html = await (await rawShell(env, request.url)).text();

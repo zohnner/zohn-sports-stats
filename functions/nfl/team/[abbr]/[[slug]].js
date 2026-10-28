@@ -10,6 +10,7 @@
 // else in functions/api/*.js, so every NFL team page silently fell back to the
 // plain shell. site.web.api.espn.com serves the identical response shape.
 import { shell, rawShell } from '../../../_shell.js';
+import { readStories, storiesForTeam, storyListHtml } from '../../../_storyLinks.js';
 import { nflverseTeams, NFLVERSE_CREDIT } from '../../../_nflverse.js';
 
 const TEAMS = 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams';
@@ -49,10 +50,12 @@ export async function onRequest(context) {
         const teamLinks = otherTeams.map(t =>
             `<li><a href="/nfl/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.displayName)}</a></li>`).join('');
 
+        const stories = storyListHtml(storiesForTeam(await readStories(env, request.url, 'nfl'), abbr).slice(0, 5), `SportStrata Stories featuring the ${name}`, { sport: 'nfl' });
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc(name)} NFL roster, depth chart, schedule, standings and fantasy assets on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
+            stories +
             `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul>` + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();

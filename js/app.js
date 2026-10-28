@@ -971,6 +971,10 @@ function loadHome() {
                     <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
                 </div>
 
+                <!-- SportStrata Stories: the site's own analysis, kept out of the
+                     tabbed rail below so it is visible without a click. -->
+                <div class="home-stories home-zone" id="homeStories"></div>
+
                 <!-- Insights + Headlines rail (D-046 P3, home redesign Phase 1) —
                      Insights leads: real computed cross-sport stat depth ESPN/CBS/
                      Yahoo's wire-copy headlines can't show, the actual differentiation
@@ -1018,6 +1022,7 @@ function loadHome() {
     _wireHomeSportTabs();
     _wireRailTabs();
     _renderHomeHeadlines();
+    _renderHomeStories();
     _renderHomeWelcomeBack();
     _renderHomeInsights();
 
@@ -2605,23 +2610,28 @@ async function _fetchHomeNewsArticles() {
     return articles;
 }
 
+// Every sport's stories, newest first. With none, the host stays empty (.home-zone:empty hides it).
+async function _renderHomeStories() {
+    const host = document.getElementById('homeStories');
+    if (!host || typeof fetchAllStories !== 'function') return;
+    const stories = await fetchAllStories();
+    if (!host.isConnected || !stories.length) return;
+    host.innerHTML = storiesBlockHtml(stories.slice(0, 4), 'Latest SportStrata Stories');
+}
+
 async function _renderHomeHeadlines() {
     const host = document.getElementById('railHeadlines');
     if (!host) return;
     const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
     try {
-        const [allArticles, stories] = await Promise.all([
-            _fetchHomeNewsArticles(),
-            typeof fetchAllStories === 'function' ? fetchAllStories() : Promise.resolve([]),
-        ]);
+        const allArticles = await _fetchHomeNewsArticles();
         const articles = allArticles
             .filter(a => a && a.headline && a.links?.web?.href)
             .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
             .slice(0, 8);
         if (!host.isConnected) return;
-        const storiesHtml = typeof storiesBlockHtml === 'function' ? storiesBlockHtml(stories.slice(0, 3), 'SportStrata Stories') : '';
-        if (!articles.length) { host.innerHTML = `${storiesHtml}<p class="pct-caption">No wire headlines right now.</p>`; return; }
-        host.innerHTML = storiesHtml + `<div class="stories-block__hdr"><span class="eyebrow">Wire · via ESPN</span></div>` + articles.map(a => {
+        if (!articles.length) { host.innerHTML = `<p class="pct-caption">No wire headlines right now.</p>`; return; }
+        host.innerHTML = `<div class="stories-block__hdr"><span class="eyebrow">Wire · via ESPN</span></div>` + articles.map(a => {
             const when = _ago(a.published || a.lastModified);
             const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[a._sport]) || {};
             return `<a class="rail-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">

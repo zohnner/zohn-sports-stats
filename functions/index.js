@@ -6,6 +6,7 @@
 // Same HTML for humans and bots. Any error fails safe to the untouched app.
 
 import { shell, rawShell } from './_shell.js';
+import { readAllStories, storyListHtml } from './_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -61,11 +62,12 @@ export async function onRequest(context) {
             name: 'SportStrata', url: CANON, description: desc,
             potentialAction: { '@type': 'SearchAction', target: 'https://sportstrata.cc/#mlb-players?q={q}', 'query-input': 'required name=q' }
         });
-        const games = await todaysGamesSnapshot(d.iso);
+        const [games, stories] = await Promise.all([todaysGamesSnapshot(d.iso), readAllStories(env, request.url)]);
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(desc)}</p>` +
             `<h2>Today's MLB Games — ${esc(d.pretty)}</h2>${games}` +
+            storyListHtml(stories.slice(0, 6), 'Latest SportStrata Stories') +
             `<ul><li><a href="/mlb">MLB Stats &amp; Analytics</a></li>` +
             `<li><a href="/mlb/leaders">MLB Stat Leaders</a></li>` +
             `<li><a href="/mlb/standings">Standings &amp; Playoff Odds</a></li>` +
