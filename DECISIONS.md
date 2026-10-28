@@ -3758,3 +3758,11 @@ From the 2026-10-27 competitive audit ("chase" Phase 3). Extends `loadHome()`; t
 
 Cache v333. Tests: `tests/todayFrontDoor.test.js`.
 
+## D-191 — Account/Dashboard no longer break navigation; ticker reduced-motion confirmed
+**Status:** shipping (stacked on D-190) | **Date:** 2026-10-27
+
+- **Fixed (found in D-189).** `renderAccountView`/`renderDashboardView` replaced `main.innerHTML`, deleting `#playersGrid` and `#searchBar`; every view after them rendered into nothing until a reload. They now render into `_mainTakeover()` (`js/navigation.js`), a sibling node that hides `main`'s standard children with inline `display`; `renderCurrentView` and `setBreadcrumb` (for detail renderers reached without `navigateTo`) release it. A late async write after navigating away lands on the detached node instead of clobbering the new view. Verified in a browser: account → NBA standings (30 rows), dashboard → Back (30 rows), account → a direct `showNCAAFTeam` (renders). Tests: `tests/mainTakeover.test.js`.
+- **Not a bug (retracting D-190's accessibility note).** The ticker already honors `prefers-reduced-motion`: `css/main.css` stops the animation and makes `.ticker-viewport` swipeable, and `Scorebug.fillTicker` skips the loop duplication. Verified with emulated reduced motion: no animation, no transform, 8 of 14 items off-screen and reachable by scrolling.
+
+Cache v334.
+

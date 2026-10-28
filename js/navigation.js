@@ -483,7 +483,38 @@ const _NAV_META = {
     'arcade':        { label: 'Arcade' },
 };
 
+// Account and Dashboard own the whole content column. They render into a
+// takeover node and hide <main>'s standard children instead of replacing
+// main.innerHTML, which destroyed #playersGrid and #searchBar (and their
+// listeners): every view after them rendered into nothing until a reload.
+// Hidden with inline display, since `hidden` loses to rules like
+// .players-grid { display: grid }.
+function _mainTakeover() {
+    const main = document.getElementById('main');
+    if (!main) return null;
+    let host = document.getElementById('mainTakeover');
+    if (!host) {
+        [...main.children].forEach(c => { c.dataset.takeoverDisplay = c.style.display; c.style.display = 'none'; });
+        host = document.createElement('div');
+        host.id = 'mainTakeover';
+        main.appendChild(host);
+    }
+    return host;
+}
+// Called by every non-takeover render path: renderCurrentView, and
+// setBreadcrumb for detail renderers reached without navigateTo.
+function _releaseMainTakeover() {
+    const host = document.getElementById('mainTakeover');
+    if (!host) return;
+    host.remove();
+    document.querySelectorAll('#main > [data-takeover-display]').forEach(c => {
+        c.style.display = c.dataset.takeoverDisplay;
+        delete c.dataset.takeoverDisplay;
+    });
+}
+
 function setBreadcrumb(root, current) {
+    _releaseMainTakeover();
     const el = document.getElementById('breadcrumb');
     if (!el) return;
     const meta = _NAV_META[root] || { label: root, icon: '' };
@@ -530,6 +561,7 @@ function renderCurrentView(view) {
 
     // My Dashboard (D-069 cont'd) — sport-agnostic personalized view, same pattern
     if (view === 'dashboard') { if (typeof renderDashboardView === 'function') renderDashboardView(); return; }
+    _releaseMainTakeover();
 
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
@@ -1852,6 +1884,7 @@ if (typeof window !== 'undefined') {
     window.setupNavigation   = setupNavigation;
     window.navigateTo        = navigateTo;
     window.setBreadcrumb     = setBreadcrumb;
+    window._mainTakeover     = _mainTakeover;
     window.renderCurrentView = renderCurrentView;
     window.switchSport       = switchSport;
     window.debounce          = debounce;

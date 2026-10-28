@@ -4734,7 +4734,8 @@ async function _dashTodayGamesFor(sport, teamAbbrs) {
 }
 
 async function renderDashboardView() {
-    const main = document.getElementById('main');
+    // A takeover node, not <main> itself (see _mainTakeover in navigation.js).
+    const main = _mainTakeover();
     if (!main) return;
 
     // D-109: a cold load straight to #dashboard runs this before initAuth()'s

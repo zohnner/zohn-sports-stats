@@ -292,7 +292,8 @@ Sticky row in header, contents per `SUB_NAV_TABS` above.
 - **Never remove `.nav-tab` from any nav button** — it's how active state sync works.
 - **Never remove `data-view` from any nav button** — it's how click routing works.
 - **Menu panel is `position: fixed`** (not sticky) — do not change this; sticky is unreliable under a fixed header.
-- **Sitewide footer (D-189):** `<footer class="site-footer">` in `index.html`, deliberately *after* `</main>` because the account and dashboard views replace `main`'s contents wholesale. Static, so every edge-rendered page serves it too. It carries the per-sport source credits (incl. nflverse CC-BY) and the `/about` link. The old home-only `.home-footer` is gone.
+- **Account/Dashboard take over `<main>` via `_mainTakeover()` (D-191)** — never assign `main.innerHTML`. That used to delete `#playersGrid`/`#searchBar`, so every later view rendered into nothing until a reload. The takeover hides `main`'s children (inline `display`) and is released by `renderCurrentView` and `setBreadcrumb`. Guarded by `tests/mainTakeover.test.js`.
+- **Sitewide footer (D-189):** `<footer class="site-footer">` in `index.html`, deliberately *after* `</main>`, outside the content column the account and dashboard views take over. Static, so every edge-rendered page serves it too. It carries the per-sport source credits (incl. nflverse CC-BY) and the `/about` link. The old home-only `.home-footer` is gone.
 - **`#seasonSelect`** is kept hidden in the DOM (outside the menu panel) for `app.js` season logic compatibility.
 
 ---
