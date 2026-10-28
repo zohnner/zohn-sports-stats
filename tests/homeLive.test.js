@@ -78,3 +78,81 @@ test('signature ignores fields the hero does not show', () => {
     const b = { nfl: [game('1', { isLive: true, leaders: [{ name: 'Y' }] })] };
     assert.equal(H.signature(a), H.signature(b));
 });
+
+// Hero ranking (2026-10-27): the hero showed WKU at Delaware (unranked, live
+// on CBSSN), and earlier a Saturday game, while World Series Game 4 was tonight.
+const mlbGame = (gameType, awayWins, homeWins, gamesInSeries = 7) => ({
+    gameType, gamesInSeries,
+    teams: { away: { leagueRecord: { wins: awayWins } }, home: { leagueRecord: { wins: homeWins } } },
+});
+
+test('mlbTier: postseason rounds rank above the regular season, World Series highest', () => {
+    const H = load();
+    assert.deepEqual(['R', 'F', 'D', 'L', 'W', undefined].map(t => H.mlbTier({ gameType: t })), [0, 1, 2, 3, 4, 0]);
+});
+
+test('mlbCanClinch: a team one win from taking the series, by series length', () => {
+    const H = load();
+    assert.equal(H.mlbCanClinch(mlbGame('W', 3, 0)), true);    // best of 7, up 3-0
+    assert.equal(H.mlbCanClinch(mlbGame('W', 2, 2)), false);
+    assert.equal(H.mlbCanClinch(mlbGame('D', 1, 2, 5)), true);  // best of 5, home up 2-1
+    assert.equal(H.mlbCanClinch(mlbGame('F', 0, 0, 3)), false); // wild card game 1
+    assert.equal(H.mlbCanClinch(mlbGame('F', 1, 0, 3)), true);
+    assert.equal(H.mlbCanClinch({ gameType: 'R', teams: {} }), false);
+});
+
+// Fixed local clock so "today" and the 3-hour window don't depend on when CI runs.
+const NOW = new Date(2026, 9, 27, 19, 0).getTime();          // Tue 7:00 PM local
+const at = (h, m = 0, dayOffset = 0) => new Date(2026, 9, 27 + dayOffset, h, m).getTime();
+const cand = (name, o) => ({ name, live: false, tier: 0, score: 0, start: NaN, ...o });
+
+test('pickHero: tonight -- a World Series game an hour out beats a live unranked college game', () => {
+    const H = load();
+    const winner = H.pickHero([
+        cand('WKU-DEL', { live: true, score: 14, start: at(19) }),
+        cand('WS G4', { tier: 4, score: 18, start: at(20) }),
+        cand('ARIZ-TTU Sat', { score: 10, start: at(12, 0, 4) }),
+    ], NOW);
+    assert.equal(winner.name, 'WS G4');
+});
+
+test('pickHero: a tiered game more than 3 hours out waits behind a live game', () => {
+    const H = load();
+    const winner = H.pickHero([
+        cand('WKU-DEL', { live: true, score: 14, start: at(19) }),
+        cand('WS G4', { tier: 4, score: 18, start: at(22, 30) }),
+    ], NOW);
+    assert.equal(winner.name, 'WKU-DEL');
+});
+
+test('pickHero: upcoming games after today are never the hero', () => {
+    const H = load();
+    const winner = H.pickHero([
+        cand('ARIZ-TTU Sat', { score: 10, start: at(12, 0, 4) }),
+        cand('NBA tonight', { score: 0, start: at(19, 30) }),
+    ], NOW);
+    assert.equal(winner.name, 'NBA tonight');
+    assert.equal(H.pickHero([cand('Sat only', { score: 10, start: at(12, 0, 4) })], NOW), null);
+});
+
+test('pickHero: within a tier live beats upcoming, then the higher score wins', () => {
+    const H = load();
+    assert.equal(H.pickHero([
+        cand('upcoming', { score: 50, start: at(20) }),
+        cand('live', { live: true, score: 1, start: at(18) }),
+    ], NOW).name, 'live');
+    assert.equal(H.pickHero([
+        cand('live WS', { live: true, tier: 4, score: 20 }),
+        cand('live NCAAF', { live: true, score: 30 }),
+    ], NOW).name, 'live WS');
+    assert.equal(H.pickHero([
+        cand('a', { live: true, score: 5 }),
+        cand('b', { live: true, score: 9 }),
+    ], NOW).name, 'b');
+});
+
+test('pickHero: a game with no known start still counts as today, and nothing yields null', () => {
+    const H = load();
+    assert.equal(H.pickHero([cand('no date', { score: 3 })], NOW).name, 'no date');
+    assert.equal(H.pickHero([], NOW), null);
+});
