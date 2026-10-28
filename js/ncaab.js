@@ -479,7 +479,7 @@ async function displayNCAABStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_ncaab.season - 1))}-${_escHtml(String(_ncaab.season).slice(2))} D-I conference standings. Source: ESPN. Conf = record within the conference.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_ncaab.season - 1))}-${_escHtml(String(_ncaab.season).slice(2))} D-I conference standings. Source: ESPN. Conf = record within the conference.${freshnessHtml(ApiCache.getTimestamp(`ncaab:standings:${_ncaab.season}`))}</p>`;
 }
 
 async function displayNCAABTeams() {

@@ -858,7 +858,7 @@ async function displayNCAAFStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_ncaaf.season))} FBS conference standings. Source: ESPN. Conf = record within the conference.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_ncaaf.season))} FBS conference standings. Source: ESPN. Conf = record within the conference.${freshnessHtml(ApiCache.getTimestamp(`ncaaf:standings:${_ncaaf.season}`))}</p>`;
 }
 
 async function displayNCAAFTeams() {

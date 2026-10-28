@@ -408,6 +408,14 @@
         <div id="playersGrid" class="players-grid"></div>
     </main>
 
+    <!-- Sitewide footer (D-189): sources, About & Methodology, contact. Outside <main>,
+         which the account and dashboard views replace wholesale. Static, so it is in every page's served HTML, edge-rendered pages included. -->
+    <footer class="site-footer">
+        <span>Data: MLB Stats API &amp; Baseball Savant (MLB); ESPN (NFL, NCAAF, NCAAB, NBA, WNBA); Sleeper and <a href="https://github.com/nflverse" rel="noopener">nflverse</a> (CC-BY 4.0) for the NFL. Not affiliated with or endorsed by any league or team.</span>
+        <span><a href="/about">About &amp; methodology</a> · <a href="/glossary">Glossary</a> · <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a></span>
+        <span>&copy; SportStrata</span>
+    </footer>
+
     <!-- math.js 13: safe formula evaluation in Stat Builder (never use eval()) -->
     <!-- Chart.js: data visualisation — loaded before charts.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"

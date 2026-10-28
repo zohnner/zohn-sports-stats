@@ -13,7 +13,7 @@
  *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
  *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
  *   /ncaab/standings · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
- *   /glossary · /nfl/glossary · /<sport>/stories · /<sport>/stories/{slug} (from content/<sport>/stories/index.json;
+ *   /glossary · /nfl/glossary · /about · /<sport>/stories · /<sport>/stories/{slug} (from content/<sport>/stories/index.json;
  *   a sport's index page is listed only once it has a story)
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
@@ -91,6 +91,7 @@ async function main() {
     add(urlTag('/nba/standings', 'daily', '0.7'));
     add(urlTag('/nba/leaders', 'daily', '0.7'));
     add(urlTag('/glossary', 'monthly', '0.6'));
+    add(urlTag('/about', 'monthly', '0.5'));
     add(urlTag('/nfl/glossary', 'monthly', '0.6'));
     for (const sport of Object.keys(require('./stories/story-core.cjs').STORY_SPORTS)) {
         try {

@@ -366,7 +366,7 @@ async function displayWNBAStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_wnba.season))} WNBA conference standings. Source: ESPN. GB = games behind conference leader.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_wnba.season))} WNBA conference standings. Source: ESPN. GB = games behind conference leader.${freshnessHtml(ApiCache.getTimestamp(`wnba:standings:${_wnba.season}`))}</p>`;
 }
 
 async function displayWNBATeams() {

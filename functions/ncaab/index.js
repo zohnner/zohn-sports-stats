@@ -23,7 +23,7 @@ function esc(s) {
 }
 
 const TITLE = "College Basketball Scores, Rankings & Standings | SportStrata";
-const DESC  = "Free NCAA men's college basketball coverage: AP/Coaches rankings, conference standings, team pages and live scores. No login, no ads.";
+const DESC  = "Free NCAA men's college basketball coverage: AP/Coaches rankings, conference standings, a team directory and live scores. No login, no ads.";
 const H1    = "College Basketball Stats";
 const CANON = 'https://sportstrata.cc/ncaab';
 const ROUTE = "ncaab-home";

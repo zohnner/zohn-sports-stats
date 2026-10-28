@@ -3729,3 +3729,19 @@ From the 2026-10-27 competitive audit ("chase" Phase 1). PR #47 had already land
 
 Not done here: `sitemap.xml` itself is not regenerated in this branch (it's automated output); after merge, run the workflow once by hand or let the next story publish trigger it.
 
+## D-189 — Trust surfaces: About & Methodology, sitewide footer, truth-in-labeling, freshness receipts; NHL stays struck
+**Status:** shipping (stacked on D-188) | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 2).
+
+- **`/about`** (`functions/about.js`, edge-rendered static content, `static-page-home`): who runs the site (independent, one person — taken from GOALS.md's "solo codebase"; no name published, owner's call), data sources per sport with what each supplies (nflverse's CC-BY credit extended into a per-sport source list), the October Odds Monte Carlo and the SRS power rankings in plain steps with their real constants, the Stories AI disclosure (`story-core`'s own `DISCLOSURE` text, so the two can't diverge), and contact. In `_routes.json` and the sitemap. `tests/trustSurfaces.test.js` checks every method number on the page against `js/odds.js` and `_PWR_SPORTS`.
+- **Sitewide footer.** The home-only footer moved into `index.html` after `</main>` (the account/dashboard views replace `main` wholesale), so every page — edge-rendered ones included — serves source credits, `/about` and contact.
+- **Truth in labeling.** NCAAB's landing meta claimed "team pages"; NCAAB has no team detail view, so it now says "a team directory". **Audit contradiction:** NBA and WNBA player pages do exist (`functions/{nba,wnba}/player/`, `nba-player-*`/`wnba-player-*` in the SPA), so their "player pages" copy stays. What the audit actually saw: in production `/nba/leaders` and `/wnba/leaders` fail safe to the bare shell (the ESPN proxy block, D-176 — out of scope here) and the sitemap carries zero NBA/WNBA player URLs, so a crawler finds no player pages. Readers do. Fixing the crawler view is the D-176 work, not copy.
+- **NHL: strike (keep it struck).** Verified there is nothing to strike: no NHL in any served copy, meta, sitemap, `SPORTS`, sub-nav, menu or bottom nav — `/nhl` 404s because it was never shipped, which is the honest state. The only trace is the dormant `#nhl-*` hash routes and `js/nhl.js` (preview-only per CLAUDE.md). Shipping a landing would be NHL feature work, which CLAUDE.md rules out unprompted. Left the dormant code alone.
+- **Freshness.** The Game Center's receipt (D-185) became the shared `freshnessHtml(ts, staleMs)` in `js/config.js`; the Game Center and home use it (home's own `_homeAgo` fork is gone), and all six standings views gained one. The timestamp is always the fetch time — `ApiCache.getTimestamp` for the ESPN sports, `_mlbFetchedAt` (new, set by `mlbFetch` from the cache's own timestamp on a hit) for MLB, a session fetch time for NFL — so a re-render from cache reads its true age (verified: "Updated 1m 3s ago" on a fresh load served from cache). **Not done: the ticker and the sport hubs.** The ticker has nine writers (one per sport plus home) fed from caches that don't carry a fetch time; a MutationObserver would stamp a cached re-render as "just now", which is exactly the false freshness this exists to remove. Threading the fetch time through each `update*Ticker` is a scoped follow-up.
+- **Ticker overlap (PR #46) confirmed** on home at 500 px and 1280 px: 162 items, 0 item overlaps, 0 logo-over-abbreviation overlaps across 1,620 logo/text pairs, SCORES button clear of the viewport.
+
+**Found, not fixed (pre-existing):** visiting `#account` or `#dashboard` replaces `main`'s contents, removing `#playersGrid`; any later in-app navigation renders nothing until a reload. Reproduced locally (account → NBA standings shows the account page's remains). The new footer survives it because it sits outside `main`.
+
+Cache v332. Tests: `tests/trustSurfaces.test.js`.
+

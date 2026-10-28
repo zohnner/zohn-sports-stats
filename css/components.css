@@ -4959,6 +4959,11 @@
 .ss-stories__list { list-style: none; padding: 0; }
 .ss-stories__list li { padding: var(--space-4) 0; border-bottom: 1px solid var(--border-default); }
 .ss-stories__list li > a { font-weight: 700; font-size: var(--text-lg); text-decoration: none; }
+/* Freshness receipt (D-189, freshnessHtml in js/config.js). Inherits its host's
+   type; only the numerals and the stale state are its own. */
+.ss-fresh { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.standings-legend .ss-fresh, .pct-caption .ss-fresh { margin-left: 0.4em; color: var(--text-muted); }
+.ss-fresh.ss-fresh--stale { color: var(--color-loss); }
 .stories-block { margin-bottom: var(--space-4); }
 .stories-block__hdr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); }
 .stories-block__more { font-size: var(--text-sm); color: var(--accent); text-decoration: none; }

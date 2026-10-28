@@ -1006,11 +1006,6 @@ function loadHome() {
             </div>
         </div>
 
-        <footer class="home-footer">
-            <span>Scores &amp; stats: MLB Stats API &amp; Baseball Savant (MLB), ESPN (NFL, NCAAF, NCAAB, WNBA). This site is not endorsed by or affiliated with any league or team.</span>
-            <span>Press &amp; partnerships: <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a></span>
-            <span>&copy; ${new Date().getFullYear()} SportStrata</span>
-        </footer>
     `;
 
     _renderHomeMoment();
@@ -3016,19 +3011,14 @@ async function _renderHomeInsights() {
 }
 
 // ── Freshness signals (D-046 P4) — "Updated Nm ago" from real fetch time ──
-function _homeAgo(ts) {
-    if (!ts) return '';
-    const s = Math.max(0, (Date.now() - ts) / 1000);
-    if (s < 45)   return 'just now';
-    if (s < 3600) return Math.round(s / 60) + 'm ago';
-    return Math.round(s / 3600) + 'h ago';
-}
+// The shared receipt (freshnessHtml in config.js) ticks the text from data-fresh-ts.
 function _updateHomeFreshness() {
     const el = document.getElementById('homeUpdatedAt');
-    if (el && AppState._homeGamesFetchedAt) el.textContent = 'Updated ' + _homeAgo(AppState._homeGamesFetchedAt);
+    if (!el || !AppState._homeGamesFetchedAt) return;
+    el.classList.add('ss-fresh');
+    el.dataset.freshTs = AppState._homeGamesFetchedAt;
+    el.textContent = _freshText(AppState._homeGamesFetchedAt);
 }
-// Keep the relative label honest between polls (cheap; only touches text when on home).
-setInterval(() => { if (AppState.currentView === 'home') _updateHomeFreshness(); }, 30_000);
 
 // ── On This Day (ANN-005) ─────────────────────────────────────
 // Fetches MLB games from today's date in the last 3 seasons,

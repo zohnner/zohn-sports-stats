@@ -3153,6 +3153,8 @@ main {
     .bottom-nav-label { display: block; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 
     main { padding-bottom: 5rem; }
+    /* The footer follows <main> and carries the bottom-nav clearance instead. */
+    main:has(+ .site-footer) { padding-bottom: 0; }
 }
 
 /* ── Global Search Button (header) ───────────────────────────── */
@@ -4134,26 +4136,31 @@ body.a2hs-open { padding-bottom: 4.5rem; }
     .a2hs-strip { bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 0.75rem); }
 }
 
-/* ── Home footer — data attribution ─────────────────────────── */
-.home-footer {
+/* ── Site footer — data attribution, About, contact (D-189; was home-only) ── */
+.site-footer {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 0.5rem 1.5rem;
-    margin-top: 2.5rem;
-    padding: 1rem 0.25rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 1rem var(--space-8) calc(1rem + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--border-default);
     font-size: 0.6875rem;
     color: var(--text-subtle);
     line-height: 1.5;
 }
-.home-footer a {
+.site-footer a {
     color: var(--text-subtle);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
-.home-footer a:hover {
+.site-footer a:hover {
     color: var(--text-secondary);
+}
+@media (max-width: 768px) {
+    /* Clears the fixed bottom nav, which main's own padding did before (see main:has(+ .site-footer)). */
+    .site-footer { padding: 1rem var(--space-4) calc(5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Sport switcher (header MLB / NFL / …) ─────────────────── */

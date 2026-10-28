@@ -408,7 +408,7 @@ async function displayNBAStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_nba.season))} NBA standings by conference and division. Source: ESPN. GB = games behind division leader.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_nba.season))} NBA standings by conference and division. Source: ESPN. GB = games behind division leader.${freshnessHtml(ApiCache.getTimestamp(`nba:standings:${_nba.season}`))}</p>`;
 }
 
 async function displayNBATeams() {
