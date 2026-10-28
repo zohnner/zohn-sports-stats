@@ -1,6 +1,22 @@
 {
   "stories": [
     {
+      "slug": "2026-10-28-rays-12th-inning-game-4-comeback",
+      "title": "The Rays scored 2 runs in the 12th inning to win Game 4",
+      "dek": "Tampa Bay beat Milwaukee 4-3, ending the Brewers' 8-game postseason win streak and cutting Milwaukee's series lead to 3-1.",
+      "date": "2026-10-28",
+      "season": 2026,
+      "round": "World Series",
+      "teams": [
+        "TB",
+        "MIL"
+      ],
+      "players": [],
+      "hero_stat": "2 runs in the bottom of the 12th inning after trailing 3-2",
+      "url": "/mlb/stories/2026-10-28-rays-12th-inning-game-4-comeback",
+      "sport": "mlb"
+    },
+    {
       "slug": "2026-10-13-guardians-alds-comeback",
       "title": "Down 0-2, the Guardians won 3 straight elimination games to take the ALDS",
       "dek": "Cleveland scored 3 runs in the first 2 games, then 20 over the next 3 — including a 6-run 6th inning in Game 4.",
