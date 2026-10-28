@@ -295,6 +295,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         </div>
         <div class="sl-layout">
             <div class="sl-primary">
+                <div class="home-myteams home-zone" id="slMyTeams"></div>
                 <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
                 ${STORY_SPORTS.includes(sport) ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
@@ -317,6 +318,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
     if (window.setBreadcrumb) setBreadcrumb(sport + '-home', null);
     const loader = _EDITORIAL_LOADERS[sport];
     if (typeof loader === 'function') loader();
+    _renderMyTeams('slMyTeams', sport);
 }
 
 // Boot renders the home view synchronously (setupNavigation -> _loadFromHash -> loadHome), so
@@ -832,6 +834,12 @@ async function _updateHomeTicker({ live = false } = {}) {
         const prev = _updateHomeTicker._heroSig;
         _updateHomeTicker._heroSig = sig;
         if (prev !== undefined && prev !== sig && typeof _renderHomeHero === 'function') _renderHomeHero();
+        // D-190: the All tab and My Teams read this same data; the first call
+        // counts as a change for them, since loadHome may have rendered before it landed.
+        if (prev !== sig) {
+            if (AppState._homeSportTab === 'all' || AppState._homeSportTab === undefined) _loadHomeTodayGames();
+            _renderMyTeams('homeMyTeams');
+        }
     }
 
     const entries = [];
@@ -895,7 +903,7 @@ function loadHome() {
     if (AppState._homeSportTab === undefined) {
         let saved = null;
         try { saved = sessionStorage.getItem('zs_home_sport_tab'); } catch (_) {}
-        AppState._homeSportTab = (saved && ['all', 'mlb', 'nfl', 'ncaaf'].includes(saved)) ? saved : 'all';
+        AppState._homeSportTab = (saved && ['all', 'mlb', 'nfl', 'ncaaf', 'ncaab', 'nba', 'wnba'].includes(saved)) ? saved : 'all';
     }
 
     const dateStr = new Date().toLocaleDateString('en-US', {
@@ -954,6 +962,10 @@ function loadHome() {
 
                 <!-- Today's Games — still MLB/NFL/NCAAF only; the sport-preview hub
                      (a later phase) subsumes this with one card per sport instead -->
+                <!-- My Teams (D-190): followed teams' current game + newest story,
+                     from the local-first follows (no account). Empty = hidden. -->
+                <div class="home-myteams home-zone" id="homeMyTeams"></div>
+
                 <div class="home-today home-zone" id="homeTodayGames">
                     <div class="home-section-hdr">
                         <span class="home-section-title">Today's Games</span>
@@ -967,6 +979,9 @@ function loadHome() {
                         <button class="standings-tab" data-sporttab="mlb" role="tab" aria-selected="false">MLB</button>
                         <button class="standings-tab" data-sporttab="nfl" role="tab" aria-selected="false">NFL</button>
                         <button class="standings-tab" data-sporttab="ncaaf" role="tab" aria-selected="false">NCAAF</button>
+                        <button class="standings-tab" data-sporttab="ncaab" role="tab" aria-selected="false">NCAAB</button>
+                        <button class="standings-tab" data-sporttab="nba" role="tab" aria-selected="false">NBA</button>
+                        <button class="standings-tab" data-sporttab="wnba" role="tab" aria-selected="false">WNBA</button>
                     </div>
                     <div class="home-today-grid" id="homeTodayGrid">${skelCards}</div>
                 </div>
@@ -1012,6 +1027,7 @@ function loadHome() {
     _renderSportPicker();
     _renderHomeRecents();
     _renderHomeFollowing();
+    _renderMyTeams('homeMyTeams');
     _syncHomeSportTabUI();
     _loadHomeTodayGames();
     _wireHomeSportTabs();
@@ -1095,6 +1111,89 @@ function _renderHomeRecents() {
 // pass lazy-warms the NFL Sleeper pool and fetches NCAAF/WNBA/NBA followed players individually
 // (no bulk pool exists for any of the three), then repaints -- mirrors _renderHomeInsights' own
 // background-then-rerender pattern below. NBA added D-161 follow-up (2026-09-14).
+// ── My Teams (D-190) ─────────────────────────────────────────
+// Each followed team's current game and newest SportStrata story. Reads the
+// local-first AuthState.follows, so it works signed out; no second follow store.
+// onlySport limits it to one sport (the sport hubs).
+const _myTeamsGames = {};
+async function _myTeamsLoadGames(sport) {
+    const loaded = _homeLoadedGames(sport);
+    if (loaded.length) return loaded;
+    if (!_myTeamsGames[sport]) {
+        const fetchFn = sport === 'mlb'
+            ? (typeof fetchMLBSchedule === 'function' ? () => fetchMLBSchedule(2) : null)
+            : _homeSportTabCfg(sport)?.fetch;
+        _myTeamsGames[sport] = fetchFn ? fetchFn().catch(() => []) : Promise.resolve([]);
+    }
+    return _myTeamsGames[sport];
+}
+
+// Live first, then the next game not yet final, then the latest final. MLB's
+// list spans ±2 days, so its non-live pick must be dated today (ET).
+function _myTeamGame(sport, abbr, games) {
+    const code = String(abbr).toUpperCase();
+    const norm = sport === 'mlb' ? Scorebug.normalizeMLBGame : _homeSportTabCfg(sport)?.normalize;
+    if (!norm) return null;
+    const mine = [];
+    for (const g of games || []) {
+        let m;
+        try { m = norm(g); } catch (_) { continue; }
+        if (String(m.home.abbr).toUpperCase() === code || String(m.away.abbr).toUpperCase() === code) mine.push({ g, m });
+    }
+    if (sport === 'mlb') {
+        const todayET = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
+        const today = mine.filter(x => x.m.status === 'live' || (x.g.officialDate || (x.g.gameDate || '').slice(0, 10)) === todayET);
+        return (today.find(x => x.m.status === 'live') || today[0]) || null;
+    }
+    return mine.find(x => x.m.status === 'live') || mine.find(x => x.m.status === 'upcoming') || mine.find(x => x.m.status === 'final') || null;
+}
+
+async function _renderMyTeams(hostId, onlySport = null) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    const teams = (typeof AuthState !== 'undefined' && AuthState.follows ? [...AuthState.follows] : [])
+        .map(k => String(k).split(':'))
+        .filter(([sp, type, abbr]) => type === 'team' && abbr && (!onlySport || sp === onlySport))
+        .map(([sport, , abbr]) => ({ sport, abbr }))
+        .slice(0, 8);
+    if (!teams.length) { host.innerHTML = ''; return; }
+
+    const rows = await Promise.all(teams.map(async t => {
+        const [games, stories] = await Promise.all([
+            _myTeamsLoadGames(t.sport),
+            (typeof STORY_SPORTS !== 'undefined' && STORY_SPORTS.includes(t.sport)) ? fetchStoriesIndex(t.sport) : [],
+        ]);
+        const code = t.abbr.toUpperCase();
+        return {
+            ...t,
+            game: _myTeamGame(t.sport, t.abbr, games),
+            // A story's first team is its subject; prefer those over passing mentions.
+            story: (stories || []).find(s => String((s.teams || [])[0] || '').toUpperCase() === code)
+                || (stories || []).find(s => (s.teams || []).some(x => String(x).toUpperCase() === code)),
+        };
+    }));
+    if (!host.isConnected) return;
+
+    host.innerHTML = `
+        <div class="home-section-hdr"><span class="home-section-title">My Teams</span></div>
+        ${rows.map(r => {
+            const line = r.game ? _gameLine(r.sport, r.game.g) : '';
+            const live = r.game && r.game.m.status === 'live';
+            return `<div class="my-teams-row">
+                ${_hfTeamChip(r.sport, r.abbr)}
+                <div class="my-teams-detail">
+                    <span class="my-teams-game${live ? ' my-teams-game--live' : ''}">${live ? '<span class="my-teams-live">LIVE</span> ' : ''}${_escHtml(line || 'No game today')}</span>
+                    ${r.story ? `<a class="my-teams-story" href="${_escHtml(r.story.url)}">${_escHtml(r.story.title)}</a>` : ''}
+                </div>
+            </div>`;
+        }).join('')}`;
+    host.querySelectorAll('.home-recent-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            if (typeof _favRailGoToTeam === 'function') _favRailGoToTeam(chip.dataset.followSport, chip.dataset.followAbbr, `${chip.dataset.followSport}-teams`);
+        });
+    });
+}
+
 function _renderHomeFollowing() {
     const el = document.getElementById('homeStarred');
     if (!el) return;
@@ -1584,6 +1683,10 @@ window.addEventListener('ss:follow-changed', (e) => {
     // 2026-09-08: this whole listener used to return early for any non-mlb `e.detail.sport`,
     // so a follow toggled anywhere outside MLB silently never updated this section).
     if (typeof _renderHomeFollowing === 'function') _renderHomeFollowing();
+    if (e.detail && e.detail.entityType === 'team') {
+        _renderMyTeams('homeMyTeams');
+        _renderMyTeams('slMyTeams', AppState.currentSport);
+    }
 });
 
 // Settings' Manage Follows list can also be the trigger (its own unfollow button), or a
@@ -1651,6 +1754,11 @@ function _wireHomeGameCardClicks(gridEl) {
             } else if (key.startsWith('ncaaf-')) {
                 if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
                 navigateTo('ncaaf-scores');
+            } else {
+                const m = /^(ncaab|nba|wnba)-(.+)$/.exec(key);
+                if (!m) return;
+                if (AppState.currentSport !== m[1]) switchSport(m[1]);
+                navigateTo(`${m[1]}-game-${m[2]}`);
             }
         };
         card.addEventListener('click', open);
@@ -1663,41 +1771,52 @@ function _wireHomeGameCardClicks(gridEl) {
 // switching back doesn't re-fetch, and so the "All" tab can union it in once
 // it exists. Does not touch the MLB-only hero/tonight's-SP/freshness wiring
 // (Axiom's explicit scoping call, D-043 3a gates in ISSUES.md).
-async function _renderHomeFootballTab(sport, gridEl) {
+// Per-sport config for the single-sport Today's Games tabs (football since
+// D-043 3a; basketball added D-190 so every live sport has a tab).
+function _homeSportTabCfg(sport) {
+    const fn = name => (typeof window[name] === 'function' ? window[name] : null);
+    const off = name => () => typeof window[name] === 'function' && window[name]();
+    return {
+        nfl:   { label: 'NFL',   fetch: fn('fetchNFLScoreboard'),   normalize: Scorebug.normalizeNFLGame,   isOff: off('_nflIsOffseason'),   offHtml: () => _nflOffseasonState('scores') },
+        ncaaf: { label: 'NCAAF', fetch: fn('fetchNCAAFScoreboard'), normalize: Scorebug.normalizeNCAAFGame, isOff: off('_ncaafIsOffseason'), offHtml: () => _ncaafOffseasonState() },
+        ncaab: { label: 'NCAAB', fetch: fn('fetchNCAABScoreboard'), normalize: Scorebug.normalizeNCAABGame, isOff: off('_ncaabIsOffseason'), offHtml: () => `<p class="home-no-games">College basketball is in its offseason.</p>` },
+        nba:   { label: 'NBA',   fetch: fn('fetchNBAScoreboard'),   normalize: Scorebug.normalizeNBAGame,   isOff: off('_nbaIsOffseason'),   offHtml: () => `<p class="home-no-games">The NBA is in its offseason.</p>` },
+        wnba:  { label: 'WNBA',  fetch: fn('fetchWNBAScoreboard'),  normalize: Scorebug.normalizeWNBAGame,  isOff: off('_wnbaIsOffseason'),  offHtml: () => `<p class="home-no-games">The WNBA is in its offseason.</p>` },
+    }[sport];
+}
+
+// Any one sport's games already loaded this page (the home ticker's fetch, or
+// a single-sport tab's own), or [].
+function _homeLoadedGames(sport) {
+    if (sport === 'mlb') return AppState._homeGames || AppState.mlbGames || [];
+    return AppState[sport + 'Games'] || AppState['_home' + sport.toUpperCase() + 'Games'] || [];
+}
+
+async function _renderHomeSportTab(sport, gridEl) {
     document.querySelectorAll('#homeTodayGames .home-live-badge').forEach(el => el.remove());
     gridEl.parentNode.querySelectorAll('.home-filter-bar').forEach(el => el.remove());
 
-    const cacheKey  = sport === 'nfl' ? '_homeNFLGames' : '_homeNCAAFGames';
-    const fetchFn   = sport === 'nfl'
-        ? (typeof fetchNFLScoreboard === 'function' ? fetchNFLScoreboard : null)
-        : (typeof fetchNCAAFScoreboard === 'function' ? fetchNCAAFScoreboard : null);
-    const normalize = sport === 'nfl' ? Scorebug.normalizeNFLGame : Scorebug.normalizeNCAAFGame;
-    const isOffseason = sport === 'nfl'
-        ? (typeof _nflIsOffseason === 'function' && _nflIsOffseason())
-        : (typeof _ncaafIsOffseason === 'function' && _ncaafIsOffseason());
-    const label = sport === 'nfl' ? 'NFL' : 'NCAAF';
-
+    const cfg = _homeSportTabCfg(sport);
+    const cacheKey = '_home' + sport.toUpperCase() + 'Games';
     if (!AppState[cacheKey]) gridEl.innerHTML = _homeSkeletonCards(4);
 
     try {
-        const games = fetchFn ? await fetchFn() : [];
+        const games = cfg.fetch ? await cfg.fetch() : [];
         AppState[cacheKey] = games;
         // Tab may have changed again while the fetch was in flight.
         if (!gridEl.isConnected || AppState._homeSportTab !== sport) return;
 
         if (!games.length) {
-            gridEl.innerHTML = isOffseason
-                ? (sport === 'nfl' ? _nflOffseasonState('scores') : _ncaafOffseasonState())
-                : `<p class="home-no-games">No ${label} games today.</p>`;
+            gridEl.innerHTML = cfg.isOff() ? cfg.offHtml() : `<p class="home-no-games">No ${cfg.label} games today.</p>`;
             return;
         }
 
         const sorted = [...games].sort((a, b) => (b.isLive === true) - (a.isLive === true)).slice(0, 15);
-        gridEl.innerHTML = sorted.map(g => Scorebug.renderScoreCard(normalize(g))).join('');
+        gridEl.innerHTML = sorted.map(g => Scorebug.renderScoreCard(cfg.normalize(g))).join('');
         _wireHomeGameCardClicks(gridEl);
     } catch (_) {
         if (gridEl.isConnected && AppState._homeSportTab === sport) {
-            gridEl.innerHTML = `<p class="home-no-games">${label} scores unavailable.</p>`;
+            gridEl.innerHTML = `<p class="home-no-games">${cfg.label} scores unavailable.</p>`;
         }
     }
 }
@@ -1707,8 +1826,8 @@ async function _loadHomeTodayGames() {
     if (!gridEl) return;
     const tab = AppState._homeSportTab || 'all';
 
-    // Single-sport football tabs get their own dedicated, smaller render path.
-    if (tab === 'nfl' || tab === 'ncaaf') return _renderHomeFootballTab(tab, gridEl);
+    // Single-sport tabs get their own dedicated, smaller render path.
+    if (tab !== 'all' && tab !== 'mlb') return _renderHomeSportTab(tab, gridEl);
 
     const _esc     = (s) => typeof _escHtml === 'function' ? _escHtml(s) : String(s == null ? '' : s);
 
@@ -1741,38 +1860,35 @@ async function _loadHomeTodayGames() {
             [...mlbResult]
                 .sort((a, b) => rank(a) - rank(b))
                 .slice(0, 15)
-                .forEach(g => cards.push(_gameCard(g)));
+                .forEach(g => cards.push({ html: _gameCard(g), tier: rank(g) }));
         }
 
         if (!gridEl.isConnected) return;
 
-        // D-043 3a "All" tab: union in whatever football data is already
-        // cached this session (lazy — nothing fetched here). MLB-first block
-        // order, not chronologically interleaved — honors the barbell framing
-        // in the D-043 spec itself (MLB leads; football is additive, not equal
-        // weight) rather than flattening every sport to the same visual rank.
-        const extraCards = [];
+        // "All" is the cross-sport Today view (D-190, was MLB-first since D-043 3a):
+        // favorite-team MLB games, then every live game in any sport, then the
+        // rest of MLB, then up to 4 more per other sport. Other sports read what
+        // the home ticker already fetched (nothing fetched here); the ticker
+        // re-renders this tab when that data changes.
+        let guestLive = 0;
         if (tab === 'all') {
-            if (AppState._homeNFLGames && AppState._homeNFLGames.length) {
-                [...AppState._homeNFLGames]
-                    .sort((a, b) => (b.isLive === true) - (a.isLive === true))
-                    .slice(0, 6)
-                    .forEach(g => extraCards.push(Scorebug.renderScoreCard(Scorebug.normalizeNFLGame(g))));
-            }
-            if (AppState._homeNCAAFGames && AppState._homeNCAAFGames.length) {
-                [...AppState._homeNCAAFGames]
-                    .sort((a, b) => (b.isLive === true) - (a.isLive === true))
-                    .slice(0, 6)
-                    .forEach(g => extraCards.push(Scorebug.renderScoreCard(Scorebug.normalizeNCAAFGame(g))));
-            }
+            ['nfl', 'ncaaf', 'ncaab', 'nba', 'wnba'].forEach(sport => {
+                const norm = _homeSportTabCfg(sport).normalize;
+                const models = _homeLoadedGames(sport).map(g => norm(g));
+                const live = models.filter(m => m.status === 'live');
+                guestLive += live.length;
+                live.forEach(m => cards.push({ html: Scorebug.renderScoreCard(m), tier: 1 }));
+                models.filter(m => m.status !== 'live').slice(0, 4)
+                    .forEach(m => cards.push({ html: Scorebug.renderScoreCard(m), tier: 3 }));
+            });
         }
 
-        if (cards.length === 0 && extraCards.length === 0) {
+        if (cards.length === 0) {
             gridEl.innerHTML = `<p class="home-no-games">No games scheduled today.</p>`;
             return;
         }
 
-        gridEl.innerHTML = cards.join('') + extraCards.join('');
+        gridEl.innerHTML = cards.sort((a, b) => a.tier - b.tier).map(c => c.html).join('');
 
         // Home redesign pass (2026-08-19, team-routed external roadmap triage
         // -- see DECISIONS.md): mark the top-ranked MLB games as "marquee"
@@ -1789,8 +1905,8 @@ async function _loadHomeTodayGames() {
         }
 
         // Update section header with live count badge + filter pills (idempotent)
-        const liveCount = mlbResult ? mlbResult.filter(g => g.status?.abstractGameState === 'Live'
-            && !/final/i.test(g.status?.detailedState || '')).length : 0;
+        const liveCount = guestLive + (mlbResult ? mlbResult.filter(g => g.status?.abstractGameState === 'Live'
+            && !/final/i.test(g.status?.detailedState || '')).length : 0);
         const hdrEl = document.querySelector('#homeTodayGames .home-section-hdr');
         if (hdrEl) {
             // Strip stale live badge before re-inserting
@@ -3330,7 +3446,11 @@ function _mlbPillLabelReadable(label) {
 // deliberate "less enriched, not broken" precedent the fav-rail already set
 // for these two sports (js/navigation.js's own _renderFavRail comment).
 function _sportPickerSnippet(sport) {
-    const g = _sportPickerGame(sport);
+    return _gameLine(sport, _sportPickerGame(sport));
+}
+
+// One-line score/status for any sport's raw game ("NYY 3 – BOS 2 · Top 7th").
+function _gameLine(sport, g) {
     if (!g) return '';
     try {
         if (sport === 'mlb' && typeof Scorebug !== 'undefined') {
@@ -3355,7 +3475,7 @@ function _sportPickerSnippet(sport) {
             return `${away.abbr} @ ${home.abbr}`;
         }
     } catch (err) {
-        Logger.warn(`Sport-picker snippet failed for ${sport}`, err, 'APP');
+        Logger.warn(`Game line failed for ${sport}`, err, 'APP');
     }
     return '';
 }

@@ -1644,6 +1644,13 @@ main {
    Latest rail) are never actually empty, so this can't hide real content. */
 .home-zone:empty { display: none; }
 .home-stories .stories-block { margin-bottom: 0; }
+.my-teams-row { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr); gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-subtle); }
+.my-teams-row:last-child { border-bottom: 0; }
+.my-teams-detail { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.my-teams-game { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.my-teams-live { font-weight: 700; color: var(--color-live); }
+.my-teams-story { font-size: var(--text-sm); color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-teams-story:hover { color: var(--accent); }
 
 .home-section-hdr {
     display: flex;

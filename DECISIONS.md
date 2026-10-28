@@ -3745,3 +3745,16 @@ From the 2026-10-27 competitive audit ("chase" Phase 2).
 
 Cache v332. Tests: `tests/trustSurfaces.test.js`.
 
+## D-190 — Today front door at `/`; account-free My Teams
+**Status:** shipping (stacked on D-189) | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 3). Extends `loadHome()`; the `_applySportUI('home')` rule, hero, rail and follows are untouched.
+
+- **`/` is cross-sport.** The edge snapshot was MLB-only ("MLB Scores, Stats & Analytics"). It now leads with live games in every sport, then today's games, then Stories, then the six sport hubs; MLB is a peer at `/mlb`. ESPN sports are fetched best-effort from `site.web.api` and drop out silently while ESPN blocks Cloudflare (D-176), so in production today the served list is MLB-only until that clears; the SPA (browser-side `_espnFetch`) shows every sport regardless. Verified locally against live upstreams: Live now mixed MLB and college football.
+- **In-app.** Today's Games gains NCAAB/NBA/WNBA tabs; **All** orders favorites, then live games across all six sports, then the rest (it was MLB-first with football appended). Basketball cards open their game viewer. The live-count badge and Live/Final/Upcoming filter now count every sport (verified: 5 live across MLB/NCAAF/NBA, filter kept exactly those 5).
+- **My Teams, account-free.** Follow stars already existed on every team page that exists (MLB/NFL/NCAAF) and already stored signed-out follows in `localStorage` (`AuthState.follows`), so no follow UI or `VALID_SPORTS` change was needed. New: a My Teams strip on home and on each sport hub — each followed team's current game and its newest Story. Verified signed out: follows persisted to `zs_follows`, a live MLB team showed LIVE with its inning, the NFL hub showed only NFL teams. NBA/WNBA/NCAAB teams can't be followed yet because those sports have no team pages (unchanged).
+
+**Known gap.** The All tab and My Teams show other sports only once the home ticker's fetch lands (a second or two after first paint); they re-render then. At 390 px the seven sport tabs scroll sideways, as `standings-tabs` always has.
+
+Cache v333. Tests: `tests/todayFrontDoor.test.js`.
+

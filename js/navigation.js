@@ -1749,7 +1749,7 @@ function _applySportUI(sport) {
 // ── SEO meta tag updates on each route change ─────────────────
 
 const _PAGE_META = {
-    'home':          { title: 'SportStrata — Serious Stats for Serious Fans', desc: 'Real-time MLB analytics, standings, player stats, splits, and live scores.' },
+    'home':          { title: 'SportStrata — Today in Sports: Live Scores, Stats & Stories', desc: 'Live scores and today\'s games across MLB, the NFL, college football, the NBA, college basketball and the WNBA, with standings, stat leaders and SportStrata Stories.' },
     'mlb-players':   { title: 'SportStrata — MLB Players',    desc: 'Browse MLB player stats for hitting and pitching. Sortable, filterable, shareable.' },
     'mlb-leaders':   { title: 'SportStrata — MLB Leaders',    desc: 'MLB statistical leaders in batting average, ERA, home runs, and more.' },
     'mlb-teams':     { title: 'SportStrata — MLB Teams',      desc: 'MLB team rosters, stats, and recent results for all 30 teams.' },
