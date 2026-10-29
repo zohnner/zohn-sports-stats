@@ -1,6 +1,27 @@
 {
   "stories": [
     {
+      "slug": "2026-10-29-rockets-5-0-league-best",
+      "title": "The Rockets are 5-0, the NBA's only team with 5 wins",
+      "dek": "Houston has outscored opponents 615-544, a plus-71 differential, after a 132-100 win at Milwaukee.",
+      "date": "2026-10-29",
+      "season": 2027,
+      "teams": [
+        "HOU",
+        "MEM",
+        "POR",
+        "DAL",
+        "SA",
+        "ATL",
+        "MIL",
+        "MIN"
+      ],
+      "players": [],
+      "hero_stat": "5-0, plus-71 point differential",
+      "url": "/nba/stories/2026-10-29-rockets-5-0-league-best",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-10-28-celtics-35-then-1",
       "title": "The Celtics won by 35 points, then by 1 the next night",
       "dek": "Boston beat Chicago 134-99, then beat Brooklyn 125-124 in overtime behind Jayson Tatum's 40 points.",
