@@ -35,7 +35,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     const cacheKey = `ncaab:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`ncaab${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`NCAAB → ${url.pathname}`, undefined, 'NCAAB');
     const controller = new AbortController();
@@ -50,6 +50,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     let json;
     try { json = await res.json(); } catch { throw new Error(`NCAAB API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`ncaab${path}`, Date.now());
     return json;
 }
 
@@ -280,7 +281,7 @@ function updateNCAABTicker(games) {
         .map(g => Scorebug.renderTickerItem ? Scorebug.renderTickerItem(Scorebug.normalizeNCAABGame(g)) : '')
         .join('');
     if (!items) return;
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['ncaab']);
 }
 
 function _renderNCAABView(view) {

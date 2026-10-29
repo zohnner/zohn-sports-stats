@@ -4963,6 +4963,7 @@
    type; only the numerals and the stale state are its own. */
 .ss-fresh { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .standings-legend .ss-fresh, .pct-caption .ss-fresh { margin-left: 0.4em; color: var(--text-muted); }
+.sl-section-hdr .ss-fresh { margin: 0 auto 0 0.6rem; font-size: 0.7rem; color: var(--text-muted); }
 .ss-fresh.ss-fresh--stale { color: var(--color-loss); }
 .stories-block { margin-bottom: var(--space-4); }
 .stories-block__hdr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); }

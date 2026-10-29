@@ -33,6 +33,7 @@ function load(file) {
             TTL: { SHORT: 300000, MEDIUM: 1800000, LONG: 3600000, DAILY: 43200000 },
             get: (k) => cache.get(k) || null,
             set: (k, v) => { cache.set(k, v); },
+            getTimestamp: (k) => (cache.has(k) ? CACHE_TS : null),
         },
         fetch: async (u) => {
             net.calls++; net.urls.push(String(u));
@@ -42,13 +43,29 @@ function load(file) {
     // config.js (not loaded here) owns the ESPN direct fallback; the proxy
     // always succeeds in this sandbox, so a passthrough is the same behavior.
     ctx._espnFetch = (u, init) => ctx.fetch(u, init);
+    // Also config.js's (D-192): records when each path's data was fetched.
+    net.noted = [];
+    ctx.noteFetched = (key, ts) => { net.noted.push([key, ts]); };
     ctx.globalThis = ctx; ctx.window = ctx;
     vm.createContext(ctx);
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', `${file}.js`), 'utf8'), ctx, { filename: `${file}.js` });
     return { ctx, net };
 }
 
+const CACHE_TS = 1_700_000_000_000;
+
 for (const [file, fn] of SPORTS) {
+    test(`${file}: records fetch time — now on a network fetch, the cache's write time on a hit`, async () => {
+        const { ctx, net } = load(file);
+        const before = Date.now();
+        await ctx[fn]();
+        await ctx[fn]();
+        assert.equal(net.noted.length, 2);
+        assert.equal(net.noted[0][0], `${file}/scoreboard`);
+        assert.ok(net.noted[0][1] >= before, 'network fetch records the current time');
+        assert.deepEqual(net.noted[1], [`${file}/scoreboard`, CACHE_TS], 'a cache hit is not "just now"');
+    });
+
     test(`${file}: default scoreboard fetch is served from cache on the second call`, async () => {
         const { ctx, net } = load(file);
         await ctx[fn]();

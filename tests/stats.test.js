@@ -23,6 +23,7 @@ function loadMlb(overrides = {}) {
         localStorage: { getItem: () => null, setItem: noop, removeItem: noop },
         Logger: { info: noop, debug: noop, warn: noop, error: noop, time: async (l, fn) => fn() },
         ApiCache: { get: () => null, set: noop, invalidate: noop, TTL: { SHORT: 1, MEDIUM: 2, LONG: 3, DAILY: 4 } },
+        noteFetched: noop,  // config.js's fetch-time registry (D-192)
         _escHtml: v => String(v),
         _normName: v => String(v).toLowerCase(),
         navigator: {},

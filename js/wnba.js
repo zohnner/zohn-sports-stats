@@ -44,7 +44,7 @@ async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fres
     const cacheKey = `wnba:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`wnba${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`WNBA → ${url.pathname}`, undefined, 'WNBA');
     const controller = new AbortController();
@@ -59,6 +59,7 @@ async function espnWNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fres
     let json;
     try { json = await res.json(); } catch { throw new Error(`WNBA API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`wnba${path}`, Date.now());
     return json;
 }
 
@@ -180,7 +181,7 @@ function updateWNBATicker(games) {
         </div>`;
     }).join('');
     if (!items) return;
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['wnba']);
 }
 
 function _renderWNBAView(view) {

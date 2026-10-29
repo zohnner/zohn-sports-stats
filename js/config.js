@@ -314,6 +314,24 @@ function _freshAgo(ms) {
 function _freshText(ts, now = Date.now()) {
     return ts ? `Updated ${_freshAgo(now - ts)} ago` : '';
 }
+// When each upstream path was last fetched, keyed `${sport}${path}` ('mlb/schedule',
+// 'nba/scoreboard'). The sports' fetch wrappers record it; a cache hit records the
+// cache entry's own write time, so a receipt built from it reads the data's true age.
+const _fetchedAt = {};
+function noteFetched(key, ts) { if (ts) _fetchedAt[key] = ts; }
+function fetchedAt(key) { return _fetchedAt[key] || 0; }
+
+// The ticker shows the oldest of the scoreboards it is displaying.
+function _markTickerFresh(sports) {
+    const el = document.getElementById('tickerFresh');
+    if (!el) return;
+    const ts = (sports || []).map(sp => fetchedAt(sp === 'mlb' ? 'mlb/schedule' : `${sp}/scoreboard`)).filter(Boolean);
+    if (!ts.length) { el.hidden = true; return; }
+    el.dataset.freshTs = Math.min(...ts);
+    el.textContent = _freshText(Number(el.dataset.freshTs));
+    el.hidden = false;
+}
+
 // staleMs: past that age the receipt turns the loss color. Ticked every 5s below.
 function freshnessHtml(ts, staleMs = 0) {
     if (!ts) return '';
@@ -361,6 +379,7 @@ if (typeof window !== 'undefined') {
     window.getAvatarStyle     = getAvatarStyle;
     window._escHtml           = _escHtml;
     window.freshnessHtml      = freshnessHtml;
+    window._markTickerFresh   = _markTickerFresh;
     // Guarded: tests and the contract monitor (D-182) load this file in a Node vm with a stub window.
     if (typeof document !== 'undefined' && typeof setInterval === 'function') setInterval(_tickFreshness, 5000);
     window.ssLoader           = function (label) {

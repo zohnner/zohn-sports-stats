@@ -115,7 +115,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
     const cacheKey = `nfl:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`nfl${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`NFL → ${url.pathname}`, undefined, 'NFL');
     const controller = new AbortController();
@@ -131,6 +131,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
     let json;
     try { json = await res.json(); } catch { throw new Error(`NFL API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`nfl${path}`, Date.now());
     return json;
 }
 
@@ -1473,7 +1474,7 @@ function updateNFLTicker(games) {
     const items = scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNFLGame(g)))
         .join('');
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['nfl']);
 }
 
 // ── Display: Stat Leaders (real season stats via /api/nflstats) ──

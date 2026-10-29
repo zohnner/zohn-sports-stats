@@ -888,7 +888,7 @@ async function _updateHomeTicker({ live = false } = {}) {
         return a.ts - b.ts;
     });
 
-    Scorebug.fillTicker(ticker, entries.map(e => Scorebug.renderTickerItem(e.model)).join(''));
+    Scorebug.fillTicker(ticker, entries.map(e => Scorebug.renderTickerItem(e.model)).join(''), [...new Set(entries.map(e => e.sport))]);
 }
 
 function loadHome() {
@@ -3584,7 +3584,7 @@ async function _loadMLBLandingGames() {
         if (!host.isConnected) return;
         if (!gamesHtml) { host.remove(); return; }
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-section-hdr"><span class="eyebrow">Today's Games</span><button class="sl-section-link" onclick="navigateTo('mlb-games')">All scores →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">Today's Games</span>${freshnessHtml(fetchedAt('mlb/schedule'))}<button class="sl-section-link" onclick="navigateTo('mlb-games')">All scores →</button></div>
             <div class="sl-games">${gamesHtml}</div></section>`;
         host.querySelectorAll('.home-game-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -3818,7 +3818,7 @@ async function _loadFootballLandingData(sport) {
         const cards = picked.map(g => Scorebug.renderScoreCard(normalize(g), { showWeather })).filter(Boolean).join('');
         if (cards) {
             gamesHtml = `<section class="sl-section">
-                <div class="sl-section-hdr"><span class="eyebrow">This Week's Games</span><button class="sl-section-link" onclick="navigateTo('${scoresView}')">All scores →</button></div>
+                <div class="sl-section-hdr"><span class="eyebrow">This Week's Games</span>${freshnessHtml(fetchedAt(`${sport}/scoreboard`))}<button class="sl-section-link" onclick="navigateTo('${scoresView}')">All scores →</button></div>
                 <div class="sl-games">${cards}</div></section>`;
         }
     }
@@ -4345,7 +4345,7 @@ async function _loadNCAABLandingGames() {
         const cards = picked.map(g => (typeof _ncaabGameCard === 'function') ? _ncaabGameCard(g) : '').filter(Boolean).join('');
         if (!cards) { host.remove(); return; }
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('ncaab-scores')">All scores →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span>${freshnessHtml(fetchedAt('ncaab/scoreboard'))}<button class="sl-section-link" onclick="navigateTo('ncaab-scores')">All scores →</button></div>
             <div class="sl-games">${cards}</div></section>`;
     } catch (err) {
         Logger.warn('NCAAB landing games failed', err && err.message, 'APP');
@@ -4433,7 +4433,7 @@ async function _loadWNBALandingGames() {
         const cards = picked.map(g => (typeof _wnbaGameCard === 'function') ? _wnbaGameCard(g) : '').filter(Boolean).join('');
         if (!cards) { host.remove(); return; }
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('wnba-scores')">All scores →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span>${freshnessHtml(fetchedAt('wnba/scoreboard'))}<button class="sl-section-link" onclick="navigateTo('wnba-scores')">All scores →</button></div>
             <div class="sl-games">${cards}</div></section>`;
     } catch (err) {
         Logger.warn('WNBA landing games failed', err && err.message, 'APP');
@@ -4556,7 +4556,7 @@ async function _loadNBALandingGames() {
         const cards = picked.map(g => (typeof _nbaGameCard === 'function') ? _nbaGameCard(g) : '').filter(Boolean).join('');
         if (!cards) { host.remove(); return; }
         host.innerHTML = `<section class="sl-section">
-            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span><button class="sl-section-link" onclick="navigateTo('nba-scores')">All scores →</button></div>
+            <div class="sl-section-hdr"><span class="eyebrow">Upcoming Games</span>${freshnessHtml(fetchedAt('nba/scoreboard'))}<button class="sl-section-link" onclick="navigateTo('nba-scores')">All scores →</button></div>
             <div class="sl-games">${cards}</div></section>`;
     } catch (err) {
         Logger.warn('NBA landing games failed', err && err.message, 'APP');

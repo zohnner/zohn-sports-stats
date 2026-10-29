@@ -3766,3 +3766,15 @@ Cache v333. Tests: `tests/todayFrontDoor.test.js`.
 
 Cache v334.
 
+## D-192 — Freshness receipts on the ticker and sport hubs
+**Status:** shipping (stacked on D-191) | **Date:** 2026-10-28
+
+Finishes D-189's freshness item, which stopped short of the ticker and hubs because their data carried no fetch time. One registry now records it: `noteFetched`/`fetchedAt` in `js/config.js`, keyed `${sport}${path}`, written by `mlbFetch` (replacing D-189's MLB-only `_mlbFetchedAt`) and all five `espn<Sport>Fetch` wrappers. A cache hit records the cache entry's write time, so a re-render from cache reads its true age; `tests/scoreboardFetch.test.js` asserts both cases per sport.
+
+- **Ticker.** `Scorebug.fillTicker` takes the sports its items came from and the ticker shows the age of the oldest one (the conservative claim when home merges six scoreboards). Desktop only (>900 px): at phone width the strip has no room, and the hubs, standings and game viewer carry the receipt there.
+- **Hubs.** Every sport hub's games header shows its scoreboard's age.
+
+Verified in a browser: home ticker "Updated 9s ago", aging on its own; NBA hub "18s ago" when reusing data fetched earlier; NFL/MLB hubs "0s" after a fresh fetch; hidden at 700 px with no overflow. The label text can trail by up to 5 s (the shared 5 s tick).
+
+Cache v335.
+
