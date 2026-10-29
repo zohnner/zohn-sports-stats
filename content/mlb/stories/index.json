@@ -1,6 +1,22 @@
 {
   "stories": [
     {
+      "slug": "2026-10-29-brewers-win-world-series-4-1",
+      "title": "The Brewers won the World Series 4-1, outscoring Tampa Bay 25-12",
+      "dek": "Milwaukee won 4 of the 5 games, clinching with a 4-1 win in Game 5 the night after Tampa Bay ended its 8-game postseason win streak.",
+      "date": "2026-10-29",
+      "season": 2026,
+      "round": "World Series",
+      "teams": [
+        "MIL",
+        "TB"
+      ],
+      "players": [],
+      "hero_stat": "4-1 World Series win, 25-12 run edge",
+      "url": "/mlb/stories/2026-10-29-brewers-win-world-series-4-1",
+      "sport": "mlb"
+    },
+    {
       "slug": "2026-10-28-rays-12th-inning-game-4-comeback",
       "title": "The Rays scored 2 runs in the 12th inning to win Game 4",
       "dek": "Tampa Bay beat Milwaukee 4-3, ending the Brewers' 8-game postseason win streak and cutting Milwaukee's series lead to 3-1.",
