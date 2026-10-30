@@ -8,6 +8,7 @@
 // no real path exists for either yet.
 
 import { shell, rawShell } from '../_shell.js';
+import { readStories, storyListHtml } from '../_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -33,9 +34,10 @@ export async function onRequest(context) {
             about: { '@type': 'SportsOrganization', name: "NCAA Football", sport: "American Football" }
         });
         const links = CARDS.map(c => `<li><a href="${esc(c[1])}">${esc(c[0])}</a></li>`).join('');
+        const stories = storyListHtml((await readStories(env, request.url, 'ncaaf')).slice(0, 5), 'Latest SportStrata Stories', { sport: 'ncaaf' });
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
-            `<p>${esc(DESC)}</p><ul>${links}</ul></section>`;
+            `<p>${esc(DESC)}</p><ul>${links}</ul>${stories}</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html

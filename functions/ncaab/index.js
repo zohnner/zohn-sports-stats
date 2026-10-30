@@ -14,6 +14,7 @@
 // js/navigation.js/js/ncaab.js directly before writing this, not assumed.
 
 import { shell, rawShell } from '../_shell.js';
+import { readStories, storyListHtml } from '../_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -22,7 +23,7 @@ function esc(s) {
 }
 
 const TITLE = "College Basketball Scores, Rankings & Standings | SportStrata";
-const DESC  = "Free NCAA men's college basketball coverage: AP/Coaches rankings, conference standings, team pages and live scores. No login, no ads.";
+const DESC  = "Free NCAA men's college basketball coverage: AP/Coaches rankings, conference standings, a team directory and live scores. No login, no ads.";
 const H1    = "College Basketball Stats";
 const CANON = 'https://sportstrata.cc/ncaab';
 const ROUTE = "ncaab-home";
@@ -39,9 +40,10 @@ export async function onRequest(context) {
             about: { '@type': 'SportsOrganization', name: "NCAA Men's College Basketball", sport: "Basketball" }
         });
         const links = CARDS.map(c => `<li><a href="${esc(c[1])}">${esc(c[0])}</a></li>`).join('');
+        const stories = storyListHtml((await readStories(env, request.url, 'ncaab')).slice(0, 5), 'Latest SportStrata Stories', { sport: 'ncaab' });
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
-            `<p>${esc(DESC)}</p><ul>${links}</ul></section>`;
+            `<p>${esc(DESC)}</p><ul>${links}</ul>${stories}</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html

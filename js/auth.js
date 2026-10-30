@@ -891,7 +891,8 @@ function _showPushNudge(sport, entityType, entityId) {
 // ---------------------------------------------------------------------------
 
 async function renderAccountView() {
-    const main = document.getElementById('main');
+    // A takeover node, not <main> itself (see _mainTakeover in navigation.js).
+    const main = _mainTakeover();
     if (!main) return;
 
     // D-109: don't judge signed-in/out from a 'loading' status -- wait for the real

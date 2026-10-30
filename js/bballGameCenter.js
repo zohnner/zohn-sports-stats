@@ -154,11 +154,6 @@ function _bgcRenderTab(ctx, tab) {
 
 // -- Freshness receipt (header) ------------------------------------------
 
-function _bgcAgo(ms) {
-    const s = Math.max(0, Math.round(ms / 1000));
-    return s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + (s % 60) + 's';
-}
-
 function _bgcFresh() {
     const data = _blg.lastData;
     if (!data) return { text: '', stale: false };
@@ -170,17 +165,17 @@ function _bgcFresh() {
     const state = _blgState(data);
     if (state === 'in') {
         if (_blg.lastOkAt && now - _blg.lastOkAt > 60000) {
-            return { text: `Stale · last good data ${_bgcAgo(now - _blg.lastOkAt)} ago · retrying`, stale: true };
+            return { text: `Stale · last good data ${_freshAgo(now - _blg.lastOkAt)} ago · retrying`, stale: true };
         }
         const parts = [];
         if (validUpd) parts.push('ESPN updated ' + updD.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
-        if (_blg.lastOkAt) parts.push('checked ' + _bgcAgo(now - _blg.lastOkAt) + ' ago');
+        if (_blg.lastOkAt) parts.push('checked ' + _freshAgo(now - _blg.lastOkAt) + ' ago');
         return { text: parts.join(' · '), stale: false };
     }
     if (state === 'post') {
         return { text: validUpd ? 'Final · last ESPN update ' + updD.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Final', stale: false };
     }
-    return { text: _blg.lastOkAt ? 'Pregame · checked ' + _bgcAgo(now - _blg.lastOkAt) + ' ago' : '', stale: false };
+    return { text: _blg.lastOkAt ? 'Pregame · checked ' + _freshAgo(now - _blg.lastOkAt) + ' ago' : '', stale: false };
 }
 
 function _bgcCountdown(iso) {

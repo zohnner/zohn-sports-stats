@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/", "/api/*", "/mlb", "/mlb/*", "/nfl", "/nfl/*", "/ncaaf", "/ncaaf/*", "/ncaab", "/ncaab/*", "/wnba", "/wnba/*", "/nba", "/nba/*", "/glossary", "/.cfignore", "/.gitignore", "/AGENTS.md", "/BRAND-KIT.md", "/CLAUDE.md", "/DECISIONS.md", "/DESIGN.md", "/GOALS.md", "/ISSUES.md", "/LICENSE", "/README.md", "/package.json", "/package-lock.json", "/schema.sql", "/wrangler.toml", "/.claude/*", "/.github/*", "/Documentation/*", "/Themes/*", "/bot/*", "/docs/*", "/migrations/*", "/misc_documentation/*", "/tests/*", "/tools/*", "/worker/*"],
+  "include": ["/", "/api/*", "/mlb", "/mlb/*", "/nfl", "/nfl/*", "/ncaaf", "/ncaaf/*", "/ncaab", "/ncaab/*", "/wnba", "/wnba/*", "/nba", "/nba/*", "/glossary", "/about", "/.cfignore", "/.gitignore", "/AGENTS.md", "/BRAND-KIT.md", "/CLAUDE.md", "/DECISIONS.md", "/DESIGN.md", "/GOALS.md", "/ISSUES.md", "/LICENSE", "/README.md", "/package.json", "/package-lock.json", "/schema.sql", "/wrangler.toml", "/.claude/*", "/.github/*", "/Documentation/*", "/Themes/*", "/bot/*", "/docs/*", "/migrations/*", "/misc_documentation/*", "/tests/*", "/tools/*", "/worker/*"],
   "exclude": []
 }

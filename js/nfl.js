@@ -115,7 +115,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
     const cacheKey = `nfl:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`nfl${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`NFL → ${url.pathname}`, undefined, 'NFL');
     const controller = new AbortController();
@@ -131,6 +131,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
     let json;
     try { json = await res.json(); } catch { throw new Error(`NFL API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`nfl${path}`, Date.now());
     return json;
 }
 
@@ -1473,7 +1474,7 @@ function updateNFLTicker(games) {
     const items = scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNFLGame(g)))
         .join('');
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['nfl']);
 }
 
 // ── Display: Stat Leaders (real season stats via /api/nflstats) ──
@@ -2317,19 +2318,20 @@ function _renderTeamPage(m) {
         ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
-    const storiesHost = m.playerPrefix === 'nfl-player-' ? '<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>' : '';
+    const storiesHost = m.storiesSport ? '<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>' : '';
     return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}${storiesHost}`;
 }
 
 // SportStrata Stories that name this team in their frontmatter (D-166).
-async function _loadNFLTeamStories(abbr) {
+// Shared by every _renderTeamPage caller that sets storiesSport (NFL, NCAAF).
+async function _loadTeamStories(sport, abbr) {
     const host = document.getElementById('nflTeamStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
     const code = String(abbr || '').toUpperCase();
-    const stories = (await fetchStoriesIndex('nfl')).filter(s => (s.teams || []).includes(code)).slice(0, 3);
+    const stories = (await fetchStoriesIndex(sport)).filter(s => (s.teams || []).includes(code)).slice(0, 3);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
-    host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', 'nfl');
+    host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', sport);
 }
 
 function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
@@ -2440,9 +2442,9 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
         assets, groups,
         rosterEmpty: 'Roster data unavailable for this team right now.',
         scheduleHtmlTop: scheduleHtml,
-        backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-',
+        backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-', storiesSport: 'nfl',
     });
-    _loadNFLTeamStories(abbr);
+    _loadTeamStories('nfl', abbr);
 }
 
 // ── Display: Rankings (Sleeper ADP — overall + positional ranks + tiers) ──

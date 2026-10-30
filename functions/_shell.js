@@ -54,9 +54,9 @@ export function failSafeRoute(pathname) {
     return null;
 }
 
-// index.html ships an empty canonical, which a crawler resolves to the request
-// URL, query string included -- so every ?utm_ variant of a fail-safe page
-// declared itself canonical.
+// index.html's canonical names the home page, so a fail-safe page must replace
+// it with its own path (never the query string: every ?utm_ variant used to
+// declare itself canonical).
 export function setCanonical(html, canonical) {
     return html
         .replace(/(<link id="canonicalLink" rel="canonical"\s*href=")[^"]*(">)/, `$1${canonical}$2`)

@@ -26,7 +26,7 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     const cacheKey = `ncaaf:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`ncaaf${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`NCAAF → ${url.pathname}`, undefined, 'NCAAF');
     const controller = new AbortController();
@@ -41,6 +41,7 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     let json;
     try { json = await res.json(); } catch { throw new Error(`NCAAF API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`ncaaf${path}`, Date.now());
     return json;
 }
 
@@ -658,7 +659,7 @@ function updateNCAAFTicker(games) {
     const items = scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeNCAAFGame(g)))
         .join('');
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['ncaaf']);
 }
 
 function _renderNCAAFView(view) {
@@ -858,7 +859,7 @@ async function displayNCAAFStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_ncaaf.season))} FBS conference standings. Source: ESPN. Conf = record within the conference.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_ncaaf.season))} FBS conference standings. Source: ESPN. Conf = record within the conference.${freshnessHtml(ApiCache.getTimestamp(`ncaaf:standings:${_ncaaf.season}`))}</p>`;
 }
 
 async function displayNCAAFTeams() {
@@ -1230,13 +1231,14 @@ function displayNCAAFTeamDetail(team, roster, sched, stats, stdRow) {
         recordChips, recordSeasonLabel: recordChips.length ? `${_ncaaf.season} Season` : '',
         assets: assets.slice(0, 6), assetsTitle: 'Team Leaders', assetsCountLabel: String((stats && stats.season) || _ncaaf.season),
         groups, rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtmlTop: scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-',
+        scheduleHtmlTop: scheduleHtml, backView: 'ncaaf-teams', backLabel: 'Teams', playerPrefix: 'ncaaf-player-', storiesSport: 'ncaaf',
     };
 
     grid.className = 'player-detail-container';
     grid.innerHTML = (typeof _renderTeamPage === 'function')
         ? _renderTeamPage(model)
         : `<div class="ncf-team-banner" style="--team:${color}"><button onclick="navigateTo('ncaaf-teams')" class="back-button">\u2190 Teams</button><h1 class="player-detail-name">${_escHtml(model.name)}</h1><p class="player-detail-meta">${_escHtml(abbr)}${summary ? ' \u00b7 ' + _escHtml(summary) : ''}</p></div>`;
+    if (typeof _loadTeamStories === 'function') _loadTeamStories('ncaaf', abbr);
 }
 
 // ── Player season profile radar (honest: % of FBS leader per stat) ──

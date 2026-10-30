@@ -17,10 +17,27 @@ name: SportStrata Sitemap Refresh
 # but wrong for an unattended cron that pushes to main: without a floor, a
 # bad ESPN day would silently shrink the live sitemap instead of failing loud.
 
+# Stories publish through story-automerge.yml's GITHUB_TOKEN merge, which fires
+# no push workflows, so the daily cron alone left each new story out of the
+# sitemap for up to a day (2026-10-27: five stories merged at 19:33 UTC, after
+# that day's refresh). workflow_run catches the auto-publish; push catches an
+# owner merge. Auto-Publish completes after every CI run, so those two events
+# regenerate only when tools/sitemap-missing-stories.cjs finds a gap.
 on:
   schedule:
     - cron: '30 12 * * *'   # ~8:30 AM ET daily — after overnight games settle, ahead of the 11:00/10:00 UTC bot jobs
   workflow_dispatch:
+  workflow_run:
+    workflows: ['SportStrata Stories Auto-Publish']
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'content/*/stories/index.json'
+
+concurrency:
+  group: sitemap-refresh
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -37,7 +54,17 @@ jobs:
         with:
           ssh-key: ${{ secrets.SITEMAP_DEPLOY_KEY }}
 
+      - name: Any published story missing from the sitemap?
+        id: gap
+        run: |
+          missing=$(node tools/sitemap-missing-stories.cjs)
+          echo "$missing"
+          if [ -n "$missing" ] || [ "${{ github.event_name }}" = schedule ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate sitemap
+        if: steps.gap.outputs.run == 'true'
         run: node tools/gen-sitemap.cjs
 
       - name: Sanity floor — fail instead of committing a degraded sitemap
@@ -63,4 +90,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add sitemap.xml
           git commit -m "chore: refresh sitemap.xml [automated]"
+          # A story can merge while the generator runs; only sitemap.xml is ours.
+          git pull --rebase -q origin main
           git push

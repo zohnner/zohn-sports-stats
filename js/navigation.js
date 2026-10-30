@@ -483,7 +483,38 @@ const _NAV_META = {
     'arcade':        { label: 'Arcade' },
 };
 
+// Account and Dashboard own the whole content column. They render into a
+// takeover node and hide <main>'s standard children instead of replacing
+// main.innerHTML, which destroyed #playersGrid and #searchBar (and their
+// listeners): every view after them rendered into nothing until a reload.
+// Hidden with inline display, since `hidden` loses to rules like
+// .players-grid { display: grid }.
+function _mainTakeover() {
+    const main = document.getElementById('main');
+    if (!main) return null;
+    let host = document.getElementById('mainTakeover');
+    if (!host) {
+        [...main.children].forEach(c => { c.dataset.takeoverDisplay = c.style.display; c.style.display = 'none'; });
+        host = document.createElement('div');
+        host.id = 'mainTakeover';
+        main.appendChild(host);
+    }
+    return host;
+}
+// Called by every non-takeover render path: renderCurrentView, and
+// setBreadcrumb for detail renderers reached without navigateTo.
+function _releaseMainTakeover() {
+    const host = document.getElementById('mainTakeover');
+    if (!host) return;
+    host.remove();
+    document.querySelectorAll('#main > [data-takeover-display]').forEach(c => {
+        c.style.display = c.dataset.takeoverDisplay;
+        delete c.dataset.takeoverDisplay;
+    });
+}
+
 function setBreadcrumb(root, current) {
+    _releaseMainTakeover();
     const el = document.getElementById('breadcrumb');
     if (!el) return;
     const meta = _NAV_META[root] || { label: root, icon: '' };
@@ -530,6 +561,7 @@ function renderCurrentView(view) {
 
     // My Dashboard (D-069 cont'd) — sport-agnostic personalized view, same pattern
     if (view === 'dashboard') { if (typeof renderDashboardView === 'function') renderDashboardView(); return; }
+    _releaseMainTakeover();
 
     // Sport-specific views
     if (view.startsWith('mlb-')) { _renderMLBView(view); return; }
@@ -939,7 +971,7 @@ function _loadFromHash() {
         // Edge-rendered content pages with no SPA view behind them (glossaries,
         // stories): render nav chrome for the sport and return before navigateTo(),
         // which would overwrite the prerendered #playersGrid and <head> (D-167).
-        if ((_m = /^static-page-(mlb|nfl|ncaaf|ncaab|wnba|nba)$/.exec(_r))) {
+        if ((_m = /^static-page-(home|mlb|nfl|ncaaf|ncaab|wnba|nba)$/.exec(_r))) {
             AppState.currentSport = _m[1];
             AppState.currentView = 'static-page';
             if (typeof _applySportUI === 'function') _applySportUI(_m[1]);
@@ -1749,7 +1781,7 @@ function _applySportUI(sport) {
 // ── SEO meta tag updates on each route change ─────────────────
 
 const _PAGE_META = {
-    'home':          { title: 'SportStrata — Serious Stats for Serious Fans', desc: 'Real-time MLB analytics, standings, player stats, splits, and live scores.' },
+    'home':          { title: 'SportStrata — Today in Sports: Live Scores, Stats & Stories', desc: 'Live scores and today\'s games across MLB, the NFL, college football, the NBA, college basketball and the WNBA, with standings, stat leaders and SportStrata Stories.' },
     'mlb-players':   { title: 'SportStrata — MLB Players',    desc: 'Browse MLB player stats for hitting and pitching. Sortable, filterable, shareable.' },
     'mlb-leaders':   { title: 'SportStrata — MLB Leaders',    desc: 'MLB statistical leaders in batting average, ERA, home runs, and more.' },
     'mlb-teams':     { title: 'SportStrata — MLB Teams',      desc: 'MLB team rosters, stats, and recent results for all 30 teams.' },
@@ -1803,6 +1835,27 @@ function _canonicalUrl(serverCanon, host, pathname) {
     return serverCanon || `https://${host}${pathname}`;
 }
 
+// The edge-rendered path URL a hash view has (functions/_shell.js failSafeRoute,
+// inverted), or null. Navigation only rewrites the hash, so without this every
+// view reached in-app would keep the canonical of the page the visit began on.
+const _PATH_SINGLE_VIEWS = new Set(['mlb-leaders', 'mlb-standings', 'nfl-leaders', 'nfl-standings', 'nfl-pickem',
+    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
+function _viewPath(view) {
+    const v = String(view || '');
+    if (v === 'home') return '/';
+    let m = /^(mlb|nfl|ncaaf|ncaab|wnba|nba)-home$/.exec(v);
+    if (m) return `/${m[1]}`;
+    if (_PATH_SINGLE_VIEWS.has(v)) return '/' + v.replace('-', '/');
+    if ((m = /^nfl-team-([A-Z0-9]{2,4})$/i.exec(v))) return `/nfl/team/${m[1].toLowerCase()}`;
+    if ((m = /^nfl-(game|player)-([a-z0-9]+)$/i.exec(v))) return `/nfl/${m[1]}/${m[2]}`;
+    if ((m = /^ncaaf-(team|player|game)-(\d+)$/.exec(v))) return `/ncaaf/${m[1]}/${m[2]}`;
+    if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
+    if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;
+    return null;
+}
+
+let _canonBootView = null;
+
 function _updatePageMeta(view) {
     const m = _PAGE_META[view] || _PAGE_META['home'];
     document.title = m.title;
@@ -1811,7 +1864,10 @@ function _updatePageMeta(view) {
     document.getElementById('ogTitle')?.setAttribute('content', m.title);
     document.getElementById('ogDescription')?.setAttribute('content', m.desc);
     const _canonHost = (typeof SITE_DOMAIN !== 'undefined') ? SITE_DOMAIN : location.host;
-    const _canonUrl = _canonicalUrl(_SERVER_CANON, _canonHost, location.pathname);
+    if (_canonBootView === null) _canonBootView = view;
+    // A path page's first view keeps the server canonical (it carries the slug).
+    const _path = (view === _canonBootView && location.pathname !== '/') ? null : _viewPath(view);
+    const _canonUrl = _path ? `https://${_canonHost}${_path}` : _canonicalUrl(_SERVER_CANON, _canonHost, location.pathname);
     document.getElementById('ogUrl')?.setAttribute('content', _canonUrl);
     document.getElementById('canonicalLink')?.setAttribute('href', _canonUrl);
 }
@@ -1828,6 +1884,7 @@ if (typeof window !== 'undefined') {
     window.setupNavigation   = setupNavigation;
     window.navigateTo        = navigateTo;
     window.setBreadcrumb     = setBreadcrumb;
+    window._mainTakeover     = _mainTakeover;
     window.renderCurrentView = renderCurrentView;
     window.switchSport       = switchSport;
     window.debounce          = debounce;

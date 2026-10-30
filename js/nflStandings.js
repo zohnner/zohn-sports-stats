@@ -10,7 +10,7 @@
 // ============================================================
 
 const _NSTD_MIN_SEASON = 2002;
-const _nstd = { season: null, view: 'div', bySeason: {}, postBySeason: {} };
+const _nstd = { season: null, view: 'div', bySeason: {}, postBySeason: {}, fetchedAt: {} };
 
 // Super Bowl winners & runners-up by SEASON (game played the following Feb),
 // in modern abbreviations. 2002 = first year of the current 32-team alignment.
@@ -141,7 +141,10 @@ async function loadNFLStandings() {
     if (!_nstd.season) _nstd.season = _nstdSeasonDefault();
     grid.innerHTML = `<div class="nstd-loading"><div class="skeleton-line" style="height:40px;width:55%;margin:3rem auto"></div><p style="text-align:center;color:var(--text-muted)">Loading ${_nstd.season} standings…</p></div>`;
     try {
-        if (!_nstd.bySeason[_nstd.season]) _nstd.bySeason[_nstd.season] = await fetchNFLStandings(_nstd.season);
+        if (!_nstd.bySeason[_nstd.season]) {
+            _nstd.bySeason[_nstd.season] = await fetchNFLStandings(_nstd.season);
+            _nstd.fetchedAt[_nstd.season] = Date.now();
+        }
         if (_nstd.postBySeason[_nstd.season] === undefined) {
             try { _nstd.postBySeason[_nstd.season] = await fetchNFLPostseason(_nstd.season); }
             catch (_) { _nstd.postBySeason[_nstd.season] = null; }
@@ -216,7 +219,7 @@ function displayNFLStandings(rows, season) {
         </div>
         ${_nstdBracket(confs, confOrder, season, _nstd.postBySeason[season])}
         ${body}
-        <p class="pct-caption">Records, points and tiebreak seeds via ESPN. Seeds 1–4 are division winners; the line marks the ${_nstdCut(season)}-team playoff cut${season >= 2020 ? '' : ' (6 teams pre-2020)'}. Click a team for its page.</p>
+        <p class="pct-caption">Records, points and tiebreak seeds via ESPN. Seeds 1–4 are division winners; the line marks the ${_nstdCut(season)}-team playoff cut${season >= 2020 ? '' : ' (6 teams pre-2020)'}. Click a team for its page.${freshnessHtml(_nstd.fetchedAt[season])}</p>
       </div>`;
 
     grid.querySelector('#nstdSeason').addEventListener('change', e => {

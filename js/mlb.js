@@ -401,7 +401,7 @@ async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM, baseUr
     const cacheKey = `mlb${url.pathname}${url.search}`;
 
     const hit = ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched('mlb' + endpoint, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`MLB → ${url.pathname}${url.search}`, undefined, 'MLB');
     const fetchUrl = MLB_USE_PROXY ? _mlbProxyUrl(url.toString()) : url.toString();
@@ -422,6 +422,7 @@ async function mlbFetch(endpoint, params = {}, ttl = ApiCache.TTL.MEDIUM, baseUr
         throw new Error(`MLB API returned non-JSON response (${url.pathname})`);
     }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched('mlb' + endpoint, Date.now());
     return json;
 }
 
@@ -5480,7 +5481,7 @@ function updateMLBTicker(games) {
 
     Scorebug.fillTicker(ticker, scored
         .map(g => Scorebug.renderTickerItem(Scorebug.normalizeMLBGame(g)))
-        .join(''));
+        .join(''), ['mlb']);
 }
 
 // ── Standings ─────────────────────────────────────────────────
@@ -5749,6 +5750,7 @@ function displayMLBStandings(divisions, league = 'AL') {
             <span class="legend-item"><span class="clinch-badge clinch-badge--div">z</span>Clinched Division</span>
             <span class="legend-item"><span class="clinch-badge clinch-badge--po">x</span>Clinched Playoff</span>
             <span class="legend-item standings-legend-note">xW = Pythagorean expected wins · M# = magic number to clinch · DIV%/OCT% = odds from 4,000 simulated seasons (pythagorean strength, simulated ${AppState.mlbOdds ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : '…'})</span>
+            ${fetchedAt('mlb/standings') ? `<span class="legend-item">${freshnessHtml(fetchedAt('mlb/standings'))}</span>` : ''}
         </div>
     `;
 }

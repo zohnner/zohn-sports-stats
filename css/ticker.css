@@ -57,6 +57,20 @@
 }
 .ticker:hover { animation-play-state: paused; }
 
+/* Freshness receipt after the strip (D-192): age of the oldest scoreboard shown.
+   Desktop only; phones get the receipts on hubs, standings and the game viewer. */
+.ticker-fresh {
+    flex-shrink: 0;
+    align-self: center;
+    padding: 0 12px;
+    border-left: 1px solid var(--border-default);
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.ticker-fresh[hidden] { display: none; }
+@media (max-width: 900px) { .ticker-fresh { display: none; } }
+
 /* Individual game item */
 .ticker__item {
     display: inline-flex;

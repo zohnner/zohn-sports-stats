@@ -3716,3 +3716,65 @@ Also: a pregame header shows the date when tip-off isn't today. Cache v325. Test
 **Known limits.** The `main: CI must pass` ruleset lets admins and deploy keys bypass it. If Muse's token is the owner's personal token, Muse *is* an admin to GitHub, so "never push to main" remains a rule Muse follows, not a lock; a GitHub App or separate account would make it one. Muse's token should not carry Workflows permission, or it could edit the workflow that publishes its own work. Share issues still need a human tap; at full volume most stories will rely on search.
 
 Cache v326. Tests: `tests/storyAutomerge.test.js` (gate, hook, new sports, basketball phrases).
+
+## D-188 — Stories distribution: home zone, crawlable story links, sitemap on publish, canonical
+**Status:** shipping | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 1). PR #47 had already landed three of its items the same day (NFL leaders/standings anchors, a Stories sub-nav tab, sitemap `<lastmod>`), so this covers what remained.
+
+- **Home.** Stories moved out of the Headlines rail tab, which is hidden until clicked (Insights is the default), into an always-visible `#homeStories` zone after Today's Games. Verified on production before the change: zero visible story rows on `/`.
+- **Crawlable links.** The SPA already listed stories on landings and NFL/MLB team pages, but the served HTML had none anywhere. `functions/_storyLinks.js` adds them to the edge snapshot of `/` (newest 6, all sports), each story sport's landing (newest 5), NFL/MLB/NCAAF team pages (stories whose `teams` name the team), and each story page (3 same-sport siblings, shared-team first). NCAAF team detail in the SPA gains the same stories block NFL has (`_loadTeamStories`, generalized from `_loadNFLTeamStories`).
+- **Sitemap.** Root cause: `gen-sitemap.cjs` already handled every story sport; `sitemap-refresh.yml` ran only on a 12:30 UTC cron, and Auto-Publish's GITHUB_TOKEN merge fires no push workflows. The five 2026-10-27 stories merged at 19:33 UTC and would have waited ~17 h. The workflow now also runs on `workflow_run` of Stories Auto-Publish and on pushes touching a story `index.json`, gated by `tools/sitemap-missing-stories.cjs` so the ordinary CI → Auto-Publish chain doesn't regenerate on every PR. It rebases before pushing. Chain depth is CI → Auto-Publish → sitemap, three levels, GitHub's documented maximum for `workflow_run` (inferred from the docs, not yet observed running).
+- **Canonical.** The query-string echo was already fixed (PR #47 era). `index.html` now ships `https://sportstrata.cc/` instead of an empty href (every template and `shell()` overwrite it; a check found no template that doesn't), and in-app navigation sets the canonical to the view's path URL via `_viewPath`.
+
+Not done here: `sitemap.xml` itself is not regenerated in this branch (it's automated output); after merge, run the workflow once by hand or let the next story publish trigger it.
+
+## D-189 — Trust surfaces: About & Methodology, sitewide footer, truth-in-labeling, freshness receipts; NHL stays struck
+**Status:** shipping (stacked on D-188) | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 2).
+
+- **`/about`** (`functions/about.js`, edge-rendered static content, `static-page-home`): who runs the site (independent, one person — taken from GOALS.md's "solo codebase"; no name published, owner's call), data sources per sport with what each supplies (nflverse's CC-BY credit extended into a per-sport source list), the October Odds Monte Carlo and the SRS power rankings in plain steps with their real constants, the Stories AI disclosure (`story-core`'s own `DISCLOSURE` text, so the two can't diverge), and contact. In `_routes.json` and the sitemap. `tests/trustSurfaces.test.js` checks every method number on the page against `js/odds.js` and `_PWR_SPORTS`.
+- **Sitewide footer.** The home-only footer moved into `index.html` after `</main>` (the account/dashboard views replace `main` wholesale), so every page — edge-rendered ones included — serves source credits, `/about` and contact.
+- **Truth in labeling.** NCAAB's landing meta claimed "team pages"; NCAAB has no team detail view, so it now says "a team directory". **Audit contradiction:** NBA and WNBA player pages do exist (`functions/{nba,wnba}/player/`, `nba-player-*`/`wnba-player-*` in the SPA), so their "player pages" copy stays. What the audit actually saw: in production `/nba/leaders` and `/wnba/leaders` fail safe to the bare shell (the ESPN proxy block, D-176 — out of scope here) and the sitemap carries zero NBA/WNBA player URLs, so a crawler finds no player pages. Readers do. Fixing the crawler view is the D-176 work, not copy.
+- **NHL: strike (keep it struck).** Verified there is nothing to strike: no NHL in any served copy, meta, sitemap, `SPORTS`, sub-nav, menu or bottom nav — `/nhl` 404s because it was never shipped, which is the honest state. The only trace is the dormant `#nhl-*` hash routes and `js/nhl.js` (preview-only per CLAUDE.md). Shipping a landing would be NHL feature work, which CLAUDE.md rules out unprompted. Left the dormant code alone.
+- **Freshness.** The Game Center's receipt (D-185) became the shared `freshnessHtml(ts, staleMs)` in `js/config.js`; the Game Center and home use it (home's own `_homeAgo` fork is gone), and all six standings views gained one. The timestamp is always the fetch time — `ApiCache.getTimestamp` for the ESPN sports, `_mlbFetchedAt` (new, set by `mlbFetch` from the cache's own timestamp on a hit) for MLB, a session fetch time for NFL — so a re-render from cache reads its true age (verified: "Updated 1m 3s ago" on a fresh load served from cache). **Not done: the ticker and the sport hubs.** The ticker has nine writers (one per sport plus home) fed from caches that don't carry a fetch time; a MutationObserver would stamp a cached re-render as "just now", which is exactly the false freshness this exists to remove. Threading the fetch time through each `update*Ticker` is a scoped follow-up.
+- **Ticker overlap (PR #46) confirmed** on home at 500 px and 1280 px: 162 items, 0 item overlaps, 0 logo-over-abbreviation overlaps across 1,620 logo/text pairs, SCORES button clear of the viewport.
+
+**Found, not fixed (pre-existing):** visiting `#account` or `#dashboard` replaces `main`'s contents, removing `#playersGrid`; any later in-app navigation renders nothing until a reload. Reproduced locally (account → NBA standings shows the account page's remains). The new footer survives it because it sits outside `main`.
+
+Cache v332. Tests: `tests/trustSurfaces.test.js`.
+
+## D-190 — Today front door at `/`; account-free My Teams
+**Status:** shipping (stacked on D-189) | **Date:** 2026-10-27
+
+From the 2026-10-27 competitive audit ("chase" Phase 3). Extends `loadHome()`; the `_applySportUI('home')` rule, hero, rail and follows are untouched.
+
+- **`/` is cross-sport.** The edge snapshot was MLB-only ("MLB Scores, Stats & Analytics"). It now leads with live games in every sport, then today's games, then Stories, then the six sport hubs; MLB is a peer at `/mlb`. ESPN sports are fetched best-effort from `site.web.api` and drop out silently while ESPN blocks Cloudflare (D-176), so in production today the served list is MLB-only until that clears; the SPA (browser-side `_espnFetch`) shows every sport regardless. Verified locally against live upstreams: Live now mixed MLB and college football.
+- **In-app.** Today's Games gains NCAAB/NBA/WNBA tabs; **All** orders favorites, then live games across all six sports, then the rest (it was MLB-first with football appended). Basketball cards open their game viewer. The live-count badge and Live/Final/Upcoming filter now count every sport (verified: 5 live across MLB/NCAAF/NBA, filter kept exactly those 5).
+- **My Teams, account-free.** Follow stars already existed on every team page that exists (MLB/NFL/NCAAF) and already stored signed-out follows in `localStorage` (`AuthState.follows`), so no follow UI or `VALID_SPORTS` change was needed. New: a My Teams strip on home and on each sport hub — each followed team's current game and its newest Story. Verified signed out: follows persisted to `zs_follows`, a live MLB team showed LIVE with its inning, the NFL hub showed only NFL teams. NBA/WNBA/NCAAB teams can't be followed yet because those sports have no team pages (unchanged).
+
+**Known gap.** The All tab and My Teams show other sports only once the home ticker's fetch lands (a second or two after first paint); they re-render then. At 390 px the seven sport tabs scroll sideways, as `standings-tabs` always has.
+
+Cache v333. Tests: `tests/todayFrontDoor.test.js`.
+
+## D-191 — Account/Dashboard no longer break navigation; ticker reduced-motion confirmed
+**Status:** shipping (stacked on D-190) | **Date:** 2026-10-27
+
+- **Fixed (found in D-189).** `renderAccountView`/`renderDashboardView` replaced `main.innerHTML`, deleting `#playersGrid` and `#searchBar`; every view after them rendered into nothing until a reload. They now render into `_mainTakeover()` (`js/navigation.js`), a sibling node that hides `main`'s standard children with inline `display`; `renderCurrentView` and `setBreadcrumb` (for detail renderers reached without `navigateTo`) release it. A late async write after navigating away lands on the detached node instead of clobbering the new view. Verified in a browser: account → NBA standings (30 rows), dashboard → Back (30 rows), account → a direct `showNCAAFTeam` (renders). Tests: `tests/mainTakeover.test.js`.
+- **Not a bug (retracting D-190's accessibility note).** The ticker already honors `prefers-reduced-motion`: `css/main.css` stops the animation and makes `.ticker-viewport` swipeable, and `Scorebug.fillTicker` skips the loop duplication. Verified with emulated reduced motion: no animation, no transform, 8 of 14 items off-screen and reachable by scrolling.
+
+Cache v334.
+
+## D-192 — Freshness receipts on the ticker and sport hubs
+**Status:** shipping (stacked on D-191) | **Date:** 2026-10-28
+
+Finishes D-189's freshness item, which stopped short of the ticker and hubs because their data carried no fetch time. One registry now records it: `noteFetched`/`fetchedAt` in `js/config.js`, keyed `${sport}${path}`, written by `mlbFetch` (replacing D-189's MLB-only `_mlbFetchedAt`) and all five `espn<Sport>Fetch` wrappers. A cache hit records the cache entry's write time, so a re-render from cache reads its true age; `tests/scoreboardFetch.test.js` asserts both cases per sport.
+
+- **Ticker.** `Scorebug.fillTicker` takes the sports its items came from and the ticker shows the age of the oldest one (the conservative claim when home merges six scoreboards). Desktop only (>900 px): at phone width the strip has no room, and the hubs, standings and game viewer carry the receipt there.
+- **Hubs.** Every sport hub's games header shows its scoreboard's age.
+
+Verified in a browser: home ticker "Updated 9s ago", aging on its own; NBA hub "18s ago" when reusing data fetched earlier; NFL/MLB hubs "0s" after a fresh fetch; hidden at 700 px with no overflow. The label text can trail by up to 5 s (the shared 5 s tick).
+
+Cache v335.
+

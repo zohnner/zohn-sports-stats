@@ -270,8 +270,10 @@
     // brings back the same items leaves the DOM alone, so the scroll and any
     // hover pause carry on undisturbed; the first-child check catches another
     // writer (skeleton, idle message) having replaced the items since.
-    function fillTicker(ticker, itemsHtml) {
+    // sports: which scoreboards the items came from, for the ticker's freshness receipt.
+    function fillTicker(ticker, itemsHtml, sports) {
         if (!ticker || !itemsHtml) return;
+        if (sports && typeof global._markTickerFresh === 'function') global._markTickerFresh(sports);
         ticker.classList.remove('ticker--idle');
         if (ticker._ssItems === itemsHtml && ticker._ssFirst && ticker._ssFirst.parentNode === ticker) return;
         ticker.innerHTML = itemsHtml;

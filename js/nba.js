@@ -55,7 +55,7 @@ async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh
     const cacheKey = `nba:${path}:${url.searchParams.toString()}`;
 
     const hit = fresh ? null : ApiCache.get(cacheKey);
-    if (hit) return hit;
+    if (hit) { noteFetched(`nba${path}`, ApiCache.getTimestamp(cacheKey)); return hit; }
 
     Logger.debug(`NBA → ${url.pathname}`, undefined, 'NBA');
     const controller = new AbortController();
@@ -70,6 +70,7 @@ async function espnNBAFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh
     let json;
     try { json = await res.json(); } catch { throw new Error(`NBA API returned non-JSON (${path})`); }
     ApiCache.set(cacheKey, json, ttl);
+    noteFetched(`nba${path}`, Date.now());
     return json;
 }
 
@@ -224,7 +225,7 @@ function updateNBATicker(games) {
         </div>`;
     }).join('');
     if (!items) return;
-    Scorebug.fillTicker(ticker, items);
+    Scorebug.fillTicker(ticker, items, ['nba']);
 }
 
 function _renderNBAView(view) {
@@ -408,7 +409,7 @@ async function displayNBAStandings() {
                 </table>
             </div>
         </section>`).join('') +
-        `<p class="standings-legend">${_escHtml(String(_nba.season))} NBA standings by conference and division. Source: ESPN. GB = games behind division leader.</p>`;
+        `<p class="standings-legend">${_escHtml(String(_nba.season))} NBA standings by conference and division. Source: ESPN. GB = games behind division leader.${freshnessHtml(ApiCache.getTimestamp(`nba:standings:${_nba.season}`))}</p>`;
 }
 
 async function displayNBATeams() {

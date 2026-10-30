@@ -27,8 +27,8 @@
     <meta property="og:site_name" content="SportStrata">
     <meta id="ogTitle"       property="og:title"       content="SportStrata — Serious Stats for Serious Fans">
     <meta id="ogDescription" property="og:description" content="Real-time MLB, NFL, NCAA Football, NCAA Basketball, WNBA and NBA scores, standings, stat leaders and live games.">
-    <meta id="ogUrl"         property="og:url"         content="">
-    <link id="canonicalLink" rel="canonical"            href="">
+    <meta id="ogUrl"         property="og:url"         content="https://sportstrata.cc/">
+    <link id="canonicalLink" rel="canonical"            href="https://sportstrata.cc/">
     <meta id="ogImage" property="og:image" content="https://sportstrata.cc/assets/og-default.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -176,6 +176,7 @@
                     <div class="ticker__item">Loading scores…</div>
                 </div>
             </div>
+            <span class="ss-fresh ticker-fresh" id="tickerFresh" hidden></span>
         </div>
 
         <!-- Sub-nav: persistent horizontal nav bar (desktop) -->
@@ -407,6 +408,14 @@
 
         <div id="playersGrid" class="players-grid"></div>
     </main>
+
+    <!-- Sitewide footer (D-189): sources, About & Methodology, contact. Outside <main>,
+         which the account and dashboard views replace wholesale. Static, so it is in every page's served HTML, edge-rendered pages included. -->
+    <footer class="site-footer">
+        <span>Data: MLB Stats API &amp; Baseball Savant (MLB); ESPN (NFL, NCAAF, NCAAB, NBA, WNBA); Sleeper and <a href="https://github.com/nflverse" rel="noopener">nflverse</a> (CC-BY 4.0) for the NFL. Not affiliated with or endorsed by any league or team.</span>
+        <span><a href="/about">About &amp; methodology</a> · <a href="/glossary">Glossary</a> · <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a></span>
+        <span>&copy; SportStrata</span>
+    </footer>
 
     <!-- math.js 13: safe formula evaluation in Stat Builder (never use eval()) -->
     <!-- Chart.js: data visualisation — loaded before charts.js -->

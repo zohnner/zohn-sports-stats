@@ -301,6 +301,52 @@ function _iconSvg(key, size = 16) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shape}</svg>`;
 }
 
+// Freshness receipt (D-189), lifted from the basketball Game Center (D-185) so
+// home, standings and the game viewer share one format. The timestamp is when
+// the data was fetched (ApiCache.getTimestamp or the fetch's own clock), never
+// when it was rendered: a re-render from cache must not read as "just now".
+function _freshAgo(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return s + 's';
+    if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+}
+function _freshText(ts, now = Date.now()) {
+    return ts ? `Updated ${_freshAgo(now - ts)} ago` : '';
+}
+// When each upstream path was last fetched, keyed `${sport}${path}` ('mlb/schedule',
+// 'nba/scoreboard'). The sports' fetch wrappers record it; a cache hit records the
+// cache entry's own write time, so a receipt built from it reads the data's true age.
+const _fetchedAt = {};
+function noteFetched(key, ts) { if (ts) _fetchedAt[key] = ts; }
+function fetchedAt(key) { return _fetchedAt[key] || 0; }
+
+// The ticker shows the oldest of the scoreboards it is displaying.
+function _markTickerFresh(sports) {
+    const el = document.getElementById('tickerFresh');
+    if (!el) return;
+    const ts = (sports || []).map(sp => fetchedAt(sp === 'mlb' ? 'mlb/schedule' : `${sp}/scoreboard`)).filter(Boolean);
+    if (!ts.length) { el.hidden = true; return; }
+    el.dataset.freshTs = Math.min(...ts);
+    el.textContent = _freshText(Number(el.dataset.freshTs));
+    el.hidden = false;
+}
+
+// staleMs: past that age the receipt turns the loss color. Ticked every 5s below.
+function freshnessHtml(ts, staleMs = 0) {
+    if (!ts) return '';
+    return `<span class="ss-fresh" data-fresh-ts="${Number(ts)}"${staleMs ? ` data-fresh-stale="${Number(staleMs)}"` : ''}>${_freshText(ts)}</span>`;
+}
+function _tickFreshness() {
+    const now = Date.now();
+    document.querySelectorAll('.ss-fresh[data-fresh-ts]').forEach(el => {
+        const ts = Number(el.dataset.freshTs);
+        el.textContent = _freshText(ts, now);
+        const stale = Number(el.dataset.freshStale) || 0;
+        el.classList.toggle('ss-fresh--stale', !!stale && now - ts > stale);
+    });
+}
+
 // Single capture-phase listener replaces all inline onerror="this.style.display='none'" handlers.
 // Mark any <img> with data-hide-on-error to opt in. data-remove-on-error takes the
 // img out of the DOM instead, for markup whose CSS shows a fallback sibling only
@@ -332,6 +378,10 @@ if (typeof window !== 'undefined') {
     window.getTeamColors      = getTeamColors;
     window.getAvatarStyle     = getAvatarStyle;
     window._escHtml           = _escHtml;
+    window.freshnessHtml      = freshnessHtml;
+    window._markTickerFresh   = _markTickerFresh;
+    // Guarded: tests and the contract monitor (D-182) load this file in a Node vm with a stub window.
+    if (typeof document !== 'undefined' && typeof setInterval === 'function') setInterval(_tickFreshness, 5000);
     window.ssLoader           = function (label) {
         var l = label ? _escHtml(label) : 'Loading';
         return '<div class="ss-loading" role="status" aria-label="' + l + '">' +
