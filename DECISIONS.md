@@ -3778,3 +3778,8 @@ Verified in a browser: home ticker "Updated 9s ago", aging on its own; NBA hub "
 
 Cache v335.
 
+## D-193 — `/` never claims "no games" for a sport it couldn't reach
+**Status:** shipping | **Date:** 2026-10-29
+
+Found verifying D-190 in production: the served `/` said "No games on today's schedule yet" on an NBA game night. MLB's season was over and every ESPN scoreboard fetch fails from Cloudflare (D-176), so the snapshot had zero rows and reported that as fact to crawlers and link previews (readers' browsers load the real scores). `todaysGames` now returns which scoreboards didn't answer; the snapshot names and links them ("Scores for NFL, College Football, NBA … couldn't be loaded for this page; each sport's page has them") and says "no games" only when every source answered. An empty but successful schedule (MLB in its offseason) still counts as answered. Test: `tests/todayFrontDoor.test.js`.
+
