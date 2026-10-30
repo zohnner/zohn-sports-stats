@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, field: null, fieldSource: null, fieldIndex: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null, lastBreakKey: undefined, pbpFilter: 'all' };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, field: null, fieldSource: null, fieldIndex: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null, lastBreakKey: undefined, pbpFilter: 'all', wpScrub: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -155,7 +155,7 @@ async function showNFLGame(eventId, tab) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { if (_nlg.field) { _nlg.field.destroy(); _nlg.field = null; } _nlg.fieldSource = null; _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; _nlg.lastBreakKey = undefined; _nlg.pbpFilter = 'all'; }
+    if (isNewGame) { if (_nlg.field) { _nlg.field.destroy(); _nlg.field = null; } _nlg.fieldSource = null; _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; _nlg.lastBreakKey = undefined; _nlg.pbpFilter = 'all'; _nlg.wpScrub = null; }
     if (tab && _NLG_TABS.some(t => t.id === tab)) {
         _nlg.activeTab = tab;
         if (!isNewGame && document.querySelector('.gv-tabs')) _nlgSwitchTabUi();
@@ -349,6 +349,7 @@ function _nlgRender(data) {
     const capParts = [venue, oddsLine].filter(Boolean);
     const capEl = grid.querySelector('.nlg-venue-caption');
     if (capEl) capEl.textContent = capParts.length ? `${capParts.join(' · ')} · data via ESPN` : 'Data via ESPN';
+    _nlgWpReapplyScrub();
 }
 
 // Broadcast network + betting line, folded into the existing venue caption
@@ -2132,7 +2133,7 @@ function _nlgWpChartSvg(data, home, away, opts = {}) {
         }).join('');
 
     const clipA = `nlg-wp-clip-above-${size}`, clipB = `nlg-wp-clip-below-${size}`;
-    return `<div class="nlg-wp-chart nlg-wp-chart--${size}">
+    return `<div class="nlg-wp-chart nlg-wp-chart--${size}" data-wp-size="${size}" tabindex="0" aria-describedby="nlg-wp-readout-${size}" aria-label="Win probability by play. Hover, drag, or use the arrow keys to step through plays.">
         <svg class="nlg-wp-svg nlg-wp-svg--${size}" viewBox="0 0 ${D.w} ${D.h}" preserveAspectRatio="none" role="img" aria-label="Win probability chart">
             <defs>
                 <clipPath id="${clipA}"><rect x="0" y="0" width="${D.w}" height="${midY}"/></clipPath>
@@ -2147,7 +2148,101 @@ function _nlgWpChartSvg(data, home, away, opts = {}) {
         <span class="nlg-wp-team nlg-wp-team--home" style="color:${_escHtml(hColor)}">${_nlgLineKey(hColor, false)}${_escHtml(homeAbbr)}</span>
         <span class="nlg-wp-team nlg-wp-team--away" style="color:${_escHtml(aColor)}">${_nlgLineKey(aColor, true)}${_escHtml(awayAbbr)}</span>
         ${dots}
-    </div>`;
+        <span class="nlg-wp-guide" hidden></span><span class="nlg-wp-marker" hidden></span>
+    </div>
+    <p class="nlg-wp-readout" id="nlg-wp-readout-${size}" aria-live="polite"></p>`;
+}
+
+// -- Win-probability scrubber (D-194): hover, drag or arrow keys put a guide
+// on one play and name it below the chart -- ESPN GameCast's per-play hover,
+// on the same series the chart draws. Delegated from document, so the poll's
+// sidebar/break-card re-render needs no rebinding; _nlg.wpScrub re-applies
+// the position after each render.
+const _nlgWpPlayCache = new WeakMap();
+function _nlgWpScrubData(data) {
+    let c = _nlgWpPlayCache.get(data);
+    if (!c) {
+        const wp = _nlgWpSeries(data);
+        c = { wp, playById: new Map(_nlgAllPlaysFlat(data).map(p => [String(p.id), p])) };
+        _nlgWpPlayCache.set(data, c);
+    }
+    return c;
+}
+
+function _nlgWpScrubShow(chart, i) {
+    const data = _nlg.lastData;
+    if (!chart || !data) return;
+    const { wp, playById } = _nlgWpScrubData(data);
+    const n = wp.length;
+    if (n < 2) return;
+    i = Math.max(0, Math.min(n - 1, i));
+    const D = _NLG_WP_DIMS[chart.dataset.wpSize] || _NLG_WP_DIMS.small;
+    const left = ((D.padX + (i / (n - 1)) * (D.w - D.padX * 2)) / D.w) * 100;
+    const top = ((D.padY + (1 - wp[i].homeWinPercentage) * (D.h - D.padY * 2)) / D.h) * 100;
+    const guide = chart.querySelector('.nlg-wp-guide'), marker = chart.querySelector('.nlg-wp-marker');
+    if (guide) { guide.hidden = false; guide.style.left = left.toFixed(2) + '%'; }
+    if (marker) { marker.hidden = false; marker.style.left = left.toFixed(2) + '%'; marker.style.top = top.toFixed(2) + '%'; }
+    const comp = _nlgComp(data);
+    const homeAbbr = (_nlgSide(comp, 'home').team || {}).abbreviation || '';
+    const awayAbbr = (_nlgSide(comp, 'away').team || {}).abbreviation || '';
+    const h = wp[i].homeWinPercentage;
+    const play = playById.get(String(wp[i].playId));
+    const swing = i > 0 && play && !_nlgIsAdminPlay(play) ? h - wp[i - 1].homeWinPercentage : 0;
+    const when = play ? [_nlgPeriodLabel(play.period && play.period.number), play.clock && play.clock.displayValue].filter(Boolean).join(' ') : '';
+    const out = chart.parentElement && chart.parentElement.querySelector('.nlg-wp-readout');
+    if (out) out.innerHTML = `${when ? `<span class="nlg-wp-readout-when">${_escHtml(when)}</span>` : ''}<span class="nlg-wp-readout-pct">${_escHtml(h >= 0.5 ? homeAbbr : awayAbbr)} ${Math.round((h >= 0.5 ? h : 1 - h) * 100)}%</span>${Math.abs(swing) >= 0.01 ? `<span class="nlg-wp-readout-swing">${_escHtml(swing > 0 ? homeAbbr : awayAbbr)} +${Math.round(Math.abs(swing) * 100)}</span>` : ''}${play && play.text ? `<span class="nlg-wp-readout-text">${_escHtml(play.text)}</span>` : ''}`;
+    _nlg.wpScrub = { size: chart.dataset.wpSize, i, kbd: document.activeElement === chart };
+}
+
+function _nlgWpScrubClear(chart) {
+    if (!chart) return;
+    chart.querySelectorAll('.nlg-wp-guide, .nlg-wp-marker').forEach(el => { el.hidden = true; });
+    const out = chart.parentElement && chart.parentElement.querySelector('.nlg-wp-readout');
+    if (out) out.innerHTML = '';
+    _nlg.wpScrub = null;
+}
+
+function _nlgWpIndexAt(chart, clientX) {
+    const { wp } = _nlgWpScrubData(_nlg.lastData);
+    const D = _NLG_WP_DIMS[chart.dataset.wpSize] || _NLG_WP_DIMS.small;
+    const r = chart.getBoundingClientRect();
+    const x = ((clientX - r.left) / r.width) * D.w;
+    return Math.round(((x - D.padX) / (D.w - D.padX * 2)) * (wp.length - 1));
+}
+
+function _nlgWpReapplyScrub() {
+    const sc = _nlg.wpScrub;
+    if (!sc) return;
+    const chart = document.querySelector(`.nlg-wp-chart[data-wp-size="${sc.size}"]`);
+    if (!chart) return;
+    if (sc.kbd) chart.focus({ preventScroll: true });
+    _nlgWpScrubShow(chart, sc.i);
+}
+
+if (typeof document !== 'undefined' && document.addEventListener) {
+    const chartOf = (e) => (e.target && e.target.closest ? e.target.closest('.nlg-wp-chart[data-wp-size]') : null);
+    document.addEventListener('pointermove', (e) => { const c = chartOf(e); if (c && _nlg.lastData) _nlgWpScrubShow(c, _nlgWpIndexAt(c, e.clientX)); });
+    document.addEventListener('pointerdown', (e) => { const c = chartOf(e); if (c && _nlg.lastData && !e.target.closest('.nlg-wp-dot')) _nlgWpScrubShow(c, _nlgWpIndexAt(c, e.clientX)); });
+    document.addEventListener('pointerout', (e) => {
+        const c = chartOf(e);
+        if (c && !c.contains(e.relatedTarget) && document.activeElement !== c) _nlgWpScrubClear(c);
+    });
+    // Removing a focused chart (every poll re-renders it) fires focusout too;
+    // only a chart still on the page has really been left.
+    document.addEventListener('focusout', (e) => {
+        const c = chartOf(e);
+        if (c && !c.contains(e.relatedTarget)) setTimeout(() => { if (c.isConnected && document.activeElement !== c) _nlgWpScrubClear(c); });
+    });
+    document.addEventListener('keydown', (e) => {
+        const c = chartOf(e);
+        if (!c || e.target !== c || !_nlg.lastData) return;
+        const n = _nlgWpScrubData(_nlg.lastData).wp.length;
+        const cur = _nlg.wpScrub && _nlg.wpScrub.size === c.dataset.wpSize ? _nlg.wpScrub.i : n - 1;
+        const next = { ArrowLeft: cur - 1, ArrowRight: cur + 1, Home: 0, End: n - 1 }[e.key];
+        if (next == null) { if (e.key === 'Escape') _nlgWpScrubClear(c); return; }
+        e.preventDefault();
+        _nlgWpScrubShow(c, next);
+    });
 }
 
 function _nlgWinProbability(data, home, away) {

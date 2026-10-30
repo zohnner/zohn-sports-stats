@@ -169,3 +169,15 @@ test('game routes accept an optional tab suffix and nothing else', () => {
     const tabs = vm.runInNewContext(SRC.match(/const _NLG_TABS = (\[[\s\S]*?\]);/)[1]).map(t => t.id).filter(t => t !== 'summary');
     for (const t of tabs) assert.ok(re.test(`nfl-game-1-${t}`), `route accepts tab ${t}`);
 });
+
+test('both WP chart sizes are keyboard-focusable scrubbers with their own readout', () => {
+    const ctx = load();
+    const { home, away } = sides(ctx, LIVE);
+    for (const size of ['small', 'large']) {
+        const svg = ctx._nlgWpChartSvg(LIVE, home, away, { size });
+        assert.ok(svg.includes(`data-wp-size="${size}"`), size);
+        assert.ok(svg.includes('tabindex="0"'), size);
+        assert.ok(svg.includes(`id="nlg-wp-readout-${size}"`) && svg.includes(`aria-describedby="nlg-wp-readout-${size}"`), size);
+        assert.ok(svg.includes('class="nlg-wp-guide" hidden') && svg.includes('class="nlg-wp-marker" hidden'), size);
+    }
+});

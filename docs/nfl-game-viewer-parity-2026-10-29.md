@@ -18,7 +18,7 @@ Key: **C** = competitors generally ship it. **Us (before)** = what production sh
 
 | Feature | C | Us (before) | Now | Source |
 |---|---|---|---|---|
-| Win-probability chart | ESPN interactive, per-play hover; others static or none | Static sparkline, quarter ticks, top-5 swing dots linked to Key Plays | Same; away line now dashed, labels carry line-style keys | `winprobability[]` keyed by `playId`, 1 entry per play (56/56 on 401873023) |
+| Win-probability chart | ESPN interactive, per-play hover; others static or none | Static sparkline, quarter ticks, top-5 swing dots linked to Key Plays | Interactive: hover, drag or arrow keys step through every play (quarter/clock, WP, swing, play text); away line dashed, labels carry line-style keys | `winprobability[]` keyed by `playId`, 1 entry per play (56/56 on 401873023) |
 | Per-play WP swing | ESPN (in chart hover) | Key Plays top 5 only | Every play shows its swing (≥1 pt), labeled with the team it moved toward; administrative non-snaps excluded | Same |
 | Drive chart | ESPN, CBS, NFL.com | Per-drive start→end bar in Play-by-Play | Unchanged, plus quarter + clock on each drive header | `drives[].start/end.yardLine`, `start.period/clock` |
 | Play-by-play: down & distance, yard line | All | Yes | Yes | `plays[].start.downDistanceText` |
@@ -63,10 +63,10 @@ Key: **C** = competitors generally ship it. **Us (before)** = what production sh
 2. **Play-by-play richness + filters.** Verified flags on every play; the WP-per-play join is exact (56/56).
 3. **Pregame matchup + game info.** Two cards from fields already in the payload; fills the thinnest state.
 4. **Trust fixes** (season-leaders label, Game Flow bug, fantasy rows). Tiny, and each one was visibly wrong.
-5. *Not built:* an interactive WP chart (hover per play). Real parity with ESPN, but a new interaction model on a chart that already has numbered dots plus the new per-play swings in Play-by-Play. Diminishing return for its risk this pass.
+5. **Interactive WP chart** (hover per play). Built in a second pass after the owner said continue: both chart sizes, pointer + touch drag + keyboard (arrows, Home/End, Escape), position and focus survive the 20s re-render.
 6. *Not built:* a written recap. No source.
 
-Everything ranked 1-4 shipped. 5-6 are deferred; reasons above.
+Items 1-5 shipped. 6 is deferred; reason above.
 
 ## Verification log
 
@@ -80,12 +80,13 @@ Everything ranked 1-4 shipped. 5-6 are deferred; reasons above.
 | Viewer on this branch, all states | 401873023 / 401873024 / 401873271 | local build, browser fallback | Tabs, filters, receipt, JSON-LD, Game Info, labels all as intended |
 | Tab deep-link cold load + hash sync | 401873023 | local | `#nfl-game-401873023-team` opens Team Stats; switching rewrites hash + history state |
 | Mobile | 401873023 | local, 500px (window minimum) | No horizontal overflow; Team Stats rows and bars stack |
+| WP scrubber | 401873023 (live, Q2 2:00, two-minute warning) | local | Hover, End/ArrowLeft/Escape, re-render keeps index 78 + focus, blur clears; Two-Minute Warning shows no swing |
 
 Not live-verified: the edge template's new JSON-LD fields. It cannot reach ESPN from Cloudflare today, and its output shape mirrors the client builder, which is tested (`tests/nflGameParity.test.js`).
 
-## Conflict to resolve (owner call)
+## Odds (owner call, resolved)
 
-The brief says "no odds injected into the game page". The viewer already ships a pregame **Odds** card (`_nlgOddsCard`) and a spread/total in the live/final caption, both added before this pass. I left them alone rather than silently removing a shipped feature. Pick one: keep (odds as data, no sportsbook links, which is how it's built today) or remove both in a follow-up.
+The brief said "no odds injected into the game page". The viewer already shipped a pregame **Odds** card (`_nlgOddsCard`) and a spread/total in the live/final caption, both from before this pass. Owner decision 2026-10-29: keep both. They are data with no sportsbook links; the rule means parity work adds none.
 
 ## Phase 3 spike: SportStrata-original analytics (do not build yet)
 
