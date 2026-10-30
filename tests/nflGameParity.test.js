@@ -116,6 +116,13 @@ test('administrative plays never carry a WP swing, even when ESPN moved WP on th
     for (const p of timeouts) assert.equal(ctx._nlgPlaySwing(p, deltas), null);
 });
 
+test('Key Plays never rank an administrative play', () => {
+    const ctx = load();
+    const swings = ctx._nlgWpSwings(LIVE);
+    assert.ok(swings.length > 0);
+    for (const s of swings) assert.equal(ctx._nlgIsAdminPlay(s.play), false, s.play.text);
+});
+
 test('big swings filter is the >= 5 point plays, excluding admin plays', () => {
     const ctx = load();
     const deltas = ctx._nlgWpDeltaById(LIVE);

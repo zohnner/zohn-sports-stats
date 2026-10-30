@@ -1789,6 +1789,9 @@ function _nlgWpSwings(data) {
         const play = playById.get(String(wp[i].playId));
         if (!play || !play.text) continue; // no play text to show -- skip rather than render a bare percentage
         if (/^\s*\*{3}.*\*{3}\s*$/.test(play.text)) continue;
+        // ESPN re-scores WP on timeouts (40% WP swing on a 12:12 timeout, 401873023),
+        // so they would otherwise outrank real plays.
+        if (_nlgIsAdminPlay(play)) continue;
         swings.push({ delta: Math.abs(wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage), play, wpIndex: i });
     }
     return swings;

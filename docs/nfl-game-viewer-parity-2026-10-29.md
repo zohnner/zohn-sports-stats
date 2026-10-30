@@ -81,6 +81,8 @@ Items 1-5 shipped. 6 is deferred; reason above.
 | Tab deep-link cold load + hash sync | 401873023 | local | `#nfl-game-401873023-team` opens Team Stats; switching rewrites hash + history state |
 | Mobile | 401873023 | local, 500px (window minimum) | No horizontal overflow; Team Stats rows and bars stack |
 | WP scrubber | 401873023 (live, Q2 2:00, two-minute warning) | local | Hover, End/ArrowLeft/Escape, re-render keeps index 78 + focus, blur clears; Two-Minute Warning shows no swing |
+| Regular-season final | 401873023 (Final, GB 27 CAR 19) | local, browser fallback | Receipt gone, poll timer off; JSON-LD has no `eventStatus`, description ends "Final: Carolina Panthers 19, Green Bay Packers 27."; Game Info drops Outside, shows Attendance 76,957 + referee; Game Flow 19/27 matches the linescore; tabs + hash, filters (195 all / 8 scoring / 3 turnovers / 12 swings) and the full-game scrubber (Home → End) work |
+| Key Plays on the final | 401873023 | local | **Bug, fixed:** pre-existing D-169 ranking listed "Official Timeout at 12:12." as Key Play #2 (40% WP swing). `_nlgWpSwings` now skips admin plays, which also covers the chart dots and the break card's biggest play; the game had 23 timeouts. |
 
 Not live-verified: the edge template's new JSON-LD fields. It cannot reach ESPN from Cloudflare today, and its output shape mirrors the client builder, which is tested (`tests/nflGameParity.test.js`).
 
