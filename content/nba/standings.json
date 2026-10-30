@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-10-28",
-  "gamesCounted": 68,
+  "throughDate": "2026-10-29",
+  "gamesCounted": 71,
   "source": "balldontlie",
   "sections": [
     {
@@ -39,7 +39,7 @@
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "3-1"
+          "record": "3-2"
         },
         {
           "name": "Indiana Pacers",
@@ -64,7 +64,7 @@
         },
         {
           "name": "Atlanta Hawks",
-          "record": "2-3"
+          "record": "3-3"
         },
         {
           "name": "Washington Wizards",
@@ -84,12 +84,12 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
-          "name": "Portland Trail Blazers",
-          "record": "3-0"
-        },
-        {
           "name": "Oklahoma City Thunder",
           "record": "4-1"
+        },
+        {
+          "name": "Portland Trail Blazers",
+          "record": "3-1"
         },
         {
           "name": "Minnesota Timberwolves",
@@ -126,7 +126,7 @@
         },
         {
           "name": "Sacramento Kings",
-          "record": "0-4"
+          "record": "0-5"
         }
       ]
     },
@@ -139,7 +139,7 @@
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "4-0"
+          "record": "5-0"
         },
         {
           "name": "Dallas Mavericks",
@@ -151,7 +151,7 @@
         },
         {
           "name": "New Orleans Pelicans",
-          "record": "0-4"
+          "record": "1-4"
         }
       ]
     }
