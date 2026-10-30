@@ -1,6 +1,51 @@
 {
   "stories": [
     {
+      "slug": "2026-10-30-grizzlies-5-0-unbeaten",
+      "title": "The Grizzlies are 5-0, joining the Rockets as the NBA's only unbeaten teams",
+      "dek": "Memphis beat Portland 124-103, holding a team that entered the night averaging 129.3 points to 103.",
+      "date": "2026-10-30",
+      "season": 2027,
+      "teams": [
+        "MEM",
+        "HOU",
+        "POR",
+        "GS",
+        "SAC",
+        "UTA",
+        "PHX",
+        "LAL",
+        "DET",
+        "PHI",
+        "OKC"
+      ],
+      "players": [],
+      "hero_stat": "5-0, plus-60 point differential",
+      "url": "/nba/stories/2026-10-30-grizzlies-5-0-unbeaten",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-10-30-kings-0-5-only-winless",
+      "title": "The Kings are 0-5, the NBA's only winless team after losing to New Orleans",
+      "dek": "Sacramento lost 132-120 to a Pelicans team that entered the night 0-4, and has the league's worst per-game differential at minus-16.6.",
+      "date": "2026-10-30",
+      "season": 2027,
+      "teams": [
+        "SAC",
+        "NOP",
+        "BKN",
+        "CHI",
+        "POR",
+        "MEM",
+        "SA",
+        "LAC"
+      ],
+      "players": [],
+      "hero_stat": "0-5, minus-16.6 points per game",
+      "url": "/nba/stories/2026-10-30-kings-0-5-only-winless",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-10-29-rockets-5-0-league-best",
       "title": "The Rockets are 5-0, the NBA's only team with 5 wins",
       "dek": "Houston has outscored opponents 615-544, a plus-71 differential, after a 132-100 win at Milwaukee.",
