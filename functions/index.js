@@ -82,12 +82,15 @@ async function getJson(url, headers = {}) {
     } catch (_) { return null; }
 }
 
+// rows, plus the sports whose scoreboard didn't answer (so the page never
+// reports "no games" for a sport it simply couldn't reach).
 async function todaysGames(iso) {
     const [mlb, ...espn] = await Promise.all([
         getJson(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${iso}&hydrate=team,linescore`),
         ...ESPN_SPORTS.map(cfg => getJson(`https://site.web.api.espn.com/apis/site/v2/sports/${cfg[3]}`, { 'User-Agent': ESPN_UA })),
     ]);
-    return [mlbGames(mlb), ...espn.map((j, i) => espnGames(j, ESPN_SPORTS[i], iso))].flat();
+    const unavailable = [...(mlb ? [] : [['MLB', '/mlb']]), ...espn.flatMap((j, i) => (j ? [] : [[ESPN_SPORTS[i][1], ESPN_SPORTS[i][2]]]))];
+    return { rows: [mlbGames(mlb), ...espn.map((j, i) => espnGames(j, ESPN_SPORTS[i], iso))].flat(), unavailable };
 }
 
 function gameList(rows) {
@@ -98,15 +101,20 @@ function gameList(rows) {
 }
 
 // Live first (every sport), then today's games, capped per sport so one
-// 16-game MLB slate can't bury the rest.
-export function gamesSnapshot(rows, pretty) {
+// 16-game MLB slate can't bury the rest. unavailable: [label, hub] for each
+// scoreboard that didn't answer; "no games" is only said when none failed.
+export function gamesSnapshot(rows, pretty, unavailable = []) {
     const live = rows.filter(r => r.live);
     const perSport = {};
     const rest = rows.filter(r => !r.live && (perSport[r.sport] = (perSport[r.sport] || 0) + 1) <= 8);
     let html = '';
     if (live.length) html += `<h2>Live now</h2>${gameList(live)}`;
     html += `<h2>Today's games — ${esc(pretty)}</h2>`;
-    html += rest.length ? gameList(rest) : (live.length ? '' : '<p>No games on today’s schedule yet.</p>');
+    if (rest.length) html += gameList(rest);
+    else if (!live.length && !unavailable.length) html += '<p>No games on today’s schedule yet.</p>';
+    if (unavailable.length) {
+        html += `<p>Scores for ${unavailable.map(([l, h]) => `<a href="${esc(h)}">${esc(l)}</a>`).join(', ')} couldn’t be loaded for this page; each sport’s page has them.</p>`;
+    }
     return html;
 }
 
@@ -127,11 +135,11 @@ export async function onRequest(context) {
             name: 'SportStrata', url: CANON, description: desc,
             potentialAction: { '@type': 'SearchAction', target: 'https://sportstrata.cc/#mlb-players?q={q}', 'query-input': 'required name=q' }
         });
-        const [rows, stories] = await Promise.all([todaysGames(d.iso), readAllStories(env, request.url)]);
+        const [{ rows, unavailable }, stories] = await Promise.all([todaysGames(d.iso), readAllStories(env, request.url)]);
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(desc)}</p>` +
-            gamesSnapshot(rows, d.pretty) +
+            gamesSnapshot(rows, d.pretty, unavailable) +
             storyListHtml(stories.slice(0, 6), 'Latest SportStrata Stories') +
             `<h2>Every sport</h2><ul>${HUBS.map(([l, h]) => `<li><a href="${h}">${esc(l)}</a></li>`).join('')}</ul>` +
             `<ul><li><a href="/mlb/leaders">MLB Stat Leaders</a></li>` +

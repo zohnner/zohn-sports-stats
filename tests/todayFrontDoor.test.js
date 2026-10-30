@@ -79,6 +79,15 @@ test('gamesSnapshot leads with live games across sports, caps each sport, escape
     assert.match(F.gamesSnapshot([], 'x'), /No games on today/);
 });
 
+test('gamesSnapshot never says "no games" for a sport it could not reach', () => {
+    const html = F.gamesSnapshot([], 'x', [['NBA', '/nba'], ['NFL', '/nfl']]);
+    assert.doesNotMatch(html, /No games on today/);
+    assert.match(html, /Scores for <a href="\/nba">NBA<\/a>, <a href="\/nfl">NFL<\/a> couldn’t be loaded/);
+    const some = F.gamesSnapshot([{ sport: 'mlb', label: 'MLB', live: false, line: 'm', href: null }], 'x', [['NBA', '/nba']]);
+    assert.match(some, /MLB: m/);
+    assert.match(some, /couldn’t be loaded/);
+});
+
 test('My Teams picks live, then upcoming, then final, and only today for MLB', () => {
     const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
     const fn = app.match(/^function _myTeamGame\([\s\S]*?^}/m)[0];
