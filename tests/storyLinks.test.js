@@ -81,10 +81,11 @@ test('storyListHtml escapes, links, and tags mixed-sport lists', () => {
 function loadViewPath(extra = '') {
     const nav = fs.readFileSync(path.join(ROOT, 'js', 'navigation.js'), 'utf8');
     const set = nav.match(/^const _PATH_SINGLE_VIEWS = [\s\S]*?\]\);/m)[0];
+    const gameRe = nav.match(/^const _NFL_GAME_VIEW_RE = .*$/m)[0];
     const fn = nav.match(/^function _viewPath\([\s\S]*?^}/m)[0];
     const ctx = { URL, Response };
     vm.createContext(ctx);
-    vm.runInContext(`${extra}\n${set}\n${fn}\n;globalThis.__v = _viewPath;`, ctx);
+    vm.runInContext(`${extra}\n${set}\n${gameRe}\n${fn}\n;globalThis.__v = _viewPath;`, ctx);
     return ctx;
 }
 
