@@ -1,6 +1,49 @@
 {
   "stories": [
     {
+      "slug": "2026-10-31-pistons-fewest-points-allowed",
+      "title": "The Pistons allow 101.8 points a game, the fewest in the NBA",
+      "dek": "Detroit is 5-1 after holding Brooklyn to 94 points, and no opponent has scored more than 113 against it.",
+      "date": "2026-10-31",
+      "season": 2027,
+      "teams": [
+        "DET",
+        "BKN",
+        "OKC",
+        "BOS",
+        "MIA",
+        "PHI",
+        "NYK",
+        "CHA"
+      ],
+      "players": [],
+      "hero_stat": "101.8 points allowed per game, fewest of 30",
+      "url": "/nba/stories/2026-10-31-pistons-fewest-points-allowed",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-10-31-timberwolves-best-differential",
+      "title": "The Timberwolves' plus-14.8 point differential leads the NBA",
+      "dek": "Minnesota is 4-2 after beating the Clippers 127-101, and its 89-point total margin is the league's largest.",
+      "date": "2026-10-31",
+      "season": 2027,
+      "teams": [
+        "MIN",
+        "LAC",
+        "MEM",
+        "POR",
+        "MIA",
+        "ORL",
+        "TOR",
+        "CLE",
+        "GS"
+      ],
+      "players": [],
+      "hero_stat": "plus-14.8 points per game, best of 30 teams",
+      "url": "/nba/stories/2026-10-31-timberwolves-best-differential",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-10-30-grizzlies-5-0-unbeaten",
       "title": "The Grizzlies are 5-0, joining the Rockets as the NBA's only unbeaten teams",
       "dek": "Memphis beat Portland 124-103, holding a team that entered the night averaging 129.3 points to 103.",

@@ -1,0 +1,172 @@
+{
+  "facts": [
+    {
+      "key": "det_opp_ppg",
+      "value": 101.8,
+      "label": "Detroit points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "teams_count",
+      "value": 30,
+      "label": "Teams in the NBA",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "okc_opp_ppg",
+      "value": 104.6,
+      "label": "Oklahoma City points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_wins",
+      "value": 5,
+      "label": "Detroit wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_losses",
+      "value": 1,
+      "label": "Detroit losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_games",
+      "value": 6,
+      "label": "Detroit games played",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_ppg",
+      "value": 109.8,
+      "label": "Detroit points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "league_ppg",
+      "value": 114.0,
+      "label": "League average points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_pf",
+      "value": 659,
+      "label": "Detroit points scored",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_pa",
+      "value": 611,
+      "label": "Detroit points allowed",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "def_gap",
+      "value": 2.8,
+      "label": "Gap between Detroit and the next-lowest points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_opp_losing",
+      "value": 3,
+      "label": "Detroit opponents with losing records",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_opp_other_games",
+      "value": 28,
+      "label": "Other games played by Detroit's opponents",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "det_opp_other_ppg",
+      "value": 111.9,
+      "label": "Detroit opponents' points per game in their other games",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "bos_ppg",
+      "value": 120.8,
+      "label": "Boston points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "phi_ppg",
+      "value": 108.7,
+      "label": "Philadelphia points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "game_bos_det",
+      "value": 121,
+      "label": "Detroit points against Boston",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261020"
+    },
+    {
+      "key": "game_bos_bos",
+      "value": 113,
+      "label": "Boston points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261020"
+    },
+    {
+      "key": "game_mia_det",
+      "value": 128,
+      "label": "Detroit points at Miami",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261023"
+    },
+    {
+      "key": "game_mia_mia",
+      "value": 111,
+      "label": "Miami points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261023"
+    },
+    {
+      "key": "game_phi_det",
+      "value": 106,
+      "label": "Detroit points at Philadelphia",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025"
+    },
+    {
+      "key": "game_phi_phi",
+      "value": 93,
+      "label": "Philadelphia points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025"
+    },
+    {
+      "key": "game_nyk_det",
+      "value": 97,
+      "label": "Detroit points at New York",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261027"
+    },
+    {
+      "key": "game_nyk_nyk",
+      "value": 111,
+      "label": "New York points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261027"
+    },
+    {
+      "key": "game_cha_det",
+      "value": 97,
+      "label": "Detroit points against Charlotte",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261028"
+    },
+    {
+      "key": "game_cha_cha",
+      "value": 89,
+      "label": "Charlotte points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261028"
+    },
+    {
+      "key": "game_bkn_det",
+      "value": 110,
+      "label": "Detroit points at Brooklyn",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "game_bkn_bkn",
+      "value": 94,
+      "label": "Brooklyn points against Detroit",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    }
+  ]
+}
