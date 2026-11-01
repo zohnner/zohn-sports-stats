@@ -1,6 +1,30 @@
 {
   "stories": [
     {
+      "slug": "2026-11-01-ranked-losses-second-straight-week",
+      "title": "Ranked teams lost 5 games to unranked opponents for a 2nd straight week",
+      "dek": "All 5 Week 9 losses came on the road, where ranked teams are 6-10 over the last 2 weeks.",
+      "date": "2026-11-01",
+      "season": 2026,
+      "week": 9,
+      "teams": [
+        "OSU",
+        "USC",
+        "SMU",
+        "SYR",
+        "NU",
+        "ORE",
+        "OKST",
+        "ISU",
+        "WIS",
+        "IOWA"
+      ],
+      "players": [],
+      "hero_stat": "5 ranked losses, 2nd straight week",
+      "url": "/ncaaf/stories/2026-11-01-ranked-losses-second-straight-week",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-10-27-ranked-teams-road-losses-week-8",
       "title": "Ranked teams lost 5 times to unranked opponents in Week 8, the most this season",
       "dek": "All 5 losses came on the road, where ranked teams went 3-5; at home they went 7-0.",
