@@ -1,0 +1,316 @@
+{
+  "facts": [
+    {
+      "key": "mem_wins",
+      "value": 6,
+      "label": "Memphis wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_losses",
+      "value": 0,
+      "label": "Memphis losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "unbeaten_teams",
+      "value": 1,
+      "label": "Unbeaten teams in the NBA",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "hou_wins",
+      "value": 6,
+      "label": "Houston wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "hou_losses",
+      "value": 1,
+      "label": "Houston losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "phi_wins",
+      "value": 6,
+      "label": "Philadelphia wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "phi_losses",
+      "value": 1,
+      "label": "Philadelphia losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_pf",
+      "value": 727,
+      "label": "Memphis points scored",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_pa",
+      "value": 636,
+      "label": "Memphis points allowed",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_diff",
+      "value": 91,
+      "label": "Memphis total point differential",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_ppg",
+      "value": 121.2,
+      "label": "Memphis points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_opp_ppg",
+      "value": 106.0,
+      "label": "Memphis points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_diff_pg",
+      "value": 15.2,
+      "label": "Memphis point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "hou_diff_pg",
+      "value": 12.4,
+      "label": "Houston point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "cle_ppg",
+      "value": 121.0,
+      "label": "Cleveland points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "hou_dal_hou",
+      "value": 111,
+      "label": "Houston points at Dallas",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "hou_dal_dal",
+      "value": 116,
+      "label": "Dallas points vs Houston",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "hou_okc_hou",
+      "value": 119,
+      "label": "Houston points vs Oklahoma City",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031"
+    },
+    {
+      "key": "hou_okc_okc",
+      "value": 98,
+      "label": "Oklahoma City points vs Houston",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031"
+    },
+    {
+      "key": "g1_mem",
+      "value": 123,
+      "label": "Memphis points vs Utah",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261022"
+    },
+    {
+      "key": "g1_uta",
+      "value": 103,
+      "label": "Utah points at Memphis",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261022"
+    },
+    {
+      "key": "g1_margin",
+      "value": 20,
+      "label": "Memphis margin vs Utah",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261022"
+    },
+    {
+      "key": "g2_mem",
+      "value": 111,
+      "label": "Memphis points at Golden State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261024"
+    },
+    {
+      "key": "g2_gs",
+      "value": 108,
+      "label": "Golden State points vs Memphis",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261024"
+    },
+    {
+      "key": "g2_margin",
+      "value": 3,
+      "label": "Memphis margin at Golden State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261024"
+    },
+    {
+      "key": "g3_mem",
+      "value": 123,
+      "label": "Memphis points at Sacramento",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "g3_sac",
+      "value": 112,
+      "label": "Sacramento points vs Memphis",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "g3_margin",
+      "value": 11,
+      "label": "Memphis margin at Sacramento",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "g4_mem",
+      "value": 110,
+      "label": "Memphis points at Utah",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261027"
+    },
+    {
+      "key": "g4_uta",
+      "value": 105,
+      "label": "Utah points vs Memphis at Utah",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261027"
+    },
+    {
+      "key": "g4_margin",
+      "value": 5,
+      "label": "Memphis margin at Utah",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261027"
+    },
+    {
+      "key": "g5_mem",
+      "value": 124,
+      "label": "Memphis points at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "g5_por",
+      "value": 103,
+      "label": "Portland points vs Memphis",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "g5_margin",
+      "value": 21,
+      "label": "Memphis margin at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "g6_mem",
+      "value": 136,
+      "label": "Memphis points vs Sacramento",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031"
+    },
+    {
+      "key": "g6_sac",
+      "value": 105,
+      "label": "Sacramento points at Memphis",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031"
+    },
+    {
+      "key": "g6_margin",
+      "value": 31,
+      "label": "Memphis margin vs Sacramento",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261031"
+    },
+    {
+      "key": "opp_distinct",
+      "value": 4,
+      "label": "Distinct opponents Memphis has beaten",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "opp_wins",
+      "value": 8,
+      "label": "Combined wins of Memphis's distinct opponents",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "opp_losses",
+      "value": 15,
+      "label": "Combined losses of Memphis's distinct opponents",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "uta_wins",
+      "value": 1,
+      "label": "Utah wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "uta_losses",
+      "value": 5,
+      "label": "Utah losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "sac_wins",
+      "value": 0,
+      "label": "Sacramento wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "sac_losses",
+      "value": 6,
+      "label": "Sacramento losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "gs_wins",
+      "value": 3,
+      "label": "Golden State wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "gs_losses",
+      "value": 3,
+      "label": "Golden State losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "por_wins",
+      "value": 4,
+      "label": "Portland wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "por_losses",
+      "value": 1,
+      "label": "Portland losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "opp_other_ppg",
+      "value": 116.2,
+      "label": "Memphis opponents' points per game in their other games",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "opp_drop",
+      "value": 10.2,
+      "label": "Drop in opponent scoring against Memphis vs their other games",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_road_wins",
+      "value": 4,
+      "label": "Memphis road wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_games",
+      "value": 6,
+      "label": "Memphis games played",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    }
+  ]
+}
