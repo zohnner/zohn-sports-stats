@@ -1,6 +1,6 @@
 // Shared SportStrata Stories renderers (D-166, generalized per sport in D-171).
 // Underscore-prefixed, so not a route. functions/<sport>/stories/{index,[slug]}.js
-// are one-line wrappers. Story page: a committed, human-reviewed
+// are one-line wrappers. Story page: a committed
 // content/<sport>/stories/<slug>.md rendered into the SPA shell with a per-story
 // <head>, NewsArticle JSON-LD and an /api/og stat card. Index: that sport's
 // index.json (tools/stories/build-index.cjs), newest first, ItemList JSON-LD.
@@ -70,10 +70,14 @@ export async function renderStoryPage(context, sport) {
         const canonical = `https://sportstrata.cc${core.storyUrl(slug, sport)}`;
         const title = `${meta.title} | SportStrata`;
         const desc = String(meta.dek);
+        const barChart = core.firstBarChart(body);
         const ogImage = 'https://sportstrata.cc/api/og?' + new URLSearchParams({
             eyebrow: `SportStrata Stories · ${eyebrow}`,
             title: String(meta.title),
-            stat: String(meta.hero_stat),
+            ...(barChart
+                ? { subtitle: barChart.title, bars: barChart.values.join(','), hi: String(barChart.hi) }
+                : { stat: String(meta.hero_stat) }),
+            ...(meta.accent && { accent: String(meta.accent).slice(1) }),
         }).toString();
         const jsonld = JSON.stringify({
             '@context': 'https://schema.org', '@type': 'NewsArticle',

@@ -16,7 +16,9 @@ const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 const core = require('./story-core.cjs');
 
-const FENCE_RE = /^content\/([a-z]+)\/stories\/[^/]+$/;
+// .md and .json only (D-195): the number checker can't read an image, so media
+// never auto-publishes.
+const FENCE_RE = /^content\/([a-z]+)\/stories\/[^/]+\.(?:md|json)$/;
 const STORY_RE = /^content\/([a-z]+)\/stories\/(\d{4}-\d{2}-\d{2}-[a-z0-9-]+)\.md$/;
 const MAX_AGE_DAYS = 3;
 
