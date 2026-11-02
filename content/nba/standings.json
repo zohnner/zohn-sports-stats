@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-10-31",
-  "gamesCounted": 88,
+  "throughDate": "2026-11-01",
+  "gamesCounted": 92,
   "source": "balldontlie",
   "sections": [
     {
@@ -14,11 +14,11 @@
         },
         {
           "name": "Boston Celtics",
-          "record": "4-1"
+          "record": "5-1"
         },
         {
           "name": "Toronto Raptors",
-          "record": "3-2"
+          "record": "3-3"
         },
         {
           "name": "New York Knicks",
@@ -26,7 +26,7 @@
         },
         {
           "name": "Brooklyn Nets",
-          "record": "0-5"
+          "record": "1-5"
         }
       ]
     },
@@ -43,7 +43,7 @@
         },
         {
           "name": "Indiana Pacers",
-          "record": "2-4"
+          "record": "2-5"
         },
         {
           "name": "Chicago Bulls",
@@ -71,11 +71,11 @@
           "record": "3-4"
         },
         {
-          "name": "Orlando Magic",
-          "record": "2-3"
+          "name": "Miami Heat",
+          "record": "2-4"
         },
         {
-          "name": "Miami Heat",
+          "name": "Orlando Magic",
           "record": "2-4"
         }
       ]
@@ -110,11 +110,11 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "4-2"
+          "record": "5-2"
         },
         {
           "name": "Golden State Warriors",
-          "record": "3-3"
+          "record": "4-3"
         },
         {
           "name": "Phoenix Suns",
@@ -122,7 +122,7 @@
         },
         {
           "name": "LA Clippers",
-          "record": "1-4"
+          "record": "1-5"
         },
         {
           "name": "Sacramento Kings",
