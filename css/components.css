@@ -4959,6 +4959,27 @@
 .ss-stories__list { list-style: none; padding: 0; }
 .ss-stories__list li { padding: var(--space-4) 0; border-bottom: 1px solid var(--border-default); }
 .ss-stories__list li > a { font-weight: 700; font-size: var(--text-lg); text-decoration: none; }
+/* Story charts (D-195, renderChart in tools/stories/story-core.cjs). Plain HTML rows,
+   so labels and values stay real text; widths and positions arrive inline as data. */
+.ss-chart { margin: var(--space-6) 0; padding: var(--space-4); background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.ss-chart figcaption { font-weight: 700; margin-bottom: var(--space-3); }
+.ss-prerender .ss-chart__legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-secondary); }
+.ss-chart__key--a::before, .ss-chart__key--b::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-full); margin-right: var(--space-2); }
+.ss-chart__row { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; font-size: var(--text-sm); }
+.ss-chart__label { color: var(--text-secondary); overflow-wrap: anywhere; }
+.ss-chart__track { position: relative; height: 12px; }
+.ss-chart__track i { position: absolute; top: 0; height: 100%; background: var(--text-muted); border-radius: var(--radius-xs); }
+.ss-chart__row.is-neg .ss-chart__track i { background: var(--color-loss); }
+.ss-chart__row.is-hi .ss-chart__track i { background: var(--accent); }
+.ss-chart__row.is-hi .ss-chart__label, .ss-chart__row.is-hi .ss-chart__val { color: var(--text-primary); font-weight: 700; }
+.ss-chart__val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+/* Two values need the width, and two dots need the track: the track takes its own line. */
+.ss-chart--compare .ss-chart__row { grid-template-columns: minmax(0, 1fr) auto; }
+.ss-chart--compare .ss-chart__track { grid-column: 1 / -1; grid-row: 2; }
+.ss-chart__track b { position: absolute; top: 5px; height: 2px; background: var(--border-strong); }
+.ss-chart__track .ss-chart__dot--a, .ss-chart__track .ss-chart__dot--b { top: 1px; width: 10px; height: 10px; margin-left: -5px; border-radius: var(--radius-full); }
+.ss-chart__track .ss-chart__dot--a, .ss-chart__key--a::before { background: var(--text-muted); }
+.ss-chart__track .ss-chart__dot--b, .ss-chart__key--b::before { background: var(--accent); }
 /* Freshness receipt (D-189, freshnessHtml in js/config.js). Inherits its host's
    type; only the numerals and the stale state are its own. */
 .ss-fresh { font-variant-numeric: tabular-nums; white-space: nowrap; }

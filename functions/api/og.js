@@ -1,4 +1,4 @@
-// GET /api/og?eyebrow=&title=&subtitle=&stat=&accent=RRGGBB
+// GET /api/og?eyebrow=&title=&subtitle=&stat=&accent=RRGGBB&bars=85,58,52&hi=0
 // Dynamic per-entity share-card PNG (D-127 continuation of the og:image gap flagged
 // in D-056/D-057/D-062 -- every edge-rendered page previously shared one static image).
 // Rate-limited like every other /api/* route via functions/api/_middleware.js.
@@ -12,6 +12,12 @@ function clip(v, max) {
     if (!v) return '';
     const s = String(v).slice(0, max);
     return s;
+}
+const MAX_BARS = 18;
+function parseBars(v) {
+    if (!v) return null;
+    const bars = String(v).slice(0, 200).split(',').slice(0, MAX_BARS).map(Number);
+    return bars.length >= 2 && bars.every(Number.isFinite) ? bars : null;
 }
 
 export async function onRequestGet(context) {
@@ -33,6 +39,8 @@ export async function onRequestGet(context) {
             subtitle: clip(q.get('subtitle'), MAX_LEN.subtitle),
             statLine: clip(q.get('stat'), MAX_LEN.stat),
             accentColor: q.get('accent') ? `#${q.get('accent').replace(/^#/, '')}` : null,
+            bars: parseBars(q.get('bars')),
+            barHi: Number.parseInt(q.get('hi'), 10),
         });
 
         return new Response(png, {
