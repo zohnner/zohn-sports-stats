@@ -1,6 +1,53 @@
 {
   "stories": [
     {
+      "slug": "2026-11-02-chargers-only-winless-team",
+      "title": "The Chargers are 0-7, the NFL's only winless team",
+      "dek": "Los Angeles has scored 99 points and allowed 175 through Sunday's Week 8 games, a minus-76 differential that is also the league's worst.",
+      "date": "2026-11-02",
+      "season": 2026,
+      "week": 8,
+      "teams": [
+        "LAC",
+        "MIA",
+        "ARI",
+        "LV",
+        "BUF",
+        "SEA",
+        "DEN",
+        "KC",
+        "LAR"
+      ],
+      "players": [],
+      "hero_stat": "0-7, the NFL's only winless team",
+      "url": "/nfl/stories/2026-11-02-chargers-only-winless-team",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-11-02-jaguars-best-point-differential",
+      "title": "The Jaguars have a plus-85 point differential, the best in the NFL",
+      "dek": "Jacksonville is 5-2 and has outscored opponents 196-111 through Sunday's Week 8 games, leading San Francisco's plus-58 differential by 27.",
+      "date": "2026-11-02",
+      "season": 2026,
+      "week": 8,
+      "teams": [
+        "JAX",
+        "SF",
+        "BUF",
+        "CLE",
+        "DEN",
+        "NE",
+        "CIN",
+        "PHI",
+        "HOU",
+        "IND"
+      ],
+      "players": [],
+      "hero_stat": "plus-85 point differential, 1st of 32",
+      "url": "/nfl/stories/2026-11-02-jaguars-best-point-differential",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-10-28-49ers-best-point-differential",
       "title": "The 49ers have a plus-58 point differential, the best in the NFL",
       "dek": "San Francisco is 6-1 and has outscored opponents 197-139, leading Minnesota's plus-51 differential by 7.",
