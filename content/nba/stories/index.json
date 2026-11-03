@@ -1,6 +1,24 @@
 {
   "stories": [
     {
+      "slug": "2026-11-03-no-unbeaten-team-after-memphis-loss",
+      "title": "No NBA team is unbeaten after Memphis lost 135-134 to New Orleans",
+      "dek": "Memphis was the league's last unbeaten team, and the best records in the NBA are now 7-1.",
+      "date": "2026-11-03",
+      "season": 2027,
+      "teams": [
+        "MEM",
+        "NOP",
+        "PHI",
+        "HOU",
+        "LAL"
+      ],
+      "players": [],
+      "hero_stat": "No unbeaten team remains; best records are 7-1",
+      "url": "/nba/stories/2026-11-03-no-unbeaten-team-after-memphis-loss",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-01-grizzlies-6-0-only-unbeaten",
       "title": "The Grizzlies are 6-0, the NBA's only unbeaten team",
       "dek": "Memphis beat Sacramento 136-105, and its plus-15.2 point differential leads the league.",
