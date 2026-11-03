@@ -3801,3 +3801,13 @@ Cache v336. Tests: `tests/storyCharts.test.js`.
 
 **Numbering note:** D-194 is taken on the unmerged `nfl-game-viewer-parity` branch. That branch may also bump `sw.js`; whichever merges second takes the next version.
 
+## D-196 — Server-side ESPN reads go through one LIVE/STALE/DOWN layer
+**Status:** shipping | **Date:** 2026-11-03
+
+ESPN still refuses Cloudflare egress (D-176); readers are covered by the browser fallback, server-side consumers were not. Every server-side ESPN read (the home page, 18 edge templates, the push Worker) now goes through `functions/_espnSource.js` `readSource()`, which classifies each answer LIVE, STALE (last-good Cache API snapshot within the caller's declared tolerance) or DOWN, with its age. Callers must pass `maxStaleMs`. Push alerts and the Pick'em week table are 0 (LIVE or nothing, no store); STALE pages carry an "as of <ET time>" receipt and a 60s page cache, and home never lists a stale score under Live now. `GET /api/sourcehealth` reports per-source state. The NCAAF/WNBA/NBA athlete proxies stop calling a block "athlete not found".
+
+**Verified.** Live 2026-11-03: scoreboard/news proxies 403 HTML labelled JSON, stats 502 text, standings 200 `{ok:false}`, athlete proxies 200 "athlete not found". `tests/espnSource.test.js` runs the real templates and push Worker under ten failure modes; the same matrix on origin/main gives identical LIVE and DOWN columns, so this is additive. Before this, push was silent (zero errors) on a 200 with an error inside or without `events`. Mutation-checked.
+
+**Not verified / not done.** Nothing deployed. STALE is dormant in production until ESPN answers once, because snapshots are only written on LIVE reads. Snapshots are per data center. No seeding from outside Cloudflare (owner call, close to evasion). Proxies, the sitemap job, the Python bot and Muse are unchanged. Contract Check is unchanged; a proposal to print `/api/sourcehealth` as an informational line is in the design note. Issues #15/#16 stay open.
+
+Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.

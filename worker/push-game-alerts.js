@@ -47,6 +47,7 @@
 // even though the lookahead window (see LOOKAHEAD_MIN) is wider than the cron
 // cadence on purpose (catches a game if one run is delayed or skipped).
 import { buildPushPayload } from '@block65/webcrypto-web-push';
+import { readSource, TOLERANCE, SHAPES } from '../functions/_espnSource.js';
 
 const LOOKAHEAD_MIN = 12; // alert fires when a game's start time is <= this many minutes away
 const MLB_SCHEDULE_URL = 'https://statsapi.mlb.com/api/v1/schedule?sportId=1';
@@ -155,8 +156,16 @@ async function _mlbUpcoming(now) {
 // Shared by NFL/NCAAF/NCAAB/WNBA/NBA -- all five ESPN scoreboards carry the
 // identical event/competitions/competitors shape; only the URL and the
 // deep-link builder differ per sport.
+//
+// D-196: an alert built on an old scoreboard can announce a game that was
+// postponed or already started, so this reads LIVE or nothing: tolerance 0,
+// no snapshot store, and _liveOnly() refuses anything else as a second lock.
 async function _espnUpcoming(sport, url, now, urlFor) {
-	const data = await _fetchJson(`${sport}-scoreboard`, url, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
+	const src = await readSource(`scoreboard:${sport}`, url, {
+		maxStaleMs: TOLERANCE.push, validate: SHAPES.scoreboard, store: null,
+		init: { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } },
+	});
+	const data = _liveOnly(sport, src);
 	const games = [];
 	for (const ev of (data.events || [])) {
 		const statusName = ev.status && ev.status.type && ev.status.type.name;
@@ -179,6 +188,13 @@ async function _espnUpcoming(sport, url, now, urlFor) {
 		});
 	}
 	return games;
+}
+
+export function _liveOnly(sport, src) {
+	if (!src || src.state !== 'LIVE') {
+		throw new Error(`${sport}-scoreboard ${src ? src.state : 'DOWN'}: ${(src && src.reason) || 'no answer'} (no alerts sent)`);
+	}
+	return src.data;
 }
 
 const _nflUpcoming = (now) => _espnUpcoming('nfl', NFL_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/nfl');

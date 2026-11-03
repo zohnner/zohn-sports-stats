@@ -12,6 +12,7 @@
 // plain shell. site.web.api.espn.com serves the identical response shape (live-
 // verified against this exact college-football/teams/:id path before switching).
 import { shell, rawShell } from '../../../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../../../_espnSource.js';
 import { readStories, storiesForTeam, storyListHtml } from '../../../_storyLinks.js';
 
 const SITE = 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football';
@@ -28,9 +29,12 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
-        const tr = await fetch(`${SITE}/teams/${id}`, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 3600, cacheEverything: true } });
-        if (!tr.ok) return shell(env, request.url);
-        const team = (await tr.json()).team;
+        const src = await readSource(`team:ncaaf:${id}`, `${SITE}/teams/${id}`, {
+            maxStaleMs: TOLERANCE.team, validate: SHAPES.team, waitUntil: p => context.waitUntil(p),
+            init: { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 3600, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const team = src.data.team;
         if (!team || !(team.displayName || team.name)) return shell(env, request.url);
 
         const name = team.displayName || team.name;
@@ -50,7 +54,7 @@ export async function onRequest(context) {
             `<p>${esc([abbr, summary].filter(Boolean).join(' · '))}</p>` +
             `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p>` +
             stories +
-            `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p></section>`;
+            `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p>` + staleNote(src, 'Team details') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -65,7 +69,7 @@ export async function onRequest(context) {
             .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`)
             .replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 300) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#ncaaf-teams', 302); }

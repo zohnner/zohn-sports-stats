@@ -10,6 +10,7 @@
 // else in functions/api/*.js, so every NFL team page silently fell back to the
 // plain shell. site.web.api.espn.com serves the identical response shape.
 import { shell, rawShell } from '../../../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../../../_espnSource.js';
 import { readStories, storiesForTeam, storyListHtml } from '../../../_storyLinks.js';
 import { nflverseTeams, NFLVERSE_CREDIT } from '../../../_nflverse.js';
 
@@ -27,8 +28,11 @@ export async function onRequest(context) {
     const abbr = String(params.abbr || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     try {
         if (!abbr || !env.ASSETS) return shell(env, request.url);
-        const data = await fetch(TEAMS, { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } })
-            .then(r => r.ok ? r.json() : null).catch(() => null);
+        const src = await readSource('teams:nfl', TEAMS, {
+            maxStaleMs: TOLERANCE.team, validate: SHAPES.teams, waitUntil: p => context.waitUntil(p),
+            init: { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } },
+        });
+        const data = src.data;
         const espn = (data && data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];
         const fromNflverse = !espn.length;
         const list = fromNflverse ? await nflverseTeams() : espn.map(w => w.team).filter(Boolean);
@@ -56,7 +60,7 @@ export async function onRequest(context) {
             `<p>${esc(name)} NFL roster, depth chart, schedule, standings and fantasy assets on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
             stories +
-            `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul>` + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
+            `<h2>Other NFL Teams</h2><ul>${teamLinks}</ul>` + (fromNflverse ? NFLVERSE_CREDIT : '') + staleNote(src, 'Team details') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -71,7 +75,7 @@ export async function onRequest(context) {
             .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`)
             .replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 300) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#nfl-teams', 302); }

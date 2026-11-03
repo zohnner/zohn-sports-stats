@@ -10,6 +10,7 @@
 // wnba-player-{id} SPA view) is real.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -22,9 +23,12 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/wnbastats', request.url), { cf: { cacheTtl: 900, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
+        const src = await readSource('leaders:wnba', new URL('/api/wnbastats', request.url), {
+            maxStaleMs: TOLERANCE.leaders, validate: SHAPES.leaders, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 900, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const data = src.data;
         const categories = data.categories || [];
         if (!categories.length) return shell(env, request.url);
         const season = data.season;
@@ -58,7 +62,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>WNBA Stat Leaders — ${esc(String(season))}</h1>` +
             `<p>Current ${esc(String(season))} WNBA leaders across scoring, rebounding, playmaking and defensive categories. Full leaderboards for every stat on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/wnba">WNBA Home</a></p>` +
-            sections.map(s => s.html).join('') + `</section>`;
+            sections.map(s => s.html).join('') + staleNote(src, 'Leaders') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -74,7 +78,7 @@ export async function onRequest(context) {
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=900' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 900) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#wnba-leaders', 302); }

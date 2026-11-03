@@ -13,6 +13,7 @@
 // with no games on the slate yet, etc.) rather than blanking the whole page.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES } from '../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -54,9 +55,14 @@ function pct(p) { return p == null ? null : Math.round(p * 100); }
 // should just omit this section, not break the always-true explainer above it.
 async function buildWeekSnapshot(request) {
     try {
-        const sbRes = await fetch(new URL('/api/nfl?path=/scoreboard', request.url), { cf: { cacheTtl: 900, cacheEverything: true } });
-        if (!sbRes.ok) return null;
-        const sb = await sbRes.json();
+        // D-196: tolerance 0 and no store. A confidence ranking built on an old
+        // line can't label itself, so this section shows only on LIVE data.
+        const src = await readSource('pickem:scoreboard:nfl', new URL('/api/nfl?path=/scoreboard', request.url), {
+            maxStaleMs: TOLERANCE.pickem, validate: SHAPES.scoreboard, store: null,
+            init: { cf: { cacheTtl: 900, cacheEverything: true } },
+        });
+        if (src.state !== 'LIVE') return null;
+        const sb = src.data;
         const events = (sb.events || []).slice(0, 16);
         if (!events.length) return null;
 
@@ -74,9 +80,12 @@ async function buildWeekSnapshot(request) {
 
             let espnHome = null, espnAway = null;
             try {
-                const sumRes = await fetch(new URL(`/api/nfl?path=/summary&event=${ev.id}`, request.url), { cf: { cacheTtl: 900, cacheEverything: true } });
-                if (sumRes.ok) {
-                    const sum = await sumRes.json();
+                const sumSrc = await readSource(`pickem:summary:nfl:${ev.id}`, new URL(`/api/nfl?path=/summary&event=${ev.id}`, request.url), {
+                    maxStaleMs: TOLERANCE.pickem, validate: SHAPES.summary, store: null,
+                    init: { cf: { cacheTtl: 900, cacheEverything: true } },
+                });
+                if (sumSrc.state === 'LIVE') {
+                    const sum = sumSrc.data;
                     const pr = sum && sum.predictor;
                     if (pr && pr.homeTeam && pr.awayTeam) {
                         const pair = normalizePair(pr.homeTeam.gameProjection, pr.awayTeam.gameProjection);

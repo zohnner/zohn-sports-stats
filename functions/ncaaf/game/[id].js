@@ -11,6 +11,7 @@
 // Same HTML for humans and bots; any error falls back to the untouched app.
 
 import { shell, rawShell } from '../../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -35,12 +36,12 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
-        const r = await fetch(
-            `https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`,
-            { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 120, cacheEverything: true } }
-        );
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
+        const src = await readSource(`summary:ncaaf:${id}`, `https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`, {
+            maxStaleMs: TOLERANCE.game, validate: SHAPES.summary, waitUntil: p => context.waitUntil(p),
+            init: { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 120, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const data = src.data;
         const comp = data.header && data.header.competitions && data.header.competitions[0];
         if (!comp) return shell(env, request.url);
 
@@ -78,7 +79,7 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(aName)} @ ${esc(hName)}</h1>` +
             `<p>${esc(statusLabel)}${dateStr ? ' · ' + esc(dateStr) : ''}${venue ? ' · ' + esc(venue) : ''}</p>` +
-            `<p>Live box score, scoring plays, and matchup analysis for ${esc(aName)} vs ${esc(hName)} on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>Live box score, scoring plays, and matchup analysis for ${esc(aName)} vs ${esc(hName)} on SportStrata — free, no login, no ads.</p>` + staleNote(src, 'Game details') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -95,7 +96,7 @@ export async function onRequest(context) {
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
         return new Response(html, {
-            headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=120' }
+            headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 120) }
         });
     } catch (e) {
         try { return await shell(env, request.url); }
