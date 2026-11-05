@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-02",
-  "gamesCounted": 107,
+  "throughDate": "2026-11-04",
+  "gamesCounted": 121,
   "source": "balldontlie",
   "sections": [
     {
@@ -10,23 +10,23 @@
       "teams": [
         {
           "name": "Philadelphia 76ers",
-          "record": "7-1"
+          "record": "8-1"
         },
         {
           "name": "Boston Celtics",
-          "record": "5-2"
-        },
-        {
-          "name": "Toronto Raptors",
-          "record": "4-3"
+          "record": "6-2"
         },
         {
           "name": "New York Knicks",
-          "record": "3-4"
+          "record": "4-4"
+        },
+        {
+          "name": "Toronto Raptors",
+          "record": "4-4"
         },
         {
           "name": "Brooklyn Nets",
-          "record": "1-6"
+          "record": "2-6"
         }
       ]
     },
@@ -35,23 +35,23 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "6-1"
+          "record": "6-2"
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "4-3"
+          "record": "4-4"
         },
         {
           "name": "Indiana Pacers",
-          "record": "2-6"
+          "record": "3-6"
         },
         {
           "name": "Chicago Bulls",
-          "record": "1-6"
+          "record": "1-7"
         },
         {
           "name": "Milwaukee Bucks",
-          "record": "1-6"
+          "record": "1-7"
         }
       ]
     },
@@ -59,20 +59,20 @@
       "name": "Eastern Conference — Southeast",
       "teams": [
         {
-          "name": "Washington Wizards",
-          "record": "4-3"
+          "name": "Atlanta Hawks",
+          "record": "5-4"
         },
         {
-          "name": "Atlanta Hawks",
+          "name": "Washington Wizards",
           "record": "4-4"
         },
         {
-          "name": "Charlotte Hornets",
+          "name": "Miami Heat",
           "record": "3-5"
         },
         {
-          "name": "Miami Heat",
-          "record": "2-5"
+          "name": "Charlotte Hornets",
+          "record": "3-6"
         },
         {
           "name": "Orlando Magic",
@@ -85,23 +85,23 @@
       "teams": [
         {
           "name": "Portland Trail Blazers",
-          "record": "5-1"
+          "record": "6-1"
         },
         {
           "name": "Oklahoma City Thunder",
-          "record": "5-2"
+          "record": "6-2"
         },
         {
           "name": "Minnesota Timberwolves",
-          "record": "5-3"
+          "record": "6-3"
         },
         {
           "name": "Denver Nuggets",
-          "record": "3-3"
+          "record": "4-3"
         },
         {
           "name": "Utah Jazz",
-          "record": "1-6"
+          "record": "1-7"
         }
       ]
     },
@@ -110,7 +110,7 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "6-2"
+          "record": "7-2"
         },
         {
           "name": "Golden State Warriors",
@@ -118,15 +118,15 @@
         },
         {
           "name": "Phoenix Suns",
-          "record": "1-4"
+          "record": "1-5"
         },
         {
           "name": "LA Clippers",
-          "record": "1-6"
+          "record": "1-7"
         },
         {
           "name": "Sacramento Kings",
-          "record": "1-6"
+          "record": "1-7"
         }
       ]
     },
@@ -135,23 +135,23 @@
       "teams": [
         {
           "name": "Houston Rockets",
-          "record": "7-1"
+          "record": "7-2"
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "6-1"
+          "record": "6-2"
         },
         {
           "name": "San Antonio Spurs",
-          "record": "5-2"
+          "record": "6-2"
         },
         {
           "name": "Dallas Mavericks",
-          "record": "4-3"
+          "record": "4-4"
         },
         {
           "name": "New Orleans Pelicans",
-          "record": "3-4"
+          "record": "4-4"
         }
       ]
     }
