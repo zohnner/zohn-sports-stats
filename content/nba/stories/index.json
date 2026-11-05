@@ -1,6 +1,59 @@
 {
   "stories": [
     {
+      "slug": "2026-11-05-76ers-best-record-close-wins",
+      "title": "The 8-1 76ers have the NBA's best record with its 9th-best point differential",
+      "dek": "7 of Philadelphia's 8 wins have come by 11 points or fewer, and 5 of them by 6 or fewer.",
+      "date": "2026-11-05",
+      "season": 2027,
+      "teams": [
+        "PHI",
+        "MIN",
+        "POR",
+        "MEM",
+        "HOU",
+        "DET",
+        "SAS",
+        "LAL",
+        "BOS",
+        "NYK",
+        "CLE",
+        "MIL",
+        "IND",
+        "CHA",
+        "CHI"
+      ],
+      "players": [],
+      "hero_stat": "8-1, the NBA's best record, on a plus-5.8 differential",
+      "url": "/nba/stories/2026-11-05-76ers-best-record-close-wins",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-05-luka-doncic-scoring-lead",
+      "title": "Luka Doncic is averaging 38.5 points a game, 8.4 clear of the NBA's next scorer",
+      "dek": "He has scored 40 or more in 5 of his 8 games, and his 5.9 3-pointers a game also lead the league.",
+      "date": "2026-11-05",
+      "season": 2027,
+      "teams": [
+        "LAL",
+        "OKC",
+        "GS",
+        "SAS",
+        "SAC",
+        "TOR",
+        "MIA",
+        "UTA",
+        "POR",
+        "LAC"
+      ],
+      "players": [
+        "3945274"
+      ],
+      "hero_stat": "38.5 points per game, 8.4 clear of the next scorer",
+      "url": "/nba/stories/2026-11-05-luka-doncic-scoring-lead",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-03-no-unbeaten-team-after-memphis-loss",
       "title": "No NBA team is unbeaten after Memphis lost 135-134 to New Orleans",
       "dek": "Memphis was the league's last unbeaten team, and the best records in the NBA are now 7-1.",
