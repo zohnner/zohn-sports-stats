@@ -68,8 +68,10 @@ const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (K
 const MLB_UA = 'SportStrata/1.0'; // matches functions/api/mlb.js's already-proven statsapi UA
 
 export default {
+	// A cron run has no caller to hand its result to; without this log every
+	// DOWN/refused scoreboard was visible only through /__run.
 	async scheduled(event, env, ctx) {
-		ctx.waitUntil(runAlerts(env));
+		ctx.waitUntil(runAlerts(env).then(_logRun, e => { console.error(`push-alerts run threw: ${String(e).slice(0, 300)}`); }));
 	},
 
 	// Manual trigger for testing -- same shared-secret gate as auth-purge.js/
@@ -89,6 +91,14 @@ export default {
 		return Response.json(result);
 	},
 };
+
+export function _logRun(result) {
+	const { matched, sent, skipped, failed, pruned, errors } = result;
+	const line = `push-alerts matched=${matched} sent=${sent} skipped=${skipped} failed=${failed} pruned=${pruned}`;
+	if (errors.length) console.error(`${line} errors=${errors.length}: ${errors.join(' | ')}`);
+	else console.log(line);
+	return result;
+}
 
 function _timingSafeEqual(a, b) {
 	const bufA = new TextEncoder().encode(a);

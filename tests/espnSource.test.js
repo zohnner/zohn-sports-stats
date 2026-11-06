@@ -385,6 +385,33 @@ test('push: sends on LIVE; sends nothing on STALE, DOWN or an empty slate', asyn
     assert.deepEqual([empty.result.sent, empty.result.errors], [0, []], 'an empty slate is an off day, not an outage');
 });
 
+test('push: a cron run logs what /__run would have returned', async () => {
+    const worker = await load('worker/push-game-alerts.js');
+    globalThis.caches = fakeCaches();
+    installFetch('http403');
+    const env = { USER_DB: fakeDb(), VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' };
+    const lines = { error: [], log: [] };
+    const orig = { error: console.error, log: console.log };
+    console.error = m => lines.error.push(String(m));
+    console.log = m => lines.log.push(String(m));
+    try {
+        const pending = [];
+        await worker.default.scheduled({}, env, { waitUntil: p => pending.push(p) });
+        await Promise.all(pending);
+    } finally {
+        console.error = orig.error;
+        console.log = orig.log;
+    }
+    assert.equal(lines.error.length, 1, 'one error line per failing run');
+    assert.match(lines.error[0], /sent=0 .*errors=5: .*nfl-scoreboard DOWN: HTTP 403 .*\(no alerts sent\)/);
+
+    lines.log.length = 0;
+    console.log = m => lines.log.push(String(m));
+    try { worker._logRun({ matched: 0, sent: 0, skipped: 0, failed: 0, pruned: 0, errors: [] }); }
+    finally { console.log = orig.log; }
+    assert.deepEqual(lines.log, ['push-alerts matched=0 sent=0 skipped=0 failed=0 pruned=0'], 'a clean run still leaves a line');
+});
+
 test('push: _liveOnly refuses a STALE read even if one were handed to it', async () => {
     const worker = await load('worker/push-game-alerts.js');
     const staleSrc = { state: 'STALE', data: scoreboard('pre'), fetchedAt: Date.now() - 1000, ageMs: 1000, reason: 'HTTP 403' };
