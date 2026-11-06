@@ -2,6 +2,7 @@
 // Clones the D-041 pattern: SPA shell via env.ASSETS + per-player head (Person JSON-LD) +
 // crawlable snapshot + __SS_ROUTE=ncaaf-player-{id}. Same HTML for humans and bots; fail-safe.
 import { shell, rawShell } from '../../../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../../../_espnSource.js';
 
 const CORE = 'https://sports.core.api.espn.com/v2/sports/football/leagues/college-football';
 
@@ -18,9 +19,12 @@ export async function onRequest(context) {
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
         const yr = season();
-        const ar = await fetch(`${CORE}/seasons/${yr}/athletes/${id}?lang=en&region=us`, { cf: { cacheTtl: 86400, cacheEverything: true } });
-        if (!ar.ok) return shell(env, request.url);
-        const a = await ar.json();
+        const src = await readSource(`athlete:ncaaf:${yr}:${id}`, `${CORE}/seasons/${yr}/athletes/${id}?lang=en&region=us`, {
+            maxStaleMs: TOLERANCE.player, validate: SHAPES.coreAthlete, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 86400, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const a = src.data;
         if (!a || !(a.fullName || a.displayName)) return shell(env, request.url);
 
         const name = a.fullName || a.displayName;
@@ -47,7 +51,7 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc([pos, team].filter(Boolean).join(' · '))}</p>` +
-            `<p>${esc(name)} ${yr} college football season stats on SportStrata — free, no login, no ads.</p></section>`;
+            `<p>${esc(name)} ${yr} college football season stats on SportStrata — free, no login, no ads.</p>` + staleNote(src, 'Player details') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -62,7 +66,7 @@ export async function onRequest(context) {
             .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`)
             .replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 300) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#ncaaf-leaders', 302); }

@@ -65,7 +65,7 @@ export async function onRequest(context) {
     if (!id) return json({ found: false, reason: 'missing id' }, 200);
 
     // 1) athlete bio
-    let bio = null, teamId = null;
+    let bio = null, teamId = null, failure = 'athlete not found';
     try {
         const r = await fetch(`${CORE}/seasons/${season}/athletes/${id}?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 86400, cacheEverything: true },
@@ -82,9 +82,14 @@ export async function onRequest(context) {
                 classYr: (a.experience && a.experience.displayValue) || '',
                 headshot: (a.headshot && a.headshot.href) || '',
             };
+        } else if (r.status !== 404) {
+            // D-196: a blocked or failing upstream is not a missing player.
+            failure = `upstream ${r.status}`;
         }
-    } catch {}
-    if (!bio) return json({ found: false, reason: 'athlete not found', season: Number(season) }, 200);
+    } catch {
+        failure = 'upstream fetch failed';
+    }
+    if (!bio) return json({ found: false, reason: failure, season: Number(season) }, 200);
 
     // 2) team (abbr + logo) — one extra ref resolve, best-effort
     if (teamId) {

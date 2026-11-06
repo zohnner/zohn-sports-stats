@@ -11,6 +11,7 @@
 // (Sept+ = current year, else prior) lives in one place, not duplicated here.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../_espnSource.js';
 import { nflverseStandings, NFLVERSE_CREDIT } from '../_nflverse.js';
 
 function esc(s) {
@@ -42,8 +43,11 @@ export async function onRequest(context) {
     try {
         if (!env.ASSETS) return shell(env, request.url);
         const confs = [];
-        const data = await fetch(new URL('/api/nflstandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } })
-            .then(r => r.ok ? r.json() : null).catch(() => null);
+        const src = await readSource('standings:nfl', new URL('/api/nflstandings', request.url), {
+            maxStaleMs: TOLERANCE.standings, validate: SHAPES.standings, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 1800, cacheEverything: true } },
+        });
+        const data = src.data;
         if (data && data.ok !== false) for (const c of (data.children || [])) collectConfs(c, [], confs);
         let sections = confs.filter(c => c.teams.length).slice(0, 8);
         const fromNflverse = !sections.length;
@@ -74,7 +78,7 @@ export async function onRequest(context) {
             `<p>Division-by-division standings with win-loss records for every NFL team, updated throughout the season on SportStrata — free, no login, no ads.</p>` +
             `<p>Divisions: <ul>${confItems}</ul></p>` +
             `<p><a href="/nfl">NFL Home</a> · <a href="/nfl/leaders">NFL Stat Leaders</a></p>` +
-            sectionHtml + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
+            sectionHtml + (fromNflverse ? NFLVERSE_CREDIT : '') + staleNote(src, 'Standings') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -90,7 +94,7 @@ export async function onRequest(context) {
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=1800' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 1800) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#nfl-standings', 302); }

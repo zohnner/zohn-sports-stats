@@ -15,6 +15,7 @@
 // plus a back-link to /nfl.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../_espnSource.js';
 import { nflverseLeaders, NFLVERSE_CREDIT } from '../_nflverse.js';
 import { fetchSleeperPlayers, sleeperIds, playerSlug } from '../_sleeper.js';
 
@@ -29,8 +30,11 @@ export async function onRequest(context) {
     try {
         if (!env.ASSETS) return shell(env, request.url);
         const sleeper = fetchSleeperPlayers();
-        let data = await fetch(new URL('/api/nflstats', request.url), { cf: { cacheTtl: 900, cacheEverything: true } })
-            .then(r => r.ok ? r.json() : null).catch(() => null);
+        const src = await readSource('leaders:nfl', new URL('/api/nflstats', request.url), {
+            maxStaleMs: TOLERANCE.leaders, validate: SHAPES.leaders, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 900, cacheEverything: true } },
+        });
+        let data = src.data;
         const fromNflverse = !(data && data.categories && data.categories.length);
         if (fromNflverse) data = await nflverseLeaders();
         const categories = data.categories || [];
@@ -73,7 +77,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>NFL Stat Leaders — ${season}</h1>` +
             `<p>Current ${season} NFL leaders across passing, rushing, receiving and defensive categories. Full leaderboards for every stat on SportStrata — free, no login, no ads.</p>` +
             `<p><a href="/nfl">NFL Home</a></p>` +
-            sections.map(s => s.html).join('') + (fromNflverse ? NFLVERSE_CREDIT : '') + `</section>`;
+            sections.map(s => s.html).join('') + (fromNflverse ? NFLVERSE_CREDIT : '') + staleNote(src, 'Leaders') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -89,7 +93,7 @@ export async function onRequest(context) {
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=900' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 900) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#nfl-leaders', 302); }

@@ -11,6 +11,7 @@
 // team-detail route yet, confirmed against js/wnba.js before writing this.
 
 import { shell, rawShell } from '../../../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../../../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -23,9 +24,12 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL(`/api/wnbaathlete?id=${id}`, request.url), { cf: { cacheTtl: 21600, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
+        const src = await readSource(`athlete:wnba:${id}`, new URL(`/api/wnbaathlete?id=${id}`, request.url), {
+            maxStaleMs: TOLERANCE.player, validate: SHAPES.athlete, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 21600, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const data = src.data;
         const bio = data && data.bio;
         if (!data.found || !bio || !bio.name) return shell(env, request.url);
 
@@ -53,7 +57,7 @@ export async function onRequest(context) {
             `<p>${bioLine}</p>` +
             `<p>${esc(name)} WNBA season stats and player profile on SportStrata — free, no login, no ads.</p>` +
             statsHtml +
-            `<p><a href="/wnba">WNBA Home</a> · <a href="/wnba/leaders">WNBA Stat Leaders</a></p></section>`;
+            `<p><a href="/wnba">WNBA Home</a> · <a href="/wnba/leaders">WNBA Stat Leaders</a></p>` + staleNote(src, 'Player details') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -68,7 +72,7 @@ export async function onRequest(context) {
             .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify(route)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`)
             .replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 300) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#wnba-leaders', 302); }
