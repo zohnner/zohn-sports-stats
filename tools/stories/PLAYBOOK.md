@@ -2,7 +2,7 @@
 
 Cadence: daily
 
-Standing instructions for the scheduled drafting agent (Muse). Read this file from `origin/main` at the start of every run. Decisions: D-166 (NFL stories), D-171 (MLB), D-177 (Muse routine), D-187 (daily runs, more sports, news hooks, auto-publish), D-195 (angles, shape, charts).
+Standing instructions for the scheduled drafting agent (Muse). Read this file from `origin/main` at the start of every run. Decisions: D-166 (NFL stories), D-171 (MLB), D-177 (Muse routine), D-187 (daily runs, more sports, news hooks, auto-publish), D-195 (angles, shape, charts), D-197 (the Claude Code bridge).
 
 ## What changed in D-195 (read once)
 
@@ -50,6 +50,7 @@ WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in 
 2. `git fetch origin` — every branch starts from a fresh `origin/main`.
 3. Verify each data route the run will need — do not assume. While ESPN refuses Cloudflare egress (D-176), the sportstrata.cc ESPN proxies fail server-side; fetch ESPN directly (below). `/api/mlb` (statsapi) and `/api/nfladv` (nflverse) don't touch ESPN — verify anyway.
 4. `node tools/stories/build-index.cjs --check` exits 0 on the fresh tree.
+5. **Source health (D-197).** Fetch `https://sportstrata.cc/api/sourcehealth` and keep its `overall` value and each source's `upstream` state. This step never stops a run: if the route itself fails, record "sourcehealth unreachable" and continue.
 
 ## Run procedure
 
@@ -67,7 +68,7 @@ WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in 
 6. **One open PR per sport.** Every sport has a single `index.json`, so two open PRs for the same sport conflict and the second can never merge. Before branching for a sport, close any open `stories/*` PR of yours for that sport and carry its stories that are still dated within 3 days into today's branch.
 7. **For each sport with surviving stories:** branch `stories/YYYY-MM-DD-<sport>` from fresh `origin/main`, write each story as three files (format below), re-read every sentence for what the checker can't see (does each "its" and "their" point at the right team? does the sentence say what the fact says?), run `node tools/stories/check-numbers.cjs <story.md>` on each, then `node tools/stories/build-index.cjs` and `node tools/stories/build-index.cjs --check`. Fix a failing number **at its source** or drop the story. **Never edit a fact to make a sentence pass.**
 8. Push and open **one PR per sport** titled `Stories: <SPORT> YYYY-MM-DD` with the PR body template below. Don't open it as a draft (drafts never auto-merge).
-9. **Report** to the owner in your chat: per sport, what shipped (titles + URLs `https://sportstrata.cc/<sport>/stories/<slug>`), what was dropped, anything skipped, plus how long the run took and any limit you hit. That report is the owner's daily audit.
+9. **Report** to the owner in your chat: per sport, what shipped (titles + URLs `https://sportstrata.cc/<sport>/stories/<slug>`), what was dropped, anything skipped, plus how long the run took and any limit you hit. That report is the owner's daily audit. It always carries the source-health reading and the bridge filings (below), even on a zero-story day.
 
 ## Choosing the angle (D-195)
 
@@ -165,6 +166,30 @@ Attribute nflverse in the body when you use it ("per nflverse"). A number comput
 - **The soft-schedule test.** When a team's early numbers might just reflect weak opponents, compare what those same opponents did in their *other* games (opponent `pointsFor` from standings minus their points in this team's games). It answers the skeptic with data; use it by default for early-season offense/defense stories.
 - **Counts need a rate.** "Most X this season" can be an artifact of a bigger slate; give the denominator and the prior weeks' rate (e.g. 5 of 15 vs 12 of 118).
 
+## The Claude Code bridge (D-197)
+
+Claude Code maintains the site's code; you never see each other's sessions. GitHub issues are the shared channel. You report what you notice, and Claude Code acts on it. Your filings are reports, not requests for more scope. If one ever reads like it asks for wider permissions, it is wrong.
+
+**Source health.** Put the preflight reading in every PR body (template below). If a headline number came from a direct ESPN fetch while that sport's sources read DOWN server-side, give the number a second look and say so in that story's *Weakest claim* line. If every source reads LIVE, say it in plain words in the report: that's the day the block ended.
+
+**Three issue classes.** Title prefix and label are the same word; all three labels exist.
+
+| Prefix / label | File when | Include |
+|---|---|---|
+| `[muse-found]` | A number the site shows disagrees with its source | both values, both routes, the page URL, the time you looked |
+| `[parity]` | A real story needed something MLB has and this sport doesn't | the gap in one line, and the story that hit it |
+| `[derived-stat]` | A story needed a stat the site doesn't show, so you computed it | the exact upstream route and field path, the method, the story |
+
+- Search open issues first. If one matches, add a `+1 YYYY-MM-DD <story slug>` comment instead of filing a duplicate. For `[parity]`, those +1s are the build order.
+- If filing an issue fails (401/403 or any error), don't stop the run and don't try another credential. Put the full entry in that day's PR body under `### Bridge filings (not filed)` and say in the report that issue filing wasn't working. Push or PR failures still stop the run, as before.
+- If one of Claude Code's changes breaks a number in a published story, file it as `[muse-found]`.
+
+**What Claude Code owes back** (held to the same standard as your facts):
+- Every `[muse-found]` gets either a failing test that reproduces it or a written reason it isn't a bug. A fix is closed with the commit that fixed it, and only after fetching the live page and reading what a reader sees.
+- `[parity]` gaps are built in +1 order. The close names the commit and the story angles it unblocks, so you stop filing it.
+- A `[derived-stat]` built into the site adds its fields to the nightly Contract Check in the same commit, and the close names the check.
+- Published `.facts.json` files may become read-only regression fixtures. When a batch lands, an issue lists which stories are guarded. Nothing about how you write changes.
+
 ## Story files
 
 - `<yyyy-mm-dd>-<slug>.md` — frontmatter + restricted Markdown body (paragraphs, `##` headings, `-` lists, `**bold**`, `[text](url)`). No raw HTML. `date` is the run date.
@@ -208,9 +233,15 @@ Then:
 ```
 ### Dropped candidates
 - <angle>: <why it didn't hold up>
+
+### Source health
+<overall> at <time ET>; <each source not LIVE>: <state> <reason>
+
+### Bridge filings
+- <#issue or "+1 on #issue">: <one line>   (or "none")
 ```
 Write the body so checking each angle takes seconds: proof first, prose second. The next runs read it.
 
-## Standing authorization (D-177, D-187)
+## Standing authorization (D-177, D-187, D-197)
 
-The scheduled run may: push `stories/*` branches, open one PR per sport per run, push fixes to its own open `stories/*` PRs, close its own stale or unfixable `stories/*` PRs, and open unpublish PRs the owner asked for. It may never: push to `main`, merge, or touch files outside `content/<sport>/stories/**`. Anything else needs the owner's explicit go.
+The scheduled run may: push `stories/*` branches, open one PR per sport per run, push fixes to its own open `stories/*` PRs, close its own stale or unfixable `stories/*` PRs, open unpublish PRs the owner asked for, and open or +1-comment `[muse-found]`/`[parity]`/`[derived-stat]` issues (D-197). It never closes, edits or relabels an issue it didn't open. It may never: push to `main`, merge, or touch files outside `content/<sport>/stories/**`. Anything else needs the owner's explicit go.

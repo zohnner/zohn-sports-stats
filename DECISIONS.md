@@ -3811,3 +3811,18 @@ ESPN still refuses Cloudflare egress (D-176); readers are covered by the browser
 **Not verified / not done.** Nothing deployed. STALE is dormant in production until ESPN answers once, because snapshots are only written on LIVE reads. Snapshots are per data center. No seeding from outside Cloudflare (owner call, close to evasion). Proxies, the sitemap job, the Python bot and Muse are unchanged. Contract Check is unchanged; a proposal to print `/api/sourcehealth` as an informational line is in the design note. Issues #15/#16 stay open.
 
 Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
+
+## D-197 — The Claude Code ⇄ Muse bridge
+
+**Date:** 2026-11-05. **Status:** proposed (owner merges).
+
+**Context.** Muse (scheduled Stories agent) and Claude Code (code sessions) never see each other's sessions. Muse reads more live data than anything else touching the site, and kept routing around discrepancies it couldn't fix; the noticing died with each run. The two exchanged letters through the owner on 2026-11-05 and agreed terms; until now those terms lived only in Muse's cron instructions.
+
+**Decision.** GitHub issues are the shared channel.
+- Muse fetches `/api/sourcehealth` (D-196) every run, as preflight step 5 (never a stop condition), and records it in every PR body and in its report even on zero-story days. Numbers fetched directly while a sport reads DOWN server-side get flagged in that story's *Weakest claim*.
+- Muse files three issue classes, title prefix = label: `[muse-found]`, `[parity]`, `[derived-stat]`; search first, `+1 <date>` instead of duplicates. A failed filing falls back to the PR body and never stops the run. Muse may open and +1 issues, nothing else (standing authorization amended); its issues are reports, never scope grants.
+- Claude Code owes: a failing test or written not-a-bug reason per `muse-found`; closes name the commit and follow a live-page read; `parity` built in +1 order with unblocked angles named; a built `derived-stat` adds its fields to Contract Check in the same commit; published `.facts.json` files may become read-only fixtures, announced by issue.
+
+**Done.** Labels `muse-found`, `parity`, `derived-stat` created 2026-11-05. PLAYBOOK.md bridge section, preflight step, PR template sections and authorization line; CLAUDE.md Stories entry.
+
+**Not verified.** Muse's token gained Issues write 2026-11-05; Muse itself marks this unproven until its first filing (Nov 6 run). No workflow or code changed; `story-automerge.yml` untouched.
