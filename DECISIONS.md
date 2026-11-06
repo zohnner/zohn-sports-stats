@@ -3826,3 +3826,20 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Done.** Labels `muse-found`, `parity`, `derived-stat` created 2026-11-05. PLAYBOOK.md bridge section, preflight step, PR template sections and authorization line; CLAUDE.md Stories entry.
 
 **Not verified.** Muse's token gained Issues write 2026-11-05; Muse itself marks this unproven until its first filing (Nov 6 run). No workflow or code changed; `story-automerge.yml` untouched.
+
+## D-198 — A scheduled Claude Code parity run
+
+**Date:** 2026-11-05. **Status:** proposed (owner merges; the routine is scheduled only after this merges).
+
+**Context.** D-197 gave Muse a `[parity]` issue class, but nothing acted on filings until the owner opened a session. The owner chose a scheduled run over manual sessions, with merging still the owner's. Muse supplied its real run times: start 08:00 ET, finished by ~08:15 ET on each of its last seven runs (Oct 30–Nov 5).
+
+**Decision.** A daily Claude Code cloud routine at 11:00 ET, governed by `tools/parity/RUNBOOK.md` (read from `origin/main` each run). It triages `[parity]` issues (`parity-ready` / a question back / closed with evidence of absent data / `parity-plan` for builds too big for one run, approved by the owner relabelling), builds the top `parity-ready` by +1 count, and opens one PR at a time. It never merges, never pushes to `main`, never touches story content, workflows, the Worker, migrations or CSP, and never deploys. The PR body lists the day's live-game windows to merge around, and "Refs" the issue rather than closing it. The issue closes only after the run reads the live page, naming the commit, URL and unblocked story angles. Muse re-tests on its next run in that sport. The loop: 06:00 Contract Check → 08:00 Muse → 11:00 parity run → owner merges → 08:00 Muse re-test.
+
+**Starting map, checked against code 2026-11-05** (supersedes the docs-based list in the second D-197 letter):
+- Confirmed gaps: no per-team page for NBA, WNBA or NCAAB (teams grid only, no `*-team-*` route or edge template); NCAAB has no follow star (no `renderFollowStar('ncaab'…)`), no leaders and no player page; WNBA and NBA follow players only, not teams; no NBA playoff picture; the early-season power-ranking prior exists for NFL and NCAAF only; dynamic OG images exist only for MLB player pages and stories.
+- Likely gap, by reading code only: the NCAAF game viewer has no pregame preview builder (odds/broadcast only, in the venue caption).
+- Not a gap (stale claim): NBA, WNBA and NCAAB pregame already render the D-186 Game Center preview (`gameCenter: true` for all three).
+
+**WNBA queue** (no Muse filings will ever come; offseason until May): 1) team page (mirroring `/nfl/team/:abbr`'s anatomy), 2) team follow, 3) early-season power-ranking prior before the May opener.
+
+**Done.** Labels `parity-plan` and `parity-ready` created 2026-11-05. **Not done.** The routine itself; its cloud environment's GitHub access is unverified until its first run.
