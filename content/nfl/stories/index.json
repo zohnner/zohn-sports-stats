@@ -1,6 +1,27 @@
 {
   "stories": [
     {
+      "slug": "2026-11-06-jaguars-plus-108-rare-company",
+      "title": "The Jaguars are plus-108 through 8 games, one of 26 such starts since 1999",
+      "dek": "Only 25 other teams since 1999 reached plus-108 through 8 games, and the last Jaguars team to do it finished 14-2.",
+      "date": "2026-11-06",
+      "season": 2026,
+      "week": 9,
+      "teams": [
+        "JAX",
+        "SF",
+        "NE",
+        "IND",
+        "DET",
+        "MIN",
+        "BAL"
+      ],
+      "players": [],
+      "hero_stat": "plus-108 through 8 games",
+      "url": "/nfl/stories/2026-11-06-jaguars-plus-108-rare-company",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-02-chargers-only-winless-team",
       "title": "The Chargers are 0-7, the NFL's only winless team",
       "dek": "Los Angeles has scored 99 points and allowed 175 through Sunday's Week 8 games, a minus-76 differential that is also the league's worst.",
