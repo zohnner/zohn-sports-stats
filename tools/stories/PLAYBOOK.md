@@ -59,6 +59,7 @@ WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in 
    - CI red → fix at the source on that branch, re-run the checker, push. If unfixable this run, close it with a one-line reason.
    - A comment "Not auto-published (D-187)" → read the reason. Stale stories (dated more than 3 days back) are closed, not refreshed: a stale story stays dead.
    - Anything open more than 2 days → close it with a one-line reason.
+   - **Bridge replies (D-197).** Read new comments on the issues you opened, plus #81 (the acknowledgement thread). If the parity run asked a question, answer it in one comment, with evidence (URL + field path) where it asks about data. If you can't answer this run, say so in the report; the issue waits.
 3. **Read what you already rejected.** Read the "Dropped candidates" section of your own PR bodies from the last 14 days, and the frontmatter of every committed story this season. Don't re-pitch a dropped angle unless the data changed, and don't repeat a covered angle.
 4. **Gather relevance inputs, per in-season sport:**
    - Games completed in the last 36 hours (scoreboard). Note margins, upsets (by ranking or record), overtimes, streaks extended or broken.
@@ -244,4 +245,4 @@ Write the body so checking each angle takes seconds: proof first, prose second. 
 
 ## Standing authorization (D-177, D-187, D-197)
 
-The scheduled run may: push `stories/*` branches, open one PR per sport per run, push fixes to its own open `stories/*` PRs, close its own stale or unfixable `stories/*` PRs, open unpublish PRs the owner asked for, and open or +1-comment `[muse-found]`/`[parity]`/`[derived-stat]` issues (D-197). It never closes, edits or relabels an issue it didn't open. It may never: push to `main`, merge, or touch files outside `content/<sport>/stories/**`. Anything else needs the owner's explicit go.
+The scheduled run may: push `stories/*` branches, open one PR per sport per run, push fixes to its own open `stories/*` PRs, close its own stale or unfixable `stories/*` PRs, open unpublish PRs the owner asked for, open or +1-comment `[muse-found]`/`[parity]`/`[derived-stat]` issues, and answer questions asked on issues it opened (D-197). It never closes, edits or relabels an issue it didn't open. It may never: push to `main`, merge, or touch files outside `content/<sport>/stories/**`. Anything else needs the owner's explicit go.
