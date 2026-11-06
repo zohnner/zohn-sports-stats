@@ -197,7 +197,8 @@ test('readSource: LIVE, STALE within tolerance, DOWN past it, DOWN with no copy'
 
     // Tolerance 0 never serves a copy, even one written this millisecond.
     await S.readSource('z', 'u', opts(ok, t0, 0));
-    assert.equal((await S.readSource('z', 'u', opts(blocked, t0, 0))).state, 'DOWN');
+    const strict = await S.readSource('z', 'u', opts(blocked, t0, 0));
+    assert.deepEqual([strict.state, strict.reason], ['DOWN', 'HTTP 403; caller accepts live data only']);
 });
 
 test('readSource: callers must declare a tolerance; a broken store never breaks a read', async () => {

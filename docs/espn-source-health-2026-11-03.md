@@ -87,6 +87,10 @@ Today a proxy failure is a WARN (`proxyBlocked`), and #15/#16 stay open as the r
 
 Nothing special happens: reads start coming back 2xx with valid JSON, so `readSource` returns LIVE everywhere. Templates render exactly as their LIVE column did before this change (measured: identical), push sends as before (5/5 in the test control), and `/api/sourcehealth` reports `overall: LIVE`. There are no flags to flip and no code to remove. The one lasting difference is that LIVE reads now leave snapshots behind, so a later relapse shows labelled STALE pages for a while before falling to DOWN.
 
+## Runtime check (2026-11-05, local workerd, unblocked IP)
+
+A probe Worker under `wrangler dev` read the real NBA scoreboard: LIVE, then a forced 403 returned STALE from workerd's Cache API (312 ms old) with the receipt "NBA scores as of Nov 5, 7:24 PM ET", and tolerance 0 refused the same copy. `wrangler pages dev` served `/api/sourcehealth` as LIVE on all 8 sources and `/ncaaf/standings` LIVE with its normal 1800s cache. `wrangler pages functions build` and `wrangler deploy --dry-run --config worker/wrangler-push.toml` both succeed (wrangler 4.118). Still unverified: the production Cache API on sportstrata.cc, and anything from Cloudflare's blocked egress.
+
 ## Tests
 
 `tests/espnSource.test.js` runs the real `onRequest`/`runAlerts` code with only fetch, the Cache API, `env.ASSETS`, D1 and the web-push library stubbed. Ten modes: live, 403 HTML, 403 JSON (push), 502 text, non-JSON 200, error-in-200, empty or malformed shape, network error, stale copy, too-old copy, no copy. Mutation-checked: making push tolerate a 15-minute copy, dropping the stale receipt, or leaving stale rows "live" each fails the suite. The same matrix run against origin/main's templates gives identical LIVE and DOWN columns, which shows the change is additive.

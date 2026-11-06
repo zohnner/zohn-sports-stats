@@ -129,7 +129,9 @@ export async function readSource(key, url, opts = {}) {
     }
     return {
         state: 'DOWN', data: null, fetchedAt: snap ? snap.fetchedAt : null, ageMs,
-        reason: snap ? `${got.reason}; last good copy too old` : got.reason,
+        reason: !snap ? got.reason
+            : maxStaleMs > 0 ? `${got.reason}; last good copy too old`
+            : `${got.reason}; caller accepts live data only`,
     };
 }
 
