@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-04",
-  "gamesCounted": 121,
+  "throughDate": "2026-11-05",
+  "gamesCounted": 123,
   "source": "balldontlie",
   "sections": [
     {
@@ -67,16 +67,16 @@
           "record": "4-4"
         },
         {
-          "name": "Miami Heat",
-          "record": "3-5"
-        },
-        {
           "name": "Charlotte Hornets",
           "record": "3-6"
         },
         {
+          "name": "Miami Heat",
+          "record": "3-6"
+        },
+        {
           "name": "Orlando Magic",
-          "record": "2-5"
+          "record": "2-6"
         }
       ]
     },
@@ -114,11 +114,11 @@
         },
         {
           "name": "Golden State Warriors",
-          "record": "5-3"
+          "record": "6-3"
         },
         {
           "name": "Phoenix Suns",
-          "record": "1-5"
+          "record": "2-5"
         },
         {
           "name": "LA Clippers",
