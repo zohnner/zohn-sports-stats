@@ -1,6 +1,56 @@
 {
   "stories": [
     {
+      "slug": "2026-11-07-luka-doncic-40-points-through-9-games",
+      "title": "Luka Doncic is averaging 40.1 points through 9 games, the first since Wilt",
+      "dek": "His 53 points against Portland on Friday gave him 361 points in 9 games, 10.2 clear of the NBA's next scorer.",
+      "date": "2026-11-07",
+      "season": 2027,
+      "teams": [
+        "LAL",
+        "POR",
+        "OKC",
+        "GS",
+        "SAS",
+        "UTA",
+        "TOR",
+        "MIA",
+        "SAC"
+      ],
+      "players": [
+        "3945274",
+        "4278073",
+        "3975",
+        "5104157"
+      ],
+      "hero_stat": "40.1 points per game through 9 games",
+      "url": "/nba/stories/2026-11-07-luka-doncic-40-points-through-9-games",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-07-spurs-seven-straight-after-0-2-start",
+      "title": "The Spurs have won 7 straight after losing their first 2 games",
+      "dek": "Victor Wembanyama's career-high 52 points beat Dallas by 1, and San Antonio now owns the NBA's longest win streak.",
+      "date": "2026-11-07",
+      "season": 2027,
+      "teams": [
+        "SAS",
+        "DAL",
+        "SAC",
+        "UTA",
+        "MIN",
+        "OKC",
+        "HOU",
+        "POR"
+      ],
+      "players": [
+        "5104157"
+      ],
+      "hero_stat": "7 straight wins after a 0-2 start",
+      "url": "/nba/stories/2026-11-07-spurs-seven-straight-after-0-2-start",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-05-76ers-best-record-close-wins",
       "title": "The 8-1 76ers have the NBA's best record with its 9th-best point differential",
       "dek": "7 of Philadelphia's 8 wins have come by 11 points or fewer, and 5 of them by 6 or fewer.",
