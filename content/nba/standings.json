@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-06",
-  "gamesCounted": 132,
+  "throughDate": "2026-11-07",
+  "gamesCounted": 139,
   "source": "balldontlie",
   "sections": [
     {
@@ -17,16 +17,16 @@
           "record": "7-2"
         },
         {
+          "name": "New York Knicks",
+          "record": "5-4"
+        },
+        {
           "name": "Toronto Raptors",
           "record": "5-4"
         },
         {
-          "name": "New York Knicks",
-          "record": "4-4"
-        },
-        {
           "name": "Brooklyn Nets",
-          "record": "2-6"
+          "record": "2-7"
         }
       ]
     },
@@ -39,11 +39,11 @@
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "5-4"
+          "record": "5-5"
         },
         {
           "name": "Indiana Pacers",
-          "record": "3-6"
+          "record": "3-7"
         },
         {
           "name": "Chicago Bulls",
@@ -60,11 +60,11 @@
       "teams": [
         {
           "name": "Atlanta Hawks",
-          "record": "6-4"
+          "record": "7-4"
         },
         {
           "name": "Washington Wizards",
-          "record": "4-5"
+          "record": "4-6"
         },
         {
           "name": "Miami Heat",
@@ -76,7 +76,7 @@
         },
         {
           "name": "Orlando Magic",
-          "record": "2-6"
+          "record": "2-7"
         }
       ]
     },
@@ -85,19 +85,19 @@
       "teams": [
         {
           "name": "Oklahoma City Thunder",
-          "record": "7-2"
-        },
-        {
-          "name": "Portland Trail Blazers",
-          "record": "6-2"
+          "record": "8-2"
         },
         {
           "name": "Minnesota Timberwolves",
           "record": "7-3"
         },
         {
+          "name": "Portland Trail Blazers",
+          "record": "6-3"
+        },
+        {
           "name": "Denver Nuggets",
-          "record": "4-3"
+          "record": "5-3"
         },
         {
           "name": "Utah Jazz",
@@ -114,11 +114,11 @@
         },
         {
           "name": "Golden State Warriors",
-          "record": "6-3"
+          "record": "7-3"
         },
         {
           "name": "Phoenix Suns",
-          "record": "2-5"
+          "record": "3-5"
         },
         {
           "name": "LA Clippers",
@@ -134,12 +134,12 @@
       "name": "Western Conference — Southwest",
       "teams": [
         {
-          "name": "Houston Rockets",
-          "record": "7-2"
+          "name": "San Antonio Spurs",
+          "record": "8-2"
         },
         {
-          "name": "San Antonio Spurs",
-          "record": "7-2"
+          "name": "Houston Rockets",
+          "record": "7-3"
         },
         {
           "name": "Memphis Grizzlies",
