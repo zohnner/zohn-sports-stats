@@ -1,6 +1,27 @@
 {
   "stories": [
     {
+      "slug": "2026-11-08-stephen-curry-41-warriors-seventh-straight",
+      "title": "Stephen Curry scored 41 to pass Gilgeous-Alexander for 2nd in scoring",
+      "dek": "Curry averages 31.2 points a game, behind only Doncic's 40.1, as the Warriors won their 7th straight.",
+      "date": "2026-11-08",
+      "season": 2027,
+      "teams": [
+        "GSW",
+        "ORL",
+        "OKC",
+        "LAL"
+      ],
+      "players": [
+        "3975",
+        "4278073",
+        "3945274"
+      ],
+      "hero_stat": "41 points on 13-of-19 shooting",
+      "url": "/nba/stories/2026-11-08-stephen-curry-41-warriors-seventh-straight",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-07-luka-doncic-40-points-through-9-games",
       "title": "Luka Doncic is averaging 40.1 points through 9 games, the first since Wilt",
       "dek": "His 53 points against Portland on Friday gave him 361 points in 9 games, 10.2 clear of the NBA's next scorer.",
