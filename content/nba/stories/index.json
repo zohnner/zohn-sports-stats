@@ -1,6 +1,47 @@
 {
   "stories": [
     {
+      "slug": "2026-11-10-warriors-51-point-win-largest-margin",
+      "title": "The Warriors beat New Orleans by 51, the NBA's largest margin this season",
+      "dek": "Golden State won 138-87 with nobody playing more than 27 minutes, and no Pelican scored more than 12 points.",
+      "date": "2026-11-10",
+      "season": 2027,
+      "teams": [
+        "GS",
+        "NO",
+        "ATL",
+        "CHA"
+      ],
+      "players": [
+        "3975",
+        "4709138",
+        "5175737"
+      ],
+      "hero_stat": "51-point win, the NBA's largest margin this season",
+      "url": "/nba/stories/2026-11-10-warriors-51-point-win-largest-margin",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-10-wembanyama-40-points-25-minutes",
+      "title": "Victor Wembanyama had 40 points and 9 blocks in 25 minutes",
+      "dek": "The 40 points came on 15-of-19 shooting, 5 days after his 52-point game against Dallas, and the Spurs have won 9 straight.",
+      "date": "2026-11-10",
+      "season": 2027,
+      "hook": "Victor Wembanyama scores 40 points in 25 minutes as Spurs win 9th straight",
+      "hook_url": "https://www.espn.com/nba/story/_/id/50440246/victor-wembanyama-scores-40-points-25-minutes",
+      "teams": [
+        "SAS",
+        "PHX",
+        "DAL"
+      ],
+      "players": [
+        "5104157"
+      ],
+      "hero_stat": "40 points and 9 blocks in 25 minutes",
+      "url": "/nba/stories/2026-11-10-wembanyama-40-points-25-minutes",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-09-lakers-league-best-scoring",
       "title": "The Lakers score 121.9 a game through 11 games, the most in the NBA",
       "dek": "Los Angeles has scored 115 or more in 9 of 11 games, including 121 without Luka Doncic on Sunday.",

@@ -1,0 +1,160 @@
+{
+ "facts": [
+  {
+   "key": "wemby_pts",
+   "label": "Victor Wembanyama points vs Phoenix, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 40
+  },
+  {
+   "key": "wemby_min",
+   "label": "Victor Wembanyama minutes vs Phoenix, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 25
+  },
+  {
+   "key": "wemby_reb",
+   "label": "Victor Wembanyama rebounds vs Phoenix, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 11
+  },
+  {
+   "key": "wemby_blk",
+   "label": "Victor Wembanyama blocks vs Phoenix, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 9
+  },
+  {
+   "key": "wemby_fgm",
+   "label": "Victor Wembanyama field goals made vs Phoenix",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 15
+  },
+  {
+   "key": "wemby_fga",
+   "label": "Victor Wembanyama field goals attempted vs Phoenix",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 19
+  },
+  {
+   "key": "wemby_ftm",
+   "label": "Victor Wembanyama free throws made vs Phoenix",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 8
+  },
+  {
+   "key": "wemby_fta",
+   "label": "Victor Wembanyama free throws attempted vs Phoenix",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 10
+  },
+  {
+   "key": "wemby_ppm",
+   "label": "Victor Wembanyama points per minute vs Phoenix (40 in 25 minutes)",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 1.6
+  },
+  {
+   "key": "wemby_plusminus",
+   "label": "Victor Wembanyama plus-minus vs Phoenix",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 30
+  },
+  {
+   "key": "sa_pts",
+   "label": "San Antonio points vs Phoenix, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+   "value": 122
+  },
+  {
+   "key": "phx_pts",
+   "label": "Phoenix points at San Antonio, Nov 9",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+   "value": 96
+  },
+  {
+   "key": "wemby_52",
+   "label": "Victor Wembanyama points vs Dallas, Nov 4",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909933",
+   "value": 52
+  },
+  {
+   "key": "wemby_52_reb",
+   "label": "Victor Wembanyama rebounds vs Dallas, Nov 4",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909933",
+   "value": 24
+  },
+  {
+   "key": "wemby_52_blk",
+   "label": "Victor Wembanyama blocks vs Dallas, Nov 4",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909933",
+   "value": 8
+  },
+  {
+   "key": "days_between",
+   "label": "Days between the Dallas game (Nov 4) and the Phoenix game (Nov 9)",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+   "value": 5
+  },
+  {
+   "key": "game_minutes",
+   "label": "Minutes in an NBA game",
+   "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909958",
+   "value": 48
+  },
+  {
+   "key": "wemby_bpg",
+   "label": "Victor Wembanyama blocks per game, 1st in the NBA",
+   "source": "https://site.web.api.espn.com/apis/site/v3/sports/basketball/nba/leaders?season=2027&seasontype=2",
+   "value": 4.5
+  },
+  {
+   "key": "wemby_ppg",
+   "label": "Victor Wembanyama points per game",
+   "source": "https://site.web.api.espn.com/apis/site/v3/sports/basketball/nba/leaders?season=2027&seasontype=2",
+   "value": 30.1
+  },
+  {
+   "key": "wemby_ppg_rank",
+   "label": "Victor Wembanyama rank in NBA scoring",
+   "source": "https://site.web.api.espn.com/apis/site/v3/sports/basketball/nba/leaders?season=2027&seasontype=2",
+   "value": 3
+  },
+  {
+   "key": "doncic_ppg",
+   "label": "Luka Doncic points per game, 1st in the NBA",
+   "source": "https://site.web.api.espn.com/apis/site/v3/sports/basketball/nba/leaders?season=2027&seasontype=2",
+   "value": 39.3
+  },
+  {
+   "key": "curry_ppg",
+   "label": "Stephen Curry points per game, 2nd in the NBA",
+   "source": "https://site.web.api.espn.com/apis/site/v3/sports/basketball/nba/leaders?season=2027&seasontype=2",
+   "value": 30.6
+  },
+  {
+   "key": "sa_wins",
+   "label": "San Antonio wins",
+   "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+   "value": 9
+  },
+  {
+   "key": "sa_losses",
+   "label": "San Antonio losses",
+   "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+   "value": 2
+  },
+  {
+   "key": "sa_streak",
+   "label": "San Antonio current win streak",
+   "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+   "value": 9
+  },
+  {
+   "key": "sa_diff",
+   "label": "San Antonio point differential per game, best in the NBA",
+   "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+   "value": 11.7
+  }
+ ]
+}
