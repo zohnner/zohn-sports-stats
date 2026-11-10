@@ -1,6 +1,30 @@
 {
   "stories": [
     {
+      "slug": "2026-11-10-vikings-6-2-fewest-points-scored",
+      "title": "The 6-2 Vikings scored 146 points, the fewest by a 6-2 team since 1999",
+      "dek": "Minnesota has allowed 116 points, the fewest in the NFL, and its 6 wins came by 17, 6, 7, 5, 10 and 6 points.",
+      "date": "2026-11-10",
+      "season": 2026,
+      "week": 9,
+      "teams": [
+        "MIN",
+        "BUF",
+        "WAS",
+        "GB",
+        "CHI",
+        "TB",
+        "MIA",
+        "NO",
+        "IND",
+        "DET"
+      ],
+      "players": [],
+      "hero_stat": "146 points scored in 8 games, 6-2 record",
+      "url": "/nfl/stories/2026-11-10-vikings-6-2-fewest-points-scored",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-09-broncos-7-2-plus-12-differential",
       "title": "The 7-2 Broncos are plus-12, one of 3 such starts since 1999",
       "dek": "Denver has won 6 of its 7 games by 7 points or fewer, while its 2 losses came by 31 points combined.",
