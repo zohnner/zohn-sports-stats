@@ -30,7 +30,9 @@ This run never waits for Muse. If today's filings aren't there, work from the ex
 
 1. `git fetch origin`; work in a fresh worktree or checkout branched from `origin/main`.
 2. `node --version` works; `node --test tests/*.test.js` passes on the fresh tree.
-3. `gh auth status` can read issues and PRs on this repo.
+3. The session can read issues and PRs on this repo through **either** route: the `gh` CLI (`gh auth status` passes and a read works) or the session's built-in GitHub tools (`mcp__github__*`). One working route is enough. If neither works, stop and report. Never go looking for other credentials or tokens.
+
+**GitHub access.** Every issue and PR action below (listing PRs and issues, labelling, commenting, closing, opening the PR) may use whichever route passed step 3. If a GitHub call fails partway through a run, stop and report it like any other failure. Don't switch to a route that wasn't verified, and don't look for credentials.
 
 ## Run procedure
 

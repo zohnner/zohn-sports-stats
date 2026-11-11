@@ -3843,3 +3843,5 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **WNBA queue** (no Muse filings will ever come; offseason until May): 1) team page (mirroring `/nfl/team/:abbr`'s anatomy), 2) team follow, 3) early-season power-ranking prior before the May opener.
 
 **Done.** Labels `parity-plan` and `parity-ready` created 2026-11-05. **Not done.** The routine itself; its cloud environment's GitHub access is unverified until its first run.
+
+**Note (2026-11-08).** The first run stopped at preflight on an invalid `GH_TOKEN` while the session's GitHub MCP tools worked; the run book now accepts either route for preflight and all issue/PR work, and still stops (never hunts for credentials) if both fail.
