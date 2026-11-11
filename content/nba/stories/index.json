@@ -1,6 +1,44 @@
 {
   "stories": [
     {
+      "slug": "2026-11-11-bucks-1-10-worst-start-23-seasons",
+      "title": "The Bucks are 1-10, their worst start through 11 games in 23 seasons",
+      "dek": "Milwaukee has lost 7 straight by 20.3 points a game, its 2nd 7-game skid in 12 months.",
+      "date": "2026-11-11",
+      "season": 2027,
+      "teams": [
+        "MIL",
+        "NY",
+        "CHI",
+        "IND"
+      ],
+      "players": [],
+      "hero_stat": "1-10 through 11 games",
+      "url": "/nba/stories/2026-11-11-bucks-1-10-worst-start-23-seasons",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-11-knicks-102-points-allowed-fewest-nba",
+      "title": "The Knicks allow 102.3 points a game through 10 games, the fewest in the NBA",
+      "dek": "New York started 0-3 while allowing 108.0 a game, then won 6 of 7 allowing 99.9.",
+      "date": "2026-11-11",
+      "season": 2027,
+      "teams": [
+        "NY",
+        "MIL",
+        "BOS",
+        "DET",
+        "CHI",
+        "CLE",
+        "PHI",
+        "BKN"
+      ],
+      "players": [],
+      "hero_stat": "102.3 points allowed per game",
+      "url": "/nba/stories/2026-11-11-knicks-102-points-allowed-fewest-nba",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-10-warriors-51-point-win-largest-margin",
       "title": "The Warriors beat New Orleans by 51, the NBA's largest margin this season",
       "dek": "Golden State won 138-87 with nobody playing more than 27 minutes, and no Pelican scored more than 12 points.",
