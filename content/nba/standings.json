@@ -1,24 +1,24 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-09",
-  "gamesCounted": 154,
+  "throughDate": "2026-11-10",
+  "gamesCounted": 160,
   "source": "balldontlie",
   "sections": [
     {
       "name": "Eastern Conference — Atlantic",
       "teams": [
         {
-          "name": "Philadelphia 76ers",
+          "name": "Boston Celtics",
           "record": "9-2"
         },
         {
-          "name": "Boston Celtics",
-          "record": "8-2"
+          "name": "Philadelphia 76ers",
+          "record": "9-3"
         },
         {
           "name": "New York Knicks",
-          "record": "5-4"
+          "record": "6-4"
         },
         {
           "name": "Toronto Raptors",
@@ -51,7 +51,7 @@
         },
         {
           "name": "Milwaukee Bucks",
-          "record": "1-9"
+          "record": "1-10"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "name": "Miami Heat",
-          "record": "4-6"
+          "record": "5-6"
         },
         {
           "name": "Charlotte Hornets",
@@ -76,7 +76,7 @@
         },
         {
           "name": "Orlando Magic",
-          "record": "2-7"
+          "record": "3-7"
         }
       ]
     },
@@ -84,16 +84,16 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
-          "name": "Oklahoma City Thunder",
-          "record": "8-2"
-        },
-        {
           "name": "Minnesota Timberwolves",
           "record": "8-3"
         },
         {
+          "name": "Oklahoma City Thunder",
+          "record": "8-3"
+        },
+        {
           "name": "Portland Trail Blazers",
-          "record": "6-3"
+          "record": "7-3"
         },
         {
           "name": "Denver Nuggets",
@@ -101,7 +101,7 @@
         },
         {
           "name": "Utah Jazz",
-          "record": "1-9"
+          "record": "1-10"
         }
       ]
     },
@@ -118,15 +118,15 @@
         },
         {
           "name": "Phoenix Suns",
-          "record": "3-6"
+          "record": "4-6"
         },
         {
           "name": "LA Clippers",
-          "record": "2-7"
+          "record": "2-8"
         },
         {
           "name": "Sacramento Kings",
-          "record": "1-9"
+          "record": "1-10"
         }
       ]
     },
