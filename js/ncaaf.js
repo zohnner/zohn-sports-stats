@@ -1110,6 +1110,36 @@ function displayNCAAFPlayerDetail(data, requestedSeason) {
     if (typeof _loadNCAAFGameLog === 'function') _loadNCAAFGameLog(data.id, requestedSeason);
 }
 
+// The roster response's `team` block, reshaped to the fields the page reads
+// from /teams/{id}.
+function _ncaafTeamFromRoster(t) {
+    if (!t || !t.id) return null;
+    return {
+        id: t.id, abbreviation: t.abbreviation, displayName: t.displayName, name: t.name,
+        color: t.color, standingSummary: t.standingSummary,
+        record: t.recordSummary ? { items: [{ summary: t.recordSummary }] } : null,
+        logos: t.logo ? [{ href: t.logo }] : [],
+    };
+}
+
+// Team identity comes from the roster call first. ESPN sends no CORS header
+// on /teams/{id} (checked 2026-11-12), so while the proxy is blocked (D-176)
+// the browser can't read that route, and the page failed for every reader.
+// /teams/{id}/roster does allow it and carries the same identity.
+async function _ncaafTeamAndRoster(id) {
+    let team = null, roster = [];
+    try {
+        const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG);
+        roster = (rd && rd.athletes) || [];
+        team = _ncaafTeamFromRoster(rd && rd.team);
+    } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
+    if (!team) {
+        const data = await espnNCAAFFetch(`/teams/${id}`, {}, ApiCache.TTL.LONG);
+        team = data && data.team;
+    }
+    return { team, roster };
+}
+
 // ── Team detail (D-044 P4) — banner + team leaders ───────────
 async function showNCAAFTeam(id) {
     const grid = document.getElementById('playersGrid');
@@ -1117,18 +1147,16 @@ async function showNCAAFTeam(id) {
     AppState.currentView = 'ncaaf-team-' + id;
     grid.className = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
-    let team;
+    let team, roster;
     try {
-        const data = await espnNCAAFFetch(`/teams/${id}`, {}, ApiCache.TTL.LONG);
-        team = data && data.team;
+        ({ team, roster } = await _ncaafTeamAndRoster(id));
     } catch (err) {
         Logger.warn('NCAAF team failed', err, 'NCAAF');
         grid.innerHTML = _ncaafErr("Couldn't load this team.", 'displayNCAAFTeams');
         return;
     }
     if (!team) { grid.innerHTML = _ncaafErr('Team not found.', 'displayNCAAFTeams'); return; }
-    let roster = [], sched = [], stats = null, stdRow = null;
-    try { const rd = await espnNCAAFFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG); roster = (rd && rd.athletes) || []; } catch (err) { Logger.warn('NCAAF roster fetch failed', err, 'NCAAF'); }
+    let sched = [], stats = null, stdRow = null;
     try { const sd = await espnNCAAFFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.MEDIUM); sched = (sd && sd.events) || []; } catch (err) { Logger.warn('NCAAF schedule fetch failed', err, 'NCAAF'); }
     try { stats = await _espnFetch(`/api/ncaafstats?season=${_ncaaf.season}`).then(r => r.json()); } catch (err) { Logger.warn('NCAAF team stats fetch failed', err, 'NCAAF'); }
     // Team Record card (mirrors MLB's _mlbTeamStatsCard) — reuses the same
