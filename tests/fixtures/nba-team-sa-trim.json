@@ -1,0 +1,1392 @@
+{
+ "_source": "site.web.api.espn.com — /apis/site/v2/sports/basketball/nba/teams/sa/roster and /teams/24/schedule, /apis/v2/sports/basketball/nba/standings?season=2027&level=3 (SA and MIL entries); fetched 2026-11-12 UTC, trimmed. /teams/{id} itself is not used: ESPN sends no CORS header on it, so the browser fallback (D-176) cannot read it.",
+ "standings": {
+  "SA": {
+   "division": "Western Conference — Southwest",
+   "entry": {
+    "team": {
+     "id": "24",
+     "abbreviation": "SA",
+     "displayName": "San Antonio Spurs",
+     "logos": [
+      {
+       "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+      }
+     ]
+    },
+    "stats": [
+     {
+      "name": "avgPointsAgainst",
+      "type": "avgpointsagainst",
+      "value": 107,
+      "displayValue": "107.0"
+     },
+     {
+      "name": "avgPointsFor",
+      "type": "avgpointsfor",
+      "value": 118.72727,
+      "displayValue": "118.7"
+     },
+     {
+      "name": "differential",
+      "type": "differential",
+      "value": 11.700000000000003,
+      "displayValue": "+11.7"
+     },
+     {
+      "name": "divisionWinPercent",
+      "type": "divisionwinpercent",
+      "value": 0.6666667,
+      "displayValue": "0.667"
+     },
+     {
+      "name": "gamesBehind",
+      "type": "gamesbehind",
+      "value": 0,
+      "displayValue": "-"
+     },
+     {
+      "name": "leagueWinPercent",
+      "type": "leaguewinpercent",
+      "value": 0.8181818,
+      "displayValue": "0.818"
+     },
+     {
+      "name": "losses",
+      "type": "losses",
+      "value": 2,
+      "displayValue": "2"
+     },
+     {
+      "name": "playoffSeed",
+      "type": "playoffseed",
+      "value": 2,
+      "displayValue": "2"
+     },
+     {
+      "name": "pointDifferential",
+      "type": "pointdifferential",
+      "value": 129,
+      "displayValue": "+129"
+     },
+     {
+      "name": "points",
+      "type": "points",
+      "value": 3.5,
+      "displayValue": "3.5"
+     },
+     {
+      "name": "pointsAgainst",
+      "type": "pointsagainst",
+      "value": 1177,
+      "displayValue": "1177"
+     },
+     {
+      "name": "pointsFor",
+      "type": "pointsfor",
+      "value": 1306,
+      "displayValue": "1306"
+     },
+     {
+      "name": "streak",
+      "type": "streak",
+      "value": 9,
+      "displayValue": "W9"
+     },
+     {
+      "name": "winPercent",
+      "type": "winpercent",
+      "value": 0.8181818,
+      "displayValue": ".818"
+     },
+     {
+      "name": "wins",
+      "type": "wins",
+      "value": 9,
+      "displayValue": "9"
+     },
+     {
+      "name": "gamesAhead",
+      "type": "gamesahead",
+      "value": 8,
+      "displayValue": "8"
+     },
+     {
+      "name": "Division Standings",
+      "type": "divisionstandings",
+      "displayValue": "9-2"
+     },
+     {
+      "name": "Home",
+      "type": "home",
+      "displayValue": "4-2"
+     },
+     {
+      "name": "Road",
+      "type": "road",
+      "displayValue": "5-0"
+     },
+     {
+      "name": "vs. Div.",
+      "type": "vsdiv",
+      "displayValue": "2-1"
+     },
+     {
+      "name": "vs. Conf.",
+      "type": "vsconf",
+      "displayValue": "9-2"
+     },
+     {
+      "name": "Last Ten Games",
+      "type": "lasttengames",
+      "displayValue": "9-1"
+     }
+    ]
+   }
+  },
+  "MIL": {
+   "division": "Eastern Conference — Central",
+   "entry": {
+    "team": {
+     "id": "15",
+     "abbreviation": "MIL",
+     "displayName": "Milwaukee Bucks",
+     "logos": [
+      {
+       "href": "https://a.espncdn.com/i/teamlogos/nba/500/mil.png"
+      }
+     ]
+    },
+    "stats": [
+     {
+      "name": "avgPointsAgainst",
+      "type": "avgpointsagainst",
+      "value": 121.181816,
+      "displayValue": "121.2"
+     },
+     {
+      "name": "avgPointsFor",
+      "type": "avgpointsfor",
+      "value": 106.27273,
+      "displayValue": "106.3"
+     },
+     {
+      "name": "differential",
+      "type": "differential",
+      "value": -14.900000000000006,
+      "displayValue": "-14.9"
+     },
+     {
+      "name": "divisionWinPercent",
+      "type": "divisionwinpercent",
+      "value": 0.33333334,
+      "displayValue": "0.333"
+     },
+     {
+      "name": "gamesBehind",
+      "type": "gamesbehind",
+      "value": 6.5,
+      "displayValue": "6.5"
+     },
+     {
+      "name": "leagueWinPercent",
+      "type": "leaguewinpercent",
+      "value": 0.11111111,
+      "displayValue": "0.111"
+     },
+     {
+      "name": "losses",
+      "type": "losses",
+      "value": 10,
+      "displayValue": "10"
+     },
+     {
+      "name": "playoffSeed",
+      "type": "playoffseed",
+      "value": 15,
+      "displayValue": "15"
+     },
+     {
+      "name": "pointDifferential",
+      "type": "pointdifferential",
+      "value": -164,
+      "displayValue": "-164"
+     },
+     {
+      "name": "points",
+      "type": "points",
+      "value": -4.5,
+      "displayValue": "-4.5"
+     },
+     {
+      "name": "pointsAgainst",
+      "type": "pointsagainst",
+      "value": 1333,
+      "displayValue": "1333"
+     },
+     {
+      "name": "pointsFor",
+      "type": "pointsfor",
+      "value": 1169,
+      "displayValue": "1169"
+     },
+     {
+      "name": "streak",
+      "type": "streak",
+      "value": -7,
+      "displayValue": "L7"
+     },
+     {
+      "name": "winPercent",
+      "type": "winpercent",
+      "value": 0.09090909,
+      "displayValue": ".091"
+     },
+     {
+      "name": "wins",
+      "type": "wins",
+      "value": 1,
+      "displayValue": "1"
+     },
+     {
+      "name": "gamesAhead",
+      "type": "gamesahead",
+      "value": 0,
+      "displayValue": "-"
+     },
+     {
+      "name": "Division Standings",
+      "type": "divisionstandings",
+      "displayValue": "1-10"
+     },
+     {
+      "name": "Home",
+      "type": "home",
+      "displayValue": "1-5"
+     },
+     {
+      "name": "Road",
+      "type": "road",
+      "displayValue": "0-5"
+     },
+     {
+      "name": "vs. Div.",
+      "type": "vsdiv",
+      "displayValue": "1-2"
+     },
+     {
+      "name": "vs. Conf.",
+      "type": "vsconf",
+      "displayValue": "1-8"
+     },
+     {
+      "name": "Last Ten Games",
+      "type": "lasttengames",
+      "displayValue": "1-9"
+     }
+    ]
+   }
+  }
+ },
+ "roster": {
+  "team": {
+   "id": "24",
+   "abbreviation": "SA",
+   "location": "San Antonio",
+   "name": "Spurs",
+   "displayName": "San Antonio Spurs",
+   "clubhouse": "https://www.espn.com/nba/team/_/name/sa/san-antonio-spurs",
+   "color": "000000",
+   "logo": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png",
+   "recordSummary": "9-2",
+   "seasonSummary": "2026-27",
+   "standingSummary": "1st in Southwest Division"
+  },
+  "athletes": [
+   {
+    "id": "6578",
+    "fullName": "Harrison Barnes",
+    "jersey": "40",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/6578.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "5105337",
+    "fullName": "Maliq Brown",
+    "jersey": "15",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5105337.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "5061568",
+    "fullName": "Carter Bryant",
+    "jersey": "11",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5061568.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "4845367",
+    "fullName": "Stephon Castle",
+    "jersey": "5",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4845367.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "4592479",
+    "fullName": "Julian Champagnie",
+    "jersey": "30",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4592479.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "4066259",
+    "fullName": "De'Aaron Fox",
+    "jersey": "4",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4066259.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "5107968",
+    "fullName": "Ja'Kobi Gillespie",
+    "jersey": "17",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5107968.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "5037871",
+    "fullName": "Dylan Harper",
+    "jersey": "2",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5037871.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "6440",
+    "fullName": "Tobias Harris",
+    "jersey": "23",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/6440.png"
+    },
+    "injuries": [
+     {
+      "status": "Out",
+      "date": "2026-11-10T22:46Z"
+     }
+    ]
+   },
+   {
+    "id": "4395723",
+    "fullName": "Keldon Johnson",
+    "jersey": "3",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4395723.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "4713010",
+    "fullName": "David Jones Garcia",
+    "jersey": "25",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4713010.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "3064560",
+    "fullName": "Luke Kornet",
+    "jersey": "7",
+    "position": {
+     "abbreviation": "C",
+     "name": "Center"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/3064560.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "3134916",
+    "fullName": "Jordan McLaughlin",
+    "jersey": "0",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/3134916.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "5101845",
+    "fullName": "Jayden Quaintance",
+    "jersey": "22",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5101845.png"
+    },
+    "injuries": [
+     {
+      "status": "Out",
+      "date": "2026-10-05T21:43Z"
+     }
+    ]
+   },
+   {
+    "id": "5105809",
+    "fullName": "Tarris Reed Jr.",
+    "jersey": "10",
+    "position": {
+     "abbreviation": "C",
+     "name": "Center"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5105809.png"
+    },
+    "injuries": []
+   },
+   {
+    "id": "4395630",
+    "fullName": "Devin Vassell",
+    "jersey": "24",
+    "position": {
+     "abbreviation": "G",
+     "name": "Guard"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4395630.png"
+    },
+    "injuries": [
+     {
+      "status": "Out",
+      "date": "2026-11-11T23:26Z"
+     }
+    ]
+   },
+   {
+    "id": "5104157",
+    "fullName": "Victor Wembanyama",
+    "jersey": "1",
+    "position": {
+     "abbreviation": "F",
+     "name": "Forward"
+    },
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/5104157.png"
+    },
+    "injuries": []
+   }
+  ],
+  "coach": [
+   {
+    "id": "4401170",
+    "firstName": "Mitch",
+    "lastName": "Johnson",
+    "experience": 2
+   }
+  ]
+ },
+ "schedule": {
+  "requestedSeason": {
+   "year": 2027,
+   "type": 2,
+   "name": "Regular Season",
+   "displayName": "2026-27"
+  },
+  "events": [
+   {
+    "id": "401909090",
+    "date": "2026-10-21T01:50Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 104,
+         "displayValue": "104"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "25",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 116,
+         "displayValue": "116"
+        },
+        "team": {
+         "id": "25",
+         "abbreviation": "OKC",
+         "displayName": "Oklahoma City Thunder",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/okc.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909096",
+    "date": "2026-10-24T01:30Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 110,
+         "displayValue": "110"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "10",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 114,
+         "displayValue": "114"
+        },
+        "team": {
+         "id": "10",
+         "abbreviation": "HOU",
+         "displayName": "Houston Rockets",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/hou.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909858",
+    "date": "2026-10-25T00:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "6",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 106,
+         "displayValue": "106"
+        },
+        "team": {
+         "id": "6",
+         "abbreviation": "DAL",
+         "displayName": "Dallas Mavericks",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/dal.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 122,
+         "displayValue": "122"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909879",
+    "date": "2026-10-28T00:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": true,
+        "score": {
+         "value": 130,
+         "displayValue": "130"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "23",
+        "homeAway": "away",
+        "winner": false,
+        "score": {
+         "value": 103,
+         "displayValue": "103"
+        },
+        "team": {
+         "id": "23",
+         "abbreviation": "SAC",
+         "displayName": "Sacramento Kings",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sac.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909890",
+    "date": "2026-10-29T01:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "26",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 111,
+         "displayValue": "111"
+        },
+        "team": {
+         "id": "26",
+         "abbreviation": "UTAH",
+         "displayName": "Utah Jazz",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/utah.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 117,
+         "displayValue": "117"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909901",
+    "date": "2026-11-01T00:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": true,
+        "score": {
+         "value": 121,
+         "displayValue": "121"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "16",
+        "homeAway": "away",
+        "winner": false,
+        "score": {
+         "value": 111,
+         "displayValue": "111"
+        },
+        "team": {
+         "id": "16",
+         "abbreviation": "MIN",
+         "displayName": "Minnesota Timberwolves",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/min.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909917",
+    "date": "2026-11-03T01:30Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": true,
+        "score": {
+         "value": 119,
+         "displayValue": "119"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "26",
+        "homeAway": "away",
+        "winner": false,
+        "score": {
+         "value": 97,
+         "displayValue": "97"
+        },
+        "team": {
+         "id": "26",
+         "abbreviation": "UTAH",
+         "displayName": "Utah Jazz",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/utah.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909933",
+    "date": "2026-11-05T02:30Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "winner": true,
+        "score": {
+         "value": 112,
+         "displayValue": "112"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "6",
+        "homeAway": "away",
+        "winner": false,
+        "score": {
+         "value": 111,
+         "displayValue": "111"
+        },
+        "team": {
+         "id": "6",
+         "abbreviation": "DAL",
+         "displayName": "Dallas Mavericks",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/dal.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909295",
+    "date": "2026-11-07T03:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "23",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 109,
+         "displayValue": "109"
+        },
+        "team": {
+         "id": "23",
+         "abbreviation": "SAC",
+         "displayName": "Sacramento Kings",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sac.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 124,
+         "displayValue": "124"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909944",
+    "date": "2026-11-08T03:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "22",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 103,
+         "displayValue": "103"
+        },
+        "team": {
+         "id": "22",
+         "abbreviation": "POR",
+         "displayName": "Portland Trail Blazers",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/por.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 125,
+         "displayValue": "125"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909958",
+    "date": "2026-11-10T02:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "id": "21",
+        "homeAway": "home",
+        "winner": false,
+        "score": {
+         "value": 96,
+         "displayValue": "96"
+        },
+        "team": {
+         "id": "21",
+         "abbreviation": "PHX",
+         "displayName": "Phoenix Suns",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/phx.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "winner": true,
+        "score": {
+         "value": 122,
+         "displayValue": "122"
+        },
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909969",
+    "date": "2026-11-12T01:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_SCHEDULED",
+        "state": "pre",
+        "completed": false
+       }
+      },
+      "competitors": [
+       {
+        "id": "4",
+        "homeAway": "home",
+        "team": {
+         "id": "4",
+         "abbreviation": "CHI",
+         "displayName": "Chicago Bulls",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/chi.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909302",
+    "date": "2026-11-14T02:30Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_SCHEDULED",
+        "state": "pre",
+        "completed": false
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "9",
+        "homeAway": "away",
+        "team": {
+         "id": "9",
+         "abbreviation": "GS",
+         "displayName": "Golden State Warriors",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/gs.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401909988",
+    "date": "2026-11-15T22:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_SCHEDULED",
+        "state": "pre",
+        "completed": false
+       }
+      },
+      "competitors": [
+       {
+        "id": "26",
+        "homeAway": "home",
+        "team": {
+         "id": "26",
+         "abbreviation": "UTAH",
+         "displayName": "Utah Jazz",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/utah.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "24",
+        "homeAway": "away",
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401910004",
+    "date": "2026-11-18T01:00Z",
+    "seasonType": {
+     "type": 2
+    },
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "name": "STATUS_SCHEDULED",
+        "state": "pre",
+        "completed": false
+       }
+      },
+      "competitors": [
+       {
+        "id": "24",
+        "homeAway": "home",
+        "team": {
+         "id": "24",
+         "abbreviation": "SA",
+         "displayName": "San Antonio Spurs",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/sa.png"
+          }
+         ]
+        }
+       },
+       {
+        "id": "8",
+        "homeAway": "away",
+        "team": {
+         "id": "8",
+         "abbreviation": "DET",
+         "displayName": "Detroit Pistons",
+         "logos": [
+          {
+           "href": "https://a.espncdn.com/i/teamlogos/nba/500/det.png"
+          }
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

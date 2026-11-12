@@ -232,6 +232,7 @@ function _renderNBAView(view) {
     if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
     if (view.startsWith('nba-player-')) { showNBAPlayer(view.slice('nba-player-'.length)); return; }
     if (view.startsWith('nba-game-'))   { showNBAGame(view.slice('nba-game-'.length));     return; }
+    if (view.startsWith('nba-team-'))   { showNBATeam(view.slice('nba-team-'.length));     return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'nba-standings':      displayNBAStandings();          break;
@@ -266,6 +267,8 @@ function _nbaStandingRow(e) {
         gb: disp(['gamesBehind']) || '',
         streak: disp(['streak']) || '',
         w, l, pct,
+        home: disp(['home', 'Home']), road: disp(['road', 'Road']), l10: disp(['lasttengames', 'Last Ten Games']),
+        ppg: num(['avgPointsFor']), oppg: num(['avgPointsAgainst']), seed: num(['playoffSeed']),
     };
 }
 
@@ -358,7 +361,7 @@ async function fetchNBAPowerTeamMeta() {
             logo: t.logo,
             color: null,
             record: t.overall || '',
-            onClick: '',
+            onClick: `navigateTo('nba-team-${t.abbr}')`,
         };
     }));
     return meta;
@@ -397,7 +400,7 @@ async function displayNBAStandings() {
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Overall</th><th>GB</th><th>Streak</th></tr></thead>
-                    <tbody>${c.teams.map(t => `<tr class="standings-row">
+                    <tbody>${c.teams.map(t => `<tr class="standings-row"${t.abbr ? ` style="cursor:pointer" onclick="navigateTo('nba-team-${_escHtml(t.abbr)}')"` : ''}>
                         <td class="standings-team-cell">
                             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
                             <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
@@ -432,19 +435,197 @@ async function displayNBATeams() {
         document.getElementById('nbaTeamsBody').innerHTML = _nbaErr('No teams returned for this season.', 'displayNBATeams');
         return;
     }
-    // Team detail is not built (deferred, mirroring NCAAF/NCAAB/WNBA's own
-    // team-detail deferral) — chips are display-only, no click-through, so
-    // this never links into a view that doesn't exist.
     document.getElementById('nbaTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
             <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
-            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip">
+            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.abbr ? ' ncaaf-team-chip--link' : ''}"${t.abbr ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('nba-team-${_escHtml(t.abbr)}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
             </div>`).join('')}</div>
         </section>`).join('') +
         `<p class="standings-legend">NBA teams grouped by conference and division (${_escHtml(String(_nba.season))}). Source: ESPN.</p>`;
 }
+
+// ── Team detail (parity #87) — ESPN-native, rendered by the shared
+// _renderTeamPage (js/nfl.js) the way NCAAF's team page is. Every source here
+// sends CORS headers (roster, schedule, standings), so it survives the proxy
+// block. Keyed by ESPN's
+// own abbreviation (SA, GS, NY, NO, UTAH, WSH), which is also what follow
+// keys and story `teams` frontmatter use; the common long forms alias to it.
+// ESPN's /teams/{abbr} answers for either form, but the route and follow key
+// must be one spelling.
+const _NBA_TEAM_ALIASES = { SAS: 'SA', GSW: 'GS', NYK: 'NY', NOP: 'NO', UTA: 'UTAH', WAS: 'WSH' };
+function _nbaTeamKey(abbr) {
+    const a = String(abbr || '').toUpperCase();
+    return _NBA_TEAM_ALIASES[a] || a;
+}
+
+// Record card from the standings row (_nbaStandingRow), the source the
+// Standings page already reads. Not /teams/{id}: ESPN sends no CORS header
+// there, so it fails in the browser fallback readers get under D-176.
+function _nbaTeamRecordChips(row) {
+    if (!row || !((row.w || 0) + (row.l || 0))) return [];
+    const one = v => v.toFixed(1);
+    const diff = (row.ppg != null && row.oppg != null) ? row.ppg - row.oppg : null;
+    return [
+        ['Record', row.overall || '—'],
+        ...(row.pct != null ? [['PCT', row.pct.toFixed(3).replace(/^0/, '')]] : []),
+        ...(row.home ? [['Home', row.home]] : []),
+        ...(row.road ? [['Away', row.road]] : []),
+        ...(row.l10 ? [['Last 10', row.l10]] : []),
+        ...(row.ppg != null ? [['PPG', one(row.ppg)]] : []),
+        ...(row.oppg != null ? [['Opp PPG', one(row.oppg)]] : []),
+        ...(diff != null ? [['Diff', (diff > 0 ? '+' : '') + one(diff)]] : []),
+        ...(row.streak ? [['Streak', row.streak]] : []),
+    ];
+}
+
+function _nbaFindStanding(confs, key) {
+    for (const c of (confs || [])) {
+        const row = c.teams.find(t => _nbaTeamKey(t.abbr) === key);
+        if (row) return { row, division: c.name };
+    }
+    return null;
+}
+
+const _NBA_POS_GROUPS = [['G', 'Guards'], ['F', 'Forwards'], ['C', 'Centers']];
+function _nbaRosterGroups(athletes) {
+    const buckets = new Map(_NBA_POS_GROUPS.map(([k]) => [k, []]));
+    const other = [];
+    (athletes || []).forEach(p => {
+        const pos = (p.position && p.position.abbreviation) || '';
+        const inj = (p.injuries || [])[0];
+        const row = {
+            id: p.id, name: p.fullName || p.displayName || '', pos, number: p.jersey || '',
+            starter: false, injury: (inj && inj.status) || '', headshot: (p.headshot && p.headshot.href) || '',
+        };
+        (buckets.get(pos.charAt(0)) || other).push(row);
+    });
+    const groups = _NBA_POS_GROUPS.map(([k, label]) => ({ label, players: buckets.get(k) })).filter(g => g.players.length);
+    if (other.length) groups.push({ label: 'Other', players: other });
+    return groups;
+}
+
+// Splits a /teams/{id}/schedule event list into the last `nRecent` finished
+// games (newest first) and the next `nNext` unfinished ones (live included).
+function _nbaTeamGames(events, teamId, nRecent = 5, nNext = 3) {
+    const rows = (events || []).map(ev => {
+        const comp = ev.competitions && ev.competitions[0];
+        if (!comp) return null;
+        const comps = comp.competitors || [];
+        const me = comps.find(c => String(c.id || (c.team && c.team.id)) === String(teamId));
+        const opp = comps.find(c => c !== me);
+        if (!me || !opp) return null;
+        const st = (comp.status && comp.status.type) || {};
+        const ot = opp.team || {};
+        const score = c => (c.score && c.score.value != null) ? Number(c.score.value) : null;
+        return {
+            id: ev.id, date: ev.date, isHome: me.homeAway === 'home',
+            oppAbbr: ot.abbreviation || '', oppName: ot.displayName || '',
+            oppLogo: (ot.logos && ot.logos[0] && ot.logos[0].href) || '',
+            done: !!st.completed, live: st.state === 'in',
+            my: score(me), opp: score(opp), won: me.winner === true,
+        };
+    }).filter(Boolean);
+    const t = r => (r.date ? new Date(r.date).getTime() : 0);
+    return {
+        recent: rows.filter(r => r.done).sort((a, b) => t(b) - t(a)).slice(0, nRecent),
+        upcoming: rows.filter(r => !r.done).sort((a, b) => t(a) - t(b)).slice(0, nNext),
+    };
+}
+
+function _nbaTeamGamesCard(title, games, emptyText) {
+    const rows = games.map(g => {
+        let right;
+        if (g.done && g.my != null && g.opp != null) {
+            right = `<span style="font-weight:700;color:${g.won ? 'var(--color-win)' : 'var(--color-loss)'}">${g.won ? 'W' : 'L'}</span> <span style="font-family:var(--font-mono)">${g.my}-${g.opp}</span>`;
+        } else if (g.live) {
+            right = `<span style="color:var(--color-live);font-weight:700">LIVE</span>`;
+        } else {
+            let d = '';
+            try { d = new Date(g.date).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (_) {}
+            right = `<span style="font-size:0.75rem;color:var(--text-secondary)">${_escHtml(d)}</span>`;
+        }
+        let day = '';
+        if (g.done) { try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {} }
+        return `<div class="roster-row roster-row--clickable roster-row--split" role="button" tabindex="0" onclick="navigateTo('nba-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
+                <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
+                    <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${day ? _escHtml(day) : ''} ${g.isHome ? 'vs' : '@'}</span>
+                    ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
+                    <span style="font-weight:600;font-size:0.875rem" title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span>
+                </div>
+                <div style="text-align:right;flex-shrink:0">${right}</div>
+            </div>`;
+    }).join('');
+    return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">${_escHtml(title)}</h2>${
+        rows ? `<div class="roster-list">${rows}</div>` : `<div class="team-empty">${_escHtml(emptyText)}</div>`}</div>`;
+}
+
+async function showNBATeam(abbr) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const key = _nbaTeamKey(abbr);
+    const view = 'nba-team-' + key;
+    AppState.currentView = view;
+    grid.className = '';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
+    const slug = key.toLowerCase();
+    const [roster, sched, std] = await Promise.all([
+        espnNBAFetch(`/teams/${slug}/roster`, {}, ApiCache.TTL.LONG).catch(err => { Logger.warn('NBA roster fetch failed', err, 'NBA'); return null; }),
+        espnNBAFetch(`/teams/${slug}/schedule`, {}, ApiCache.TTL.SHORT).catch(err => { Logger.warn('NBA schedule fetch failed', err, 'NBA'); return null; }),
+        fetchNBAStandings(NBA_LAST_SEASON).then(c => _nbaFindStanding(c, key)).catch(err => { Logger.warn('NBA standings fetch failed (team detail)', err, 'NBA'); return null; }),
+    ]);
+    if (AppState.currentView !== view) return;
+    const team = (roster && roster.team) || (sched && sched.team);
+    if (!team || !team.id) { grid.innerHTML = _nbaErr("Couldn't load this team.", 'displayNBATeams'); return; }
+    displayNBATeamDetail(team, roster, sched, std);
+}
+
+function displayNBATeamDetail(team, roster, sched, std) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const name = team.displayName || team.name || 'Team';
+    if (window.setBreadcrumb) setBreadcrumb('nba-teams', _escHtml(name));
+    const abbr = team.abbreviation || '';
+    const color = '#' + String(team.color || 'c8102e').replace('#', '');
+    const row = std && std.row;
+    const athletes = (roster && roster.athletes) || [];
+    const groups = _nbaRosterGroups(athletes);
+    const coach = roster && roster.coach && roster.coach[0];
+    const coachName = coach ? [coach.firstName, coach.lastName].filter(Boolean).join(' ') : '';
+    const games = _nbaTeamGames(sched && sched.events, team.id);
+    const seasonName = team.seasonSummary || (sched && sched.requestedSeason && sched.requestedSeason.displayName) || '';
+    const injured = groups.reduce((n, g) => n + g.players.filter(p => p.injury).length, 0);
+    const recordChips = _nbaTeamRecordChips(row);
+    const record = recordChips.length ? row.overall : (team.recordSummary || '');
+
+    const model = {
+        sport: 'nba', abbr, name,
+        logo: team.logo || (team.logos && team.logos[0] && team.logos[0].href) || '', teamColor: color,
+        division: (std && std.division) || '', record,
+        seasonLabel: [seasonName ? `${seasonName} season` : '', team.standingSummary || ''].filter(Boolean).join(' · '),
+        facts: [
+            ...(recordChips.length && row.seed ? [{ label: 'Conf. Seed', value: row.seed }] : []),
+            ...(coachName ? [{ label: 'Head Coach', value: coachName }] : []),
+            ...(athletes.length ? [{ label: 'Players', value: athletes.length }] : []),
+        ],
+        recordChips, recordSeasonLabel: recordChips.length && seasonName ? `${seasonName} Season` : '',
+        scheduleHtmlTop: _nbaTeamGamesCard('Recent Results', games.recent, 'No games played yet this season.')
+            + _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.'),
+        groups, rosterTitle: 'Roster',
+        rosterCaption: `Grouped by position${injured ? ' · injury status from ESPN' : ''}`,
+        rosterEmpty: 'Roster data unavailable for this team right now.',
+        backView: 'nba-teams', backLabel: 'Teams', playerPrefix: 'nba-player-', storiesSport: 'nba',
+    };
+
+    grid.className = 'player-detail-container';
+    grid.innerHTML = _renderTeamPage(model)
+        + `<p class="detail-note" style="margin-top:0.75rem">Source: ESPN.</p>`;
+    if (typeof _loadTeamStories === 'function') _loadTeamStories('nba', abbr, _nbaTeamKey);
+}
+
+window.showNBATeam          = showNBATeam;
+window.displayNBATeamDetail = displayNBATeamDetail;
 
 window.fetchNBAScoreboard = fetchNBAScoreboard;
 window.displayNBAScores    = displayNBAScores;
