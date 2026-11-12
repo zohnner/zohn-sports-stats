@@ -3845,3 +3845,15 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Done.** Labels `parity-plan` and `parity-ready` created 2026-11-05. **Not done.** The routine itself; its cloud environment's GitHub access is unverified until its first run.
 
 **Note (2026-11-08).** The first run stopped at preflight on an invalid `GH_TOKEN` while the session's GitHub MCP tools worked; the run book now accepts either route for preflight and all issue/PR work, and still stops (never hunts for credentials) if both fail.
+
+## D-199 — An audit run: look for gaps and faults on purpose
+
+**Date:** 2026-11-12. **Status:** proposed (owner merges; no routine is scheduled until the owner creates one).
+
+**Context.** The parity queue only grew when a Muse story hit a gap. Sports Muse doesn't cover (WNBA) never got a filing, and faults that aren't a missing page were found by accident: NCAAF game cards opening the scores list, and ESPN's `/teams` route having no CORS header. Finding more is not the constraint, though: the queue is limited by one build a day and one reviewer.
+
+**Decision.** A weekly audit run governed by `tools/audit/RUNBOOK.md`. It files at most 3 `[audit]` issues per run and builds nothing. Two tools feed it: `tools/audit/matrix.cjs`, a sport × capability grid read from the code (routes, edge templates, contracts, follows), and `tools/audit/page-walk.cjs`, which opens every list view and one team, player and game page per sport in a real browser and reports script errors, misroutes, empty pages and error messages. Findings are verified twice and ranked: reader-facing bugs first, then gaps by season and by how many sports already have the capability.
+
+**Verified 2026-11-12.** Matrix on `origin/main`: 22 gaps, matching D-198's hand-made map. The walk's in-page half was run through a browser against production and a local server: 25 list views and 9 sampled detail pages. It found two production faults: the NCAAF team page shows "Couldn't load this team." (`ncaaf-team-2050`), and NFL Standings renders two "TBD 0" rows linking to `nfl-team-TBD`. Neither is fixed here.
+
+**Not verified / not done.** The Playwright driver (`run()`) has not been executed: Playwright isn't installed on the owner's machine, only in the cloud sandbox. No `audit` label, tracking issue or routine exists yet. A per-page-type checklist against other sites, and weighting by page views, are later phases.
