@@ -94,6 +94,7 @@ test('hash views map to the path URL their edge template serves', () => {
         home: '/', 'nfl-home': '/nfl', 'nba-standings': '/nba/standings', 'nfl-pickem': '/nfl/pickem',
         'nfl-team-JAX': '/nfl/team/jax', 'nfl-player-4046': '/nfl/player/4046', 'ncaaf-game-401864494': '/ncaaf/game/401864494',
         'mlb-live-776543': '/mlb/game/776543', 'mlb-player-592450': '/mlb/player/592450', 'wnba-player-12': '/wnba/player/12',
+        'nba-team-SA': '/nba/team/sa', 'nba-team-UTAH': '/nba/team/utah',
         'mlb-builder': null, 'nfl-mock': null, 'mlb-team-147': null,
     };
     for (const [view, want] of Object.entries(cases)) assert.equal(ctx.__v(view), want, view);
@@ -102,7 +103,7 @@ test('hash views map to the path URL their edge template serves', () => {
 test('every mapped path round-trips through the edge fail-safe route table', () => {
     const shellSrc = fs.readFileSync(path.join(ROOT, 'functions', '_shell.js'), 'utf8').replace(/^export /gm, '');
     const ctx = loadViewPath(`${shellSrc}\n;globalThis.__r = failSafeRoute;`);
-    for (const view of ['nfl-home', 'mlb-leaders', 'ncaab-standings', 'nfl-team-JAX', 'ncaaf-team-333', 'mlb-live-1', 'nba-player-9']) {
+    for (const view of ['nfl-home', 'mlb-leaders', 'ncaab-standings', 'nfl-team-JAX', 'ncaaf-team-333', 'mlb-live-1', 'nba-player-9', 'nba-team-UTAH']) {
         assert.equal(ctx.__r(ctx.__v(view)), view, view);
     }
 });

@@ -35,6 +35,7 @@ test('fail-safe route matches each template\'s own success route', () => {
         '/nfl/team/jax': 'nfl-team-JAX', '/nfl/team/lar/los-angeles-rams': 'nfl-team-LAR',
         '/nfl/game/401873182': 'nfl-game-401873182', '/ncaaf/team/2/auburn': 'ncaaf-team-2',
         '/mlb/game/776543': 'mlb-live-776543', '/nba/player/1966/lebron-james': 'nba-player-1966',
+        '/nba/team/ny': 'nba-team-NY', '/nba/team/utah/utah-jazz': 'nba-team-UTAH',
     };
     for (const [p, want] of Object.entries(cases)) assert.equal(failSafeRoute(p), want, p);
 });
