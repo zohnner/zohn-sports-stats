@@ -82,6 +82,13 @@ async function fetchNFLStandings(season) {
 // Real postseason results from the ESPN scoreboard (seasontype=3). Weeks map to
 // rounds: 1 Wild Card, 2 Divisional, 3 Conference, 5 Super Bowl (4 is the Pro
 // Bowl — its "AFC"/"NFC" sides fail the real-team check and are dropped).
+// ESPN lists the playoff slots as "TBD v TBD" all season, and the Pro Bowl as
+// "AFC v NFC". Neither is a game between teams, and a TBD row would link to a
+// team page that can't exist.
+function _nstdRealGame(g) {
+    return !!g && g.teams.every(t => !!t.abbr && t.abbr.length <= 3 && !['AFC', 'NFC', 'TBD'].includes(t.abbr));
+}
+
 async function fetchNFLPostseason(season) {
     const out = { wc: [], div: [], conf: [], sb: [] };
     const parseGame = (e) => {
@@ -96,7 +103,7 @@ async function fetchNFLPostseason(season) {
         }));
         return { teams, done: teams.some(t => t.win) };
     };
-    const isReal = (g) => g && g.teams.every(t => t.abbr && t.abbr.length <= 3 && t.abbr !== 'AFC' && t.abbr !== 'NFC');
+    const isReal = _nstdRealGame;
     const fetchWk = async (wk) => {
         try {
             const r = await _espnFetch(`/api/nfl?path=/scoreboard&seasontype=3&week=${wk}&dates=${season}`);
