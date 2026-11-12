@@ -657,8 +657,10 @@ setupNavigation();
             if (gid) navigateTo('nfl-game-' + gid);
             else navigateTo('nfl-games');
         } else if (sport === 'ncaaf') {
+            const gid = item.dataset.gameId;
             if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
-            navigateTo('ncaaf-scores');
+            if (gid) navigateTo('ncaaf-game-' + gid);
+            else navigateTo('ncaaf-scores');
         } else if (sport === 'wnba') {
             const gid = item.dataset.gameId;
             if (AppState.currentSport !== 'wnba') switchSport('wnba');
@@ -1734,9 +1736,9 @@ function _wireHomeSportTabs() {
 }
 
 // Generalized click routing for home-grid cards, sport-aware via the
-// `data-game-key` prefix Scorebug's normalizers already write (mlb-/nfl-/
-// ncaaf-). Mirrors setupTickerClicks' per-sport routing above — NCAAF has no
-// per-game detail view, so it routes to the scores list, same as the ticker.
+// `data-game-key` prefix Scorebug's normalizers already write. Mirrors
+// setupTickerClicks' per-sport routing above; tests/gameClicks.test.js runs
+// both handlers and fails if either stops opening the game for a sport.
 function _wireHomeGameCardClicks(gridEl) {
     gridEl.querySelectorAll('.home-game-card').forEach(card => {
         const open = () => {
@@ -1752,8 +1754,9 @@ function _wireHomeGameCardClicks(gridEl) {
                 if (AppState.currentSport !== 'nfl') switchSport('nfl');
                 if (id) navigateTo('nfl-game-' + id); else navigateTo('nfl-games');
             } else if (key.startsWith('ncaaf-')) {
+                const id = key.slice(6);
                 if (AppState.currentSport !== 'ncaaf') switchSport('ncaaf');
-                navigateTo('ncaaf-scores');
+                if (id) navigateTo('ncaaf-game-' + id); else navigateTo('ncaaf-scores');
             } else {
                 const m = /^(ncaab|nba|wnba)-(.+)$/.exec(key);
                 if (!m) return;

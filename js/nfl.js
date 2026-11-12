@@ -2314,8 +2314,11 @@ function _renderTeamPage(m) {
     // explained as one. Rather than build a near-duplicate second view, this
     // relabels the existing section and adds a visible legend (the star
     // previously only had a hover tooltip, invisible on touch devices).
+    const rosterHead = m.rosterTitle
+        ? `<h2 class="detail-section-title">${esc(m.rosterTitle)}</h2>${m.rosterCaption ? `<p class="pct-caption" style="margin:-0.4rem 0 0.6rem">${esc(m.rosterCaption)}</p>` : ''}`
+        : `<h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>`;
     const rosterCard = groups
-        ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1"><h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>${groups}</div>`
+        ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1">${rosterHead}${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');
 
     const storiesHost = m.storiesSport ? '<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>' : '';
@@ -2324,11 +2327,14 @@ function _renderTeamPage(m) {
 
 // SportStrata Stories that name this team in their frontmatter (D-166).
 // Shared by every _renderTeamPage caller that sets storiesSport (NFL, NCAAF).
-async function _loadTeamStories(sport, abbr) {
+// `norm` maps a frontmatter team code to the page's key, for sports whose
+// stories spell one team more than one way (NBA: SAS and SA).
+async function _loadTeamStories(sport, abbr, norm) {
     const host = document.getElementById('nflTeamStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
     const code = String(abbr || '').toUpperCase();
-    const stories = (await fetchStoriesIndex(sport)).filter(s => (s.teams || []).includes(code)).slice(0, 3);
+    const key = norm || (t => String(t).toUpperCase());
+    const stories = (await fetchStoriesIndex(sport)).filter(s => (s.teams || []).some(t => key(t) === code)).slice(0, 3);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
     host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', sport);
