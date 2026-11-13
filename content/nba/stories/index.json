@@ -1,6 +1,39 @@
 {
   "stories": [
     {
+      "slug": "2026-11-13-cade-cunningham-52-points-10-assists-no-turnovers",
+      "title": "Cade Cunningham posts the NBA's first 50-point, 10-assist, 0-turnover game",
+      "dek": "He scored 30 of his 52 points in the 4th quarter and the overtimes, and his previous career high was 46.",
+      "date": "2026-11-13",
+      "season": 2027,
+      "teams": [
+        "DET",
+        "WSH"
+      ],
+      "players": [
+        "4432166",
+        "4684742"
+      ],
+      "hero_stat": "52 points, 11 assists, 0 turnovers",
+      "url": "/nba/stories/2026-11-13-cade-cunningham-52-points-10-assists-no-turnovers",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-13-timberwolves-best-point-differential-nba",
+      "title": "Minnesota leads the NBA at plus-13.4 points a game through 12 games",
+      "dek": "The Timberwolves have won 5 straight by 16.4 points a game, including a 39-point rout of Dallas.",
+      "date": "2026-11-13",
+      "season": 2027,
+      "teams": [
+        "MIN",
+        "DAL"
+      ],
+      "players": [],
+      "hero_stat": "plus-13.4 points a game, best in the NBA",
+      "url": "/nba/stories/2026-11-13-timberwolves-best-point-differential-nba",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-12-towns-11-double-doubles-ties-knicks-record",
       "title": "Towns has a double-double in all 11 games, tying a Knicks record",
       "dek": "He averages 13.5 rebounds, the league's best, and no other player has more than 9 double-doubles.",
