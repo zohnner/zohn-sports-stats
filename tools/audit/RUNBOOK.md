@@ -35,6 +35,10 @@ The parity run (D-198) builds what is already in the queue. Until now the queue 
 5. **Tracking issue.** If the matrix changed since the last run, post the new table (`node tools/audit/matrix.cjs`) as a comment on the issue titled `[audit] Parity matrix`. If that issue doesn't exist, open it; it counts as one of the 3.
 6. **Report** in the final message: views visited, findings by kind, what was filed (links), what was found but not filed and why, checks that didn't run, and how long the run took.
 
+## Route crawl (D-201)
+
+`node tools/audit/route-crawl.cjs https://sportstrata.cc` is the click-level check the page walk can't do: the walk opens views by name, so a card that opens the wrong view never shows up in it. The crawl runs daily on its own workflow and fails the job on any mis-route. A sport with no games on screen (MLB in the offseason) is listed under "Not exercised"; `tests/gameClicks.test.js` covers those handlers meanwhile.
+
 ## What the tools can't see
 
 - A matrix `yes` means the route or file exists, not that the page is good.
