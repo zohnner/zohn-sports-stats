@@ -1,0 +1,135 @@
+{
+ "name": "National Basketball Association",
+ "abbreviation": "NBA",
+ "children": [
+  {
+   "name": "Eastern Conference",
+   "children": [
+    {
+     "name": "Atlantic",
+     "standings": {
+      "entries": [
+       {
+        "team": {
+         "abbreviation": "NY",
+         "displayName": "New York Knicks"
+        },
+        "stats": [
+         {
+          "name": "avgPointsAgainst",
+          "type": "avgpointsagainst",
+          "displayValue": "103.5"
+         },
+         {
+          "name": "avgPointsFor",
+          "type": "avgpointsfor",
+          "displayValue": "110.3"
+         },
+         {
+          "name": "losses",
+          "type": "losses",
+          "displayValue": "5"
+         },
+         {
+          "name": "playoffSeed",
+          "type": "playoffseed",
+          "displayValue": "5"
+         },
+         {
+          "name": "streak",
+          "type": "streak",
+          "displayValue": "L1"
+         },
+         {
+          "name": "winPercent",
+          "type": "winpercent",
+          "displayValue": ".545"
+         },
+         {
+          "name": "wins",
+          "type": "wins",
+          "displayValue": "6"
+         },
+         {
+          "name": "Home",
+          "type": "home",
+          "displayValue": "4-3"
+         },
+         {
+          "name": "Road",
+          "type": "road",
+          "displayValue": "2-2"
+         },
+         {
+          "name": "Last Ten Games",
+          "type": "lasttengames",
+          "displayValue": "6-4"
+         }
+        ]
+       },
+       {
+        "team": {
+         "abbreviation": "BOS",
+         "displayName": "Boston Celtics"
+        },
+        "stats": [
+         {
+          "name": "avgPointsAgainst",
+          "type": "avgpointsagainst",
+          "displayValue": "103.1"
+         },
+         {
+          "name": "avgPointsFor",
+          "type": "avgpointsfor",
+          "displayValue": "114.3"
+         },
+         {
+          "name": "losses",
+          "type": "losses",
+          "displayValue": "2"
+         },
+         {
+          "name": "playoffSeed",
+          "type": "playoffseed",
+          "displayValue": "1"
+         },
+         {
+          "name": "streak",
+          "type": "streak",
+          "displayValue": "W5"
+         },
+         {
+          "name": "winPercent",
+          "type": "winpercent",
+          "displayValue": ".833"
+         },
+         {
+          "name": "wins",
+          "type": "wins",
+          "displayValue": "10"
+         },
+         {
+          "name": "Home",
+          "type": "home",
+          "displayValue": "5-0"
+         },
+         {
+          "name": "Road",
+          "type": "road",
+          "displayValue": "5-2"
+         },
+         {
+          "name": "Last Ten Games",
+          "type": "lasttengames",
+          "displayValue": "9-1"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "_source": "site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?level=3&season=2027, fetched 2026-11-12, trimmed to NY + BOS"
+}

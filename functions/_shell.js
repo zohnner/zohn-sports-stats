@@ -38,6 +38,7 @@ const ENTITY = [
     [/^mlb\/game\/(\d+)$/,                  m => 'mlb-live-' + m[1]],
     [/^mlb\/player\/(\d+)$/,                m => 'mlb-player-' + m[1]],
     [/^(wnba|nba)\/player\/(\d+)$/,         m => `${m[1]}-player-${m[2]}`],
+    [/^nba\/team\/([a-z]{2,4})$/i,          m => 'nba-team-' + m[1].toUpperCase()],
 ];
 
 export function failSafeRoute(pathname) {
