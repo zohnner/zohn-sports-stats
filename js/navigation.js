@@ -1018,7 +1018,7 @@ function _loadFromHash() {
             AppState.currentSport = 'ncaaf';
             if (typeof _applySportUI === 'function') _applySportUI('ncaaf');
             navigateTo(_r); return;
-        } else if (/^(mlb|nfl|nhl|ncaaf|ncaab|wnba|nba)-[a-z]+$/.test(_r) || /^(wnba|nba)-player-\d+$/.test(_r)) {
+        } else if (/^(mlb|nfl|nhl|ncaaf|ncaab|wnba|nba)-[a-z]+$/.test(_r) || /^(wnba|nba)-player-\d+$/.test(_r) || /^nba-team-[A-Z]{2,4}$/.test(_r)) {
             // nba was missing here and the player pattern had no branch at all, so
             // every /nba/* and /{wnba,nba}/player/* edge page booted to home (D-180).
             const _sp = _r.split('-')[0];
@@ -1859,6 +1859,7 @@ function _viewPath(view) {
     if ((m = /^ncaaf-(team|player|game)-(\d+)$/.exec(v))) return `/ncaaf/${m[1]}/${m[2]}`;
     if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
     if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;
+    if ((m = /^nba-team-([A-Z]{2,4})$/i.exec(v))) return `/nba/team/${m[1].toLowerCase()}`;
     return null;
 }
 

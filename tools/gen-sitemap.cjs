@@ -18,13 +18,13 @@
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
  *   /ncaaf/team/{id}/{slug} · /ncaaf/player/{id}/{slug}
  *   /nfl/team/{abbr}/{slug} · /nfl/player/{sleeperId}/{slug} · /nfl/game/{id} (rolling window)
- *   /wnba/player/{espnId}/{slug} · /nba/player/{espnId}/{slug}
+ *   /wnba/player/{espnId}/{slug} · /nba/player/{espnId}/{slug} · /nba/team/{abbr}/{slug}
  *
- * NCAAB, WNBA and NBA deliberately have no /team/ entries, and NCAAB has no
- * /player/ entries either — none of the three has a client-side team-detail
- * route yet, and NCAAB has no player-detail view at all (confirmed against
- * js/ncaab.js/js/wnba.js/js/nba.js's _render*View dispatch during the
- * 2026-08-31 SEO audit, DECISIONS.md D-121, and again for NBA at D-161).
+ * NCAAB and WNBA deliberately have no /team/ entries, and NCAAB has no
+ * /player/ entries either — neither has a client-side team-detail route yet,
+ * and NCAAB has no player-detail view at all (confirmed against
+ * js/ncaab.js/js/wnba.js's _render*View dispatch during the 2026-08-31 SEO
+ * audit, DECISIONS.md D-121). NBA's team page shipped with parity #87.
  * Don't add those sections here until the underlying SPA views exist —
  * a sitemap entry with nothing real to hydrate into is worse than no entry.
  *
@@ -249,6 +249,17 @@ async function main() {
             }
         }
     } catch (e) { console.error('NBA players:', e.message); }
+
+    // 10) NBA teams (parity #87) — ESPN's abbreviations, the key
+    // functions/nba/team/[abbr]/[[slug]].js serves under.
+    try {
+        const bt = await jget('https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams');
+        const teams = (bt.sports && bt.sports[0] && bt.sports[0].leagues && bt.sports[0].leagues[0] && bt.sports[0].leagues[0].teams) || [];
+        for (const w of teams) {
+            const t = w.team;
+            if (t && t.abbreviation) add(urlTag(`/nba/team/${t.abbreviation.toLowerCase()}/${slug(t.displayName || t.name)}`, 'daily', '0.6'));
+        }
+    } catch (e) { console.error('NBA teams:', e.message); }
 
     const xml =`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
     if (DRY) { console.log(`[dry] ${urls.length} urls (nothing written)`); return; }
