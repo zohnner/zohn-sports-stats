@@ -1,10 +1,10 @@
 name: SportStrata Stories Share Links
 
-# When a story merges, waits for it to go live, then opens one issue per push
-# with a "Post to X" link (X's composer, prefilled with the approved ## X text
-# from the .social.md) and copy-ready Reddit text. Posting stays manual (D-179,
+# When a story merges, waits for it to go live, then posts a "Post to X" link
+# (X's composer, prefilled with the approved ## X text from the .social.md) and
+# copy-ready Reddit text as a comment on this week's "📣 Share queue" issue
+# (D-200, tools/stories/share-queue.sh). Posting stays manual (D-179,
 # replacing D-178's API auto-post): no X developer account, no secrets.
-# Close the issue once you've posted; an open one is a story not yet shared.
 # workflow_dispatch with a slug regenerates the links for any story; story-automerge.yml
 # dispatches it too (D-187), since its GITHUB_TOKEN merge doesn't fire the push trigger.
 
@@ -56,17 +56,17 @@ jobs:
           TARGETS: ${{ steps.find.outputs.targets }}
         run: node tools/stories/share-links.cjs comment share.md $TARGETS
 
-      - name: Open share issue
+      # D-200: one queue issue per week (Monday, UTC), each batch a comment on
+      # it. The first batch of a new week closes last week's queue: a story
+      # that old isn't worth posting.
+      - name: Add to this week's share queue
         if: steps.find.outputs.targets != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGETS: ${{ steps.find.outputs.targets }}
         run: |
           if [ ! -s share.md ]; then
             echo "Nothing to share"
             exit 0
           fi
-          count=$(echo $TARGETS | wc -w)
-          if [ "$count" -eq 1 ]; then title="📣 Share: ${TARGETS#*/}"; else title="📣 Share: $count new stories"; fi
           cat share.md >> "$GITHUB_STEP_SUMMARY"
-          gh issue create --title "$title" --body-file share.md
+          bash tools/stories/share-queue.sh share.md
