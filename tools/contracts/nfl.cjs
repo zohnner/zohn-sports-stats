@@ -2,6 +2,7 @@
 const L = require('../contract-lib.cjs');
 const fields = require('../fields/field-core.cjs');
 
+const ESPN = 'https://site.web.api.espn.com/apis';
 const scoreboard = d => `/api/nfl?path=/scoreboard&dates=${d.yyyymmdd}`;
 
 module.exports = {
@@ -13,6 +14,7 @@ module.exports = {
             id: 'nfl-scoreboard',
             needs: 'probe',
             mirrors: 'js/nfl.js fetchNFLScoreboard',
+            sources: [/sports\/football\/nfl\/scoreboard/, /\/api\/nfl\?path=\/scoreboard/],
             route: scoreboard,
             paths: [
                 'events[].id',
@@ -55,6 +57,7 @@ module.exports = {
         {
             id: 'nfl-standings',
             mirrors: 'js/nflStandings.js fetchNFLStandings',
+            sources: [/sports\/football\/nfl\/standings/, /\/api\/nflstandings/],
             route: c => c.season == null ? '/api/nflstandings' : `/api/nflstandings?season=${c.season}`,
             paths: [],
             invariants: [L.deepCount('entries', 32, { exact: true, each: 'team.abbreviation' })],
@@ -87,6 +90,71 @@ module.exports = {
                 const bad = data.filter(x => !x || !x.player_id || typeof x.count !== 'number').length;
                 return bad ? `${bad} entries missing player_id/count` : null;
             })],
+        },
+        {
+            id: 'nfl-team-schedule',
+            mirrors: 'js/nfl.js team page schedule (/teams/{abbr}/schedule); story source',
+            sources: [/sports\/football\/nfl\/teams\/[^/?\s]+\/schedule/],
+            route: () => '/api/nfl?path=/teams/kc/schedule',
+            paths: [
+                'team.abbreviation',
+                'events[].id',
+                'events[].date',
+                'events[].competitions[0].competitors[].team.abbreviation',
+                'events[].competitions[0].status.type.completed',
+            ],
+            invariants: [L.minCount('events', 16), L.completedScores()],
+        },
+        {
+            id: 'nfl-team-statistics',
+            mirrors: 'story source: ESPN team statistics',
+            sources: [/sports\/football\/nfl\/teams\/[^/?\s]+\/statistics/],
+            route: () => `${ESPN}/site/v2/sports/football/nfl/teams/kc/statistics`,
+            paths: [
+                'team.abbreviation',
+                'results.stats.categories[].name',
+                'results.stats.categories[].stats[].name',
+                'results.stats.categories[].stats[].displayValue',
+                'results.opponent[].name',
+                'results.opponent[].stats[].name',
+            ],
+            invariants: [L.hasNames('results.stats.categories', ['passing', 'rushing', 'receiving', 'scoring'])],
+        },
+        {
+            id: 'nflverse-games',
+            mirrors: 'functions/_nflverse.js games.csv reader; story source',
+            sources: [/nflverse-data\/releases\/download\/schedules\/games\.csv/],
+            route: () => 'https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv',
+            paths: [],
+            invariants: [
+                L.csvColumns(['game_id', 'season', 'game_type', 'week', 'gameday', 'away_team', 'away_score', 'home_team', 'home_score']),
+                L.predicate('every regular season since 1999 is present with scored games', data => {
+                    const scored = {};
+                    for (const g of data?.rows || []) {
+                        if (g.game_type === 'REG' && g.home_score !== '' && g.away_score !== '' && Number.isFinite(Number(g.home_score))) scored[g.season] = (scored[g.season] || 0) + 1;
+                    }
+                    const years = Object.keys(scored).map(Number);
+                    if (!years.length) return 'no scored regular-season games';
+                    const last = Math.max(...years);
+                    for (let y = 1999; y < last; y++) if ((scored[y] || 0) < 240) return `season ${y} has ${scored[y] || 0} scored regular-season games`;
+                    return null;
+                }),
+            ],
+        },
+        {
+            id: 'nflverse-player-week',
+            needs: 'probe',
+            mirrors: 'story source: nflverse weekly player stats',
+            sources: [/nflverse-data\/releases\/download\/stats_player\/stats_player_week_\d{4}\.csv/],
+            route: c => `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${c.season}.csv`,
+            paths: [],
+            invariants: [
+                L.csvColumns(['player_id', 'player_display_name', 'position', 'season', 'week', 'season_type', 'team', 'attempts', 'passing_yards', 'passing_tds', 'rushing_yards', 'receiving_yards']),
+                L.predicate('has quarterback rows for the season', data => {
+                    const qbs = (data?.rows || []).filter(r => r.position === 'QB' && r.season_type === 'REG').length;
+                    return qbs >= 32 ? null : `only ${qbs} regular-season QB rows`;
+                }),
+            ],
         },
         {
             id: 'nfl-fields-venues',
