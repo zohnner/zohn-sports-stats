@@ -3856,4 +3856,19 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 
 **Verified 2026-11-12.** Matrix on `origin/main`: 22 gaps, matching D-198's hand-made map. The walk's in-page half was run through a browser against production and a local server: 25 list views and 9 sampled detail pages. It found two production faults: the NCAAF team page shows "Couldn't load this team." (`ncaaf-team-2050`), and NFL Standings renders two "TBD 0" rows linking to `nfl-team-TBD`. Neither is fixed here.
 
-**Not verified / not done.** The Playwright driver (`run()`) has not been executed: Playwright isn't installed on the owner's machine, only in the cloud sandbox. No `audit` label, tracking issue or routine exists yet. A per-page-type checklist against other sites, and weighting by page views, are later phases.
+**Not verified / not done.** The Playwright driver (`run()`) has not been executed: Playwright isn't installed on the owner's machine, only in the cloud sandbox. A per-page-type checklist against other sites, and weighting by page views, are later phases.
+
+**Update (2026-11-12).** Merged as #124. The `audit` label and the routine (`trig_01517EzQoGc2B6TJvmT7RhYZ`, Mondays 18:00 UTC, first run 2026-11-16) exist. Both faults the walk found were fixed in #125 and verified on production. There is no tracking issue yet; the first run opens one.
+
+## D-200 — Share queue, derived-stat grouping, auto-merge retry
+
+**Date:** 2026-11-12. **Status:** owner-approved 2026-11-12.
+
+**Context.** Three pieces of the Stories loop were piling up or dropping work. (1) `story-share.yml` opened one "📣 Share" issue per merge: 26 were open and 1 had ever been closed, so the list stopped meaning "not yet shared". (2) Muse had filed 16 `[derived-stat]` issues in a week, one per story question. Built one at a time they never end, but they bunch: #83/#98/#99/#105 all need team-season search since 1999 by record and margin, and #86/#92/#107/#126 all need a player game log with streaks. (3) On 2026-11-11 the auto-merge of #119 failed with HTTP 405 "Base branch was modified": Muse's per-sport PRs pass CI together, and right after one merges GitHub briefly refuses the next. The concurrency group already serialized the runs.
+
+**Decision.**
+- **Share queue.** `tools/stories/share-queue.sh` posts each batch as a comment on one "📣 Share queue — week of <Monday>" issue (label `share-queue`). The first batch of a new week closes the previous queue; a story older than a week isn't worth posting. Tests: `tests/shareQueue.test.js`. The 26 per-story issues were closed (the last 7 days' stories carried into the first queue issue); any of them can be regenerated with the workflow's `slug` input.
+- **Derived stats.** The parity run book's triage step names the capability each `[derived-stat]` issue needs. Three or more on one capability become one `[parity]` issue (normal triage and plan approval); the rest are labelled `derived-logged` and counted on later runs. Derived-stat issues are never closed by the run.
+- **Auto-merge retry.** `story-automerge.yml`'s Merge step retries only the 405 "Base branch was modified" answer, after 5, 15, 30 and 60 seconds; any other failure still fails at once.
+
+**Verified.** The share-queue script against a fake `gh` (three cases, one of which fails when the same-week match is broken); the merge retry loop against a fake `gh` (flaky 405, other error, clean, persistent 405). **Not verified.** Neither workflow has run in GitHub Actions with these changes yet.
