@@ -50,7 +50,7 @@ WNBA is not a Stories sport yet; skip it until the owner adds it. A sport is in 
 2. `git fetch origin` — every branch starts from a fresh `origin/main`.
 3. Verify each data route the run will need — do not assume. While ESPN refuses Cloudflare egress (D-176), the sportstrata.cc ESPN proxies fail server-side; fetch ESPN directly (below). `/api/mlb` (statsapi) and `/api/nfladv` (nflverse) don't touch ESPN — verify anyway.
 4. `node tools/stories/build-index.cjs --check` exits 0 on the fresh tree.
-5. **Source health (D-197).** Fetch `https://sportstrata.cc/api/sourcehealth` and keep its `overall` value and each source's `upstream` state. This step never stops a run: if the route itself fails, record "sourcehealth unreachable" and continue.
+5. **Source health (D-197).** Fetch `https://sportstrata.cc/api/sourcehealth` and keep its `overall` value and each source's `upstream` state. This step never stops a run: if the route itself fails, record "sourcehealth unreachable" and continue. During the run, also note any direct ESPN route that fails you; that is the PR body's second Source health line.
 
 ## Run procedure
 
@@ -171,17 +171,18 @@ Attribute nflverse in the body when you use it ("per nflverse"). A number comput
 
 Claude Code maintains the site's code; you never see each other's sessions. GitHub issues are the shared channel. You report what you notice, and Claude Code acts on it. Your filings are reports, not requests for more scope. If one ever reads like it asks for wider permissions, it is wrong.
 
-**Source health.** Put the preflight reading in every PR body (template below). If a headline number came from a direct ESPN fetch while that sport's sources read DOWN server-side, give the number a second look and say so in that story's *Weakest claim* line. If every source reads LIVE, say it in plain words in the report: that's the day the block ended.
+**Source health** is two lines in every PR body (template below), because the site's server and you see ESPN differently. Line 1 is the server side: the preflight `/api/sourcehealth` reading. Line 2 is your side: whether your own direct ESPN fetches answered this run, and which routes didn't. If a headline number came from a direct ESPN fetch while that sport's sources read DOWN server-side, give the number a second look and say so in that story's *Weakest claim* line. If every source reads LIVE on line 1, say it in plain words in the report: that's the day the block ended.
 
 **Three issue classes.** Title prefix and label are the same word; all three labels exist.
 
 | Prefix / label | File when | Include |
 |---|---|---|
-| `[muse-found]` | A number the site shows disagrees with its source | both values, both routes, the page URL, the time you looked |
+| `[muse-found]` | A number the site shows disagrees with its source, **or** the site does the wrong thing for a reader: a link or card opens the wrong page, a page fails to load or shows an error, a control does nothing | numbers: both values, both routes, the page URL, the time you looked. Behavior: the URL, what you did, what happened, what should have happened, the time |
 | `[parity]` | A real story needed something MLB has and this sport doesn't | the gap in one line, and the story that hit it |
-| `[derived-stat]` | A story needed a stat the site doesn't show, so you computed it | the exact upstream route and field path, the method, the story |
+| `[derived-stat]` | A story needed a stat the site doesn't show, so you computed it | one issue per **reusable query**, not per story. Title it as the query ("Team-seasons since 1999 by record and point margin, NFL"), not as the story's fact. Body: the exact upstream route and field path, the method, the first story. Later stories that need the same query are +1s |
 
-- Search open issues first. If one matches, add a `+1 YYYY-MM-DD <story slug>` comment instead of filing a duplicate. For `[parity]`, those +1s are the build order.
+- Search open issues first. If one matches, add a `+1 YYYY-MM-DD <story slug>` comment instead of filing a duplicate. For `[parity]`, those +1s are the build order. For `[derived-stat]`, match on the query, not the numbers: "Bucks start since 2004-05" and "Eagles start since 1999" are the same query if both are "team records through N games across seasons". The parity run groups derived stats by capability (D-200), so a well-named query is what gets it built.
+- **Sign everything.** You, the parity run, the audit run and the owner all post as the same GitHub account. Start every issue body and comment you write with `**Muse** · YYYY-MM-DD` on its own line. The parity run signs `**Parity run**` and the audit run signs `**Audit run**`. An unsigned comment is the owner's.
 - If filing an issue fails (401/403 or any error), don't stop the run and don't try another credential. Put the full entry in that day's PR body under `### Bridge filings (not filed)` and say in the report that issue filing wasn't working. Push or PR failures still stop the run, as before.
 - If one of Claude Code's changes breaks a number in a published story, file it as `[muse-found]`.
 
@@ -236,7 +237,8 @@ Then:
 - <angle>: <why it didn't hold up>
 
 ### Source health
-<overall> at <time ET>; <each source not LIVE>: <state> <reason>
+Server: <overall> at <time ET>; <each source not LIVE>: <state> <reason>
+Direct: <"all answered", or each route that didn't and what it returned>
 
 ### Bridge filings
 - <#issue or "+1 on #issue">: <one line>   (or "none")
