@@ -1,6 +1,26 @@
 {
   "stories": [
     {
+      "slug": "2026-11-13-nfc-north-all-four-teams-6-2-or-better",
+      "title": "All 4 NFC North teams are 6-2 or better through Week 9, a first since 1999",
+      "dek": "Chicago leads the division at 7-2 despite losing both of its division games.",
+      "date": "2026-11-13",
+      "season": 2026,
+      "hook": "\"NFC North: Bears win division? Cousins has Vikes in command?\"",
+      "hook_url": "https://www.espn.com/nfl/story/_/id/50462993/lions-packers-bears-vikings-nfc-north",
+      "week": 10,
+      "teams": [
+        "CHI",
+        "DET",
+        "GB",
+        "MIN"
+      ],
+      "players": [],
+      "hero_stat": "4 teams at 6-2 or better, first since 1999",
+      "url": "/nfl/stories/2026-11-13-nfc-north-all-four-teams-6-2-or-better",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-11-cousins-20-touchdowns-vikings-8",
       "title": "Kirk Cousins has 20 touchdown passes; Minnesota's quarterbacks have 8",
       "dek": "Cousins ranks 2nd in the NFL in touchdown passes, and his 20 are more than the 12 touchdowns Minnesota has scored in total.",
