@@ -524,14 +524,61 @@ function _nbaTeamGames(events, teamId, nRecent = 5, nNext = 3) {
             oppAbbr: ot.abbreviation || '', oppName: ot.displayName || '',
             oppLogo: (ot.logos && ot.logos[0] && ot.logos[0].href) || '',
             done: !!st.completed, live: st.state === 'in',
+            reg: !ev.seasonType || ev.seasonType.type === 2,
             my: score(me), opp: score(opp), won: me.winner === true,
         };
     }).filter(Boolean);
     const t = r => (r.date ? new Date(r.date).getTime() : 0);
+    let w = 0, l = 0;
+    const log = rows.filter(r => r.done && r.reg && r.my != null && r.opp != null).sort((a, b) => t(a) - t(b)).map(r => {
+        if (r.won) w++; else l++;
+        return { ...r, margin: r.my - r.opp, record: `${w}-${l}` };
+    }).reverse();
     return {
         recent: rows.filter(r => r.done).sort((a, b) => t(b) - t(a)).slice(0, nRecent),
         upcoming: rows.filter(r => !r.done).sort((a, b) => t(a) - t(b)).slice(0, nNext),
+        log,
     };
+}
+
+// W-L and per-game points for/against/margin over the newest `n` games of a
+// newest-first log (n = null for the whole season).
+function _nbaTeamSplit(log, n) {
+    const g = n == null ? log : log.slice(0, n);
+    if (!g.length) return null;
+    const sum = f => g.reduce((s, r) => s + f(r), 0);
+    const per = v => Math.round((v / g.length) * 10) / 10;
+    const w = g.filter(r => r.won).length;
+    return { n: g.length, w, l: g.length - w, pf: per(sum(r => r.my)), pa: per(sum(r => r.opp)), margin: per(sum(r => r.margin)) };
+}
+
+const _nbaSigned = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(Number.isInteger(v) ? 0 : 1);
+
+function _nbaTeamGameLogCard(log) {
+    if (!log.length) return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2><div class="team-empty">No games played yet this season.</div></div>`;
+    const spans = [['Last 5', 5], ['Last 10', 10], ['Season', null]]
+        .filter(([, n]) => n == null || log.length > n)
+        .map(([label, n]) => [label, _nbaTeamSplit(log, n)]);
+    const splitRows = spans.map(([label, s]) => `<tr><td class="gl-l">${label}</td><td>${s.w}-${s.l}</td><td>${s.pf.toFixed(1)}</td><td>${s.pa.toFixed(1)}</td><td style="color:${s.margin >= 0 ? 'var(--color-win)' : 'var(--color-loss)'}">${_nbaSigned(s.margin)}</td></tr>`).join('');
+    const row = g => {
+        let day = '';
+        try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        return `<tr class="roster-row--clickable" role="button" tabindex="0" onclick="navigateTo('nba-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
+            <td class="gl-l">${_escHtml(day)}</td>
+            <td class="gl-l">${g.isHome ? 'vs' : '@'} <span title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span></td>
+            <td style="font-family:var(--font-mono)"><span class="${g.won ? 'gl-res--w' : 'gl-res--l'}">${g.won ? 'W' : 'L'}</span> ${g.my}-${g.opp}</td>
+            <td style="font-family:var(--font-mono)">${_nbaSigned(g.margin)}</td>
+            <td>${g.record}</td></tr>`;
+    };
+    const table = rows => `<div class="table-wrapper" style="overflow-x:auto"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th class="gl-l">Date</th><th class="gl-l">Opp</th><th>Result</th><th>Margin</th><th>Record</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`;
+    const SHOWN = 10;
+    const rest = log.length > SHOWN
+        ? `<details style="margin-top:0.5rem"><summary style="cursor:pointer;color:var(--text-secondary);font-size:0.8125rem">All ${log.length} games</summary>${table(log.slice(SHOWN))}</details>`
+        : '';
+    return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2>
+        <div class="table-wrapper" style="overflow-x:auto;margin-bottom:0.75rem"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th></th><th>W-L</th><th title="Points per game">PF/G</th><th title="Points allowed per game">PA/G</th><th title="Average margin">Margin</th></tr></thead><tbody>${splitRows}</tbody></table></div>
+        ${table(log.slice(0, SHOWN))}${rest}
+        <p class="detail-note" style="margin-top:0.5rem">Regular season, newest first. Margin is points scored minus points allowed.</p></div>`;
 }
 
 function _nbaTeamGamesCard(title, games, emptyText) {
@@ -610,8 +657,8 @@ function displayNBATeamDetail(team, roster, sched, std) {
             ...(athletes.length ? [{ label: 'Players', value: athletes.length }] : []),
         ],
         recordChips, recordSeasonLabel: recordChips.length && seasonName ? `${seasonName} Season` : '',
-        scheduleHtmlTop: _nbaTeamGamesCard('Recent Results', games.recent, 'No games played yet this season.')
-            + _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.'),
+        scheduleHtmlTop: _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.')
+            + _nbaTeamGameLogCard(games.log),
         groups, rosterTitle: 'Roster',
         rosterCaption: `Grouped by position${injured ? ' · injury status from ESPN' : ''}`,
         rosterEmpty: 'Roster data unavailable for this team right now.',

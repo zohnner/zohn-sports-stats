@@ -4779,6 +4779,11 @@
 .gl-table th.gl-l, .gl-table td.gl-l { text-align: left; }
 .gl-res--w { color: var(--color-win); font-weight: 700; }
 .gl-res--l { color: var(--color-loss); }
+/* NBA team game log (parity #146): the default 1.25rem cell padding pushes Margin/Record off a phone screen */
+.stats-table.gl-table--compact { font-size: 0.8125rem; }
+@media (max-width: 600px) {
+    .stats-table.gl-table--compact th, .stats-table.gl-table--compact td { padding: 0.55rem 0.6rem; }
+}
 
 
 /* ── Highlight Card Studio (ISSUES.md three-gate spec / D-074) ──
