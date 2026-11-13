@@ -3784,7 +3784,7 @@ Cache v335.
 Found verifying D-190 in production: the served `/` said "No games on today's schedule yet" on an NBA game night. MLB's season was over and every ESPN scoreboard fetch fails from Cloudflare (D-176), so the snapshot had zero rows and reported that as fact to crawlers and link previews (readers' browsers load the real scores). `todaysGames` now returns which scoreboards didn't answer; the snapshot names and links them ("Scores for NFL, College Football, NBA … couldn't be loaded for this page; each sport's page has them") and says "no games" only when every source answered. An empty but successful schedule (MLB in its offseason) still counts as answered. Test: `tests/todayFrontDoor.test.js`.
 
 ## D-194 — NFL game viewer: competitor parity pass
-**Status:** shipping | **Date:** 2026-10-29
+**Status:** shipped (#133, merged 2026-11-13; verified live on WSH @ NYG, event 401873052: freshness receipt, sectioned Team Stats, play-by-play filters, tab deep links, SportsEvent JSON-LD) | **Date:** 2026-10-29
 
 Audited live during CAR @ GB (TNF, event 401873023) against ESPN GameCast, CBS, Yahoo, FOX and NFL.com; full gap matrix, ranking, verification log and the Phase 3 spike in `docs/nfl-game-viewer-parity-2026-10-29.md`. Every new field was confirmed in a real payload (live 401873023, pregame 401873024, final 401873271) on the browser-fallback path production readers are on; the `/api/nfl` proxy answered 403 all session (D-176), so it could not be exercised.
 
