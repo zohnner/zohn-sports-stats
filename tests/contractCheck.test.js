@@ -339,11 +339,11 @@ test('exitCodeFor: fail beats warn beats pass; skip is neutral', () => {
 });
 
 test('shipped contract files load, validate, and use unique ids', () => {
-    const sports = ['nfl', 'ncaaf', 'mlb'].map(f => require(`../tools/contracts/${f}.cjs`));
+    const sports = require('../tools/contract-coverage.cjs').loadSports();
     check.validateSports(sports);
     const ids = sports.flatMap(s => s.contracts.map(c => c.id));
     assert.equal(new Set(ids).size, ids.length);
-    assert.equal(ids.length, 14);
+    assert.equal(ids.length, 37);
     for (const s of sports) for (const c of s.contracts) assert.ok(c.mirrors, `${c.id} needs a mirrors note`);
 });
 

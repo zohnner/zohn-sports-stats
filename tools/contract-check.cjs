@@ -14,9 +14,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { ContractError, parsePath, checkPath } = require('./contract-lib.cjs');
+const { ContractError, parsePath, checkPath, parseCsv } = require('./contract-lib.cjs');
+const coverage = require('./contract-coverage.cjs');
 
-const SPORT_FILES = ['nfl', 'ncaaf', 'mlb'];
+const SPORT_FILES = coverage.SPORT_FILES;
 const WALK_BACK_DAYS = 10;
 
 const looksLikeHtml = snippet => /^\s*</.test(snippet || '');
@@ -41,6 +42,7 @@ async function getJson(url) {
         const text = await r.text();
         let json = null;
         try { json = JSON.parse(text); } catch { json = null; }
+        if (!json && r.ok && /\.csv(\?|$)/.test(url)) json = parseCsv(text);
         return { ok: r.ok, status: r.status, contentType: r.headers.get('content-type') || '', json, bodySnippet: text.slice(0, 200) };
     } catch (e) {
         return { ok: false, status: 0, contentType: '', json: null, bodySnippet: String(e && e.message) };
@@ -51,7 +53,7 @@ async function getJson(url) {
 // js/config.js _espnFetch: proxy first, then ESPN directly from the browser
 // (leaders rebuilt from site/v3). Running that real function here keeps this
 // check on the code readers run, not a copy that can drift from it.
-const ESPN_ROUTE = /^\/api\/(nfl|ncaaf)(standings|stats)?(\?|$)/;
+const ESPN_ROUTE = /^\/api\/(nfl|ncaaf|nba|ncaab)(standings|stats)?(\?|$)/;
 
 function browserFallbackFrom(base) {
     const noop = () => {};
@@ -104,6 +106,9 @@ function browserFallbackFrom(base) {
 
 function fetchJsonFrom(base, get = getJson, espn = null) {
     return async p => {
+        // An absolute route is an upstream a story cites directly (ESPN, statsapi,
+        // nflverse). It is fetched as-is, which works from a GitHub runner.
+        if (/^https?:\/\//.test(p)) return get(p);
         if (!ESPN_ROUTE.test(p)) return get(base + p);
         espn = espn || browserFallbackFrom(base);
         return espn(base + p);
@@ -143,6 +148,18 @@ function settle(r) {
 }
 
 async function runContract(c, ctx, fetchJson) {
+    // resolve: a route that needs an id from another feed (an athlete from the
+    // leaders list, the ESPN event for an MLB date) looks it up first.
+    if (c.resolve) {
+        let extra = null;
+        try { extra = await c.resolve(ctx, fetchJson); } catch { extra = null; }
+        if (!extra) {
+            const failed = result(c.id, null);
+            failed.failures.push('could not resolve the id this route needs');
+            return settle(failed);
+        }
+        ctx = { ...ctx, ...extra };
+    }
     const url = c.route(ctx);
     const r = result(c.id, url);
     const res = await fetchJson(url);
@@ -231,6 +248,9 @@ function validateSports(sports) {
     for (const s of sports) {
         for (const c of s.contracts) {
             if (!c.id || typeof c.route !== 'function') throw new ContractError(`contract missing id/route in ${s.sport}`);
+            if (c.sources && !(Array.isArray(c.sources) && c.sources.every(x => x instanceof RegExp))) {
+                throw new ContractError(`${c.id}: sources must be an array of RegExp`);
+            }
             for (const p of c.paths || []) {
                 try { parsePath(p); } catch (e) { throw new ContractError(`${c.id}: ${e.message}`); }
             }
@@ -289,9 +309,13 @@ async function main(argv) {
         }
     }
     printReport(reports);
-    const exitCode = exitCodeFor(reports);
+    // Story coverage is read from the repo, not the network: an uncovered
+    // story fails the run even when every contract passed.
+    const cov = coverage.storyCoverage(path.join(__dirname, '..'), sports);
+    console.log('\n' + coverage.format(cov));
+    const exitCode = cov.uncovered > 0 ? 2 : exitCodeFor(reports);
     if (jsonOut) {
-        fs.writeFileSync(jsonOut, JSON.stringify({ generatedAt: today.toISOString(), base, exitCode, sports: reports }, null, 2));
+        fs.writeFileSync(jsonOut, JSON.stringify({ generatedAt: today.toISOString(), base, exitCode, sports: reports, coverage: cov }, null, 2));
     }
     console.log(`\n${['✅ PASS', '⚠️  WARN', '❌ FAIL'][exitCode]}`);
     return exitCode;

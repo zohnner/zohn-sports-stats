@@ -154,6 +154,81 @@ function predicate(name, fn, opts = {}) {
     return { name, severity: opts.severity || 'fail', check: (data, ctx) => fn(data, ctx) };
 }
 
+// Minimal CSV reader (quoted fields, doubled quotes) for upstream files such
+// as nflverse's games.csv. Returns { columns, rows }, each row an object.
+function parseCsv(text) {
+    const lines = [];
+    let row = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (quoted) {
+            if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+            else if (ch === '"') quoted = false;
+            else cell += ch;
+        } else if (ch === '"') quoted = true;
+        else if (ch === ',') { row.push(cell); cell = ''; }
+        else if (ch === '\n' || ch === '\r') {
+            if (ch === '\r' && text[i + 1] === '\n') i++;
+            row.push(cell); cell = '';
+            if (row.length > 1 || row[0] !== '') lines.push(row);
+            row = [];
+        } else cell += ch;
+    }
+    if (cell !== '' || row.length) { row.push(cell); lines.push(row); }
+    const columns = lines.shift() || [];
+    return { columns, rows: lines.map(r => Object.fromEntries(columns.map((c, i) => [c, r[i] ?? '']))) };
+}
+
+function csvColumns(names, opts = {}) {
+    return {
+        name: `csvColumns(${names.join(', ')})`,
+        severity: opts.severity || 'fail',
+        check(data) {
+            if (!data || !Array.isArray(data.columns)) return 'not a CSV file';
+            const missing = names.filter(n => !data.columns.includes(n));
+            return missing.length ? `missing column(s): ${missing.join(', ')}` : null;
+        },
+    };
+}
+
+// Every list found at `path` (an array of {name} objects, or of strings)
+// carries all of `names`.
+function hasNames(path, names, opts = {}) {
+    parsePath(path);
+    return {
+        name: `hasNames(${path}: ${names.join(', ')})`,
+        severity: opts.severity || 'fail',
+        check(data) {
+            const lists = collect(data, path);
+            if (!lists.length) return `${path} not found`;
+            for (const { loc, value } of lists) {
+                if (!Array.isArray(value)) return `${loc} is not an array`;
+                const have = new Set(value.map(x => (x && typeof x === 'object' ? x.name : x)));
+                const missing = names.filter(n => !have.has(n));
+                if (missing.length) return `${loc} is missing ${missing.join(', ')}`;
+            }
+            return null;
+        },
+    };
+}
+
+// ESPN team schedule: every completed event has a numeric score for both teams.
+function completedScores(opts = {}) {
+    const num = c => {
+        const v = c?.score?.value ?? c?.score;
+        return v !== '' && v !== null && v !== undefined && Number.isFinite(Number(v));
+    };
+    return {
+        name: 'completed events carry numeric scores',
+        severity: opts.severity || 'fail',
+        check(data) {
+            const done = (data?.events || []).filter(e => e?.competitions?.[0]?.status?.type?.completed);
+            const bad = done.filter(e => !(e.competitions[0].competitors || []).every(num));
+            return bad.length ? `${bad.length} completed event(s) without numeric scores, e.g. ${bad[0].id}` : null;
+        },
+    };
+}
+
 function readEspnScoreboard(json) {
     const events = Array.isArray(json?.events) ? json.events : [];
     const season = events[0]?.season;
@@ -186,5 +261,6 @@ function readMlbSchedule(json) {
 module.exports = {
     ContractError, parsePath, collect, checkPath, getAt, deepCollect,
     minCount, exactCount, deepCount, numeric, eachNonEmpty, predicate,
+    parseCsv, csvColumns, hasNames, completedScores,
     readEspnScoreboard, readMlbSchedule,
 };
