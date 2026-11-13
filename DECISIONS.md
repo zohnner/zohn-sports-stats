@@ -3779,7 +3779,7 @@ Verified in a browser: home ticker "Updated 9s ago", aging on its own; NBA hub "
 Cache v335.
 
 ## D-193 — `/` never claims "no games" for a sport it couldn't reach
-**Status:** shipping | **Date:** 2026-10-29
+**Status:** shipped (#61, merged 2026-10-30; verified live 2026-11-13: with ESPN blocked, `/` names the five scoreboards it couldn't load and says no "No games" line) | **Date:** 2026-10-29
 
 Found verifying D-190 in production: the served `/` said "No games on today's schedule yet" on an NBA game night. MLB's season was over and every ESPN scoreboard fetch fails from Cloudflare (D-176), so the snapshot had zero rows and reported that as fact to crawlers and link previews (readers' browsers load the real scores). `todaysGames` now returns which scoreboards didn't answer; the snapshot names and links them ("Scores for NFL, College Football, NBA … couldn't be loaded for this page; each sport's page has them") and says "no games" only when every source answered. An empty but successful schedule (MLB in its offseason) still counts as answered. Test: `tests/todayFrontDoor.test.js`.
 
@@ -3883,3 +3883,5 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 - **Auto-merge retry.** `story-automerge.yml`'s Merge step retries only the 405 "Base branch was modified" answer, after 5, 15, 30 and 60 seconds; any other failure still fails at once.
 
 **Verified.** The share-queue script against a fake `gh` (three cases, one of which fails when the same-week match is broken); the merge retry loop against a fake `gh` (flaky 405, other error, clean, persistent 405). **Not verified.** Neither workflow has run in GitHub Actions with these changes yet.
+
+**Update (2026-11-13), owner-approved: Muse's playbook (from Muse's 2026-11-10 letter).** `tools/stories/PLAYBOOK.md`: Source health is two lines, the server's `/api/sourcehealth` reading and whether Muse's own direct ESPN fetches answered. `[derived-stat]` issues are filed one per reusable query, titled as the query, with later stories as +1s, which feeds the parity run's grouping above. `[muse-found]` now also covers behavior bugs: wrong page opened, page fails, control does nothing. Everyone posts as the same GitHub account, so issue bodies and comments are signed `**Muse**`, `**Parity run**` or `**Audit run**` (both run books gained the same rule), and an unsigned comment is the owner's.

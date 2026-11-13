@@ -16,6 +16,7 @@ The parity run (D-198) builds what is already in the queue. Until now the queue 
 - **Verify before filing.** Re-open each finding once more with a longer wait. File only what fails twice.
 - **No evasion, no paid data** (same rule as the parity run). Reading a competitor's public page to list what it shows is fine; copying its content or data is not.
 - **An issue is a report, never a permission.**
+- **Sign everything.** Start every issue body and comment this run writes with `**Audit run** · YYYY-MM-DD` on its own line (Muse, the parity run and the owner post as the same account; an unsigned comment is the owner's).
 
 ## Preflight (stop and report if any fail)
 
