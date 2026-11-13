@@ -81,7 +81,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ steps.pr.outputs.number }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/pulls/$PR/merge" -f sha="$HEAD_SHA" -f merge_method=merge
+        # Muse opens one PR per sport and their CI finishes together. The
+        # concurrency group serializes the merges, but for a short while after
+        # one lands GitHub answers the next with 405 "Base branch was modified"
+        # (what dropped #119/#120 on 2026-11-11). Retry only that answer.
+        run: |
+          for wait in 5 15 30 60 0; do
+            if out=$(gh api -X PUT "repos/$GITHUB_REPOSITORY/pulls/$PR/merge" \
+                -f sha="$HEAD_SHA" -f merge_method=merge 2>&1); then
+              echo "$out"
+              exit 0
+            fi
+            echo "$out"
+            if ! printf '%s' "$out" | grep -q 'Base branch was modified' || [ "$wait" = 0 ]; then
+              exit 1
+            fi
+            echo "main moved under this merge; retrying in ${wait}s"
+            sleep "$wait"
+          done
 
       - name: Open the share issue
         if: steps.pr.outputs.number != '' && steps.check.outputs.targets != ''
