@@ -1,0 +1,42 @@
+name: Route Crawl
+
+# Clicks game cards and team links on production in a real browser and fails
+# when one lands anywhere but its game or team view (tools/audit/route-crawl.cjs).
+# Each run also plants a card that opens the wrong view; a run that doesn't
+# report the plant fails too. ESPN answers GitHub runners, so the pages load
+# here the way they do for a reader.
+
+on:
+  schedule:
+    - cron: '30 13 * * *'   # daily, after the sitemap refresh (12:30 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Crawl production
+        run: node tools/audit/route-crawl.cjs https://sportstrata.cc --json route-crawl.json
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-crawl
+          path: route-crawl.json
+          if-no-files-found: ignore
