@@ -8,6 +8,7 @@
 
 import { shell, rawShell } from './_shell.js';
 import { readAllStories, storyListHtml } from './_storyLinks.js';
+import { readSource, ESPN_SITE, SCOREBOARD_PATH, SHAPES, TOLERANCE, etStamp } from './_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -82,15 +83,29 @@ async function getJson(url, headers = {}) {
     } catch (_) { return null; }
 }
 
+// A STALE scoreboard's rows each carry their "as of" time and never count as
+// live: an old live score is the most misleading thing this page could show.
+export function staleRows(rows, src) {
+    if (!src || src.state !== 'STALE') return rows;
+    const asOf = etStamp(src.fetchedAt);
+    return rows.map(r => ({ ...r, live: false, line: `${r.line} (as of ${asOf})` }));
+}
+
 // rows, plus the sports whose scoreboard didn't answer (so the page never
-// reports "no games" for a sport it simply couldn't reach).
-async function todaysGames(iso) {
+// reports "no games" for a sport it simply couldn't reach), plus the labels
+// of sports shown from a last-good copy (D-196).
+async function todaysGames(iso, waitUntil) {
     const [mlb, ...espn] = await Promise.all([
         getJson(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${iso}&hydrate=team,linescore`),
-        ...ESPN_SPORTS.map(cfg => getJson(`https://site.web.api.espn.com/apis/site/v2/sports/${cfg[3]}`, { 'User-Agent': ESPN_UA })),
+        ...ESPN_SPORTS.map(cfg => readSource(`scoreboard:${cfg[0]}`, `${ESPN_SITE}/${cfg[3]}`, {
+            maxStaleMs: TOLERANCE.scores, validate: SHAPES.scoreboard, waitUntil,
+            init: { headers: { Accept: 'application/json', 'User-Agent': ESPN_UA }, cf: { cacheTtl: 60, cacheEverything: true } },
+        })),
     ]);
-    const unavailable = [...(mlb ? [] : [['MLB', '/mlb']]), ...espn.flatMap((j, i) => (j ? [] : [[ESPN_SPORTS[i][1], ESPN_SPORTS[i][2]]]))];
-    return { rows: [mlbGames(mlb), ...espn.map((j, i) => espnGames(j, ESPN_SPORTS[i], iso))].flat(), unavailable };
+    const unavailable = [...(mlb ? [] : [['MLB', '/mlb']]), ...espn.flatMap((s, i) => (s.data ? [] : [[ESPN_SPORTS[i][1], ESPN_SPORTS[i][2]]]))];
+    const stale = espn.flatMap((s, i) => (s.state === 'STALE' ? [ESPN_SPORTS[i][1]] : []));
+    const rows = [mlbGames(mlb), ...espn.map((s, i) => staleRows(espnGames(s.data, ESPN_SPORTS[i], iso), s))].flat();
+    return { rows, unavailable, stale };
 }
 
 function gameList(rows) {
@@ -103,7 +118,7 @@ function gameList(rows) {
 // Live first (every sport), then today's games, capped per sport so one
 // 16-game MLB slate can't bury the rest. unavailable: [label, hub] for each
 // scoreboard that didn't answer; "no games" is only said when none failed.
-export function gamesSnapshot(rows, pretty, unavailable = []) {
+export function gamesSnapshot(rows, pretty, unavailable = [], stale = []) {
     const live = rows.filter(r => r.live);
     const perSport = {};
     const rest = rows.filter(r => !r.live && (perSport[r.sport] = (perSport[r.sport] || 0) + 1) <= 8);
@@ -114,6 +129,9 @@ export function gamesSnapshot(rows, pretty, unavailable = []) {
     else if (!live.length && !unavailable.length) html += '<p>No games on today’s schedule yet.</p>';
     if (unavailable.length) {
         html += `<p>Scores for ${unavailable.map(([l, h]) => `<a href="${esc(h)}">${esc(l)}</a>`).join(', ')} couldn’t be loaded for this page; each sport’s page has them.</p>`;
+    }
+    if (stale.length) {
+        html += `<p class="ss-stale" data-source-state="stale">${stale.map(esc).join(', ')} scores are the last copy our server got from ESPN; each game shows when that was.</p>`;
     }
     return html;
 }
@@ -135,11 +153,11 @@ export async function onRequest(context) {
             name: 'SportStrata', url: CANON, description: desc,
             potentialAction: { '@type': 'SearchAction', target: 'https://sportstrata.cc/#mlb-players?q={q}', 'query-input': 'required name=q' }
         });
-        const [{ rows, unavailable }, stories] = await Promise.all([todaysGames(d.iso), readAllStories(env, request.url)]);
+        const [{ rows, unavailable, stale }, stories] = await Promise.all([todaysGames(d.iso, p => context.waitUntil(p)), readAllStories(env, request.url)]);
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(H1)}</h1>` +
             `<p>${esc(desc)}</p>` +
-            gamesSnapshot(rows, d.pretty, unavailable) +
+            gamesSnapshot(rows, d.pretty, unavailable, stale) +
             storyListHtml(stories.slice(0, 6), 'Latest SportStrata Stories') +
             `<h2>Every sport</h2><ul>${HUBS.map(([l, h]) => `<li><a href="${h}">${esc(l)}</a></li>`).join('')}</ul>` +
             `<ul><li><a href="/mlb/leaders">MLB Stat Leaders</a></li>` +
@@ -160,7 +178,7 @@ export async function onRequest(context) {
             .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
             .replace('</head>', () => `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', () => `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=120' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': `public, max-age=${stale.length ? 60 : 120}` } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#home', 302); }

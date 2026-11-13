@@ -59,6 +59,7 @@ function validateMeta(meta, sport = 'nfl') {
     if (typeof meta.title === 'string' && meta.title.length > 80) problems.push('title must be 80 characters or fewer (og card limit)');
     if ((meta.hook === undefined) !== (meta.hook_url === undefined)) problems.push('hook and hook_url go together');
     if (meta.hook_url !== undefined && !/^https:\/\/[^\s<>"'\\@]+$/.test(String(meta.hook_url))) problems.push('hook_url must be an https URL');
+    if (meta.accent !== undefined && !/^#[0-9a-fA-F]{6}$/.test(String(meta.accent))) problems.push('accent must be #RRGGBB');
     return problems;
 }
 
@@ -76,10 +77,119 @@ function renderInline(text) {
     return renderBold(esc(withSlots)).replace(/\u0000(\d+)\u0000/g, (_, i) => links[Number(i)]);
 }
 
+// D-195: a chart is text in the story body, so checkStory reads its numbers and
+// words like any other sentence. The site draws it; no image ever carries a number
+// the checker can't see.
+const CHART_HEAD = /^::chart (bars|compare) (\S.*)$/;
+const CHART_VALUE = /^[+\-−–]?(?:\d[\d,]*(?:\.\d+)?|\.\d+)%?$/;
+const CHART_MIN_ROWS = 2;
+const CHART_MAX_ROWS = 18;
+
+function chartNumber(raw) {
+    if (!CHART_VALUE.test(raw)) throw new StoryError(`chart value "${raw}" is not a number`);
+    return Number(raw.replace(/[+,%]/g, '').replace(/[−–]/, '-'));
+}
+
+function parseChart(block) {
+    const lines = block.split('\n').map(l => l.trim());
+    const head = CHART_HEAD.exec(lines[0]);
+    if (!head) throw new StoryError('chart needs a type (bars or compare) and a title');
+    if (lines.length < 2 || lines[lines.length - 1] !== '::') throw new StoryError('chart needs a closing :: line');
+    const type = head[1];
+    const cells = lines.slice(1, -1).map(l => l.split('|').map(c => c.trim()));
+    const legend = type === 'compare' ? cells.shift() : null;
+    if (type === 'compare' && (!legend || legend.length !== 2 || legend.some(c => !c || CHART_VALUE.test(c)))) {
+        throw new StoryError('compare chart needs a legend line first: A | B');
+    }
+    if (cells.length < CHART_MIN_ROWS || cells.length > CHART_MAX_ROWS) {
+        throw new StoryError(`chart needs ${CHART_MIN_ROWS} to ${CHART_MAX_ROWS} rows`);
+    }
+    const valueCount = type === 'compare' ? 2 : 1;
+    const rows = cells.map(([label, ...raws]) => {
+        if (!label || raws.length !== valueCount) throw new StoryError(`chart row "${label}" needs ${valueCount} value(s)`);
+        return { label: label.replace(/^\*/, ''), hi: label.startsWith('*'), raws, values: raws.map(chartNumber) };
+    });
+    if (rows.filter(r => r.hi).length > 1) throw new StoryError('chart can highlight only one row');
+    return { type, title: head[2], legend, rows };
+}
+
+const chartPct = n => `${Number((n * 100).toFixed(1))}%`;
+
+function chartRow(r, track, value, classes = '') {
+    return `<div class="ss-chart__row${r.hi ? ' is-hi' : ''}${classes}"><span class="ss-chart__label">${esc(r.label)}</span>` +
+        `<span class="ss-chart__track" aria-hidden="true">${track}</span><span class="ss-chart__val">${esc(value)}</span></div>`;
+}
+
+function renderChart(chart) {
+    const all = chart.rows.flatMap(r => r.values);
+    let rows;
+    let legend = '';
+    if (chart.type === 'bars') {
+        const neg = -Math.min(0, ...all);
+        const span = (neg + Math.max(0, ...all)) || 1;
+        rows = chart.rows.map(r => {
+            const v = r.values[0];
+            const left = v < 0 ? (neg + v) / span : neg / span;
+            return chartRow(r, `<i style="left:${chartPct(left)};width:${chartPct(Math.abs(v) / span)}"></i>`, r.raws[0], v < 0 ? ' is-neg' : '');
+        });
+    } else {
+        const lo = Math.min(0, ...all);
+        const span = (Math.max(0, ...all) - lo) || 1;
+        const at = v => (v - lo) / span;
+        legend = `<p class="ss-chart__legend"><span class="ss-chart__key--a">${esc(chart.legend[0])}</span><span class="ss-chart__key--b">${esc(chart.legend[1])}</span></p>`;
+        rows = chart.rows.map(r => {
+            const [a, b] = r.values.map(at);
+            const track = `<b style="left:${chartPct(Math.min(a, b))};width:${chartPct(Math.abs(a - b))}"></b>` +
+                `<i class="ss-chart__dot--a" style="left:${chartPct(a)}"></i><i class="ss-chart__dot--b" style="left:${chartPct(b)}"></i>`;
+            return chartRow(r, track, `${r.raws[0]} vs ${r.raws[1]}`);
+        });
+    }
+    return `<figure class="ss-chart ss-chart--${chart.type}"><figcaption>${esc(chart.title)}</figcaption>${legend}${rows.join('')}</figure>`;
+}
+
+function chartBlocks(body) {
+    return String(body == null ? '' : body).replace(/\r\n/g, '\n').split(/\n{2,}/)
+        .map(block => block.trim()).filter(block => block.startsWith('::chart'));
+}
+
+function chartProblems(body) {
+    return chartBlocks(body).flatMap(block => {
+        try { parseChart(block); return []; }
+        catch (e) { return [{ where: 'chart', token: block.split('\n')[0], message: e.message }]; }
+    });
+}
+
+// The share card draws the first bars chart without labels, so it only needs
+// the values, the highlight and the chart title.
+function firstBarChart(body) {
+    for (const block of chartBlocks(body)) {
+        let chart;
+        try { chart = parseChart(block); } catch (_) { continue; }
+        if (chart.type === 'bars') return { title: chart.title, values: chart.rows.map(r => r.values[0]), hi: chart.rows.findIndex(r => r.hi) };
+    }
+    return null;
+}
+
+// Share-card bar geometry in pixels, around a zero line shared by every column.
+function barColumns(values, height, minBar = 3) {
+    const pos = Math.max(0, ...values);
+    const span = pos - Math.min(0, ...values);
+    const zero = span ? pos / span * height : height;
+    return values.map(v => {
+        const h = Math.max(minBar, span ? Math.abs(v) / span * height : 0);
+        return { top: Math.round(v < 0 ? zero : zero - h), height: Math.round(h) };
+    });
+}
+
 function renderBody(md) {
     return String(md == null ? '' : md).replace(/\r\n/g, '\n').split(/\n{2,}/)
         .map(block => block.trim()).filter(Boolean)
         .map(block => {
+            // A malformed chart is dropped: CI's chartProblems stops it before publish,
+            // so this only guards a page against a chart that somehow got through.
+            if (block.startsWith('::chart')) {
+                try { return renderChart(parseChart(block)); } catch (_) { return ''; }
+            }
             if (block.startsWith('## ')) return `<h2>${renderInline(block.slice(3).trim())}</h2>`;
             const lines = block.split('\n');
             if (lines.every(l => /^- /.test(l))) {
@@ -228,7 +338,7 @@ function matchesFact(tok, values) {
 function checkStory(story, factsDoc, socialText, sport = 'nfl') {
     const cfg = STORY_SPORTS[sport];
     if (!cfg) throw new StoryError(`unknown sport ${sport}`);
-    const problems = factProblems(factsDoc);
+    const problems = [...factProblems(factsDoc), ...chartProblems(story.body)];
     const values = factsDoc.facts.filter(isValidFact).map(f => f.value);
     const maxWeek = cfg.weeks && Number.isInteger(story.meta.week) ? story.meta.week + 1 : 0;
     const fields = [['title', story.meta.title], ['dek', story.meta.dek], ['hero_stat', story.meta.hero_stat], ['body', story.body], ['social', socialText], ['hook', story.meta.hook]];
@@ -249,4 +359,5 @@ function checkStory(story, factsDoc, socialText, sport = 'nfl') {
 module.exports = {
     StoryError, SLUG_RE, BYLINE, DISCLOSURE, STORY_SPORTS,
     parseStory, validateMeta, renderBody, storyUrl, storyEyebrow, indexEntry, sportFromPath, checkStory,
+    firstBarChart, barColumns,
 };

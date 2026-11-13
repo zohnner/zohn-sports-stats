@@ -47,6 +47,7 @@
 // even though the lookahead window (see LOOKAHEAD_MIN) is wider than the cron
 // cadence on purpose (catches a game if one run is delayed or skipped).
 import { buildPushPayload } from '@block65/webcrypto-web-push';
+import { readSource, TOLERANCE, SHAPES } from '../functions/_espnSource.js';
 
 const LOOKAHEAD_MIN = 12; // alert fires when a game's start time is <= this many minutes away
 const MLB_SCHEDULE_URL = 'https://statsapi.mlb.com/api/v1/schedule?sportId=1';
@@ -67,8 +68,10 @@ const ESPN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (K
 const MLB_UA = 'SportStrata/1.0'; // matches functions/api/mlb.js's already-proven statsapi UA
 
 export default {
+	// A cron run has no caller to hand its result to; without this log every
+	// DOWN/refused scoreboard was visible only through /__run.
 	async scheduled(event, env, ctx) {
-		ctx.waitUntil(runAlerts(env));
+		ctx.waitUntil(runAlerts(env).then(_logRun, e => { console.error(`push-alerts run threw: ${String(e).slice(0, 300)}`); }));
 	},
 
 	// Manual trigger for testing -- same shared-secret gate as auth-purge.js/
@@ -88,6 +91,14 @@ export default {
 		return Response.json(result);
 	},
 };
+
+export function _logRun(result) {
+	const { matched, sent, skipped, failed, pruned, errors } = result;
+	const line = `push-alerts matched=${matched} sent=${sent} skipped=${skipped} failed=${failed} pruned=${pruned}`;
+	if (errors.length) console.error(`${line} errors=${errors.length}: ${errors.join(' | ')}`);
+	else console.log(line);
+	return result;
+}
 
 function _timingSafeEqual(a, b) {
 	const bufA = new TextEncoder().encode(a);
@@ -155,8 +166,16 @@ async function _mlbUpcoming(now) {
 // Shared by NFL/NCAAF/NCAAB/WNBA/NBA -- all five ESPN scoreboards carry the
 // identical event/competitions/competitors shape; only the URL and the
 // deep-link builder differ per sport.
+//
+// D-196: an alert built on an old scoreboard can announce a game that was
+// postponed or already started, so this reads LIVE or nothing: tolerance 0,
+// no snapshot store, and _liveOnly() refuses anything else as a second lock.
 async function _espnUpcoming(sport, url, now, urlFor) {
-	const data = await _fetchJson(`${sport}-scoreboard`, url, { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } });
+	const src = await readSource(`scoreboard:${sport}`, url, {
+		maxStaleMs: TOLERANCE.push, validate: SHAPES.scoreboard, store: null,
+		init: { headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA } },
+	});
+	const data = _liveOnly(sport, src);
 	const games = [];
 	for (const ev of (data.events || [])) {
 		const statusName = ev.status && ev.status.type && ev.status.type.name;
@@ -179,6 +198,13 @@ async function _espnUpcoming(sport, url, now, urlFor) {
 		});
 	}
 	return games;
+}
+
+export function _liveOnly(sport, src) {
+	if (!src || src.state !== 'LIVE') {
+		throw new Error(`${sport}-scoreboard ${src ? src.state : 'DOWN'}: ${(src && src.reason) || 'no answer'} (no alerts sent)`);
+	}
+	return src.data;
 }
 
 const _nflUpcoming = (now) => _espnUpcoming('nfl', NFL_SCOREBOARD_URL, now, () => 'https://sportstrata.cc/nfl');

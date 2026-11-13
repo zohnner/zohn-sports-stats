@@ -1055,6 +1055,7 @@ function _loadFromHash() {
     // #nba-player-{id} landed on home.
     const nbaGameMatch       = hash.match(/^nba-game-([A-Za-z0-9]+)$/);
     const nbaPlayerMatch     = hash.match(/^nba-player-(\d+)$/);
+    const nbaTeamMatch       = hash.match(/^nba-team-([A-Za-z]{2,4})$/);
 
     // Cold-load restores below that bypass navigateTo() still log the entry view.
     if (mlbCompareMatch || mlbScorecardMatch || mlbPlayerMatch || mlbTeamMatch) _trackPageView(hash);
@@ -1100,7 +1101,7 @@ function _loadFromHash() {
         AppState.currentSport = 'ncaab';
         _applySportUI('ncaab');
         navigateTo('ncaab-game-' + ncaabGameMatch[1], false);
-    } else if (nbaGameMatch || nbaPlayerMatch) {
+    } else if (nbaGameMatch || nbaPlayerMatch || nbaTeamMatch) {
         AppState.currentSport = 'nba';
         _applySportUI('nba');
         navigateTo(hash, false);
@@ -1603,6 +1604,8 @@ function _renderSportSwitch(sport) {
 //                                 by `.abbr`. _renderNCAAFView (js/ncaaf.js) DOES
 //                                 have a `view.startsWith('ncaaf-team-')` branch,
 //                                 so navigateTo() is correct here (unlike MLB).
+//   nba   — `nba-team-{abbr}`   — ESPN abbr; showNBATeam (js/nba.js) aliases
+//                                 the long forms (SAS, GSW, ...) itself.
 //   ncaab/wnba — no team-detail view exists yet (their Teams-view team chips
 //                aren't links either — see js/ncaab.js, js/wnba.js), so the
 //                Teams-list fallback is the correct destination, not a bug.
@@ -1652,6 +1655,11 @@ async function _favRailGoToTeam(sport, abbr, fallbackView) {
             Logger.warn('Fav-rail NCAAF team lookup failed', err, 'NAV');
         }
         navigateTo(fallbackView);
+        return;
+    }
+
+    if (sport === 'nba') {
+        navigateTo('nba-team-' + abbr);
         return;
     }
 

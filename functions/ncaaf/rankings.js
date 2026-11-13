@@ -10,6 +10,7 @@
 // only because one half runs at the edge and one in the browser.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -22,9 +23,12 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/ncaaf?path=/rankings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
+        const src = await readSource('rankings:ncaaf', new URL('/api/ncaaf?path=/rankings', request.url), {
+            maxStaleMs: TOLERANCE.rankings, validate: SHAPES.rankings, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 1800, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const data = src.data;
         const polls = (data.rankings || []).filter(p => fbsPoll(p.shortName || p.name));
         const poll = polls[0];
         const ranks = poll ? (poll.ranks || []).slice(0, 25) : [];
@@ -56,7 +60,7 @@ export async function onRequest(context) {
         const snapshot =
             `<section class="ss-prerender"><h1>${esc(pollName)}${occurrence ? ` — ${esc(occurrence)}` : ''}</h1>` +
             `<p>Full Top 25 college football rankings with records and movement, updated weekly on SportStrata — free, no login, no ads.</p>` +
-            `<ol>${items}</ol></section>`;
+            `<ol>${items}</ol>` + staleNote(src, 'Rankings') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -72,7 +76,7 @@ export async function onRequest(context) {
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=1800' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 1800) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#ncaaf-rankings', 302); }

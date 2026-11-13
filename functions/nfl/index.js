@@ -8,6 +8,7 @@
 // full 32-team directory linking down into /nfl/team/:abbr.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote } from '../_espnSource.js';
 import { readStories, storyListHtml } from '../_storyLinks.js';
 
 function esc(s) {
@@ -31,19 +32,19 @@ const CARDS = [["Stat Leaders", "/nfl/leaders"], ["Mock Draft", "#nfl-mock"], ["
 
 async function teamDirectory() {
     try {
-        const r = await fetch(
-            'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams',
-            { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } }
-        );
-        if (!r.ok) return '';
-        const data = await r.json();
+        const src = await readSource('teams:nfl', 'https://site.web.api.espn.com/apis/site/v2/sports/football/nfl/teams', {
+            maxStaleMs: TOLERANCE.team, validate: SHAPES.teams,
+            init: { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true } },
+        });
+        if (!src.data) return '';
+        const data = src.data;
         const list = (data.sports && data.sports[0] && data.sports[0].leagues && data.sports[0].leagues[0] && data.sports[0].leagues[0].teams) || [];
         const teams = list.map(w => w.team).filter(t => t && t.abbreviation && t.displayName)
             .slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
         if (!teams.length) return '';
         const items = teams.map(t =>
             `<li><a href="/nfl/team/${esc(t.abbreviation.toLowerCase())}">${esc(t.displayName)}</a></li>`).join('');
-        return `<h2>All 32 NFL Teams</h2><ul>${items}</ul>`;
+        return `<h2>All 32 NFL Teams</h2><ul>${items}</ul>` + staleNote(src, 'Team list');
     } catch (_) { return ''; }
 }
 

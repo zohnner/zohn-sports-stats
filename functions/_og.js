@@ -23,9 +23,12 @@ import RESVG_WASM from '@resvg/resvg-wasm/index_bg.wasm';
 // works -- no complex-script/ligature shaping is needed here anyway (player/team names,
 // stat lines, all plain Latin text).
 import satori from 'satori';
+import core from '../tools/stories/story-core.cjs';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+const BAR_HEIGHT = 120;
+const BAR_MUTED = '#3a4252';
 const BRAND_ACCENT = '#ff8100';
 const BRAND_GOLD = '#ffd200';
 const FONT_FILES = ['BarlowSemiCondensed-Bold.ttf', 'BarlowSemiCondensed-SemiBold.ttf', 'BarlowSemiCondensed-Regular.ttf'];
@@ -64,7 +67,22 @@ function visibleAccent(hex) {
     return `#${mix(r)}${mix(g)}${mix(b)}`;
 }
 
-function buildTree({ eyebrow, title, subtitle, statLine, accentColor }) {
+// Unlabeled on purpose: the card's subtitle names the chart and the story has the
+// numbers. Every column is drawn even when no row is highlighted.
+function barsTree(bars, barHi, accent) {
+    return { type: 'div', props: {
+        style: { display: 'flex', height: BAR_HEIGHT, marginTop: 24 },
+        children: core.barColumns(bars, BAR_HEIGHT).map(({ top, height }, i) => ({ type: 'div', props: {
+            style: { display: 'flex', position: 'relative', flex: 1, maxWidth: 110, height: BAR_HEIGHT, marginLeft: i ? 8 : 0 },
+            children: [{ type: 'div', props: {
+                style: { display: 'flex', position: 'absolute', left: 0, right: 0, top, height, background: i === barHi ? accent : BAR_MUTED },
+                children: [],
+            } }],
+        } })),
+    } };
+}
+
+function buildTree({ eyebrow, title, subtitle, statLine, accentColor, bars, barHi }) {
     const accent = visibleAccent(accentColor);
     const content = [];
     if (eyebrow) {
@@ -89,6 +107,7 @@ function buildTree({ eyebrow, title, subtitle, statLine, accentColor }) {
             children: statLine,
         } });
     }
+    if (bars) content.push(barsTree(bars, barHi, accent));
 
     return {
         type: 'div',
@@ -110,9 +129,9 @@ function buildTree({ eyebrow, title, subtitle, statLine, accentColor }) {
 
 // eyebrow/title/subtitle/statLine are plain strings only -- caller is responsible for
 // keeping them short; satori has no text overflow/ellipsis handling of its own.
-export async function renderOgPng({ env, url, eyebrow, title, subtitle, statLine, accentColor }) {
+export async function renderOgPng({ env, url, eyebrow, title, subtitle, statLine, accentColor, bars, barHi }) {
     const [fonts] = await Promise.all([loadFonts(env, url), ensureResvgWasm()]);
-    const svg = await satori(buildTree({ eyebrow, title, subtitle, statLine, accentColor }), { width: WIDTH, height: HEIGHT, fonts });
+    const svg = await satori(buildTree({ eyebrow, title, subtitle, statLine, accentColor, bars, barHi }), { width: WIDTH, height: HEIGHT, fonts });
     const resvg = new Resvg(svg, { font: { loadSystemFonts: false }, fitTo: { mode: 'width', value: WIDTH } });
     return resvg.render().asPng();
 }

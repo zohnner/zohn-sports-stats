@@ -1,0 +1,310 @@
+{
+  "facts": [
+    {
+      "key": "w9_losses",
+      "value": 5,
+      "label": "Week 9 ranked losses to unranked FBS opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_games",
+      "value": 16,
+      "label": "Week 9 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_wins",
+      "value": 11,
+      "label": "Week 9 ranked wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_loss_rate",
+      "value": 0.3125,
+      "label": "5 / 16, shown as 31.3%",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_home_wins",
+      "value": 8,
+      "label": "Week 9 ranked home wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_home_losses",
+      "value": 0,
+      "label": "Week 9 ranked home losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_away_wins",
+      "value": 3,
+      "label": "Week 9 ranked away wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w9_away_losses",
+      "value": 5,
+      "label": "Week 9 ranked away losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w8_losses",
+      "value": 5,
+      "label": "Week 8 ranked losses to unranked FBS opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "w8_games",
+      "value": 15,
+      "label": "Week 8 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "w8_home_wins",
+      "value": 7,
+      "label": "Week 8 ranked home wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "w8_away_wins",
+      "value": 3,
+      "label": "Week 8 ranked away wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "two_week_wins",
+      "value": 21,
+      "label": "Weeks 8-9 ranked wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_losses",
+      "value": 10,
+      "label": "Weeks 8-9 ranked losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_games",
+      "value": 31,
+      "label": "Weeks 8-9 ranked-vs-unranked games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_home_wins",
+      "value": 15,
+      "label": "Weeks 8-9 ranked home wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_home_losses",
+      "value": 0,
+      "label": "Weeks 8-9 ranked home losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_away_wins",
+      "value": 6,
+      "label": "Weeks 8-9 ranked away wins over unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "two_week_away_losses",
+      "value": 10,
+      "label": "Weeks 8-9 ranked away losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "consecutive_weeks",
+      "value": 2,
+      "label": "Straight weeks with 5 ranked losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "w6_high",
+      "value": 4,
+      "label": "Previous single-week high, Week 6 ranked losses to unranked opponents",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=1; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=2; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=3; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=4; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=5; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=6; https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&seasontype=2&dates=2026&limit=300&week=7"
+    },
+    {
+      "key": "osu_rank",
+      "value": 2,
+      "label": "Ohio State rank",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "osu_pts",
+      "value": 18,
+      "label": "Ohio State points vs USC",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "usc_pts",
+      "value": 30,
+      "label": "USC points vs Ohio State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "smu_rank",
+      "value": 19,
+      "label": "SMU rank",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "smu_pts",
+      "value": 27,
+      "label": "SMU points vs Syracuse",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "syr_pts",
+      "value": 30,
+      "label": "Syracuse points vs SMU",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "nu_rank",
+      "value": 20,
+      "label": "Northwestern rank",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "nu_pts",
+      "value": 26,
+      "label": "Northwestern points vs Oregon",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "ore_pts",
+      "value": 34,
+      "label": "Oregon points vs Northwestern",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "okst_rank",
+      "value": 24,
+      "label": "Oklahoma State rank",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "okst_pts",
+      "value": 49,
+      "label": "Oklahoma State points vs Iowa State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "isu_pts",
+      "value": 51,
+      "label": "Iowa State points vs Oklahoma State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "wis_rank",
+      "value": 25,
+      "label": "Wisconsin rank",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "wis_pts",
+      "value": 0,
+      "label": "Wisconsin points vs Iowa",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "iowa_pts",
+      "value": 30,
+      "label": "Iowa points vs Wisconsin",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "byu_rank_w8",
+      "value": 2,
+      "label": "BYU rank in Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "byu_pts_w8",
+      "value": 31,
+      "label": "BYU points vs UCF in Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "ucf_pts_w8",
+      "value": 39,
+      "label": "UCF points vs BYU in Week 8",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261024&groups=80"
+    },
+    {
+      "key": "winners_wins",
+      "value": 26,
+      "label": "Combined wins of the 5 Week 9 upset winners",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "winners_losses",
+      "value": 15,
+      "label": "Combined losses of the 5 Week 9 upset winners",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "usc_wins",
+      "value": 7,
+      "label": "USC wins",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "usc_losses",
+      "value": 2,
+      "label": "USC losses",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "iowa_wins",
+      "value": 6,
+      "label": "Iowa wins",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "iowa_losses",
+      "value": 2,
+      "label": "Iowa losses",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "ore_wins",
+      "value": 5,
+      "label": "Oregon wins",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "ore_losses",
+      "value": 3,
+      "label": "Oregon losses",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "syr_wins",
+      "value": 4,
+      "label": "Syracuse wins",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "syr_losses",
+      "value": 4,
+      "label": "Syracuse losses",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "isu_wins",
+      "value": 4,
+      "label": "Iowa State wins",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    },
+    {
+      "key": "isu_losses",
+      "value": 4,
+      "label": "Iowa State losses",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261031&groups=80"
+    }
+  ]
+}

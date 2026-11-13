@@ -1,0 +1,214 @@
+{
+  "facts": [
+    {
+      "key": "min_diff_pg",
+      "value": 14.8,
+      "label": "Minnesota point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "teams_count",
+      "value": 30,
+      "label": "Teams in the NBA",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_diff_pg",
+      "value": 12.0,
+      "label": "Memphis point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_wins",
+      "value": 4,
+      "label": "Minnesota wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_losses",
+      "value": 2,
+      "label": "Minnesota losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_games",
+      "value": 6,
+      "label": "Minnesota games played",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_diff_total",
+      "value": 89,
+      "label": "Minnesota total point differential",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "hou_diff_total",
+      "value": 66,
+      "label": "Houston total point differential",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_diff_total",
+      "value": 60,
+      "label": "Memphis total point differential",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_ppg",
+      "value": 121.5,
+      "label": "Minnesota points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "por_ppg",
+      "value": 122.8,
+      "label": "Portland points per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_opp_ppg",
+      "value": 106.7,
+      "label": "Minnesota points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "win_margin_1",
+      "value": 25,
+      "label": "Minnesota margin at Miami",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261021"
+    },
+    {
+      "key": "win_margin_2",
+      "value": 22,
+      "label": "Minnesota margin at Orlando",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261023"
+    },
+    {
+      "key": "win_margin_3",
+      "value": 23,
+      "label": "Minnesota margin against Toronto",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025"
+    },
+    {
+      "key": "win_margin_4",
+      "value": 26,
+      "label": "Minnesota margin against the Clippers",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "loss_margin_1",
+      "value": 2,
+      "label": "Minnesota margin at Cleveland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "loss_margin_2",
+      "value": 5,
+      "label": "Minnesota margin against Golden State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261028"
+    },
+    {
+      "key": "min_opp_losing",
+      "value": 3,
+      "label": "Minnesota opponents with losing records",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_opp_other_games",
+      "value": 26,
+      "label": "Other games played by Minnesota's opponents",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "min_opp_other_ppg",
+      "value": 116.2,
+      "label": "Minnesota opponents' points per game in their other games",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_wins",
+      "value": 5,
+      "label": "Memphis wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "mem_losses",
+      "value": 0,
+      "label": "Memphis losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?seasontype=2&season=2027"
+    },
+    {
+      "key": "game_mia_min",
+      "value": 131,
+      "label": "Minnesota points at Miami",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261021"
+    },
+    {
+      "key": "game_mia_mia",
+      "value": 106,
+      "label": "Miami points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261021"
+    },
+    {
+      "key": "game_orl_min",
+      "value": 115,
+      "label": "Minnesota points at Orlando",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261023"
+    },
+    {
+      "key": "game_orl_orl",
+      "value": 93,
+      "label": "Orlando points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261023"
+    },
+    {
+      "key": "game_tor_min",
+      "value": 117,
+      "label": "Minnesota points against Toronto",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025"
+    },
+    {
+      "key": "game_tor_tor",
+      "value": 94,
+      "label": "Toronto points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261025"
+    },
+    {
+      "key": "game_cle_min",
+      "value": 125,
+      "label": "Minnesota points at Cleveland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "game_cle_cle",
+      "value": 127,
+      "label": "Cleveland points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261026"
+    },
+    {
+      "key": "game_gs_min",
+      "value": 114,
+      "label": "Minnesota points against Golden State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261028"
+    },
+    {
+      "key": "game_gs_gs",
+      "value": 119,
+      "label": "Golden State points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261028"
+    },
+    {
+      "key": "game_lac_min",
+      "value": 127,
+      "label": "Minnesota points against the Clippers",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    },
+    {
+      "key": "game_lac_lac",
+      "value": 101,
+      "label": "Clippers points against Minnesota",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261030"
+    }
+  ]
+}

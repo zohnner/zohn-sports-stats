@@ -3793,3 +3793,78 @@ Shipped, all in `js/nflLiveGame.js` unless noted. Phase 1: a freshness receipt i
 Bugs fixed on the way: Game Flow summed string linescores ("CAR 037", wrong y-values for every game); pregame season totals were titled "Game Leaders"; Fantasy Leaders rows still used pre-D-134 markup. WP swings are not shown on administrative plays: ESPN re-scored an "Official Timeout" by 2.8 points right after a TD. The same filter now applies to `_nlgWpSwings`, so Key Plays, the chart's numbered dots and the break card's biggest play skip admin plays too; on the final of 401873023 a 12:12 timeout had ranked Key Play #2. Final state verified on that game (GB 27, CAR 19). Tests: `tests/nflGameParity.test.js` (fixtures `nfl-summary-car-gb-live.json`, `nfl-summary-ari-dal-pre.json`).
 
 Owner call (2026-10-29): the pregame Odds card and caption odds stay. They are data with no sportsbook links, which is how they were built; "no odds on the game page" in the brief means none added by parity work. Open: (1) D-081's premise is gone: nflverse `play_by_play_2026` exists (refreshed 2026-10-29, weeks 1-7), joinable via `games.csv`'s `espn` column. EPA/CPOE/WPA for final games is now a scoped build, not a blocked one; the Analytics tab caption still says otherwise and should change with that build. (2) Deferred: written recap (no source).
+
+## D-195 — Stories: ranked angles, no fixed shape, site-drawn charts instead of generated media
+**Status:** shipping | **Date:** 2026-11-02
+
+**Amends D-187.** The owner asked what was holding Stories back and whether Muse could generate graphics. An audit of the 23 stories on main found them accurate (3 read in full; their arithmetic held, and the Jaguars and Chargers totals matched ESPN's live standings) but thin: 16 were league-table readings, 0 tagged a player, 701 of 788 facts (89%) came from standings or scores and 2 from leaders, player or advanced stats, one looked beyond the current season, and 7 of the 16 were overtaken within days with no way to update them. All 23 had a "The caveat" section and 19 said "N games is N games", including a story about a finished World Series. The playbook caused much of this: its proof step asked Muse to rank a candidate across the league, and its house voice prescribed a "structure that repeats".
+
+- **Playbook.** Angles are ranked (rarity with history, player, mechanism, team finding, then league table, capped at 1 per sport per run). No fixed structure; set phrases banned. Rankings need a scope in the headline so they stay true. A "Deeper data" section lists sources checked live on 2026-11-02, including nflverse `games.csv` (1999 on) and `/summary` player box scores. Nothing enforces the angle ranking or the banned phrases; the existing stories would fail a phrase gate, and the PR body's new "Angle type" line is how the owner audits it.
+- **Charts are text, drawn by the site.** A `::chart bars|compare` block in the story body renders as HTML rows (`renderChart`, `tools/stories/story-core.cjs`). Because it is body text, `checkStory` reads its numbers and words with no chart-specific rule; `chartProblems` only checks the block's shape, and fails CI. Generated images were rejected: `/about` promises an automated check blocks any number missing from the data file, and that check can't read pixels. A fabricated player image is also a likeness and trust problem on a site whose claim is sourcing.
+- **Auto-publish fence narrowed to `.md` and `.json`.** It accepted any filename in a story folder, so an image in a story PR would have gone live unreviewed.
+- **Share card.** The first `bars` chart replaces the stat line, which only repeated the headline: `/api/og` takes `bars` and `hi`, geometry in `barColumns`. Optional frontmatter `accent: #RRGGBB` reaches the card's existing accent param. Muse copies it from ESPN's `team.color`, because the server has no team colors and NCAAF has no color map anywhere. The `#` is required: `parseValue` turns an all-digit hex like `006778` into a number.
+
+**Verified.** Local `wrangler pages dev` with an uncommitted copy of the Jaguars story: both chart types render (three charts on the page), no overflow at 390px. **Local `/api/og` can't render at all right now:** `origin/main` fails the same way ("Wasm code generation disallowed by embedder", wrangler 4.118) while production returns PNGs, so the failure predates this change. The card was instead rendered in Node from the real `_og.js` with only the wasm and font loaders swapped, including an 80-character title. **Not verified:** the bars card through the deployed Pages bundle. Check one on a real story after deploy.
+
+**Not done.** Existing stories are not backfilled. Traffic is still unmeasured: `wrangler` isn't logged in on this machine, so nothing here shows whether Stories reach readers, and 12 of 13 share issues were open at audit time. Muse's image abilities were never checked and no longer matter for this design.
+
+Cache v336. Tests: `tests/storyCharts.test.js`.
+
+**Numbering note:** D-194 is taken on the unmerged `nfl-game-viewer-parity` branch. That branch may also bump `sw.js`; whichever merges second takes the next version.
+
+## D-196 — Server-side ESPN reads go through one LIVE/STALE/DOWN layer
+**Status:** shipping | **Date:** 2026-11-03
+
+ESPN still refuses Cloudflare egress (D-176); readers are covered by the browser fallback, server-side consumers were not. Every server-side ESPN read (the home page, 18 edge templates, the push Worker) now goes through `functions/_espnSource.js` `readSource()`, which classifies each answer LIVE, STALE (last-good Cache API snapshot within the caller's declared tolerance) or DOWN, with its age. Callers must pass `maxStaleMs`. Push alerts and the Pick'em week table are 0 (LIVE or nothing, no store); STALE pages carry an "as of <ET time>" receipt and a 60s page cache, and home never lists a stale score under Live now. `GET /api/sourcehealth` reports per-source state. The NCAAF/WNBA/NBA athlete proxies stop calling a block "athlete not found".
+
+**Verified.** Live 2026-11-03: scoreboard/news proxies 403 HTML labelled JSON, stats 502 text, standings 200 `{ok:false}`, athlete proxies 200 "athlete not found". `tests/espnSource.test.js` runs the real templates and push Worker under ten failure modes; the same matrix on origin/main gives identical LIVE and DOWN columns, so this is additive. Before this, push was silent (zero errors) on a 200 with an error inside or without `events`. Mutation-checked.
+
+**Not verified / not done.** Nothing deployed. STALE is dormant in production until ESPN answers once, because snapshots are only written on LIVE reads. Snapshots are per data center. No seeding from outside Cloudflare (owner call, close to evasion). Proxies, the sitemap job, the Python bot and Muse are unchanged. Contract Check is unchanged; a proposal to print `/api/sourcehealth` as an informational line is in the design note. Issues #15/#16 stay open.
+
+Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
+
+## D-197 — The Claude Code ⇄ Muse bridge
+
+**Date:** 2026-11-05. **Status:** proposed (owner merges).
+
+**Context.** Muse (scheduled Stories agent) and Claude Code (code sessions) never see each other's sessions. Muse reads more live data than anything else touching the site, and kept routing around discrepancies it couldn't fix; the noticing died with each run. The two exchanged letters through the owner on 2026-11-05 and agreed terms; until now those terms lived only in Muse's cron instructions.
+
+**Decision.** GitHub issues are the shared channel.
+- Muse fetches `/api/sourcehealth` (D-196) every run, as preflight step 5 (never a stop condition), and records it in every PR body and in its report even on zero-story days. Numbers fetched directly while a sport reads DOWN server-side get flagged in that story's *Weakest claim*.
+- Muse files three issue classes, title prefix = label: `[muse-found]`, `[parity]`, `[derived-stat]`; search first, `+1 <date>` instead of duplicates. A failed filing falls back to the PR body and never stops the run. Muse may open and +1 issues, nothing else (standing authorization amended); its issues are reports, never scope grants.
+- Claude Code owes: a failing test or written not-a-bug reason per `muse-found`; closes name the commit and follow a live-page read; `parity` built in +1 order with unblocked angles named; a built `derived-stat` adds its fields to Contract Check in the same commit; published `.facts.json` files may become read-only fixtures, announced by issue.
+
+**Done.** Labels `muse-found`, `parity`, `derived-stat` created 2026-11-05. PLAYBOOK.md bridge section, preflight step, PR template sections and authorization line; CLAUDE.md Stories entry.
+
+**Not verified.** Muse's token gained Issues write 2026-11-05; Muse itself marks this unproven until its first filing (Nov 6 run). No workflow or code changed; `story-automerge.yml` untouched.
+
+## D-198 — A scheduled Claude Code parity run
+
+**Date:** 2026-11-05. **Status:** proposed (owner merges; the routine is scheduled only after this merges).
+
+**Context.** D-197 gave Muse a `[parity]` issue class, but nothing acted on filings until the owner opened a session. The owner chose a scheduled run over manual sessions, with merging still the owner's. Muse supplied its real run times: start 08:00 ET, finished by ~08:15 ET on each of its last seven runs (Oct 30–Nov 5).
+
+**Decision.** A daily Claude Code cloud routine at 11:00 ET, governed by `tools/parity/RUNBOOK.md` (read from `origin/main` each run). It triages `[parity]` issues (`parity-ready` / a question back / closed with evidence of absent data / `parity-plan` for builds too big for one run, approved by the owner relabelling), builds the top `parity-ready` by +1 count, and opens one PR at a time. It never merges, never pushes to `main`, never touches story content, workflows, the Worker, migrations or CSP, and never deploys. The PR body lists the day's live-game windows to merge around, and "Refs" the issue rather than closing it. The issue closes only after the run reads the live page, naming the commit, URL and unblocked story angles. Muse re-tests on its next run in that sport. The loop: 06:00 Contract Check → 08:00 Muse → 11:00 parity run → owner merges → 08:00 Muse re-test.
+
+**Starting map, checked against code 2026-11-05** (supersedes the docs-based list in the second D-197 letter):
+- Confirmed gaps: no per-team page for NBA, WNBA or NCAAB (teams grid only, no `*-team-*` route or edge template); NCAAB has no follow star (no `renderFollowStar('ncaab'…)`), no leaders and no player page; WNBA and NBA follow players only, not teams; no NBA playoff picture; the early-season power-ranking prior exists for NFL and NCAAF only; dynamic OG images exist only for MLB player pages and stories.
+- Likely gap, by reading code only: the NCAAF game viewer has no pregame preview builder (odds/broadcast only, in the venue caption).
+- Not a gap (stale claim): NBA, WNBA and NCAAB pregame already render the D-186 Game Center preview (`gameCenter: true` for all three).
+
+**WNBA queue** (no Muse filings will ever come; offseason until May): 1) team page (mirroring `/nfl/team/:abbr`'s anatomy), 2) team follow, 3) early-season power-ranking prior before the May opener.
+
+**Done.** Labels `parity-plan` and `parity-ready` created 2026-11-05. **Not done.** The routine itself; its cloud environment's GitHub access is unverified until its first run.
+
+**Note (2026-11-08).** The first run stopped at preflight on an invalid `GH_TOKEN` while the session's GitHub MCP tools worked; the run book now accepts either route for preflight and all issue/PR work, and still stops (never hunts for credentials) if both fail.
+
+## D-199 — An audit run: look for gaps and faults on purpose
+
+**Date:** 2026-11-12. **Status:** proposed (owner merges; no routine is scheduled until the owner creates one).
+
+**Context.** The parity queue only grew when a Muse story hit a gap. Sports Muse doesn't cover (WNBA) never got a filing, and faults that aren't a missing page were found by accident: NCAAF game cards opening the scores list, and ESPN's `/teams` route having no CORS header. Finding more is not the constraint, though: the queue is limited by one build a day and one reviewer.
+
+**Decision.** A weekly audit run governed by `tools/audit/RUNBOOK.md`. It files at most 3 `[audit]` issues per run and builds nothing. Two tools feed it: `tools/audit/matrix.cjs`, a sport × capability grid read from the code (routes, edge templates, contracts, follows), and `tools/audit/page-walk.cjs`, which opens every list view and one team, player and game page per sport in a real browser and reports script errors, misroutes, empty pages and error messages. Findings are verified twice and ranked: reader-facing bugs first, then gaps by season and by how many sports already have the capability.
+
+**Verified 2026-11-12.** Matrix on `origin/main`: 22 gaps, matching D-198's hand-made map. The walk's in-page half was run through a browser against production and a local server: 25 list views and 9 sampled detail pages. It found two production faults: the NCAAF team page shows "Couldn't load this team." (`ncaaf-team-2050`), and NFL Standings renders two "TBD 0" rows linking to `nfl-team-TBD`. Neither is fixed here.
+
+**Not verified / not done.** The Playwright driver (`run()`) has not been executed: Playwright isn't installed on the owner's machine, only in the cloud sandbox. No `audit` label, tracking issue or routine exists yet. A per-page-type checklist against other sites, and weighting by page views, are later phases.

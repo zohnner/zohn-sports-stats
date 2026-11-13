@@ -7,6 +7,7 @@
 // just terminates one level sooner. Same HTML for humans and bots; fail-safe.
 
 import { shell, rawShell } from '../_shell.js';
+import { readSource, TOLERANCE, SHAPES, staleNote, pageCacheControl } from '../_espnSource.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -36,10 +37,12 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const r = await fetch(new URL('/api/wnbastandings', request.url), { cf: { cacheTtl: 1800, cacheEverything: true } });
-        if (!r.ok) return shell(env, request.url);
-        const data = await r.json();
-        if (data && data.ok === false) return shell(env, request.url);
+        const src = await readSource('standings:wnba', new URL('/api/wnbastandings', request.url), {
+            maxStaleMs: TOLERANCE.standings, validate: SHAPES.standings, waitUntil: p => context.waitUntil(p),
+            init: { cf: { cacheTtl: 1800, cacheEverything: true } },
+        });
+        if (!src.data) return shell(env, request.url);
+        const data = src.data;
 
         const confs = [];
         for (const c of (data.children || [])) collectConfs(c, [], confs);
@@ -66,7 +69,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>WNBA Standings</h1>` +
             `<p>Eastern and Western Conference standings with win-loss records, updated throughout the season on SportStrata — free, no login, no ads.</p>` +
             `<p>Conferences: <ul>${confItems}</ul></p>` +
-            sectionHtml + `</section>`;
+            sectionHtml + staleNote(src, 'Standings') + `</section>`;
 
         let html = await (await rawShell(env, request.url)).text();
         html = html
@@ -82,7 +85,7 @@ export async function onRequest(context) {
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
-        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=1800' } });
+        return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': pageCacheControl(src, 1800) } });
     } catch (e) {
         try { return await shell(env, request.url); }
         catch (_) { return Response.redirect('https://sportstrata.cc/#wnba-standings', 302); }

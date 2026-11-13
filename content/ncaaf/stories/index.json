@@ -1,6 +1,62 @@
 {
   "stories": [
     {
+      "slug": "2026-11-08-georgia-42-7-ole-miss-top-10-blowout",
+      "title": "Georgia beat No. 10 Ole Miss 42-7, the biggest top-10 blowout this season",
+      "dek": "The 35-point margin is 27 points wider than any other game between top-10 teams this season.",
+      "date": "2026-11-08",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "UGA",
+        "MISS"
+      ],
+      "players": [],
+      "hero_stat": "35-point win over a top-10 team",
+      "url": "/ncaaf/stories/2026-11-08-georgia-42-7-ole-miss-top-10-blowout",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-08-notre-dame-31-24-miami-top-offense",
+      "title": "Notre Dame held No. 1 Miami to 24 points, its season low",
+      "dek": "Miami entered Saturday averaging 47.6 points a game, the most in FBS; its previous low was 33.",
+      "date": "2026-11-08",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "ND",
+        "MIA"
+      ],
+      "players": [],
+      "hero_stat": "24 points allowed to the No. 1 scoring offense",
+      "url": "/ncaaf/stories/2026-11-08-notre-dame-31-24-miami-top-offense",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-01-ranked-losses-second-straight-week",
+      "title": "Ranked teams lost 5 games to unranked opponents for a 2nd straight week",
+      "dek": "All 5 Week 9 losses came on the road, where ranked teams are 6-10 over the last 2 weeks.",
+      "date": "2026-11-01",
+      "season": 2026,
+      "week": 9,
+      "teams": [
+        "OSU",
+        "USC",
+        "SMU",
+        "SYR",
+        "NU",
+        "ORE",
+        "OKST",
+        "ISU",
+        "WIS",
+        "IOWA"
+      ],
+      "players": [],
+      "hero_stat": "5 ranked losses, 2nd straight week",
+      "url": "/ncaaf/stories/2026-11-01-ranked-losses-second-straight-week",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-10-27-ranked-teams-road-losses-week-8",
       "title": "Ranked teams lost 5 times to unranked opponents in Week 8, the most this season",
       "dek": "All 5 losses came on the road, where ranked teams went 3-5; at home they went 7-0.",
