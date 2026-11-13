@@ -177,7 +177,7 @@
 .nlg-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); margin-bottom: 1rem; overflow: hidden; }
 .nlg-sum { cursor: pointer; padding: 0.6rem 1rem; font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
 .nlg-sum::-webkit-details-marker { display: none; }
-.nlg-sum-teams { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-subtle); font-size: 0.7rem; }
+.nlg-sum-teams { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-size: 0.7rem; }
 /* Drive-history position bar (D-160) -- flex-basis:100% forces it onto its
    own row below the existing team/description line, inside the same
    flex-wrap .nlg-sum row rather than a new wrapper element. A plain 100-unit
@@ -442,7 +442,7 @@
    below, where it fits without an ellipsis in the normal case. */
 .nlg-leader-row { padding: 0.2rem 0; font-size: 0.76rem; }
 .nlg-leader-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
-.nlg-leader-cat { color: var(--text-subtle); font-size: 0.66rem; text-transform: uppercase; }
+.nlg-leader-cat { color: var(--text-muted); font-size: 0.66rem; text-transform: uppercase; }
 .nlg-leader-name { display: block; color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-leader-val { font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
@@ -484,7 +484,7 @@
 .nlg-pbp-plays { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.25rem; }
 .nlg-pbp-play { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.78rem; }
 .nlg-pbp-play--score { background: color-mix(in srgb, var(--color-live) 8%, transparent); }
-.nlg-pbp-dd { font-size: 0.64rem; font-weight: 700; color: var(--text-subtle); min-width: 84px; }
+.nlg-pbp-dd { font-size: 0.64rem; font-weight: 700; color: var(--text-muted); }
 .nlg-pbp-text { color: var(--text-secondary); }
 .nlg-pbp-score { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-primary); }
 
@@ -607,3 +607,48 @@
 .nlg-fw-bars { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
 .nlg-fw-bar { width: 6px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: 0.85; }
 .nlg-fw-avg { font-family: var(--font-display); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* NFL game viewer parity pass (D-194): freshness receipt, line-style keys,
+   full team stats, game info, richer play-by-play. --text-muted (not
+   --text-subtle) for every numeral: check-themes.cjs guards only --text-muted,
+   and --text-subtle measures about 1.6:1 on the Monarchs theme. */
+.nlg-fresh { font-size: 0.66rem; color: var(--text-muted); margin-top: 0.15rem; }
+.nlg-linekey { display: inline-block; vertical-align: middle; margin-right: 0.3em; flex-shrink: 0; }
+.nlg-flow-qs { display: flex; justify-content: space-between; font-size: 0.58rem; font-weight: 700; color: var(--text-muted); margin-top: 0.15rem; }
+.nlg-flow-legend > span { display: inline-flex; align-items: center; font-variant-numeric: tabular-nums; }
+.nlg-ts-sec { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 0.7rem 0 0.15rem; }
+.nlg-ts-sec:first-child { padding-top: 0.2rem; }
+.nlg-ts-bar { grid-column: 1 / -1; display: flex; gap: 2px; height: 3px; margin-top: 0.1rem; }
+.nlg-ts-bar span { display: block; height: 100%; border-radius: var(--radius-full); min-width: 2px; }
+.nlg-ts-key { display: inline-flex; align-items: center; gap: 0.25rem; }
+.nlg-ts-key .nlg-linekey:last-child { margin: 0 0 0 0.3em; }
+.nlg-ts-note { padding: 0 1rem 0.7rem; margin: 0; }
+.nlg-info-row { grid-template-columns: auto 1fr; }
+.nlg-info-row .nlg-an-val { text-align: right; }
+.nlg-pbp-filters { flex-wrap: wrap; margin: 0 0 0.75rem; }
+.nlg-pbp-play { grid-template-columns: 92px 1fr auto; }
+.nlg-pbp-meta { display: flex; flex-direction: column; gap: 0.1rem; }
+.nlg-pbp-when { font-size: 0.64rem; font-weight: 800; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.nlg-pbp-team { font-size: 0.62rem; font-weight: 800; color: var(--text-muted); }
+.nlg-pbp-tag { display: inline-block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.05rem 0.35rem; margin-right: 0.4rem; border-radius: var(--radius-xs); border: 1px solid var(--border-strong); color: var(--text-primary); background: var(--bg-raised); vertical-align: 0.1em; }
+.nlg-pbp-tag--pen { color: var(--text-muted); border-color: var(--border-default); }
+.nlg-pbp-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.nlg-pbp-wp { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nlg-pbp-plays--flat { padding-top: 0.6rem; }
+@media (max-width: 640px) {
+    .nlg-pbp-play { grid-template-columns: 1fr auto; }
+    .nlg-pbp-meta { grid-column: 1 / -1; flex-direction: row; gap: 0.5rem; align-items: baseline; }
+}
+
+/* Win-probability scrubber (D-194). The readout stands in for the legend while
+   a play is selected, clamped so the sidebar barely moves. */
+.nlg-wp-chart[data-wp-size] { cursor: crosshair; touch-action: pan-y; border-radius: var(--radius-sm); }
+.nlg-wp-chart[data-wp-size]:focus-visible { outline: 2px solid var(--border-strong); outline-offset: 2px; }
+.nlg-wp-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-muted); pointer-events: none; transform: translateX(-0.5px); }
+.nlg-wp-marker { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-card); pointer-events: none; transform: translate(-50%, -50%); }
+.nlg-wp-readout { margin: 0.3rem 0 0; font-size: 0.7rem; line-height: 1.35; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nlg-wp-readout:empty { display: none; }
+.nlg-wp-readout:not(:empty) + .nlg-wp-legend { display: none; }
+.nlg-wp-readout-when, .nlg-wp-readout-pct, .nlg-wp-readout-swing { font-weight: 800; font-variant-numeric: tabular-nums; margin-right: 0.45em; }
+.nlg-wp-readout-when, .nlg-wp-readout-swing { color: var(--text-muted); }
+.nlg-wp-readout-pct { color: var(--text-primary); }

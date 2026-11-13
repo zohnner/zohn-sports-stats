@@ -25,7 +25,7 @@
 // climbing entries on a real 4th-quarter game) — see _nlgWinProbability below.
 // ============================================================
 
-const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, field: null, fieldSource: null, fieldIndex: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null, lastBreakKey: undefined };
+const _nlg = { eventId: null, timer: null, activeTab: 'summary', lastData: null, fantasyScoring: 'PPR', situation: null, lastState: null, fantasyWatchGamePk: null, fantasyWatchHtml: '', fantasyWatchPlayers: null, yourRosterGameId: null, yourRosterPlayers: null, field: null, fieldSource: null, fieldIndex: null, lastBigPlayId: null, bigPlayDismiss: null, lastSituationKey: null, catchupData: null, lastBattleState: null, lastBreakKey: undefined, pbpFilter: 'all', wpScrub: null };
 
 const NLG_POLL_MS = 20000;
 // Pregame-only cadence (D-1xx): a scheduled game never used to poll at all
@@ -127,18 +127,39 @@ const _NLG_TABS = [
 async function fetchNFLSummary(eventId) {
     const r = await _espnFetch(`/api/nfl?path=/summary&event=${encodeURIComponent(eventId)}`);
     if (!r.ok) throw new Error(`summary ${r.status}`);
-    return r.json();
+    const data = await r.json();
+    if (typeof noteFetched === 'function') noteFetched('nfl/summary', Date.now());
+    return data;
 }
 
 function _nlgStop() {
     if (_nlg.timer) { clearInterval(_nlg.timer); _nlg.timer = null; }
 }
 
-async function showNFLGame(eventId) {
+// Router teardown: leaving the page also drops its SportsEvent JSON-LD.
+function _nlgLeave() {
+    _nlgStop();
+    document.getElementById('ssEventLd')?.remove();
+}
+
+// The active tab rides in the hash (#nfl-game-{id}-box) so a copied URL opens
+// the same view. replaceState, not navigateTo: a tab switch is not a new page.
+function _nlgSyncTabHash() {
+    if (!_nlg.eventId || typeof history === 'undefined') return;
+    const view = 'nfl-game-' + _nlg.eventId + (_nlg.activeTab === 'summary' ? '' : '-' + _nlg.activeTab);
+    if (location.hash === '#' + view) return;
+    history.replaceState({ ...(history.state || {}), view }, '', location.pathname + location.search + '#' + view);
+}
+
+async function showNFLGame(eventId, tab) {
     _nlgStop();
     const isNewGame = _nlg.eventId !== eventId;
     _nlg.eventId = eventId;
-    if (isNewGame) { if (_nlg.field) { _nlg.field.destroy(); _nlg.field = null; } _nlg.fieldSource = null; _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; _nlg.lastBreakKey = undefined; }
+    if (isNewGame) { if (_nlg.field) { _nlg.field.destroy(); _nlg.field = null; } _nlg.fieldSource = null; _nlg.activeTab = 'summary'; _nlg.lastData = null; _nlg.lastState = null; _nlg.fantasyWatchGamePk = null; _nlg.fantasyWatchHtml = ''; _nlg.fantasyWatchPlayers = null; _nlg.yourRosterGameId = null; _nlg.yourRosterPlayers = null; _nlg.lastBigPlayId = null; if (_nlg.bigPlayDismiss) { _nlg.bigPlayDismiss(); _nlg.bigPlayDismiss = null; } _nlg.lastSituationKey = null; _nlg.catchupData = null; _nlg.lastBattleState = null; _nlg.lastBreakKey = undefined; _nlg.pbpFilter = 'all'; _nlg.wpScrub = null; }
+    if (tab && _NLG_TABS.some(t => t.id === tab)) {
+        _nlg.activeTab = tab;
+        if (!isNewGame && document.querySelector('.gv-tabs')) _nlgSwitchTabUi();
+    }
     _nlgLoadFieldIndex();
     const grid = document.getElementById('playersGrid');
     if (!grid) return;
@@ -222,6 +243,54 @@ function _nlgState(data) {
 function _nlgComp(data) { return data.header.competitions[0]; }
 function _nlgSide(comp, ha) { return (comp.competitors || []).find(c => c.homeAway === ha) || {}; }
 
+// SportsEvent JSON-LD from the payload this page renders. The edge template
+// (functions/nfl/game/[id].js) emits the same block under the same id, but
+// only when its own ESPN fetch gets through, which D-176's egress block has
+// stopped; this keeps the page described whichever path served it.
+function _nlgEventJsonLd(data, eventId) {
+    const comp = _nlgComp(data);
+    const home = _nlgSide(comp, 'home'), away = _nlgSide(comp, 'away');
+    const state = _nlgState(data);
+    const venue = data.gameInfo?.venue || {};
+    const addr = venue.address || {};
+    const team = (c) => {
+        const t = c.team || {};
+        const abbr = String(t.abbreviation || '').toUpperCase();
+        return {
+            '@type': 'SportsTeam', name: t.displayName || t.name || abbr,
+            ...(abbr ? { url: `https://sportstrata.cc/nfl/team/${(abbr === 'WAS' ? 'WSH' : abbr).toLowerCase()}` } : {}),
+            ...(t.logos?.[0]?.href ? { logo: t.logos[0].href } : {}),
+        };
+    };
+    const homeTeam = team(home), awayTeam = team(away);
+    const hs = home.score, as = away.score;
+    const score = state === 'post' && hs != null && as != null ? ` Final: ${awayTeam.name} ${as}, ${homeTeam.name} ${hs}.` : '';
+    return {
+        '@context': 'https://schema.org', '@type': 'SportsEvent',
+        name: `${awayTeam.name} at ${homeTeam.name}`, sport: 'American Football',
+        url: `https://sportstrata.cc/nfl/game/${eventId}`,
+        description: `${awayTeam.name} at ${homeTeam.name}${venue.fullName ? ` at ${venue.fullName}` : ''}.${score}`,
+        ...(comp.date ? { startDate: comp.date } : {}),
+        ...(venue.fullName ? { location: {
+            '@type': 'Place', name: venue.fullName,
+            ...(addr.city ? { address: { '@type': 'PostalAddress', addressLocality: addr.city, ...(addr.state ? { addressRegion: addr.state } : {}), ...(addr.country ? { addressCountry: addr.country } : {}) } } : {}),
+        } } : {}),
+        homeTeam, awayTeam, competitor: [awayTeam, homeTeam],
+        ...(state !== 'post' ? { eventStatus: 'https://schema.org/EventScheduled' } : {}),
+    };
+}
+
+function _nlgUpsertEventLd(data) {
+    let el = document.getElementById('ssEventLd');
+    if (!el) {
+        el = document.createElement('script');
+        el.type = 'application/ld+json'; el.id = 'ssEventLd';
+        document.head.appendChild(el);
+    }
+    const json = JSON.stringify(_nlgEventJsonLd(data, _nlg.eventId)).replace(/</g, '\\u003c');
+    if (el.textContent !== json) el.textContent = json;
+}
+
 // -- Shell + header (always re-rendered; never loses tab/scroll state) ------
 
 function _nlgRender(data) {
@@ -233,6 +302,7 @@ function _nlgRender(data) {
     const homeAbbr = (home.team && home.team.abbreviation) || '';
     const awayAbbr = (away.team && away.team.abbreviation) || '';
     if (window.setBreadcrumb && homeAbbr && awayAbbr) setBreadcrumb('nfl-games', `${awayAbbr} @ ${homeAbbr}`);
+    try { _nlgUpsertEventLd(data); } catch (_) { /* structured data is never worth breaking the page */ }
 
     const state = _nlgState(data);
     if (state === 'in') _nlgCheckBigPlay();
@@ -279,6 +349,7 @@ function _nlgRender(data) {
     const capParts = [venue, oddsLine].filter(Boolean);
     const capEl = grid.querySelector('.nlg-venue-caption');
     if (capEl) capEl.textContent = capParts.length ? `${capParts.join(' · ')} · data via ESPN` : 'Data via ESPN';
+    _nlgWpReapplyScrub();
 }
 
 // Broadcast network + betting line, folded into the existing venue caption
@@ -494,6 +565,7 @@ function _nlgRenderHeader(comp, home, away) {
             <div class="nlg-center">
               <div class="nlg-status ${live ? 'nlg-status--live' : ''}">${_escHtml(statusText)}${live ? ' <span class="nlg-livebadge">● LIVE</span>' : ''}</div>
               ${countdown ? `<div class="nlg-countdown">${_escHtml(countdown)}</div>` : ''}
+              ${state !== 'post' && typeof freshnessHtml === 'function' ? `<div class="nlg-fresh">${freshnessHtml(fetchedAt('nfl/summary'), (live ? NLG_POLL_MS : NLG_PREGAME_POLL_MS) * 3)}</div>` : ''}
               <div class="nlg-vs">@</div>
             </div>
             ${teamBlock(home, 'home')}
@@ -829,7 +901,7 @@ function _nlgRenderMain(data, comp, home, away, state) {
 // THIS game"), so it lives here as its own section (Fantasy Watch) instead
 // of a tab that would behave unlike every other tab.
 function _nlgBuildPregamePreview(data, comp, home, away) {
-    return `${_nlgWinProjectionCard(data, home, away)}${_nlgOddsCard(data)}${_nlgRecentFormCard(data, home, away)}${_nlgInjuriesCard(data)}${_nlgNewsCard(data, true)}${_nlgFantasyWatchSection(data, home, away)}`;
+    return `${_nlgWinProjectionCard(data, home, away)}${_nlgSeasonMatchupCard(data, home, away)}${_nlgOddsCard(data)}${_nlgRecentFormCard(data, home, away)}${_nlgGameInfoCard(data, 'pre')}${_nlgInjuriesCard(data)}${_nlgNewsCard(data, true)}${_nlgFantasyWatchSection(data, home, away)}`;
 }
 
 // data.predictor (ESPN's pregame win-projection model) -- confirmed live
@@ -1073,6 +1145,11 @@ function _nlgTabsHtml() {
 function _nlgSwitchTab(tab) {
     if (_nlg.activeTab === tab) return;
     _nlg.activeTab = tab;
+    _nlgSwitchTabUi();
+    _nlgSyncTabHash();
+}
+
+function _nlgSwitchTabUi() {
     const tabsEl = document.querySelector('.gv-tabs');
     if (tabsEl) tabsEl.outerHTML = _nlgTabsHtml();
     _nlgRenderActiveTabBody();
@@ -1105,7 +1182,7 @@ function _nlgRenderActiveTabBody() {
 // -- Summary tab (linescore + scoring feed) ------------------------------
 
 function _nlgRenderSummaryTab(data, comp, home, away) {
-    return `${_nlgLinescore(comp, home, away)}${_nlgScoringFeed(data)}${_nlgInjuriesCard(data)}${_nlgNewsCard(data)}`;
+    return `${_nlgLinescore(comp, home, away)}${_nlgScoringFeed(data)}${_nlgGameInfoCard(data, _nlgState(data))}${_nlgInjuriesCard(data)}${_nlgNewsCard(data)}`;
 }
 
 function _nlgLinescore(comp, home, away) {
@@ -1208,38 +1285,105 @@ function _nlgDriveBarHtml(d, homeAbbr, tc) {
     return `<div class="nlg-drive-bar"><div class="nlg-drive-bar-fill" style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%;background:${_escHtml(color)}"></div></div>`;
 }
 
+// Per-play facts, all from the play object or the WP series (live-verified on
+// 401873023: period/clock on every play, isTurnover/isPenalty/scoringPlay
+// flags, and a winprobability entry for every play id, 56 of 56).
+const _NLG_PBP_FILTERS = [
+    { id: 'all', label: 'All plays' },
+    { id: 'scoring', label: 'Scoring' },
+    { id: 'turnovers', label: 'Turnovers' },
+    { id: 'swings', label: 'Big swings' },
+];
+const NLG_BIG_SWING = 0.05;
+
+function _nlgPeriodLabel(n) {
+    return n ? (n <= 4 ? 'Q' + n : (n === 5 ? 'OT' : 'OT' + (n - 4))) : '';
+}
+
+// Signed home-perspective WP change caused by each play, keyed by play id.
+function _nlgWpDeltaById(data) {
+    const wp = _nlgWpSeries(data);
+    const out = new Map();
+    for (let i = 1; i < wp.length; i++) out.set(String(wp[i].playId), wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage);
+    return out;
+}
+
+// ESPN re-runs its model on non-snaps too (an "Official Timeout" right after a
+// TD carried +2.8 points on 401873023), so those never get a swing label.
+function _nlgIsAdminPlay(p) {
+    return /timeout|end period|end of (half|game|regulation)|two-minute warning/i.test((p.type && p.type.text) || '');
+}
+
+function _nlgPlaySwing(p, deltas) {
+    return _nlgIsAdminPlay(p) ? null : deltas.get(String(p.id));
+}
+
+function _nlgPlayMatches(p, filter, deltas) {
+    if (filter === 'scoring') return !!p.scoringPlay;
+    if (filter === 'turnovers') return !!p.isTurnover;
+    if (filter === 'swings') return Math.abs(_nlgPlaySwing(p, deltas) || 0) >= NLG_BIG_SWING;
+    return true;
+}
+
+function _nlgPbpPlayHtml(p, ctx, teamAbbr) {
+    const tags = [];
+    if (p.scoringPlay) tags.push(['score', (p.type && p.type.abbreviation) || 'SCORE']);
+    if (p.isTurnover) tags.push(['to', 'TO']);
+    if (p.isPenalty) tags.push(['pen', 'PEN']);
+    const d = _nlgPlaySwing(p, ctx.deltas);
+    const swing = d != null && Math.abs(d) >= 0.01
+        ? `<span class="nlg-pbp-wp" title="Win probability change">${_escHtml(d > 0 ? ctx.homeAbbr : ctx.awayAbbr)} +${Math.round(Math.abs(d) * 100)}%</span>` : '';
+    const when = [_nlgPeriodLabel(p.period && p.period.number), p.clock && p.clock.displayValue].filter(Boolean).join(' ');
+    return `<div class="nlg-pbp-play ${p.scoringPlay ? 'nlg-pbp-play--score' : ''}${p.isTurnover ? ' nlg-pbp-play--to' : ''}">
+        <span class="nlg-pbp-meta"><span class="nlg-pbp-when">${_escHtml(when)}</span>${teamAbbr ? `<span class="nlg-pbp-team">${_escHtml(teamAbbr)}</span>` : ''}<span class="nlg-pbp-dd">${_escHtml((p.start && p.start.downDistanceText) || '')}</span></span>
+        <span class="nlg-pbp-text">${tags.map(([k, l]) => `<span class="nlg-pbp-tag nlg-pbp-tag--${k}">${_escHtml(l)}</span>`).join('')}${_escHtml(p.text || '')}</span>
+        <span class="nlg-pbp-side">${swing}<span class="nlg-pbp-score">${p.awayScore != null ? p.awayScore : ''}–${p.homeScore != null ? p.homeScore : ''}</span></span>
+    </div>`;
+}
+
+function _nlgSetPbpFilter(filter) {
+    if (!_NLG_PBP_FILTERS.some(f => f.id === filter) || _nlg.pbpFilter === filter) return;
+    _nlg.pbpFilter = filter;
+    _nlgRenderActiveTabBody();
+}
+
 function _nlgRenderPbp(data) {
     const comp = _nlgComp(data);
     const homeAbbr = (_nlgSide(comp, 'home').team || {}).abbreviation || '';
+    const awayAbbr = (_nlgSide(comp, 'away').team || {}).abbreviation || '';
     const tc = (abbr) => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || 'var(--accent)';
-    const drivesObj = data.drives || {};
-    // Bug found live 2026-08-13 against a real in-progress game (event
-    // 401874392, TEN@SF -- see ISSUES.md "Live NFL preseason debugging
-    // session"): at certain live moments (confirmed: right after a drive
-    // ends, before the next one's first play is recorded) ESPN's
-    // drives.current is the SAME drive object as drives.previous's most
-    // recent entry -- verified by matching `id` (e.g. both "40187439217")
-    // -- not a distinct in-progress drive. Rendering both unconditionally
-    // duplicated the most recent drive card. Dedupe by id before concat.
-    const prev = (drivesObj.previous || []).filter(d => !drivesObj.current || d.id !== drivesObj.current.id);
-    const all = [...(drivesObj.current ? [drivesObj.current] : []), ...prev.slice().reverse()];
+    // Newest first. _nlgDrivesChrono already drops the copy of the in-progress
+    // drive ESPN repeats in drives.previous (id match, live-verified 2026-08-13).
+    const all = _nlgDrivesChrono(data).slice().reverse();
     if (!all.length) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No play-by-play yet</p><p class="pct-caption">Drive detail appears once the game is underway.</p></div>`;
+    const ctx = { deltas: _nlgWpDeltaById(data), homeAbbr, awayAbbr };
+    const filter = _nlg.pbpFilter || 'all';
+    const chips = `<div class="nlg-fantasy-chips nlg-pbp-filters" role="group" aria-label="Filter plays">${_NLG_PBP_FILTERS.map(f =>
+        `<button type="button" class="nlg-fantasy-chip ${filter === f.id ? 'nlg-fantasy-chip--active' : ''}" aria-pressed="${filter === f.id}" onclick="_nlgSetPbpFilter('${f.id}')">${_escHtml(f.label)}</button>`).join('')}</div>`;
+
+    if (filter !== 'all') {
+        const rows = all.flatMap(d => (d.plays || []).slice().reverse()
+            .filter(p => _nlgPlayMatches(p, filter, ctx.deltas))
+            .map(p => _nlgPbpPlayHtml(p, ctx, (d.team || {}).abbreviation || '')));
+        const label = _NLG_PBP_FILTERS.find(f => f.id === filter).label.toLowerCase();
+        const body = rows.length
+            ? `<div class="nlg-card"><div class="nlg-pbp-plays nlg-pbp-plays--flat">${rows.join('')}</div></div>`
+            : `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No ${_escHtml(label)} yet</p>${filter === 'swings' ? `<p class="pct-caption">Plays that moved win probability ${Math.round(NLG_BIG_SWING * 100)} points or more.</p>` : ''}</div>`;
+        return chips + body;
+    }
+
     const driveHtml = (d, i) => {
         const teamAbbr = (d.team || {}).abbreviation || '';
         const plays = (d.plays || []).slice().reverse();
-        const playsHtml = plays.map(p => `<div class="nlg-pbp-play ${p.scoringPlay ? 'nlg-pbp-play--score' : ''}">
-                <span class="nlg-pbp-dd">${_escHtml((p.start && p.start.downDistanceText) || '')}</span>
-                <span class="nlg-pbp-text">${_escHtml(p.text || '')}</span>
-                <span class="nlg-pbp-score">${p.awayScore != null ? p.awayScore : ''}–${p.homeScore != null ? p.homeScore : ''}</span>
-            </div>`).join('');
+        const start = [_nlgPeriodLabel(d.start && d.start.period && d.start.period.number), d.start && d.start.clock && d.start.clock.displayValue].filter(Boolean).join(' ');
         return `<details class="nlg-card" ${i < 2 ? 'open' : ''}>
             <summary class="nlg-sum">${_escHtml(teamAbbr)} · ${_escHtml(d.description || d.displayResult || 'Drive')}
-                <span class="nlg-sum-teams">${_escHtml(d.shortDisplayResult || '')}</span>
+                <span class="nlg-sum-teams">${start ? `${_escHtml(start)} · ` : ''}${_escHtml(d.shortDisplayResult || '')}</span>
                 ${_nlgDriveBarHtml(d, homeAbbr, tc)}</summary>
-            <div class="nlg-pbp-plays">${playsHtml}</div>
+            <div class="nlg-pbp-plays">${plays.map(p => _nlgPbpPlayHtml(p, ctx, '')).join('')}</div>
         </details>`;
     };
-    return all.map(driveHtml).join('');
+    return chips + all.map(driveHtml).join('');
 }
 
 // -- Box Score tab (all groups present, not just passing/rushing/receiving) --
@@ -1268,25 +1412,102 @@ function _nlgRenderBoxFull(data, home, away) {
 
 // -- Team Stats tab -------------------------------------------------------
 
+// Every stat ESPN sends, in its order and with its own labels (25 per team
+// live, verified on event 401873023; 8 season per-game stats pregame on
+// 401873024), grouped into sections by name. A name not in the map lands in
+// "More" rather than disappearing. ESPN lists "interceptions" twice (once
+// with passing, once with turnovers, same number), so repeats are dropped.
+const _NLG_TS_SECTIONS = [
+    ['Offense', ['totalYards', 'totalOffensivePlays', 'yardsPerPlay', 'totalDrives', 'firstDowns', 'firstDownsPassing', 'firstDownsRushing', 'firstDownsPenalty']],
+    ['Passing', ['netPassingYards', 'completionAttempts', 'yardsPerPass', 'sacksYardsLost', 'interceptions']],
+    ['Rushing', ['rushingYards', 'rushingAttempts', 'yardsPerRushAttempt']],
+    ['Situational', ['thirdDownEff', 'fourthDownEff', 'redZoneAttempts', 'possessionTime']],
+    ['Turnovers & penalties', ['turnovers', 'fumblesLost', 'defensiveTouchdowns', 'totalPenaltiesYards']],
+];
+
+// A share bar only where both sides are plain numbers (or a clock), so "2-6"
+// conversions and "1-17" penalty lines never get a misleading one.
+function _nlgStatMagnitude(stat) {
+    const v = String(stat?.displayValue ?? '').trim();
+    if (/^\d+:\d{2}$/.test(v)) { const [m, sec] = v.split(':').map(Number); return m * 60 + sec; }
+    return /^-?\d+(\.\d+)?$/.test(v) ? Math.abs(parseFloat(v)) : null;
+}
+
+function _nlgTeamStatsCard(teams, home, away, title, note) {
+    const pick = (side, idx) => teams.find(t => t.homeAway === side)
+        || teams.find(t => (t.team || {}).id === ((side === 'home' ? home : away).team || {}).id) || teams[idx];
+    const ht = pick('home', 1), at = pick('away', 0);
+    const aStats = at.statistics || [], hStats = ht.statistics || [];
+    if (!aStats.length && !hStats.length) return '';
+    const homeAbbr = (ht.team || {}).abbreviation || (home.team || {}).abbreviation || '';
+    const awayAbbr = (at.team || {}).abbreviation || (away.team || {}).abbreviation || '';
+    const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
+    const seen = new Set();
+    const pairs = aStats.filter(a => !seen.has(a.name) && seen.add(a.name)).map(a => {
+        const h = hStats.find(x => x.name === a.name);
+        return { name: a.name, label: a.label || (h && h.label) || a.name, a, h };
+    });
+    const row = (p) => {
+        const av = _nlgStatMagnitude(p.a), hv = _nlgStatMagnitude(p.h);
+        const total = av != null && hv != null ? av + hv : 0;
+        const bar = total > 0
+            ? `<div class="nlg-ts-bar" aria-hidden="true"><span style="width:${(100 * av / total).toFixed(1)}%;background:${_escHtml(aColor)}"></span><span class="nlg-ts-bar-h" style="width:${(100 * hv / total).toFixed(1)}%;background:${_escHtml(hColor)}"></span></div>`
+            : '';
+        return `<div class="nlg-ts-row">
+            <span class="nlg-ts-a">${_escHtml(p.a?.displayValue ?? '—')}</span>
+            <span class="nlg-ts-l">${_escHtml(p.label)}</span>
+            <span class="nlg-ts-h">${_escHtml(p.h?.displayValue ?? '—')}</span>${bar}</div>`;
+    };
+    const used = new Set();
+    let body = '';
+    for (const [sec, names] of _NLG_TS_SECTIONS) {
+        const rows = pairs.filter(p => names.includes(p.name));
+        rows.forEach(p => used.add(p));
+        if (rows.length) body += `<div class="nlg-ts-sec">${_escHtml(sec)}</div>${rows.map(row).join('')}`;
+    }
+    const rest = pairs.filter(p => !used.has(p));
+    if (rest.length) body += `${used.size ? '<div class="nlg-ts-sec">More</div>' : ''}${rest.map(row).join('')}`;
+    return `<div class="nlg-card"><div class="nlg-sum">${_escHtml(title)} <span class="nlg-sum-teams nlg-ts-key">${_nlgLineKey(aColor, false)}${_escHtml(awayAbbr)} · ${_escHtml(homeAbbr)}${_nlgLineKey(hColor, false)}</span></div>
+        <div class="nlg-ts">${body}</div>${note ? `<p class="pct-caption nlg-ts-note">${_escHtml(note)}</p>` : ''}</div>`;
+}
+
 function _nlgTeamStats(data, home, away) {
     const teams = (data.boxscore && data.boxscore.teams) || [];
-    if (teams.length < 2) return `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No team stats yet</p></div>`;
-    const byHA = {};
-    teams.forEach(t => { byHA[t.homeAway || (t.team && t.team.id === (home.team || {}).id ? 'home' : 'away')] = t; });
-    const ht = byHA.home || teams.find(t => (t.team || {}).id === (home.team || {}).id) || teams[1];
-    const at = byHA.away || teams.find(t => (t.team || {}).id === (away.team || {}).id) || teams[0];
-    const get = (t, name) => { const s = (t.statistics || []).find(x => x.name === name); return s ? (s.displayValue || '') : '—'; };
-    const want = [
-        ['totalYards', 'Total Yards'], ['netPassingYards', 'Passing'], ['rushingYards', 'Rushing'],
-        ['firstDowns', 'First Downs'], ['thirdDownEff', '3rd Down'], ['totalPenaltiesYards', 'Penalties'],
-        ['turnovers', 'Turnovers'], ['possessionTime', 'Time of Poss.'],
-    ];
-    const rows = want.map(([k, l]) => `<div class="nlg-ts-row">
-        <span class="nlg-ts-a">${_escHtml(get(at, k))}</span>
-        <span class="nlg-ts-l">${l}</span>
-        <span class="nlg-ts-h">${_escHtml(get(ht, k))}</span></div>`).join('');
-    return `<div class="nlg-card"><div class="nlg-sum">Team stats <span class="nlg-sum-teams">${_escHtml((at.team || {}).abbreviation || '')} · ${_escHtml((ht.team || {}).abbreviation || '')}</span></div>
-        <div class="nlg-ts">${rows}</div></div>`;
+    const empty = `<div class="nlg-empty-tab"><p class="nlg-empty-tab-title">No team stats yet</p></div>`;
+    if (teams.length < 2) return empty;
+    return _nlgTeamStatsCard(teams, home, away, 'Team stats', '') || empty;
+}
+
+// Pregame, boxscore.teams[] carries season per-game averages, not this game.
+function _nlgSeasonMatchupCard(data, home, away) {
+    const teams = (data.boxscore && data.boxscore.teams) || [];
+    if (teams.length < 2) return '';
+    return _nlgTeamStatsCard(teams, home, away, 'Season averages', 'Per game, this season to date.');
+}
+
+// Venue, surface, conditions, broadcast and crew: the facts competitors print
+// around a game. Weather is labeled "Outside" because nothing here knows
+// whether a roof is closed (field profiles carry no roof, ESPN sends none).
+function _nlgGameInfoCard(data, state) {
+    const gi = data.gameInfo || {};
+    const v = gi.venue || {}, addr = v.address || {};
+    const comp = _nlgComp(data);
+    const rows = [];
+    const d = comp.date ? new Date(comp.date) : null;
+    if (d && !isNaN(d)) rows.push(['Kickoff', d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })]);
+    if (v.fullName) rows.push(['Venue', [v.fullName, [addr.city, addr.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')]);
+    if (typeof v.grass === 'boolean') rows.push(['Surface', v.grass ? 'Natural grass' : 'Artificial turf']);
+    const w = gi.weather;
+    if (state !== 'post' && w && typeof w.temperature === 'number') rows.push(['Outside', `${w.temperature}°F${typeof w.gust === 'number' ? ` · gusts ${w.gust} mph` : ''}`]);
+    const b = (data.broadcasts && data.broadcasts[0]) || null;
+    const bname = b && ((b.media && (b.media.shortName || b.media.callLetters)) || (b.names && b.names[0]) || b.name);
+    if (bname) rows.push(['TV', String(bname)]);
+    if (typeof gi.attendance === 'number' && gi.attendance > 0) rows.push(['Attendance', gi.attendance.toLocaleString()]);
+    const ref = (gi.officials || []).find(o => o.position && o.position.name === 'Referee');
+    if (ref && ref.displayName) rows.push(['Referee', ref.displayName]);
+    if (!rows.length) return '';
+    return `<div class="nlg-card"><div class="nlg-sum">Game info</div><div class="nlg-ts">${rows.map(([l, val]) =>
+        `<div class="nlg-ts-row nlg-info-row"><span class="nlg-ts-l">${_escHtml(l)}</span><span class="nlg-an-val">${_escHtml(val)}</span></div>`).join('')}</div></div>`;
 }
 
 // -- Analytics tab (D-081 Phase 3a: Success Rate + Drive Efficiency — live,
@@ -1568,6 +1789,9 @@ function _nlgWpSwings(data) {
         const play = playById.get(String(wp[i].playId));
         if (!play || !play.text) continue; // no play text to show -- skip rather than render a bare percentage
         if (/^\s*\*{3}.*\*{3}\s*$/.test(play.text)) continue;
+        // ESPN re-scores WP on timeouts (40% WP swing on a 12:12 timeout, 401873023),
+        // so they would otherwise outrank real plays.
+        if (_nlgIsAdminPlay(play)) continue;
         swings.push({ delta: Math.abs(wp[i].homeWinPercentage - wp[i - 1].homeWinPercentage), play, wpIndex: i });
     }
     return swings;
@@ -1829,6 +2053,14 @@ function _nlgRenderYourRoster(data) {
 // Chart-only pair (2026-09-26): _NFL_TEAM_COLOR has exact duplicate
 // primaries (GB/PIT, CIN/DEN, ATL/HOU/KC, NE/SF) and no secondaries, so a
 // collision degrades away to neutral gray — see _matchupTeamColors.
+// Second channel for every two-team line (WCAG 1.4.1): the away team's line is
+// dashed and each label carries a line-style key, so near-identical team
+// colors (navy vs dark green) stay readable without telling hues apart.
+const _NLG_AWAY_DASH = '5 3';
+function _nlgLineKey(color, dashed) {
+    return `<svg class="nlg-linekey" width="16" height="6" viewBox="0 0 16 6" aria-hidden="true"><line x1="1" y1="3" x2="15" y2="3" stroke="${_escHtml(color)}" stroke-width="2"${dashed ? ` stroke-dasharray="4 2.5"` : ''}/></svg>`;
+}
+
 function _nlgMatchupColors(homeAbbr, awayAbbr) {
     const hex = abbr => (typeof getNFLTeamColor === 'function' && getNFLTeamColor(abbr)) || null;
     const h = hex(homeAbbr), a = hex(awayAbbr);
@@ -1904,7 +2136,7 @@ function _nlgWpChartSvg(data, home, away, opts = {}) {
         }).join('');
 
     const clipA = `nlg-wp-clip-above-${size}`, clipB = `nlg-wp-clip-below-${size}`;
-    return `<div class="nlg-wp-chart nlg-wp-chart--${size}">
+    return `<div class="nlg-wp-chart nlg-wp-chart--${size}" data-wp-size="${size}" tabindex="0" aria-describedby="nlg-wp-readout-${size}" aria-label="Win probability by play. Hover, drag, or use the arrow keys to step through plays.">
         <svg class="nlg-wp-svg nlg-wp-svg--${size}" viewBox="0 0 ${D.w} ${D.h}" preserveAspectRatio="none" role="img" aria-label="Win probability chart">
             <defs>
                 <clipPath id="${clipA}"><rect x="0" y="0" width="${D.w}" height="${midY}"/></clipPath>
@@ -1914,12 +2146,106 @@ function _nlgWpChartSvg(data, home, away, opts = {}) {
             ${qticks}
             <line class="nlg-wp-mid" x1="${D.padX}" y1="${midY}" x2="${D.w - D.padX}" y2="${midY}" vector-effect="non-scaling-stroke"/>
             <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2" vector-effect="non-scaling-stroke" clip-path="url(#${clipA})"/>
-            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" vector-effect="non-scaling-stroke" clip-path="url(#${clipB})"/>
+            <polyline points="${_escHtml(pts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" stroke-dasharray="${_NLG_AWAY_DASH}" vector-effect="non-scaling-stroke" clip-path="url(#${clipB})"/>
         </svg>
-        <span class="nlg-wp-team nlg-wp-team--home" style="color:${_escHtml(hColor)}">${_escHtml(homeAbbr)}</span>
-        <span class="nlg-wp-team nlg-wp-team--away" style="color:${_escHtml(aColor)}">${_escHtml(awayAbbr)}</span>
+        <span class="nlg-wp-team nlg-wp-team--home" style="color:${_escHtml(hColor)}">${_nlgLineKey(hColor, false)}${_escHtml(homeAbbr)}</span>
+        <span class="nlg-wp-team nlg-wp-team--away" style="color:${_escHtml(aColor)}">${_nlgLineKey(aColor, true)}${_escHtml(awayAbbr)}</span>
         ${dots}
-    </div>`;
+        <span class="nlg-wp-guide" hidden></span><span class="nlg-wp-marker" hidden></span>
+    </div>
+    <p class="nlg-wp-readout" id="nlg-wp-readout-${size}" aria-live="polite"></p>`;
+}
+
+// -- Win-probability scrubber (D-194): hover, drag or arrow keys put a guide
+// on one play and name it below the chart -- ESPN GameCast's per-play hover,
+// on the same series the chart draws. Delegated from document, so the poll's
+// sidebar/break-card re-render needs no rebinding; _nlg.wpScrub re-applies
+// the position after each render.
+const _nlgWpPlayCache = new WeakMap();
+function _nlgWpScrubData(data) {
+    let c = _nlgWpPlayCache.get(data);
+    if (!c) {
+        const wp = _nlgWpSeries(data);
+        c = { wp, playById: new Map(_nlgAllPlaysFlat(data).map(p => [String(p.id), p])) };
+        _nlgWpPlayCache.set(data, c);
+    }
+    return c;
+}
+
+function _nlgWpScrubShow(chart, i) {
+    const data = _nlg.lastData;
+    if (!chart || !data) return;
+    const { wp, playById } = _nlgWpScrubData(data);
+    const n = wp.length;
+    if (n < 2) return;
+    i = Math.max(0, Math.min(n - 1, i));
+    const D = _NLG_WP_DIMS[chart.dataset.wpSize] || _NLG_WP_DIMS.small;
+    const left = ((D.padX + (i / (n - 1)) * (D.w - D.padX * 2)) / D.w) * 100;
+    const top = ((D.padY + (1 - wp[i].homeWinPercentage) * (D.h - D.padY * 2)) / D.h) * 100;
+    const guide = chart.querySelector('.nlg-wp-guide'), marker = chart.querySelector('.nlg-wp-marker');
+    if (guide) { guide.hidden = false; guide.style.left = left.toFixed(2) + '%'; }
+    if (marker) { marker.hidden = false; marker.style.left = left.toFixed(2) + '%'; marker.style.top = top.toFixed(2) + '%'; }
+    const comp = _nlgComp(data);
+    const homeAbbr = (_nlgSide(comp, 'home').team || {}).abbreviation || '';
+    const awayAbbr = (_nlgSide(comp, 'away').team || {}).abbreviation || '';
+    const h = wp[i].homeWinPercentage;
+    const play = playById.get(String(wp[i].playId));
+    const swing = i > 0 && play && !_nlgIsAdminPlay(play) ? h - wp[i - 1].homeWinPercentage : 0;
+    const when = play ? [_nlgPeriodLabel(play.period && play.period.number), play.clock && play.clock.displayValue].filter(Boolean).join(' ') : '';
+    const out = chart.parentElement && chart.parentElement.querySelector('.nlg-wp-readout');
+    if (out) out.innerHTML = `${when ? `<span class="nlg-wp-readout-when">${_escHtml(when)}</span>` : ''}<span class="nlg-wp-readout-pct">${_escHtml(h >= 0.5 ? homeAbbr : awayAbbr)} ${Math.round((h >= 0.5 ? h : 1 - h) * 100)}%</span>${Math.abs(swing) >= 0.01 ? `<span class="nlg-wp-readout-swing">${_escHtml(swing > 0 ? homeAbbr : awayAbbr)} +${Math.round(Math.abs(swing) * 100)}</span>` : ''}${play && play.text ? `<span class="nlg-wp-readout-text">${_escHtml(play.text)}</span>` : ''}`;
+    _nlg.wpScrub = { size: chart.dataset.wpSize, i, kbd: document.activeElement === chart };
+}
+
+function _nlgWpScrubClear(chart) {
+    if (!chart) return;
+    chart.querySelectorAll('.nlg-wp-guide, .nlg-wp-marker').forEach(el => { el.hidden = true; });
+    const out = chart.parentElement && chart.parentElement.querySelector('.nlg-wp-readout');
+    if (out) out.innerHTML = '';
+    _nlg.wpScrub = null;
+}
+
+function _nlgWpIndexAt(chart, clientX) {
+    const { wp } = _nlgWpScrubData(_nlg.lastData);
+    const D = _NLG_WP_DIMS[chart.dataset.wpSize] || _NLG_WP_DIMS.small;
+    const r = chart.getBoundingClientRect();
+    const x = ((clientX - r.left) / r.width) * D.w;
+    return Math.round(((x - D.padX) / (D.w - D.padX * 2)) * (wp.length - 1));
+}
+
+function _nlgWpReapplyScrub() {
+    const sc = _nlg.wpScrub;
+    if (!sc) return;
+    const chart = document.querySelector(`.nlg-wp-chart[data-wp-size="${sc.size}"]`);
+    if (!chart) return;
+    if (sc.kbd) chart.focus({ preventScroll: true });
+    _nlgWpScrubShow(chart, sc.i);
+}
+
+if (typeof document !== 'undefined' && document.addEventListener) {
+    const chartOf = (e) => (e.target && e.target.closest ? e.target.closest('.nlg-wp-chart[data-wp-size]') : null);
+    document.addEventListener('pointermove', (e) => { const c = chartOf(e); if (c && _nlg.lastData) _nlgWpScrubShow(c, _nlgWpIndexAt(c, e.clientX)); });
+    document.addEventListener('pointerdown', (e) => { const c = chartOf(e); if (c && _nlg.lastData && !e.target.closest('.nlg-wp-dot')) _nlgWpScrubShow(c, _nlgWpIndexAt(c, e.clientX)); });
+    document.addEventListener('pointerout', (e) => {
+        const c = chartOf(e);
+        if (c && !c.contains(e.relatedTarget) && document.activeElement !== c) _nlgWpScrubClear(c);
+    });
+    // Removing a focused chart (every poll re-renders it) fires focusout too;
+    // only a chart still on the page has really been left.
+    document.addEventListener('focusout', (e) => {
+        const c = chartOf(e);
+        if (c && !c.contains(e.relatedTarget)) setTimeout(() => { if (c.isConnected && document.activeElement !== c) _nlgWpScrubClear(c); });
+    });
+    document.addEventListener('keydown', (e) => {
+        const c = chartOf(e);
+        if (!c || e.target !== c || !_nlg.lastData) return;
+        const n = _nlgWpScrubData(_nlg.lastData).wp.length;
+        const cur = _nlg.wpScrub && _nlg.wpScrub.size === c.dataset.wpSize ? _nlg.wpScrub.i : n - 1;
+        const next = { ArrowLeft: cur - 1, ArrowRight: cur + 1, Home: 0, End: n - 1 }[e.key];
+        if (next == null) { if (e.key === 'Escape') _nlgWpScrubClear(c); return; }
+        e.preventDefault();
+        _nlgWpScrubShow(c, next);
+    });
 }
 
 function _nlgWinProbability(data, home, away) {
@@ -2154,19 +2480,24 @@ function _nlgSidebarLeaders(data) {
     };
     const blocks = leaders.map(block).filter(Boolean);
     if (!blocks.length) return '';
-    return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Leaders</h3>${blocks.join('')}</div>`;
+    // Pregame, ESPN fills leaders[] with season totals ("1,851 YDS, 13 TD" on
+    // 401873024), so the card must not call them game leaders.
+    const title = _nlgState(data) === 'pre' ? 'Season Leaders' : 'Game Leaders';
+    return `<div class="nlg-side-card"><h3 class="nlg-side-title">${title}</h3>${blocks.join('')}</div>`;
 }
 
 function _nlgFantasyLeadersCard(data) {
     const scoring = _nlg.fantasyScoring;
     const list = _nlgComputeFantasy(data, scoring);
     if (!list.length) return '';
-    const rows = list.slice(0, 5).map((p, i) => `<div class="nlg-leader-row"><span class="nlg-leader-cat">${i + 1}</span><span class="nlg-leader-name">${_escHtml(p.name)} <span class="pct-caption">${_escHtml(p.team)}</span></span><span class="nlg-leader-val">${p.pts.toFixed(1)}</span></div>`).join('');
+    const rows = list.slice(0, 5).map((p, i) => `<div class="nlg-leader-row"><div class="nlg-leader-row-top"><span class="nlg-leader-name">${i + 1}. ${_escHtml(p.name)} <span class="nlg-leader-cat">${_escHtml(p.team)}</span></span><span class="nlg-leader-val">${p.pts.toFixed(1)}</span></div></div>`).join('');
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Fantasy Leaders <span class="pct-caption">(${_escHtml(scoring)})</span></h3>${rows}</div>`;
 }
 
 function _nlgGameFlow(comp, home, away) {
-    const ls = (c) => (c.linescores || []).map((l) => (l.value != null ? l.value : (l.displayValue || 0)));
+    // /summary linescores carry only a string displayValue ("7"), no numeric
+    // value (401873023), so coerce: summing strings concatenated "0"+"3"+"7".
+    const ls = (c) => (c.linescores || []).map((l) => Number(l.value != null ? l.value : l.displayValue) || 0);
     const h = ls(home), a = ls(away);
     const n = Math.max(h.length, a.length);
     if (n < 2) return '';
@@ -2184,12 +2515,17 @@ function _nlgGameFlow(comp, home, away) {
     const homeAbbr = (home.team || {}).abbreviation || '';
     const awayAbbr = (away.team || {}).abbreviation || '';
     const { home: hColor, away: aColor } = _nlgMatchupColors(homeAbbr, awayAbbr);
+    const qs = Array.from({ length: n }, (_, i) => `<span>${i < 4 ? 'Q' + (i + 1) : 'OT'}</span>`).join('');
     return `<div class="nlg-side-card"><h3 class="nlg-side-title">Game Flow</h3>
-        <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none">
-            <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2"/>
-            <polyline points="${_escHtml(hPts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2"/>
+        <svg class="nlg-flow-svg" viewBox="0 0 ${w} ${hgt}" preserveAspectRatio="none" role="img" aria-label="${_escHtml(`Cumulative score by quarter: ${awayAbbr} ${ac[n - 1]}, ${homeAbbr} ${hc[n - 1]}`)}">
+            <polyline points="${_escHtml(aPts)}" fill="none" stroke="${_escHtml(aColor)}" stroke-width="2" stroke-dasharray="${_NLG_AWAY_DASH}" vector-effect="non-scaling-stroke"/>
+            <polyline points="${_escHtml(hPts)}" fill="none" stroke="${_escHtml(hColor)}" stroke-width="2" vector-effect="non-scaling-stroke"/>
         </svg>
-        <div class="nlg-flow-legend"><span style="color:${_escHtml(aColor)}">${_escHtml(awayAbbr)}</span><span style="color:${_escHtml(hColor)}">${_escHtml(homeAbbr)}</span></div>
+        <div class="nlg-flow-qs">${qs}</div>
+        <div class="nlg-flow-legend">
+            <span style="color:${_escHtml(aColor)}">${_nlgLineKey(aColor, true)}${_escHtml(awayAbbr)} ${ac[n - 1]}</span>
+            <span style="color:${_escHtml(hColor)}">${_nlgLineKey(hColor, false)}${_escHtml(homeAbbr)} ${hc[n - 1]}</span>
+        </div>
     </div>`;
 }
 
@@ -2200,7 +2536,8 @@ function _nlgNav(abbr) {
 if (typeof window !== 'undefined') {
     window.showNFLGame = showNFLGame;
     window.fetchNFLSummary = fetchNFLSummary;
-    window.stopNFLLiveGame = _nlgStop;
+    window.stopNFLLiveGame = _nlgLeave;
     window._nlgSwitchTab = _nlgSwitchTab;
     window._nlgSetFantasyScoring = _nlgSetFantasyScoring;
+    window._nlgSetPbpFilter = _nlgSetPbpFilter;
 }

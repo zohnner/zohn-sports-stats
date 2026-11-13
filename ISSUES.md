@@ -10,6 +10,8 @@ Active issues in priority order. When fixed, delete the row — the fix lives in
 
 | ID | File | Description |
 |---|---|---|
+| P2-009 | `tools/check-themes.cjs`, `css/variables.css` | `--text-subtle` is not in the contrast contract, and on the Monarchs theme it measures about 1.6:1 (#4a2828 on #140508). D-194 moved the NFL viewer's numerals to `--text-muted`; every other `--text-subtle` use is still unguarded. Fix: add the pair to `PAIRS`, then fix what it flags. |
+| P2-010 | `js/scorebug.js` / ticker poll | Ticker trailed the NFL game header by 1+ polls during 401873023 (header 10:44, ticker 11:20; header 6:33 while the ticker held an older clock), on production and locally. Seen during D-194, root cause not investigated. |
 | P2-008 | Cloudflare dashboard (zone WAF) | Percent-encoded paths bypass D-168's private-path 404s (`/%44ECISIONS.md` serves DECISIONS.md; live 2026-10-21, D-182). Owner action: Security → WAF → Custom rules → new rule, action **Block**, expression below (regenerate from `functions/_private-paths.cjs` if its lists change). `url_decode()` availability on this zone's plan is unconfirmed; if the editor rejects it, the fallback is an allowlist build output dir (D-168). Verify after: `curl -s -o /dev/null -w "%{http_code}" https://sportstrata.cc/%44ECISIONS.md` should not be 200. |
 
 P2-008 WAF expression:

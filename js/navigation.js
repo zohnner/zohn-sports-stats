@@ -702,6 +702,8 @@ function _renderMLBView(view) {
 // N-6 (Vera/Kael): only the offseason-affected stat surfaces — Scores/Standings/Teams.
 // Players/Rankings/Trending/Leaders deliver year-round, so the strip is redundant there.
 const _NFL_STRIP_VIEWS = new Set(['nfl-games', 'nfl-teams']);
+// nfl-game-{id}, optionally with the viewer's active tab: nfl-game-{id}-box.
+const _NFL_GAME_VIEW_RE = /^nfl-game-([A-Za-z0-9]+)(?:-(pbp|box|team|analytics|fantasy))?$/;
 
 function _syncNFLOffseasonStrip(view) {
     document.getElementById('nflOffseasonStrip')?.remove();
@@ -765,7 +767,8 @@ function _renderNFLView(view) {
     }
     if (view.startsWith('nfl-game-')) {
         if (viewCount) viewCount.textContent = 'NFL Game';
-        if (typeof showNFLGame === 'function') showNFLGame(view.slice('nfl-game-'.length));
+        const m = _NFL_GAME_VIEW_RE.exec(view);
+        if (m && typeof showNFLGame === 'function') showNFLGame(m[1], m[2]);
         return;
     }
 
@@ -997,10 +1000,12 @@ function _loadFromHash() {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');
             navigateTo(_r); return;
-        } else if (/^nfl-game-([A-Za-z0-9]+)$/.test(_r)) {
+        } else if ((_m = _NFL_GAME_VIEW_RE.exec(_r))) {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');
-            navigateTo(_r); return;
+            // The edge route names the game; a tab in the hash (#nfl-game-X-box) wins.
+            const _h = _NFL_GAME_VIEW_RE.exec(location.hash.slice(1));
+            navigateTo(_h && _h[1] === _m[1] ? _h[0] : _r); return;
         } else if (/^nfl-player-([A-Za-z0-9]+)$/.test(_r)) {
             AppState.currentSport = 'nfl';
             if (typeof _applySportUI === 'function') _applySportUI('nfl');
@@ -1039,7 +1044,7 @@ function _loadFromHash() {
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
-    const nflGameMatch       = hash.match(/^nfl-game-([A-Za-z0-9]+)$/);
+    const nflGameMatch       = hash.match(_NFL_GAME_VIEW_RE);
     const ncaafPlayerMatch   = hash.match(/^ncaaf-player-(\d+)$/);
     const ncaafTeamMatch     = hash.match(/^ncaaf-team-(\d+)$/);
     const ncaafGameMatch     = hash.match(/^ncaaf-game-(\d+)$/);
@@ -1123,7 +1128,7 @@ function _loadFromHash() {
     } else if (nflGameMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
-        navigateTo('nfl-game-' + nflGameMatch[1], false);
+        navigateTo(nflGameMatch[0], false);
     } else {
         // Malformed deep-link? Warn if hash looks like it was meant to be a known pattern
         const knownPrefixes = ['player-', 'team-', 'mlb-player-', 'mlb-compare-', 'mlb-live-', 'mlb-scorecard-'];
@@ -1855,7 +1860,8 @@ function _viewPath(view) {
     if (m) return `/${m[1]}`;
     if (_PATH_SINGLE_VIEWS.has(v)) return '/' + v.replace('-', '/');
     if ((m = /^nfl-team-([A-Z0-9]{2,4})$/i.exec(v))) return `/nfl/team/${m[1].toLowerCase()}`;
-    if ((m = /^nfl-(game|player)-([a-z0-9]+)$/i.exec(v))) return `/nfl/${m[1]}/${m[2]}`;
+    if ((m = _NFL_GAME_VIEW_RE.exec(v))) return `/nfl/game/${m[1]}`;
+    if ((m = /^nfl-player-([a-z0-9]+)$/i.exec(v))) return `/nfl/player/${m[1]}`;
     if ((m = /^ncaaf-(team|player|game)-(\d+)$/.exec(v))) return `/ncaaf/${m[1]}/${m[2]}`;
     if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
     if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;

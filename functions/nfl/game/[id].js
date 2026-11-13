@@ -46,7 +46,9 @@ export async function onRequest(context) {
         const aName = (away.team && away.team.displayName) || 'Away';
         const hName = (home.team && home.team.displayName) || 'Home';
         const aScore = away.score, hScore = home.score;
-        const venue = (data.gameInfo && data.gameInfo.venue && data.gameInfo.venue.fullName) || '';
+        const venueObj = (data.gameInfo && data.gameInfo.venue) || {};
+        const venue = venueObj.fullName || '';
+        const addr = venueObj.address || {};
         const dateStr = fmtDate(comp.date);
         const st = (comp.status && comp.status.type) || {};
         const state = st.state || 'pre';
@@ -61,13 +63,20 @@ export async function onRequest(context) {
         const title = `${aName} @ ${hName} — ${statusLabel}${dateStr ? ` · ${dateStr}` : ''} | SportStrata`;
         const desc = `${matchup}${dateStr ? ` on ${dateStr}` : ''}${venue ? ` at ${venue}` : ''}. ${statusLabel}. Box score, live scoring and matchup analysis on SportStrata — free, no login.`;
 
+        // Same shape as _nlgEventJsonLd in js/nflLiveGame.js, which replaces this
+        // block (same element id) once the SPA has rendered the game.
+        const team = (c, name) => {
+            const abbr = String((c.team && c.team.abbreviation) || '').toUpperCase();
+            return { '@type': 'SportsTeam', name, ...(abbr ? { url: `https://sportstrata.cc/nfl/team/${(abbr === 'WAS' ? 'WSH' : abbr).toLowerCase()}` } : {}) };
+        };
+        const homeTeam = team(home, hName), awayTeam = team(away, aName);
         const jsonld = JSON.stringify({
             '@context': 'https://schema.org', '@type': 'SportsEvent',
             name: `${aName} at ${hName}`, sport: 'American Football', url: canonical,
             ...(comp.date ? { startDate: comp.date } : {}),
-            ...(venue ? { location: { '@type': 'Place', name: venue } } : {}),
-            homeTeam: { '@type': 'SportsTeam', name: hName },
-            awayTeam: { '@type': 'SportsTeam', name: aName },
+            ...(venue ? { location: { '@type': 'Place', name: venue,
+                ...(addr.city ? { address: { '@type': 'PostalAddress', addressLocality: addr.city, ...(addr.state ? { addressRegion: addr.state } : {}), ...(addr.country ? { addressCountry: addr.country } : {}) } } : {}) } } : {}),
+            homeTeam, awayTeam, competitor: [awayTeam, homeTeam],
             ...(state !== 'post' ? { eventStatus: 'https://schema.org/EventScheduled' } : {})
         });
 
@@ -86,7 +95,7 @@ export async function onRequest(context) {
             .replace(/(<meta id="ogDescription"\s*property="og:description"\s*content=")[^"]*(">)/, `$1${esc(desc)}$2`)
             .replace(/(<meta id="twTitle" name="twitter:title" content=")[^"]*(">)/, `$1${esc(title)}$2`)
             .replace(/(<meta id="twDescription" name="twitter:description" content=")[^"]*(">)/, `$1${esc(desc)}$2`)
-            .replace('</head>', `<script type="application/ld+json">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify('nfl-game-' + id)};</script></head>`)
+            .replace('</head>', `<script type="application/ld+json" id="ssEventLd">${jsonld.replace(/</g, "\\u003c")}</script><script>window.__SS_ROUTE=${JSON.stringify('nfl-game-' + id)};</script></head>`)
             .replace('<div id="playersGrid" class="players-grid"></div>', `<div id="playersGrid" class="players-grid">${snapshot}</div>`);
         html = html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 
