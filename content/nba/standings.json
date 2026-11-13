@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-11",
-  "gamesCounted": 170,
+  "throughDate": "2026-11-12",
+  "gamesCounted": 174,
   "source": "balldontlie",
   "sections": [
     {
@@ -14,7 +14,7 @@
         },
         {
           "name": "Philadelphia 76ers",
-          "record": "9-3"
+          "record": "10-3"
         },
         {
           "name": "New York Knicks",
@@ -22,7 +22,7 @@
         },
         {
           "name": "Toronto Raptors",
-          "record": "5-6"
+          "record": "5-7"
         },
         {
           "name": "Brooklyn Nets",
@@ -35,7 +35,7 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "7-3"
+          "record": "8-3"
         },
         {
           "name": "Cleveland Cavaliers",
@@ -67,16 +67,16 @@
           "record": "5-6"
         },
         {
-          "name": "Charlotte Hornets",
-          "record": "4-7"
-        },
-        {
           "name": "Orlando Magic",
           "record": "4-7"
         },
         {
-          "name": "Washington Wizards",
+          "name": "Charlotte Hornets",
           "record": "4-8"
+        },
+        {
+          "name": "Washington Wizards",
+          "record": "4-9"
         }
       ]
     },
@@ -85,7 +85,7 @@
       "teams": [
         {
           "name": "Minnesota Timberwolves",
-          "record": "8-3"
+          "record": "9-3"
         },
         {
           "name": "Portland Trail Blazers",
@@ -118,7 +118,7 @@
         },
         {
           "name": "Phoenix Suns",
-          "record": "4-6"
+          "record": "5-6"
         },
         {
           "name": "LA Clippers",
@@ -142,12 +142,12 @@
           "record": "9-3"
         },
         {
-          "name": "Dallas Mavericks",
+          "name": "Memphis Grizzlies",
           "record": "7-4"
         },
         {
-          "name": "Memphis Grizzlies",
-          "record": "7-4"
+          "name": "Dallas Mavericks",
+          "record": "7-5"
         },
         {
           "name": "New Orleans Pelicans",
