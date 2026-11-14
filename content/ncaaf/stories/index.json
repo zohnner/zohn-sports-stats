@@ -1,6 +1,51 @@
 {
   "stories": [
     {
+      "slug": "2026-11-14-colorado-first-ap-top-15-win-since-2007",
+      "title": "Colorado's first AP top-15 win in 19 years: 42-32 over No. 14 Houston",
+      "dek": "The Buffaloes lost to No. 12 Texas Tech and No. 11 Utah this season before beating No. 14 Houston 42-32.",
+      "date": "2026-11-14",
+      "season": 2026,
+      "hook": "Colorado upsets No. 14 Houston for 1st AP top-15 win since 2007",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50479172/colorado-upsets-no-14-houston-1st-ap-top-15-win-2007",
+      "week": 11,
+      "teams": [
+        "COLO",
+        "HOU"
+      ],
+      "players": [
+        "4871081",
+        "5096878",
+        "5079771",
+        "4685574",
+        "4816098"
+      ],
+      "hero_stat": "19 years since Colorado's last AP top-15 win",
+      "url": "/ncaaf/stories/2026-11-14-colorado-first-ap-top-15-win-since-2007",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-14-ucla-first-10-0-start-since-1998",
+      "title": "UCLA is 10-0 for the first time since 1998, its 3rd 10-0 start",
+      "dek": "The Bruins held Illinois scoreless in the first half and to 240 yards, forcing 3 interceptions in a 22-14 win.",
+      "date": "2026-11-14",
+      "season": 2026,
+      "week": 11,
+      "teams": [
+        "UCLA",
+        "ILL"
+      ],
+      "players": [
+        "4795295",
+        "5152410",
+        "4917945",
+        "5092275"
+      ],
+      "hero_stat": "10-0 start, the 3rd in UCLA history",
+      "url": "/ncaaf/stories/2026-11-14-ucla-first-10-0-start-since-1998",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-13-memphis-only-fbs-team-two-50-point-road-games",
       "title": "Memphis has the FBS's only 2 50-point road games through Week 11",
       "dek": "Marcus Stokes has accounted for 5 touchdowns in 3 straight games, and Jaylin Carter just passed 1,000 rushing yards.",
