@@ -1,6 +1,41 @@
 {
   "stories": [
     {
+      "slug": "2026-11-14-jeremy-fears-24-points-9-assists-no-turnovers",
+      "title": "Jeremy Fears Jr. scored a season-high 24 with 9 assists and 0 turnovers",
+      "dek": "Fears leads Division I at 10.0 assists per game; Michigan State made a season-high 18 3-pointers in the 106-72 win over Northern Iowa.",
+      "date": "2026-11-14",
+      "season": 2027,
+      "teams": [
+        "MSU",
+        "UNI"
+      ],
+      "players": [
+        "4711255"
+      ],
+      "hero_stat": "24 points, 9 assists, 0 turnovers",
+      "url": "/ncaab/stories/2026-11-14-jeremy-fears-24-points-9-assists-no-turnovers",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-14-kentucky-northern-arizona-78-77",
+      "title": "Kentucky survived winless Northern Arizona 78-77, the closest ranked game yet",
+      "dek": "Northern Arizona shot 13 of 26 on 3-pointers and led for 41% of the game; no Wildcat scored more than 14 points.",
+      "date": "2026-11-14",
+      "season": 2027,
+      "teams": [
+        "UK",
+        "NAU"
+      ],
+      "players": [
+        "5313239",
+        "5101849"
+      ],
+      "hero_stat": "78-77, the only 1-possession game in 80 ranked-team games",
+      "url": "/ncaab/stories/2026-11-14-kentucky-northern-arizona-78-77",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-11-michigan-state-duke-33-percent-shooting",
       "title": "No. 5 Michigan State held No. 2 Duke to 73 points on 33% shooting",
       "dek": "Duke averaged 98.5 points on 55% shooting in its first 2 games; Michigan State led wire to wire.",
