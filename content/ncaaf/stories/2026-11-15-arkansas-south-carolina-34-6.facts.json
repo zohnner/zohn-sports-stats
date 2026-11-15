@@ -1,0 +1,208 @@
+{
+  "facts": [
+    {
+      "key": "ark_pts",
+      "label": "Arkansas points vs South Carolina, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 34
+    },
+    {
+      "key": "sc_pts",
+      "label": "South Carolina points vs Arkansas, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 6
+    },
+    {
+      "key": "sc_margin",
+      "label": "Arkansas margin of victory vs South Carolina (34 minus 6)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 28
+    },
+    {
+      "key": "sc_avg",
+      "label": "South Carolina points per game this season (318 points in 10 games)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 31.8
+    },
+    {
+      "key": "sc_pts_total",
+      "label": "South Carolina total points this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 318
+    },
+    {
+      "key": "sc_games",
+      "label": "South Carolina games played this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 10
+    },
+    {
+      "key": "sc_gap",
+      "label": "Gap between South Carolina's 31.8 season average and the 6 points vs Arkansas",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 25.8
+    },
+    {
+      "key": "sc_rank",
+      "label": "South Carolina AP rank entering the Arkansas game",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 17
+    },
+    {
+      "key": "sc_wins_before",
+      "label": "South Carolina wins before the Arkansas game",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 6
+    },
+    {
+      "key": "sc_losses_before",
+      "label": "South Carolina losses before the Arkansas game",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 3
+    },
+    {
+      "key": "ark_wins_before",
+      "label": "Arkansas wins before the South Carolina game",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 3
+    },
+    {
+      "key": "ark_losses_before",
+      "label": "Arkansas losses before the South Carolina game",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 6
+    },
+    {
+      "key": "sc_prev_low",
+      "label": "South Carolina fewest points in a game this season before Saturday (17 vs Texas A&M, Nov 7)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 17
+    },
+    {
+      "key": "sc_gap_prev_low",
+      "label": "Gap between South Carolina's previous low of 17 and the 6 points vs Arkansas",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 11
+    },
+    {
+      "key": "sc_games_27plus",
+      "label": "South Carolina games with at least 27 points in its first 9 games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 7
+    },
+    {
+      "key": "sc_games_before",
+      "label": "South Carolina games played before Saturday",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 9
+    },
+    {
+      "key": "ark_allowed_utah",
+      "label": "Arkansas points allowed vs Utah, Sept 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 43
+    },
+    {
+      "key": "ark_allowed_uga",
+      "label": "Arkansas points allowed vs Georgia, Sept 19",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 45
+    },
+    {
+      "key": "ark_wins",
+      "label": "Arkansas wins this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 4
+    },
+    {
+      "key": "ark_losses",
+      "label": "Arkansas losses this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 6
+    },
+    {
+      "key": "sc_wins",
+      "label": "South Carolina wins this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 6
+    },
+    {
+      "key": "sc_losses",
+      "label": "South Carolina losses this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 4
+    },
+    {
+      "key": "ark_season_high",
+      "label": "Arkansas most points in a game this season (34 vs Tulsa and vs South Carolina)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/8/schedule?season=2026",
+      "value": 34
+    },
+    {
+      "key": "sc_oklahoma_pts",
+      "label": "South Carolina points vs Oklahoma, Oct 31",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 42
+    },
+    {
+      "key": "sc_g1",
+      "label": "South Carolina points vs Kent State, Sept 5",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 57
+    },
+    {
+      "key": "sc_g2",
+      "label": "South Carolina points vs Towson, Sept 12",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 45
+    },
+    {
+      "key": "sc_g3",
+      "label": "South Carolina points vs Mississippi State, Sept 19",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 34
+    },
+    {
+      "key": "sc_g4",
+      "label": "South Carolina points vs Alabama, Sept 26",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 18
+    },
+    {
+      "key": "sc_g5",
+      "label": "South Carolina points vs Kentucky, Oct 3",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 34
+    },
+    {
+      "key": "sc_g6",
+      "label": "South Carolina points vs Florida, Oct 10",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 38
+    },
+    {
+      "key": "sc_g7",
+      "label": "South Carolina points vs Tennessee, Oct 24",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 27
+    },
+    {
+      "key": "sc_g8",
+      "label": "South Carolina points vs Oklahoma, Oct 31",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 42
+    },
+    {
+      "key": "sc_g9",
+      "label": "South Carolina points vs Texas A&M, Nov 7",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/2579/schedule?season=2026",
+      "value": 17
+    },
+    {
+      "key": "season_year",
+      "label": "Season year",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 2026
+    }
+  ]
+}

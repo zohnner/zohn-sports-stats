@@ -1,6 +1,59 @@
 {
   "stories": [
     {
+      "slug": "2026-11-15-arkansas-south-carolina-34-6",
+      "title": "Arkansas held No. 17 South Carolina to 6 points, a season low",
+      "dek": "The 4-6 Razorbacks beat the ranked Gamecocks 34-6, holding them 25.8 points below their season average.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "ARK",
+        "SC"
+      ],
+      "players": [],
+      "hero_stat": "6 points allowed — South Carolina's fewest this season",
+      "url": "/ncaaf/stories/2026-11-15-arkansas-south-carolina-34-6",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-15-utah-arizona-40-39",
+      "title": "Utah survived Arizona 40-39 after its defense gave up a season-high 39",
+      "dek": "Arizona scored 39 points, 22.7 more than Utah had allowed on average, and the Utes still won on a 70-yard touchdown with 2:25 left.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "hook": "No. 2 Utah survives, stays unbeaten on late 70-yard TD in thriller vs. Arizona",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50488650/no-2-utah-survives-late-70-yard-td-thriller-vs-arizona",
+      "week": 12,
+      "teams": [
+        "UTAH",
+        "ARIZ"
+      ],
+      "players": [
+        "5105849",
+        "4871040"
+      ],
+      "hero_stat": "39 points allowed — Utah's most this season",
+      "url": "/ncaaf/stories/2026-11-15-utah-arizona-40-39",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-15-washington-state-73-points",
+      "title": "Washington State's 73 points are its most since at least 2021",
+      "dek": "The 2-8 Cougars beat Colorado State 73-7, a 66-point margin that is also their largest since at least 2021.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "WSU",
+        "CSU"
+      ],
+      "players": [],
+      "hero_stat": "73 points — Washington State's most since at least 2021",
+      "url": "/ncaaf/stories/2026-11-15-washington-state-73-points",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-14-colorado-first-ap-top-15-win-since-2007",
       "title": "Colorado's first AP top-15 win in 19 years: 42-32 over No. 14 Houston",
       "dek": "The Buffaloes lost to No. 12 Texas Tech and No. 11 Utah this season before beating No. 14 Houston 42-32.",
