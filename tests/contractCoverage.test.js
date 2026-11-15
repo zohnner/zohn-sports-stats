@@ -26,11 +26,14 @@ test('every story sport has a contract file', () => {
     for (const s of Object.keys(core.STORY_SPORTS)) assert.ok(cov.SPORT_FILES.includes(s), `${s} has stories but no contract file`);
 });
 
-test('every published story in the repo is under contract', () => {
+// Nothing here asserts on the published stories themselves. CI runs these
+// tests on every story PR, and an uncovered route or an unreviewed source must
+// not stop a story from publishing (owner decision, 2026-11-15); the nightly
+// Contract Check run is what reports them.
+test('the coverage report reads the published stories', () => {
     const r = cov.storyCoverage(ROOT, sports);
     assert.ok(r.published > 0);
-    assert.deepEqual(r.uncoveredStories, []);
-    assert.equal(r.underContract, r.published);
+    assert.equal(r.underContract + r.uncovered, r.published);
 });
 
 test('classify: feeds with a contract, derived facts, third-party pages, and gaps', () => {
@@ -215,4 +218,36 @@ test('absolute routes are fetched as given, not through the site', async () => {
         'fallback:https://x.test/api/ncaabstandings?season=2027',
         'https://x.test/api/mlb?url=x',
     ]);
+});
+
+// ── Third-party sources: reviewed list and blocklist ─────────
+
+const REVIEWED = { 'good.example': { status: 'ok', why: 'x' }, 'bad.example': { status: 'blocked', since: '2026-11-16', why: 'x' } };
+const dated = (slug, sources) => story('nba', slug, sources);
+
+test('planted fault: a new story citing a blocked source fails the run', () => {
+    const r = cov.storyCoverage(ROOT, sports, [dated('2026-11-16-plant', [SB, 'https://www.bad.example/article'])], REVIEWED);
+    assert.equal(r.uncovered, 0);
+    assert.equal(r.blocked, 1);
+    assert.deepEqual(r.blockedStories, [{ sport: 'nba', slug: '2026-11-16-plant', hosts: ['bad.example'] }]);
+    assert.match(cov.format(r), /FAIL nba\/2026-11-16-plant cites a blocked source: bad\.example/);
+    assert.match(cov.format(r), /BLOCKED {3} bad\.example: 1 fact\(s\) in 1 story/);
+});
+
+test('a story published before the source was blocked is listed, not failed', () => {
+    const r = cov.storyCoverage(ROOT, sports, [dated('2026-11-12-older', [SB, 'https://bad.example/article'])], REVIEWED);
+    assert.equal(r.blocked, 0);
+    assert.equal(r.hosts['bad.example'].status, 'blocked');
+});
+
+test('planted fault: a source nobody has reviewed is reported as unreviewed', () => {
+    const r = cov.storyCoverage(ROOT, sports, [dated('2026-11-16-new', [SB, 'https://never-seen.example/x', 'https://sub.good.example/y'])], REVIEWED);
+    assert.equal(r.hosts['never-seen.example'].status, 'unreviewed');
+    assert.equal(r.hosts['sub.good.example'].status, 'ok');
+    assert.match(cov.format(r), /UNREVIEWED never-seen\.example/);
+    assert.match(cov.format(r), /Unreviewed sources: 1/);
+});
+
+test('a link to another story in this repo is a derived fact, not a third-party source', () => {
+    assert.equal(cov.classify('https://raw.githubusercontent.com/zohnner/zohn-sports-stats/main/content/ncaab/stories/2026-11-14-x.facts.json', nba).state, 'derived');
 });
