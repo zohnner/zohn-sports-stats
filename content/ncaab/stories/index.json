@@ -1,6 +1,23 @@
 {
   "stories": [
     {
+      "slug": "2026-11-15-lsu-gonzaga-81-80",
+      "title": "LSU ended Gonzaga's 21-game home win streak, 81-80",
+      "dek": "The unranked Tigers beat No. 14 Gonzaga in Spokane, the Zags' first home loss since February 2025.",
+      "date": "2026-11-15",
+      "season": 2027,
+      "teams": [
+        "LSU",
+        "GONZ"
+      ],
+      "players": [
+        "5107782"
+      ],
+      "hero_stat": "81-80 — LSU ends Gonzaga's 21-game home win streak",
+      "url": "/ncaab/stories/2026-11-15-lsu-gonzaga-81-80",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-14-jeremy-fears-24-points-9-assists-no-turnovers",
       "title": "Jeremy Fears Jr. scored a season-high 24 with 9 assists and 0 turnovers",
       "dek": "Fears leads Division I at 10.0 assists per game; Michigan State made a season-high 18 3-pointers in the 106-72 win over Northern Iowa.",
