@@ -3,6 +3,47 @@ const L = require('../contract-lib.cjs');
 const fields = require('../fields/field-core.cjs');
 
 const ESPN = 'https://site.web.api.espn.com/apis';
+const GAMES_CSV = 'https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv';
+
+// /api/nflstarts, recomputed from the raw file. Written apart from
+// functions/_nflStarts.js on purpose: two implementations that agree every
+// night are the check. "Through n games" is a team's first n games in week
+// order; counting weeks 1-n instead drops every team with an early bye (#138).
+function rederiveStart(rows, team, season, n) {
+    const games = {};
+    for (const g of rows) {
+        if (g.game_type !== 'REG' || g.home_score === '' || g.away_score === '') continue;
+        for (const [side, other] of [['home', 'away'], ['away', 'home']]) {
+            const key = `${g.season} ${g[`${side}_team`]}`;
+            (games[key] = games[key] || []).push({ week: Number(g.week), day: g.gameday, pf: Number(g[`${side}_score`]), pa: Number(g[`${other}_score`]) });
+        }
+    }
+    const first = key => {
+        const list = games[key];
+        if (!list || list.length < n) return null;
+        const start = [...list].sort((a, b) => a.week - b.week || String(a.day).localeCompare(String(b.day))).slice(0, n);
+        const out = { w: 0, pf: 0, pa: 0, seq: '' };
+        for (const g of start) {
+            out.pf += g.pf; out.pa += g.pa;
+            out.seq += g.pf > g.pa ? 'W' : g.pf < g.pa ? 'L' : 'T';
+            if (g.pf > g.pa) out.w++;
+        }
+        return { ...out, diff: out.pf - out.pa };
+    };
+    const mineKey = `${season} ${team}`;
+    const mine = first(mineKey);
+    if (!mine) return null;
+    const exp = { pf: mine.pf, diff: mine.diff, pool: 0, diffAtLeast: 0, peers: 0, 'sameSequence.count': 0 };
+    for (const key of Object.keys(games)) {
+        const o = first(key);
+        if (!o) continue;
+        exp.pool++;
+        if (o.diff >= mine.diff) exp.diffAtLeast++;
+        if (o.w >= mine.w) exp.peers++;
+        if (key !== mineKey && o.seq === mine.seq) exp['sameSequence.count']++;
+    }
+    return exp;
+}
 const scoreboard = d => `/api/nfl?path=/scoreboard&dates=${d.yyyymmdd}`;
 
 module.exports = {
@@ -153,6 +194,27 @@ module.exports = {
                 L.predicate('has quarterback rows for the season', data => {
                     const qbs = (data?.rows || []).filter(r => r.position === 'QB' && r.season_type === 'REG').length;
                     return qbs >= 32 ? null : `only ${qbs} regular-season QB rows`;
+                }),
+            ],
+        },
+        {
+            id: 'nfl-starts',
+            mirrors: 'functions/api/nflstarts.js + functions/_nflStarts.js; js/nfl.js _loadNFLStartHistory (derived stats #83, #98, #99, #105)',
+            // A finished stretch (Jacksonville's first 8 games of 2026), so the
+            // team's own line never moves; the comparison pool still grows.
+            resolve: async (c, fetchJson) => {
+                const res = await fetchJson(GAMES_CSV);
+                const expected = res.json?.rows ? rederiveStart(res.json.rows, 'JAX', 2026, 8) : null;
+                return expected ? { expected } : null;
+            },
+            route: () => '/api/nflstarts?team=JAX&season=2026&through=8',
+            paths: ['record.w', 'record.l', 'pf', 'pa', 'diff', 'sequence', 'since', 'pool', 'diffAtLeast', 'diffAtMost', 'peers', 'fewerPoints.count', 'smallerDiff.count', 'sameSequence.count'],
+            invariants: [
+                L.predicate('the route agrees with a fresh computation from games.csv', (data, ctx) => {
+                    const bad = Object.entries(ctx.expected || {})
+                        .filter(([k, v]) => L.getAt(data, k) !== v)
+                        .map(([k, v]) => `${k}: route says ${L.getAt(data, k)}, games.csv gives ${v}`);
+                    return bad.length ? bad.join('; ') : null;
                 }),
             ],
         },
