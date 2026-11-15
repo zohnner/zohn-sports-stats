@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-13",
-  "gamesCounted": 183,
+  "throughDate": "2026-11-14",
+  "gamesCounted": 188,
   "source": "balldontlie",
   "sections": [
     {
@@ -26,7 +26,7 @@
         },
         {
           "name": "Brooklyn Nets",
-          "record": "3-8"
+          "record": "3-9"
         }
       ]
     },
@@ -35,11 +35,11 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "8-3"
+          "record": "8-4"
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "6-7"
+          "record": "7-7"
         },
         {
           "name": "Indiana Pacers",
@@ -47,7 +47,7 @@
         },
         {
           "name": "Chicago Bulls",
-          "record": "2-9"
+          "record": "3-9"
         },
         {
           "name": "Milwaukee Bucks",
@@ -64,7 +64,7 @@
         },
         {
           "name": "Miami Heat",
-          "record": "6-6"
+          "record": "7-6"
         },
         {
           "name": "Orlando Magic",
@@ -84,20 +84,20 @@
       "name": "Western Conference — Northwest",
       "teams": [
         {
-          "name": "Minnesota Timberwolves",
-          "record": "9-3"
-        },
-        {
           "name": "Portland Trail Blazers",
           "record": "9-3"
         },
         {
-          "name": "Oklahoma City Thunder",
-          "record": "8-5"
+          "name": "Minnesota Timberwolves",
+          "record": "9-4"
         },
         {
           "name": "Denver Nuggets",
-          "record": "6-4"
+          "record": "7-4"
+        },
+        {
+          "name": "Oklahoma City Thunder",
+          "record": "8-5"
         },
         {
           "name": "Utah Jazz",
@@ -143,15 +143,15 @@
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "8-4"
+          "record": "9-4"
         },
         {
           "name": "Dallas Mavericks",
-          "record": "7-5"
+          "record": "7-6"
         },
         {
           "name": "New Orleans Pelicans",
-          "record": "4-9"
+          "record": "4-10"
         }
       ]
     }
