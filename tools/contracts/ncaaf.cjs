@@ -44,6 +44,7 @@ module.exports = {
             id: 'ncaaf-summary',
             needs: 'final',
             mirrors: 'js/ncaafLiveGame.js fetchNCAAFSummary',
+            sources: [/college-football\/summary/, /\/api\/ncaaf\?path=\/summary/],
             route: c => `/api/ncaaf?path=/summary&event=${c.finalId}`,
             paths: [
                 'header.competitions[0].status.type.state',
@@ -61,6 +62,20 @@ module.exports = {
             route: c => c.season == null ? '/api/ncaafstandings' : `/api/ncaafstandings?season=${c.season}`,
             paths: [],
             invariants: [L.deepCount('entries', 120, { each: 'team.abbreviation' })],
+        },
+        {
+            id: 'ncaaf-team-schedule',
+            mirrors: 'js/ncaaf.js team page schedule (/teams/{id}/schedule); story source',
+            sources: [/college-football\/teams\/[^/?\s]+\/schedule/],
+            route: () => '/api/ncaaf?path=/teams/333/schedule',
+            paths: [
+                'team.abbreviation',
+                'events[].id',
+                'events[].date',
+                'events[].competitions[0].competitors[].team.id',
+                'events[].competitions[0].status.type.completed',
+            ],
+            invariants: [L.minCount('events', 10), L.completedScores()],
         },
         {
             id: 'ncaaf-rankings',

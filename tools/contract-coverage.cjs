@@ -19,7 +19,9 @@ const SPORT_FILES = ['nfl', 'ncaaf', 'mlb', 'nba', 'ncaab'];
 // Feeds a contract can reach. A URL anywhere else is a third-party page
 // (Basketball-Reference, a news article): it can't be put under contract,
 // so it is counted and listed on its own line instead of passing silently.
-const FEED_HOST = /(^|\.)(espn\.com|statsapi\.mlb\.com|github\.com)$/;
+// espn.com's article and video pages are third-party pages too; only its API
+// hosts are feeds.
+const FEED_HOST = /^((site|site\.web|sports\.core)\.api\.espn\.com|statsapi\.mlb\.com|github\.com)$/;
 
 // A fact computed from the story's other facts has no upstream of its own.
 const DERIVED = /^\s*(derived\b|content\/[a-z]+\/stories\/\S+\.facts\.json)/i;
