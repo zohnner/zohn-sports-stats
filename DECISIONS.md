@@ -3883,3 +3883,32 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 - **Auto-merge retry.** `story-automerge.yml`'s Merge step retries only the 405 "Base branch was modified" answer, after 5, 15, 30 and 60 seconds; any other failure still fails at once.
 
 **Verified.** The share-queue script against a fake `gh` (three cases, one of which fails when the same-week match is broken); the merge retry loop against a fake `gh` (flaky 405, other error, clean, persistent 405). **Not verified.** Neither workflow has run in GitHub Actions with these changes yet.
+
+## D-201 — Integrity close-out: story coverage, route crawl, derived stats, one audit
+
+**Date:** 2026-11-15. **Status:** proposed (four PRs; owner merges).
+
+**Context.** Stories publish with no owner review, and the checks around them had gaps that each looked small: Contract Check covered 3 of 5 story sports, nothing clicked a card to see where it went, twelve `[derived-stat]` filings had no owner, and no single run said whether the whole thing held.
+
+**Decision.**
+- **Story coverage (PR #137).** Contracts for NBA and NCAAB, and for the routes the other sports were missing; 14 contracts became 39. Coverage is per route, not per sport: every contract lists the upstream routes it stands behind (`sources`), and a story is under contract only when every route its `.facts.json` cites matches one. Every Contract Check run ends with the table, and one uncovered story fails the run. Third-party citations are listed, never counted as covered.
+- **Route crawl (PR #136).** `tools/audit/route-crawl.cjs` clicks game cards and team links on production in a browser and checks every team path URL over HTTP. Each run plants a card that opens the wrong view and fails if the plant is not reported.
+- **Derived stats (PR #168).** Three capabilities built, each with a contract that recomputes it nightly: NFL start history (`/api/nflstarts`), the NBA player game log, and largest margins on the Power Rankings pages. A contract for a derived stat either recomputes it with separate code from the raw upstream, or runs the site function and compares it with a second feed.
+- **Audit (this PR).** `tools/audit/integrity-audit.cjs` runs the four checks and the planted-fault tests and prints one report. It holds no checking logic: a green line means the command under it passed.
+
+**A control must have caught a planted fault.** Every check above has tests named "planted fault" that break one thing on purpose. The audit counts them and fails if none ran.
+
+**What it found.**
+- The Vikings story claim (fewest points by a 6-2 team since 1999) is wrong: three earlier teams scored fewer. The count used weeks 1-8, which drops teams with an early bye. Filed as #138, story untouched. "Through N games" on this site means the first N games in week order.
+- Within two days of the coverage table existing, 8 of 17 new stories cited a route with no contract. Contracts were added; the table went back to 0.
+- Third-party citations grew from 26 facts in 3 stories to 74 facts in 10 stories in the same two days.
+- Both routing bugs in the brief were already fixed on `main` (#123, #131); the crawl confirmed it.
+
+**Owner decisions (2026-11-15).**
+1. An uncovered route does not block a story from publishing. The nightly run reports it and a contract is added afterwards. So no CI test may assert on the published story set; CI runs on story PRs.
+2. A third-party citation does not fail the run, but every source is reviewed. `tools/contracts/third-party-sources.cjs` lists each host as `ok` or `blocked` with a reason; a story dated on or after a host was blocked fails the nightly run, and an unlisted host prints as UNREVIEWED. First review: nine hosts ok, sportbursts.com blocked from 2026-11-16.
+3. `.facts.json` stays as it is: no field paths. No run recomputes a story number; the number checker and the source contracts are the controls.
+
+**Verified 2026-11-15, against production.** Coverage 60 of 60. Route crawl 57 clicks, 0 mis-routes, plant caught, 492 team path URLs. Sitemap: 60 stories and 5 indexes, all with the right `<lastmod>`. 22 planted faults caught. 519 tests pass.
+
+**Not verified.** `nfl-starts` fails until #168 is deployed (the route 404s on production). The NFL team-page card has not been seen in a browser. MLB game cards could not be clicked: no MLB games in November.

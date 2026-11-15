@@ -1,0 +1,39 @@
+name: Integrity Audit
+
+# One report for the four integrity claims (D-201): story coverage and
+# contracts, the route crawl, unanswered derived-stat issues, and story
+# <lastmod> in the sitemap. Weekly and on demand; the report is the job summary.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Run the audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/audit/integrity-audit.cjs https://sportstrata.cc --md integrity-audit.md
+
+      - name: Publish the report
+        if: always()
+        run: if [ -f integrity-audit.md ]; then cat integrity-audit.md >> "$GITHUB_STEP_SUMMARY"; fi
