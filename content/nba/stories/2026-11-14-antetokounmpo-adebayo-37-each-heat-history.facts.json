@@ -1,0 +1,262 @@
+{
+  "facts": [
+    {
+      "key": "giannis_pts",
+      "label": "Giannis Antetokounmpo points vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 37
+    },
+    {
+      "key": "giannis_fgm",
+      "label": "Giannis Antetokounmpo field goals made vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 15
+    },
+    {
+      "key": "giannis_fga",
+      "label": "Giannis Antetokounmpo field goals attempted vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 20
+    },
+    {
+      "key": "giannis_reb",
+      "label": "Giannis Antetokounmpo rebounds vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 9
+    },
+    {
+      "key": "giannis_min",
+      "label": "Giannis Antetokounmpo minutes vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 31
+    },
+    {
+      "key": "bam_pts",
+      "label": "Bam Adebayo points vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 37
+    },
+    {
+      "key": "bam_fgm",
+      "label": "Bam Adebayo field goals made vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 13
+    },
+    {
+      "key": "bam_fga",
+      "label": "Bam Adebayo field goals attempted vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 19
+    },
+    {
+      "key": "bam_reb",
+      "label": "Bam Adebayo rebounds vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 14
+    },
+    {
+      "key": "bam_tov",
+      "label": "Bam Adebayo turnovers vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 0
+    },
+    {
+      "key": "bam_min",
+      "label": "Bam Adebayo minutes vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 38
+    },
+    {
+      "key": "duo_pts",
+      "label": "Antetokounmpo and Adebayo combined points (37 + 37)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 74
+    },
+    {
+      "key": "duo_fgm",
+      "label": "Antetokounmpo and Adebayo combined field goals made (15 + 13)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 28
+    },
+    {
+      "key": "duo_fga",
+      "label": "Antetokounmpo and Adebayo combined field goals attempted (20 + 19)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 39
+    },
+    {
+      "key": "mia_pts",
+      "label": "Miami points vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 133
+    },
+    {
+      "key": "cle_pts",
+      "label": "Cleveland points vs Miami, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 121
+    },
+    {
+      "key": "mia_margin",
+      "label": "Miami margin of victory vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 12
+    },
+    {
+      "key": "mitchell_pts",
+      "label": "Davion Mitchell points vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 22
+    },
+    {
+      "key": "mitchell_ast",
+      "label": "Davion Mitchell assists vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 17
+    },
+    {
+      "key": "conwell_pts",
+      "label": "Ryan Conwell points vs Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 20
+    },
+    {
+      "key": "mia_20pts_count",
+      "label": "Miami players with at least 20 points (Antetokounmpo 37, Adebayo 37, Mitchell 22, Conwell 20)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 4
+    },
+    {
+      "key": "mia_wins",
+      "label": "Miami wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 7
+    },
+    {
+      "key": "mia_losses",
+      "label": "Miami losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 6
+    },
+    {
+      "key": "mia_streak",
+      "label": "Miami consecutive wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 4
+    },
+    {
+      "key": "mia_start_losses",
+      "label": "Miami losses to open the season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/14/schedule",
+      "value": 4
+    },
+    {
+      "key": "mia_start_wins",
+      "label": "Miami wins in its first 4 games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/14/schedule",
+      "value": 0
+    },
+    {
+      "key": "heat_duo_rank",
+      "label": "Pairs of Heat teammates to each score at least 35 points in the same game, including Antetokounmpo/Adebayo (the other pair: LeBron James/Dwyane Wade, twice in 2012-13)",
+      "source": "https://www.usatoday.com/story/sports/nba/heat/2026/11/14/giannis-antetokounmpo-bam-adebayo-37-points-lebron-james-dwyane-wade-mark/92774407007/",
+      "value": 2
+    },
+    {
+      "key": "hist_year",
+      "label": "Year of the most recent LeBron James/Dwyane Wade 35-point game (Feb. 26, 2013)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=400278565",
+      "value": 2013
+    },
+    {
+      "key": "lebron_wade_2012_year",
+      "value": 2012,
+      "label": "Year of the first LeBron James/Dwyane Wade 35-point game (March 14, 2012 at Chicago)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=320314004"
+    },
+    {
+      "key": "lebron_wade_2012_wade",
+      "value": 36,
+      "label": "Dwyane Wade points at Chicago, March 14, 2012",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=320314004"
+    },
+    {
+      "key": "lebron_wade_2012_lebron",
+      "value": 35,
+      "label": "LeBron James points at Chicago, March 14, 2012",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=320314004"
+    },
+    {
+      "key": "lebron_wade_2013_day",
+      "value": 26,
+      "label": "Day of the most recent LeBron James/Dwyane Wade 35-point game (Feb. 26, 2013)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=400278565"
+    },
+    {
+      "key": "lebron_wade_2013_lebron",
+      "value": 40,
+      "label": "LeBron James points vs Sacramento, Feb. 26, 2013 (double overtime)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=400278565"
+    },
+    {
+      "key": "lebron_wade_2013_wade",
+      "value": 39,
+      "label": "Dwyane Wade points vs Sacramento, Feb. 26, 2013 (double overtime)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=400278565"
+    },
+    {
+      "key": "mia_season_high",
+      "label": "Miami season-high points (vs Indiana at home, Oct 30)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/14/schedule",
+      "value": 145
+    },
+    {
+      "key": "cle_mitchell_pts",
+      "label": "Donovan Mitchell points vs Miami, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909298",
+      "value": 25
+    },
+    {
+      "key": "cle_wins",
+      "label": "Cleveland wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 7
+    },
+    {
+      "key": "cle_losses",
+      "label": "Cleveland losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 7
+    },
+    {
+      "key": "years_gap",
+      "label": "Years between the James/Wade 35-point game (2013) and this one (2026)",
+      "source": "https://www.usatoday.com/story/sports/nba/heat/2026/11/14/giannis-antetokounmpo-bam-adebayo-37-points-lebron-james-dwyane-wade-mark/92774407007/",
+      "value": 13
+    },
+    {
+      "key": "mia_det_pts",
+      "label": "Miami points vs Detroit, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261114",
+      "value": 137
+    },
+    {
+      "key": "det_pts_vs_mia",
+      "label": "Detroit points vs Miami, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261114",
+      "value": 117
+    },
+    {
+      "key": "mia_pts_rank",
+      "label": "Rank of 133 points among Miami's season scoring totals (behind 145 and 137)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 3
+    },
+    {
+      "key": "mia_cle_streak",
+      "label": "Miami consecutive wins after beating Cleveland, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261113",
+      "value": 3
+    }
+  ]
+}
