@@ -1,0 +1,340 @@
+{
+  "facts": [
+    {
+      "key": "sa_streak",
+      "label": "San Antonio consecutive wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 11
+    },
+    {
+      "key": "sa_wins",
+      "label": "San Antonio wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 11
+    },
+    {
+      "key": "sa_losses",
+      "label": "San Antonio losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 2
+    },
+    {
+      "key": "sa_start_wins",
+      "label": "San Antonio wins in its first 2 games (home losses to Oklahoma City and Houston)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 0
+    },
+    {
+      "key": "sa_allowed_streak",
+      "label": "San Antonio points allowed per game during the 11-game win streak (1,151 points in 11 games)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 104.6
+    },
+    {
+      "key": "sa_allowed_total",
+      "label": "San Antonio points allowed during the 11-game win streak",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 1151
+    },
+    {
+      "key": "opp_other_avg",
+      "label": "Streak opponents' points per game in their other games (10,113 points in 88 games; pointsFor totals minus points scored against San Antonio)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 114.9
+    },
+    {
+      "key": "opp_other_total",
+      "label": "Streak opponents' combined points in their other games",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 10113
+    },
+    {
+      "key": "opp_other_games",
+      "label": "Streak opponents' combined games other than against San Antonio",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 88
+    },
+    {
+      "key": "def_gap",
+      "label": "Gap between opponents' scoring in other games (114.9) and against San Antonio (104.6)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 10.3
+    },
+    {
+      "key": "sa_margin_avg",
+      "label": "San Antonio average margin of victory during the 11-game win streak (188 points over 11 games)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 17.1
+    },
+    {
+      "key": "sa_margin_total",
+      "label": "San Antonio combined margin of victory during the 11-game win streak",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 188
+    },
+    {
+      "key": "gs_pts",
+      "label": "Golden State points vs San Antonio, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 85
+    },
+    {
+      "key": "gs_other_avg",
+      "label": "Golden State points per game in games other than vs San Antonio (1,432 points in 12 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 119.3
+    },
+    {
+      "key": "gs_gap",
+      "label": "Golden State shortfall vs its other-games scoring average (119.3 minus 85)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 34.3
+    },
+    {
+      "key": "gs_next_low",
+      "label": "Golden State next-lowest points in a game this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/9/schedule",
+      "value": 105
+    },
+    {
+      "key": "gs_low_gap",
+      "label": "Gap between Golden State's lowest (85) and next-lowest (105) scoring games",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/9/schedule",
+      "value": 20
+    },
+    {
+      "key": "sa_gs_margin",
+      "label": "San Antonio margin of victory vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 38
+    },
+    {
+      "key": "sa_gs_pts",
+      "label": "San Antonio points vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 123
+    },
+    {
+      "key": "sa_prev_best_margin",
+      "label": "San Antonio previous largest margin in the streak (vs Sacramento at home, Oct 27)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 27
+    },
+    {
+      "key": "opp_teams_below",
+      "label": "Streak opponents averaging below their usual scoring against San Antonio (of 8 teams faced)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 7
+    },
+    {
+      "key": "opp_teams_total",
+      "label": "Teams San Antonio faced during the 11-game win streak",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 8
+    },
+    {
+      "key": "home_wins",
+      "label": "Streak wins at home",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 5
+    },
+    {
+      "key": "road_wins",
+      "label": "Streak wins on the road",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 6
+    },
+    {
+      "key": "castle_pts",
+      "label": "Stephon Castle points vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 32
+    },
+    {
+      "key": "castle_min",
+      "label": "Stephon Castle minutes vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 25
+    },
+    {
+      "key": "castle_fgm",
+      "label": "Stephon Castle field goals made vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 12
+    },
+    {
+      "key": "castle_fga",
+      "label": "Stephon Castle field goals attempted vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 18
+    },
+    {
+      "key": "castle_3pm",
+      "label": "Stephon Castle 3-pointers made vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 5
+    },
+    {
+      "key": "castle_3pa",
+      "label": "Stephon Castle 3-pointers attempted vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 8
+    },
+    {
+      "key": "wemby_pts",
+      "label": "Victor Wembanyama points vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 12
+    },
+    {
+      "key": "wemby_reb",
+      "label": "Victor Wembanyama rebounds vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 12
+    },
+    {
+      "key": "wemby_ast",
+      "label": "Victor Wembanyama assists vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 6
+    },
+    {
+      "key": "wemby_blk",
+      "label": "Victor Wembanyama blocks vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 2
+    },
+    {
+      "key": "wemby_min",
+      "label": "Victor Wembanyama minutes vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 21
+    },
+    {
+      "key": "sa_ppg_allowed",
+      "label": "San Antonio points allowed per game this season (1,381 points in 13 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 106.2
+    },
+    {
+      "key": "sa_pa_total",
+      "label": "San Antonio total points allowed this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 1381
+    },
+    {
+      "key": "sa_games",
+      "label": "San Antonio games played",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 13
+    },
+    {
+      "key": "bos_ppg_allowed",
+      "label": "Boston points allowed per game (fewest in the NBA)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 103.1
+    },
+    {
+      "key": "ny_ppg_allowed",
+      "label": "New York points allowed per game (2nd-fewest in the NBA)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 103.7
+    },
+    {
+      "key": "sa_def_rank",
+      "label": "San Antonio rank in fewest points allowed per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 3
+    },
+    {
+      "key": "sa_diff",
+      "label": "San Antonio point differential per game",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 13.3
+    },
+    {
+      "key": "por_other",
+      "label": "Portland points per game in games other than vs San Antonio (1,332 points in 11 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 121.1
+    },
+    {
+      "key": "por_vs_sa",
+      "label": "Portland points vs San Antonio, Nov 7",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 103
+    },
+    {
+      "key": "min_other",
+      "label": "Minnesota points per game in games other than vs San Antonio (1,427 points in 12 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 118.9
+    },
+    {
+      "key": "min_vs_sa",
+      "label": "Minnesota points vs San Antonio, Oct 31",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 111
+    },
+    {
+      "key": "dal_other",
+      "label": "Dallas points per game in games other than vs San Antonio (1,258 points in 11 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 114.4
+    },
+    {
+      "key": "dal_vs_sa",
+      "label": "Dallas points per game vs San Antonio across 2 meetings (106 and 111)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 108.5
+    },
+    {
+      "key": "phx_vs_sa",
+      "label": "Phoenix points vs San Antonio, Nov 9",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 96
+    },
+    {
+      "key": "phx_other",
+      "value": 113.3,
+      "label": "Phoenix points per game in games other than vs San Antonio (1,133 points in 10 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings"
+    },
+    {
+      "key": "sac_other",
+      "label": "Sacramento points per game in games other than vs San Antonio (1,086 points in 10 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 108.6
+    },
+    {
+      "key": "sac_vs_sa",
+      "label": "Sacramento points per game vs San Antonio across 2 meetings (103 and 109)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 106
+    },
+    {
+      "key": "utah_other",
+      "label": "Utah points per game in games other than vs San Antonio (1,189 points in 11 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 108.1
+    },
+    {
+      "key": "utah_vs_sa",
+      "label": "Utah points per game vs San Antonio across 2 meetings (111 and 97)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 104
+    },
+    {
+      "key": "chi_vs_sa",
+      "label": "Chicago points vs San Antonio, Nov 11",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule",
+      "value": 119
+    },
+    {
+      "key": "chi_other",
+      "label": "Chicago points per game in games other than vs San Antonio (1,256 points in 11 games)",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+      "value": 114.2
+    }
+  ]
+}

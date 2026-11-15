@@ -1,6 +1,122 @@
 {
   "stories": [
     {
+      "slug": "2026-11-15-arkansas-south-carolina-34-6",
+      "title": "Arkansas held No. 17 South Carolina to 6 points, a season low",
+      "dek": "The 4-6 Razorbacks beat the ranked Gamecocks 34-6, holding them 25.8 points below their season average.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "ARK",
+        "SC"
+      ],
+      "players": [],
+      "hero_stat": "6 points allowed — South Carolina's fewest this season",
+      "url": "/ncaaf/stories/2026-11-15-arkansas-south-carolina-34-6",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-15-utah-arizona-40-39",
+      "title": "Utah survived Arizona 40-39 after its defense gave up a season-high 39",
+      "dek": "Arizona scored 39 points, 22.7 more than Utah had allowed on average, and the Utes still won on a 70-yard touchdown with 2:25 left.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "hook": "No. 2 Utah survives, stays unbeaten on late 70-yard TD in thriller vs. Arizona",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50488650/no-2-utah-survives-late-70-yard-td-thriller-vs-arizona",
+      "week": 12,
+      "teams": [
+        "UTAH",
+        "ARIZ"
+      ],
+      "players": [
+        "5105849",
+        "4871040"
+      ],
+      "hero_stat": "39 points allowed — Utah's most this season",
+      "url": "/ncaaf/stories/2026-11-15-utah-arizona-40-39",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-15-washington-state-73-points",
+      "title": "Washington State's 73 points are its most since at least 2021",
+      "dek": "The 2-8 Cougars beat Colorado State 73-7, a 66-point margin that is also their largest since at least 2021.",
+      "date": "2026-11-15",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "WSU",
+        "CSU"
+      ],
+      "players": [],
+      "hero_stat": "73 points — Washington State's most since at least 2021",
+      "url": "/ncaaf/stories/2026-11-15-washington-state-73-points",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-14-colorado-first-ap-top-15-win-since-2007",
+      "title": "Colorado's first AP top-15 win in 19 years: 42-32 over No. 14 Houston",
+      "dek": "The Buffaloes lost to No. 12 Texas Tech and No. 11 Utah this season before beating No. 14 Houston 42-32.",
+      "date": "2026-11-14",
+      "season": 2026,
+      "hook": "Colorado upsets No. 14 Houston for 1st AP top-15 win since 2007",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50479172/colorado-upsets-no-14-houston-1st-ap-top-15-win-2007",
+      "week": 11,
+      "teams": [
+        "COLO",
+        "HOU"
+      ],
+      "players": [
+        "4871081",
+        "5096878",
+        "5079771",
+        "4685574",
+        "4816098"
+      ],
+      "hero_stat": "19 years since Colorado's last AP top-15 win",
+      "url": "/ncaaf/stories/2026-11-14-colorado-first-ap-top-15-win-since-2007",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-14-ucla-first-10-0-start-since-1998",
+      "title": "UCLA is 10-0 for the first time since 1998, its 3rd 10-0 start",
+      "dek": "The Bruins held Illinois scoreless in the first half and to 240 yards, forcing 3 interceptions in a 22-14 win.",
+      "date": "2026-11-14",
+      "season": 2026,
+      "week": 11,
+      "teams": [
+        "UCLA",
+        "ILL"
+      ],
+      "players": [
+        "4795295",
+        "5152410",
+        "4917945",
+        "5092275"
+      ],
+      "hero_stat": "10-0 start, the 3rd in UCLA history",
+      "url": "/ncaaf/stories/2026-11-14-ucla-first-10-0-start-since-1998",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-13-memphis-only-fbs-team-two-50-point-road-games",
+      "title": "Memphis has the FBS's only 2 50-point road games through Week 11",
+      "dek": "Marcus Stokes has accounted for 5 touchdowns in 3 straight games, and Jaylin Carter just passed 1,000 rushing yards.",
+      "date": "2026-11-13",
+      "season": 2026,
+      "hook": "Stokes has 5 total TDs, Memphis blows 21-point lead before beating South Florida 52-41",
+      "hook_url": "https://www.espn.com/ncf/recap?gameId=401862824",
+      "week": 11,
+      "teams": [
+        "MEM",
+        "USF"
+      ],
+      "players": [],
+      "hero_stat": "2 road games of 50-plus points, the only team in the FBS",
+      "url": "/ncaaf/stories/2026-11-13-memphis-only-fbs-team-two-50-point-road-games",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-08-georgia-42-7-ole-miss-top-10-blowout",
       "title": "Georgia beat No. 10 Ole Miss 42-7, the biggest top-10 blowout this season",
       "dek": "The 35-point margin is 27 points wider than any other game between top-10 teams this season.",

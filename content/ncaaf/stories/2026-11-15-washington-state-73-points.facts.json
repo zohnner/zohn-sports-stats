@@ -1,0 +1,220 @@
+{
+  "facts": [
+    {
+      "key": "wsu_pts",
+      "label": "Washington State points vs Colorado State, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 73
+    },
+    {
+      "key": "csu_pts",
+      "label": "Colorado State points vs Washington State, Nov 14",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 7
+    },
+    {
+      "key": "wsu_margin",
+      "label": "Washington State margin of victory vs Colorado State (73 minus 7)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 66
+    },
+    {
+      "key": "wsu_wins",
+      "label": "Washington State wins this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 2
+    },
+    {
+      "key": "wsu_losses",
+      "label": "Washington State losses this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 8
+    },
+    {
+      "key": "wsu_ppg",
+      "label": "Washington State points per game this season (244 points in 10 games)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 24.4
+    },
+    {
+      "key": "wsu_pts_total",
+      "label": "Washington State total points this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 244
+    },
+    {
+      "key": "wsu_games",
+      "label": "Washington State games played this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 10
+    },
+    {
+      "key": "wsu_prev_max_2021",
+      "label": "Washington State most points in a game, 2021-2025 seasons (70 vs Portland State, 2024)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2024",
+      "value": 70
+    },
+    {
+      "key": "wsu_gap_prev_max",
+      "label": "Gap between 73 points and the previous 2021-2025 high of 70",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2024",
+      "value": 3
+    },
+    {
+      "key": "wsu_prev_season_high",
+      "label": "Washington State most points in a game this season before Saturday (48 vs Duquesne, Sept 19)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 48
+    },
+    {
+      "key": "wsu_prev_fbs_high",
+      "label": "Washington State most points vs an FBS opponent this season before Saturday (30 vs Oregon State, Oct 17)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 30
+    },
+    {
+      "key": "wsu_prev_max_margin",
+      "label": "Washington State largest margin of victory, 2021-2025 seasons (43 vs Northern Colorado, 2023)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2023",
+      "value": 43
+    },
+    {
+      "key": "wsu_2021_span",
+      "label": "Seasons checked for Washington State scoring highs (2021 through 2026)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2021",
+      "value": 2021
+    },
+    {
+      "key": "csu_wins",
+      "label": "Colorado State wins this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 3
+    },
+    {
+      "key": "csu_losses",
+      "label": "Colorado State losses this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 7
+    },
+    {
+      "key": "csu_ppg_allowed",
+      "label": "Colorado State points allowed per game this season (476 points in 10 games)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 47.6
+    },
+    {
+      "key": "csu_pa_total",
+      "label": "Colorado State total points allowed this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 476
+    },
+    {
+      "key": "csu_prev_max_allowed",
+      "label": "Most points Colorado State had allowed in a game this season before Saturday (66 vs Texas State, Oct 16)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 66
+    },
+    {
+      "key": "csu_gap_max_allowed",
+      "label": "Gap between 73 points and the most Colorado State had allowed before (66)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 7
+    },
+    {
+      "key": "csu_min_scored",
+      "label": "Colorado State fewest points in a game this season (7 vs Washington State)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/36/schedule?season=2026",
+      "value": 7
+    },
+    {
+      "key": "wsu_game_wash",
+      "label": "Washington State points vs Washington, Sept 6",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 10
+    },
+    {
+      "key": "wsu_game_kst",
+      "label": "Washington State points vs Kansas State, Sept 12",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 7
+    },
+    {
+      "key": "wsu_game_duq",
+      "label": "Washington State points vs Duquesne, Sept 19",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 48
+    },
+    {
+      "key": "wsu_game_ariz",
+      "label": "Washington State points vs Arizona, Sept 26",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 24
+    },
+    {
+      "key": "wsu_game_fresno",
+      "label": "Washington State points vs Fresno State, Oct 4",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 6
+    },
+    {
+      "key": "wsu_game_usu",
+      "label": "Washington State points vs Utah State, Oct 10",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 16
+    },
+    {
+      "key": "wsu_game_oregst",
+      "label": "Washington State points vs Oregon State, Oct 17",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 30
+    },
+    {
+      "key": "wsu_game_boise",
+      "label": "Washington State points vs Boise State, Oct 24",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 10
+    },
+    {
+      "key": "wsu_game_sdsu",
+      "label": "Washington State points vs San Diego State, Oct 31",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 20
+    },
+    {
+      "key": "wsu_above_avg",
+      "label": "Gap between 73 points and Washington State's 24.4 season average",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 48.6
+    },
+    {
+      "key": "wsu_gap_season_high",
+      "label": "Gap between 73 points and Washington State's previous season high of 48",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 25
+    },
+    {
+      "key": "wsu_games_before",
+      "label": "Washington State games played before Saturday (first 9 games of the season)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2026",
+      "value": 9
+    },
+    {
+      "key": "season_year",
+      "label": "Season year",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261114&groups=80",
+      "value": 2026
+    },
+    {
+      "key": "wsu_70_year",
+      "label": "Year Washington State scored 70 vs Portland State",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2024",
+      "value": 2024
+    },
+    {
+      "key": "wsu_43_year",
+      "label": "Year Washington State beat Northern Colorado by 43",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams/265/schedule?season=2023",
+      "value": 2023
+    }
+  ]
+}
