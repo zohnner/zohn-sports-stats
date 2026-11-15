@@ -114,7 +114,7 @@ test('planted fault: a wrong number in a copied story fails the number check', t
 // ── Contracts: planted upstream drift ────────────────────────
 
 const stub = json => async () => ({ ok: true, status: 200, contentType: 'application/json', json, bodySnippet: '' });
-const CTX = { season: 2027, finalId: '401909958', yyyymmdd: '20261109', athleteId: '3945274' };
+const CTX = { season: 2027, finalId: '401909958', yyyymmdd: '20261109', athleteId: '3945274', core: { games: 1, points: 32, doubleDoubles: 0 } };
 const run = (id, json, ctx = CTX) => check.runContract({ ...contract(id), resolve: undefined }, ctx, stub(json));
 
 const LABELS = ['MIN', 'FG', 'FG%', '3PT', '3P%', 'FT', 'FT%', 'REB', 'AST', 'BLK', 'STL', 'PF', 'TO', 'PTS'];

@@ -308,6 +308,35 @@ async function _prComputePriorRatings(cfg) {
 // MLB keeps its own wrapper (displayMLBPowerRankings, js/mlb.js) since its
 // power rankings are a tab embedded in Standings, not a standalone route --
 // but it still calls computeSRS/_prRenderRows, the same shared core.
+// The season's most lopsided finished games, largest first (D-201, derived
+// stat #106). Pure: the same season games the rating is computed from.
+function largestMargins(games, n = 5) {
+    return (games || [])
+        .filter(g => Number.isFinite(Number(g.homeScore)) && Number.isFinite(Number(g.awayScore)) && Number(g.homeScore) !== Number(g.awayScore))
+        .map(g => {
+            const homeWon = Number(g.homeScore) > Number(g.awayScore);
+            return {
+                winner: homeWon ? g.home : g.away, loser: homeWon ? g.away : g.home,
+                winnerScore: Number(homeWon ? g.homeScore : g.awayScore), loserScore: Number(homeWon ? g.awayScore : g.homeScore),
+                margin: Math.abs(Number(g.homeScore) - Number(g.awayScore)), date: g.date || '',
+            };
+        })
+        .sort((a, b) => b.margin - a.margin || (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+        .slice(0, n);
+}
+
+function _prMarginsHtml(games) {
+    const top = largestMargins(games, 5);
+    if (!top.length) return '';
+    const esc = (typeof _escHtml === 'function') ? _escHtml : (s => String(s));
+    const day = d => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) { return ''; } };
+    return `<div class="stats-card" style="margin-top:1.25rem">
+        <h2 class="detail-section-title">Largest margins this season</h2>
+        ${top.map(g => `<div class="detail-row"><span class="detail-label">${esc(g.winner)} ${esc(String(g.winnerScore))}, ${esc(g.loser)} ${esc(String(g.loserScore))}${g.date ? ` · ${esc(day(g.date))}` : ''}</span><span class="detail-value">${esc(String(g.margin))} points</span></div>`).join('')}
+        <p class="pct-caption" style="margin-top:0.5rem">Finished regular-season games.</p>
+    </div>`;
+}
+
 async function _prShow(sport) {
     const cfg = _PWR_SPORTS[sport];
     const grid = document.getElementById('playersGrid');
@@ -345,6 +374,7 @@ async function _prShow(sport) {
                     <p class="md-note">Opponent-adjusted rating from this season's actual results — computed, not editorial.</p>
                 </div>
                 ${listHtml}
+                ${_prMarginsHtml(games)}
             </div>`;
     } catch (err) {
         if (typeof Logger !== 'undefined') Logger.error(`${sport} power rankings failed`, err && err.message, 'POWERRANKINGS');
@@ -354,6 +384,7 @@ async function _prShow(sport) {
 
 if (typeof window !== 'undefined') {
     window.computeSRS = computeSRS;
+    window.largestMargins = largestMargins;
     window._PWR_SPORTS = _PWR_SPORTS;
     window._prRenderRows = _prRenderRows;
     window._prShow = _prShow;

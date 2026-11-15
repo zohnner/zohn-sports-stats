@@ -2447,10 +2447,65 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
         recordChips, recordSeasonLabel: recordChips.length ? `${recordSeason} Season` : '',
         assets, groups,
         rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtmlTop: scheduleHtml,
+        scheduleHtmlTop: scheduleHtml + '<div id="nflStartHistory" style="grid-column:1/-1"></div>',
         backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-', storiesSport: 'nfl',
     });
     _loadTeamStories('nfl', abbr);
+    _loadNFLStartHistory(abbr);
+}
+
+// How this start compares with every start since 1999 (D-201; derived stats
+// #83, #98, #99, #105). /api/nflstarts does the counting from nflverse's
+// games.csv; this only words it. Pure, so tests can run it.
+function _nflStartHistoryHtml(d) {
+    if (!d || !d.ok || d.through < 4) return '';
+    const esc = _escHtml;
+    const signed = v => (v > 0 ? '+' : '') + v;
+    const who = t => `${t.season} ${t.team}`;
+    const n = d.through;
+    const rec = `${d.record.w}-${d.record.l}${d.record.t ? '-' + d.record.t : ''}`;
+    const listed = (group, fmt) => (group.count <= 8 ? ` (${group.teams.map(fmt).join('; ')})` : '');
+    const lines = [];
+    lines.push(d.diff >= 0
+        ? `${d.diffAtLeast} of ${d.pool} teams since ${d.since} were at ${signed(d.diff)} or better through ${n} games.`
+        : `${d.diffAtMost} of ${d.pool} teams since ${d.since} were at ${signed(d.diff)} or worse through ${n} games.`);
+    const fewer = d.fewerPoints.count
+        ? `${d.fewerPoints.count} of the others scored ${d.pf} points or fewer${listed(d.fewerPoints, t => `${who(t)}, ${t.value}`)}`
+        : `none of the others scored as few as ${d.pf} points${d.nextFewestPoints ? ` (next: ${who(d.nextFewestPoints)}, ${d.nextFewestPoints.value})` : ''}`;
+    const smaller = d.smallerDiff.count
+        ? `${d.smallerDiff.count} had a differential of ${signed(d.diff)} or smaller${listed(d.smallerDiff, t => `${who(t)}, ${signed(t.value)}`)}`
+        : `none had a differential as small as ${signed(d.diff)}`;
+    lines.push(`${d.peers} teams had ${d.record.w} or more wins through ${n} games: ${fewer}, and ${smaller}.`);
+    lines.push(d.sameSequence.count
+        ? `${d.sameSequence.count} other team${d.sameSequence.count === 1 ? '' : 's'} opened in the same order${d.sameSequence.count <= 12 ? ': ' + d.sameSequence.teams.map(t => who(t) + (t.final ? ` (finished ${t.final})` : '')).join(', ') : ''}.`
+        : `No other team since ${d.since} opened in this exact order.`);
+    const chips = [['Record', rec], ['Points', d.pf], ['Allowed', d.pa], ['Differential', signed(d.diff)], ['Order', d.sequence.split('').join(' ')]];
+    return `<div class="stats-card">
+        <h3 class="detail-section-title">This Start Since ${esc(String(d.since))} <span class="team-section__count">through ${esc(String(n))} games</span></h3>
+        <div class="player-bio-grid" style="margin-top:0.5rem">${chips.map(([l, v]) => `<div class="player-bio-item"><span class="bio-label">${esc(l)}</span><span class="bio-value">${esc(String(v))}</span></div>`).join('')}</div>
+        ${lines.map(l => `<p style="margin:0.6rem 0 0;color:var(--text-secondary)">${esc(l)}</p>`).join('')}
+        <p class="pct-caption" style="margin-top:0.6rem">Regular season, each team's first ${esc(String(n))} games in week order. Data: nflverse (CC-BY 4.0).</p>
+    </div>`;
+}
+
+async function _loadNFLStartHistory(abbr) {
+    const host = document.getElementById('nflStartHistory');
+    if (!host) return;
+    const cacheKey = `nflStarts_${abbr}`;
+    let data = ApiCache.get(cacheKey);
+    if (!data) {
+        try {
+            const res = await fetch(`/api/nflstarts?team=${encodeURIComponent(abbr)}`);
+            data = res.ok ? await res.json() : null;
+            if (data && data.ok) ApiCache.set(cacheKey, data, ApiCache.TTL.MEDIUM);
+        } catch (err) {
+            Logger.warn('NFL start history fetch failed', err, 'NFL');
+            data = null;
+        }
+    }
+    if (!host.isConnected) return;
+    const html = _nflStartHistoryHtml(data);
+    if (html) host.innerHTML = html; else host.remove();
 }
 
 // ── Display: Rankings (Sleeper ADP — overall + positional ranks + tiers) ──

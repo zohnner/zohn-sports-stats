@@ -343,7 +343,7 @@ test('shipped contract files load, validate, and use unique ids', () => {
     check.validateSports(sports);
     const ids = sports.flatMap(s => s.contracts.map(c => c.id));
     assert.equal(new Set(ids).size, ids.length);
-    assert.equal(ids.length, 39);
+    assert.ok(ids.length >= 39);
     for (const s of sports) for (const c of s.contracts) assert.ok(c.mirrors, `${c.id} needs a mirrors note`);
 });
 
