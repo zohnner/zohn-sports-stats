@@ -39,6 +39,7 @@ module.exports = {
             id: 'nfl-summary',
             needs: 'final',
             mirrors: 'js/nflLiveGame.js fetchNFLSummary',
+            sources: [/sports\/football\/nfl\/summary/, /\/api\/nfl\?path=\/summary/],
             route: c => `/api/nfl?path=/summary&event=${c.finalId}`,
             paths: [
                 'header.competitions[0].status.type.state',
