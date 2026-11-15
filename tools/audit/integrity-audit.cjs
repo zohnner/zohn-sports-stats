@@ -66,7 +66,9 @@ function claims(base, opts) {
         sm.code === 0, grab(sm.out, /Sitemap: .*/), lines(sm.out, /FAIL/));
 
     // The controls themselves: every planted fault is caught.
-    const tests = node('--test', ...PLANT_TESTS);
+    // The spec reporter, named: Node 22 switches to TAP when output is piped
+    // (as it is here), and TAP has no "✔ planted fault" lines to count.
+    const tests = node('--test', '--test-reporter=spec', ...PLANT_TESTS);
     const planted = (tests.out.match(/^✔ planted fault/gm) || []).length;
     add('Controls', 'Every planted fault is caught by its control', `node --test ${PLANT_TESTS.join(' ')}`,
         tests.code === 0 && planted > 0, `${planted} planted faults caught, ${grab(tests.out, /ℹ fail \d+/).replace('ℹ ', '')}`, lines(tests.out, /^✖/));
