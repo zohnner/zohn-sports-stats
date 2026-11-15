@@ -3904,10 +3904,10 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 - Third-party citations grew from 26 facts in 3 stories to 74 facts in 10 stories in the same two days.
 - Both routing bugs in the brief were already fixed on `main` (#123, #131); the crawl confirmed it.
 
-**Open decisions for the owner.**
-1. Should an uncovered route block a story PR from auto-merging, or is the nightly failure enough? Muse can only touch `content/`, so it cannot add a contract itself.
-2. Should a third-party citation fail the run? The playbook says facts come from ESPN direct.
-3. `.facts.json` records a value and a URL, not the field the value came from, so no run can recompute a story number. Adding a field path would let one. That is a change to story generation.
+**Owner decisions (2026-11-15).**
+1. An uncovered route does not block a story from publishing. The nightly run reports it and a contract is added afterwards. So no CI test may assert on the published story set; CI runs on story PRs.
+2. A third-party citation does not fail the run, but every source is reviewed. `tools/contracts/third-party-sources.cjs` lists each host as `ok` or `blocked` with a reason; a story dated on or after a host was blocked fails the nightly run, and an unlisted host prints as UNREVIEWED. First review: nine hosts ok, sportbursts.com blocked from 2026-11-16.
+3. `.facts.json` stays as it is: no field paths. No run recomputes a story number; the number checker and the source contracts are the controls.
 
 **Verified 2026-11-15, against production.** Coverage 60 of 60. Route crawl 57 clicks, 0 mis-routes, plant caught, 492 team path URLs. Sitemap: 60 stories and 5 indexes, all with the right `<lastmod>`. 22 planted faults caught. 519 tests pass.
 
