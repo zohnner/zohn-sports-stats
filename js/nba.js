@@ -755,8 +755,70 @@ function displayNBAPlayerDetail(data) {
         ? detailSection({ title: 'Season Stats', body: `<p class="detail-prose">No ${data.season} season stats for ${_escHtml(bio.name)} yet — common for reserves and early-season players.</p>` })
         : '';
 
-    grid.innerHTML = header + profile + statSections + noStats +
+    grid.innerHTML = header + profile + statSections + noStats + '<div id="nbaGameLog"></div>' +
         `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
+    if (data.id) _loadNBAGameLog(data.id, _nba.season);
+}
+
+// ── Player game log (D-201; derived stats #92, #107, #126) ───
+// ESPN's common/v3 gamelog sends CORS headers and has no /api proxy, so it is
+// read direct. The totals come from BballMath, which the nightly contract
+// checks against ESPN's season totals.
+function _nbaGameLogHtml(rows, sum) {
+    if (!rows.length || !sum) return '';
+    const esc = _escHtml;
+    const chips = [
+        ['Games', sum.games], ['Points', sum.points], ['Per game', sum.ppg.toFixed(1)], ['High', sum.high],
+        ['30-point games', sum.thirty], ['40-point games', sum.forty],
+        ['Double-doubles', `${sum.doubleDoubles} in ${sum.games} games`],
+        ...(sum.tripleDoubles ? [['Triple-doubles', sum.tripleDoubles]] : []),
+        ...(sum.ptsPerMin != null ? [['Points per minute', sum.ptsPerMin.toFixed(2)]] : []),
+    ].map(([l, v]) => `<div class="ncf-stat"><span class="ncf-stat-v">${esc(String(v))}</span><span class="ncf-stat-l">${esc(l)}</span></div>`).join('');
+    const show = v => (v == null || v === '' ? '—' : esc(String(v)));
+    const body = rows.map(g => {
+        let dt = '';
+        try { dt = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        const resCls = g.result === 'W' ? 'gl-res--w' : g.result === 'L' ? 'gl-res--l' : '';
+        const perMin = g.min ? (g.pts / g.min).toFixed(2) : '—';
+        return `<tr${g.eventId ? ` style="cursor:pointer" onclick="navigateTo('nba-game-${esc(g.eventId)}')"` : ''}>
+            <td class="gl-l">${esc(dt)}</td>
+            <td class="gl-l">${esc(g.atVs)}${g.atVs ? ' ' : ''}${esc(g.opp)}</td>
+            <td class="gl-l ${resCls}">${esc(g.result)} ${esc(g.score)}</td>
+            <td>${show(g.min)}</td><td><strong>${show(g.pts)}</strong></td><td>${show(g.reb)}</td><td>${show(g.ast)}</td><td>${show(g.stl)}</td><td>${show(g.blk)}</td>
+            <td>${show(g.fg)}</td><td>${show(g.tp)}</td><td>${show(g.ft)}</td><td>${perMin}</td>
+        </tr>`;
+    }).join('');
+    const head = '<th class="gl-l">Date</th><th class="gl-l">Opp</th><th class="gl-l">Res</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>FG</th><th>3PT</th><th>FT</th><th>PTS/MIN</th>';
+    return detailSection({
+        title: 'Game Log',
+        body: `<div class="ncf-statline">${chips}</div>
+            <div class="table-wrapper" style="overflow-x:auto;margin-top:0.75rem"><table class="stats-table gl-table" style="white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+            <p class="pct-caption" style="margin-top:0.5rem">Regular season. A double-double is 10 or more in two of points, rebounds, assists, steals and blocks.</p>`,
+    });
+}
+
+async function _loadNBAGameLog(id, season) {
+    const host = document.getElementById('nbaGameLog');
+    if (!host || typeof BballMath === 'undefined') return;
+    const cacheKey = `nba:gamelog:${id}:${season}`;
+    let data = ApiCache.get(cacheKey);
+    if (!data) {
+        try {
+            const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${encodeURIComponent(id)}/gamelog?season=${season}`);
+            if (!res.ok) throw new Error('gamelog ' + res.status);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.MEDIUM);
+            if (typeof noteFetched === 'function') noteFetched('nba/gamelog', Date.now());
+        } catch (err) {
+            Logger.warn('NBA game log fetch failed', err, 'NBA');
+            host.remove();
+            return;
+        }
+    }
+    if (!host.isConnected) return;
+    const rows = BballMath.gameLog(data);
+    const html = _nbaGameLogHtml(rows, BballMath.gameLogSummary(rows));
+    if (html) host.innerHTML = html; else host.remove();
 }
 
 window.displayNBALeaders      = displayNBALeaders;

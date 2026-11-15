@@ -1,5 +1,37 @@
 'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const L = require('../contract-lib.cjs');
+
+// js/bballGameMath.js is a browser script; load the real file so the contract
+// checks the math readers get, not a copy of it.
+let _site = null;
+function siteMath() {
+    if (!_site) {
+        const ctx = {};
+        ctx.globalThis = ctx;
+        vm.createContext(ctx);
+        vm.runInContext(fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'bballGameMath.js'), 'utf8'), ctx);
+        _site = vm.runInContext('BballMath', ctx);
+    }
+    return _site;
+}
+
+let _rankings = null;
+function siteRankings() {
+    if (!_rankings) {
+        const ctx = { console };
+        ctx.globalThis = ctx;
+        vm.createContext(ctx);
+        vm.runInContext(`${fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'powerRankings.js'), 'utf8')}\n;globalThis.__lm = largestMargins;`, ctx);
+        _rankings = { largestMargins: ctx.__lm };
+    }
+    return _rankings;
+}
+
+// ESPN team ids 1-30.
+const TEAM_IDS = Array.from({ length: 30 }, (_, i) => i + 1);
 
 const ESPN = 'https://site.web.api.espn.com/apis';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba';
@@ -133,6 +165,44 @@ module.exports = {
             invariants: [L.minCount('events', 41), L.completedScores()],
         },
         {
+            // Derived stat #106. The Power Rankings page lists the season's
+            // largest margins from all 30 team schedules (js/powerRankings.js
+            // largestMargins). This reads the same 30 schedules, runs the site's
+            // function, and compares it with a plain maximum computed here.
+            id: 'nba-largest-margin',
+            needs: 'probe',
+            mirrors: 'js/powerRankings.js largestMargins over js/nba.js fetchNBASeasonGames',
+            resolve: async (c, fetchJson) => {
+                const lists = await Promise.all(TEAM_IDS.map(id => fetchJson(`${ESPN}/site/v2/sports/basketball/nba/teams/${id}/schedule?season=${c.season}&seasontype=2`)));
+                if (lists.some(r => !r.ok || !Array.isArray(r.json?.events))) return null;
+                const seen = new Set(), games = [];
+                let max = 0;
+                for (const r of lists) {
+                    for (const ev of r.json.events) {
+                        const comp = ev.competitions?.[0];
+                        if (seen.has(ev.id) || !comp?.status?.type?.completed) continue;
+                        seen.add(ev.id);
+                        const home = comp.competitors.find(t => t.homeAway === 'home'), away = comp.competitors.find(t => t.homeAway === 'away');
+                        games.push({ home: home.team.abbreviation, away: away.team.abbreviation, homeScore: home.score?.value, awayScore: away.score?.value, date: ev.date });
+                        const diff = Math.abs(Number(home.score?.value) - Number(away.score?.value));
+                        if (diff > max) max = diff;
+                    }
+                }
+                return { seasonGames: games, maxMargin: max };
+            },
+            route: c => `${ESPN}/site/v2/sports/basketball/nba/teams/1/schedule?season=${c.season}&seasontype=2`,
+            paths: ['events[].id', 'events[].competitions[0].competitors[].homeAway'],
+            invariants: [
+                L.predicate('the site largest margin equals the maximum over all 30 schedules', (data, ctx) => {
+                    const top = siteRankings().largestMargins(ctx.seasonGames || [], 5);
+                    if (!top.length) return 'no finished games across the 30 schedules';
+                    if (top[0].margin !== ctx.maxMargin) return `site says ${top[0].margin}, the schedules give ${ctx.maxMargin}`;
+                    if (top[0].winnerScore - top[0].loserScore !== top[0].margin) return 'the top game does not add up';
+                    return top.every((g, i) => i === 0 || top[i - 1].margin >= g.margin) ? null : 'the list is not in order';
+                }),
+            ],
+        },
+        {
             id: 'nba-athlete-statistics',
             mirrors: 'story source: ESPN core athlete statistics (also read by functions/api/nbaathlete.js)',
             sources: [/leagues\/nba\/seasons\/\d+\/types\/\d+\/athletes\/\d+\/statistics/],
@@ -154,7 +224,16 @@ module.exports = {
             mirrors: 'story source: ESPN common/v3 athlete game log',
             sources: [/sports\/basketball\/nba\/athletes\/\d+\/gamelog/],
             needs: 'probe',
-            resolve: topScorer,
+            // Also reads ESPN's own season totals for the same player, so the
+            // site's game-log math can be checked against a second source.
+            resolve: async (c, fetchJson) => {
+                const top = await topScorer(c, fetchJson);
+                if (!top) return null;
+                const res = await fetchJson(`${CORE}/seasons/${c.season}/types/2/athletes/${top.athleteId}/statistics`);
+                const stat = (cat, name) => ((res.json?.splits?.categories || []).find(x => x.name === cat)?.stats || []).find(s => s.name === name)?.value;
+                const core = { games: stat('general', 'gamesPlayed'), points: stat('offensive', 'points'), doubleDoubles: stat('general', 'doubleDouble') };
+                return Object.values(core).every(Number.isFinite) ? { ...top, core } : null;
+            },
             route: c => `${ESPN}/common/v3/sports/basketball/nba/athletes/${c.athleteId}/gamelog?season=${c.season}`,
             paths: ['labels', 'names', 'seasonTypes[].displayName', 'seasonTypes[].categories[].events[].eventId', 'seasonTypes[].categories[].events[].stats'],
             invariants: [
@@ -174,6 +253,18 @@ module.exports = {
                         }
                     }
                     return rows ? null : 'no game rows for the league scoring leader';
+                }),
+                // Derived stats #92, #107, #126: the player page's game-log totals
+                // (js/bballGameMath.js, the code readers run) against ESPN's season
+                // totals for the same player. Minutes are left out: ESPN rounds
+                // them per game in one feed and per season in the other.
+                L.predicate('the site game-log totals match ESPN season totals', (data, ctx) => {
+                    if (!ctx.core) return 'no season totals to compare against';
+                    const s = siteMath().gameLogSummary(siteMath().gameLog(data));
+                    if (!s) return 'the site math found no regular-season games';
+                    const bad = ['games', 'points', 'doubleDoubles'].filter(k => s[k] !== ctx.core[k])
+                        .map(k => `${k}: game log gives ${s[k]}, season totals say ${ctx.core[k]}`);
+                    return bad.length ? bad.join('; ') : null;
                 }),
             ],
         },
