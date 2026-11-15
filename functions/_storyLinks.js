@@ -22,6 +22,12 @@ export async function readStories(env, url, sport) {
     } catch (_) { return []; }
 }
 
+// Is this slug in the sport's published index? An index that could not be
+// read (empty list) answers yes, so an asset hiccup never 404s every story.
+export function isPublished(stories, slug) {
+    return !stories.length || stories.some(s => s.slug === slug);
+}
+
 export async function readAllStories(env, url) {
     const lists = await Promise.all(STORY_SPORT_IDS.map(sp => readStories(env, url, sp)));
     return lists.flat().sort((a, b) => String(b.date).localeCompare(String(a.date)));

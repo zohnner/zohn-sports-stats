@@ -21,7 +21,7 @@ function loadStoryLinks() {
         .replace(/^export /gm, '');
     const ctx = { URL, core: require(path.join(ROOT, 'tools', 'stories', 'story-core.cjs')) };
     vm.createContext(ctx);
-    vm.runInContext(`${src}\n;globalThis.__out = { readStories, readAllStories, storiesForTeam, siblingStories, storyListHtml };`, ctx);
+    vm.runInContext(`${src}\n;globalThis.__out = { readStories, isPublished, readAllStories, storiesForTeam, siblingStories, storyListHtml };`, ctx);
     return ctx.__out;
 }
 const L = loadStoryLinks();
@@ -117,4 +117,12 @@ test('sitemap gap check lists only story URLs the sitemap lacks', () => {
     fs.writeFileSync(path.join(dir, 'sitemap.xml'), '<urlset><url><loc>https://sportstrata.cc/nfl/stories/a</loc></url></urlset>');
     assert.deepEqual(missingStoryUrls(dir), ['/nfl/stories/c', '/nfl/stories/b']);
     fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('an unpublished story is not served: a slug missing from the index is not published', () => {
+    const index = [S('2026-11-09-a', '2026-11-09', ['DEN']), S('2026-11-10-b', '2026-11-10', ['MIN'])];
+    assert.equal(L.isPublished(index, '2026-11-09-a'), true);
+    assert.equal(L.isPublished(index, '2026-11-10-deleted'), false);
+    // An index that could not be read must not take every story down with it.
+    assert.equal(L.isPublished([], '2026-11-10-deleted'), true);
 });
