@@ -313,7 +313,7 @@ async function main(argv) {
     // story fails the run even when every contract passed.
     const cov = coverage.storyCoverage(path.join(__dirname, '..'), sports);
     console.log('\n' + coverage.format(cov));
-    const exitCode = cov.uncovered > 0 ? 2 : exitCodeFor(reports);
+    const exitCode = cov.uncovered > 0 || cov.blocked > 0 ? 2 : exitCodeFor(reports);
     if (jsonOut) {
         fs.writeFileSync(jsonOut, JSON.stringify({ generatedAt: today.toISOString(), base, exitCode, sports: reports, coverage: cov }, null, 2));
     }

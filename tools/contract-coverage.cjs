@@ -24,7 +24,19 @@ const SPORT_FILES = ['nfl', 'ncaaf', 'mlb', 'nba', 'ncaab'];
 const FEED_HOST = /^((site|site\.web|sports\.core)\.api\.espn\.com|statsapi\.mlb\.com|github\.com)$/;
 
 // A fact computed from the story's other facts has no upstream of its own.
-const DERIVED = /^\s*(derived\b|content\/[a-z]+\/stories\/\S+\.facts\.json)/i;
+// That includes a link to another story's own files in this repo.
+const DERIVED = /^\s*(derived\b|content\/[a-z]+\/stories\/\S+\.facts\.json|https?:\/\/\S*\/content\/[a-z]+\/stories\/)/i;
+
+const REVIEWED = require('./contracts/third-party-sources.cjs');
+
+// A third-party host -> 'ok' | 'blocked' | 'unreviewed'. A blocked host only
+// fails stories dated on or after the day it was blocked.
+function sourceStatus(host, storyDate, reviewed = REVIEWED) {
+    const entry = reviewed[host] || reviewed[host.split('.').slice(-2).join('.')];
+    if (!entry) return 'unreviewed';
+    if (entry.status !== 'blocked') return 'ok';
+    return !entry.since || !storyDate || storyDate >= entry.since ? 'blocked' : 'blocked-before';
+}
 
 function hostOf(source) {
     const m = /^\s*https?:\/\/([^/\s?#]+)/i.exec(source);
@@ -65,10 +77,10 @@ function storySports(root) {
 }
 
 // sports: the loaded contract modules ({ sport, contracts }).
-function storyCoverage(root, sports, stories = null) {
+function storyCoverage(root, sports, stories = null, reviewed = REVIEWED) {
     const bySport = Object.fromEntries(sports.map(s => [s.sport, s.contracts]));
     const all = stories || storySports(root).flatMap(s => readStories(root, s));
-    const report = { published: 0, underContract: 0, uncovered: 0, externalFacts: 0, sports: {}, uncoveredStories: [], externalStories: [] };
+    const report = { published: 0, underContract: 0, uncovered: 0, externalFacts: 0, blocked: 0, sports: {}, uncoveredStories: [], externalStories: [], blockedStories: [], hosts: {} };
     for (const st of all) {
         const row = report.sports[st.sport] = report.sports[st.sport] || { published: 0, underContract: 0, uncovered: 0 };
         row.published++; report.published++;
@@ -94,6 +106,18 @@ function storyCoverage(root, sports, stories = null) {
         if (ext.length) {
             report.externalFacts += ext.reduce((n, [, k]) => n + k, 0);
             report.externalStories.push({ sport: st.sport, slug: st.slug, hosts: external });
+            const date = (/^\d{4}-\d{2}-\d{2}/.exec(st.slug) || [''])[0];
+            const blockedHere = [];
+            for (const [host, n] of ext) {
+                const status = sourceStatus(host, date, reviewed);
+                const h = report.hosts[host] = report.hosts[host] || { facts: 0, stories: 0, status: status === 'blocked-before' ? 'blocked' : status };
+                h.facts += n; h.stories++;
+                if (status === 'blocked') blockedHere.push(host);
+            }
+            if (blockedHere.length) {
+                report.blocked++;
+                report.blockedStories.push({ sport: st.sport, slug: st.slug, hosts: blockedHere });
+            }
         }
     }
     return report;
@@ -114,6 +138,14 @@ function format(r) {
         for (const e of r.externalStories) {
             out.push(`      note ${e.sport}/${e.slug}: ${Object.entries(e.hosts).map(([h, n]) => `${h} (${n})`).join(', ')}`);
         }
+        out.push('  Third-party sources (reviewed in tools/contracts/third-party-sources.cjs)');
+        const order = { blocked: 0, unreviewed: 1, ok: 2 };
+        for (const [host, h] of Object.entries(r.hosts || {}).sort((a, b) => order[a[1].status] - order[b[1].status] || b[1].facts - a[1].facts)) {
+            out.push(`      ${h.status === 'ok' ? 'ok        ' : h.status === 'blocked' ? 'BLOCKED   ' : 'UNREVIEWED'} ${host}: ${h.facts} fact(s) in ${h.stories} story(ies)`);
+        }
+        const unreviewed = Object.values(r.hosts || {}).filter(h => h.status === 'unreviewed').length;
+        out.push(`  Blocked-source stories: ${r.blocked || 0}   Unreviewed sources: ${unreviewed}`);
+        for (const b of r.blockedStories || []) out.push(`      FAIL ${b.sport}/${b.slug} cites a blocked source: ${b.hosts.join(', ')}`);
     }
     return out.join('\n');
 }
@@ -125,7 +157,7 @@ function loadSports() {
 if (require.main === module) {
     const report = storyCoverage(path.join(__dirname, '..'), loadSports());
     console.log(process.argv.includes('--json') ? JSON.stringify(report, null, 2) : format(report));
-    process.exit(report.uncovered ? 2 : 0);
+    process.exit(report.uncovered || report.blocked ? 2 : 0);
 }
 
-module.exports = { SPORT_FILES, classify, readStories, storySports, storyCoverage, format, loadSports };
+module.exports = { SPORT_FILES, sourceStatus, classify, readStories, storySports, storyCoverage, format, loadSports };
