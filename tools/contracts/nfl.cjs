@@ -112,6 +112,36 @@ module.exports = {
             invariants: [L.minCount('categories', 5), L.eachNonEmpty('categories[].leaders')],
         },
         {
+            // ESPN's own full stats table, read straight from the browser by the
+            // NFL Stats page. The response lists every stat group's names whatever
+            // the category, so one passing call checks all six tabs' columns.
+            id: 'nfl-stats-byathlete',
+            mirrors: 'js/nflStatsTable.js parse (NFL Stats page, js/nfl.js loadNFLStats)',
+            sources: [/statistics\/byathlete/],
+            route: c => `${ESPN}/common/v3/sports/football/nfl/statistics/byathlete?region=us&lang=en&contentorigin=espn&seasontype=2&limit=1000&isqualified=true&category=offense%3Apassing&sort=passing.passingYards%3Adesc${c.season == null ? '' : `&season=${c.season}`}`,
+            paths: ['athletes[].athlete.id', 'athletes[].athlete.displayName', 'athletes[].athlete.teamShortName', 'athletes[].categories[].totals', 'pagination.pages'],
+            invariants: [
+                // Not 32: the run probes the latest game day, and early in Week 1 few passers qualify.
+                L.minCount('athletes', 20),
+                L.predicate('every group.field the stats table reads is in categories[].names', data => {
+                    const need = {
+                        general: ['gamesPlayed', 'fumblesForced'],
+                        passing: ['completions', 'passingAttempts', 'completionPct', 'passingYards', 'yardsPerPassAttempt', 'passingYardsPerGame', 'passingTouchdowns', 'interceptions', 'sacks', 'QBRating', 'adjQBR'],
+                        rushing: ['rushingAttempts', 'rushingYards', 'yardsPerRushAttempt', 'rushingYardsPerGame', 'longRushing', 'rushingTouchdowns', 'rushingFumbles', 'rushingFirstDowns'],
+                        receiving: ['receptions', 'receivingTargets', 'receivingYards', 'yardsPerReception', 'receivingYardsPerGame', 'receivingTouchdowns', 'longReception', 'receivingYardsAfterCatch', 'receivingFirstDowns'],
+                        defensive: ['totalTackles', 'soloTackles', 'sacks', 'tacklesForLoss', 'passesDefended'],
+                        defensiveinterceptions: ['interceptions'],
+                        kicking: ['fieldGoalsMade', 'fieldGoalAttempts', 'fieldGoalPct', 'longFieldGoalMade', 'fieldGoalsMade50', 'extraPointsMade', 'extraPointAttempts'],
+                        scoring: ['totalTouchdowns', 'fieldGoals', 'kickExtraPoints', 'totalTwoPointConvs', 'totalPoints', 'totalPointsPerGame'],
+                    };
+                    const groups = Object.fromEntries(((data && data.categories) || []).map(g => [g.name, new Set(g.names || [])]));
+                    const missing = [];
+                    for (const [g, fields] of Object.entries(need)) for (const f of fields) if (!groups[g] || !groups[g].has(f)) missing.push(`${g}.${f}`);
+                    return missing.length ? `missing ${missing.join(', ')}` : null;
+                }),
+            ],
+        },
+        {
             id: 'sleeper-players',
             mirrors: 'js/fantasy.js + js/nfl.js /api/sleeper players pool',
             route: () => '/api/sleeper?path=/v1/players/nfl',
