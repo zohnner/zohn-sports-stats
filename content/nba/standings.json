@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-14",
-  "gamesCounted": 188,
+  "throughDate": "2026-11-15",
+  "gamesCounted": 197,
   "source": "balldontlie",
   "sections": [
     {
@@ -10,19 +10,19 @@
       "teams": [
         {
           "name": "Boston Celtics",
-          "record": "10-2"
+          "record": "11-2"
         },
         {
           "name": "Philadelphia 76ers",
-          "record": "10-3"
+          "record": "11-3"
         },
         {
           "name": "New York Knicks",
-          "record": "6-6"
+          "record": "7-6"
         },
         {
           "name": "Toronto Raptors",
-          "record": "5-7"
+          "record": "5-8"
         },
         {
           "name": "Brooklyn Nets",
@@ -43,7 +43,7 @@
         },
         {
           "name": "Indiana Pacers",
-          "record": "5-8"
+          "record": "5-9"
         },
         {
           "name": "Chicago Bulls",
@@ -51,7 +51,7 @@
         },
         {
           "name": "Milwaukee Bucks",
-          "record": "1-12"
+          "record": "1-13"
         }
       ]
     },
@@ -60,7 +60,7 @@
       "teams": [
         {
           "name": "Atlanta Hawks",
-          "record": "7-6"
+          "record": "8-6"
         },
         {
           "name": "Miami Heat",
@@ -72,11 +72,11 @@
         },
         {
           "name": "Charlotte Hornets",
-          "record": "4-8"
+          "record": "4-9"
         },
         {
           "name": "Washington Wizards",
-          "record": "4-9"
+          "record": "4-10"
         }
       ]
     },
@@ -92,16 +92,16 @@
           "record": "9-4"
         },
         {
+          "name": "Oklahoma City Thunder",
+          "record": "9-5"
+        },
+        {
           "name": "Denver Nuggets",
           "record": "7-4"
         },
         {
-          "name": "Oklahoma City Thunder",
-          "record": "8-5"
-        },
-        {
           "name": "Utah Jazz",
-          "record": "1-12"
+          "record": "1-13"
         }
       ]
     },
@@ -110,7 +110,7 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "11-2"
+          "record": "12-2"
         },
         {
           "name": "Golden State Warriors",
@@ -118,15 +118,15 @@
         },
         {
           "name": "Phoenix Suns",
-          "record": "5-6"
+          "record": "5-7"
         },
         {
           "name": "LA Clippers",
-          "record": "3-8"
+          "record": "4-8"
         },
         {
           "name": "Sacramento Kings",
-          "record": "1-11"
+          "record": "1-12"
         }
       ]
     },
@@ -135,11 +135,11 @@
       "teams": [
         {
           "name": "San Antonio Spurs",
-          "record": "11-2"
+          "record": "12-2"
         },
         {
           "name": "Houston Rockets",
-          "record": "10-3"
+          "record": "11-3"
         },
         {
           "name": "Memphis Grizzlies",
@@ -147,7 +147,7 @@
         },
         {
           "name": "Dallas Mavericks",
-          "record": "7-6"
+          "record": "7-7"
         },
         {
           "name": "New Orleans Pelicans",
