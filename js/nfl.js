@@ -1530,13 +1530,6 @@ async function loadNFLStats(view) {
     displayNFLStats();
 }
 
-// Full Sleeper-keyed player page when name + team match exactly one player; ESPN page otherwise.
-function _nstLinker() {
-    const nrm = x => (x || '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
-    const idx = new Map();
-    for (const p of (_nflPool || [])) { const k = `${nrm(p.full_name)}|${p.team || ''}`; idx.set(k, idx.has(k) ? null : p.player_id); }
-    return r => { const sid = idx.get(`${nrm(r.name)}|${_nflSleeperAbbr(r.team)}`); return sid ? `nfl-player-${sid}` : `nfl-player-espn-${r.id}`; };
-}
 
 function displayNFLStats() {
     const grid = document.getElementById('playersGrid');
@@ -1546,7 +1539,7 @@ function displayNFLStats() {
     if (_nst.sort && _nst.sort !== sortCol.k) _nst.sort = null;
     const dir = (_nst.sort === sortCol.k && _nst.dir) || T.defaultDir(sortCol);
     const base = _nst.perGame ? T.perGame(parsed.rows, cols) : parsed.rows;
-    const link = _nstLinker();
+    const link = T.linker(_nflPool, _nflSleeperAbbr);
     _nst.view = { cols, sortCol, dir, base, pct: T.percentiles(base, cols, poolIds), link };
     const th = c => {
         const s = c.k === sortCol.k ? ` aria-sort="${dir === 'asc' ? 'ascending' : 'descending'}"` : '';

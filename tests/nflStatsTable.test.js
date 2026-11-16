@@ -122,6 +122,24 @@ test('url pages past ESPN\'s 1,000-row cap', () => {
     assert.match(T.url('defense', 2026, true, 2), /page=2/);
 });
 
+test('player links: name + team first, a unique name second, never a guess between namesakes', () => {
+    const pool = [
+        { player_id: '1', full_name: 'Jacoby Brissett', team: 'BAL' },
+        { player_id: '2', full_name: 'Josh Allen', team: 'BUF' },
+        { player_id: '3', full_name: 'Josh Allen', team: 'JAX' },
+        { player_id: '4', full_name: 'Marvin Harrison Jr.', team: 'ARI' },
+        { player_id: '5', full_name: 'Terry McLaurin', team: 'WAS' },
+    ];
+    const link = T.linker(pool, a => ({ WSH: 'WAS' })[a] || a);
+    const r = (name, team, id = '99') => ({ name, team, id });
+    assert.equal(link(r('Josh Allen', 'JAX')), 'nfl-player-3', 'namesakes split by team');
+    assert.equal(link(r('Jacoby Brissett', 'ARI')), 'nfl-player-1', 'moved team, unique name');
+    assert.equal(link(r('Josh Allen', 'MIA', '77')), 'nfl-player-espn-77', 'namesakes, no team match: no guess');
+    assert.equal(link(r('Marvin Harrison', 'ARI')), 'nfl-player-4', 'suffix ignored');
+    assert.equal(link(r('Terry McLaurin', 'WSH')), 'nfl-player-5', 'ESPN abbreviation aliased');
+    assert.equal(link(r('Nobody Here', 'DAL', '42')), 'nfl-player-espn-42');
+});
+
 test('leaders gives the top three qualified players per headline stat', () => {
     const { rows } = T.parse(FIX, 'passing');
     const groups = T.leaders(rows, 'passing', new Set(rows.map(r => r.id)));

@@ -152,6 +152,24 @@ const NFLStatsTable = (() => {
         }).filter(Boolean);
     }
 
+    // ESPN row → the full Sleeper-keyed player page. Name + team first; then the
+    // name alone if exactly one pool player has it (ESPN keeps a traded or cut
+    // player under his old team). Namesakes never get a guess: ESPN page instead.
+    function linker(pool, aliasTeam = a => a) {
+        const key = x => String(x || '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+        const byTeam = new Map(), byName = new Map();
+        for (const p of pool || []) {
+            const n = key(p.full_name), t = `${n}|${p.team || ''}`;
+            byTeam.set(t, byTeam.has(t) ? null : p.player_id);
+            byName.set(n, byName.has(n) ? null : p.player_id);
+        }
+        return r => {
+            const n = key(r.name);
+            const sid = byTeam.get(`${n}|${aliasTeam(r.team)}`) || byName.get(n);
+            return sid ? `nfl-player-${sid}` : `nfl-player-espn-${r.id}`;
+        };
+    }
+
     const VIEW_RE = /^nfl-leaders(?:-(passing|rushing|receiving|defense|kicking|scoring))?(?:~([A-Za-z0-9]+\.[A-Za-z0-9_]+)-(asc|desc))?$/;
     function parseView(view) {
         const m = VIEW_RE.exec(String(view || ''));
@@ -169,5 +187,5 @@ const NFLStatsTable = (() => {
     }
 
     return { ENDPOINT, GP_KEY, MIN_GP, CATEGORIES, category, url, num, parse, filterRows, perGame,
-        sortRows, defaultDir, percentiles, tier, leaders, parseView, viewFor, fmt };
+        sortRows, defaultDir, percentiles, tier, leaders, linker, parseView, viewFor, fmt };
 })();
