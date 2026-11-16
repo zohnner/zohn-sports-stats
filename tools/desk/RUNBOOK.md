@@ -13,6 +13,7 @@ It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refre
 ## Hard rules (non-negotiable)
 
 - **May:** post **one** comment per day on the month's brief issue; open that issue (title `[desk] Daily brief — YYYY-MM`, label `desk`) when the month has none.
+- **A day is the calendar date in America/New_York.** The brief's header carries that date, never the UTC date. Decide whether today's brief already exists from the comments' timestamps converted to New York time, not from their header text. If one exists, post nothing and say so in the final message.
 - **Never:** push, open a PR, merge, close, relabel or edit any issue or PR, comment anywhere else, re-run a workflow, touch any file, deploy, or run wrangler.
 - **The repo is public, so the brief is public.** Raw traffic counts never go in the issue. The issue carries rankings and direction only ("NBA first, NFL second; entries up on yesterday"). Counts go in the run's final message, which only the owner sees.
 - **Never print the stats key**, in the issue, the final message or a command echo.
@@ -24,7 +25,7 @@ It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refre
 
 1. `git fetch origin`; work on a detached checkout of `origin/main`.
 2. GitHub reads and one comment work through `gh api` (REST) or the session's built-in GitHub tools. `gh auth status` fails in the cloud sandbox by design; `gh pr` and `gh issue` are refused there. Never look for another credential.
-3. `https://sportstrata.cc/api/sourcehealth` answers. If not, record "sourcehealth unreachable" and continue.
+3. `https://sportstrata.cc/api/sourcehealth` answers. If not, record "sourcehealth unreachable" and continue. A 403 from the sandbox proxy (`host_not_allowed`, `connect_rejected`) means `sportstrata.cc` is missing from this cloud environment's allowed domains; put that under **Needs you**, since only the owner can add it.
 4. `STATS_KEY` is set in the environment and `GET https://sportstrata.cc/api/stats?days=14` with header `X-Stats-Key` returns 200. If the key is missing or the route answers 401, 503 or 502, record "numbers unavailable (<status>)" and continue without the numbers section.
 
 ## Run procedure
