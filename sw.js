@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v346';
+const CACHE_NAME    = 'sportstrata-v347';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -31,6 +31,7 @@ const STATIC_ASSETS = [
     '/css/bballGameCenter.css',
     '/css/auth.css',
     '/css/nflPickem.css',
+    '/css/tonightsStakes.css',
     '/js/math.min.js',
     '/js/config.js',
     '/js/detailFrame.js',
@@ -79,6 +80,7 @@ const STATIC_ASSETS = [
     '/js/scorebug.js',
     '/js/homeLive.js',
     '/js/app.js',
+    '/js/tonightsStakes.js',
 ];
 
 // Install — pre-cache the static shell, bypassing the HTTP cache so a CACHE_NAME
