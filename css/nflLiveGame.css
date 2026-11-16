@@ -488,8 +488,11 @@
 .nlg-pbp-text { color: var(--text-secondary); }
 .nlg-pbp-score { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-primary); }
 
-/* Box Score tab — full groups, denser than the old 2-column preview */
-.nlg-bx--full { grid-template-columns: 1fr 1fr; }
+/* Box Score tab — full groups, denser than the old 2-column preview.
+   Two columns only above the stacking breakpoint: unscoped, this rule sits
+   after the ≤640px .nlg-bx stacking query at equal specificity and defeats
+   it, crushing both teams' tables into half-width columns on phones. */
+@media (min-width: 641px) { .nlg-bx--full { grid-template-columns: 1fr 1fr; } }
 
 /* Fantasy */
 .nlg-fantasy-header { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
