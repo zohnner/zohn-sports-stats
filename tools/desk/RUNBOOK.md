@@ -39,10 +39,9 @@ It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refre
    - Channels in rank order, and any channel that moved rank.
    - The five top entry pages and the five top stories, checked against the index or sitemap as above.
    - Sports in rank order by new sessions.
-7. **TikTok** (skip if no log issue exists). The log is the newest open issue titled `[tiktok] Posts — week of YYYY-MM-DD`. Each line is `YYYY-MM-DD | team | the stat shown | site page URL`, and a reply of `posted` from the owner marks it live. For each line marked posted in the last 3 days, compare entries to that page's path on the two days after posting with that page's daily mean over the 14-day window. Report up, flat or down. Until the profile link carries `?utm_source=tiktok`, TikTok visits read as direct or search, so say that this is a comparison of page entries, not a count of TikTok visitors.
-8. **Monday only: the line for Muse.** Over the 14-day window, which story sports and which angle types (the `Angle type:` line in each story's PR body, 1 to 5) rank highest by entries. One line, ranks only, signed. Muse reads it when choosing among angles that already hold up.
-9. **Post the brief** as one comment (format below), signed `**Desk run**`.
-10. **Report** in the final message: the brief's text, then the raw counts behind the numbers section, what could not be read and why, and how long the run took.
+7. **Monday only: the line for Muse.** Over the 14-day window, which story sports and which angle types (the `Angle type:` line in each story's PR body, 1 to 5) rank highest by entries. One line, ranks only, signed. Muse reads it when choosing among angles that already hold up.
+8. **Post the brief** as one comment (format below), signed `**Desk run**`.
+9. **Report** in the final message: the brief's text, then the raw counts behind the numbers section, what could not be read and why, and how long the run took.
 
 ## Brief format
 
@@ -64,7 +63,6 @@ It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refre
 - Channels, in order: <list>
 - Top entry pages: <list>
 - Top stories: <list>
-- TikTok: <page>: <up|flat|down> after <date>   (or "no log")
 
 ### For Muse (Mondays)
 <one line>
@@ -76,4 +74,4 @@ It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refre
 
 - Muse's chat reports and the other routines' final messages. A run that did its job and left nothing on GitHub looks the same as one that never started.
 - Who a visitor is, or whether a visit was a person. `page_views` holds no identifier, and rows before D-202 (2026-11-15) include the audit tools' own browser visits.
-- Whether a TikTok video was watched. Only entries to the page its stat points at.
+- TikTok. Its visits read as direct or search until the profile can carry a link with `?utm_source=tiktok`, and this run does not try to measure them (owner decision 2026-11-15).
