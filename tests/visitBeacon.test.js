@@ -124,3 +124,19 @@ test('track.js parseRow: validates and drops bad optional fields', async () => {
     assert.equal(parseRow({ sport: 'nfl', view: 'v', seq: 0 }).seq, null);
     assert.equal(parseRow({ sport: 'nfl', view: 'v', seq: 1.5 }).seq, null);
 });
+
+test('refBucket: TikTok by referrer host and by utm_source', () => {
+    const V = load();
+    assert.equal(V.refBucket('https://www.tiktok.com/@sportstrata', 'sportstrata.cc', ''), 'tiktok');
+    assert.equal(V.refBucket('https://vm.tiktok.com/abc', 'sportstrata.cc', ''), 'tiktok');
+    // The in-app browser often sends no referrer; the profile link's utm is what counts it.
+    assert.equal(V.refBucket('', 'sportstrata.cc', '?utm_source=tiktok'), 'tiktok');
+    assert.equal(V.refBucket('', 'sportstrata.cc', '?utm_source=TikTok'), 'tiktok');
+    assert.equal(V.refBucket('https://nottiktok.com/', 'sportstrata.cc', ''), 'other');
+});
+
+test('track.js parseRow: keeps a tiktok ref on the entry row', async () => {
+    const { parseRow, REF_BUCKETS } = await import(pathToFileURL(path.join(__dirname, '..', 'functions', 'api', 'track.js')).href);
+    assert.equal(REF_BUCKETS.has('tiktok'), true);
+    assert.equal(parseRow({ sport: 'home', view: 'home', seq: 1, isNew: 1, ref: 'tiktok', path: '/' }).ref, 'tiktok');
+});

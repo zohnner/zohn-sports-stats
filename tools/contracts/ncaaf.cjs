@@ -23,6 +23,7 @@ module.exports = {
             id: 'ncaaf-scoreboard',
             needs: 'probe',
             mirrors: 'js/ncaaf.js fetchNCAAFScoreboard (groups=80, D-135)',
+            sources: [/college-football\/scoreboard/, /\/api\/ncaaf\?path=\/scoreboard/],
             route: scoreboard,
             paths: [
                 'events[].id',
@@ -43,6 +44,7 @@ module.exports = {
             id: 'ncaaf-summary',
             needs: 'final',
             mirrors: 'js/ncaafLiveGame.js fetchNCAAFSummary',
+            sources: [/college-football\/summary/, /\/api\/ncaaf\?path=\/summary/],
             route: c => `/api/ncaaf?path=/summary&event=${c.finalId}`,
             paths: [
                 'header.competitions[0].status.type.state',
@@ -56,9 +58,39 @@ module.exports = {
         {
             id: 'ncaaf-standings',
             mirrors: 'js/ncaaf.js fetchNCAAFStandings',
+            sources: [/college-football\/standings/, /\/api\/ncaafstandings/],
             route: c => c.season == null ? '/api/ncaafstandings' : `/api/ncaafstandings?season=${c.season}`,
             paths: [],
             invariants: [L.deepCount('entries', 120, { each: 'team.abbreviation' })],
+        },
+        {
+            id: 'ncaaf-team-schedule',
+            mirrors: 'js/ncaaf.js team page schedule (/teams/{id}/schedule); story source',
+            sources: [/college-football\/teams\/[^/?\s]+\/schedule/],
+            route: () => '/api/ncaaf?path=/teams/333/schedule',
+            paths: [
+                'team.abbreviation',
+                'events[].id',
+                'events[].date',
+                'events[].competitions[0].competitors[].team.id',
+                'events[].competitions[0].status.type.completed',
+            ],
+            invariants: [L.minCount('events', 10), L.completedScores()],
+        },
+        {
+            id: 'ncaaf-rankings',
+            mirrors: 'js/ncaaf.js fetchNCAAFRankings; story source',
+            sources: [/college-football\/rankings/, /\/api\/ncaaf\?path=\/rankings/],
+            route: () => '/api/ncaaf?path=/rankings',
+            paths: ['rankings[].name', 'rankings[].ranks[].current', 'rankings[].ranks[].team.id'],
+            invariants: [
+                L.minCount('rankings', 1),
+                L.predicate('the AP poll lists 25 teams', data => {
+                    const ap = (data?.rankings || []).find(r => r.type === 'ap' || /AP/.test(r.name || ''));
+                    if (!ap) return 'no AP poll in the response';
+                    return (ap.ranks || []).length === 25 ? null : `AP poll has ${(ap.ranks || []).length} teams`;
+                }, { severity: 'warn' }),
+            ],
         },
         {
             id: 'ncaaf-leaders',

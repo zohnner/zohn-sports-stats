@@ -8,7 +8,7 @@
 // Unknown slug → the shell with HTTP 404. Any other error → the plain shell.
 import core from '../tools/stories/story-core.cjs';
 import { shell, rawShell } from './_shell.js';
-import { readStories, siblingStories, storyListHtml } from './_storyLinks.js';
+import { readStories, isPublished, siblingStories, storyListHtml } from './_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -66,7 +66,12 @@ export async function renderStoryPage(context, sport) {
         if (core.validateMeta(meta, sport).length) return shell(env, request.url);
 
         const eyebrow = core.storyEyebrow(meta, sport);
-        const siblings = siblingStories(await readStories(env, request.url, sport), slug);
+        // Unpublishing deletes the .md, but the edge kept serving a deleted file
+        // for 20+ minutes (2026-11-15). The index is the list of what is
+        // published, so a story missing from it is gone, whatever ASSETS returns.
+        const published = await readStories(env, request.url, sport);
+        if (!isPublished(published, slug)) return notFound(env, request.url);
+        const siblings = siblingStories(published, slug);
         const canonical = `https://sportstrata.cc${core.storyUrl(slug, sport)}`;
         const title = `${meta.title} | SportStrata`;
         const desc = String(meta.dek);

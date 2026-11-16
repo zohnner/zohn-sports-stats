@@ -55,6 +55,15 @@ async function seasonGames(season) {
     return toObjects(parseCSV(text.slice(0, nl + 1) + lines.join('\n')));
 }
 
+// Every regular-season game since 1999, for /api/nflstarts. Non-REG lines are
+// dropped before parsing so the CPU cost tracks the games that are compared.
+export async function allRegularSeasonGames() {
+    const text = await fetchText('schedules/games.csv.gz', 3600);
+    const nl = text.indexOf('\n');
+    const lines = text.slice(nl + 1).split('\n').filter(l => l.includes(',REG,'));
+    return toObjects(parseCSV(text.slice(0, nl + 1) + lines.join('\n')));
+}
+
 async function teamMeta() {
     return toObjects(parseCSV(await fetchText('teams/teams_colors_logos.csv.gz', 86400)));
 }

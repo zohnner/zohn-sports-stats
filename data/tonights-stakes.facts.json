@@ -1,0 +1,133 @@
+{
+  "file": "data/tonights-stakes.json",
+  "checkedAt": "2026-11-16T03:18:07Z",
+  "note": "Companion facts file in the Stories .facts.json format (tools/stories): every number in data/tonights-stakes.json is recorded here with its source route and field path. The repo number checker (tools/stories/check-numbers.cjs, D-166) cannot be pointed at this file \u2014 it only accepts a story .md under content/<sport>/stories/ and validates story frontmatter plus body numbers against a sibling facts file; the stakes file is a homepage data JSON, not a story. Values below were instead re-verified by hand against the listed ESPN routes at checkedAt. Authoring caution (from the first build's Chase near-miss): ESPN core career totals are pregame until a live game folds in \u2014 author close to game time and reconcile career lines against the gamelog.",
+  "facts": [
+    {
+      "key": "pit_wins",
+      "value": 6,
+      "label": "Pittsburgh wins",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=PIT].stats[name=wins].displayValue"
+    },
+    {
+      "key": "pit_losses",
+      "value": 2,
+      "label": "Pittsburgh losses",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=PIT].stats[name=losses].displayValue"
+    },
+    {
+      "key": "cin_wins",
+      "value": 6,
+      "label": "Cincinnati wins",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CIN].stats[name=wins].displayValue"
+    },
+    {
+      "key": "cin_losses",
+      "value": 2,
+      "label": "Cincinnati losses",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CIN].stats[name=losses].displayValue"
+    },
+    {
+      "key": "pit_streak",
+      "value": "W4",
+      "label": "Pittsburgh streak (detail line: won four straight)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=PIT].stats[name=streak].displayValue"
+    },
+    {
+      "key": "cin_streak",
+      "value": "W4",
+      "label": "Cincinnati streak (detail line: won four straight)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CIN].stats[name=streak].displayValue"
+    },
+    {
+      "key": "pit_seed",
+      "value": 4,
+      "label": "Pittsburgh playoff seed (stake line: winner takes the AFC No. 4 seed)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=PIT].stats[name=playoffSeed].displayValue"
+    },
+    {
+      "key": "cin_seed",
+      "value": 6,
+      "label": "Cincinnati playoff seed",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CIN].stats[name=playoffSeed].displayValue"
+    },
+    {
+      "key": "cle_wins",
+      "value": 6,
+      "label": "Cleveland wins (rest of division, for the 'game clear' line)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CLE].stats[name=wins].displayValue"
+    },
+    {
+      "key": "cle_losses",
+      "value": 4,
+      "label": "Cleveland losses (rest of division, for the 'game clear' line)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=CLE].stats[name=losses].displayValue"
+    },
+    {
+      "key": "bal_wins",
+      "value": 4,
+      "label": "Baltimore wins (rest of division, for the 'game clear' line)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=BAL].stats[name=wins].displayValue"
+    },
+    {
+      "key": "bal_losses",
+      "value": 5,
+      "label": "Baltimore losses (rest of division, for the 'game clear' line)",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "standings entries[team.abbreviation=BAL].stats[name=losses].displayValue"
+    },
+    {
+      "key": "division_gap_games",
+      "value": 1,
+      "label": "Games PIT/CIN (6-2) sit clear of the next division team CLE (6-4): ((6-6)+(4-2))/2 = 1.0",
+      "source": "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=2026",
+      "field": "derived from pit/cin/cle wins+losses above"
+    },
+    {
+      "key": "watt_career_sacks",
+      "value": 122.5,
+      "label": "T.J. Watt career sacks entering tonight",
+      "source": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3045282/statistics",
+      "field": "splits.categories[name=defensive].stats[name=sacks].displayValue"
+    },
+    {
+      "key": "watt_career_games",
+      "value": 143,
+      "label": "T.J. Watt career games played entering tonight",
+      "source": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3045282/statistics",
+      "field": "splits.categories[name=general].stats[name=gamesPlayed].displayValue"
+    },
+    {
+      "key": "watt_season_sacks",
+      "value": 7.5,
+      "label": "T.J. Watt sacks this season (detail line: 7.5 through eight games)",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/3045282/gamelog?season=2026",
+      "field": "seasonTypes[0].categories[0].totals at names[sacks]"
+    },
+    {
+      "key": "watt_season_games",
+      "value": 8,
+      "label": "T.J. Watt games played this season (detail line: through eight games)",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/athletes/3045282/gamelog?season=2026",
+      "field": "seasonTypes[0].categories[0].events length"
+    },
+    {
+      "key": "watt_sacks_for_125",
+      "value": 2.5,
+      "label": "Sacks needed tonight for 125 career: 125 - 122.5 = 2.5 (needValue/needLabel)",
+      "source": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3045282/statistics",
+      "field": "derived from watt_career_sacks"
+    }
+  ]
+}

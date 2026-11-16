@@ -399,6 +399,56 @@ const BballMath = (() => {
         };
     }
 
+    // ── Player game log (ESPN common/v3 athlete gamelog) ─────────
+    // Regular season only, newest first. Columns are found by `names`, never
+    // by position, so a reordered payload can't shift one stat into another.
+    function gameLog(json) {
+        const names = (json && json.names) || [];
+        const col = n => names.indexOf(n);
+        const at = { min: col('minutes'), pts: col('points'), reb: col('totalRebounds'), ast: col('assists'), stl: col('steals'), blk: col('blocks'),
+            fg: col('fieldGoalsMade-fieldGoalsAttempted'), tp: col('threePointFieldGoalsMade-threePointFieldGoalsAttempted'), ft: col('freeThrowsMade-freeThrowsAttempted') };
+        if (at.min < 0 || at.pts < 0) return [];
+        const num = (stats, i) => (i >= 0 && stats[i] !== undefined && stats[i] !== '' && Number.isFinite(Number(stats[i])) ? Number(stats[i]) : null);
+        const rows = [];
+        for (const st of (json.seasonTypes || [])) {
+            if (!/regular season/i.test(st.displayName || '')) continue;
+            for (const cat of (st.categories || [])) {
+                for (const ev of (cat.events || [])) {
+                    const s = ev.stats || [];
+                    if (s.length !== names.length) continue;
+                    const meta = (json.events || {})[ev.eventId] || {};
+                    rows.push({
+                        eventId: String(ev.eventId), date: meta.gameDate || '', atVs: meta.atVs || '',
+                        opp: (meta.opponent && meta.opponent.abbreviation) || '', result: meta.gameResult || '', score: meta.score || '',
+                        min: num(s, at.min), pts: num(s, at.pts), reb: num(s, at.reb), ast: num(s, at.ast), stl: num(s, at.stl), blk: num(s, at.blk),
+                        fg: at.fg >= 0 ? s[at.fg] : '', tp: at.tp >= 0 ? s[at.tp] : '', ft: at.ft >= 0 ? s[at.ft] : '',
+                    });
+                }
+            }
+        }
+        return rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    }
+
+    // Totals a story would otherwise compute by hand. A double-double is 10 or
+    // more in two of points, rebounds, assists, steals, blocks.
+    function gameLogSummary(rows) {
+        const games = rows.length;
+        if (!games) return null;
+        const sum = k => rows.reduce((n, r) => n + (r[k] || 0), 0);
+        const tens = r => ['pts', 'reb', 'ast', 'stl', 'blk'].filter(k => (r[k] || 0) >= 10).length;
+        const points = sum('pts'), minutes = sum('min');
+        return {
+            games, points, minutes,
+            ppg: Math.round(points / games * 10) / 10,
+            high: Math.max(...rows.map(r => r.pts || 0)),
+            thirty: rows.filter(r => (r.pts || 0) >= 30).length,
+            forty: rows.filter(r => (r.pts || 0) >= 40).length,
+            doubleDoubles: rows.filter(r => tens(r) >= 2).length,
+            tripleDoubles: rows.filter(r => tens(r) >= 3).length,
+            ptsPerMin: minutes ? Math.round(points / minutes * 100) / 100 : null,
+        };
+    }
+
     return {
         teamSituation,
         HOOP, BASELINE_Y, HOOP_FROM_BASELINE, COURTS, ZONES, ZONE_LABEL,
@@ -408,6 +458,7 @@ const BballMath = (() => {
         wpTimeline, wpSwings, marginSeries,
         teamTotals, fourFactors, possessions, efficiency,
         splitWhere, clutch, lastFive,
+        gameLog, gameLogSummary,
     };
 })();
 
