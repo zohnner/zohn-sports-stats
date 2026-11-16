@@ -13,6 +13,7 @@
 // with the findings.
 const path = require('node:path');
 const { buildMatrix, repoReader } = require('./matrix.cjs');
+const { blockTracking } = require('./no-track.cjs');
 
 const MIN_TEXT = 80;
 // A message saying the page failed, and one saying there is simply nothing
@@ -136,6 +137,7 @@ async function run(baseUrl, opts = {}) {
     const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } : undefined;
     const browser = await chromium.launch({ proxy });
     const page = await browser.newPage({ ignoreHTTPSErrors: !!proxy });
+    await blockTracking(page);
     await page.goto(baseUrl, { waitUntil: 'load' });
     await page.waitForFunction('typeof navigateTo === "function" && typeof AppState === "object"');
     const walk = targets => page.evaluate(`(${walkInPage.toString()})(${JSON.stringify(targets)}, ${JSON.stringify({ waitMs: opts.waitMs || 8000, emptyRe: EMPTY_RE.source, idleRe: IDLE_RE.source })})`);

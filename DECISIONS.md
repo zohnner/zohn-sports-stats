@@ -3912,3 +3912,11 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Verified 2026-11-15, against production.** Coverage 60 of 60. Route crawl 57 clicks, 0 mis-routes, plant caught, 492 team path URLs. Sitemap: 60 stories and 5 indexes, all with the right `<lastmod>`. 22 planted faults caught. 519 tests pass.
 
 **Not verified.** `nfl-starts` fails until #168 is deployed (the route 404s on production). The NFL team-page card has not been seen in a browser. MLB game cards could not be clicked: no MLB games in November.
+
+## D-202 — Agent numbers layer: TikTok channel, audit tools out of the visit log, key-gated stats route
+
+**Date:** 2026-11-15. **Status:** accepted.
+
+**Context.** Stories bring most new readers, but the visit log had no TikTok bucket although TikTok is the site's active social channel. The audit tools' own browser visits were being logged as new direct visitors. Scheduled agents had no way to read the numbers at all, since they cannot reach D1.
+
+**Decision.** Three changes in this PR: a TikTok channel bucket in the visit log, with `?utm_source=tiktok` on the profile link; `tools/audit/no-track.cjs`, used by the page walk and route crawl so their visits are not counted; and `GET /api/stats`, a read-only route gated by `STATS_KEY` that returns aggregates only. Owner decisions, 2026-11-15: the four-agent roster is approved (Muse, a daily read-only desk run, the parity run widened into a build run, and the Monday audit run with a growth half). Raw traffic counts stay out of the public brief issue because the repo is public. The share queue goes to manual dispatch in a later PR. Owner setup owed after merge: add `STATS_KEY` (a random string of at least 32 bytes) as a Secret in Cloudflare Pages and also to the desk and audit routines' environments, and set the TikTok profile link. Design: `docs/superpowers/specs/2026-11-15-agent-roster-design.md`.
