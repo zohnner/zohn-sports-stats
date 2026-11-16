@@ -3,6 +3,9 @@
 // the numbers are the owner's, not because any row is personal: the table
 // holds no user id, IP or user agent, and this route never returns a row.
 const DAY_MS = 86400000;
+// page_views.view is written by the open /api/track route, so a "story:" row can
+// carry any text. Only the published-story filename shape is passed on to agents.
+const SLUG_RE = /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+$/;
 
 export const QUERIES = {
     bySport: 'SELECT sport, COUNT(*) AS views, SUM(CASE WHEN seq = 1 AND is_new = 1 THEN 1 ELSE 0 END) AS new_sessions FROM page_views WHERE created_at > ? GROUP BY sport ORDER BY views DESC',
@@ -25,7 +28,7 @@ export function shape(days, since, now, results) {
         bySport: bySport.map(r => ({ sport: r.sport, views: r.views, newSessions: r.new_sessions || 0 })),
         byChannel: byChannel.map(r => ({ channel: r.channel, entries: r.entries })),
         topEntries: topEntries.map(r => ({ path: r.path, entries: r.entries })),
-        stories: stories.map(r => ({ slug: String(r.view).slice(6), views: r.views, entries: r.entries || 0 })),
+        stories: stories.map(r => ({ slug: String(r.view).slice(6), views: r.views, entries: r.entries || 0 })).filter(s => SLUG_RE.test(s.slug)),
         daily: daily.map(r => ({ day: r.day, views: r.views, entries: r.entries || 0 })),
     };
 }
