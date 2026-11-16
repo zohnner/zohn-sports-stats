@@ -72,6 +72,8 @@ Edit to `tools/stories/PLAYBOOK.md`: step 3 also reads the latest Monday line in
 
 ## Part 6: TikTok (account `sportstrata`)
 
+**Set aside 2026-11-15 by owner decision.** The profile cannot carry a link yet, so the post log, the desk-run comparison and the audit-run candidate below are not being built. Only the channel bucket from Part 1 exists.
+
 How it works today, from Muse (2026-11-15): Muse scans verified NFL and NCAAF team, league and school channels hourly for press-conference moments, verifies the speaker, wording and one supporting statistic, and edits a fixed format (hook card, the moment with captions, one "Data Says" stat card, a verdict card, an outro). The owner posts from his phone. Muse never auto-posts.
 
 This is a different product from site Stories, which ban quotes and reporting. The stat card is the only part that connects a video to a page on the site, so that is what gets measured:
