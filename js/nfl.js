@@ -90,7 +90,7 @@ function _nflOffseasonState(surface) {
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
         scores:    `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-mock')">Mock draft</button>
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
-        generic:   `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-players')">Browse players</button>
+        generic:   `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-leaders')">Browse stats</button>
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-rankings')">Rankings</button>`,
     };
     const s = copy[surface] ? surface : 'generic';
@@ -885,7 +885,6 @@ function _createNFLGameCard(game, isTopLeverage) {
 // NFL data comes from Sleeper's public API via the same-origin /api/sleeper proxy.
 let _nflPool    = null;     // active fantasy players sorted by ADP (search_rank)
 let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
-let _nflPosFilter = sessionStorage.getItem('ss_nfl_pos_filter') || 'ALL';
 
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
 // NFL team primary colors (curated for visibility on the dark UI) — drives player
@@ -1036,115 +1035,6 @@ function getNFLSleeperHeadshot(id) {
     return id ? `https://sleepercdn.com/content/nfl/players/${id}.jpg` : null;
 }
 
-// ── Display: Players (reuses the .player-card component) ───────
-async function loadNFLPlayers() {
-    const grid = document.getElementById('playersGrid');
-    grid.className = 'players-grid';
-    grid.style.cssText = '';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
-
-    grid.innerHTML = Array.from({ length: 8 }, () =>
-        `<div class="skeleton-card" style="min-height:240px"></div>`
-    ).join('');
-
-    try {
-        await fetchNFLSleeperPool();
-        displayNFLPlayers();
-    } catch (err) {
-        ErrorHandler.handle(grid, err, loadNFLPlayers, { tag: 'NFL', title: 'Failed to Load NFL Players' });
-    }
-}
-
-function displayNFLPlayers() {
-    const grid = document.getElementById('playersGrid');
-    grid.className = '';
-    grid.style.cssText = '';
-
-    const pool = _nflPool || [];
-    if (!pool.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL player data available'); // icon arg removed 2026-09-07 -- was already dead
-        return;
-    }
-
-    const filtered = _nflPosFilter === 'ALL'
-        ? pool
-        : pool.filter(p => p.fantasy_positions.includes(_nflPosFilter));
-    const shown = filtered.slice(0, 120);
-
-    const chip = (f) => {
-        const active = f === _nflPosFilter;
-        return `<button data-nfl-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);
-            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
-            background:${active ? 'var(--accent)' : 'transparent'};
-            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
-    };
-    const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
-        ${_NFL_POS_FILTERS.map(chip).join('')}
-        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} by ADP</span>
-    </div>`;
-
-    const cards = document.createElement('div');
-    cards.className = 'players-grid';
-    shown.forEach(p => cards.appendChild(_createNFLPlayerCard(p)));
-
-    grid.innerHTML = bar;
-    grid.appendChild(cards);
-
-    grid.querySelectorAll('[data-nfl-pos]').forEach(btn => {
-        btn.addEventListener('click', () => { _nflPosFilter = btn.dataset.nflPos; sessionStorage.setItem('ss_nfl_pos_filter', _nflPosFilter); displayNFLPlayers(); });
-    });
-}
-
-function _createNFLPlayerCard(p) {
-    const card = document.createElement('div');
-    card.className = 'player-card';
-    card.style.cursor = 'pointer';
-    card.onclick = () => navigateTo('nfl-player-' + p.player_id);
-
-    const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
-    const posColor = getNFLTeamColor(p.team) || _NFL_POS_COLOR[pos] || 'var(--accent)';
-    card.style.borderTop = `3px solid ${_nflAlpha(posColor, 80)}`;
-
-    const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
-    const headshot = getNFLSleeperHeadshot(p.player_id);
-    const inches   = parseInt(p.height, 10);
-    const htStr    = (!isNaN(inches) && inches > 0) ? `${Math.floor(inches / 12)}'${inches % 12}"` : (p.height || '—');
-
-    const rows = [
-        ['POS',     pos || '—'],
-        ['TEAM',    p.team || 'FA'],
-        ['AGE',     p.age != null ? p.age : '—'],
-        ['EXP',     p.years_exp != null ? (p.years_exp === 0 ? 'Rookie' : `${p.years_exp} yr`) : '—'],
-        ['HT / WT', `${htStr}${p.weight ? ' · ' + p.weight : ''}`],
-        ['COLLEGE', p.college || '—'],
-    ].map(([l, v]) =>
-        `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-value">${_escHtml(String(v))}</span></div>`
-    ).join('');
-
-    const rankBadge = `<span class="player-rank-badge ${p._adp <= 12 ? 'player-rank-badge--top' : ''}">#${p._adp} ADP</span>`;
-    const inj = p.injury_status
-        ? `<div class="player-team" style="color:var(--color-loss);font-size:0.68rem">${_escHtml(p.injury_status)}</div>`
-        : '';
-
-    card.innerHTML = `
-        <div class="player-card-top">
-            ${rankBadge}
-            ${typeof renderFollowStar === 'function' ? renderFollowStar('nfl', 'player', p.player_id, { cardCorner: true }) : ''}
-            <div class="player-avatar nfl-pos-grad" style="--pc:${posColor}">
-                ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="avatar-text">${initials}</span>
-            </div>
-            <div class="player-name">${_escHtml(p.full_name)}</div>
-            <div class="player-team">${p.team ? _escHtml(p.team) + ' · ' : ''}${_escHtml(pos)}${p.number ? ' · #' + p.number : ''}</div>
-            ${inj}
-        </div>
-        <div class="player-details">${rows}</div>
-        <div class="card-cta">VIEW PROFILE →</div>
-    `;
-    return card;
-}
-
 // ── Display: Trending (fantasy add/drop — reuses leaderboard panel) ──
 async function loadNFLLeaderboards() {
     const grid = document.getElementById('playersGrid');
@@ -1217,7 +1107,7 @@ function displayNFLTrending(adds, drops) {
 // Pure client-side filter/group over the already-cached Sleeper pool, same
 // data _renders_ inline elsewhere (roster rows, player cards) but was never
 // browsable league-wide before this. Reuses .nfl-lrow (Trending's row shape)
-// and _NFL_POS_FILTERS (Players' filter pills) rather than inventing either.
+// and _NFL_POS_FILTERS (shared with Waiver Wire) rather than inventing either.
 const _NFL_INJ_STATUS_ORDER = ['Questionable', 'IR', 'PUP', 'DNR', 'Sus'];
 
 // Injury status severity (DESIGN.md fix): "Questionable" is the routine,
@@ -1779,7 +1669,7 @@ async function showNFLPlayerDetail(id) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
     try {
         await fetchNFLSleeperPool();
     } catch (err) {
@@ -1795,7 +1685,7 @@ function _renderNFLPlayerDetail(p) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', p.full_name);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', p.full_name);
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
@@ -1831,7 +1721,7 @@ function _renderNFLPlayerDetail(p) {
     for (let _y = NFL_STATS_SEASON; _y >= _rookieSeason; _y--) _seasonOpts += `<option value="${_y}" ${_y === NFL_STATS_SEASON ? 'selected' : ''}>${_y}</option>`;
 
     const _nflHeader = detailHeader({
-        back: { view: 'nfl-players', label: 'Players' },
+        back: { view: 'nfl-leaders', label: 'Stats' },
         actions: [{ label: 'Share', onclick: "window._shareCurrentPage && window._shareCurrentPage()", title: 'Copy link' }],
         avatar: { headshotHtml: headshotImg, initials, accent: teamColor, className: 'nfl-hero-avatar' },
         name: p.full_name,
@@ -2909,7 +2799,7 @@ async function showNFLEspnPlayer(espnId) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
     _nflDetailPlayer = null;
     _nflEspnId = espnId;
 
@@ -2922,7 +2812,7 @@ async function showNFLEspnPlayer(espnId) {
         prof = pr || {}; career = cr;
     } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }
     if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found'); return; } // icon arg removed 2026-09-07 -- was already dead
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', prof.name);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', prof.name);
 
     const years = [];
     (career && career.categories || []).forEach(c => (c.seasons || []).forEach(sn => { if (sn.year && years.indexOf(sn.year) < 0) years.push(sn.year); }));
@@ -2940,7 +2830,7 @@ async function showNFLEspnPlayer(espnId) {
     grid.innerHTML = `
         <div class="player-detail-header">
             <div style="display:flex;align-items:center;justify-content:space-between">
-                <button onclick="navigateTo('nfl-players')" class="back-button">← Players</button>
+                <button onclick="navigateTo('nfl-leaders')" class="back-button">← Stats</button>
                 ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
             </div>
             <div class="player-hero">
@@ -2998,7 +2888,5 @@ if (typeof window !== 'undefined') {
     window.displayNFLWaivers   = displayNFLWaivers;
     window.loadNFLStatLeaders  = loadNFLStatLeaders;
     window.displayNFLStatLeaders = displayNFLStatLeaders;
-    window.loadNFLPlayers      = loadNFLPlayers;
-    window.displayNFLPlayers   = displayNFLPlayers;
     window.updateNFLTicker     = updateNFLTicker;
 }

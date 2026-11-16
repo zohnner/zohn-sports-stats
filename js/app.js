@@ -3313,7 +3313,7 @@ window._otdReveal = function(idx) {
 
 // Enter a sport from the home page — handles same-sport case
 function enterSport(sport) {
-    const defaultViews = { nba: 'players', mlb: 'mlb-players', nfl: 'nfl-players', nhl: 'nhl-players' };
+    const defaultViews = { nba: 'players', mlb: 'mlb-players', nfl: 'nfl-leaders', nhl: 'nhl-players' };
     if (AppState.currentSport === sport) {
         navigateTo(defaultViews[sport] || 'players');
     } else {
@@ -4622,7 +4622,7 @@ const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', ncaab: 'N
 // view yet, so its absence here is correct), wnba has real Leaders +
 // player detail (D-092 Resolution 5).
 const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', ncaab: 'ncaab-teams', wnba: 'wnba-teams', nba: 'nba-teams' };
-const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', wnba: 'wnba-leaders', nba: 'nba-leaders' };
+const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-leaders', ncaaf: 'ncaaf-leaders', wnba: 'wnba-leaders', nba: 'nba-leaders' };
 
 function _dashGroupFollows() {
     const bySport = {};
