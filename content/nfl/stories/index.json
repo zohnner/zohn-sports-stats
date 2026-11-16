@@ -1,6 +1,59 @@
 {
   "stories": [
     {
+      "slug": "2026-11-16-49ers-46-cowboys-40",
+      "title": "Dallas scored 40 points and still lost to San Francisco",
+      "dek": "The 46-40 game was only the 26th time since 1999 that a team scored 40 points and lost.",
+      "date": "2026-11-16",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "SF",
+        "DAL"
+      ],
+      "players": [
+        "3117251",
+        "4361741",
+        "2577417",
+        "4426354"
+      ],
+      "hero_stat": "40 points scored in a loss — 26th time since 1999",
+      "url": "/nfl/stories/2026-11-16-49ers-46-cowboys-40",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-11-16-bills-8-1-first-since-1999",
+      "title": "Buffalo is 8-1 for the first time since 1999",
+      "dek": "The Bills beat the Jets 31-12 and have scored 287 points, the most in the NFL.",
+      "date": "2026-11-16",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "BUF",
+        "NYJ"
+      ],
+      "players": [],
+      "hero_stat": "8-1 — Buffalo's first 8-1 start since 1999",
+      "url": "/nfl/stories/2026-11-16-bills-8-1-first-since-1999",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-11-16-vikings-7-2-on-176-points",
+      "title": "The Vikings are 7-2 while scoring 176 points, the 4th-fewest since 1999",
+      "dek": "Minnesota has allowed 126 points, the fewest in the NFL, and its 30-10 win at Green Bay was its largest there since 1999.",
+      "date": "2026-11-16",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "MIN",
+        "GB"
+      ],
+      "players": [],
+      "hero_stat": "176 points scored in 9 games — 4th-fewest by a 7-2 team since 1999accent: #4f2683",
+      "url": "/nfl/stories/2026-11-16-vikings-7-2-on-176-points",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-14-buccaneers-plus-24-differential-best-3-6-team-since-1999",
       "title": "Tampa Bay's plus-24 differential is the best for a 3-6 team since 1999",
       "dek": "The Buccaneers are 3-6 through 9 games despite outscoring opponents 202-178; since 1999, no team that went 3-6 through 9 games has had a better differential.",
