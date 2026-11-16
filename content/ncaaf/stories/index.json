@@ -1,6 +1,27 @@
 {
   "stories": [
     {
+      "slug": "2026-11-16-oklahoma-beats-no-19-ole-miss-24-17",
+      "title": "Oklahoma beat No. 19 Ole Miss on a 75-yard punt return",
+      "dek": "The Sooners threw for 111 yards and were outgained 306-299, and the return was the 7-point difference.",
+      "date": "2026-11-16",
+      "season": 2026,
+      "hook": "Oklahoma, boosted by crowd's ire at postponement, beats No. 19 Ole Miss",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50495687/sooners-boosted-crowd-ire-postponement-beat-rebels",
+      "week": 12,
+      "teams": [
+        "OU",
+        "MISS"
+      ],
+      "players": [
+        "5080703",
+        "4915980"
+      ],
+      "hero_stat": "75-yard punt return — the difference in a 24-17 win",
+      "url": "/ncaaf/stories/2026-11-16-oklahoma-beats-no-19-ole-miss-24-17",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-15-arkansas-south-carolina-34-6",
       "title": "Arkansas held No. 17 South Carolina to 6 points, a season low",
       "dek": "The 4-6 Razorbacks beat the ranked Gamecocks 34-6, holding them 25.8 points below their season average.",
