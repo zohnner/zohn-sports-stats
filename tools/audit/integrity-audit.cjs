@@ -15,7 +15,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
-const PLANT_TESTS = ['tests/contractCoverage.test.js', 'tests/routeCrawl.test.js', 'tests/nflStarts.test.js', 'tests/nbaGameLog.test.js', 'tests/sitemapCheck.test.js'];
+const PLANT_TESTS = ['tests/contractCoverage.test.js', 'tests/routeCrawl.test.js', 'tests/nflStarts.test.js', 'tests/nbaGameLog.test.js', 'tests/sitemapCheck.test.js', 'tests/auditNoTrack.test.js'];
 
 // Open derived-stat issues nobody has answered.
 const unowned = issues => issues.filter(i => !(i.comments || []).length);

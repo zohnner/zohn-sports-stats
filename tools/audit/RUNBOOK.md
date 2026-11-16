@@ -48,6 +48,7 @@ The parity run (D-198) builds what is already in the queue. Until now the queue 
 - A matrix `yes` means the route or file exists, not that the page is good.
 - The walk samples one team, player and game per sport. It finds links from `onclick`, `data-game-key`, `data-game-id` and `data-team-abbr`; MLB's cards use none of those, so MLB detail pages are not sampled yet.
 - Nothing here measures a page against what other sites offer, or weighs findings by traffic. Both are planned: a checklist per page type, written with the owner, and a weekly page-view export.
+- The walk and the crawl block the page-view beacon (`tools/audit/no-track.cjs`), so their visits are not in `page_views`. Any new tool that opens the live site in a browser must call `blockTracking(page)` before its first `goto`.
 
 ## Report format for a finding
 

@@ -15,6 +15,7 @@
 // Needs `playwright` (or `playwright-core` plus PW_CHANNEL=chrome).
 const fs = require('node:fs');
 const path = require('node:path');
+const { blockTracking } = require('./no-track.cjs');
 
 const SPORTS = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'nba', 'wnba'];
 const SCORES_VIEW = s => (s === 'mlb' || s === 'nfl' ? `${s}-games` : `${s}-scores`);
@@ -254,6 +255,7 @@ async function crawlBrowser(base, opts = {}) {
     const browser = await chromium.launch({ proxy, channel: process.env.PW_CHANNEL || undefined });
     try {
         const page = await browser.newPage({ ignoreHTTPSErrors: !!proxy, viewport: { width: 1280, height: 900 } });
+        await blockTracking(page);
         await page.goto(base, { waitUntil: 'load' });
         await page.waitForFunction('typeof navigateTo === "function" && typeof AppState === "object"');
         const args = {
