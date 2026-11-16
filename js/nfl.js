@@ -1502,7 +1502,9 @@ async function loadNFLStats(view) {
     grid.style.cssText = '';
     if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
     const p = NFLStatsTable.parseView(view) || { cat: 'passing', sort: null, dir: null };
-    if (p.cat !== _nst.cat) { _nst.pos = ''; _nst.showAll = false; }
+    // "All players" stays on the tab it was chosen for: carried into Passing it
+    // ranks a punter's one trick-play throw as the league's fewest interceptions.
+    if (p.cat !== _nst.cat) { _nst.pos = ''; _nst.showAll = false; _nst.qualified = true; }
     Object.assign(_nst, p);
     const cat = NFLStatsTable.category(_nst.cat);
     const want = `${cat.id}:${_nst.season || 'cur'}:${cat.toggle ? _nst.qualified : true}`;

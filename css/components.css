@@ -2255,7 +2255,7 @@
 .nst-group { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--border-default); border-radius: var(--radius-full); }
 .nst-chip { padding: 0.3rem 0.65rem; font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); background: none; border: 0; border-radius: var(--radius-full); cursor: pointer; }
 .nst-chip.is-on { color: var(--bg-base); background: var(--accent); }
-.nst-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.nst-wrap { max-width: 100%; overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
 .nst-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .nst-table th, .nst-table td { padding: 0.45rem 0.6rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
 .nst-table thead th { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.4px; color: var(--text-muted); background: var(--bg-table-head); }
@@ -2264,24 +2264,31 @@
 .nst-th[aria-sort="descending"] button::after { content: ' ▾'; }
 .nst-th[aria-sort="ascending"] button::after { content: ' ▴'; }
 .nst-table .nst-rk { width: 2rem; color: var(--text-muted); }
-.nst-table .nst-name { position: sticky; left: 0; z-index: 1; min-width: 150px; max-width: 210px; text-align: left; background: var(--bg-card); }
-.nst-table thead .nst-name { z-index: 2; background: var(--bg-table-head); }
+/* Pinned cells need an opaque base: --bg-card and --bg-table-head are translucent,
+   so scrolled numbers would show through the player names. */
+.nst-table .nst-name { position: sticky; left: 0; z-index: 1; min-width: 150px; max-width: 210px; text-align: left; background: var(--bg-surface); }
+.nst-table thead .nst-name { z-index: 2; background: linear-gradient(var(--bg-table-head), var(--bg-table-head)), var(--bg-surface); }
 .nst-pl { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
 .nst-pl img { flex: none; width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--bg-raised); }
 .nst-pt { display: flex; flex-direction: column; min-width: 0; }
 .nst-pn { overflow: hidden; text-overflow: ellipsis; font-weight: 700; color: var(--text-primary); text-decoration: none; }
 .nst-pm { font-size: 0.68rem; font-weight: 500; color: var(--text-muted); }
 .nst-table tbody tr[data-go] { cursor: pointer; }
-.nst-table tbody tr[data-go]:hover .nst-name { background: var(--bg-card-hover); }
+.nst-table tbody tr[data-go]:hover .nst-name { background: linear-gradient(var(--bg-card-hover), var(--bg-card-hover)), var(--bg-surface); }
 .nst-table tbody tr[data-go]:hover .nst-pn { color: var(--accent); }
 .nst-table td.nst-sorted { font-weight: 800; color: var(--text-primary); }
-.nst-hi2 { background: color-mix(in srgb, var(--color-win) 30%, transparent); }
-.nst-hi1 { background: color-mix(in srgb, var(--color-win) 14%, transparent); }
+.nst-hi2 { background: color-mix(in srgb, var(--color-win) 22%, transparent); }
+.nst-hi1 { background: color-mix(in srgb, var(--color-win) 10%, transparent); }
 .nst-lo1 { background: color-mix(in srgb, var(--color-loss) 12%, transparent); }
-.nst-lo2 { background: color-mix(in srgb, var(--color-loss) 24%, transparent); }
+.nst-lo2 { background: color-mix(in srgb, var(--color-loss) 22%, transparent); }
 .nst-table .nst-empty { padding: var(--space-6); text-align: center; color: var(--text-muted); }
 .nst-more { width: 100%; padding: var(--space-3); font-weight: 700; color: var(--accent); background: none; border: 0; cursor: pointer; }
 .nst-foot { margin: 0; font-size: 0.72rem; color: var(--text-muted); }
+@media (max-width: 640px) {
+    .nst-leaders { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .nst-lead { scroll-snap-align: start; }
+    .nst-table .nst-name { min-width: 128px; max-width: 150px; }
+}
 
 /* .nfl-standings-* (N-5 phase 3) removed 2026-08-02 (Finn, live-verify pass) — the
    JS that used these classes was dead code (see js/nfl.js ~line 148); the live
