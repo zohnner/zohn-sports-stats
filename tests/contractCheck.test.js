@@ -437,3 +437,37 @@ test('planIssueActions keeps a proxyBlocked route\'s issue open, without a daily
     const acts = issues.planIssueActions(report([blocked]), [{ number: 15, title: 'contract-drift: nfl-probe' }], null);
     assert.deepEqual(acts, []);
 });
+
+// 2026-11-16: one ESPN 500 on ncaab-leaders-v3 failed the whole Integrity Audit;
+// the same URL answered 200 minutes later.
+test('runContract: a 5xx gets one retry; a recovered retry passes with a note', async () => {
+    const c = { id: 'x', route: () => '/x', paths: ['events[].id'], invariants: [] };
+    const seq = (...answers) => { let i = 0; const f = async () => { f.calls++; return answers[Math.min(i++, answers.length - 1)]; }; f.calls = 0; return f; };
+    const e500 = { ok: false, status: 500, contentType: 'application/json', json: null, bodySnippet: '{"code":0,"detail":"general error: unknown error"}' };
+    const good = { ok: true, status: 200, contentType: 'application/json', json: { events: [{ id: 1 }] }, bodySnippet: '' };
+
+    let f = seq(e500, good);
+    let r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'pass');
+    assert.equal(f.calls, 2);
+    assert.deepEqual(r.notes, ['first try got HTTP 500; passed on retry']);
+
+    f = seq(e500, e500);
+    r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'fail');
+    assert.equal(f.calls, 2);
+    assert.match(r.failures[0], /^HTTP 500/);
+
+    f = seq({ ...e500, status: 0, bodySnippet: 'fetch failed' }, good);
+    r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'pass');
+    assert.deepEqual(r.notes, ['first try got network error; passed on retry']);
+});
+
+test('runContract: a 4xx is not retried', async () => {
+    const c = { id: 'x', route: () => '/x', paths: [], invariants: [] };
+    let calls = 0;
+    const r = await check.runContract(c, {}, async () => { calls++; return { ok: false, status: 404, json: null, bodySnippet: 'nope' }; }, { retryDelayMs: 0 });
+    assert.equal(r.status, 'fail');
+    assert.equal(calls, 1);
+});
