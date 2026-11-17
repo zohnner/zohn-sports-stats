@@ -421,9 +421,11 @@ test('fetchJsonFrom sends ESPN proxy routes through the fallback and everything 
     const get = async u => { seen.push(['get', u]); return { ok: true }; };
     const espn = async u => { seen.push(['espn', u]); return { ok: true }; };
     const f = check.fetchJsonFrom('https://s', get, espn);
-    for (const p of ['/api/nfl?path=/scoreboard', '/api/ncaafstandings?season=2026', '/api/nflstats', '/api/sleeper?path=/x', '/api/mlb?url=x', '/api/nflx'])
+    for (const p of ['/api/nfl?path=/scoreboard', '/api/ncaafstandings?season=2026', '/api/nflstats',
+        '/api/nflplayer?name=x&team=GB', '/api/nflathlete?id=1', '/api/nflcareer?id=1', '/api/nflgamelog?id=1',
+        '/api/sleeper?path=/x', '/api/mlb?url=x', '/api/nflx'])
         await f(p);
-    assert.deepEqual(seen.map(s => s[0]), ['espn', 'espn', 'espn', 'get', 'get', 'get']);
+    assert.deepEqual(seen.map(s => s[0]), ['espn', 'espn', 'espn', 'espn', 'espn', 'espn', 'espn', 'get', 'get', 'get']);
 });
 
 test('browserFallbackFrom loads the real js/config.js _espnFetch under Node', () => {

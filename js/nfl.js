@@ -1829,13 +1829,13 @@ async function _loadNFLCareer(espnId, pos) {
     const host = document.getElementById('nfl-career');
     if (!host) return;
     try {
-        const cacheKey = `nfl:career:${espnId}`;
+        const cacheKey = `nfl:career2:${espnId}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nflcareer?id=${encodeURIComponent(espnId)}`);
+            const res = await _espnFetch(`/api/nflcareer?id=${encodeURIComponent(espnId)}`);
             if (!res.ok) return;
             data = await res.json();
-            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            if (data.found) ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (!data.found || !data.categories || !data.categories.length) return;
         if (!document.body.contains(host)) return;
@@ -1918,11 +1918,14 @@ const _NFL_STAT_GROUP_COLOR = { passing:'var(--nfl-stat-passing)', rushing:'var(
 
 // Explicit placeholder when the Sleeper->ESPN name match yields no stats, so a
 // real player never shows a blank stat area with no explanation (N-1).
-function _nflStatsUnavailable(host, name) {
+function _nflStatsUnavailable(host, name, failed) {
     if (!host || !document.body.contains(host)) return;
     host.className = 'stats-card';
+    const why = failed
+        ? `ESPN, our stats source, didn't answer. Try again in a few minutes.`
+        : `we couldn't match this player to a stats source. This is common for free agents and recent roster moves.`;
     host.innerHTML = `<h2 class="detail-section-title">Season Stats</h2>
-        <p style="color:var(--text-muted);font-size:0.85rem;margin:0;line-height:1.5">Season stats aren't available for ${_escHtml(name || 'this player')} right now — we couldn't match this player to a stats source. This is common for free agents and recent roster moves.</p>`;
+        <p style="color:var(--text-muted);font-size:0.85rem;margin:0;line-height:1.5">Season stats aren't available for ${_escHtml(name || 'this player')} right now — ${why}</p>`;
 }
 
 // Season stat line on the player-detail page. Sleeper has no game stats, so we
@@ -1933,13 +1936,13 @@ async function _loadNFLPlayerStats(p, season) {
     if (!host) return;
     if (!p || !p.team) { _nflStatsUnavailable(host, p && p.full_name); return; }
     try {
-        const cacheKey = `nfl:pstats2:${p.player_id}:${season}`;
+        const cacheKey = `nfl:pstats3:${p.player_id}:${season}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}&season=${season}`);
-            if (!res.ok) { Logger.warn('NFL player stats fetch ' + res.status, null, 'NFL'); _nflStatsUnavailable(host, p.full_name); return; }
+            const res = await _espnFetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team)}&season=${season}`);
+            if (!res.ok) { Logger.warn('NFL player stats fetch ' + res.status, null, 'NFL'); _nflStatsUnavailable(host, p.full_name, true); return; }
             data = await res.json();
-            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            if (!/fetch failed/.test(data.reason || '')) ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         // Bug found live 2026-09-15: this used to read data.season here (the season the
         // aggregate stat line fell back to, e.g. 2025) instead of the season the user
@@ -1954,7 +1957,7 @@ async function _loadNFLPlayerStats(p, season) {
         // whatever year the aggregate stat line fell back to.
         if (data.espnId) _loadNFLGameLog(data.espnId, season);
         if (data.espnId && _nflCareerEspnId !== data.espnId) { _nflCareerEspnId = data.espnId; _loadNFLCareer(data.espnId, p.position); }
-        if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name); return; }
+        if (!data.found || !data.groups || !data.groups.length) { _nflStatsUnavailable(host, p.full_name, /fetch failed/.test(data.reason || '')); return; }
         if (!document.body.contains(host)) return;  // user navigated away
 
         const _statPos = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
@@ -2022,13 +2025,13 @@ async function _loadNFLGameLog(espnId, season) {
     const host = document.getElementById('nfl-gamelog');
     if (!host) return;
     try {
-        const cacheKey = `nfl:gamelog:${espnId}:${season}`;
+        const cacheKey = `nfl:gamelog2:${espnId}:${season}`;
         let data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/nflgamelog?id=${encodeURIComponent(espnId)}&season=${encodeURIComponent(season)}`);
+            const res = await _espnFetch(`/api/nflgamelog?id=${encodeURIComponent(espnId)}&season=${encodeURIComponent(season)}`);
             if (!res.ok) return;
             data = await res.json();
-            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            if (!/fetch failed/.test(data.reason || '')) ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
         if (!data.found || !data.games || !data.games.length) return;
         if (!document.body.contains(host)) return;
@@ -2734,7 +2737,7 @@ async function _updateNFLCompare() {
     results.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:1.5rem">Loading…</div>`;
 
     const fetchStats = async p => {
-        try { const r = await fetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}`); return r.ok ? await r.json() : null; }
+        try { const r = await _espnFetch(`/api/nflplayer?name=${encodeURIComponent(p.full_name)}&team=${encodeURIComponent(p.team || '')}`); return r.ok ? await r.json() : null; }
         catch { return null; }
     };
     const [dA, dB] = await Promise.all([fetchStats(pA), fetchStats(pB)]);
@@ -2801,8 +2804,8 @@ async function showNFLEspnPlayer(espnId) {
     let prof = {}, career = null;
     try {
         const [pr, cr] = await Promise.all([
-            fetch(`/api/nflathlete?id=${espnId}`).then(r => r.ok ? r.json() : null),
-            fetch(`/api/nflcareer?id=${espnId}`).then(r => r.ok ? r.json() : null),
+            _espnFetch(`/api/nflathlete?id=${espnId}`).then(r => r.ok ? r.json() : null),
+            _espnFetch(`/api/nflcareer?id=${espnId}`).then(r => r.ok ? r.json() : null),
         ]);
         prof = pr || {}; career = cr;
     } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }

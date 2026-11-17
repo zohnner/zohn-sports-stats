@@ -95,11 +95,14 @@ export async function onRequest(context) {
     if (!name || !teamId) return json({ found: false, reason: 'missing name/team' }, 200);
 
     // 1) team roster -> athlete id by name
-    let athleteId = null, espnName = name;
+    // A failed fetch must say "fetch failed": js/config.js retries from the browser
+    // only on that reason, and trusts "not on roster" / "no stats" as real answers.
+    let athleteId = null, espnName = name, rosterStatus = 0;
     try {
         const r = await fetch(`${SITE}/teams/${teamId}/roster`, {
             headers: { 'Accept': 'application/json', 'User-Agent': ESPN_UA }, cf: { cacheTtl: 86400, cacheEverything: true },
         });
+        rosterStatus = r.status;
         if (r.ok) {
             const roster = flattenRoster(await r.json());
             const target = norm(name);
@@ -108,6 +111,7 @@ export async function onRequest(context) {
             if (hit) { athleteId = hit.id; espnName = hit.fullName || hit.displayName; }
         }
     } catch {}
+    if (rosterStatus < 200 || rosterStatus > 299) return json({ found: false, reason: 'roster fetch failed', status: rosterStatus, season: Number(season) }, 200, 300);
     if (!athleteId) return json({ found: false, reason: 'not on roster', season: Number(season) }, 200);
 
     // 2) athlete season statistics
@@ -121,23 +125,28 @@ export async function onRequest(context) {
     // js/nfl.js's consumer). Roster lookup above is unaffected: it fetches the *current*
     // team roster with no season param, so athleteId/espnName are already season-
     // independent and don't need a fallback of their own.
+    // ESPN answers 404 for a season with no stats yet; anything else non-2xx is a failure.
+    let statsFailed = false;
     const fetchStats = async (s) => {
         const r = await fetch(`${CORE}/seasons/${s}/types/2/athletes/${athleteId}/statistics?lang=en&region=us`, {
             headers: { 'Accept': 'application/json' }, cf: { cacheTtl: 43200, cacheEverything: true },
         });
-        if (!r.ok) return null;
+        if (!r.ok) { if (r.status !== 404) statsFailed = true; return null; }
         return (await r.json()).splits;
     };
     let splits = null, statsSeason = season;
-    try { splits = await fetchStats(season); } catch {}
+    try { splits = await fetchStats(season); } catch { statsFailed = true; }
     if ((!splits || !(splits.categories || []).length) && Number(season) === defaultSeason()) {
         const fallback = String(Number(season) - 1);
         try {
             const fb = await fetchStats(fallback);
             if (fb && (fb.categories || []).length) { splits = fb; statsSeason = fallback; }
-        } catch {}
+        } catch { statsFailed = true; }
     }
-    if (!splits || !(splits.categories || []).length) return json({ found: false, reason: 'no stats', season: Number(statsSeason) }, 200);
+    if (!splits || !(splits.categories || []).length) {
+        if (statsFailed) return json({ found: false, reason: 'stats fetch failed', season: Number(statsSeason) }, 200, 300);
+        return json({ found: false, reason: 'no stats', season: Number(statsSeason) }, 200);
+    }
 
     const cats = {};
     (splits && splits.categories || []).forEach(c => { cats[c.name] = catMap(c.stats); });

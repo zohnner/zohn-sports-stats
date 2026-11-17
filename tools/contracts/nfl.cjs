@@ -46,6 +46,14 @@ function rederiveStart(rows, team, season, n) {
 }
 const scoreboard = d => `/api/nfl?path=/scoreboard&dates=${d.yyyymmdd}`;
 
+// The season's passing-yards leader: always rostered, always has stats, a career
+// and a game log, so the player-page contracts never pin a name that goes stale.
+async function passingLeader(ctx, fetchJson) {
+    const res = await fetchJson(`${ESPN}/common/v3/sports/football/nfl/statistics/byathlete?region=us&lang=en&contentorigin=espn&seasontype=2&limit=1&isqualified=true&category=offense%3Apassing&sort=passing.passingYards%3Adesc&season=${ctx.season}`);
+    const a = res.json?.athletes?.[0]?.athlete;
+    return a && a.id && a.teamShortName ? { athleteId: String(a.id), name: a.displayName, team: a.teamShortName } : null;
+}
+
 module.exports = {
     sport: 'nfl',
     gameDay: 0,
@@ -140,6 +148,49 @@ module.exports = {
                     return missing.length ? `missing ${missing.join(', ')}` : null;
                 }),
             ],
+        },
+        // NFL player pages (js/nfl.js, Compare, live-game Fantasy Watch). Their
+        // proxies are 403'd by ESPN (D-176); these run the real browser fallback
+        // in js/config.js against the current passing leader.
+        {
+            id: 'nfl-player-stats',
+            mirrors: 'js/nfl.js _loadNFLPlayerStats + Compare, js/nflLiveGame.js Fantasy Watch (/api/nflplayer)',
+            sources: [/\/api\/nflplayer/, /football\/nfl\/teams\/\d+\/roster/, /leagues\/nfl\/seasons\/\d+\/types\/\d+\/athletes\/\d+\/statistics/],
+            needs: 'probe',
+            resolve: passingLeader,
+            route: c => `/api/nflplayer?name=${encodeURIComponent(c.name)}&team=${c.team}&season=${c.season}`,
+            paths: ['espnId', 'groups[].key', 'groups[].stats'],
+            invariants: [L.predicate('found, with a passing group', d => (d && d.found && (d.groups || []).some(g => g.key === 'passing')) ? null : `found=${d && d.found} reason=${d && d.reason}`)],
+        },
+        {
+            id: 'nfl-player-athlete',
+            mirrors: 'js/nfl.js showNFLEspnPlayer (/api/nflathlete)',
+            sources: [/\/api\/nflathlete/, /common\/v3\/sports\/football\/nfl\/athletes\/\d+$/],
+            needs: 'probe',
+            resolve: passingLeader,
+            route: c => `/api/nflathlete?id=${c.athleteId}`,
+            paths: ['name', 'pos', 'headshot'],
+            invariants: [L.predicate('found', d => (d && d.found) ? null : `reason=${d && d.reason}`)],
+        },
+        {
+            id: 'nfl-player-career',
+            mirrors: 'js/nfl.js _loadNFLCareer + showNFLEspnPlayer (/api/nflcareer)',
+            sources: [/\/api\/nflcareer/, /common\/v3\/sports\/football\/nfl\/athletes\/\d+\/stats/],
+            needs: 'probe',
+            resolve: passingLeader,
+            route: c => `/api/nflcareer?id=${c.athleteId}`,
+            paths: ['categories[].name', 'categories[].labels', 'categories[].seasons[].year', 'categories[].totals'],
+            invariants: [L.predicate('found, with a passing category', d => (d && d.found && (d.categories || []).some(x => x.name === 'passing')) ? null : `found=${d && d.found} reason=${d && d.reason}`)],
+        },
+        {
+            id: 'nfl-player-gamelog',
+            mirrors: 'js/nfl.js _loadNFLGameLog, js/nflLiveGame.js Fantasy Watch (/api/nflgamelog)',
+            sources: [/\/api\/nflgamelog/, /common\/v3\/sports\/football\/nfl\/athletes\/\d+\/gamelog/],
+            needs: 'probe',
+            resolve: passingLeader,
+            route: c => `/api/nflgamelog?id=${c.athleteId}&season=${c.season}`,
+            paths: ['columns[].label', 'columns[].name', 'games[].opp', 'games[].stats'],
+            invariants: [L.predicate('found, with games', d => (d && d.found && (d.games || []).length) ? null : `found=${d && d.found} reason=${d && d.reason}`)],
         },
         {
             id: 'sleeper-players',
