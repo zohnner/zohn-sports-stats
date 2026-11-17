@@ -1077,11 +1077,11 @@ async function _nlgFetchFantasyWatch(gamePk, homeAbbr, awayAbbr) {
     if (!starters.length) { _nlgFantasyWatchDone(gamePk, [], ''); return; }
 
     const results = await Promise.allSettled(starters.map(async (s) => {
-        const pRes = await fetch(`/api/nflplayer?name=${encodeURIComponent(s.name)}&team=${encodeURIComponent(s.team)}`);
+        const pRes = await _espnFetch(`/api/nflplayer?name=${encodeURIComponent(s.name)}&team=${encodeURIComponent(s.team)}`);
         if (!pRes.ok) return null;
         const pData = await pRes.json();
         if (!pData.espnId) return null;
-        const glRes = await fetch(`/api/nflgamelog?id=${encodeURIComponent(pData.espnId)}&season=${encodeURIComponent(pData.season)}`);
+        const glRes = await _espnFetch(`/api/nflgamelog?id=${encodeURIComponent(pData.espnId)}&season=${encodeURIComponent(pData.season)}`);
         if (!glRes.ok) return null;
         const glData = await glRes.json();
         if (!glData.found || !glData.games || !glData.games.length) return null;

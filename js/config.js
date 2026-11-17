@@ -458,12 +458,20 @@ function _espnDirectUrl(proxyUrl) {
 async function _espnFetch(proxyUrl, init) {
     let res = null;
     try { res = await fetch(proxyUrl, init); } catch (err) { if (init?.signal?.aborted) throw err; }
+    // NFL player proxies answer 200 {found:false} both for a real miss ("not on
+    // roster", "no stats") and for an ESPN failure ("... fetch failed"); only the
+    // failure is worth retrying from the browser.
+    const nm = String(proxyUrl).match(/\/api\/nfl(player|athlete|career|gamelog)\?/);
     if (res && res.ok) {
-        if (!/standings|athlete/.test(String(proxyUrl))) return res;
+        if (!nm && !/standings|athlete/.test(String(proxyUrl))) return res;
         const body = await res.clone().json().catch(() => null);
-        if (body && body.ok !== false && body.found !== false) return res;
+        if (nm ? body && !/fetch failed/.test(body.reason || '') : body && body.ok !== false && body.found !== false) return res;
     }
-    const am = String(proxyUrl).match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
+    if (nm) {
+        Logger.warn('ESPN NFL player proxy failed, fetching ESPN direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
+        return _espnNFLPlayerResponse(nm[1], new URL(proxyUrl, location.origin).searchParams, init);
+    }
+    const am =String(proxyUrl).match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
     if (am) {
         const q = new URL(proxyUrl, location.origin).searchParams;
         Logger.warn('ESPN athlete proxy failed, fetching core API direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
@@ -694,4 +702,193 @@ async function _espnAthleteResponse(sport, id, seasonParam, init) {
         groups.push({ key: g.key, label: g.label, stats: line, raw });
     }
     return reply({ found: groups.length > 0, season: Number(statsSeason), id, bio, gp, groups });
+}
+
+// /api/nfl{player,athlete,career,gamelog}: browser ports of the four NFL player
+// proxies, 403'd by ESPN from Cloudflare (seen 2026-11-16). Every upstream route
+// here allows CORS. Output matches each proxy exactly: tests/nflPlayerFallback
+// runs both on the same ESPN payload. A change to one side must change both.
+const _NFL_ESPN_ATH = `${_ESPN_DIRECT}/common/v3/sports/football/nfl/athletes`;
+const _NFL_ESPN_TEAM_ID = {
+    ATL: 1, BUF: 2, CHI: 3, CIN: 4, CLE: 5, DAL: 6, DEN: 7, DET: 8, GB: 9, TEN: 10,
+    IND: 11, KC: 12, LV: 13, LAR: 14, MIA: 15, MIN: 16, NE: 17, NO: 18, NYG: 19, NYJ: 20,
+    PHI: 21, ARI: 22, PIT: 23, LAC: 24, SF: 25, SEA: 26, TB: 27, WAS: 28, CAR: 29, JAX: 30,
+    BAL: 33, HOU: 34, OAK: 13, WSH: 28,
+};
+const _NFL_ESPN_GROUPS = [
+    { key: 'passing', label: 'Passing', cat: 'passing', primary: 'passingYards', stats: [
+        ['completions', 'CMP'], ['passingAttempts', 'ATT'], ['passingYards', 'YDS'],
+        ['passingTouchdowns', 'TD'], ['interceptions', 'INT'], ['quarterbackRating', 'RTG']] },
+    { key: 'rushing', label: 'Rushing', cat: 'rushing', primary: 'rushingAttempts', stats: [
+        ['rushingAttempts', 'CAR'], ['rushingYards', 'YDS'], ['rushingTouchdowns', 'TD'],
+        ['yardsPerRushAttempt', 'AVG'], ['longRushing', 'LNG']] },
+    { key: 'receiving', label: 'Receiving', cat: 'receiving', primary: 'receptions', stats: [
+        ['receptions', 'REC'], ['receivingTargets', 'TGT'], ['receivingYards', 'YDS'],
+        ['receivingTouchdowns', 'TD'], ['yardsPerReception', 'AVG'], ['longReception', 'LNG']] },
+    { key: 'defense', label: 'Defense', cat: 'defensive', primary: 'totalTackles', stats: [
+        ['totalTackles', 'TOT'], ['soloTackles', 'SOLO'], ['sacks', 'SACK'],
+        ['tacklesForLoss', 'TFL'], ['passesDefended', 'PD'], ['QBHits', 'QBH']] },
+    { key: 'kicking', label: 'Kicking', cat: 'scoring', primary: 'fieldGoals', stats: [
+        ['fieldGoals', 'FG'], ['kickExtraPointsMade', 'XP'], ['totalPoints', 'PTS']] },
+];
+const _NFL_ESPN_CAREER_KEEP = {
+    passing: ['passingAttempts', 25], rushing: ['rushingAttempts', 20], receiving: ['receptions', 10],
+    defensive: ['totalTackles', 20], scoring: ['fieldGoals', 1],
+};
+
+function _nflEspnNorm(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '')
+        .replace(/\s+/g, ' ').trim();
+}
+function _nflEspnDefaultSeason() {
+    const now = new Date();
+    return now.getUTCMonth() + 1 >= 9 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+}
+
+async function _nflEspnPlayerBody(name, team, season, get) {
+    const teamId = _NFL_ESPN_TEAM_ID[team];
+    if (!name || !teamId) return { found: false, reason: 'missing name/team' };
+    const roster = await get(`${_ESPN_DIRECT}/site/v2/sports/football/nfl/teams/${teamId}/roster`);
+    if (!roster || roster._httpStatus !== undefined) return { found: false, reason: 'roster fetch failed', season: Number(season) };
+    const all = [];
+    for (const grp of (roster.athletes || [])) {
+        if (Array.isArray(grp.items)) all.push(...grp.items);
+        else if (grp.id) all.push(grp);
+    }
+    const target = _nflEspnNorm(name);
+    const hit = all.find(a => _nflEspnNorm(a.fullName || a.displayName) === target)
+        || all.find(a => _nflEspnNorm(a.displayName) === target);
+    if (!hit) return { found: false, reason: 'not on roster', season: Number(season) };
+    const athleteId = hit.id, espnName = hit.fullName || hit.displayName;
+
+    const core = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
+    let failed = false;
+    // ESPN answers 404 for a season with no stats yet; anything else non-2xx is a failure.
+    const statsFor = async (s) => {
+        const r = await get(`${core}/seasons/${s}/types/2/athletes/${athleteId}/statistics?lang=en&region=us`);
+        if (r._httpStatus !== undefined) { if (r._httpStatus !== 404) failed = true; return null; }
+        return r.splits;
+    };
+    let splits = await statsFor(season), statsSeason = season;
+    if ((!splits || !(splits.categories || []).length) && Number(season) === _nflEspnDefaultSeason()) {
+        const fb = await statsFor(String(Number(season) - 1));
+        if (fb && (fb.categories || []).length) { splits = fb; statsSeason = String(Number(season) - 1); }
+    }
+    if (!splits || !(splits.categories || []).length) {
+        return { found: false, reason: failed ? 'stats fetch failed' : 'no stats', season: Number(statsSeason) };
+    }
+    const cats = {};
+    splits.categories.forEach(c => {
+        const m = {};
+        (c.stats || []).forEach(s => { m[s.name] = { d: s.displayValue, v: s.value }; });
+        cats[c.name] = m;
+    });
+    const gp = cats.general && cats.general.gamesPlayed ? cats.general.gamesPlayed.d : null;
+    const di = cats.defensiveInterceptions && cats.defensiveInterceptions.interceptions;
+    const groups = [];
+    for (const g of _NFL_ESPN_GROUPS) {
+        const cm = cats[g.cat];
+        if (!cm) continue;
+        let show = !!(cm[g.primary] && cm[g.primary].v > 0);
+        if (g.key === 'defense') {
+            show = (cm.totalTackles && cm.totalTackles.v >= 10) || (cm.sacks && cm.sacks.v > 0)
+                || (cm.passesDefended && cm.passesDefended.v > 0) || (di && di.v > 0);
+        }
+        if (!show) continue;
+        const line = g.stats.map(([n, l]) => [l, cm[n] ? cm[n].d : '—']);
+        if (g.key === 'defense' && di) line.push(['INT', di.d]);
+        groups.push({ key: g.key, label: g.label, stats: line });
+    }
+    return { found: groups.length > 0, season: Number(statsSeason), name: espnName, espnId: athleteId, gp, groups };
+}
+
+function _nflEspnAthleteBody(id, j) {
+    const a = j.athlete || j;
+    if (!a || !(a.fullName || a.displayName)) return { found: false, reason: 'no athlete' };
+    const pos = a.position || {}, college = a.college || {}, status = a.status || {};
+    return {
+        found: true, id: Number(id), name: a.fullName || a.displayName, pos: pos.abbreviation || '',
+        headshot: (a.headshot && a.headshot.href) || `https://a.espncdn.com/i/headshots/nfl/players/full/${id}.png`,
+        height: a.displayHeight || '', weight: a.displayWeight || '', college: college.name || '',
+        jersey: a.jersey || '', debutYear: a.debutYear || null, age: a.age || null,
+        statusType: status.type || '', statusName: status.name || '',
+        team: (a.team && a.team.displayName) || '',
+    };
+}
+
+function _nflEspnCareerBody(id, j) {
+    const num = v => { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
+    const idAbbr = {};
+    Object.values(j.teams || {}).forEach(t => { if (t && t.id) idAbbr[t.id] = t.abbreviation; });
+    const categories = (j.categories || []).map(c => {
+        const keep = _NFL_ESPN_CAREER_KEEP[c.name];
+        if (keep) {
+            const idx = (c.names || []).indexOf(keep[0]);
+            if ((idx >= 0 && c.totals ? num(c.totals[idx]) : 0) < keep[1]) return null;
+        }
+        return {
+            name: c.name, displayName: c.displayName, labels: c.labels || [],
+            seasons: (c.statistics || []).map(st => ({
+                year: st.season && st.season.year, team: idAbbr[st.teamId] || '', stats: st.stats || [],
+            })),
+            totals: c.totals || [],
+        };
+    }).filter(Boolean);
+    return { found: categories.length > 0, id: Number(id), categories };
+}
+
+function _nflEspnGamelogBody(season, g) {
+    const labels = g.labels || [], names = g.names || [], displayNames = g.displayNames || [];
+    const eventsMap = g.events || {};
+    const games = [];
+    for (const st of (g.seasonTypes || [])) {
+        const isPost = /post|playoff/i.test(st.displayName || '');
+        for (const cat of (st.categories || [])) {
+            for (const ev of (cat.events || [])) {
+                const meta = eventsMap[ev.eventId || ev.id] || {};
+                if (!Array.isArray(ev.stats) || !ev.stats.length) continue;
+                games.push({
+                    wk: meta.week != null ? meta.week : null, post: isPost || undefined,
+                    opp: (meta.opponent && meta.opponent.abbreviation) || '', atVs: meta.atVs || '',
+                    res: meta.gameResult || '', score: meta.score || '', date: meta.gameDate || '', stats: ev.stats,
+                });
+            }
+        }
+    }
+    games.sort((a, b) => (a.date && b.date) ? (a.date < b.date ? -1 : 1) : 0);
+    return {
+        found: games.length > 0, season: Number(season),
+        columns: labels.map((l, i) => ({ label: l, name: names[i] || '', full: displayNames[i] || l })),
+        games,
+    };
+}
+
+async function _espnNFLPlayerResponse(kind, q, init) {
+    // Parsed JSON, or { _httpStatus } when ESPN fails (0 = network error).
+    const get = async (url) => {
+        try {
+            const r = await fetch(url, init);
+            return r.ok ? await r.json() : { _httpStatus: r.status };
+        } catch { return { _httpStatus: 0 }; }
+    };
+    const ok = j => j && j._httpStatus === undefined;
+    const season = /^\d{4}$/.test(q.get('season') || '') ? q.get('season') : String(_nflEspnDefaultSeason());
+    const id = (q.get('id') || '').replace(/[^0-9]/g, '');
+    let body;
+    if (kind === 'player') {
+        body = await _nflEspnPlayerBody(q.get('name') || '', (q.get('team') || '').toUpperCase(), season, get);
+    } else if (!id) {
+        body = { found: false, reason: 'missing id' };
+    } else if (kind === 'athlete') {
+        const j = await get(`${_NFL_ESPN_ATH}/${id}`);
+        body = ok(j) ? _nflEspnAthleteBody(id, j) : { found: false, reason: 'athlete fetch failed' };
+    } else if (kind === 'career') {
+        const j = await get(`${_NFL_ESPN_ATH}/${id}/stats`);
+        body = ok(j) ? _nflEspnCareerBody(id, j) : { found: false, reason: 'career fetch failed' };
+    } else {
+        const j = await get(`${_NFL_ESPN_ATH}/${id}/gamelog?season=${season}`);
+        body = ok(j) ? _nflEspnGamelogBody(season, j) : { found: false, reason: 'gamelog fetch failed' };
+    }
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }

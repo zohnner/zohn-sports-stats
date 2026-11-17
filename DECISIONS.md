@@ -3949,3 +3949,15 @@ The rejected options were a Pages Function proxy, blocked by D-176, and nflverse
 **Checks.** `tests/nflStatsTable.test.js` runs against a trimmed real response. Contract `nfl-stats-byathlete` checks every column the table reads, with a floor of 20 qualified passers. It is 20 and not 32 because the nightly run probes the latest game day, and early in Week 1 few passers qualify. Spec: `docs/superpowers/specs/2026-11-16-nfl-stats-table-design.md`; plan: `docs/superpowers/plans/2026-11-16-nfl-stats-table.md`.
 
 **Not done.** Team offense/defense tables, postseason (`seasontype=3`), Next Gen/EPA columns and CSV export. Each can build on this table.
+
+## D-204 — NFL player pages read ESPN from the browser when the proxies are blocked (2026-11-16)
+
+**Found:** verifying D-203 live. Every NFL player page on production showed "Season stats aren't available … we couldn't match this player" (even the passing-yards leader), and every ESPN-only player page showed "Player not found". Cause: `/api/nflplayer`, `/api/nflathlete`, `/api/nflcareer` and `/api/nflgamelog` all get 403 from ESPN since D-176, and D-176's browser fallback never covered them. `/api/nflplayer` reported the blocked roster fetch as "not on roster", which is why the page blamed name matching. Compare and the live-game Fantasy Watch use the same endpoints and were broken the same way.
+
+**Decision:** browser ports of all four in `js/config.js` (`_espnNFLPlayerResponse`), reached through `_espnFetch`; all five upstream ESPN routes send `Access-Control-Allow-Origin: *` (checked 2026-11-16). The proxies now say "roster fetch failed" / "stats fetch failed" for an upstream failure (ESPN's 404 for a season with no stats still means "no stats"), and the client retries only on "fetch failed", so a genuine miss costs no extra ESPN calls. The client no longer caches failed answers, and its cache keys were versioned so a cached failure from before this fix is ignored. A failed load now says ESPN didn't answer instead of blaming name matching.
+
+**Guards:** `tests/nflPlayerFallback.test.js` runs each proxy and its port on one real ESPN payload (trimmed, Jordan Love 2026) and requires identical JSON. Nightly contracts `nfl-player-stats`, `-athlete`, `-career`, `-gamelog` run the real fallback against the season's passing leader (`tools/contract-check.cjs` now routes those four proxies through `_espnFetch`).
+
+**Found while building:** the first port declared `_nflEspnSeason`, a name `js/nfl.js` already declares; classic scripts share one global scope, so `nfl.js` failed to load at all. The unit tests load files one at a time and missed it; the browser check caught it. The same test file now loads every `index.html` script in order into one context and fails on any redeclaration (planted-fault checked against the original clash).
+
+**Known residue:** browsers that fetched an old "not on roster" answer keep it up to 6 hours (`max-age=21600`); those visitors see the old message for that player until it expires. Not worked around.
