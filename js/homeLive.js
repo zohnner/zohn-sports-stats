@@ -67,15 +67,6 @@ const HomeLive = (() => {
             .map(x => x.c)[0] || null;
     }
 
-    // Whether MLB standings describe a race still being run. MLB_SEASON
-    // (js/mlb.js) is the current year only Mar-Oct, so comparing it with the
-    // calendar year reuses that rule instead of adding a second one. In
-    // Nov-Dec MLB_SEASON points a year behind the season that just ended, so
-    // standings read then were two seasons stale (D-205).
-    function mlbRaceSeasonOpen(season, now) {
-        return Number(season) === new Date(now).getFullYear();
-    }
-
     // The closest division race in fetchMLBStandingsFull rows, or null.
     // statsapi writes a tied second place's games back as "-", which
     // parseFloat reads as NaN, so a tie dropped the division. A division
@@ -96,5 +87,5 @@ const HomeLive = (() => {
         return best;
     }
 
-    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, mlbRaceSeasonOpen, tightestRace };
+    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, tightestRace };
 })();

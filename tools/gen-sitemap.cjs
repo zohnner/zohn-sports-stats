@@ -44,7 +44,15 @@ const path = require('path');
 
 const BASE = 'https://sportstrata.cc';
 const now = new Date();
-const MLB_SEASON  = (now.getUTCMonth() + 1 >= 3 && now.getUTCMonth() + 1 <= 11) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+// MLB season from statsapi's calendar, the same resolve the site uses (D-206).
+// functions/_mlbSeason.js is ESM and this workflow's Node may predate loading
+// it from CommonJS, so evaluate its import-free source the way the tests do.
+let MLB_SEASON;
+async function resolveMlbSeason() {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'functions', '_mlbSeason.js'), 'utf8').replace(/^export /gm, '');
+    const { mlbSeason } = new Function(src + '\nreturn { mlbSeason };')();
+    return (await mlbSeason(now)).season;
+}
 const CFB_SEASON  = (now.getUTCMonth() + 1 >= 8) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 const DRY = process.argv.includes('--dry');
 const GAME_WINDOW_DAYS = 14;
@@ -70,6 +78,7 @@ async function jget(url) {
 function idFromRef(ref) { const m = /\/athletes\/(\d+)/.exec(ref || ''); return m ? m[1] : null; }
 
 async function main() {
+    MLB_SEASON = await resolveMlbSeason();
     const urls = [];
     const seen = new Set();
     const add = (tag) => { if (!seen.has(tag)) { seen.add(tag); urls.push(tag); } };

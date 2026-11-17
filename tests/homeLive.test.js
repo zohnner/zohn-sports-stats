@@ -161,15 +161,6 @@ test('pickHero: a game with no known start still counts as today, and nothing yi
 const row = (name, wins, losses, gb, clinched = '') => ({ teamName: name, wins, losses, gb, clinched });
 const div = (division, ...teams) => ({ division, teams });
 
-test('mlbRaceSeasonOpen: open only when the standings season is the calendar year', () => {
-    const H = load();
-    assert.equal(H.mlbRaceSeasonOpen(2026, new Date(2026, 6, 15).getTime()), true);
-    // Nov 2026: MLB_SEASON is 2025, two seasons stale.
-    assert.equal(H.mlbRaceSeasonOpen(2025, new Date(2026, 10, 16).getTime()), false);
-    // Feb 2027: MLB_SEASON is 2026, the season that ended.
-    assert.equal(H.mlbRaceSeasonOpen(2026, new Date(2027, 1, 10).getTime()), false);
-});
-
 test('tightestRace: a tied second place ("-") is a 0-game race, not skipped', () => {
     const H = load();
     const r = H.tightestRace([

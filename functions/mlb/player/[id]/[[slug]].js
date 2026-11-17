@@ -8,16 +8,12 @@
 // zero outbound links.
 
 import { shell, rawShell } from '../../../_shell.js';
+import { mlbSeason } from '../../../_mlbSeason.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
-}
-
-function mlbSeason() {
-    const n = new Date(); const m = n.getUTCMonth();
-    return (m <= 1) ? n.getUTCFullYear() - 1 : n.getUTCFullYear(); // Jan/Feb → prior season
 }
 
 // D-127: a short, real stat line for this player's share-card image. Deliberately
@@ -55,7 +51,7 @@ export async function onRequest(context) {
     const id = String(params.id || '').replace(/[^0-9]/g, '');
     try {
         if (!id || !env.ASSETS) return shell(env, request.url);
-        const season = mlbSeason();
+        const { season } = await mlbSeason();
         const pr = await fetch(
             `https://statsapi.mlb.com/api/v1/people/${id}?hydrate=${encodeURIComponent(`currentTeam,stats(group=[hitting,pitching],type=season,season=${season})`)}`,
             { cf: { cacheTtl: 3600, cacheEverything: true } }
