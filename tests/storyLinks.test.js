@@ -101,6 +101,13 @@ test('hash views map to the path URL their edge template serves', () => {
     for (const [view, want] of Object.entries(cases)) assert.equal(ctx.__v(view), want, view);
 });
 
+test('NFL Stats tab and sort variants canonicalize to /nfl/leaders', () => {
+    const ctx = loadViewPath();
+    for (const view of ['nfl-leaders', 'nfl-leaders-receiving', 'nfl-leaders-defense~defensive.sacks-desc', 'nfl-leaders~passing.interceptions-asc']) {
+        assert.equal(ctx.__v(view), '/nfl/leaders', view);
+    }
+});
+
 test('every mapped path round-trips through the edge fail-safe route table', () => {
     const shellSrc = fs.readFileSync(path.join(ROOT, 'functions', '_shell.js'), 'utf8').replace(/^export /gm, '');
     const ctx = loadViewPath(`${shellSrc}\n;globalThis.__r = failSafeRoute;`);

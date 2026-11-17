@@ -90,7 +90,7 @@ function _nflOffseasonState(surface) {
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
         scores:    `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-mock')">Mock draft</button>
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-teams')">Browse teams</button>`,
-        generic:   `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-players')">Browse players</button>
+        generic:   `<button class="nfl-offseason-btn" onclick="navigateTo('nfl-leaders')">Browse stats</button>
             <button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="navigateTo('nfl-rankings')">Rankings</button>`,
     };
     const s = copy[surface] ? surface : 'generic';
@@ -885,7 +885,6 @@ function _createNFLGameCard(game, isTopLeverage) {
 // NFL data comes from Sleeper's public API via the same-origin /api/sleeper proxy.
 let _nflPool    = null;     // active fantasy players sorted by ADP (search_rank)
 let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
-let _nflPosFilter = sessionStorage.getItem('ss_nfl_pos_filter') || 'ALL';
 
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
 // NFL team primary colors (curated for visibility on the dark UI) — drives player
@@ -1036,115 +1035,6 @@ function getNFLSleeperHeadshot(id) {
     return id ? `https://sleepercdn.com/content/nfl/players/${id}.jpg` : null;
 }
 
-// ── Display: Players (reuses the .player-card component) ───────
-async function loadNFLPlayers() {
-    const grid = document.getElementById('playersGrid');
-    grid.className = 'players-grid';
-    grid.style.cssText = '';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
-
-    grid.innerHTML = Array.from({ length: 8 }, () =>
-        `<div class="skeleton-card" style="min-height:240px"></div>`
-    ).join('');
-
-    try {
-        await fetchNFLSleeperPool();
-        displayNFLPlayers();
-    } catch (err) {
-        ErrorHandler.handle(grid, err, loadNFLPlayers, { tag: 'NFL', title: 'Failed to Load NFL Players' });
-    }
-}
-
-function displayNFLPlayers() {
-    const grid = document.getElementById('playersGrid');
-    grid.className = '';
-    grid.style.cssText = '';
-
-    const pool = _nflPool || [];
-    if (!pool.length) {
-        ErrorHandler.renderEmptyState(grid, 'No NFL player data available'); // icon arg removed 2026-09-07 -- was already dead
-        return;
-    }
-
-    const filtered = _nflPosFilter === 'ALL'
-        ? pool
-        : pool.filter(p => p.fantasy_positions.includes(_nflPosFilter));
-    const shown = filtered.slice(0, 120);
-
-    const chip = (f) => {
-        const active = f === _nflPosFilter;
-        return `<button data-nfl-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);
-            border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
-            background:${active ? 'var(--accent)' : 'transparent'};
-            color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
-    };
-    const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
-        ${_NFL_POS_FILTERS.map(chip).join('')}
-        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} by ADP</span>
-    </div>`;
-
-    const cards = document.createElement('div');
-    cards.className = 'players-grid';
-    shown.forEach(p => cards.appendChild(_createNFLPlayerCard(p)));
-
-    grid.innerHTML = bar;
-    grid.appendChild(cards);
-
-    grid.querySelectorAll('[data-nfl-pos]').forEach(btn => {
-        btn.addEventListener('click', () => { _nflPosFilter = btn.dataset.nflPos; sessionStorage.setItem('ss_nfl_pos_filter', _nflPosFilter); displayNFLPlayers(); });
-    });
-}
-
-function _createNFLPlayerCard(p) {
-    const card = document.createElement('div');
-    card.className = 'player-card';
-    card.style.cursor = 'pointer';
-    card.onclick = () => navigateTo('nfl-player-' + p.player_id);
-
-    const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
-    const posColor = getNFLTeamColor(p.team) || _NFL_POS_COLOR[pos] || 'var(--accent)';
-    card.style.borderTop = `3px solid ${_nflAlpha(posColor, 80)}`;
-
-    const initials = (p.full_name || '').split(' ').map(w => w[0] || '').slice(0, 2).join('');
-    const headshot = getNFLSleeperHeadshot(p.player_id);
-    const inches   = parseInt(p.height, 10);
-    const htStr    = (!isNaN(inches) && inches > 0) ? `${Math.floor(inches / 12)}'${inches % 12}"` : (p.height || '—');
-
-    const rows = [
-        ['POS',     pos || '—'],
-        ['TEAM',    p.team || 'FA'],
-        ['AGE',     p.age != null ? p.age : '—'],
-        ['EXP',     p.years_exp != null ? (p.years_exp === 0 ? 'Rookie' : `${p.years_exp} yr`) : '—'],
-        ['HT / WT', `${htStr}${p.weight ? ' · ' + p.weight : ''}`],
-        ['COLLEGE', p.college || '—'],
-    ].map(([l, v]) =>
-        `<div class="detail-row"><span class="detail-label">${l}</span><span class="detail-value">${_escHtml(String(v))}</span></div>`
-    ).join('');
-
-    const rankBadge = `<span class="player-rank-badge ${p._adp <= 12 ? 'player-rank-badge--top' : ''}">#${p._adp} ADP</span>`;
-    const inj = p.injury_status
-        ? `<div class="player-team" style="color:var(--color-loss);font-size:0.68rem">${_escHtml(p.injury_status)}</div>`
-        : '';
-
-    card.innerHTML = `
-        <div class="player-card-top">
-            ${rankBadge}
-            ${typeof renderFollowStar === 'function' ? renderFollowStar('nfl', 'player', p.player_id, { cardCorner: true }) : ''}
-            <div class="player-avatar nfl-pos-grad" style="--pc:${posColor}">
-                ${headshot ? `<img class="player-headshot" src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
-                <span class="avatar-text">${initials}</span>
-            </div>
-            <div class="player-name">${_escHtml(p.full_name)}</div>
-            <div class="player-team">${p.team ? _escHtml(p.team) + ' · ' : ''}${_escHtml(pos)}${p.number ? ' · #' + p.number : ''}</div>
-            ${inj}
-        </div>
-        <div class="player-details">${rows}</div>
-        <div class="card-cta">VIEW PROFILE →</div>
-    `;
-    return card;
-}
-
 // ── Display: Trending (fantasy add/drop — reuses leaderboard panel) ──
 async function loadNFLLeaderboards() {
     const grid = document.getElementById('playersGrid');
@@ -1217,7 +1107,7 @@ function displayNFLTrending(adds, drops) {
 // Pure client-side filter/group over the already-cached Sleeper pool, same
 // data _renders_ inline elsewhere (roster rows, player cards) but was never
 // browsable league-wide before this. Reuses .nfl-lrow (Trending's row shape)
-// and _NFL_POS_FILTERS (Players' filter pills) rather than inventing either.
+// and _NFL_POS_FILTERS (shared with Waiver Wire) rather than inventing either.
 const _NFL_INJ_STATUS_ORDER = ['Questionable', 'IR', 'PUP', 'DNR', 'Sus'];
 
 // Injury status severity (DESIGN.md fix): "Questionable" is the routine,
@@ -1482,7 +1372,7 @@ const _NFL_STAT_COLORS = ['var(--nfl-cat-1)','var(--nfl-cat-2)','var(--nfl-cat-3
 
 let _nflLeaderSeason = null;  // null = current season (server auto-detects)
 
-async function loadNFLStatLeaders() {
+async function loadNFLStatLeaders(opts = {}) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
     grid.style.cssText = '';
@@ -1507,13 +1397,13 @@ async function loadNFLStatLeaders() {
             return;
         }
         try { await fetchNFLSleeperPool(); } catch (err) { Logger.warn('Sleeper pool fetch failed on leaders load', err, 'NFL'); }
-        displayNFLStatLeaders(data);
+        displayNFLStatLeaders(data, opts);
     } catch (err) {
         ErrorHandler.handle(grid, err, loadNFLStatLeaders, { tag: 'NFL', title: 'Failed to Load NFL Leaders' });
     }
 }
 
-function displayNFLStatLeaders(data) {
+function displayNFLStatLeaders(data, cfg = {}) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'players-grid';
     grid.style.cssText = '';
@@ -1530,6 +1420,13 @@ function displayNFLStatLeaders(data) {
         </label>
         <span style="font-size:0.74rem;color:var(--text-muted)">${data.season} regular-season leaders · Source: ESPN</span>`;
     grid.appendChild(bar);
+    if (cfg.fallback) {
+        const note = document.createElement('p');
+        note.className = 'nst-foot';
+        note.style.gridColumn = '1/-1';
+        note.textContent = "The full stats table couldn't load from ESPN, so these are the top five in each category.";
+        grid.appendChild(note);
+    }
     bar.querySelector('#nflLeaderSeason').addEventListener('change', e => { _nflLeaderSeason = e.target.value; loadNFLStatLeaders(); });
 
     const _nflLeaderNrm = x => (x || '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
@@ -1563,6 +1460,199 @@ function displayNFLStatLeaders(data) {
     });
 }
 
+// ── NFL Stats page (#nfl-leaders): every qualified player, sortable, shaded ──
+// ESPN's byathlete table is read straight from the browser (open CORS), so the
+// Cloudflare block on ESPN (D-176) never touches it. Pure logic: js/nflStatsTable.js.
+const _NST_CAP = 150;
+const _nst = { cat: 'passing', sort: null, dir: null, season: null, qualified: true, perGame: false,
+    q: '', team: '', pos: '', showAll: false, data: null, want: null, view: null };
+
+async function _nstFetch(cat, season, qualified) {
+    const key = `nfl:byathlete:${cat.id}:${season}:${qualified ? 'q' : 'all'}`;
+    const hit = ApiCache.get(key);
+    if (hit) { noteFetched('nfl/byathlete', hit.fetchedAt); return hit; }
+    const page = async n => {
+        const res = await fetch(NFLStatsTable.url(cat.id, season, qualified, n));
+        if (!res.ok) throw new Error(`NFL stats ${res.status}`);
+        return res.json();
+    };
+    const first = await page(1);
+    const pages = Math.min((first.pagination && first.pagination.pages) || 1, 3);
+    for (let n = 2; n <= pages; n++) first.athletes = (first.athletes || []).concat((await page(n)).athletes || []);
+    const parsed = NFLStatsTable.parse(first, cat.id);
+    if (!parsed.rows.length) throw new Error('NFL stats: no rows');
+    if (parsed.dropped.length) Logger.warn('ESPN stopped sending NFL stat columns', parsed.dropped, 'NFL');
+    parsed.fetchedAt = Date.now();
+    const live = season === NFL_STATS_SEASON && !_nflIsOffseason();
+    ApiCache.set(key, parsed, live ? ApiCache.TTL.SHORT : ApiCache.TTL.DAILY);
+    noteFetched('nfl/byathlete', parsed.fetchedAt);
+    return parsed;
+}
+
+// Shading always ranks against qualified players, so "All players" loads both lists.
+async function _nstLoad(cat, season, qualified) {
+    const q = await _nstFetch(cat, season, true);
+    const shown = (cat.toggle && !qualified) ? await _nstFetch(cat, season, false) : q;
+    return { parsed: shown, poolIds: new Set(q.rows.map(r => r.id)), fetchedAt: Math.min(q.fetchedAt, shown.fetchedAt) };
+}
+
+async function loadNFLStats(view) {
+    const grid = document.getElementById('playersGrid');
+    grid.className = '';
+    grid.style.cssText = '';
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
+    const p = NFLStatsTable.parseView(view) || { cat: 'passing', sort: null, dir: null };
+    // "All players" stays on the tab it was chosen for: carried into Passing it
+    // ranks a punter's one trick-play throw as the league's fewest interceptions.
+    if (p.cat !== _nst.cat) { _nst.pos = ''; _nst.showAll = false; _nst.qualified = true; }
+    Object.assign(_nst, p);
+    const cat = NFLStatsTable.category(_nst.cat);
+    const want = `${cat.id}:${_nst.season || 'cur'}:${cat.toggle ? _nst.qualified : true}`;
+    _nst.want = want;
+    if (!_nst.data || _nst.data.key !== want) {
+        grid.innerHTML = '<div class="skeleton-card" style="min-height:520px"></div>';
+        try {
+            let season = _nst.season || NFL_STATS_SEASON, data;
+            // The new season's table is empty until Week 1 is played; show last season meanwhile.
+            try { data = await _nstLoad(cat, season, _nst.qualified); }
+            catch (err) { if (_nst.season) throw err; season -= 1; data = await _nstLoad(cat, season, _nst.qualified); }
+            if (_nst.want !== want) return;
+            _nst.data = { ...data, key: want, season };
+        } catch (err) {
+            if (_nst.want !== want) return;
+            Logger.warn('NFL stats table unavailable, showing leader cards', err, 'NFL');
+            loadNFLStatLeaders({ fallback: true });
+            return;
+        }
+    }
+    try { await fetchNFLSleeperPool(); } catch (err) { Logger.warn('Sleeper pool fetch failed on stats load', err, 'NFL'); }
+    if (_nst.want !== want) return;
+    displayNFLStats();
+}
+
+
+function displayNFLStats() {
+    const grid = document.getElementById('playersGrid');
+    const T = NFLStatsTable, cat = T.category(_nst.cat), { parsed, poolIds } = _nst.data;
+    const cols = parsed.cols;
+    const sortCol = cols.find(c => c.k === _nst.sort) || cols.find(c => c.k === cat.sort) || cols[0];
+    if (_nst.sort && _nst.sort !== sortCol.k) _nst.sort = null;
+    const dir = (_nst.sort === sortCol.k && _nst.dir) || T.defaultDir(sortCol);
+    const base = _nst.perGame ? T.perGame(parsed.rows, cols) : parsed.rows;
+    const link = T.linker(_nflPool, _nflSleeperAbbr);
+    _nst.view = { cols, sortCol, dir, base, pct: T.percentiles(base, cols, poolIds), link };
+    const th = c => {
+        const s = c.k === sortCol.k ? ` aria-sort="${dir === 'asc' ? 'ascending' : 'descending'}"` : '';
+        return `<th class="nst-th" scope="col" data-sort="${c.k}"${s}><button type="button">${_escHtml(c.l)}</button></th>`;
+    };
+    grid.innerHTML = `<div class="nst">
+        ${_nstHeadHtml(cat)}
+        ${_nstLeadersHtml(T.leaders(parsed.rows, cat.id, poolIds), link)}
+        ${_nstControlsHtml(cat, parsed.rows)}
+        <div class="nst-wrap"><table class="nst-table">
+            <thead><tr><th class="nst-rk" scope="col">#</th><th class="nst-name" scope="col">Player</th>${cols.map(th).join('')}</tr></thead>
+            <tbody id="nstBody"></tbody>
+        </table></div>
+        <p class="nst-foot">Source: ESPN, ${_nst.data.season} regular season. Green and red mark the top and bottom quarter among qualified players with ${T.MIN_GP}+ games.</p>
+    </div>`;
+    _nstRenderBody();
+    _nstWire(grid);
+    _nstSyncHash();
+    document.querySelectorAll('.nav-tab[data-view="nfl-leaders"]').forEach(t => t.classList.add('active'));
+}
+
+function _nstHeadHtml(cat) {
+    const tabs = NFLStatsTable.CATEGORIES.map(c =>
+        `<button type="button" role="tab" class="nst-tab${c.id === cat.id ? ' is-on' : ''}" aria-selected="${c.id === cat.id}" data-nst-cat="${c.id}">${c.label}</button>`).join('');
+    return `<div class="nst-head"><h2 class="nst-title">${_nst.data.season} NFL Stats</h2>${freshnessHtml(_nst.data.fetchedAt)}</div>
+        <div class="nst-tabs" role="tablist">${tabs}</div>`;
+}
+
+function _nstLeadersHtml(groups, link) {
+    if (!groups.length) return '';
+    return `<div class="nst-leaders">${groups.map(g => `<div class="nst-lead">
+        <div class="nst-lead-h">${_escHtml(g.col.l)}</div>
+        ${g.top.map((r, i) => { const v = _escHtml(link(r)); return `<a class="nst-lead-r" href="#${v}" data-go="${v}">
+            <span class="nst-lead-n">${i + 1}. ${_escHtml(r.name)} <span class="nst-lead-t">${_escHtml(r.team)}</span></span>
+            <span class="nst-lead-v">${NFLStatsTable.fmt(g.col, r.v[g.col.k], false)}</span></a>`; }).join('')}
+    </div>`).join('')}</div>`;
+}
+
+function _nstControlsHtml(cat, rows) {
+    const chip = (attr, v, label, on) => `<button type="button" class="nst-chip${on ? ' is-on' : ''}" ${attr}="${v}">${label}</button>`;
+    const teams = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
+    let seasons = '';
+    for (let y = NFL_STATS_SEASON; y >= NFL_LEADERS_MIN_SEASON; y--) seasons += `<option value="${y}"${y === _nst.data.season ? ' selected' : ''}>${y}</option>`;
+    return `<div class="nst-controls">
+        <input id="nstSearch" class="nst-search" type="search" placeholder="Find a player" aria-label="Find a player" value="${_escHtml(_nst.q)}">
+        <select id="nstTeam" aria-label="Team"><option value="">All teams</option>${teams.map(t => `<option value="${_escHtml(t)}"${t === _nst.team ? ' selected' : ''}>${_escHtml(t)}</option>`).join('')}</select>
+        <select id="nstSeason" aria-label="Season">${seasons}</select>
+        ${cat.pos.length ? `<span class="nst-group">${chip('data-nst-pos', '', 'All', !_nst.pos)}${cat.pos.map(p => chip('data-nst-pos', p, p, _nst.pos === p)).join('')}</span>` : ''}
+        <span class="nst-group">${chip('data-nst-pg', '0', 'Totals', !_nst.perGame)}${chip('data-nst-pg', '1', 'Per game', _nst.perGame)}</span>
+        ${cat.toggle ? `<span class="nst-group">${chip('data-nst-q', '1', 'Qualified', _nst.qualified)}${chip('data-nst-q', '0', 'All players', !_nst.qualified)}</span>` : ''}
+    </div>`;
+}
+
+function _nstRenderBody() {
+    const body = document.getElementById('nstBody');
+    if (!body || !_nst.view) return;
+    const T = NFLStatsTable, { cols, sortCol, dir, base, pct, link } = _nst.view;
+    const rows = T.sortRows(T.filterRows(base, { q: _nst.q, team: _nst.team, pos: _nst.pos, cat: _nst.cat }), sortCol.k, dir);
+    if (!rows.length) { body.innerHTML = `<tr><td class="nst-empty" colspan="${cols.length + 2}">No players match these filters.</td></tr>`; return; }
+    const shown = _nst.showAll ? rows : rows.slice(0, _NST_CAP);
+    let html = shown.map((r, i) => {
+        const p = pct[r.id] || {}, go = _escHtml(link(r));
+        const cells = cols.map(c => {
+            const t = T.tier(p[c.k]);
+            const cls = `${c.k === sortCol.k ? 'nst-sorted' : ''}${t ? ` nst-${t}` : ''}`.trim();
+            return `<td${cls ? ` class="${cls}"` : ''}>${T.fmt(c, r.v[c.k], _nst.perGame)}</td>`;
+        }).join('');
+        return `<tr data-go="${go}"><td class="nst-rk">${i + 1}</td><th class="nst-name" scope="row"><span class="nst-pl">
+            <img src="${_escHtml(r.headshot)}" alt="" loading="lazy" data-hide-on-error>
+            <span class="nst-pt"><a class="nst-pn" href="#${go}" data-go="${go}">${_escHtml(r.name)}</a><span class="nst-pm">${_escHtml(r.team)} · ${_escHtml(r.pos)}</span></span>
+        </span></th>${cells}</tr>`;
+    }).join('');
+    if (rows.length > shown.length) html += `<tr><td colspan="${cols.length + 2}"><button type="button" class="nst-more" data-nst-more>Show all ${rows.length} players</button></td></tr>`;
+    body.innerHTML = html;
+}
+
+function _nstWire(grid) {
+    const root = grid.querySelector('.nst');
+    root.addEventListener('click', e => {
+        const t = e.target;
+        const go = t.closest('[data-go]');
+        if (go) { e.preventDefault(); navigateTo(go.dataset.go); return; }
+        const tab = t.closest('[data-nst-cat]');
+        if (tab) { navigateTo(NFLStatsTable.viewFor({ cat: tab.dataset.nstCat })); return; }
+        const th = t.closest('[data-sort]');
+        if (th) {
+            const col = _nst.view.cols.find(c => c.k === th.dataset.sort);
+            _nst.dir = col.k === _nst.view.sortCol.k ? (_nst.view.dir === 'asc' ? 'desc' : 'asc') : NFLStatsTable.defaultDir(col);
+            _nst.sort = col.k;
+            displayNFLStats();
+            return;
+        }
+        const pos = t.closest('[data-nst-pos]');
+        if (pos) { _nst.pos = pos.dataset.nstPos; _nst.showAll = false; displayNFLStats(); return; }
+        const pg = t.closest('[data-nst-pg]');
+        if (pg) { _nst.perGame = pg.dataset.nstPg === '1'; displayNFLStats(); return; }
+        const q = t.closest('[data-nst-q]');
+        if (q) { _nst.qualified = q.dataset.nstQ === '1'; _nst.showAll = false; loadNFLStats(AppState.currentView); return; }
+        if (t.closest('[data-nst-more]')) { _nst.showAll = true; _nstRenderBody(); }
+    });
+    root.querySelector('#nstSearch').addEventListener('input', e => { _nst.q = e.target.value; _nst.showAll = false; _nstRenderBody(); });
+    root.querySelector('#nstTeam').addEventListener('change', e => { _nst.team = e.target.value; _nst.showAll = false; _nstRenderBody(); });
+    root.querySelector('#nstSeason').addEventListener('change', e => { _nst.season = Number(e.target.value); _nst.team = ''; loadNFLStats(AppState.currentView); });
+}
+
+// Sort and tab live in the hash so a shared link reopens the same table.
+function _nstSyncHash() {
+    const view = NFLStatsTable.viewFor({ cat: _nst.cat, sort: _nst.sort, dir: _nst.sort ? _nst.view.dir : null });
+    AppState.currentView = view;
+    if (location.hash === '#' + view) return;
+    history.replaceState({ ...(history.state || {}), view }, '', location.pathname + location.search + '#' + view);
+}
+
 // ── Team abbr alias: ESPN → Sleeper (Washington + legacy Oakland differ) ──
 function _nflSleeperAbbr(abbr) {
     return ({ WSH: 'WAS', OAK: 'LV' })[abbr] || abbr;
@@ -1574,7 +1664,7 @@ async function showNFLPlayerDetail(id) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
     try {
         await fetchNFLSleeperPool();
     } catch (err) {
@@ -1590,7 +1680,7 @@ function _renderNFLPlayerDetail(p) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', p.full_name);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', p.full_name);
 
     const pos      = p.position || (p.fantasy_positions && p.fantasy_positions[0]) || '';
     const posColor = _NFL_POS_COLOR[pos] || 'var(--accent)';
@@ -1626,7 +1716,7 @@ function _renderNFLPlayerDetail(p) {
     for (let _y = NFL_STATS_SEASON; _y >= _rookieSeason; _y--) _seasonOpts += `<option value="${_y}" ${_y === NFL_STATS_SEASON ? 'selected' : ''}>${_y}</option>`;
 
     const _nflHeader = detailHeader({
-        back: { view: 'nfl-players', label: 'Players' },
+        back: { view: 'nfl-leaders', label: 'Stats' },
         actions: [{ label: 'Share', onclick: "window._shareCurrentPage && window._shareCurrentPage()", title: 'Copy link' }],
         avatar: { headshotHtml: headshotImg, initials, accent: teamColor, className: 'nfl-hero-avatar' },
         name: p.full_name,
@@ -2704,7 +2794,7 @@ async function showNFLEspnPlayer(espnId) {
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:320px"></div>`;
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', null);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', null);
     _nflDetailPlayer = null;
     _nflEspnId = espnId;
 
@@ -2717,7 +2807,7 @@ async function showNFLEspnPlayer(espnId) {
         prof = pr || {}; career = cr;
     } catch (err) { Logger.warn('ESPN player profile/career fetch failed', err, 'NFL'); }
     if (!prof.found) { ErrorHandler.renderEmptyState(grid, 'Player not found'); return; } // icon arg removed 2026-09-07 -- was already dead
-    if (window.setBreadcrumb) setBreadcrumb('nfl-players', prof.name);
+    if (window.setBreadcrumb) setBreadcrumb('nfl-leaders', prof.name);
 
     const years = [];
     (career && career.categories || []).forEach(c => (c.seasons || []).forEach(sn => { if (sn.year && years.indexOf(sn.year) < 0) years.push(sn.year); }));
@@ -2735,7 +2825,7 @@ async function showNFLEspnPlayer(espnId) {
     grid.innerHTML = `
         <div class="player-detail-header">
             <div style="display:flex;align-items:center;justify-content:space-between">
-                <button onclick="navigateTo('nfl-players')" class="back-button">← Players</button>
+                <button onclick="navigateTo('nfl-leaders')" class="back-button">← Stats</button>
                 ${retired ? '<span class="player-hero-pos" style="background:var(--bg-elevated);color:var(--text-muted)">Retired</span>' : ''}
             </div>
             <div class="player-hero">
@@ -2774,6 +2864,7 @@ async function showNFLEspnPlayer(espnId) {
 if (typeof window !== 'undefined') {
     window.loadNFLTeams        = loadNFLTeams;
     window.showNFLEspnPlayer   = showNFLEspnPlayer;
+    window.loadNFLStats        = loadNFLStats;
     window.loadNFLRankings     = loadNFLRankings;
     window.loadNFLCompare      = loadNFLCompare;
     window.showNFLPlayerDetail = showNFLPlayerDetail;
@@ -2792,7 +2883,5 @@ if (typeof window !== 'undefined') {
     window.displayNFLWaivers   = displayNFLWaivers;
     window.loadNFLStatLeaders  = loadNFLStatLeaders;
     window.displayNFLStatLeaders = displayNFLStatLeaders;
-    window.loadNFLPlayers      = loadNFLPlayers;
-    window.displayNFLPlayers   = displayNFLPlayers;
     window.updateNFLTicker     = updateNFLTicker;
 }

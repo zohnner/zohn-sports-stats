@@ -3922,3 +3922,30 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Decision.** Three changes in this PR: a TikTok channel bucket in the visit log, with `?utm_source=tiktok` on the profile link; `tools/audit/no-track.cjs`, used by the page walk and route crawl so their visits are not counted; and `GET /api/stats`, a read-only route gated by `STATS_KEY` that returns aggregates only. Owner decisions, 2026-11-15: the four-agent roster is approved (Muse, a daily read-only desk run, the parity run widened into a build run, and the Monday audit run with a growth half). Raw traffic counts stay out of the public brief issue because the repo is public. The share queue goes to manual dispatch in a later PR. Owner setup owed after merge: add `STATS_KEY` (a random string of at least 32 bytes) as a Secret in Cloudflare Pages and also to the desk and audit routines' environments, and set the TikTok profile link. Design: `docs/superpowers/specs/2026-11-15-agent-roster-design.md`.
 
 **Continuation (2026-11-15, desk run).** `tools/desk/RUNBOOK.md` is the second part of the roster: a daily read-only run that posts one brief on a monthly `[desk] Daily brief` issue. It may open that issue and post one comment a day, and nothing else. Owner setup: create the routine (09:30 ET, same cloud environment as the audit run), add `STATS_KEY` to that environment, and create the `desk` label. TikTok measurement is set aside for now (owner decision 2026-11-15): the profile cannot carry a link yet, and the post log in the spec (Part 6) is not being built. The `tiktok` channel bucket stays in the visit log and will start counting once a link with `?utm_source=tiktok` exists.
+
+## D-203 — NFL Stats: one sortable table replaces Players and Leaders
+
+**Date:** 2026-11-16. **Status:** built on `feat/nfl-stats-table`, awaiting owner review.
+
+**Why.** The NFL stats surfaces could not compete with Pro-Football-Reference, ESPN or NFL.com, which all lead with one dense, sortable table per category. Leaders showed nine cards of five names and one number each (the cap was structural: `/api/nflstats` resolves five athletes per category, and it currently returns 502 under the D-176 block). Players, the first NFL tab, showed 120 bio cards ordered by ADP and no stats at all.
+
+**What.** One page, `#nfl-leaders` labeled "Stats", with Passing/Rushing/Receiving/Defense/Kicking/Scoring tables of every qualified player. It has click-to-sort columns, name search, team and position filters, a Totals/Per game toggle, a Qualified/All players toggle on the offensive tabs, a season selector back to 2000, and a top-three leader strip. Cells are shaded by percentile, ranked only among qualified players with 5+ games, so a backup's one completion never paints as league-best. Tab and sort live in the hash so a link reproduces the view.
+
+**Data.** ESPN `site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byathlete`, read from the browser. It sends open CORS headers and the host was already in `connect-src`, so the Cloudflare block on ESPN (D-176) does not apply and no proxy was added. Verified live 2026-11-15/16:
+- **Sorting** works in both directions.
+- **One call returns a whole category, up to ESPN's 1,000-row page cap.** Defense runs to about 1,330 rows, so the client reads the remaining pages.
+- **Kicking** answers only as `specialTeams:kicking`.
+- **Seasons** go back to 2000.
+
+The rejected options were a Pages Function proxy, blocked by D-176, and nflverse player CSVs, which are multi-megabyte and a week behind.
+
+**Choices.**
+- **The view keeps the id `nfl-leaders`,** not the `nfl-stats` named in the spec. The audit matrix, `/nfl/leaders`, `failSafeRoute` and `_PATH_SINGLE_VIEWS` already key on it.
+- **`nfl-players` redirects to it.** The ADP bio-card page was removed, because ADP Rankings already lists players by ADP with tiers and injury status.
+- **Defense keeps defensive positions only.** ESPN's list includes every receiver and kicker with a special-teams tackle, which would flood the table and drag the percentile curve.
+- **Switching tabs resets to qualified players.** Carried into Passing, "All players" ranked a punter's one trick-play throw as the league's fewest interceptions.
+- **The offseason strip's hardcoded "2025 Leaders" link is gone.**
+
+**Checks.** `tests/nflStatsTable.test.js` runs against a trimmed real response. Contract `nfl-stats-byathlete` checks every column the table reads, with a floor of 20 qualified passers. It is 20 and not 32 because the nightly run probes the latest game day, and early in Week 1 few passers qualify. Spec: `docs/superpowers/specs/2026-11-16-nfl-stats-table-design.md`; plan: `docs/superpowers/plans/2026-11-16-nfl-stats-table.md`.
+
+**Not done.** Team offense/defense tables, postseason (`seasontype=3`), Next Gen/EPA columns and CSV export. Each can build on this table.
