@@ -3976,3 +3976,30 @@ The rejected options were a Pages Function proxy, blocked by D-176, and nflverse
 **Not changed:** `MLB_SEASON`'s Nov/Dec value (year − 1, arguably the just-finished season) is used across the whole MLB section; changing it is a separate owner decision. This fix does not depend on it: whichever value it takes in Nov–Feb, it is not the calendar year, so the gate stays closed. `pickHero` eligibility is unchanged.
 
 **Guards:** `tests/homeLive.test.js` — gate open/closed across Jul, Nov and Feb; tie read as 0; clinched and unplayed divisions skipped.
+
+## D-206 — MLB season and phase come from statsapi's calendar: the season ends when the World Series does (2026-11-17)
+
+**Owner direction:** "we need dynamic handling for the seasons timing, it could be as simple as when the world series is over the season is over." Follows D-205, which left `MLB_SEASON`'s Nov/Dec value flagged for this decision.
+
+**Before:** three month rules disagreed. The client's `MLB_SEASON` was the calendar year Mar–Oct and the previous year Nov–Feb, so in Nov/Dec it skipped the season that had just ended. The edge templates `/mlb/leaders` and `/mlb/player/*` used Jan–Feb as the previous year, so today they showed 2026 while the app showed 2025. And `_sportPickerStatus` called all of Mar–Oct "Regular season".
+
+**Decision:** one rule, read from statsapi `/seasons/{year}?sportId=1`. Checked 2026-11-17: `postSeasonEndDate` is the date of the real last World Series game (2024 ended in five on Oct 30 and reads `2024-10-30`; 2025 went seven, `2025-11-01`; 2026 `2026-10-28`), so the day after it the phase is `offseason`. `season` is the calendar year once that year's regular season has started, otherwise the year before; spring training shows last season instead of empty boards. `js/mlbSeason.js` (`MLBSeason`, loaded before `mlb.js`) is the client copy, and `functions/_mlbSeason.js` is the edge copy, using the date in Eastern time. Both fall back to a calendar guess when statsapi doesn't answer.
+
+**How the client stays synchronous:** `MLB_SEASON` is still set at script load, from dates stored in localStorage (`zs_mlb_season_dates`), or the guess on a first visit. Boot then calls `MLBSeason.refresh()` through `mlbFetch`: every 12h, or hourly during the postseason in case `postSeasonEndDate` holds a scheduled date until the Series ends (not verified either way; the hourly check bounds it). If the season or phase changed, it resets MLB state the way the season selector does (`_resetMLBSeasonState`, extracted from it) and re-renders home or an MLB list view. Detail pages keep what they loaded.
+
+**Consumers moved:** D-205's hero and pennant gate now open only in phase `regular`, and `HomeLive.mlbRaceSeasonOpen` is removed. The MLB sport-picker status reads the phase (Regular season / Postseason / Spring training / Offseason). Both edge templates use `functions/_mlbSeason.js`, and so does `tools/gen-sitemap.cjs`, which had a fourth rule (Mar–Nov current); it evaluates the import-free source the way the tests do, because its workflow pins no Node version. Dry run: 1,554 URLs against 1,553 committed.
+
+**Effect today (2026-11-17):** MLB Leaders, Players, Teams and the rest show 2026, the season that just ended, where they showed 2025.
+
+**Guards:** `tests/mlbSeason.test.js` covers:
+- every phase boundary on the real 2026 dates;
+- a World Series that ends early;
+- the calendar fallback;
+- refresh freshness, including the hourly postseason re-check and the new-year refetch;
+- client and edge resolving every day of 2026 identically, with a planted one-character drift confirmed to fail it.
+
+Browser check on a local server, cold and warm loads: `MLB_SEASON` 2026, phase `offseason` from stored API dates, every MLB request at `season=2026`, picker "MLB Offseason", no race text, no exceptions.
+
+**Found while building:** the first picker version put its status table in a top-level `const` below `_sportPickerStatus`. Boot renders home synchronously before that line runs (the temporal dead zone CLAUDE.md warns about), so home threw on every load. The browser check caught it, and the table moved inside the function.
+
+**Not covered:** `tools/contracts/mlb.cjs` still guesses the season by month (Jan–Feb is the previous year) when its offseason probe finds none. It builds routes synchronously, so moving it means restructuring the contract run; in March before Opening Day its `/teams/145/stats` contract may ask for a season with no stats yet. NBA's `CURRENT_SEASON` and the other sports' season models are unchanged. The worker `push-game-alerts.js` has no MLB season rule.

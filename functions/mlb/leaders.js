@@ -9,6 +9,7 @@
 // links site-wide despite ~1,500 pages in the sitemap.
 
 import { shell, rawShell } from '../_shell.js';
+import { mlbSeason } from '../_mlbSeason.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -36,11 +37,6 @@ const MLB_TEAM_ABBR = {
     'Texas Rangers': 'TEX', 'Toronto Blue Jays': 'TOR', 'Washington Nationals': 'WSH'
 };
 
-function mlbSeason() {
-    const n = new Date(); const m = n.getUTCMonth();
-    return (m <= 1) ? n.getUTCFullYear() - 1 : n.getUTCFullYear(); // Jan/Feb → prior season
-}
-
 const CATS = [
     { cat: 'homeRuns',          group: 'hitting',  label: 'Home Run' },
     { cat: 'battingAverage',    group: 'hitting',  label: 'Batting Average' },
@@ -54,7 +50,7 @@ export async function onRequest(context) {
     const { request, env } = context;
     try {
         if (!env.ASSETS) return shell(env, request.url);
-        const season = mlbSeason();
+        const { season } = await mlbSeason();
         const r = await fetch(
             `https://statsapi.mlb.com/api/v1/stats/leaders?leaderCategories=${CATS.map(c => c.cat).join(',')}&season=${season}&sportId=1&limit=5`,
             { cf: { cacheTtl: 900, cacheEverything: true } }

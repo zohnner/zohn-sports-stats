@@ -3,9 +3,10 @@
 // Official MLB Stats API: https://statsapi.mlb.com/api/v1
 // ============================================================
 
-let MLB_SEASON = new Date().getMonth() >= 2 && new Date().getMonth() <= 9  // Mar–Oct = current season
-    ? new Date().getFullYear()
-    : new Date().getFullYear() - 1;   // Nov–Feb = previous completed season
+// The season to show comes from MLBSeason (js/mlbSeason.js, D-206); app.js
+// corrects it at boot once statsapi's calendar answers. The fallback only
+// runs where mlb.js is loaded alone (the unit tests).
+let MLB_SEASON = typeof MLBSeason !== 'undefined' ? MLBSeason.current().season : new Date().getFullYear();
 
 // True when it's noon–midnight ET — games are live or recently completed,
 // so season stat corrections are most likely. Use SHORT TTL instead of MEDIUM.
@@ -7375,7 +7376,7 @@ Object.assign(AppState, {
     _mlbTeamRosters:       {},
 });
 
-function setMLBSeason(year) { MLB_SEASON = year; _ensureWrcConstants(year); }
+function setMLBSeason(year) { MLB_SEASON = year; if (typeof window !== 'undefined') window.MLB_SEASON = year; _ensureWrcConstants(year); }
 
 if (typeof window !== 'undefined') {
     window.MLB_SEASON              = MLB_SEASON;

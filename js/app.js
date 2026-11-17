@@ -18,6 +18,16 @@ Logger.info('Initializing SportStrata…', undefined, 'APP');
 })();
 
 
+function _resetMLBSeasonState() {
+    AppState.mlbPlayers      = { hitting: [], pitching: [] };
+    AppState.mlbPlayerStats  = { hitting: {}, pitching: {} };
+    AppState.mlbTeams        = [];
+    AppState.mlbGames        = [];
+    AppState.mlbStandings    = null;
+    AppState.mlbLeaderSplits = null;
+    if (typeof _clearMLBLeaderSplitsCache === 'function') _clearMLBLeaderSplitsCache();
+}
+
 // Season selector — switches CURRENT_SEASON and reloads the current view
 (function setupSeasonSelector() {
     const sel = document.getElementById('seasonSelect');
@@ -34,14 +44,7 @@ Logger.info('Initializing SportStrata…', undefined, 'APP');
         AppState.allGames        = [];
         AppState.nbaStatsMap     = null;
         AppState._nbaStatsSeason = null;
-        // MLB season state
-        AppState.mlbPlayers      = { hitting: [], pitching: [] };
-        AppState.mlbPlayerStats  = { hitting: {}, pitching: {} };
-        AppState.mlbTeams        = [];
-        AppState.mlbGames        = [];
-        AppState.mlbStandings    = null;
-        AppState.mlbLeaderSplits = null;
-        if (typeof _clearMLBLeaderSplitsCache === 'function') _clearMLBLeaderSplitsCache();
+        _resetMLBSeasonState();
         // Sync the MLB module's own season variable
         if (typeof setMLBSeason === 'function') setMLBSeason(year);
         // Teams data is season-independent; keep allTeams
@@ -328,6 +331,26 @@ let _homeNewsCache = null;
 
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
+
+// D-206: correct the MLB season and phase from statsapi's calendar. They can
+// only differ from what boot just rendered on a first visit (no stored dates)
+// or the day a phase turns over, e.g. the World Series ending; re-render
+// home or an MLB list view then. Detail pages keep what they loaded.
+(async () => {
+    const before = MLBSeason.current();
+    let next;
+    try {
+        next = await MLBSeason.refresh(year => mlbFetch(`/seasons/${year}`, { sportId: 1 }, ApiCache.TTL.LONG));
+    } catch (e) {
+        Logger.warn('MLB season calendar unavailable', e.message, 'MLB');
+        return;
+    }
+    if (next.season === MLB_SEASON && next.phase === before.phase) return;
+    Logger.info(`MLB season ${MLB_SEASON}/${before.phase} → ${next.season}/${next.phase}`, undefined, 'MLB');
+    if (next.season !== MLB_SEASON) { _resetMLBSeasonState(); setMLBSeason(next.season); }
+    const view = AppState.currentView || '';
+    if (view === 'home' || /^mlb-[a-z]+$/.test(view)) renderCurrentView(view);
+})();
 
 
 // Populate the ticker independently so it works on first load
@@ -2645,7 +2668,7 @@ async function _renderHomeHero(games) {
     });
     const winner = HomeLive.pickHero(candidates, Date.now());
     let hero = winner ? winner.heroFn(winner.g, winner.live ? 'live' : 'upcoming') : null;
-    if (!hero && HomeLive.mlbRaceSeasonOpen(MLB_SEASON, Date.now())) hero = await _heroFromStandings().catch(() => null);
+    if (!hero && MLBSeason.phase() === 'regular') hero = await _heroFromStandings().catch(() => null);
 
     if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
     host.className = `home-hero home-hero--${hero.kind}`;
@@ -2915,7 +2938,7 @@ function _mlbLeaderStatMoments() {
 // AppState.mlbStandings/mlbOdds this used to compute inline in
 // _renderHomeMoment -- lifted, not re-derived.
 async function _mlbPennantStatMoment() {
-    if (!HomeLive.mlbRaceSeasonOpen(MLB_SEASON, Date.now())) return null;
+    if (MLBSeason.phase() !== 'regular') return null;
     try {
         // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
         // as _mlbTrendingStatMoment above -- the AppState.mlbStandings check
@@ -3309,7 +3332,13 @@ function enterSport(sport) {
 
 function _sportPickerStatus(id) {
     const m = new Date().getMonth() + 1; // 1=Jan
-    if (id === 'mlb')   return (m >= 3 && m <= 10) ? { cls: 'active', label: 'Regular season' } : { cls: 'idle', label: 'Offseason' };
+    if (id === 'mlb') {
+        const phase = MLBSeason.phase();
+        if (phase === 'regular')    return { cls: 'active', label: 'Regular season' };
+        if (phase === 'postseason') return { cls: 'active', label: 'Postseason' };
+        if (phase === 'preseason')  return { cls: 'active', label: 'Spring training' };
+        return { cls: 'idle', label: 'Offseason' };
+    }
     if (id === 'nfl')   {
         // Sourced from _nflSeasonPhase() (js/nfl.js, loaded before app.js) instead
         // of a second, independent month-range check — a hardcoded calendar
