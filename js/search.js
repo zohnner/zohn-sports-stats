@@ -220,7 +220,7 @@ function _buildGroups(q) {
         sport:  'nfl',
         type:   'player',
         name:   p.full_name,
-        sub:    `${p.team || 'FA'} · ${p.position || '—'}${p._adp ? ` · #${p._adp} ADP` : ''}`,
+        sub:    `${p.team || 'FA'} · ${p.position || '—'}${p.number != null && p.number !== '' ? ` · #${p.number}` : ''}${p._adp ? ` · ADP ${p._adp}` : ''}`,
         badge:  'NFL',
         avatarUrl: typeof getNFLSleeperHeadshot === 'function' ? getNFLSleeperHeadshot(p.player_id) : '',
         action: () => {

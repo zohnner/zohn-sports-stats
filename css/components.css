@@ -5016,6 +5016,8 @@
 .ss-story__hook { font-size: var(--text-sm); color: var(--text-muted); }
 .ss-story__meta { font-size: var(--text-sm); color: var(--text-muted); border-bottom: 1px solid var(--border-default); padding-bottom: var(--space-4); }
 .ss-story__disclosure { font-size: var(--text-sm); color: var(--text-muted); border-top: 1px solid var(--border-default); padding-top: var(--space-4); margin-top: var(--space-8); }
+.ss-stories__sports { margin: var(--space-2) 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted); }
+.ss-stories__sports strong { color: var(--text-primary); }
 .ss-stories__list { list-style: none; padding: 0; }
 .ss-stories__list li { padding: var(--space-4) 0; border-bottom: 1px solid var(--border-default); }
 .ss-stories__list li > a { font-weight: 700; font-size: var(--text-lg); text-decoration: none; }
