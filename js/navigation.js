@@ -431,7 +431,6 @@ const _NAV_META = {
     'mlb-highlight-card': { label: 'Highlight Card' },
     'mlb-compare':   { label: 'Compare' },
     'mlb-scorecard': { label: 'Scorecard' },
-    'nfl-players':   { label: 'NFL Players' },
     'nfl-rankings':  { label: 'Draft HQ · ADP Rankings' },
     'nfl-draftkit':  { label: 'Draft HQ' },
     'nfl-mock':      { label: 'Draft HQ · Mock Draft' },
@@ -442,7 +441,7 @@ const _NAV_META = {
     // that isn't reachable through Draft HQ's own nav strip anymore.
     'nfl-myleague':  { label: 'Fantasy · My League' },
     'nfl-compare':   { label: 'Player Compare' },
-    'nfl-leaders':   { label: 'NFL Leaders' },
+    'nfl-leaders':   { label: 'NFL Stats' },
     'nfl-trending':  { label: 'Fantasy · Trending' },
     'nfl-injuries':  { label: 'Fantasy · Injury Report' },
     'nfl-waivers':   { label: 'Fantasy · Waiver Wire' },
@@ -721,11 +720,10 @@ function _syncNFLOffseasonStrip(view) {
     strip.setAttribute('role', 'status');
     strip.setAttribute('aria-live', 'polite');
     strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is in the offseason — preseason returns in August, the regular season in September. Standings &amp; tools are open year-round:
-            <button class="nfl-offseason-strip__link" data-view="nfl-players">Players</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-leaders">Stats</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
-            <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button> ·
-            <button class="nfl-offseason-strip__link" data-view="nfl-leaders">2025 Leaders</button></span>
+            <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button></span>
         <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">✕</button>`;
     main.insertBefore(strip, grid);
 
@@ -758,6 +756,11 @@ function _renderNFLView(view) {
     if (view.startsWith('nfl-player-')) {
         if (viewCount) viewCount.textContent = 'NFL Player';
         showNFLPlayerDetail(view.slice('nfl-player-'.length));
+        return;
+    }
+    if (/^nfl-leaders(?:$|[-~])/.test(view)) {
+        if (viewCount) viewCount.textContent = 'NFL Stats';
+        loadNFLStats(view);
         return;
     }
     if (view.startsWith('nfl-team-')) {
@@ -794,8 +797,8 @@ function _renderNFLView(view) {
             if (typeof loadNFLSOS === 'function') loadNFLSOS();
             break;
         case 'nfl-players':
-            if (viewCount) viewCount.textContent = 'NFL Players';
-            loadNFLPlayers();
+            if (viewCount) viewCount.textContent = 'NFL Stats';
+            loadNFLStats('nfl-leaders');
             break;
         case 'nfl-rankings':
             if (viewCount) viewCount.textContent = 'Draft HQ · Rankings';
@@ -804,10 +807,6 @@ function _renderNFLView(view) {
         case 'nfl-compare':
             if (viewCount) viewCount.textContent = 'Player Compare';
             loadNFLCompare();
-            break;
-        case 'nfl-leaders':
-            if (viewCount) viewCount.textContent = 'NFL Leaders';
-            loadNFLStatLeaders();
             break;
         case 'nfl-powerrankings':
             if (viewCount) viewCount.textContent = 'NFL Power Rankings';
@@ -1041,6 +1040,7 @@ function _loadFromHash() {
     const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
     const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
     const nflEspnMatch       = hash.match(/^nfl-player-espn-(\d+)$/);
+    const nflStatsMatch      = /^nfl-leaders[-~]/.test(hash);
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
@@ -1076,6 +1076,10 @@ function _loadFromHash() {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
+    } else if (nflStatsMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        navigateTo(hash, false);
     } else if (nflEspnMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
@@ -1225,11 +1229,11 @@ const SUB_NAV_TABS = {
         { v: 'news', l: 'News' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players' },
+        { v: 'nfl-leaders', l: 'Stats' },
         { v: 'nfl-teams', l: 'Teams' },
         { v: 'nfl-standings', l: 'Standings' },
-        { l: 'Stats & Leaders', cols: [
-            { items: [{ v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-powerrankings', l: 'Power Rankings' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
+        { l: 'Analytics', cols: [
+            { items: [{ v: 'nfl-powerrankings', l: 'Power Rankings' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
         ] },
         // Grouped into Draft Prep / In-Season (D-103) — mirrors what MENU_TABS.nfl's
         // mobile grouping already did; the desktop dropdown was the one place this
@@ -1385,7 +1389,7 @@ const MENU_TABS = {
     ],
     nfl: [
         { group:'Stats & Leaders' },
-        { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
+        { v:'nfl-leaders', l:'Stats', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' },
         { v:'nfl-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/nfl/stories', l:'Stories', i:'extra' }, { v:'news', l:'News', i:'extra' },
@@ -1452,8 +1456,8 @@ const BOTTOM_NAV_TABS = {
         { more: true, l: 'More', i: 'extra' },
     ],
     nfl: [
-        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-players', l: 'Players', i: 'players' },
-        { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
+        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-leaders', l: 'Stats', i: 'leaders' },
+        { v: 'nfl-standings', l: 'Standings', i: 'standings' }, { v: 'nfl-teams', l: 'Teams', i: 'teams' },
         { more: true, l: 'More', i: 'extra' },
     ],
     ncaaf: [
@@ -1866,6 +1870,7 @@ function _viewPath(view) {
     if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
     if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;
     if ((m = /^nba-team-([A-Z]{2,4})$/i.exec(v))) return `/nba/team/${m[1].toLowerCase()}`;
+    if (/^nfl-leaders[-~]/.test(v)) return '/nfl/leaders';
     return null;
 }
 

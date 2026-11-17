@@ -53,7 +53,7 @@ async function getJson(url) {
 // js/config.js _espnFetch: proxy first, then ESPN directly from the browser
 // (leaders rebuilt from site/v3). Running that real function here keeps this
 // check on the code readers run, not a copy that can drift from it.
-const ESPN_ROUTE = /^\/api\/(nfl|ncaaf|nba|ncaab)(standings|stats)?(\?|$)/;
+const ESPN_ROUTE = /^\/api\/(?:(?:nfl|ncaaf|nba|ncaab)(?:standings|stats)?|nfl(?:player|athlete|career|gamelog)|ncaafgamelog)(\?|$)/;
 
 function browserFallbackFrom(base) {
     const noop = () => {};
@@ -147,7 +147,15 @@ function settle(r) {
     return r;
 }
 
-async function runContract(c, ctx, fetchJson) {
+// A 5xx or a network error gets one more try before it counts: ESPN's v3
+// leaders feed 500s on a request that answers a few seconds later
+// (ncaab-leaders-v3 failed the 2026-11-16 Integrity Audit this way and passed
+// on a manual re-check). A retry that recovers is kept as a note, so a feed
+// that flakes every night still shows up in the report.
+const RETRY_DELAY_MS = 3000;
+const transient = res => !res.ok && (res.status === 0 || res.status >= 500);
+
+async function runContract(c, ctx, fetchJson, { retryDelayMs = RETRY_DELAY_MS } = {}) {
     // resolve: a route that needs an id from another feed (an athlete from the
     // leaders list, the ESPN event for an MLB date) looks it up first.
     if (c.resolve) {
@@ -162,7 +170,13 @@ async function runContract(c, ctx, fetchJson) {
     }
     const url = c.route(ctx);
     const r = result(c.id, url);
-    const res = await fetchJson(url);
+    let res = await fetchJson(url);
+    if (transient(res)) {
+        const first = res.status ? `HTTP ${res.status}` : 'network error';
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        res = await fetchJson(url);
+        if (res.ok) r.notes.push(`first try got ${first}; passed on retry`);
+    }
     if (!res.ok) {
         if (looksLikeHtml(res.bodySnippet)) {
             r.failures.push(`HTTP ${res.status}: upstream returned HTML (likely WAF block): ${res.bodySnippet}`);

@@ -421,9 +421,11 @@ test('fetchJsonFrom sends ESPN proxy routes through the fallback and everything 
     const get = async u => { seen.push(['get', u]); return { ok: true }; };
     const espn = async u => { seen.push(['espn', u]); return { ok: true }; };
     const f = check.fetchJsonFrom('https://s', get, espn);
-    for (const p of ['/api/nfl?path=/scoreboard', '/api/ncaafstandings?season=2026', '/api/nflstats', '/api/sleeper?path=/x', '/api/mlb?url=x', '/api/nflx'])
+    for (const p of ['/api/nfl?path=/scoreboard', '/api/ncaafstandings?season=2026', '/api/nflstats',
+        '/api/nflplayer?name=x&team=GB', '/api/nflathlete?id=1', '/api/nflcareer?id=1', '/api/nflgamelog?id=1', '/api/ncaafgamelog?id=1',
+        '/api/sleeper?path=/x', '/api/mlb?url=x', '/api/nflx'])
         await f(p);
-    assert.deepEqual(seen.map(s => s[0]), ['espn', 'espn', 'espn', 'get', 'get', 'get']);
+    assert.deepEqual(seen.map(s => s[0]), ['espn', 'espn', 'espn', 'espn', 'espn', 'espn', 'espn', 'espn', 'get', 'get', 'get']);
 });
 
 test('browserFallbackFrom loads the real js/config.js _espnFetch under Node', () => {
@@ -434,4 +436,38 @@ test('planIssueActions keeps a proxyBlocked route\'s issue open, without a daily
     const blocked = { ...R('nfl-probe', 'warn'), proxyBlocked: true };
     const acts = issues.planIssueActions(report([blocked]), [{ number: 15, title: 'contract-drift: nfl-probe' }], null);
     assert.deepEqual(acts, []);
+});
+
+// 2026-11-16: one ESPN 500 on ncaab-leaders-v3 failed the whole Integrity Audit;
+// the same URL answered 200 minutes later.
+test('runContract: a 5xx gets one retry; a recovered retry passes with a note', async () => {
+    const c = { id: 'x', route: () => '/x', paths: ['events[].id'], invariants: [] };
+    const seq = (...answers) => { let i = 0; const f = async () => { f.calls++; return answers[Math.min(i++, answers.length - 1)]; }; f.calls = 0; return f; };
+    const e500 = { ok: false, status: 500, contentType: 'application/json', json: null, bodySnippet: '{"code":0,"detail":"general error: unknown error"}' };
+    const good = { ok: true, status: 200, contentType: 'application/json', json: { events: [{ id: 1 }] }, bodySnippet: '' };
+
+    let f = seq(e500, good);
+    let r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'pass');
+    assert.equal(f.calls, 2);
+    assert.deepEqual(r.notes, ['first try got HTTP 500; passed on retry']);
+
+    f = seq(e500, e500);
+    r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'fail');
+    assert.equal(f.calls, 2);
+    assert.match(r.failures[0], /^HTTP 500/);
+
+    f = seq({ ...e500, status: 0, bodySnippet: 'fetch failed' }, good);
+    r = await check.runContract(c, {}, f, { retryDelayMs: 0 });
+    assert.equal(r.status, 'pass');
+    assert.deepEqual(r.notes, ['first try got network error; passed on retry']);
+});
+
+test('runContract: a 4xx is not retried', async () => {
+    const c = { id: 'x', route: () => '/x', paths: [], invariants: [] };
+    let calls = 0;
+    const r = await check.runContract(c, {}, async () => { calls++; return { ok: false, status: 404, json: null, bodySnippet: 'nope' }; }, { retryDelayMs: 0 });
+    assert.equal(r.status, 'fail');
+    assert.equal(calls, 1);
 });

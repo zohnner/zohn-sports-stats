@@ -1,6 +1,26 @@
 {
   "stories": [
     {
+      "slug": "2026-11-17-chargers-first-win-after-0-8-start",
+      "title": "The Chargers won their first game after an 0-8 start, a first since 2013",
+      "dek": "Los Angeles beat Baltimore 23-20 on Monday, and only 6 of the 18 teams to start 0-8 since 1999 won their 9th game.",
+      "date": "2026-11-17",
+      "season": 2026,
+      "week": 10,
+      "teams": [
+        "LAC",
+        "BAL"
+      ],
+      "players": [
+        "4685382",
+        "3043078",
+        "4038941"
+      ],
+      "hero_stat": "1-8 after the first win, the 6th 0-8 team since 1999 to win its 9th game",
+      "url": "/nfl/stories/2026-11-17-chargers-first-win-after-0-8-start",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-16-49ers-46-cowboys-40",
       "title": "Dallas scored 40 points and still lost to San Francisco",
       "dek": "The 46-40 game was only the 26th time since 1999 that a team scored 40 points and lost.",

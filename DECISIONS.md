@@ -3922,3 +3922,102 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Decision.** Three changes in this PR: a TikTok channel bucket in the visit log, with `?utm_source=tiktok` on the profile link; `tools/audit/no-track.cjs`, used by the page walk and route crawl so their visits are not counted; and `GET /api/stats`, a read-only route gated by `STATS_KEY` that returns aggregates only. Owner decisions, 2026-11-15: the four-agent roster is approved (Muse, a daily read-only desk run, the parity run widened into a build run, and the Monday audit run with a growth half). Raw traffic counts stay out of the public brief issue because the repo is public. The share queue goes to manual dispatch in a later PR. Owner setup owed after merge: add `STATS_KEY` (a random string of at least 32 bytes) as a Secret in Cloudflare Pages and also to the desk and audit routines' environments, and set the TikTok profile link. Design: `docs/superpowers/specs/2026-11-15-agent-roster-design.md`.
 
 **Continuation (2026-11-15, desk run).** `tools/desk/RUNBOOK.md` is the second part of the roster: a daily read-only run that posts one brief on a monthly `[desk] Daily brief` issue. It may open that issue and post one comment a day, and nothing else. Owner setup: create the routine (09:30 ET, same cloud environment as the audit run), add `STATS_KEY` to that environment, and create the `desk` label. TikTok measurement is set aside for now (owner decision 2026-11-15): the profile cannot carry a link yet, and the post log in the spec (Part 6) is not being built. The `tiktok` channel bucket stays in the visit log and will start counting once a link with `?utm_source=tiktok` exists.
+
+## D-203 — NFL Stats: one sortable table replaces Players and Leaders
+
+**Date:** 2026-11-16. **Status:** built on `feat/nfl-stats-table`, awaiting owner review.
+
+**Why.** The NFL stats surfaces could not compete with Pro-Football-Reference, ESPN or NFL.com, which all lead with one dense, sortable table per category. Leaders showed nine cards of five names and one number each (the cap was structural: `/api/nflstats` resolves five athletes per category, and it currently returns 502 under the D-176 block). Players, the first NFL tab, showed 120 bio cards ordered by ADP and no stats at all.
+
+**What.** One page, `#nfl-leaders` labeled "Stats", with Passing/Rushing/Receiving/Defense/Kicking/Scoring tables of every qualified player. It has click-to-sort columns, name search, team and position filters, a Totals/Per game toggle, a Qualified/All players toggle on the offensive tabs, a season selector back to 2000, and a top-three leader strip. Cells are shaded by percentile, ranked only among qualified players with 5+ games, so a backup's one completion never paints as league-best. Tab and sort live in the hash so a link reproduces the view.
+
+**Data.** ESPN `site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byathlete`, read from the browser. It sends open CORS headers and the host was already in `connect-src`, so the Cloudflare block on ESPN (D-176) does not apply and no proxy was added. Verified live 2026-11-15/16:
+- **Sorting** works in both directions.
+- **One call returns a whole category, up to ESPN's 1,000-row page cap.** Defense runs to about 1,330 rows, so the client reads the remaining pages.
+- **Kicking** answers only as `specialTeams:kicking`.
+- **Seasons** go back to 2000.
+
+The rejected options were a Pages Function proxy, blocked by D-176, and nflverse player CSVs, which are multi-megabyte and a week behind.
+
+**Choices.**
+- **The view keeps the id `nfl-leaders`,** not the `nfl-stats` named in the spec. The audit matrix, `/nfl/leaders`, `failSafeRoute` and `_PATH_SINGLE_VIEWS` already key on it.
+- **`nfl-players` redirects to it.** The ADP bio-card page was removed, because ADP Rankings already lists players by ADP with tiers and injury status.
+- **Defense keeps defensive positions only.** ESPN's list includes every receiver and kicker with a special-teams tackle, which would flood the table and drag the percentile curve.
+- **Switching tabs resets to qualified players.** Carried into Passing, "All players" ranked a punter's one trick-play throw as the league's fewest interceptions.
+- **The offseason strip's hardcoded "2025 Leaders" link is gone.**
+
+**Checks.** `tests/nflStatsTable.test.js` runs against a trimmed real response. Contract `nfl-stats-byathlete` checks every column the table reads, with a floor of 20 qualified passers. It is 20 and not 32 because the nightly run probes the latest game day, and early in Week 1 few passers qualify. Spec: `docs/superpowers/specs/2026-11-16-nfl-stats-table-design.md`; plan: `docs/superpowers/plans/2026-11-16-nfl-stats-table.md`.
+
+**Not done.** Team offense/defense tables, postseason (`seasontype=3`), Next Gen/EPA columns and CSV export. Each can build on this table.
+
+## D-204 — NFL player pages read ESPN from the browser when the proxies are blocked (2026-11-16)
+
+**Found:** verifying D-203 live. Every NFL player page on production showed "Season stats aren't available … we couldn't match this player" (even the passing-yards leader), and every ESPN-only player page showed "Player not found". Cause: `/api/nflplayer`, `/api/nflathlete`, `/api/nflcareer` and `/api/nflgamelog` all get 403 from ESPN since D-176, and D-176's browser fallback never covered them. `/api/nflplayer` reported the blocked roster fetch as "not on roster", which is why the page blamed name matching. Compare and the live-game Fantasy Watch use the same endpoints and were broken the same way.
+
+**Decision:** browser ports of all four in `js/config.js` (`_espnNFLPlayerResponse`), reached through `_espnFetch`; all five upstream ESPN routes send `Access-Control-Allow-Origin: *` (checked 2026-11-16). The proxies now say "roster fetch failed" / "stats fetch failed" for an upstream failure (ESPN's 404 for a season with no stats still means "no stats"), and the client retries only on "fetch failed", so a genuine miss costs no extra ESPN calls. The client no longer caches failed answers, and its cache keys were versioned so a cached failure from before this fix is ignored. A failed load now says ESPN didn't answer instead of blaming name matching.
+
+**Guards:** `tests/nflPlayerFallback.test.js` runs each proxy and its port on one real ESPN payload (trimmed, Jordan Love 2026) and requires identical JSON. Nightly contracts `nfl-player-stats`, `-athlete`, `-career`, `-gamelog` run the real fallback against the season's passing leader (`tools/contract-check.cjs` now routes those four proxies through `_espnFetch`).
+
+**Found while building:** the first port declared `_nflEspnSeason`, a name `js/nfl.js` already declares; classic scripts share one global scope, so `nfl.js` failed to load at all. The unit tests load files one at a time and missed it; the browser check caught it. The same test file now loads every `index.html` script in order into one context and fails on any redeclaration (planted-fault checked against the original clash).
+
+**Known residue:** browsers that fetched an old "not on roster" answer keep it up to 6 hours (`max-age=21600`); those visitors see the old message for that player until it expires. Not worked around.
+
+**Update 2026-11-17 — NCAAF player game logs too.** `/api/ncaafgamelog` had the same 403 (checked on production: `gamelog fetch failed`), so NCAAF player pages showed no game log. It has the NFL game log's shape, so `_espnNFLPlayerResponse` now also serves it (college-football route, August season start, `bowl` counted as postseason like the proxy). New contract `ncaaf-player-gamelog` against the FBS passing leader. Gap spotted in an unpushed parallel branch (`fix/nfl-player-stats-blocked`, another session, 2026-11-16) whose NFL half duplicates this decision; that branch was left untouched.
+
+## D-205 — Home hero no longer shows a finished MLB division race (2026-11-17)
+
+**Found:** owner screenshot, 2026-11-16 23:40 CT. With every ticker game final, the home hero read "Cleveland Guardians lead the AL Central — 1 game clear of Detroit Tigers at 88–74". That is the final 2025 table (checked against statsapi `season=2025`); the 2026 season had ended with Cleveland 85–77, White Sox 1.0 back. Three causes stacked: when `HomeLive.pickHero` finds no live or today game, `_renderHomeHero` fell back to `_heroFromStandings()` (D-046) unconditionally, so D-046's "hidden if nothing to show" state was unreachable once the season ended; that fallback had no season check; and `MLB_SEASON` is the previous year in Nov–Feb, so in November it reads two seasons back.
+
+**Decision:** the standings fallback runs only when `HomeLive.mlbRaceSeasonOpen(MLB_SEASON, now)`, i.e. `MLB_SEASON` equals the calendar year. That reuses `MLB_SEASON`'s Mar–Oct rule rather than adding a second calendar rule. Otherwise a null pick hides the hero as before. `_mlbPennantStatMoment()` (the home Insights pennant line) read the same standings the same way and gets the same gate. Both now pick the race through one pure function, `HomeLive.tightestRace(divs)`, which also:
+- reads a tied second place's games back (`"-"` from statsapi) as 0 instead of NaN, so a tied division is no longer silently dropped and the existing "tied atop" copy can show;
+- skips a division whose leader has clinched it (`clinchIndicator` `y` or `z`), which covers October postseason off-days and late September, when the gate is open but the table is final;
+- skips a table no one has played in, so the tie fix can't turn a pre-Opening-Day 0–0 table into "tied atop … 0–0 apiece".
+
+**Not changed:** `MLB_SEASON`'s Nov/Dec value (year − 1, arguably the just-finished season) is used across the whole MLB section; changing it is a separate owner decision. This fix does not depend on it: whichever value it takes in Nov–Feb, it is not the calendar year, so the gate stays closed. `pickHero` eligibility is unchanged.
+
+**Guards:** `tests/homeLive.test.js` — gate open/closed across Jul, Nov and Feb; tie read as 0; clinched and unplayed divisions skipped.
+
+## D-206 — MLB season and phase come from statsapi's calendar: the season ends when the World Series does (2026-11-17)
+
+**Owner direction:** "we need dynamic handling for the seasons timing, it could be as simple as when the world series is over the season is over." Follows D-205, which left `MLB_SEASON`'s Nov/Dec value flagged for this decision.
+
+**Before:** three month rules disagreed. The client's `MLB_SEASON` was the calendar year Mar–Oct and the previous year Nov–Feb, so in Nov/Dec it skipped the season that had just ended. The edge templates `/mlb/leaders` and `/mlb/player/*` used Jan–Feb as the previous year, so today they showed 2026 while the app showed 2025. And `_sportPickerStatus` called all of Mar–Oct "Regular season".
+
+**Decision:** one rule, read from statsapi `/seasons/{year}?sportId=1`. Checked 2026-11-17: `postSeasonEndDate` is the date of the real last World Series game (2024 ended in five on Oct 30 and reads `2024-10-30`; 2025 went seven, `2025-11-01`; 2026 `2026-10-28`), so the day after it the phase is `offseason`. `season` is the calendar year once that year's regular season has started, otherwise the year before; spring training shows last season instead of empty boards. `js/mlbSeason.js` (`MLBSeason`, loaded before `mlb.js`) is the client copy, and `functions/_mlbSeason.js` is the edge copy, using the date in Eastern time. Both fall back to a calendar guess when statsapi doesn't answer.
+
+**How the client stays synchronous:** `MLB_SEASON` is still set at script load, from dates stored in localStorage (`zs_mlb_season_dates`), or the guess on a first visit. Boot then calls `MLBSeason.refresh()` through `mlbFetch`: every 12h, or hourly during the postseason in case `postSeasonEndDate` holds a scheduled date until the Series ends (not verified either way; the hourly check bounds it). If the season or phase changed, it resets MLB state the way the season selector does (`_resetMLBSeasonState`, extracted from it) and re-renders home or an MLB list view. Detail pages keep what they loaded.
+
+**Consumers moved:** D-205's hero and pennant gate now open only in phase `regular`, and `HomeLive.mlbRaceSeasonOpen` is removed. The MLB sport-picker status reads the phase (Regular season / Postseason / Spring training / Offseason). Both edge templates use `functions/_mlbSeason.js`, and so does `tools/gen-sitemap.cjs`, which had a fourth rule (Mar–Nov current); it evaluates the import-free source the way the tests do, because its workflow pins no Node version. Dry run: 1,554 URLs against 1,553 committed.
+
+**Effect today (2026-11-17):** MLB Leaders, Players, Teams and the rest show 2026, the season that just ended, where they showed 2025.
+
+**Guards:** `tests/mlbSeason.test.js` covers:
+- every phase boundary on the real 2026 dates;
+- a World Series that ends early;
+- the calendar fallback;
+- refresh freshness, including the hourly postseason re-check and the new-year refetch;
+- client and edge resolving every day of 2026 identically, with a planted one-character drift confirmed to fail it.
+
+Browser check on a local server, cold and warm loads: `MLB_SEASON` 2026, phase `offseason` from stored API dates, every MLB request at `season=2026`, picker "MLB Offseason", no race text, no exceptions.
+
+**Found while building:** the first picker version put its status table in a top-level `const` below `_sportPickerStatus`. Boot renders home synchronously before that line runs (the temporal dead zone CLAUDE.md warns about), so home threw on every load. The browser check caught it, and the table moved inside the function.
+
+**Not covered:** `tools/contracts/mlb.cjs` still guesses the season by month (Jan–Feb is the previous year) when its offseason probe finds none. It builds routes synchronously, so moving it means restructuring the contract run; in March before Opening Day its `/teams/145/stats` contract may ask for a season with no stats yet. NBA's `CURRENT_SEASON` and the other sports' season models are unchanged. The worker `push-game-alerts.js` has no MLB season rule.
+
+## D-207 — Contract runs retry a transient upstream error once; the desk stops treating late cron as missing (2026-11-17)
+
+**Found:** the desk run's 2026-11-17 brief. The first scheduled Integrity Audit (2026-11-16 23:16 UTC) failed on one contract, `ncaab-leaders-v3`: ESPN's site/v3 leaders feed answered HTTP 500 ("general error: unknown error"). The other five audit checks held. The same URL answered 200 twice on 2026-11-17, and the nightly Contract Check passed it hours earlier. One transient upstream error failed the whole weekly audit.
+
+**Decision:** `runContract` (`tools/contract-check.cjs`) retries once, after 3 seconds, on a 5xx or network error. A 4xx is never retried, since it is an answer, not a hiccup. A retry that recovers passes with a note ("first try got HTTP 500; passed on retry"), which Contract Check and the audit both print, so a feed that flakes every night is still visible. Two failures in a row still fail.
+
+**Also:** the same brief flagged "Contract Check's 06:00 ET run has not appeared today". It hadn't run because GitHub starts this repo's scheduled jobs hours late:
+- Contract Check ran at 17:29 and 20:45 UTC against an 11:00 UTC cron;
+- the Integrity Audit ran 9 hours late.
+
+The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md` now says cron times are targets and only the 36-hour and 8-day rules count.
+
+**Guards:** `tests/contractCheck.test.js` covers:
+- a 500 that recovers (passes, with a note);
+- a 500 twice (fails);
+- a network error that recovers;
+- a 404, which is fetched once.

@@ -1,6 +1,66 @@
 {
   "stories": [
     {
+      "slug": "2026-11-17-grizzlies-129-points-three-straight",
+      "title": "Memphis has scored 129 or more in 3 straight games, its longest run this season",
+      "dek": "The Grizzlies average 135.7 points over the 3 games, 14.0 more than their season average.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "MEM",
+        "NO",
+        "BKN",
+        "WSH"
+      ],
+      "players": [
+        "5041935",
+        "4600663"
+      ],
+      "hero_stat": "135.7 points a game over 3 games, 16.9 above what those opponents usually allow",
+      "url": "/nba/stories/2026-11-17-grizzlies-129-points-three-straight",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-17-magic-four-straight-first-boston-home-loss",
+      "title": "Orlando has won 4 straight, handing Boston its first home loss",
+      "dek": "The Magic were 2-7 before the streak, and the win in Boston came after 3 wins over the league's 3 worst teams.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "ORL",
+        "BOS",
+        "SAC",
+        "UTAH",
+        "MIL"
+      ],
+      "players": [
+        "4066320",
+        "4566434"
+      ],
+      "hero_stat": "4 straight wins after a 2-7 start, including Boston's first home loss",
+      "url": "/nba/stories/2026-11-17-magic-four-straight-first-boston-home-loss",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-17-pelicans-72-point-swing-warriors",
+      "title": "7 days after losing by 51, New Orleans beat Golden State by 21",
+      "dek": "The 72-point swing ended New Orleans' 6-game losing streak and handed Golden State a 3rd straight loss.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "NO",
+        "GS"
+      ],
+      "players": [
+        "5144091",
+        "4397136",
+        "5175737"
+      ],
+      "hero_stat": "72-point swing in 7 days, from a 51-point loss to a 21-point win",
+      "url": "/nba/stories/2026-11-17-pelicans-72-point-swing-warriors",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-16-celtics-lead-nba-differential",
       "title": "Boston now leads the NBA in point differential",
       "dek": "The Celtics' 37-point win over Dallas moved them past San Antonio to plus-13.1 a game, and they allow a league-low 102.4.",

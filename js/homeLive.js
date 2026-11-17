@@ -67,5 +67,25 @@ const HomeLive = (() => {
             .map(x => x.c)[0] || null;
     }
 
-    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero };
+    // The closest division race in fetchMLBStandingsFull rows, or null.
+    // statsapi writes a tied second place's games back as "-", which
+    // parseFloat reads as NaN, so a tie dropped the division. A division
+    // whose leader has clinched it (y, or z for a bye) is no longer a race,
+    // and a table nobody has played in yet (before Opening Day) isn't one.
+    function tightestRace(divs) {
+        let best = null;
+        (divs || []).forEach(d => {
+            const [leader, second] = (d && d.teams) || [];
+            if (!leader || !second) return;
+            if (leader.clinched === 'y' || leader.clinched === 'z') return;
+            if (!((Number(leader.wins) || 0) + (Number(leader.losses) || 0))) return;
+            const raw = String(second.gb == null ? '' : second.gb).trim();
+            const gb = (raw === '-' || raw === '—') ? 0 : parseFloat(raw);
+            if (!isFinite(gb)) return;
+            if (!best || gb < best.gb) best = { div: d.division, leader, second, gb };
+        });
+        return best;
+    }
+
+    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, tightestRace };
 })();

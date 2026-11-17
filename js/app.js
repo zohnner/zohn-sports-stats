@@ -18,6 +18,16 @@ Logger.info('Initializing SportStrata…', undefined, 'APP');
 })();
 
 
+function _resetMLBSeasonState() {
+    AppState.mlbPlayers      = { hitting: [], pitching: [] };
+    AppState.mlbPlayerStats  = { hitting: {}, pitching: {} };
+    AppState.mlbTeams        = [];
+    AppState.mlbGames        = [];
+    AppState.mlbStandings    = null;
+    AppState.mlbLeaderSplits = null;
+    if (typeof _clearMLBLeaderSplitsCache === 'function') _clearMLBLeaderSplitsCache();
+}
+
 // Season selector — switches CURRENT_SEASON and reloads the current view
 (function setupSeasonSelector() {
     const sel = document.getElementById('seasonSelect');
@@ -34,14 +44,7 @@ Logger.info('Initializing SportStrata…', undefined, 'APP');
         AppState.allGames        = [];
         AppState.nbaStatsMap     = null;
         AppState._nbaStatsSeason = null;
-        // MLB season state
-        AppState.mlbPlayers      = { hitting: [], pitching: [] };
-        AppState.mlbPlayerStats  = { hitting: {}, pitching: {} };
-        AppState.mlbTeams        = [];
-        AppState.mlbGames        = [];
-        AppState.mlbStandings    = null;
-        AppState.mlbLeaderSplits = null;
-        if (typeof _clearMLBLeaderSplitsCache === 'function') _clearMLBLeaderSplitsCache();
+        _resetMLBSeasonState();
         // Sync the MLB module's own season variable
         if (typeof setMLBSeason === 'function') setMLBSeason(year);
         // Teams data is season-independent; keep allTeams
@@ -328,6 +331,26 @@ let _homeNewsCache = null;
 
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
+
+// D-206: correct the MLB season and phase from statsapi's calendar. They can
+// only differ from what boot just rendered on a first visit (no stored dates)
+// or the day a phase turns over, e.g. the World Series ending; re-render
+// home or an MLB list view then. Detail pages keep what they loaded.
+(async () => {
+    const before = MLBSeason.current();
+    let next;
+    try {
+        next = await MLBSeason.refresh(year => mlbFetch(`/seasons/${year}`, { sportId: 1 }, ApiCache.TTL.LONG));
+    } catch (e) {
+        Logger.warn('MLB season calendar unavailable', e.message, 'MLB');
+        return;
+    }
+    if (next.season === MLB_SEASON && next.phase === before.phase) return;
+    Logger.info(`MLB season ${MLB_SEASON}/${before.phase} → ${next.season}/${next.phase}`, undefined, 'MLB');
+    if (next.season !== MLB_SEASON) { _resetMLBSeasonState(); setMLBSeason(next.season); }
+    const view = AppState.currentView || '';
+    if (view === 'home' || /^mlb-[a-z]+$/.test(view)) renderCurrentView(view);
+})();
 
 
 // Populate the ticker independently so it works on first load
@@ -2023,14 +2046,7 @@ async function _heroFromStandings() {
         AppState.mlbStandings = divs;
     }
     if (!Array.isArray(divs) || !divs.length) return null;
-    let best = null;
-    divs.forEach(d => {
-        const teams = d.teams || [];
-        if (teams.length < 2) return;
-        const gb = parseFloat(teams[1].gb);
-        if (!isFinite(gb)) return;
-        if (!best || gb < best.gb) best = { div: d.division, leader: teams[0], second: teams[1], gb };
-    });
+    const best = HomeLive.tightestRace(divs);
     if (!best) return null;
     const logo = (typeof getMLBTeamLogoUrl === 'function' && best.leader.teamId) ? getMLBTeamLogoUrl(best.leader.teamId) : '';
     const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(best.leader.teamAbbr) : { primary: '#7c8df0' };
@@ -2652,7 +2668,7 @@ async function _renderHomeHero(games) {
     });
     const winner = HomeLive.pickHero(candidates, Date.now());
     let hero = winner ? winner.heroFn(winner.g, winner.live ? 'live' : 'upcoming') : null;
-    if (!hero) hero = await _heroFromStandings().catch(() => null);
+    if (!hero && MLBSeason.phase() === 'regular') hero = await _heroFromStandings().catch(() => null);
 
     if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
     host.className = `home-hero home-hero--${hero.kind}`;
@@ -2922,6 +2938,7 @@ function _mlbLeaderStatMoments() {
 // AppState.mlbStandings/mlbOdds this used to compute inline in
 // _renderHomeMoment -- lifted, not re-derived.
 async function _mlbPennantStatMoment() {
+    if (MLBSeason.phase() !== 'regular') return null;
     try {
         // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
         // as _mlbTrendingStatMoment above -- the AppState.mlbStandings check
@@ -2929,17 +2946,9 @@ async function _mlbPennantStatMoment() {
         // from both missing it before either's fetch resolves.
         if (!AppState.mlbStandings) AppState.mlbStandings = await _homeInflightFetch('mlbStandingsFull', fetchMLBStandingsFull);
     } catch (_) { return null; }
-    const races = [];
-    (AppState.mlbStandings || []).forEach(d => {
-        const [lead, second] = d.teams || [];
-        if (!lead || !second) return;
-        const gb = parseFloat(second.gb);
-        if (isNaN(gb)) return;
-        races.push({ div: d.division, lead, second, gb });
-    });
-    if (!races.length) return null;
-    races.sort((a, b) => a.gb - b.gb);
-    const r = races[0];
+    const best = HomeLive.tightestRace(AppState.mlbStandings);
+    if (!best) return null;
+    const r = { ...best, lead: best.leader };
     const tail = r.gb === 0
         ? `are tied atop the ${r.div}`
         : `lead the ${r.div} by ${r.gb === 1 ? '1 game' : r.gb + ' games'} over ${r.second.teamName}`;
@@ -3313,7 +3322,7 @@ window._otdReveal = function(idx) {
 
 // Enter a sport from the home page — handles same-sport case
 function enterSport(sport) {
-    const defaultViews = { nba: 'players', mlb: 'mlb-players', nfl: 'nfl-players', nhl: 'nhl-players' };
+    const defaultViews = { nba: 'players', mlb: 'mlb-players', nfl: 'nfl-leaders', nhl: 'nhl-players' };
     if (AppState.currentSport === sport) {
         navigateTo(defaultViews[sport] || 'players');
     } else {
@@ -3323,7 +3332,13 @@ function enterSport(sport) {
 
 function _sportPickerStatus(id) {
     const m = new Date().getMonth() + 1; // 1=Jan
-    if (id === 'mlb')   return (m >= 3 && m <= 10) ? { cls: 'active', label: 'Regular season' } : { cls: 'idle', label: 'Offseason' };
+    if (id === 'mlb') {
+        const phase = MLBSeason.phase();
+        if (phase === 'regular')    return { cls: 'active', label: 'Regular season' };
+        if (phase === 'postseason') return { cls: 'active', label: 'Postseason' };
+        if (phase === 'preseason')  return { cls: 'active', label: 'Spring training' };
+        return { cls: 'idle', label: 'Offseason' };
+    }
     if (id === 'nfl')   {
         // Sourced from _nflSeasonPhase() (js/nfl.js, loaded before app.js) instead
         // of a second, independent month-range check — a hardcoded calendar
@@ -4622,7 +4637,7 @@ const _SPORT_LABEL = { mlb: 'MLB', nfl: 'NFL', ncaaf: 'NCAA Football', ncaab: 'N
 // view yet, so its absence here is correct), wnba has real Leaders +
 // player detail (D-092 Resolution 5).
 const _SPORT_TEAMS_VIEW = { mlb: 'mlb-teams', nfl: 'nfl-teams', ncaaf: 'ncaaf-teams', ncaab: 'ncaab-teams', wnba: 'wnba-teams', nba: 'nba-teams' };
-const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-players', ncaaf: 'ncaaf-leaders', wnba: 'wnba-leaders', nba: 'nba-leaders' };
+const _SPORT_PLAYERS_VIEW = { mlb: 'mlb-players', nfl: 'nfl-leaders', ncaaf: 'ncaaf-leaders', wnba: 'wnba-leaders', nba: 'nba-leaders' };
 
 function _dashGroupFollows() {
     const bySport = {};
