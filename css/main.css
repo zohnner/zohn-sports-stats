@@ -1789,6 +1789,13 @@ main {
     letter-spacing: 0.02em;
 }
 .hgc-abbr--win { color: var(--text-primary); }
+.hgc-rank {
+    font-family: var(--font-mono);
+    font-size: 0.72em;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-right: 0.3em;
+}
 
 .hgc-score {
     font-size: 1rem;
