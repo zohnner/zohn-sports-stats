@@ -4003,3 +4003,11 @@ Browser check on a local server, cold and warm loads: `MLB_SEASON` 2026, phase `
 **Found while building:** the first picker version put its status table in a top-level `const` below `_sportPickerStatus`. Boot renders home synchronously before that line runs (the temporal dead zone CLAUDE.md warns about), so home threw on every load. The browser check caught it, and the table moved inside the function.
 
 **Not covered:** `tools/contracts/mlb.cjs` still guesses the season by month (Jan–Feb is the previous year) when its offseason probe finds none. It builds routes synchronously, so moving it means restructuring the contract run; in March before Opening Day its `/teams/145/stats` contract may ask for a season with no stats yet. NBA's `CURRENT_SEASON` and the other sports' season models are unchanged. The worker `push-game-alerts.js` has no MLB season rule.
+
+## D-208 — A retired story 301s to the page with the corrected numbers (2026-11-17)
+
+**Context:** #172 unpublished the Vikings 6-2 story because its count used weeks 1-8, which dropped every team with an early bye (#138). Links shared before the unpublish kept bringing readers in: it was the third-ranked entry page in the 2026-11-17 desk brief, and every one of those readers got a 404.
+
+**Decision:** `RETIRED_STORIES` in `functions/_storyLinks.js` maps an unpublished slug to the page that now carries the correct numbers, and `renderStoryPage` answers it with a 301 before anything else. The Vikings slug goes to `/nfl/team/min/minnesota-vikings`, whose start-history module (D-201) counts each team's first 8 games. Unpublishing is still "delete the story"; a slug redirects only when someone lists it, and only when a correct page exists. With no such page, a pulled story keeps its 404.
+
+**Guard:** `tests/storyLinks.test.js` fails if a retired slug is still in its sport's published index, or if a target is not a site path.

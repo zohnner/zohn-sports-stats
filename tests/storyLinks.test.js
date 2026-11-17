@@ -21,7 +21,7 @@ function loadStoryLinks() {
         .replace(/^export /gm, '');
     const ctx = { URL, core: require(path.join(ROOT, 'tools', 'stories', 'story-core.cjs')) };
     vm.createContext(ctx);
-    vm.runInContext(`${src}\n;globalThis.__out = { readStories, isPublished, readAllStories, storiesForTeam, siblingStories, storyListHtml };`, ctx);
+    vm.runInContext(`${src}\n;globalThis.__out = { readStories, isPublished, readAllStories, storiesForTeam, siblingStories, storyListHtml, RETIRED_STORIES, retiredStoryTarget };`, ctx);
     return ctx.__out;
 }
 const L = loadStoryLinks();
@@ -132,4 +132,18 @@ test('an unpublished story is not served: a slug missing from the index is not p
     assert.equal(L.isPublished(index, '2026-11-10-deleted'), false);
     // An index that could not be read must not take every story down with it.
     assert.equal(L.isPublished([], '2026-11-10-deleted'), true);
+});
+
+test('a retired story 301s to the page with the corrected numbers, and is never also published', () => {
+    assert.equal(L.retiredStoryTarget('nfl', '2026-11-10-vikings-6-2-fewest-points-scored'), '/nfl/team/min/minnesota-vikings');
+    assert.equal(L.retiredStoryTarget('nfl', '2026-11-09-a'), null);
+    assert.equal(L.retiredStoryTarget('mlb', '2026-11-10-vikings-6-2-fewest-points-scored'), null);
+    assert.equal(L.retiredStoryTarget('nfl', 'constructor'), null);
+    for (const [sport, slugs] of Object.entries(L.RETIRED_STORIES)) {
+        const index = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', sport, 'stories', 'index.json'), 'utf8')).stories;
+        for (const [slug, target] of Object.entries(slugs)) {
+            assert.ok(!index.some(s => s.slug === slug), `${slug} is retired but still published`);
+            assert.match(target, /^\/[a-z]/, `${slug} target must be a site path`);
+        }
+    }
 });
