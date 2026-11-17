@@ -42,7 +42,7 @@ async function proxy(name, query, upstream = espn) {
 }
 
 // config.js in a browser-like sandbox. `api` answers same-origin /api/* calls.
-function browser(api) {
+function browser(api, upstream = espn) {
     const noop = () => {};
     const calls = [];
     const ctx = {
@@ -52,7 +52,7 @@ function browser(api) {
         location: { origin: 'https://sportstrata.test' },
         fetch: async (u) => {
             calls.push(String(u));
-            return String(u).startsWith('/api/') ? api(String(u)) : espn(u);
+            return String(u).startsWith('/api/') ? api(String(u)) : upstream(u);
         },
     };
     ctx.globalThis = ctx; ctx.window = ctx;
@@ -84,6 +84,20 @@ for (const [name, query] of CASES) {
         assert.ok(b.calls.some(u => /espn\.com/.test(u)), 'went to ESPN directly');
     });
 }
+
+// NCAAF's game log proxy (/api/ncaafgamelog) has the NFL one's shape and the same
+// 403. Fixture: Drew Mestemaker's 2026 log (3 games), plus one season type
+// relabelled "Bowls" by hand so the college-only postseason rule is exercised.
+const CFB = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'ncaaf-gamelog-mestemaker-trim.json'), 'utf8'));
+const cfb = u => (String(u).includes('/college-football/athletes/5219834/gamelog?season=2026') ? json(CFB) : json({}, 404));
+
+test('ncaafgamelog: the browser fallback returns exactly what the proxy would', async () => {
+    const want = await proxy('ncaafgamelog', 'id=5219834&season=2026', cfb);
+    assert.equal(want.found, true);
+    assert.ok(want.games.some(g => g.post), 'fixture has a bowl game');
+    const b = browser(() => json({ found: false, reason: 'gamelog fetch failed', status: 403 }), cfb);
+    assert.deepEqual(await b.get('/api/ncaafgamelog?id=5219834&season=2026'), want);
+});
 
 test('a proxy that answered "not on roster" is trusted, not retried against ESPN', async () => {
     const b = browser(() => json({ found: false, reason: 'not on roster', season: 2026 }));

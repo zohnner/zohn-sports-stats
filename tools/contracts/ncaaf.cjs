@@ -1,6 +1,14 @@
 'use strict';
 const L = require('../contract-lib.cjs');
 
+// The FBS passing-yards leader for the probed season, for the player game log.
+async function passingLeader(ctx, fetchJson) {
+    const res = await fetchJson(`https://site.web.api.espn.com/apis/site/v3/sports/football/college-football/leaders?seasontype=2&limit=5&season=${ctx.season}`);
+    const cat = (res.json?.leaders?.categories || []).find(c => c.name === 'passingYards');
+    const id = cat?.leaders?.[0]?.athlete?.id;
+    return id ? { athleteId: String(id) } : null;
+}
+
 const scoreboard = d => `/api/ncaaf?path=/scoreboard&groups=80&dates=${d.yyyymmdd}`;
 
 module.exports = {
@@ -19,6 +27,18 @@ module.exports = {
     fullSlateWeeks: { from: 2, lastMinus: 2 },
     probe: { route: scoreboard, read: L.readEspnScoreboard },
     contracts: [
+        {
+            // ESPN 403s the proxy from Cloudflare (D-176); this runs the real
+            // browser fallback in js/config.js (D-204), as readers get it.
+            id: 'ncaaf-player-gamelog',
+            needs: 'probe',
+            mirrors: 'js/ncaaf.js _loadNCAAFGameLog (/api/ncaafgamelog)',
+            sources: [/\/api\/ncaafgamelog/, /college-football\/athletes\/\d+\/gamelog/],
+            resolve: passingLeader,
+            route: c => `/api/ncaafgamelog?id=${c.athleteId}&season=${c.season}`,
+            paths: ['columns[].label', 'columns[].name', 'games[].opp', 'games[].stats'],
+            invariants: [L.predicate('found, with games', d => (d && d.found && (d.games || []).length) ? null : `found=${d && d.found} reason=${d && d.reason}`)],
+        },
         {
             id: 'ncaaf-scoreboard',
             needs: 'probe',
