@@ -461,14 +461,14 @@ async function _espnFetch(proxyUrl, init) {
     // NFL player proxies answer 200 {found:false} both for a real miss ("not on
     // roster", "no stats") and for an ESPN failure ("... fetch failed"); only the
     // failure is worth retrying from the browser.
-    const nm = String(proxyUrl).match(/\/api\/nfl(player|athlete|career|gamelog)\?/);
+    const nm = String(proxyUrl).match(/\/api\/(nflplayer|nflathlete|nflcareer|nflgamelog|ncaafgamelog)\?/);
     if (res && res.ok) {
         if (!nm && !/standings|athlete/.test(String(proxyUrl))) return res;
         const body = await res.clone().json().catch(() => null);
         if (nm ? body && !/fetch failed/.test(body.reason || '') : body && body.ok !== false && body.found !== false) return res;
     }
     if (nm) {
-        Logger.warn('ESPN NFL player proxy failed, fetching ESPN direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
+        Logger.warn('ESPN player proxy failed, fetching ESPN direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnNFLPlayerResponse(nm[1], new URL(proxyUrl, location.origin).searchParams, init);
     }
     const am =String(proxyUrl).match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
@@ -838,12 +838,12 @@ function _nflEspnCareerBody(id, j) {
     return { found: categories.length > 0, id: Number(id), categories };
 }
 
-function _nflEspnGamelogBody(season, g) {
+function _nflEspnGamelogBody(season, g, postRe = /post|playoff/i) {
     const labels = g.labels || [], names = g.names || [], displayNames = g.displayNames || [];
     const eventsMap = g.events || {};
     const games = [];
     for (const st of (g.seasonTypes || [])) {
-        const isPost = /post|playoff/i.test(st.displayName || '');
+        const isPost = postRe.test(st.displayName || '');
         for (const cat of (st.categories || [])) {
             for (const ev of (cat.events || [])) {
                 const meta = eventsMap[ev.eventId || ev.id] || {};
@@ -873,19 +873,25 @@ async function _espnNFLPlayerResponse(kind, q, init) {
         } catch { return { _httpStatus: 0 }; }
     };
     const ok = j => j && j._httpStatus === undefined;
-    const season = /^\d{4}$/.test(q.get('season') || '') ? q.get('season') : String(_nflEspnDefaultSeason());
+    // NCAAF's season starts in August (functions/api/ncaafgamelog.js), the NFL's in September.
+    const now = new Date(), cfbSeason = now.getUTCMonth() + 1 >= 8 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+    const season = /^\d{4}$/.test(q.get('season') || '') ? q.get('season')
+        : String(kind === 'ncaafgamelog' ? cfbSeason : _nflEspnDefaultSeason());
     const id = (q.get('id') || '').replace(/[^0-9]/g, '');
     let body;
-    if (kind === 'player') {
+    if (kind === 'nflplayer') {
         body = await _nflEspnPlayerBody(q.get('name') || '', (q.get('team') || '').toUpperCase(), season, get);
     } else if (!id) {
         body = { found: false, reason: 'missing id' };
-    } else if (kind === 'athlete') {
+    } else if (kind === 'nflathlete') {
         const j = await get(`${_NFL_ESPN_ATH}/${id}`);
         body = ok(j) ? _nflEspnAthleteBody(id, j) : { found: false, reason: 'athlete fetch failed' };
-    } else if (kind === 'career') {
+    } else if (kind === 'nflcareer') {
         const j = await get(`${_NFL_ESPN_ATH}/${id}/stats`);
         body = ok(j) ? _nflEspnCareerBody(id, j) : { found: false, reason: 'career fetch failed' };
+    } else if (kind === 'ncaafgamelog') {
+        const j = await get(`${_ESPN_DIRECT}/common/v3/sports/football/college-football/athletes/${id}/gamelog?season=${season}`);
+        body = ok(j) ? _nflEspnGamelogBody(season, j, /post|bowl|playoff/i) : { found: false, reason: 'gamelog fetch failed' };
     } else {
         const j = await get(`${_NFL_ESPN_ATH}/${id}/gamelog?season=${season}`);
         body = ok(j) ? _nflEspnGamelogBody(season, j) : { found: false, reason: 'gamelog fetch failed' };

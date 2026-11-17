@@ -53,7 +53,7 @@ async function getJson(url) {
 // js/config.js _espnFetch: proxy first, then ESPN directly from the browser
 // (leaders rebuilt from site/v3). Running that real function here keeps this
 // check on the code readers run, not a copy that can drift from it.
-const ESPN_ROUTE = /^\/api\/(?:(?:nfl|ncaaf|nba|ncaab)(?:standings|stats)?|nfl(?:player|athlete|career|gamelog))(\?|$)/;
+const ESPN_ROUTE = /^\/api\/(?:(?:nfl|ncaaf|nba|ncaab)(?:standings|stats)?|nfl(?:player|athlete|career|gamelog)|ncaafgamelog)(\?|$)/;
 
 function browserFallbackFrom(base) {
     const noop = () => {};
