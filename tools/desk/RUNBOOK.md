@@ -8,7 +8,7 @@ Standing instructions for a scheduled Claude Code desk run. Read this file from 
 
 Muse, the build run, the audit run and ten workflows each report somewhere different: Muse in its own chat, the routines in their final messages, workflows by email, the rest in issues. Nobody reads all of it, and nothing notices when one of them does not run. This run reads everything once a day and writes one brief, with what needs the owner at the top. It builds nothing and fixes nothing.
 
-It runs after the morning's other jobs (ET): Contract Check 06:00, sitemap refresh 07:30, Muse 08:00, Route Crawl 08:30, and on Mondays the Integrity Audit 09:00.
+It is timed after the morning's other jobs (ET): Contract Check 06:00, sitemap refresh 07:30, Muse 08:00, Route Crawl 08:30, and on Mondays the Integrity Audit 09:00. Those are the GitHub workflows' cron times, not when they run: GitHub starts this repo's scheduled jobs hours late (Contract Check ran at 12:29 and 15:45 ET on 2026-11-15 and 16; the 2026-11-16 Integrity Audit at 18:16 ET). A job that hasn't run yet today is not news. Judge a schedule only by the 36-hour and 8-day rules in step 1.
 
 ## Hard rules (non-negotiable)
 

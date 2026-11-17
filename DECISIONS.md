@@ -4003,3 +4003,21 @@ Browser check on a local server, cold and warm loads: `MLB_SEASON` 2026, phase `
 **Found while building:** the first picker version put its status table in a top-level `const` below `_sportPickerStatus`. Boot renders home synchronously before that line runs (the temporal dead zone CLAUDE.md warns about), so home threw on every load. The browser check caught it, and the table moved inside the function.
 
 **Not covered:** `tools/contracts/mlb.cjs` still guesses the season by month (Jan–Feb is the previous year) when its offseason probe finds none. It builds routes synchronously, so moving it means restructuring the contract run; in March before Opening Day its `/teams/145/stats` contract may ask for a season with no stats yet. NBA's `CURRENT_SEASON` and the other sports' season models are unchanged. The worker `push-game-alerts.js` has no MLB season rule.
+
+## D-207 — Contract runs retry a transient upstream error once; the desk stops treating late cron as missing (2026-11-17)
+
+**Found:** the desk run's 2026-11-17 brief. The first scheduled Integrity Audit (2026-11-16 23:16 UTC) failed on one contract, `ncaab-leaders-v3`: ESPN's site/v3 leaders feed answered HTTP 500 ("general error: unknown error"). The other five audit checks held. The same URL answered 200 twice on 2026-11-17, and the nightly Contract Check passed it hours earlier. One transient upstream error failed the whole weekly audit.
+
+**Decision:** `runContract` (`tools/contract-check.cjs`) retries once, after 3 seconds, on a 5xx or network error. A 4xx is never retried, since it is an answer, not a hiccup. A retry that recovers passes with a note ("first try got HTTP 500; passed on retry"), which Contract Check and the audit both print, so a feed that flakes every night is still visible. Two failures in a row still fail.
+
+**Also:** the same brief flagged "Contract Check's 06:00 ET run has not appeared today". It hadn't run because GitHub starts this repo's scheduled jobs hours late:
+- Contract Check ran at 17:29 and 20:45 UTC against an 11:00 UTC cron;
+- the Integrity Audit ran 9 hours late.
+
+The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md` now says cron times are targets and only the 36-hour and 8-day rules count.
+
+**Guards:** `tests/contractCheck.test.js` covers:
+- a 500 that recovers (passes, with a note);
+- a 500 twice (fails);
+- a network error that recovers;
+- a 404, which is fetched once.
