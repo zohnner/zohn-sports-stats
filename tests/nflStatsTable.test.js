@@ -95,6 +95,20 @@ test('percentiles rank against the qualified pool, flip lower-is-better, skip th
     assert.equal(T.tier(p['5']['passing.interceptions']), 'lo2');
 });
 
+test('percentiles shade from Week 1: the GP floor never exceeds what the qualified pool has played', () => {
+    const cols = T.category('passing').cols;
+    const week = (gp) => [2, 4, 6, 8, 10, 12].map((n, i) => row(String(i), { 'passing.interceptions': n, 'general.gamesPlayed': gp }));
+    const ids = new Set(['0', '1', '2', '3', '4', '5']);
+    const p1 = T.percentiles(week(1), cols, ids);
+    assert.equal(T.tier(p1['0']['passing.interceptions']), 'hi2', 'Week 1: shaded');
+    const w3 = week(3);
+    w3.push(row('missed', { 'passing.interceptions': 0, 'general.gamesPlayed': 2 }));
+    ids.add('missed');
+    const p3 = T.percentiles(w3, cols, ids);
+    assert.ok(p3['0'], 'Week 3: full-time starters shaded');
+    assert.equal(p3.missed, undefined, 'Week 3: a starter who missed a game sits out the curve');
+});
+
 test('filterRows matches name, team and grouped defensive positions', () => {
     const rows = [
         row('1', {}, { name: 'Will Anderson Jr.', pos: 'DE', team: 'HOU' }),
