@@ -1,0 +1,238 @@
+{
+  "facts": [
+    {
+      "key": "gs_nov9_pts",
+      "label": "Golden State points vs New Orleans, Nov 9",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+      "value": 138
+    },
+    {
+      "key": "no_nov9_pts",
+      "label": "New Orleans points vs Golden State, Nov 9",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+      "value": 87
+    },
+    {
+      "key": "margin_nov9",
+      "label": "Golden State win margin vs New Orleans, Nov 9",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+      "value": 51
+    },
+    {
+      "key": "no_nov16_pts",
+      "label": "New Orleans points vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 115
+    },
+    {
+      "key": "gs_nov16_pts",
+      "label": "Golden State points vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 94
+    },
+    {
+      "key": "margin_nov16",
+      "label": "New Orleans win margin vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 21
+    },
+    {
+      "key": "swing",
+      "label": "Swing between the two meetings (51 + 21)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 72
+    },
+    {
+      "key": "days_between",
+      "label": "Days between the Nov 9 and Nov 16 meetings",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 7
+    },
+    {
+      "key": "first_day",
+      "label": "Day of the first meeting (November)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261109",
+      "value": 9
+    },
+    {
+      "key": "second_day",
+      "label": "Day of the second meeting (November)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 16
+    },
+    {
+      "key": "no_losing_streak",
+      "label": "New Orleans consecutive losses before Nov 16 (Nov 7-15)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/3/schedule?season=2027&seasontype=2",
+      "value": 6
+    },
+    {
+      "key": "gs_losing_streak",
+      "label": "Golden State consecutive losses (Nov 11, 13, 16)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/9/schedule?season=2027&seasontype=2",
+      "value": 3
+    },
+    {
+      "key": "gs_hou_pts",
+      "label": "Golden State points at Houston, Nov 11",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261111",
+      "value": 108
+    },
+    {
+      "key": "hou_pts",
+      "label": "Houston points vs Golden State, Nov 11",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261111",
+      "value": 115
+    },
+    {
+      "key": "hou_margin",
+      "label": "Houston win margin vs Golden State, Nov 11",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261111",
+      "value": 7
+    },
+    {
+      "key": "gs_sa_pts",
+      "label": "Golden State points at San Antonio, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 85
+    },
+    {
+      "key": "sa_pts",
+      "label": "San Antonio points vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 123
+    },
+    {
+      "key": "sa_margin",
+      "label": "San Antonio win margin vs Golden State, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909302",
+      "value": 38
+    },
+    {
+      "key": "gs_slide_margin",
+      "label": "Golden State combined losing margin in the 3-game slide (7 + 38 + 21)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/9/schedule?season=2027&seasontype=2",
+      "value": 66
+    },
+    {
+      "key": "gs_win_streak",
+      "label": "Golden State consecutive wins before the slide",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/9/schedule?season=2027&seasontype=2",
+      "value": 8
+    },
+    {
+      "key": "fears_pts",
+      "label": "Jeremiah Fears points vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 19
+    },
+    {
+      "key": "fears_reb",
+      "label": "Jeremiah Fears rebounds vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 10
+    },
+    {
+      "key": "fears_ast",
+      "label": "Jeremiah Fears assists vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 10
+    },
+    {
+      "key": "fears_min",
+      "label": "Jeremiah Fears minutes vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 29
+    },
+    {
+      "key": "fears_td_count",
+      "label": "Jeremiah Fears triple-doubles in 2026-27 (Nov 16 vs Golden State, his only one in 15 games)",
+      "source": "https://www.basketball-reference.com/players/f/fearsje01/gamelog/2027/",
+      "value": 1
+    },
+    {
+      "key": "fears_games",
+      "label": "Jeremiah Fears games played in 2026-27 through Nov 16",
+      "source": "https://www.basketball-reference.com/players/f/fearsje01/gamelog/2027/",
+      "value": 15
+    },
+    {
+      "key": "bey_pts",
+      "label": "Saddiq Bey points vs Golden State, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 23
+    },
+    {
+      "key": "gs_fgm",
+      "label": "Golden State field goals made vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 28
+    },
+    {
+      "key": "gs_fga",
+      "label": "Golden State field goals attempted vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 84
+    },
+    {
+      "key": "gs_fg_pct",
+      "label": "Golden State field-goal percentage vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 33
+    },
+    {
+      "key": "gs_3pm",
+      "label": "Golden State 3-pointers made vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 11
+    },
+    {
+      "key": "gs_3pa",
+      "label": "Golden State 3-pointers attempted vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 46
+    },
+    {
+      "key": "gs_3p_pct",
+      "label": "Golden State 3-point percentage vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 24
+    },
+    {
+      "key": "lendeborg_pts",
+      "label": "Yaxel Lendeborg points vs New Orleans, Nov 16",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401910000",
+      "value": 28
+    },
+    {
+      "key": "no_wins",
+      "label": "New Orleans wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 5
+    },
+    {
+      "key": "no_losses",
+      "label": "New Orleans losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 10
+    },
+    {
+      "key": "gs_wins",
+      "label": "Golden State wins",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 8
+    },
+    {
+      "key": "gs_losses",
+      "label": "Golden State losses",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 6
+    },
+    {
+      "key": "meetings_count",
+      "label": "Meetings between New Orleans and Golden State in the last 7 days",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261116",
+      "value": 2
+    }
+  ]
+}
