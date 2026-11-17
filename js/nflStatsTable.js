@@ -121,9 +121,12 @@ const NFLStatsTable = (() => {
     const defaultDir = col => (col && col.low ? 'asc' : 'desc');
 
     // Ranked only among qualified players with MIN_GP+ games, so a 1-for-1
-    // backup never paints as the league's best completion rate.
+    // backup never paints as the league's best completion rate. Before Week 5
+    // nobody has MIN_GP, so the floor drops to the most games anyone qualified has played.
     function percentiles(rows, cols, poolIds) {
-        const pool = rows.filter(r => poolIds.has(r.id) && (r.v[GP_KEY] || 0) >= MIN_GP);
+        const qual = rows.filter(r => poolIds.has(r.id));
+        const floor = Math.min(MIN_GP, Math.max(0, ...qual.map(r => r.v[GP_KEY] || 0)));
+        const pool = qual.filter(r => (r.v[GP_KEY] || 0) >= floor);
         const out = {};
         for (const col of cols) {
             if (col.noShade) continue;
