@@ -131,7 +131,7 @@ test('render: team page shows record, roster, games and links to player and game
     assert.match(html, /Team Record/);
     assert.match(html, /Last 10/);
     assert.match(html, /2026-27 Season/);
-    assert.match(html, /Recent Results/);
+    assert.match(html, /Game Log/);
     assert.match(html, /Upcoming/);
     assert.match(html, />Roster</);
     assert.doesNotMatch(html, /Depth Chart/);
@@ -148,5 +148,52 @@ test('render: standings unavailable still renders identity, roster and games', (
     assert.match(html, /San Antonio Spurs/);
     assert.match(html, /9-2/);
     assert.doesNotMatch(html, /Team Record/);
-    assert.match(html, /Recent Results/);
+    assert.match(html, /Game Log/);
+});
+
+// Season game log (parity #146). tests/fixtures/nba-schedule-ny-trim.json is
+// the live Knicks /teams/ny/schedule, fetched 2026-11-13 (11 finals, 6-5).
+const NY = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'nba-schedule-ny-trim.json'), 'utf8'));
+
+test('game log: every final, newest first, with margin and running record', () => {
+    const { log } = ctx._nbaTeamGames(NY.events, NY.team.id);
+    assert.equal(log.length, 11);
+    assert.equal(log[0].record, '6-5');
+    assert.equal(log[log.length - 1].record, '0-1');
+    assert.equal(log[0].oppAbbr, 'CLE');
+    assert.equal(log[0].margin, -8);
+    const ts = r => new Date(r.date).getTime();
+    for (let i = 1; i < log.length; i++) assert.ok(ts(log[i - 1]) > ts(log[i]));
+    for (const r of log) assert.equal(r.margin, r.my - r.opp);
+});
+
+test('game log splits: reproduce #114 (Knicks allowed 108.0 in the first 3, 99.9 in the next 7)', () => {
+    const { log } = ctx._nbaTeamGames(NY.events, NY.team.id);
+    assert.equal(ctx._nbaTeamSplit(log.slice(-3), null).pa, 108);
+    assert.equal(ctx._nbaTeamSplit(log.slice(1, 8), null).pa, 99.9);
+    const l5 = ctx._nbaTeamSplit(log, 5), l10 = ctx._nbaTeamSplit(log, 10), all = ctx._nbaTeamSplit(log, null);
+    assert.deepEqual([l5.w, l5.l, l10.w, l10.l, all.w, all.l, all.n], [4, 1, 6, 4, 6, 5, 11]);
+    assert.equal(all.margin, 6.8);
+    assert.equal(ctx._nbaTeamSplit([], null), null);
+});
+
+test('game log: non-regular-season finals are left out', () => {
+    const pre = JSON.parse(JSON.stringify(NY.events[0]));
+    pre.id = 'pre1'; pre.seasonType.type = 1; pre.date = '2026-10-10T23:30Z';
+    const { log } = ctx._nbaTeamGames([pre, ...NY.events], NY.team.id);
+    assert.equal(log.length, 11);
+    assert.ok(!log.some(r => r.id === 'pre1'));
+});
+
+test('game log card: splits table, newest 10 rows, the rest behind a toggle', () => {
+    const { log } = ctx._nbaTeamGames(NY.events, NY.team.id);
+    const html = ctx._nbaTeamGameLogCard(log);
+    assert.match(html, /Last 5<\/td><td>4-1/);
+    assert.match(html, /Last 10<\/td><td>6-4/);
+    assert.match(html, /Season<\/td><td>6-5/);
+    assert.match(html, /All 11 games/);
+    assert.equal((html.match(/navigateTo\('nba-game-/g) || []).length, 11);
+    assert.match(html, /107-115/);
+    assert.match(html, /\u22128/);
+    assert.match(ctx._nbaTeamGameLogCard([]), /No games played yet/);
 });
