@@ -3963,3 +3963,16 @@ The rejected options were a Pages Function proxy, blocked by D-176, and nflverse
 **Known residue:** browsers that fetched an old "not on roster" answer keep it up to 6 hours (`max-age=21600`); those visitors see the old message for that player until it expires. Not worked around.
 
 **Update 2026-11-17 — NCAAF player game logs too.** `/api/ncaafgamelog` had the same 403 (checked on production: `gamelog fetch failed`), so NCAAF player pages showed no game log. It has the NFL game log's shape, so `_espnNFLPlayerResponse` now also serves it (college-football route, August season start, `bowl` counted as postseason like the proxy). New contract `ncaaf-player-gamelog` against the FBS passing leader. Gap spotted in an unpushed parallel branch (`fix/nfl-player-stats-blocked`, another session, 2026-11-16) whose NFL half duplicates this decision; that branch was left untouched.
+
+## D-205 — Home hero no longer shows a finished MLB division race (2026-11-17)
+
+**Found:** owner screenshot, 2026-11-16 23:40 CT. With every ticker game final, the home hero read "Cleveland Guardians lead the AL Central — 1 game clear of Detroit Tigers at 88–74". That is the final 2025 table (checked against statsapi `season=2025`); the 2026 season had ended with Cleveland 85–77, White Sox 1.0 back. Three causes stacked: when `HomeLive.pickHero` finds no live or today game, `_renderHomeHero` fell back to `_heroFromStandings()` (D-046) unconditionally, so D-046's "hidden if nothing to show" state was unreachable once the season ended; that fallback had no season check; and `MLB_SEASON` is the previous year in Nov–Feb, so in November it reads two seasons back.
+
+**Decision:** the standings fallback runs only when `HomeLive.mlbRaceSeasonOpen(MLB_SEASON, now)`, i.e. `MLB_SEASON` equals the calendar year. That reuses `MLB_SEASON`'s Mar–Oct rule rather than adding a second calendar rule. Otherwise a null pick hides the hero as before. `_mlbPennantStatMoment()` (the home Insights pennant line) read the same standings the same way and gets the same gate. Both now pick the race through one pure function, `HomeLive.tightestRace(divs)`, which also:
+- reads a tied second place's games back (`"-"` from statsapi) as 0 instead of NaN, so a tied division is no longer silently dropped and the existing "tied atop" copy can show;
+- skips a division whose leader has clinched it (`clinchIndicator` `y` or `z`), which covers October postseason off-days and late September, when the gate is open but the table is final;
+- skips a table no one has played in, so the tie fix can't turn a pre-Opening-Day 0–0 table into "tied atop … 0–0 apiece".
+
+**Not changed:** `MLB_SEASON`'s Nov/Dec value (year − 1, arguably the just-finished season) is used across the whole MLB section; changing it is a separate owner decision. This fix does not depend on it: whichever value it takes in Nov–Feb, it is not the calendar year, so the gate stays closed. `pickHero` eligibility is unchanged.
+
+**Guards:** `tests/homeLive.test.js` — gate open/closed across Jul, Nov and Feb; tie read as 0; clinched and unplayed divisions skipped.

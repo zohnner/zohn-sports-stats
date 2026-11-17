@@ -2023,14 +2023,7 @@ async function _heroFromStandings() {
         AppState.mlbStandings = divs;
     }
     if (!Array.isArray(divs) || !divs.length) return null;
-    let best = null;
-    divs.forEach(d => {
-        const teams = d.teams || [];
-        if (teams.length < 2) return;
-        const gb = parseFloat(teams[1].gb);
-        if (!isFinite(gb)) return;
-        if (!best || gb < best.gb) best = { div: d.division, leader: teams[0], second: teams[1], gb };
-    });
+    const best = HomeLive.tightestRace(divs);
     if (!best) return null;
     const logo = (typeof getMLBTeamLogoUrl === 'function' && best.leader.teamId) ? getMLBTeamLogoUrl(best.leader.teamId) : '';
     const colors = typeof getMLBTeamColors === 'function' ? getMLBTeamColors(best.leader.teamAbbr) : { primary: '#7c8df0' };
@@ -2652,7 +2645,7 @@ async function _renderHomeHero(games) {
     });
     const winner = HomeLive.pickHero(candidates, Date.now());
     let hero = winner ? winner.heroFn(winner.g, winner.live ? 'live' : 'upcoming') : null;
-    if (!hero) hero = await _heroFromStandings().catch(() => null);
+    if (!hero && HomeLive.mlbRaceSeasonOpen(MLB_SEASON, Date.now())) hero = await _heroFromStandings().catch(() => null);
 
     if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
     host.className = `home-hero home-hero--${hero.kind}`;
@@ -2922,6 +2915,7 @@ function _mlbLeaderStatMoments() {
 // AppState.mlbStandings/mlbOdds this used to compute inline in
 // _renderHomeMoment -- lifted, not re-derived.
 async function _mlbPennantStatMoment() {
+    if (!HomeLive.mlbRaceSeasonOpen(MLB_SEASON, Date.now())) return null;
     try {
         // Phase 4 perf pass (2026-09-08): same _homeInflightFetch treatment
         // as _mlbTrendingStatMoment above -- the AppState.mlbStandings check
@@ -2929,17 +2923,9 @@ async function _mlbPennantStatMoment() {
         // from both missing it before either's fetch resolves.
         if (!AppState.mlbStandings) AppState.mlbStandings = await _homeInflightFetch('mlbStandingsFull', fetchMLBStandingsFull);
     } catch (_) { return null; }
-    const races = [];
-    (AppState.mlbStandings || []).forEach(d => {
-        const [lead, second] = d.teams || [];
-        if (!lead || !second) return;
-        const gb = parseFloat(second.gb);
-        if (isNaN(gb)) return;
-        races.push({ div: d.division, lead, second, gb });
-    });
-    if (!races.length) return null;
-    races.sort((a, b) => a.gb - b.gb);
-    const r = races[0];
+    const best = HomeLive.tightestRace(AppState.mlbStandings);
+    if (!best) return null;
+    const r = { ...best, lead: best.leader };
     const tail = r.gb === 0
         ? `are tied atop the ${r.div}`
         : `lead the ${r.div} by ${r.gb === 1 ? '1 game' : r.gb + ' games'} over ${r.second.teamName}`;

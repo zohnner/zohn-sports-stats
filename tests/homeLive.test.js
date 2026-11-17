@@ -156,3 +156,48 @@ test('pickHero: a game with no known start still counts as today, and nothing yi
     assert.equal(H.pickHero([cand('no date', { score: 3 })], NOW).name, 'no date');
     assert.equal(H.pickHero([], NOW), null);
 });
+
+// D-205: the home hero's standings fallback showed a finished race in November.
+const row = (name, wins, losses, gb, clinched = '') => ({ teamName: name, wins, losses, gb, clinched });
+const div = (division, ...teams) => ({ division, teams });
+
+test('mlbRaceSeasonOpen: open only when the standings season is the calendar year', () => {
+    const H = load();
+    assert.equal(H.mlbRaceSeasonOpen(2026, new Date(2026, 6, 15).getTime()), true);
+    // Nov 2026: MLB_SEASON is 2025, two seasons stale.
+    assert.equal(H.mlbRaceSeasonOpen(2025, new Date(2026, 10, 16).getTime()), false);
+    // Feb 2027: MLB_SEASON is 2026, the season that ended.
+    assert.equal(H.mlbRaceSeasonOpen(2026, new Date(2027, 1, 10).getTime()), false);
+});
+
+test('tightestRace: a tied second place ("-") is a 0-game race, not skipped', () => {
+    const H = load();
+    const r = H.tightestRace([
+        div('AL Central', row('Guardians', 60, 50, '—'), row('Tigers', 59, 51, '1.0')),
+        div('AL East', row('Rays', 62, 48, '—'), row('Yankees', 62, 48, '-')),
+    ]);
+    assert.equal(r.div, 'AL East');
+    assert.equal(r.gb, 0);
+    assert.equal(r.leader.teamName, 'Rays');
+});
+
+test('tightestRace: clinched divisions and unplayed tables are not races', () => {
+    const H = load();
+    assert.equal(H.tightestRace([
+        div('AL Central', row('Guardians', 85, 77, '—', 'y'), row('White Sox', 84, 78, '1.0', 'w')),
+        div('AL East', row('Rays', 98, 64, '—', 'z'), row('Yankees', 93, 68, '4.5', 'w')),
+    ]), null);
+    assert.equal(H.tightestRace([div('AL West', row('Astros', 0, 0, '—'), row('Rangers', 0, 0, '-'))]), null);
+    const r = H.tightestRace([
+        div('AL Central', row('Guardians', 85, 77, '—', 'y'), row('White Sox', 84, 78, '1.0')),
+        div('NL East', row('Braves', 80, 70, '—', 'x'), row('Phillies', 77, 73, '3.0')),
+    ]);
+    assert.equal(r.div, 'NL East');
+    assert.equal(r.gb, 3);
+});
+
+test('tightestRace: empty or malformed input is null', () => {
+    const H = load();
+    assert.equal(H.tightestRace(null), null);
+    assert.equal(H.tightestRace([div('X', row('A', 1, 0, '—'))]), null);
+});
