@@ -396,10 +396,10 @@ const _RG_SHOWN = 25;
 
 function _rankedGamesResultsHtml(games, state) {
     const esc = (typeof _escHtml === 'function') ? _escHtml : (s => String(s));
-    const day = d => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); } catch (_) { return ''; } };
+    const day = d => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) { return ''; } };
     const side = (abbr, rank, score) => `${rank ? `No. ${rank} ` : ''}${esc(abbr)} ${score}`;
     const r = rankedGames(games, state);
-    const row = g => `<div class="detail-row"><span class="detail-label">${g.date ? `${esc(day(g.date))} · ` : ''}${side(g.winner, g.winnerRank, g.winnerScore)}, ${side(g.loser, g.loserRank, g.loserScore)}</span><span class="detail-value">${g.upset ? '<span class="win-badge" style="margin:0 0.5rem 0 0">Upset</span>' : ''}${g.margin} pts</span></div>`;
+    const row = g => `<div class="detail-row"><span class="detail-label">${g.date ? `${esc(day(g.date))} · ` : ''}${side(g.winner, g.winnerRank, g.winnerScore)}, ${side(g.loser, g.loserRank, g.loserScore)}</span><span class="detail-value" style="white-space:nowrap">${g.upset ? '<span class="win-badge" style="margin:0 0.5rem 0 0">Upset</span>' : ''}${g.margin} pts</span></div>`;
     const teamLine = r.teamRecord
         ? `<p class="md-note" style="margin:0.5rem 0">${esc(state.team.trim().toUpperCase())} is ${r.teamRecord.w}-${r.teamRecord.l} against ranked opponents.</p>`
         : '';
@@ -415,6 +415,7 @@ function _rankedGamesHtml(games, state) {
     const all = rankedGames(games);
     if (!all.rows.length) return '';
     const teams = [...new Set(all.rows.flatMap(g => [g.winner, g.loser]))].sort();
+    const example = all.rows[0].winner;
     const pills = _RG_FILTERS.map(([k, l]) =>
         `<button type="button" class="standings-tab${k === state.filter ? ' active' : ''}" data-rg-filter="${k}">${l}</button>`).join('');
     return `<div class="stats-card" style="margin-top:1.25rem">
@@ -422,7 +423,7 @@ function _rankedGamesHtml(games, state) {
         <p class="md-note" style="margin:0 0 0.75rem">Ranked teams are ${all.vsUnranked.w}-${all.vsUnranked.l} against unranked opponents.</p>
         <div class="standings-tabs" style="margin-bottom:0.75rem">${pills}</div>
         <div class="search-input-wrap" style="margin-bottom:0.75rem">
-            <input type="search" class="ncaaf-team-filter-input" data-rg-team placeholder="Team record vs ranked (e.g. ${esc(teams[0] || 'OU')})" aria-label="Team abbreviation" list="rgTeams" value="${esc(state.team || '')}" autocomplete="off">
+            <input type="search" class="ncaaf-team-filter-input" data-rg-team placeholder="Team, e.g. ${esc(example)}" aria-label="Team abbreviation: record against ranked opponents" list="rgTeams" value="${esc(state.team || '')}" autocomplete="off">
             <datalist id="rgTeams">${teams.map(t => `<option value="${esc(t)}">`).join('')}</datalist>
         </div>
         <div data-rg-results>${_rankedGamesResultsHtml(games, state)}</div>
