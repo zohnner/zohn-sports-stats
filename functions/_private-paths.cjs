@@ -12,8 +12,8 @@ const PRIVATE_FILES = [
 ];
 
 const PRIVATE_DIRS = [
-    '.claude', '.github', 'Documentation', 'Themes', 'bot', 'docs',
-    'migrations', 'misc_documentation', 'tests', 'tools', 'worker',
+    '.claude', '.github', 'bot', 'docs',
+    'migrations', 'tests', 'tools', 'worker',
 ];
 
 const PUBLIC_FILES = [
