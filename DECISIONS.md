@@ -4022,6 +4022,15 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 - a network error that recovers;
 - a 404, which is fetched once.
 
+<<<<<<< HEAD
+## D-208 — A retired story 301s to the page with the corrected numbers (2026-11-17)
+
+**Context:** #172 unpublished the Vikings 6-2 story because its count used weeks 1-8, which dropped every team with an early bye (#138). Links shared before the unpublish kept bringing readers in: it was the third-ranked entry page in the 2026-11-17 desk brief, and every one of those readers got a 404.
+
+**Decision:** `RETIRED_STORIES` in `functions/_storyLinks.js` maps an unpublished slug to the page that now carries the correct numbers, and `renderStoryPage` answers it with a 301 before anything else. The Vikings slug goes to `/nfl/team/min/minnesota-vikings`, whose start-history module (D-201) counts each team's first 8 games. Unpublishing is still "delete the story"; a slug redirects only when someone lists it, and only when a correct page exists. With no such page, a pulled story keeps its 404.
+
+**Guard:** `tests/storyLinks.test.js` fails if a retired slug is still in its sport's published index, or if a target is not a site path.
+
 ## D-209 — The route crawl retries a page that drops one request (2026-11-17)
 
 **Context:** The manual Integrity Audit right after D-207 merged passed. The next one, 46 minutes later, failed on the route crawl: three small-college NCAAF team pages (`/ncaaf/team/2023`, `/507`, `/74`) answered "0", the crawler's code for a fetch that threw (a 20s timeout or a dropped connection), out of roughly 400 pages. Minutes later all three answered 200, each in under 1.3s. D-207 had given contract checks one retry but not the crawl.
