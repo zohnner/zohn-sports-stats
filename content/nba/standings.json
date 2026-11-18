@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-16",
-  "gamesCounted": 205,
+  "throughDate": "2026-11-17",
+  "gamesCounted": 210,
   "source": "balldontlie",
   "sections": [
     {
@@ -18,11 +18,11 @@
         },
         {
           "name": "New York Knicks",
-          "record": "7-6"
+          "record": "8-6"
         },
         {
           "name": "Toronto Raptors",
-          "record": "5-8"
+          "record": "5-9"
         },
         {
           "name": "Brooklyn Nets",
@@ -35,7 +35,7 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "8-4"
+          "record": "9-4"
         },
         {
           "name": "Cleveland Cavaliers",
@@ -72,7 +72,7 @@
         },
         {
           "name": "Charlotte Hornets",
-          "record": "4-9"
+          "record": "4-10"
         },
         {
           "name": "Washington Wizards",
@@ -85,14 +85,14 @@
       "teams": [
         {
           "name": "Minnesota Timberwolves",
-          "record": "10-4"
-        },
-        {
-          "name": "Portland Trail Blazers",
-          "record": "9-4"
+          "record": "11-4"
         },
         {
           "name": "Oklahoma City Thunder",
+          "record": "9-5"
+        },
+        {
+          "name": "Portland Trail Blazers",
           "record": "9-5"
         },
         {
@@ -101,7 +101,7 @@
         },
         {
           "name": "Utah Jazz",
-          "record": "1-13"
+          "record": "2-13"
         }
       ]
     },
@@ -110,7 +110,7 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "12-2"
+          "record": "13-2"
         },
         {
           "name": "Golden State Warriors",
@@ -122,7 +122,7 @@
         },
         {
           "name": "LA Clippers",
-          "record": "4-8"
+          "record": "4-9"
         },
         {
           "name": "Sacramento Kings",
@@ -135,7 +135,7 @@
       "teams": [
         {
           "name": "San Antonio Spurs",
-          "record": "12-2"
+          "record": "12-3"
         },
         {
           "name": "Houston Rockets",
