@@ -19,7 +19,9 @@ function _ncaafIsOffseason() {
 
 // `fresh` skips the cache READ but still writes the result back (D-170):
 // a live poll gets current data and every other caller benefits from it.
-async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
+// persist:false skips the localStorage write: season loops fetch 15 weeks at
+// 1.7-2.5 MB each, which filled storage and raised the "Caching off" toast.
+async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false, persist = true } = {}) {
     const url = new URL('/api/ncaaf', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -40,7 +42,7 @@ async function espnNCAAFFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     if (!res.ok) throw new Error(`NCAAF API ${res.status}: ${res.statusText}`);
     let json;
     try { json = await res.json(); } catch { throw new Error(`NCAAF API returned non-JSON (${path})`); }
-    ApiCache.set(cacheKey, json, ttl);
+    if (persist) ApiCache.set(cacheKey, json, ttl);
     noteFetched(`ncaaf${path}`, Date.now());
     return json;
 }
@@ -199,7 +201,7 @@ async function fetchNCAAFScoreboard(opts = {}) {
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
-    const data = await espnNCAAFFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
+    const data = await espnNCAAFFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh, persist: opts.persist !== false });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -292,7 +294,7 @@ async function fetchNCAAFSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 15 }, (_, i) => i + 1).map(week =>
-            fetchNCAAFScoreboard({ seasontype: 2, week }).catch(() => [])
+            fetchNCAAFScoreboard({ seasontype: 2, week, persist: false }).catch(() => [])
         )
     );
 
@@ -326,7 +328,7 @@ async function fetchNCAAFPriorSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 15 }, (_, i) => i + 1).map(week =>
-            fetchNCAAFScoreboard({ seasontype: 2, week, season: priorSeason }).catch(() => [])
+            fetchNCAAFScoreboard({ seasontype: 2, week, season: priorSeason, persist: false }).catch(() => [])
         )
     );
 

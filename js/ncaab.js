@@ -27,7 +27,9 @@ function _ncaabIsOffseason() {
 
 // `fresh` skips the cache READ but still writes the result back (D-170):
 // a live poll gets current data and every other caller benefits from it.
-async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false } = {}) {
+// persist:false skips the localStorage write for the season day-loop (see
+// espnNCAAFFetch).
+async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fresh = false, persist = true } = {}) {
     const url = new URL('/api/ncaab', location.origin);
     url.searchParams.set('path', path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -48,7 +50,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
     if (!res.ok) throw new Error(`NCAAB API ${res.status}: ${res.statusText}`);
     let json;
     try { json = await res.json(); } catch { throw new Error(`NCAAB API returned non-JSON (${path})`); }
-    ApiCache.set(cacheKey, json, ttl);
+    if (persist) ApiCache.set(cacheKey, json, ttl);
     noteFetched(`ncaab${path}`, Date.now());
     return json;
 }
@@ -66,7 +68,7 @@ async function espnNCAABFetch(path, params = {}, ttl = ApiCache.TTL.SHORT, { fre
 async function fetchNCAABScoreboard(opts = {}) {
     const params = { groups: 50 };
     if (opts.dates) params.dates = opts.dates;
-    const data = await espnNCAABFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
+    const data = await espnNCAABFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh, persist: opts.persist !== false });
     return (data.events || []).map(ev => {
         const comp = ev.competitions?.[0];
         if (!comp) return null;
@@ -129,7 +131,7 @@ async function fetchNCAABSeasonGames() {
     const perDay = [];
     for (let i = 0; i < dates.length; i += CONCURRENCY) {
         const batch = dates.slice(i, i + CONCURRENCY);
-        const results = await Promise.all(batch.map(dt => fetchNCAABScoreboard({ dates: dt }).catch(() => [])));
+        const results = await Promise.all(batch.map(dt => fetchNCAABScoreboard({ dates: dt, persist: false }).catch(() => [])));
         perDay.push(...results);
     }
 

@@ -42,6 +42,7 @@ function sandbox(files, route, presetCache = {}) {
         noteFetched: noop,
     };
     ctx._espnFetch = (u, init) => ctx.fetch(u, init);
+    ctx.__cacheKeys = () => [...cache.keys()];
     ctx._escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     ctx.globalThis = ctx; ctx.window = ctx;
     vm.createContext(ctx);
@@ -147,4 +148,33 @@ test('section HTML: summary line, escaped names, upset tag', async () => {
     assert.match(all, /Ranked teams are 13-4 against unranked opponents/);
     assert.match(all, /OU 27, No\. 1 TEX 24/);
     assert.match(all, /Upset/);
+});
+
+// A season load fetches 15 NCAAF weeks (1.7-2.5 MB each) or one NCAAB
+// scoreboard per day. Saving each raw payload filled localStorage (~10 MB
+// measured 2026-11-18) and raised the "Caching off" toast; only the
+// flattened season array is worth keeping.
+const rawScoreboardKeys = ctx => ctx.__cacheKeys().filter(k => /^ncaa[fb]:\/scoreboard:/.test(k));
+
+test('season loads keep raw scoreboard payloads out of storage', async () => {
+    const { ctx } = await cfbGames();
+    assert.deepEqual(rawScoreboardKeys(ctx), [], 'NCAAF season');
+    assert.ok(ctx.__cacheKeys().some(k => k.startsWith('ncaafSeasonGames')), 'the flattened season array is still cached');
+
+    const prior = sandbox(['ncaaf.js'], cfbRoute);
+    await prior.fetchNCAAFPriorSeasonGames();
+    assert.deepEqual(rawScoreboardKeys(prior), [], 'NCAAF prior season');
+
+    const cbb = sandbox(['ncaab.js'], cbbRoute);
+    await cbb.fetchNCAABSeasonGames();
+    assert.deepEqual(rawScoreboardKeys(cbb), [], 'NCAAB season');
+});
+
+test('the Scores page still caches the scoreboard it shows', async () => {
+    const f = sandbox(['ncaaf.js'], cfbRoute);
+    await f.fetchNCAAFScoreboard({ seasontype: 2, week: 6 });
+    assert.equal(rawScoreboardKeys(f).length, 1);
+    const b = sandbox(['ncaab.js'], cbbRoute);
+    await b.fetchNCAABScoreboard({ dates: '20261115' });
+    assert.equal(rawScoreboardKeys(b).length, 1);
 });
