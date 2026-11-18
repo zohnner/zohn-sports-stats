@@ -103,17 +103,20 @@ async function main() {
     add(urlTag('/glossary', 'monthly', '0.6'));
     add(urlTag('/about', 'monthly', '0.5'));
     add(urlTag('/nfl/glossary', 'monthly', '0.6'));
+    let newestStory = '';
     for (const sport of Object.keys(require('./stories/story-core.cjs').STORY_SPORTS)) {
         try {
             const idx = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', sport, 'stories', 'index.json'), 'utf8'));
             const stories = idx.stories || [];
             const newest = stories.map(s => s.date).sort().pop();
             if (stories.length) add(urlTag(`/${sport}/stories`, 'daily', '0.7', newest));
+            if (newest && newest > newestStory) newestStory = newest;
             for (const s of stories) add(urlTag(s.url, 'monthly', '0.6', s.date));
         } catch (e) {
             console.warn(`${sport} stories index unreadable, skipping story URLs: ${e.message}`);
         }
     }
+    if (newestStory) add(urlTag('/stories', 'daily', '0.7', newestStory));
 
     // 2) MLB teams
     try {

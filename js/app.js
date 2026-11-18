@@ -324,11 +324,6 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
     _renderMyTeams('slMyTeams', sport);
 }
 
-// Boot renders the home view synchronously (setupNavigation -> _loadFromHash -> loadHome), so
-// any module state loadHome touches must be initialized before this call, or it hits the
-// const/let temporal dead zone. _homeNewsCache is read by _renderHomeHeadlines on first paint (F1).
-let _homeNewsCache = null;
-
 // setupNavigation calls _loadFromHash which handles initial view + player loading
 setupNavigation();
 
@@ -750,8 +745,7 @@ function _homeSkeletonCards(n = 6) {
 // that instead of showing whatever AppState.currentSport happens to still be
 // set to. Merges MLB/NFL/NCAAF through Scorebug's already-normalized model
 // (D-047 S2) — a data-merge over fetches every sport already makes elsewhere,
-// not a new component. NCAAB has no Scorebug normalizer yet (D-052 shipped
-// its own standalone ticker fn) and NHL is preview-only — both out of scope.
+// not a new component. NHL is preview-only and out of scope.
 // D-173: `live` is set only by the 30s home poll. On those ticks any sport
 // with a game in progress fetches fresh (bypassing its 5-minute cache) under
 // its own in-flight key, so it never joins a cached request already running;
@@ -959,31 +953,13 @@ function loadHome() {
         ${isFirstVisit ? `
         <div class="home-welcome">
             <strong class="home-welcome-headline">Serious stats for serious fans — no login, ever.</strong>
-            <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NCAAF, NCAAB, and WNBA — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
-        </div>` : `<div class="home-welcome-back" id="homeWelcomeBack" hidden></div>`}
+            <span class="home-welcome-sub">Broadcast-grade analytics across MLB, NFL, NBA, WNBA and college football and basketball — the receipt on every number, plus no-login NFL draft tools that give you an edge. Free, no account, no ads.</span>
+        </div>` : ''}
         <div class="sl-layout home-hub-layout">
             <div class="sl-primary">
                 <!-- Data-Story hero (D-046 P2, cross-sport across all 5 since the
                      home redesign) — the day's focal narrative; hidden until populated -->
                 <div class="home-hero" id="homeHero" hidden></div>
-
-                <!-- Search prompt bar (P2-004) — pre-existing bug, unrelated to D-103,
-                     caught live 2026-08-15: this referenced a #searchBtn id that has
-                     never existed (the real open-search-modal trigger has always been
-                     #globalSearchBtn — see index.html/js/search.js). getElementById
-                     silently returned null so ?.click() no-op'd — clicking this bar
-                     visually focused nothing and the search modal never opened. -->
-                <button class="home-search-bar" onclick="document.getElementById('globalSearchBtn')?.click()" aria-label="Search players">
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <span class="home-search-bar-text">Search players, teams, stats…</span>
-                    <kbd class="home-search-kbd">⌘K</kbd>
-                </button>
-
-                <!-- Seasonal promo band (D-040 1a / D-043 3b) — one calendar-driven
-                     marketing CTA (e.g. NFL season live, draft season). Pennant Races
-                     used to share this host; its tightest-gap signal now competes as
-                     an MLB candidate in the Insights engine below instead (Phase 1). -->
-                <div class="home-moment" id="homeMoment" hidden></div>
 
                 <!-- Today's Games — still MLB/NFL/NCAAF only; the sport-preview hub
                      (a later phase) subsumes this with one card per sport instead -->
@@ -1015,24 +991,15 @@ function loadHome() {
                      tabbed rail below so it is visible without a click. -->
                 <div class="home-stories home-zone" id="homeStories"></div>
 
-                <!-- Insights + Headlines rail (D-046 P3, home redesign Phase 1) —
-                     Insights leads: real computed cross-sport stat depth ESPN/CBS/
-                     Yahoo's wire-copy headlines can't show, the actual differentiation
-                     play. Headlines (also now cross-sourced across all 5 sports) is
-                     the secondary tab, not the default. -->
+                <!-- Computed stat lines (D-046 P3): the site's own numbers. The wire
+                     headlines that shared this box as a second tab sent readers off
+                     the site and live on each sport's News page instead. -->
                 <div class="home-rail home-zone" id="homeRail">
                     <div class="home-section-hdr">
-                        <span class="home-section-title">The Latest</span>
-                        <div class="rail-tabs" role="tablist" aria-label="Insights and news">
-                            <button class="rail-tab active" data-tab="insights" role="tab" aria-selected="true">Insights</button>
-                            <button class="rail-tab" data-tab="headlines" role="tab" aria-selected="false">Headlines</button>
-                        </div>
+                        <span class="home-section-title">By the Numbers</span>
                     </div>
-                    <div class="rail-panel" id="railInsights" role="tabpanel">
+                    <div class="rail-panel" id="railInsights">
                         ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
-                    </div>
-                    <div class="rail-panel" id="railHeadlines" role="tabpanel" hidden>
-                        ${[0,1,2,3,4].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
                     </div>
                 </div>
             </div>
@@ -1048,7 +1015,6 @@ function loadHome() {
 
     `;
 
-    _renderHomeMoment();
     _renderSportPicker();
     _renderHomeRecents();
     _renderHomeFollowing();
@@ -1056,10 +1022,7 @@ function loadHome() {
     _syncHomeSportTabUI();
     _loadHomeTodayGames();
     _wireHomeSportTabs();
-    _wireRailTabs();
-    _renderHomeHeadlines();
     _renderHomeStories();
-    _renderHomeWelcomeBack();
     _renderHomeInsights();
 
     // Background-load leaderboard data for the Insights rail if not yet cached
@@ -1240,10 +1203,9 @@ function _renderHomeFollowing() {
 
 // Functions, not top-level `const`s -- loadHome() runs synchronously during script
 // bootstrap (setupNavigation -> _loadFromHash -> navigateTo, all called near the top of
-// this file), before the JS engine reaches a `const` declared further down (see
-// _promoMoments' own note above for the exact TDZ bug this already caused once, live,
-// 2026-08-02). Function declarations are fully hoisted, so these read identically with
-// no ordering hazard.
+// this file), before the JS engine reaches a `const` declared further down (a TDZ
+// bug this already caused once, live, 2026-08-02). Function declarations are fully
+// hoisted, so these read identically with no ordering hazard.
 // nba added D-161 follow-up (2026-09-14) -- js/nba.js's renderFollowStar()
 // calls mean a real followed NBA team/player can exist now; without an entry
 // here it was silently dropped from Following entirely (no crash, just never
@@ -1730,7 +1692,7 @@ window.addEventListener('ss:follow-changed', () => {
 });
 
 // D-043 3a: sport-tab bar. A static element (part of loadHome()'s one-shot
-// template), so its click listener is bound once, guarded like _wireRailTabs.
+// template), so its click listener is bound once.
 function _syncHomeSportTabUI() {
     const bar = document.getElementById('homeSportTabs');
     if (!bar) return;
@@ -2613,6 +2575,18 @@ function _nbaMarquee(g) {
 // action no longer being invisible on the homepage 9 months a year (D-099's
 // finding: preseason and the first ~9 weeks of the regular season were
 // locked out entirely under the old rule).
+function _heroFromStory(s) {
+    const sport = String(s.sport || '').toUpperCase();
+    const html = `
+        <div class="hero-main">
+            <span class="hero-kicker">SportStrata Stories${sport ? ` · ${_escHtml(sport)}` : ''}</span>
+            <h2 class="hero-headline">${_escHtml(s.title)}</h2>
+            <p class="hero-hook">${_escHtml(s.dek)}</p>
+            <div class="hero-meta"><span class="hero-cta">Read the story →</span></div>
+        </div>`;
+    return { kind: 'story', html, onClick: () => { location.assign(s.url); } };
+}
+
 async function _renderHomeHero(games) {
     const host = document.getElementById('homeHero');
     if (!host) return;
@@ -2656,18 +2630,34 @@ async function _renderHomeHero(games) {
     // and drops upcoming games that aren't today. Leverage and marquee scores
     // are on different scales, but they only ever compare like with like.
     const candidates = [];
-    const add = (g, live, start, tier, cfg, heroFn) =>
-        candidates.push({ g, live, start: Date.parse(start), tier, score: live ? cfg.leverage(g) : cfg.marquee(g), heroFn });
+    const add = (g, live, start, tier, cfg, heroFn, sport) => {
+        const score = live ? cfg.leverage(g) : cfg.marquee(g);
+        // Every leverage/marquee score adds 100 for a followed team's game.
+        candidates.push({ g, live, start: Date.parse(start), tier, score, heroFn, sport,
+            fav: score >= 100, ranked: !!(g.homeTeam?.rank || g.awayTeam?.rank) });
+    };
     list.forEach(g => {
-        if (isLive(g) || isUpcoming(g)) add(g, isLive(g), g.gameDate, HomeLive.mlbTier(g), { leverage: mlbLeverage, marquee: mlbMarquee }, _heroFromGame);
+        if (isLive(g) || isUpcoming(g)) add(g, isLive(g), g.gameDate, HomeLive.mlbTier(g), { leverage: mlbLeverage, marquee: mlbMarquee }, _heroFromGame, 'mlb');
     });
     Object.entries(_HOME_HERO_GUEST_SPORTS).forEach(([sport, cfg]) => {
         (guestGames[sport] || []).forEach(g => {
-            if (g.isLive || !g.isFinal) add(g, !!g.isLive, g.date, 0, cfg, cfg.heroFn);
+            if (g.isLive || !g.isFinal) add(g, !!g.isLive, g.date, 0, cfg, cfg.heroFn, sport);
         });
     });
-    const winner = HomeLive.pickHero(candidates, Date.now());
-    let hero = winner ? winner.heroFn(winner.g, winner.live ? 'live' : 'upcoming') : null;
+    // A game leads only if it clears HomeLive.leadWorthy. When none does, the
+    // newest recent story leads, and only then any other game today.
+    const now = Date.now();
+    const heroOf = w => (w ? w.heroFn(w.g, w.live ? 'live' : 'upcoming') : null);
+    let hero = heroOf(HomeLive.pickHero(candidates.filter(HomeLive.leadWorthy), now));
+    let leadStory = null;
+    if (!hero && typeof fetchAllStories === 'function') {
+        const stories = await fetchAllStories().catch(() => []);
+        leadStory = (stories || []).find(s => HomeLive.storyCanLead(s, now)) || null;
+        if (leadStory) hero = _heroFromStory(leadStory);
+    }
+    const leadUrl = leadStory ? leadStory.url : null;
+    if (AppState._homeHeroStory !== leadUrl) { AppState._homeHeroStory = leadUrl; _renderHomeStories(); }
+    if (!hero) hero = heroOf(HomeLive.pickHero(candidates, now));
     if (!hero && MLBSeason.phase() === 'regular') hero = await _heroFromStandings().catch(() => null);
 
     if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
@@ -2682,195 +2672,14 @@ async function _renderHomeHero(games) {
     }
 }
 
-// ── Headlines + Insights rail (D-046 P3) ──────────────────────
-// Headlines reuse the /api/news pipeline; Insights are templated data bullets
-// computed from AppState.mlbLeaderSplits — no editorial staff, honest margins.
-function _wireRailTabs() {
-    const rail = document.getElementById('homeRail');
-    if (!rail || rail._wired) return;
-    rail._wired = true;
-    rail.addEventListener('click', e => {
-        const tab = e.target.closest('.rail-tab');
-        if (!tab) return;
-        const name = tab.dataset.tab;
-        rail.querySelectorAll('.rail-tab').forEach(t => {
-            const on = t === tab;
-            t.classList.toggle('active', on);
-            t.setAttribute('aria-selected', on ? 'true' : 'false');
-        });
-        const hl = document.getElementById('railHeadlines');
-        const ins = document.getElementById('railInsights');
-        if (hl)  hl.hidden  = name !== 'headlines';
-        if (ins) ins.hidden = name !== 'insights';
-    });
-}
-
-// Home redesign Phase 1 (2026-09-07): cross-sourced across all 6 sports
-// instead of MLB's /api/news feed alone -- each of NFL/NCAAF/NCAAB/WNBA/NBA
-// already has a real /api/news?sport= feed (NCAAB/WNBA added during the
-// sport-landing port, NBA added D-161 follow-up -- functions/api/news.js's
-// LEAGUES map; this array was found still missing 'nba' during the NBA
-// revival sweep, 2026-09-14), so there's no reason Headlines stayed
-// MLB-only or excluded any live sport. Merged and sorted by recency rather
-// than kept in per-sport lists, since the point is "what's new right now,"
-// not "what's new per sport."
-// Shared by _renderHomeHeadlines and _renderHomeWelcomeBack (both need the
-// same cross-sport article list) -- _homeNewsCache persists the result across
-// calls once resolved, and _homeInflightFetch dedupes the two if they race
-// each other before either has resolved, same pattern this file already uses
-// for every other home-load fetch (see the Phase 4 perf-pass comments above
-// on _loadHomeTodayGames' calls) rather than risking a second /api/news burst.
-async function _fetchHomeNewsArticles() {
-    if (_homeNewsCache) return _homeNewsCache.articles || [];
-    const sports = ['mlb', 'nfl', 'ncaaf', 'ncaab', 'wnba', 'nba'];
-    const articles = await _homeInflightFetch('homeNewsArticles', async () => {
-        try {
-            const results = await Promise.all(sports.map(async sport => {
-                try {
-                    const res = await _espnFetch(`/api/news?sport=${sport}`);
-                    if (!res.ok) return [];
-                    const json = await res.json();
-                    return ((json && json.articles) || []).map(a => ({ ...a, _sport: sport }));
-                } catch (_) { return []; }
-            }));
-            return results.flat();
-        } catch (_) { return []; }
-    });
-    _homeNewsCache = { articles };
-    return articles;
-}
-
 // Every sport's stories, newest first. With none, the host stays empty (.home-zone:empty hides it).
 async function _renderHomeStories() {
     const host = document.getElementById('homeStories');
     if (!host || typeof fetchAllStories !== 'function') return;
     const stories = await fetchAllStories();
     if (!host.isConnected || !stories.length) return;
-    host.innerHTML = storiesBlockHtml(stories.slice(0, 4), 'Latest SportStrata Stories');
-}
-
-async function _renderHomeHeadlines() {
-    const host = document.getElementById('railHeadlines');
-    if (!host) return;
-    const _ago = typeof _newsTimeAgo === 'function' ? _newsTimeAgo : () => '';
-    try {
-        const allArticles = await _fetchHomeNewsArticles();
-        const articles = allArticles
-            .filter(a => a && a.headline && a.links?.web?.href)
-            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
-            .slice(0, 8);
-        if (!host.isConnected) return;
-        if (!articles.length) { host.innerHTML = `<p class="pct-caption">No wire headlines right now.</p>`; return; }
-        host.innerHTML = `<div class="stories-block__hdr"><span class="eyebrow">Wire · via ESPN</span></div>` + articles.map(a => {
-            const when = _ago(a.published || a.lastModified);
-            const meta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[a._sport]) || {};
-            return `<a class="rail-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">
-                <span class="rail-hl-sport" style="color:${meta.accent || 'var(--text-muted)'}">${_escHtml((a._sport || '').toUpperCase())}</span>
-                <span class="rail-hl-text">${_escHtml(a.headline)}</span>
-                ${when ? `<span class="rail-hl-time">${_escHtml(when)}</span>` : ''}
-            </a>`;
-        }).join('') + `<p class="pct-caption">Wire headlines via ESPN &amp; MLB Stats API · tap to read the full story</p>`;
-    } catch (err) {
-        if (window.Logger) Logger.warn('home headlines failed', err, 'APP');
-        if (host.isConnected) host.innerHTML = `<p class="pct-caption">Headlines unavailable right now.</p>`;
-    }
-}
-
-// ── "Welcome Back" module — returning-visitor re-engagement ────────────────
-// Shown only when zs_last_visit names a different local calendar day than
-// today (a real gap, not a same-day reload) -- mutually exclusive with the
-// first-visit .home-welcome banner above, since loadHome()'s template only
-// renders #homeWelcomeBack in the isFirstVisit-false branch. Renders nothing
-// at all, not an empty shell, when neither sub-section below has content --
-// same fail-to-nothing posture _renderHomeHero already uses.
-//
-// Date comparisons reuse mlb.js's _mlbDateString ET-anchor convention (fixed
-// -5h offset, not real DST-aware ET) so this lines up with the exact scheme
-// arcade.js's zs_quest_streak already writes lastDate in -- a different
-// timezone convention here would make the streak-freshness check below wrong
-// near midnight ET even though each piece is internally consistent.
-function _hwbTodayStr() {
-    return typeof _mlbDateString === 'function' ? _mlbDateString(0) : new Date().toISOString().slice(0, 10);
-}
-function _hwbYesterdayStr() {
-    return typeof _mlbDateString === 'function' ? _mlbDateString(-1) : new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-}
-function _hwbEtDateStrFromTs(ts) {
-    const d = new Date(ts - 5 * 60 * 60 * 1000);
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-}
-
-// arcade.js's _questSaveStreak only zeroes zs_quest_streak.count on the *next
-// loss* -- it never expires on its own just from days passing (js/arcade.js
-// ~line 1600). A stored count can be several days stale, so this checks
-// lastDate directly (today or yesterday) rather than trusting count > 0,
-// so this module never claims a streak is alive when arcade.js's own count
-// hasn't caught up to reality yet.
-function _hwbActiveStreak() {
-    try {
-        const raw = JSON.parse(localStorage.getItem('zs_quest_streak') || '{}');
-        const count = raw.count || 0;
-        if (!count) return null;
-        if (raw.lastDate !== _hwbTodayStr() && raw.lastDate !== _hwbYesterdayStr()) return null;
-        return count;
-    } catch (_) { return null; }
-}
-
-function _hwbRelativeLabel(lastDayStr) {
-    if (lastDayStr === _hwbYesterdayStr()) return 'yesterday';
-    const diffDays = Math.round((new Date(`${_hwbTodayStr()}T00:00:00`) - new Date(`${lastDayStr}T00:00:00`)) / 86400000);
-    if (diffDays >= 2 && diffDays <= 6) return `${diffDays} days ago`;
-    return new Date(`${lastDayStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-async function _renderHomeWelcomeBack() {
-    const host = document.getElementById('homeWelcomeBack');
-    if (!host) return; // first-visit banner rendered instead this load -- nothing to do
-
-    let lastVisitRaw = null;
-    try { lastVisitRaw = localStorage.getItem('zs_last_visit'); } catch (_) {}
-    // Advance the stored timestamp before anything async below, so a slow
-    // headlines fetch can't leave it stale -- the next visit's gap is always
-    // measured from *this* visit, not from whenever this function happens to finish.
-    try { localStorage.setItem('zs_last_visit', String(Date.now())); } catch (_) {}
-
-    const lastVisitTs = Number(lastVisitRaw) || null;
-    if (!lastVisitTs) return; // never recorded before (or storage was cleared) -- nothing to compare against yet
-
-    const lastDayStr = _hwbEtDateStrFromTs(lastVisitTs);
-    if (lastDayStr === _hwbTodayStr()) return; // same calendar day -- not a real gap
-
-    const streak = _hwbActiveStreak();
-    const streakHtml = streak
-        ? `<div class="hwb-row hwb-streak">
-            ${_iconSvg('fire', 15)}
-            <span>Your Daily Quest streak is at <strong>${streak} day${streak === 1 ? '' : 's'}</strong> — <a href="#" onclick="navigateTo('arcade');return false;">keep it going</a></span>
-        </div>`
-        : '';
-
-    let headlinesHtml = '';
-    try {
-        const allArticles = await _fetchHomeNewsArticles();
-        const since = allArticles
-            .filter(a => a && a.headline && a.links?.web?.href)
-            .filter(a => {
-                const pub = new Date(a.published || a.lastModified).getTime();
-                return pub && pub > lastVisitTs;
-            })
-            .sort((a, b) => new Date(b.published || b.lastModified) - new Date(a.published || a.lastModified))
-            .slice(0, 2);
-        if (since.length) {
-            headlinesHtml = `<div class="hwb-row hwb-headlines">
-                ${since.map(a => `<a class="hwb-headline" href="${_escHtml(a.links.web.href)}" target="_blank" rel="noopener">${_escHtml(a.headline)}</a>`).join('')}
-            </div>`;
-        }
-    } catch (_) { /* headlines are a bonus, not a requirement -- fail silent */ }
-
-    if (!host.isConnected) return; // navigated away while the headlines fetch was in flight
-    if (!streakHtml && !headlinesHtml) return; // nothing worth a "welcome back" for -- stay hidden
-
-    host.innerHTML = `<span class="hwb-title">Welcome back — ${_escHtml(_hwbRelativeLabel(lastDayStr))}</span>${streakHtml}${headlinesHtml}`;
-    host.hidden = false;
+    const lead = AppState._homeHeroStory;
+    host.innerHTML = storiesBlockHtml(stories.filter(s => s.url !== lead).slice(0, 4), 'Latest SportStrata Stories');
 }
 
 // ── Cross-sport stat-moment Insights engine (home redesign Phase 1) ────────
@@ -2900,6 +2709,8 @@ function _notabilityFromRankJump(jump, base = 20, weight = 8, cap = 95) {
 // used to do inline, now one candidate source among several sports'.
 function _mlbLeaderStatMoments() {
     const out = [];
+    // Season leaders are news only while the season is being played.
+    if (MLBSeason.phase() !== 'regular') return out;
     const hitting  = AppState.mlbLeaderSplits?.hitting  || [];
     const pitching = AppState.mlbLeaderSplits?.pitching || [];
     if (!hitting.length && !pitching.length) return out;
@@ -3056,6 +2867,9 @@ async function _pollJumpStatMoment(fetchFn, sport, view) {
 // MLB's pennant-gap candidate via the shared _notabilityFromTightness scale).
 async function _wnbaStatMoments() {
     const out = [];
+    // A finished season's leader is not today's number (it read "A'ja Wilson
+    // leads the WNBA" on home in mid-November).
+    if (typeof _wnbaIsOffseason === 'function' && _wnbaIsOffseason()) return out;
     const season = (typeof _wnba !== 'undefined') ? _wnba.season : undefined;
     try {
         // Phase 4 perf pass (2026-09-08): this used to be a bare, uncached
@@ -3135,7 +2949,7 @@ async function _renderHomeInsights() {
             <span class="rail-insight-dot" style="--c:${color}"></span>
             <span class="rail-insight-text">${_escHtml(c.text)}</span>
         </div>`;
-    }).join('') + `<p class="pct-caption">Today's sharpest numbers across MLB, NFL, NCAAF, NCAAB, and WNBA</p>`;
+    }).join('') + `<p class="pct-caption">Today's sharpest numbers across every sport in season</p>`;
 }
 
 // ── Freshness signals (D-046 P4) — "Updated Nm ago" from real fetch time ──
@@ -4343,9 +4157,7 @@ async function _loadNCAABLandingSpotlight() {
 }
 // ── NCAAB landing Games module (Phase 4) — reuses _ncaabGameCard (js/ncaab.js),
 // the same compact card displayNCAABScores() already renders, instead of a
-// new card shape. Not routed through Scorebug -- NCAAB has no Scorebug
-// normalizer (a separate, pre-existing gap noted in CLAUDE.md for the
-// ticker; fixing that architecture is out of scope here). Labeled "Upcoming
+// new card shape (since 2026-11-17 a Scorebug card, like every game card). Labeled "Upcoming
 // Games" rather than NFL/NCAAF's "This Week's Games": NCAAB's schedule can
 // be genuinely weeks away from the landing page's own default view (e.g.
 // the whole offseason, when every game on the board is opening week), and
@@ -5171,56 +4983,6 @@ if (typeof window !== 'undefined') {
     window.openSettingsPanel = openSettingsPanel;
 }
 
-// ── PWA Install Prompt ────────────────────────────────────────
-// Captures the beforeinstallprompt event so we can trigger it on demand.
-// After a short delay on the second+ visit, surfaces a non-intrusive toast.
-(function setupInstallPrompt() {
-    let _deferredPrompt = null;
-
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        _deferredPrompt = e;
-
-        const visits = parseInt(localStorage.getItem('zs_visits') || '0', 10) + 1;
-        localStorage.setItem('zs_visits', String(visits));
-
-        if (visits < 2) return; // only prompt from 2nd visit onward
-        if (localStorage.getItem('zs_install_dismissed')) return;
-
-        setTimeout(() => {
-            if (!_deferredPrompt) return;
-            const toast = document.createElement('div');
-            toast.className = 'install-toast';
-            toast.setAttribute('role', 'dialog');
-            toast.setAttribute('aria-label', 'Install SportStrata');
-            toast.innerHTML = `
-                <span class="install-toast-msg">Add SportStrata to your home screen</span>
-                <button class="install-toast-btn" id="installAcceptBtn">Install</button>
-                <button class="install-toast-dismiss" aria-label="Dismiss">✕</button>
-            `;
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('install-toast--visible'));
-
-            document.getElementById('installAcceptBtn')?.addEventListener('click', () => {
-                _deferredPrompt.prompt();
-                _deferredPrompt.userChoice.then(() => { _deferredPrompt = null; toast.remove(); });
-            });
-            toast.querySelector('.install-toast-dismiss')?.addEventListener('click', () => {
-                localStorage.setItem('zs_install_dismissed', '1');
-                toast.classList.remove('install-toast--visible');
-                setTimeout(() => toast.remove(), 300);
-            });
-        }, 4000);
-    });
-
-    window.addEventListener('appinstalled', () => {
-        _deferredPrompt = null;
-        document.querySelector('.install-toast')?.remove();
-        Logger.info('PWA installed', undefined, 'APP');
-    });
-})();
-
-
 // ── F5 Phase 1: Add-to-Home-Screen prompt (2nd distinct-day visit) ──
 // G4: visit tracking is localStorage-only, nothing leaves the browser.
 // iOS Safari never fires beforeinstallprompt — strip simply never shows there.
@@ -5232,6 +4994,8 @@ if (typeof window !== 'undefined') {
     try {
         if (localStorage.getItem(DONE_KEY)) return;
         if (window.matchMedia('(display-mode: standalone)').matches) return;
+        // Phones only: on a desktop the strip sat on top of the page content.
+        if (!window.matchMedia('(max-width: 800px)').matches) return;
         const today = new Date().toDateString();
         const days = JSON.parse(localStorage.getItem(DAYS_KEY) || '[]');
         if (!days.includes(today)) {
@@ -5275,108 +5039,6 @@ if (typeof window !== 'undefined') {
         Logger.info('A2HS prompt shown', undefined, 'APP');
     });
 })();
-
-// ── Seasonal promo band (D-043 3b) — exactly one promo CTA, chosen by the
-// calendar. Priority order matters: first active entry wins. Replaces the old
-// single hardcoded "NFL Draft Season" row, which just went empty once its
-// Jun–Sep window closed instead of following the calendar into football
-// season the way Vera's spec calls for. Windows below are disjoint by design
-// (draft ends Aug, nfl-live starts Sep), so ordering doesn't actually matter
-// today — kept priority-based anyway so a future overlapping entry is safe.
-//
-// A function, not a top-level `const` array — `loadHome()` runs synchronously
-// during script bootstrap (setupNavigation → _loadFromHash → navigateTo, all
-// called near the top of this file) which is *before* the JS engine reaches a
-// `const` declared further down the file; referencing it from that path threw
-// "Cannot access 'PROMO_MOMENTS' before initialization" (a real TDZ bug caught
-// live on first production check, 2026-08-02). Function declarations are
-// fully hoisted, so this reads identically but has no ordering hazard.
-function _promoMoments() {
-    return [
-        {
-            key: 'nfl-live',
-            // Deliberately NOT derived from _nflIsOffseason() (D-063 narrowed that to
-            // exclude August preseason) -- this promo is specifically "the real season
-            // is live," which August preseason isn't. Sep-Feb, same window this always
-            // used, just no longer coupled to a season-phase helper whose meaning changed
-            // out from under it. Sep 1-8 (preseason's tail) and Mar-Jun have no active
-            // NFL promo here by design -- 'draft' below owns Jul-Aug, and there's
-            // deliberately no promo for the handful of days between preseason ending and
-            // "draft season" already being over; the Pennant Races widget fills that gap.
-            active: () => { const m = new Date().getMonth() + 1; return m >= 9 || m <= 2; },
-            kicker: () => `${typeof NFL_FANTASY_SEASON !== 'undefined' ? NFL_FANTASY_SEASON : ''} Football Season`,
-            text:   () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
-                ? 'NFL and NCAAF — scores, standings and fantasy tools, all live, no login required.'
-                : 'Scores, standings and fantasy tools — all live, no login required.',
-            primary: { label: 'NFL Scores →', view: 'nfl-games' },
-            secondary: () => (typeof _ncaafIsOffseason === 'function' && !_ncaafIsOffseason())
-                ? { label: 'NCAAF Scores →', view: 'ncaaf-scores' }
-                : { label: 'Standings →', view: 'nfl-standings' },
-        },
-        {
-            key: 'draft',
-            active: () => { const m = new Date().getMonth() + 1; return m === 7 || m === 8; }, // Jul–Aug
-            kicker: () => 'NFL Draft Season',
-            text:   () => 'Mock draft in 60 seconds — no login. Build your board before your league does.',
-            primary: { label: 'Mock Draft →', view: 'nfl-mock' },
-            secondary: () => ({ label: 'Draft Kit →', view: 'nfl-draftkit' }),
-        },
-    ];
-}
-
-function _activePromoMoment() {
-    return _promoMoments().find(p => { try { return p.active(); } catch (_) { return false; } }) || null;
-}
-
-// Cross-sport navigation needs the sport UI switched first — a bare
-// navigateTo from MLB home to an nfl-* view recreates the D-038 V2 chimera.
-// 'ncaaf' was missing here (D-043 3b fix) — a promo CTA routing to any
-// ncaaf-* view would silently fail to switch AppState.currentSport.
-// 'ncaab'/'wnba' were missing too (home redesign Phase 4, 2026-09-08) — same
-// bug, just never hit yet since no promo moment has pointed at either sport.
-// 'nba' was missing too (NBA revival sweep, 2026-09-14) — same bug again,
-// added after this list was last touched; same "never hit yet" caveat applies.
-function _hmGo(view) {
-    const sport = view.split('-')[0];
-    if (['mlb', 'nfl', 'nhl', 'ncaaf', 'ncaab', 'wnba', 'nba'].includes(sport) && AppState.currentSport !== sport) {
-        AppState.currentSport = sport;
-        if (typeof _applySportUI === 'function') _applySportUI(sport);
-    }
-    navigateTo(view);
-}
-
-// Home redesign Phase 1 (2026-09-07): the Pennant Races viz that used to
-// live here is retired -- its tightest-gap signal is now one candidate in
-// the cross-sport stat-moment Insights engine above (_mlbPennantStatMoment),
-// competing honestly against NFL/NCAAF/NCAAB/WNBA's own signals instead of
-// always occupying its own MLB-only card regardless of what else is
-// happening that day. This function now only renders the seasonal promo row
-// (_activePromoMoment), left functionally untouched -- it's a marketing CTA,
-// not a stat, so it doesn't belong in the notability competition.
-function _renderHomeMoment() {
-    const host = document.getElementById('homeMoment');
-    if (!host) return;
-    const promo = _activePromoMoment();
-    if (!promo) { host.hidden = true; return; }
-
-    // 2026-08-19 (mock-draft-visibility fix): giving the promo row the
-    // sport's own accent as a left border + icon (same "border = identity"
-    // pattern .sport-card already uses) makes it legible as distinct,
-    // sport-owned content at a glance, without inventing any new class or color.
-    const promoSport = promo.primary.view.split('-')[0];
-    const promoMeta = (typeof SPORTS_META !== 'undefined' && SPORTS_META[promoSport]) || {};
-    const promoAccent = promoMeta.accent || 'var(--accent)';
-    const promoIcon = promoMeta.icon ? `<span class="hm-kicker-icon">${_iconSvg(promoMeta.icon, 12)}</span>` : '';
-
-    host.hidden = false;
-    host.innerHTML = `
-        <div class="hm-row hm-row--promo" style="--sport-accent:${promoAccent}">
-            <span class="hm-kicker">${promoIcon}${_escHtml(promo.kicker())}</span>
-            <span class="hm-text">${_escHtml(promo.text())}</span>
-            <button class="hm-chip hm-chip--primary" onclick="_hmGo('${promo.primary.view}')">${_escHtml(promo.primary.label)}</button>
-            <button class="hm-chip" onclick="_hmGo('${promo.secondary().view}')">${_escHtml(promo.secondary().label)}</button>
-        </div>`;
-}
 
 
 // Boot splash dismiss (D-048): fade the branded splash once the first view has painted.

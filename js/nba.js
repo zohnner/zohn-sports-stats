@@ -122,22 +122,6 @@ function _nbaOffseasonState() {
     </div>`;
 }
 
-// Live label from the status clock: "2:38 Q1", "OT", or ESPN's own text
-// for breaks ("Halftime", "End of 1st") where the clock reads 0.0.
-function _nbaLiveLabel(g) {
-    if (/HALFTIME|END_PERIOD/.test(g.statusName) || !g.period) return g.statusText;
-    const per = g.period <= 4 ? 'Q' + g.period : (g.period === 5 ? 'OT' : (g.period - 4) + 'OT');
-    return g.clock ? `${g.clock} ${per}` : per;
-}
-
-// ESPN's statusText is fixed to Eastern; the ISO date is the real instant.
-function _nbaTipLabel(g) {
-    const d = new Date(g.date);
-    if (isNaN(d) || /TBD/i.test(g.statusText)) return g.statusText;
-    const sameDay = d.toDateString() === new Date().toDateString();
-    return d.toLocaleString([], { ...(sameDay ? {} : { weekday: 'short' }), hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-}
-
 // 4th quarter or OT, within 5. Uses only the scoreboard's own score and
 // status; no per-card summary fetch.
 function _nbaIsClose(g) {
@@ -145,22 +129,8 @@ function _nbaIsClose(g) {
 }
 
 function _nbaGameCard(g) {
-    const row = (t) => `
-        <div class="hgc-row">
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:28px;height:28px">` : '<span style="width:28px"></span>'}
-            <span class="hgc-team">${_escHtml(t.abbr)}</span>
-            <span class="hgc-score ${g.isFinal && t.winner ? 'hgc-score--win' : ''}" style="margin-left:auto">${(g.isFinal || g.isLive) ? t.score : ''}</span>
-        </div>`;
-    const pill = g.isLive ? `<span class="ticker-status-pill ticker-status-pill--live">LIVE · ${_escHtml(_nbaLiveLabel(g))}</span>`
-        : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
-        : `<span class="hgc-status">${_escHtml(_nbaTipLabel(g))}</span>`;
     const close = _nbaIsClose(g) ? '<span class="nba-close-badge" title="4th quarter or overtime, within 5 points">Close</span>' : '';
-    const id = _escHtml(String(g.id));
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('nba-game-${id}')" onkeydown="if(event.key==='Enter')navigateTo('nba-game-${id}')">
-        ${row(g.awayTeam)}
-        ${row(g.homeTeam)}
-        <div class="hgc-card-footer">${pill}${close}</div>
-    </div>`;
+    return Scorebug.renderScoreCard(Scorebug.normalizeNBAGame(g), { go: `nba-game-${g.id}`, badge: close });
 }
 
 async function displayNBAScores(opts = {}) {

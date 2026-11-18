@@ -40,6 +40,8 @@ function setupNavigation() {
         if (t) navigateTo(t.dataset.view);
     });
     document.getElementById('menuPanel')?.addEventListener('click', e => {
+        const go = e.target.closest('[data-sport-go]');
+        if (go) { _goSport(go.dataset.sportGo); _closeMenu(); return; }
         const t = e.target.closest('.nav-tab[data-view]');
         if (t) { navigateTo(t.dataset.view); _closeMenu(); }
     });
@@ -53,13 +55,7 @@ function setupNavigation() {
         // the visible switcher shows nothing active — which made switchSport()
         // early-return and silently do nothing on click. Same fix
         // _renderSportPicker's card click handler (app.js) already applies.
-        if (sp === AppState.currentSport) {
-            const meta = (typeof SPORTS_META !== 'undefined') ? SPORTS_META[sp] : null;
-            if (typeof _applySportUI === 'function') _applySportUI(sp);
-            navigateTo(meta ? meta.defaultView : sp + '-players');
-        } else {
-            switchSport(sp);
-        }
+        _goSport(sp);
         _closeSportSwitchMenu();
     });
 
@@ -391,7 +387,62 @@ function _seedSportTicker(sport) {
     }
 }
 
-function switchSport(sport) {
+// A person picking a sport in the header switcher or the home menu. Unlike a
+// bare switchSport(), which code calls before routing somewhere itself, this
+// keeps the reader's section and keeps the address bar truthful.
+function _goSport(sp) {
+    // switchSport() returns early when the sport is already current, which it
+    // can be on a neutral view like Home.
+    const same = sp === AppState.currentSport;
+    const storiesHref = same ? null : _switchStoriesHref(sp, location.pathname, AppState.currentView);
+    if (storiesHref) { location.assign(storiesHref); return; }
+    const meta = SPORTS_META[sp];
+    const view = same ? (meta ? meta.defaultView : sp + '-players') : _switchTarget(sp, AppState.currentView);
+    // navigateTo() only rewrites the hash, so leaving an edge-rendered path
+    // page left the old path in the address bar (/mlb/stories#nfl-home).
+    // From a path page, write the new view's own path instead.
+    const fromPath = location.pathname !== '/';
+    if (same) { _applySportUI(sp); navigateTo(view, !fromPath); }
+    else switchSport(sp, view, !fromPath);
+    if (fromPath) history.pushState({ view }, '', `${_viewPath(view) || '/'}#${view}`);
+}
+
+// The section a view belongs to, so a sport switch can keep it: 'standings'
+// from 'nfl-standings', 'scores' from either scores spelling, 'news' as is.
+// Entity and tool views (a player, a game, Draft HQ) have no section.
+function _viewSection(view) {
+    const v = String(view || '');
+    if (v === 'news') return 'news';
+    const m = /^(?:mlb|nfl|ncaaf|ncaab|wnba|nba)-([a-z]+)$/.exec(v);
+    if (!m) return null;
+    return (m[1] === 'games' || m[1] === 'scores') ? 'scores' : m[1];
+}
+
+// Where a sport switch lands: the same section in the new sport when that
+// sport's nav offers it, else the sport's landing page. It used to be the
+// landing page every time, so Standings -> other sport's Standings took two
+// clicks and a re-orientation.
+function _switchTarget(sport, fromView) {
+    const cfg = SPORTS_META[sport] || SPORTS_META.mlb;
+    const section = _viewSection(fromView);
+    if (!section || section === 'home') return cfg.defaultView;
+    if (section === 'news') return 'news';
+    if (section === 'scores') return _SPORT_SCORES_VIEW[sport] || `${sport}-games`;
+    const want = `${sport}-${section}`;
+    const offered = (SUB_NAV_TABS[sport] || [])
+        .flatMap(t => (t.cols ? t.cols.flatMap(c => c.items) : [t])).some(t => t.v === want);
+    return offered ? want : cfg.defaultView;
+}
+
+// On a stories page the switcher goes to the new sport's stories, when it has any.
+function _switchStoriesHref(sport, pathname, view) {
+    if (view !== 'static-page' || !/^\/(?:[a-z]+\/)?stories(?:\/|$)/.test(pathname)) return null;
+    const href = `/${sport}/stories`;
+    return (SUB_NAV_TABS[sport] || []).some(t => t.href === href) ? href : null;
+}
+
+
+function switchSport(sport, view, push = true) {
     if (sport === AppState.currentSport) return;
     AppState.currentSport = sport;
 
@@ -404,7 +455,7 @@ function switchSport(sport) {
 
     _seedSportTicker(sport);
 
-    navigateTo(cfg.defaultView);
+    navigateTo(view || cfg.defaultView, push);
 }
 
 // ── Breadcrumb ───────────────────────────────────────────────
@@ -1213,6 +1264,16 @@ function _loadFromHash() {
 // dropdown can render as one or several labeled columns in the full-width mega-panel
 // (see _renderSubNav). A `cols` entry with no `t` renders as an untitled single column.
 const SUB_NAV_TABS = {
+    // Home (the D-042 front door) and sport-neutral pages (/stories, /about)
+    // render this cross-sport set. They used to borrow MLB's, so "Stories" on
+    // the home page silently meant MLB stories. Nothing here may be scoped to
+    // one sport (tests/homeNav.test.js).
+    home: [
+        { v: 'home', l: 'Today' },
+        { href: '/stories', l: 'Stories' },
+        { v: 'arcade', l: 'Arcade' },
+        { href: '/about', l: 'About' },
+    ],
     mlb: [
         { v: 'mlb-players', l: 'Players' },
         { v: 'mlb-teams', l: 'Teams' },
@@ -1380,6 +1441,15 @@ const _NAV_ICONS = {
 // mislabeled under 'Tools' on both sports — Compare is stat-browsing, not a
 // tool) to match the desktop mega-menu's Stats & Leaders / Tools split.
 const MENU_TABS = {
+    // `sports: true` expands to one button per SPORTS entry: on mobile the
+    // switcher shows only the active sport, and home has none.
+    home: [
+        { group:'SportStrata' },
+        { v:'home', l:'Today', i:'scores' }, { href:'/stories', l:'Stories', i:'trending' },
+        { v:'arcade', l:'Arcade', i:'arcade' }, { href:'/about', l:'About', i:'extra' },
+        { group:'Sports' },
+        { sports: true },
+    ],
     mlb: [
         { group:'Stats & Leaders' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
@@ -1443,8 +1513,11 @@ function _renderMenuPanel(sport) {
     if (!grid) return;
     const tabs = MENU_TABS[sport] || MENU_TABS.mlb;
     grid.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
-    grid.innerHTML = tabs.map(t => t.group
+    const items = tabs.flatMap(t => (t.sports ? SPORTS.map(s => ({ sport: s.id, l: s.label, i: 'teams' })) : [t]));
+    grid.innerHTML = items.map(t => t.group
         ? `<div class="menu-section" role="presentation">${t.group}</div>`
+        : t.sport
+            ? `<button class="nav-tab menu-item" type="button" data-sport-go="${t.sport}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
         : t.href
             ? `<a class="nav-tab menu-item${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></a>`
             : `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
@@ -1453,6 +1526,11 @@ function _renderMenuPanel(sport) {
 }
 
 const BOTTOM_NAV_TABS = {
+    home: [
+        { v: 'home', l: 'Today', i: 'scores' }, { href: '/stories', l: 'Stories', i: 'trending' },
+        { v: 'arcade', l: 'Arcade', i: 'arcade' }, { href: '/about', l: 'About', i: 'leaders' },
+        { more: true, l: 'More', i: 'extra' },
+    ],
     mlb: [
         { v: 'mlb-games', l: 'Scores', i: 'scores' }, { v: 'mlb-players', l: 'Players', i: 'players' },
         { v: 'mlb-leaders', l: 'Leaders', i: 'leaders' }, { v: 'mlb-standings', l: 'Standings', i: 'standings' },
@@ -1491,6 +1569,8 @@ function _renderBottomNav(sport) {
     const tabs = BOTTOM_NAV_TABS[sport] || BOTTOM_NAV_TABS.mlb;
     nav.innerHTML = tabs.map(t => t.more
         ? `<button class="nav-tab bottom-more" type="button" aria-label="More options"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
+        : t.href
+            ? `<a class="nav-tab${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></a>`
         : `<button class="nav-tab" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
     ).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
@@ -1753,9 +1833,11 @@ async function _renderFavRail() {
     });
 }
 
-function _applySportSearchPlaceholder(sport) {
-    const label = (SPORTS.find(s => s.id === sport) || {}).label || '';
-    const ph = label ? `Search ${label} players, teams, stats…` : 'Search players, teams, stats…';
+// The search covers every sport it indexes at once, whichever sport is
+// active, so the prompt never names one (it read "Search MLB players" on
+// home and "Search NCAAF players" where no NCAAF player is searchable).
+function _applySportSearchPlaceholder() {
+    const ph = 'Search players, teams, stats…';
     const box = document.getElementById('searchBox'); if (box) box.placeholder = ph;
     const modal = document.getElementById('searchModalInput'); if (modal) modal.placeholder = ph;
     const gbtn = document.getElementById('globalSearchBtn'); if (gbtn) gbtn.setAttribute('data-label', ph);
@@ -1765,20 +1847,19 @@ function _applySportUI(sport) {
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
     // Home is the sport-agnostic front door (D-042): neutral brand, no sport forced
-    // active in the switcher; the home picker band is the launchpad. Nav context
-    // defaults to mlb so the sub-nav is never empty. Amends the old CLAUDE.md rule
-    // that loadHome must call _applySportUI('mlb').
+    // active in the switcher; the home picker band is the launchpad. The nav
+    // surfaces render their own cross-sport 'home' set, never one sport's.
     if (sport === 'home') {
         // .innerHTML, not .textContent (2026-09-07 emoji removal) -- 'house'
         // is an _ICON key rendered as SVG, not a raw emoji character.
         if (brandIcon) brandIcon.innerHTML = _iconSvg('house', 20);
         if (brandSub)  brandSub.textContent  = 'Multi-Sport Analytics';
         document.getElementById('nflOffseasonStrip')?.remove();
-        _renderSubNav('mlb');
-        _renderBottomNav('mlb');
-        _renderMenuPanel('mlb');
+        _renderSubNav('home');
+        _renderBottomNav('home');
+        _renderMenuPanel('home');
         _renderSportSwitch(null);
-        _applySportSearchPlaceholder('mlb');
+        _applySportSearchPlaceholder();
         return;
     }
     const meta = SPORTS_META[sport] || SPORTS_META.mlb;

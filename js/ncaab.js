@@ -175,20 +175,7 @@ function _ncaabOffseasonState() {
 }
 
 function _ncaabGameCard(g) {
-    const row = (t) => `
-        <div class="hgc-row">
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:28px;height:28px">` : '<span style="width:28px"></span>'}
-            <span class="hgc-team">${t.rank ? `<span class="hgc-rank">#${t.rank}</span> ` : ''}${_escHtml(t.abbr)}</span>
-            <span class="hgc-score ${g.isFinal && t.winner ? 'hgc-score--win' : ''}" style="margin-left:auto">${(g.isFinal || g.isLive) ? t.score : ''}</span>
-        </div>`;
-    const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
-        : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
-        : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('ncaab-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')navigateTo('ncaab-game-${_escHtml(String(g.id))}')">
-        ${row(g.awayTeam)}
-        ${row(g.homeTeam)}
-        <div class="hgc-card-footer">${pill}</div>
-    </div>`;
+    return Scorebug.renderScoreCard(Scorebug.normalizeNCAABGame(g), { go: `ncaab-game-${g.id}` });
 }
 
 // Live-game dashboard lives in js/bballLiveGame.js, shared with WNBA — see

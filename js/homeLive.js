@@ -87,5 +87,25 @@ const HomeLive = (() => {
         return best;
     }
 
-    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, tightestRace };
+    // Whether a game may lead the home page: a postseason game, a followed
+    // team's game, any MLB or NFL game, a live NBA or WNBA game, or a
+    // college game with a ranked team in it. An unranked college game never
+    // leads, live or not: on 2026-11-17 Eastern Michigan at Western Michigan
+    // led the site while that day's NFL story sat four screens down.
+    function leadWorthy(c) {
+        if (!c) return false;
+        if (c.tier > 0 || c.fav) return true;
+        if (c.sport === 'mlb' || c.sport === 'nfl') return true;
+        if (c.sport === 'nba' || c.sport === 'wnba') return !!c.live;
+        return (c.sport === 'ncaaf' || c.sport === 'ncaab') && !!c.ranked;
+    }
+
+    // A story may lead the page for three days from its date.
+    const STORY_LEAD_MS = 3 * 24 * 60 * 60 * 1000;
+    function storyCanLead(story, now) {
+        const t = Date.parse(`${story && story.date}T00:00:00`);
+        return Number.isFinite(t) && now - t < STORY_LEAD_MS && now >= t;
+    }
+
+    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, tightestRace, leadWorthy, storyCanLead };
 })();
