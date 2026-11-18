@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v359';
+const CACHE_NAME    = 'sportstrata-v360';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -171,7 +171,10 @@ self.addEventListener('fetch', e => {
     // copy instantly but refreshes it in the background, so the next load is current.
     e.respondWith(
         caches.match(e.request).then(cached => {
-            const network = fetch(e.request).then(resp => {
+            // Revalidate rather than read the browser's HTTP cache, which the zone
+            // rule lets keep /js/* for 4h: a stale copy from there would overwrite
+            // the fresh one install just precached (#142, D-211). Usually a 304.
+            const network = fetch(new Request(e.request, { cache: 'no-cache' })).then(resp => {
                 if (resp && resp.status === 200 && resp.type !== 'opaque') {
                     const clone = resp.clone();
                     caches.open(CACHE_NAME).then(c => c.put(e.request, clone));

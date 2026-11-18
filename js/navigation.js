@@ -1016,6 +1016,29 @@ async function _restoreMLBComparison(group, id1, id2) {
     });
 }
 
+// The server named a route this copy of the router has no branch for, so the
+// HTML is newer than this script: the service worker served a cached
+// navigation.js from before the route shipped (#142, D-211). Reload once, after
+// the new worker takes over, instead of booting to home. One try per route per
+// session, so a route that is really unknown still lands on home.
+function _staleCodeReload(route, env = {
+    storage: (() => { try { return window.sessionStorage; } catch (_) { return null; } })(),
+    sw: navigator.serviceWorker,
+    reload: () => location.reload(),
+    wait: ms => new Promise(r => setTimeout(r, ms)),
+}) {
+    const key = `zs_route_reload:${route}`;
+    try {
+        if (!env.storage || env.storage.getItem(key)) return false;
+        env.storage.setItem(key, '1');
+    } catch (_) { return false; }
+    Logger.warn('Server route unknown to this script; reloading for fresh code', { route }, 'NAV');
+    const changed = env.sw ? new Promise(r => env.sw.addEventListener('controllerchange', r, { once: true })) : Promise.resolve();
+    const update = env.sw && env.sw.getRegistration ? env.sw.getRegistration().then(reg => reg && reg.update()).catch(() => {}) : Promise.resolve();
+    update.then(() => Promise.race([changed, env.wait(3000)])).then(() => env.reload());
+    return true;
+}
+
 function _loadFromHash() {
     // D-041 Phase 1: edge-prerendered path URLs (e.g. /mlb/team/nyy) set window.__SS_ROUTE
     // so the SPA boots straight to the entity. Additive — normal loads never set it.
@@ -1082,6 +1105,7 @@ function _loadFromHash() {
             if (typeof _applySportUI === 'function') _applySportUI(_sp);
             navigateTo(_r); return;
         }
+        if (_staleCodeReload(_r)) return;
     }
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('home', false); return; }

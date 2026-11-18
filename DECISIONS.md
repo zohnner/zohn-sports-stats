@@ -4049,3 +4049,15 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 **Names are plain text:** NCAAB has neither a team page nor a player page yet (#116, #117, both `parity-ready`). When #117 ships, the rows and the edge template should link to it.
 
 **Guard:** `tests/ncaabLeaders.test.js`: the proxy and the browser fallback return identical JSON from a trimmed real response, and FG%/FT% are dropped. It fails against `js/config.js` without the NCAAB entry. Contract `ncaab-leaders-v3` now requires all six categories and each row's team abbreviation.
+
+## D-211 — A page newer than its cached router reloads once instead of booting home (2026-11-17)
+
+**Context:** #142 (muse-found): the first direct visit to `/nba/team/det` rendered home, and a reload rendered the team page. The parity run couldn't reproduce it. Reading `sw.js` confirms its hypothesis. Page loads are network-first, so the HTML (with `__SS_ROUTE=nba-team-DET`) is always current. Scripts are stale-while-revalidate from Cache Storage, so a returning visitor's first load after a deploy can run a `navigation.js` from before the route existed. `_loadFromHash` had no fallback for a server route it didn't know and fell through to home, while the same load refreshed the cache in the background. A second gap: that background refresh went through the browser's HTTP cache, where the zone rule keeps `/js/*` up to 4h, so a stale copy could overwrite the fresh one the new worker had just precached.
+
+**Decision:**
+- `_staleCodeReload` (`js/navigation.js`): when the server names a route the router has no branch for, it asks the worker to update and waits for `controllerchange` (3s at most), then reloads once. A per-route `sessionStorage` flag stops a second try, so a route that is really unknown still lands on home. Blocked storage means no reload.
+- `sw.js`: the stale-while-revalidate refresh fetches with `cache: 'no-cache'` (revalidate, usually a 304).
+
+**Limits:** copies of the old router already in browsers don't have the guard, so this protects routes added after it ships. Versioning script URLs would close the gap fully, but it needs a build step or a per-deploy token in about 50 script tags (see CLAUDE.md's "no build step").
+
+**Guard:** `tests/staleRouteReload.test.js` covers the one-reload rule, the flag, the no-worker and blocked-storage cases, the wiring in `_loadFromHash`, and the `sw.js` fetch mode. Checked in Chrome by injecting an unknown route on every load: two loads, then home, no exceptions.
