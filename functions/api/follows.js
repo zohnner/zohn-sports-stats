@@ -16,7 +16,7 @@ import { buildAuth } from './auth/_instance.js';
 // call sites vs. this set while working on unrelated NCAAF feature work, not a bug
 // report. js/ncaab.js has zero renderFollowStar call sites (no follow star wired up
 // yet for NCAAB) -- 'ncaab' deliberately not added here until that ships client-side.
-const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf', 'nba', 'wnba']);
+const VALID_SPORTS = new Set(['mlb', 'nfl', 'ncaaf', 'ncaab', 'nba', 'wnba']);
 const VALID_ENTITY_TYPES = new Set(['team', 'player']);
 
 async function requireSession(context) {
