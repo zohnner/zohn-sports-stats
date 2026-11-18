@@ -3,7 +3,7 @@
 // ESPN public API via same-origin /api/ncaab Pages Function.
 // Bounded P2/P3 scope, mirroring NCAAF's original D-042 phase-1:
 // Scores, Standings (conference-grouped), Teams, Rankings, Leaders (#191, D-210).
-// No player detail page yet (#117).
+// Team pages (#116): ncaab-team-{id}. No player detail page yet (#117).
 // Season model mirrors nfl.js/ncaaf.js. No keys, no D1.
 // ============================================================
 
@@ -278,6 +278,7 @@ function updateNCAABTicker(games) {
 function _renderNCAABView(view) {
     if (window.StatsCharts && StatsCharts.destroyAll) StatsCharts.destroyAll();
     if (view.startsWith('ncaab-game-')) { showNCAABGame(view.slice('ncaab-game-'.length)); return; }
+    if (view.startsWith('ncaab-team-')) { showNCAABTeam(view.slice('ncaab-team-'.length)); return; }
     if (window.setBreadcrumb) setBreadcrumb(view, null);
     switch (view) {
         case 'ncaab-standings':      displayNCAABStandings();          break;
@@ -453,9 +454,13 @@ function _ncaabStandingRow(e) {
         abbr: t.abbreviation || '',
         logo: (t.logos && t.logos[0] && t.logos[0].href) || t.logo || '',
         overall: (w != null && l != null) ? `${w}-${l}` : (disp(['overall', 'total']) || '—'),
-        conf: disp(['vsConf', 'conferenceRecord', 'vsConference']) || '',
+        // ESPN names this stat "vs. Conf." with type "vsconf" (checked 2026-11-18).
+        conf: disp(['vsconf', 'vsConf', 'conferenceRecord', 'vsConference']) || '',
         winPct: num(['winPercent']),
         streak: disp(['streak']) || '',
+        w, l,
+        home: disp(['home']), road: disp(['road']), vsTop25: disp(['vsaprankedteams']),
+        ppg: num(['avgPointsFor']), oppg: num(['avgPointsAgainst']),
     };
 }
 
@@ -518,7 +523,7 @@ async function displayNCAABStandings() {
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Conf</th><th>Overall</th></tr></thead>
-                    <tbody>${c.teams.map(t => `<tr class="standings-row">
+                    <tbody>${c.teams.map(t => `<tr class="standings-row"${t.id ? ` style="cursor:pointer" onclick="navigateTo('ncaab-team-${_escHtml(String(t.id))}')"` : ''}>
                         <td class="standings-team-cell">
                             ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : ''}
                             <span class="standings-team-name" title="${_escHtml(t.name)}">${_escHtml(t.name)}</span>
@@ -552,18 +557,118 @@ async function displayNCAABTeams() {
         document.getElementById('ncaabTeamsBody').innerHTML = _ncaabErr('No teams returned for this season.', 'displayNCAABTeams');
         return;
     }
-    // Team detail is deferred (D-052 P4, not built yet) — chips are display-only,
-    // no click-through, so this never links into a view that doesn't exist.
     document.getElementById('ncaabTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
             <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
-            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip">
+            <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.id ? ' ncaaf-team-chip--link' : ''}"${t.id ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('ncaab-team-${_escHtml(String(t.id))}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
             </div>`).join('')}</div>
         </section>`).join('') +
         `<p class="standings-legend">D-I teams grouped by conference (${_escHtml(String(_ncaab.season - 1))}-${_escHtml(String(_ncaab.season).slice(2))}). Source: ESPN.</p>`;
 }
+
+// ── Team page (#116) ─────────────────────────────────────────
+// Keyed by ESPN team id (abbreviations are unique across D-I today, but ids
+// are what ESPN's routes take); follows and story `teams` use the abbreviation,
+// as NCAAF's do. The page is NBA's (js/nba.js) fed NCAAB data: the roster and
+// schedule routes have the same shape and both send CORS headers, so they
+// survive the D-176 proxy block. No player links until #117.
+function _ncaabFindStanding(confs, id, abbr) {
+    for (const c of (confs || [])) {
+        const row = c.teams.find(t => (id && String(t.id) === String(id)) || (abbr && t.abbr === abbr));
+        if (row) return { row, conference: c.name };
+    }
+    return null;
+}
+
+function _ncaabTeamRecordChips(row) {
+    if (!row || !((row.w || 0) + (row.l || 0))) return [];
+    const one = v => v.toFixed(1);
+    const diff = (row.ppg != null && row.oppg != null) ? row.ppg - row.oppg : null;
+    return [
+        ['Record', row.overall || '—'],
+        ...(row.conf ? [['Conf', row.conf]] : []),
+        ...(row.home ? [['Home', row.home]] : []),
+        ...(row.road ? [['Away', row.road]] : []),
+        ...(row.vsTop25 ? [['vs AP Top 25', row.vsTop25]] : []),
+        ...(row.ppg != null ? [['PPG', one(row.ppg)]] : []),
+        ...(row.oppg != null ? [['Opp PPG', one(row.oppg)]] : []),
+        ...(diff != null ? [['Diff', (diff > 0 ? '+' : '') + one(diff)]] : []),
+        ...(row.streak ? [['Streak', row.streak]] : []),
+    ];
+}
+
+// A team's rank in the first poll ESPN lists (AP), or null.
+function _ncaabPollRank(polls, abbr) {
+    const p = (polls || [])[0];
+    const hit = p && abbr ? p.ranks.find(r => r.abbr === abbr) : null;
+    return hit ? { rank: hit.current, poll: p.name } : null;
+}
+
+async function showNCAABTeam(id) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const view = 'ncaab-team-' + id;
+    AppState.currentView = view;
+    grid.className = '';
+    grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
+    if (!/^\d+$/.test(String(id))) { grid.innerHTML = _ncaabErr('Team not found.', 'displayNCAABTeams'); return; }
+    const [roster, sched, confs, polls] = await Promise.all([
+        espnNCAABFetch(`/teams/${id}/roster`, {}, ApiCache.TTL.LONG).catch(err => { Logger.warn('NCAAB roster fetch failed', err, 'NCAAB'); return null; }),
+        espnNCAABFetch(`/teams/${id}/schedule`, {}, ApiCache.TTL.SHORT).catch(err => { Logger.warn('NCAAB schedule fetch failed', err, 'NCAAB'); return null; }),
+        fetchNCAABStandings(NCAAB_LAST_SEASON).catch(err => { Logger.warn('NCAAB standings fetch failed (team detail)', err, 'NCAAB'); return null; }),
+        fetchNCAABRankings().catch(err => { Logger.warn('NCAAB rankings fetch failed (team detail)', err, 'NCAAB'); return null; }),
+    ]);
+    if (AppState.currentView !== view) return;
+    const team = (roster && roster.team) || (sched && sched.team);
+    if (!team || !team.id) { grid.innerHTML = _ncaabErr("Couldn't load this team.", 'displayNCAABTeams'); return; }
+    displayNCAABTeamDetail(team, roster, sched, _ncaabFindStanding(confs, team.id, team.abbreviation), _ncaabPollRank(polls, team.abbreviation));
+}
+
+function displayNCAABTeamDetail(team, roster, sched, std, rank) {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    const name = team.displayName || team.name || 'Team';
+    if (window.setBreadcrumb) setBreadcrumb('ncaab-teams', _escHtml(name));
+    const abbr = team.abbreviation || '';
+    const color = '#' + String(team.color || '1f4e8c').replace('#', '');
+    const row = std && std.row;
+    const athletes = (roster && roster.athletes) || [];
+    const groups = _nbaRosterGroups(athletes);
+    const coach = roster && roster.coach && roster.coach[0];
+    const coachName = coach ? [coach.firstName, coach.lastName].filter(Boolean).join(' ') : '';
+    const games = _nbaTeamGames(sched && sched.events, team.id);
+    const seasonName = team.seasonSummary || (sched && sched.requestedSeason && sched.requestedSeason.displayName) || '';
+    const recordChips = _ncaabTeamRecordChips(row);
+    const record = recordChips.length ? row.overall : (team.recordSummary || '');
+
+    const model = {
+        sport: 'ncaab', abbr, name,
+        logo: team.logo || (team.logos && team.logos[0] && team.logos[0].href) || '', teamColor: color,
+        division: (std && std.conference) || '', record,
+        seasonLabel: [seasonName ? `${seasonName} season` : '', team.standingSummary || ''].filter(Boolean).join(' · '),
+        facts: [
+            ...(rank ? [{ label: rank.poll || 'Poll', value: '#' + rank.rank }] : []),
+            ...(coachName ? [{ label: 'Head Coach', value: coachName }] : []),
+            ...(athletes.length ? [{ label: 'Players', value: athletes.length }] : []),
+        ],
+        recordChips, recordSeasonLabel: recordChips.length && seasonName ? `${seasonName} Season` : '',
+        scheduleHtmlTop: _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.', 'ncaab-game-')
+            + _nbaTeamGameLogCard(games.log, 'ncaab-game-'),
+        groups, rosterTitle: 'Roster', rosterCaption: 'Grouped by position',
+        rosterEmpty: 'Roster data unavailable for this team right now.',
+        backView: 'ncaab-teams', backLabel: 'Teams', playerPrefix: '', storiesSport: 'ncaab',
+    };
+
+    grid.className = 'player-detail-container';
+    grid.innerHTML = _renderTeamPage(model)
+        + `<p class="detail-note" style="margin-top:0.75rem">Source: ESPN.</p>`;
+    if (typeof _loadTeamStories === 'function') _loadTeamStories('ncaab', abbr);
+}
+
+window.showNCAABTeam          = showNCAABTeam;
+window.displayNCAABTeamDetail = displayNCAABTeamDetail;
 
 window.fetchNCAABScoreboard = fetchNCAABScoreboard;
 window.displayNCAABScores   = displayNCAABScores;

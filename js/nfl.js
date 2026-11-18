@@ -2387,7 +2387,7 @@ function _renderTeamPage(m) {
     const groups = (m.groups || []).map(grp => {
         if (!grp.players.length) return '';
         const rows = grp.players.map(p =>
-            `<div class="roster-row" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('${m.playerPrefix}${p.id}')" onkeydown="if(event.key==='Enter')this.click()">
+            `<div class="roster-row"${m.playerPrefix ? ` role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('${m.playerPrefix}${p.id}')" onkeydown="if(event.key==='Enter')this.click()"` : ''}>
                 <div class="roster-avatar" style="background:linear-gradient(135deg,${color}cc,${color}44);position:relative;overflow:hidden">
                     ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
                     <span style="position:relative">${esc(initials(p.name))}</span>
