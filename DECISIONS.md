@@ -4038,6 +4038,18 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 
 **Guard:** `tests/routeCrawl.test.js`: a timeout that recovers passes with a note; a 503 on both tries and a 404 are findings; the 404 is fetched once. The test fails against the crawler without the retry.
 
+## D-210 — NCAAB Leaders, without shooting percentages (2026-11-17)
+
+**Context:** #191 (audit run): NCAAB was the only one of six sports with no Leaders page, three weeks into a season ESPN already serves leaders for. The owner said build it.
+
+**Decision:** `ncaab-leaders` view (`displayNCAABLeaders`, `js/ncaab.js`), a new `/api/ncaabstats`, its browser fallback in `_espnLeadersResponse`, and a crawlable `/ncaab/leaders`. The source is ESPN site/v3 `/leaders`, which carries names, teams and headshots inline. The core-API route the other basketball proxies use would need a team-id table for about 360 schools. Categories: points, rebounds, assists, steals, blocks and 3-pointers made, per game.
+
+**FG% and FT% are left out.** ESPN applies no attempts minimum to college leaders: on 2026-11-17 its FG% leaders were at 85.7% and every FT% leader was at 100%. The feed carries no attempt counts, so a minimum can't be applied here. The page says so. Add them back only with a minimum.
+
+**Names are plain text:** NCAAB has neither a team page nor a player page yet (#116, #117, both `parity-ready`). When #117 ships, the rows and the edge template should link to it.
+
+**Guard:** `tests/ncaabLeaders.test.js`: the proxy and the browser fallback return identical JSON from a trimmed real response, and FG%/FT% are dropped. It fails against `js/config.js` without the NCAAB entry. Contract `ncaab-leaders-v3` now requires all six categories and each row's team abbreviation.
+
 ## D-211 — A page newer than its cached router reloads once instead of booting home (2026-11-17)
 
 **Context:** #142 (muse-found): the first direct visit to `/nba/team/det` rendered home, and a reload rendered the team page. The parity run couldn't reproduce it. Reading `sw.js` confirms its hypothesis. Page loads are network-first, so the HTML (with `__SS_ROUTE=nba-team-DET`) is always current. Scripts are stale-while-revalidate from Cache Storage, so a returning visitor's first load after a deploy can run a `navigation.js` from before the route existed. `_loadFromHash` had no fallback for a server route it didn't know and fell through to home, while the same load refreshed the cache in the background. A second gap: that background refresh went through the browser's HTTP cache, where the zone rule keeps `/js/*` up to 4h, so a stale copy could overwrite the fresh one the new worker had just precached.

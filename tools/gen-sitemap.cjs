@@ -12,7 +12,7 @@
  *   landings /mlb /nfl /ncaaf /ncaab /wnba /nba · the 5 static stubs (mock-draft/
  *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
  *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
- *   /ncaab/standings · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
+ *   /ncaab/standings · /ncaab/leaders · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
  *   /glossary · /nfl/glossary · /about · /<sport>/stories · /<sport>/stories/{slug} (from content/<sport>/stories/index.json;
  *   a sport's index page is listed only once it has a story)
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
@@ -95,6 +95,7 @@ async function main() {
     add(urlTag('/ncaaf/standings', 'daily', '0.7'));
     add(urlTag('/ncaaf/rankings', 'weekly', '0.7'));
     add(urlTag('/ncaab/standings', 'daily', '0.7'));
+    add(urlTag('/ncaab/leaders', 'daily', '0.7'));
     add(urlTag('/wnba/standings', 'daily', '0.7'));
     add(urlTag('/wnba/leaders', 'daily', '0.7'));
     add(urlTag('/nba/standings', 'daily', '0.7'));

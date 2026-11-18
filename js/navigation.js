@@ -518,6 +518,7 @@ const _NAV_META = {
     'ncaab-standings': { label: 'College Standings' },
     'ncaab-teams':     { label: 'College Teams' },
     'ncaab-rankings':  { label: 'CBB Rankings' },
+    'ncaab-leaders':   { label: 'College Basketball Leaders' },
     'ncaab-home':      { label: 'College Basketball' },
     'wnba-scores':     { label: 'WNBA Scores' },
     'wnba-standings':  { label: 'WNBA Standings' },
@@ -1222,7 +1223,7 @@ function _loadFromHash() {
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-pickem', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders', 'ncaaf-powerrankings'];
-        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings', 'ncaab-powerrankings'];
+        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings', 'ncaab-leaders', 'ncaab-powerrankings'];
         const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs', 'wnba-powerrankings'];
         // nba-* array added D-161 follow-up (2026-09-14) -- this was missing
         // entirely (unlike every other sport above), a real bug live-verified
@@ -1354,6 +1355,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaab-standings', l: 'Standings' },
         { v: 'ncaab-teams', l: 'Teams' },
         { v: 'ncaab-rankings', l: 'Rankings' },
+        { v: 'ncaab-leaders', l: 'Leaders' },
         { v: 'ncaab-powerrankings', l: 'Power Rankings' },
         { href: '/ncaab/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
@@ -1509,6 +1511,7 @@ const MENU_TABS = {
         { group:'College Basketball' },
         { v:'ncaab-scores', l:'Scores', i:'scores' }, { v:'ncaab-standings', l:'Standings', i:'standings' },
         { v:'ncaab-teams', l:'Teams', i:'teams' }, { v:'ncaab-rankings', l:'Rankings', i:'leaders' },
+        { v:'ncaab-leaders', l:'Leaders', i:'leaders' },
         { v:'ncaab-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/ncaab/stories', l:'Stories', i:'extra' },
         { v:'news', l:'News', i:'extra' },
     ],
@@ -1923,6 +1926,7 @@ const _PAGE_META = {
     'ncaab-standings': { title: 'SportStrata — College Basketball Standings', desc: 'NCAA men\'s basketball standings by conference.' },
     'ncaab-teams':     { title: 'SportStrata — College Basketball Teams',     desc: 'Browse NCAA men\'s basketball teams by conference.' },
     'ncaab-rankings':  { title: 'SportStrata — College Basketball Rankings',  desc: 'AP and Coaches Poll Top 25 for NCAA men\'s basketball.' },
+    'ncaab-leaders':   { title: 'SportStrata — College Basketball Leaders',   desc: 'NCAA men\'s basketball statistical leaders: points, rebounds, assists, steals, blocks and threes per game.' },
     'wnba-scores':     { title: 'SportStrata — WNBA Scores',    desc: 'Live WNBA scores and today\'s scoreboard.' },
     'wnba-standings':  { title: 'SportStrata — WNBA Standings', desc: 'WNBA standings by conference.' },
     'wnba-teams':      { title: 'SportStrata — WNBA Teams',     desc: 'Browse WNBA teams by conference.' },
@@ -1961,7 +1965,7 @@ function _canonicalUrl(serverCanon, host, pathname) {
 // inverted), or null. Navigation only rewrites the hash, so without this every
 // view reached in-app would keep the canonical of the page the visit began on.
 const _PATH_SINGLE_VIEWS = new Set(['mlb-leaders', 'mlb-standings', 'nfl-leaders', 'nfl-standings', 'nfl-pickem',
-    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
+    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'ncaab-leaders', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
 function _viewPath(view) {
     const v = String(view || '');
     if (v === 'home') return '/';

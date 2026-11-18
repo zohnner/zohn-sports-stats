@@ -1,0 +1,497 @@
+{
+ "requestedSeason": {
+  "year": 2027
+ },
+ "leaders": {
+  "categories": [
+   {
+    "name": "pointsPerGame",
+    "displayName": "Points Per Game",
+    "leaders": [
+     {
+      "displayValue": "29.5",
+      "value": 29.5,
+      "athlete": {
+       "id": "4432741",
+       "displayName": "Dior Johnson",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/4432741.png"
+       }
+      },
+      "team": {
+       "abbreviation": "UCF",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2116.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "27.8",
+      "value": 27.75,
+      "athlete": {
+       "id": "5254338",
+       "displayName": "Jake Hall",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5254338.png"
+       }
+      },
+      "team": {
+       "abbreviation": "UNM",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/167.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "26.8",
+      "value": 26.75,
+      "athlete": {
+       "id": "5174955",
+       "displayName": "Paulius Murauskas",
+       "position": {
+        "abbreviation": "F"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5174955.png"
+       }
+      },
+      "team": {
+       "abbreviation": "ASU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/9.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "25.2",
+      "value": 25.25,
+      "athlete": {
+       "id": "5455089",
+       "displayName": "Tim Ibukunoluwa",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5455089.png"
+       }
+      },
+      "team": {
+       "abbreviation": "SIE",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2561.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "25.0",
+      "value": 25,
+      "athlete": {
+       "id": "5313875",
+       "displayName": "Jalen Haynes",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5313875.png"
+       }
+      },
+      "team": {
+       "abbreviation": "SIU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/79.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "24.2",
+      "value": 24.25,
+      "athlete": {
+       "id": "5060709",
+       "displayName": "Robert Wright III",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5060709.png"
+       }
+      },
+      "team": {
+       "abbreviation": "BYU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "assistsPerGame",
+    "displayName": "Assists Per Game",
+    "leaders": [
+     {
+      "displayValue": "10.0",
+      "value": 10,
+      "athlete": {
+       "id": "4711255",
+       "displayName": "Jeremy Fears Jr.",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/4711255.png"
+       }
+      },
+      "team": {
+       "abbreviation": "MSU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "9.5",
+      "value": 9.5,
+      "athlete": {
+       "id": "5174637",
+       "displayName": "Cian Medley",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5174637.png"
+       }
+      },
+      "team": {
+       "abbreviation": "ECU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/151.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "fieldGoalPercentage",
+    "displayName": "Field Goal Percentage",
+    "leaders": [
+     {
+      "displayValue": "85.7",
+      "value": 0.8571428656578064,
+      "athlete": {
+       "id": "5105980",
+       "displayName": "Kellen Thames",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5105980.png"
+       }
+      },
+      "team": {
+       "abbreviation": "SLU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/139.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "85.7",
+      "value": 0.8571428656578064,
+      "athlete": {
+       "id": "5313562",
+       "displayName": "Tristan Beckford",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5313562.png"
+       }
+      },
+      "team": {
+       "abbreviation": "BGSU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/189.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "reboundsPerGame",
+    "displayName": "Rebounds Per Game",
+    "leaders": [
+     {
+      "displayValue": "15.5",
+      "value": 15.5,
+      "athlete": {
+       "id": "5105848",
+       "displayName": "Demetrius Lilley",
+       "position": {
+        "abbreviation": "C"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5105848.png"
+       }
+      },
+      "team": {
+       "abbreviation": "BING",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2066.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "13.2",
+      "value": 13.25,
+      "athlete": {
+       "id": "5321954",
+       "displayName": "Jaquay Randolph",
+       "position": {
+        "abbreviation": "F"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5321954.png"
+       }
+      },
+      "team": {
+       "abbreviation": "PRST",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2502.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "stealsPerGame",
+    "displayName": "Steals Per Game",
+    "leaders": [
+     {
+      "displayValue": "5.2",
+      "value": 5.25,
+      "athlete": {
+       "id": "5107804",
+       "displayName": "Miles Byrd",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5107804.png"
+       }
+      },
+      "team": {
+       "abbreviation": "PROV",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2507.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "4.0",
+      "value": 4,
+      "athlete": {
+       "id": "5314226",
+       "displayName": "Mynor Strong",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5314226.png"
+       }
+      },
+      "team": {
+       "abbreviation": "TOL",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2649.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "blocksPerGame",
+    "displayName": "Blocks Per Game",
+    "leaders": [
+     {
+      "displayValue": "4.8",
+      "value": 4.75,
+      "athlete": {
+       "id": "5105866",
+       "displayName": "Sean Logan",
+       "position": {
+        "abbreviation": "F"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5105866.png"
+       }
+      },
+      "team": {
+       "abbreviation": "JOES",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2603.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "4.0",
+      "value": 4,
+      "athlete": {
+       "id": "5183975",
+       "displayName": "Abdullah Ahmed",
+       "position": {
+        "abbreviation": "F"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5183975.png"
+       }
+      },
+      "team": {
+       "abbreviation": "MASS",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/113.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "FreeThrowPct",
+    "displayName": "Free Throws Percentage",
+    "leaders": [
+     {
+      "displayValue": "1.0",
+      "value": 1,
+      "athlete": {
+       "id": "4565207",
+       "displayName": "KK Robinson",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/4565207.png"
+       }
+      },
+      "team": {
+       "abbreviation": "NMSU",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/166.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "1.0",
+      "value": 1,
+      "athlete": {
+       "id": "4683944",
+       "displayName": "Tyler Lundblade",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/4683944.png"
+       }
+      },
+      "team": {
+       "abbreviation": "TENN",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "name": "3PointsMadePerGame",
+    "displayName": "Average 3-Point Field Goals Made",
+    "leaders": [
+     {
+      "displayValue": "5.8",
+      "value": 5.75,
+      "athlete": {
+       "id": "5313872",
+       "displayName": "Brayden Shorter",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5313872.png"
+       }
+      },
+      "team": {
+       "abbreviation": "MUR",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/93.png"
+        }
+       ]
+      }
+     },
+     {
+      "displayValue": "5.0",
+      "value": 5,
+      "athlete": {
+       "id": "5074087",
+       "displayName": "Elijah Moore",
+       "position": {
+        "abbreviation": "G"
+       },
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5074087.png"
+       }
+      },
+      "team": {
+       "abbreviation": "MCN",
+       "logos": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2377.png"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ]
+ }
+}
