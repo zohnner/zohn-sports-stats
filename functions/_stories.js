@@ -8,7 +8,7 @@
 // Unknown slug → the shell with HTTP 404. Any other error → the plain shell.
 import core from '../tools/stories/story-core.cjs';
 import { shell, rawShell } from './_shell.js';
-import { readStories, isPublished, retiredStoryTarget, siblingStories, storyListHtml } from './_storyLinks.js';
+import { readStories, readAllStories, isPublished, retiredStoryTarget, siblingStories, storyListHtml, STORY_SPORT_IDS } from './_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -44,13 +44,27 @@ function fillHead(html, { title, desc, canonical, ogImage, jsonld, sport, snapsh
     return html.replace(/\b(href|src)="(?!https?:|\/\/|\/|#|data:|mailto:|tel:)/g, '$1="/');
 }
 
+// "All · NFL · MLB …": the way sideways from any stories page. Lists only
+// sports with a published story, so no link lands on an empty index.
+// `active` is a sport id, 'all', or null (a story page: nothing is current).
+function sportLinks(all, active) {
+    const have = STORY_SPORT_IDS.filter(sp => all.some(s => s.sport === sp));
+    const link = (href, label, on) => (on ? `<strong aria-current="page">${label}</strong>` : `<a href="${href}">${label}</a>`);
+    return [link('/stories', active === null ? 'All stories' : 'All', active === 'all'),
+        ...have.map(sp => link(`/${sp}/stories`, esc(core.STORY_SPORTS[sp].label), active === sp))];
+}
+function sportRowHtml(all, active) {
+    const links = sportLinks(all, active);
+    return links.length > 2 ? `<nav class="ss-stories__sports" aria-label="Stories by sport">${links.join(' · ')}</nav>` : '';
+}
+
 function htmlResponse(html) {
     return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=600' } });
 }
 
 async function failSafe(env, url, sport) {
     try { return await shell(env, url); }
-    catch (_) { return Response.redirect(`https://sportstrata.cc/${sport}`, 302); }
+    catch (_) { return Response.redirect(`https://sportstrata.cc/${sport === 'home' ? '' : sport}`, 302); }
 }
 
 export async function renderStoryPage(context, sport) {
@@ -74,6 +88,7 @@ export async function renderStoryPage(context, sport) {
         const published = await readStories(env, request.url, sport);
         if (!isPublished(published, slug)) return notFound(env, request.url);
         const siblings = siblingStories(published, slug);
+        const everySport = await readAllStories(env, request.url);
         const canonical = `https://sportstrata.cc${core.storyUrl(slug, sport)}`;
         const title = `${meta.title} | SportStrata`;
         const desc = String(meta.dek);
@@ -104,7 +119,7 @@ export async function renderStoryPage(context, sport) {
             `<div class="ss-story__body">${core.renderBody(body)}</div>` +
             `<p class="ss-story__disclosure">${esc(core.DISCLOSURE)} <a href="/content/${sport}/stories/${esc(slug)}.facts.json">See the data behind this story</a>.</p>` +
             storyListHtml(siblings, `More ${label} stories`, { sport, more: false }) +
-            `<p class="ss-story__more"><a href="/${sport}/stories">More SportStrata Stories</a> · <a href="/${sport}">${label} Home</a></p>` +
+            `<p class="ss-story__more">More stories: ${sportLinks(everySport, null).reverse().join(' · ')} · <a href="/${sport}">${label} Home</a></p>` +
             `</article>`;
 
         const html = await (await rawShell(env, request.url)).text();
@@ -121,6 +136,7 @@ export async function renderStoriesIndex(context, sport) {
         const label = core.STORY_SPORTS[sport].label;
         const r = await env.ASSETS.fetch(new URL(`/content/${sport}/stories/index.json`, request.url));
         const stories = r.ok ? (((await r.json()) || {}).stories || []) : [];
+        const everySport = await readAllStories(env, request.url);
 
         const canonical = `https://sportstrata.cc/${sport}/stories`;
         const title = `SportStrata Stories — Data-Driven ${label} Analysis | SportStrata`;
@@ -136,6 +152,7 @@ export async function renderStoriesIndex(context, sport) {
         ).join('');
         const snapshot =
             `<section class="ss-prerender ss-stories"><h1>SportStrata Stories</h1>` +
+            sportRowHtml(everySport, sport) +
             `<p>Original ${label} analysis built from SportStrata's own numbers. Every stat in every story is listed with its source.</p>` +
             (stories.length ? `<ol class="ss-stories__list">${items}</ol>` : `<p>The first stories are on the way.</p>`) +
             `<p><a href="/${sport}">${label} Home</a></p></section>`;
@@ -144,5 +161,39 @@ export async function renderStoriesIndex(context, sport) {
         return htmlResponse(fillHead(html, { title, desc, canonical, ogImage: null, jsonld, sport, snapshot }));
     } catch (e) {
         return failSafe(env, request.url, sport);
+    }
+}
+
+// /stories: every sport's stories in one list, newest first. Each row carries
+// its sport in the eyebrow, so a mixed list is never ambiguous.
+export async function renderStoriesHub(context) {
+    const { request, env } = context;
+    try {
+        if (!env.ASSETS) return shell(env, request.url);
+        const stories = await readAllStories(env, request.url);
+
+        const canonical = 'https://sportstrata.cc/stories';
+        const title = 'SportStrata Stories — Data-Driven Sports Analysis | SportStrata';
+        const desc = "Original analysis across every sport SportStrata covers, built from its own numbers — every stat listed with its source. Free, no login, no ads.";
+        const jsonld = JSON.stringify({
+            '@context': 'https://schema.org', '@type': 'ItemList', name: 'SportStrata Stories', url: canonical,
+            itemListElement: stories.map((s, i) => ({ '@type': 'ListItem', position: i + 1, url: `https://sportstrata.cc${s.url}`, name: s.title })),
+        });
+        const items = stories.map(s =>
+            `<li><a href="${esc(s.url)}">${esc(s.title)}</a>` +
+            `<p class="ss-story__dek">${esc(s.dek)}</p>` +
+            `<p class="ss-story__meta"><time datetime="${esc(s.date)}">${esc(prettyDate(s.date))}</time> · ${esc(core.storyEyebrow(s, s.sport))}</p></li>`
+        ).join('');
+        const snapshot =
+            `<section class="ss-prerender ss-stories"><h1>SportStrata Stories</h1>` +
+            sportRowHtml(stories, 'all') +
+            `<p>Original analysis built from SportStrata's own numbers, across every sport. Every stat in every story is listed with its source.</p>` +
+            (stories.length ? `<ol class="ss-stories__list">${items}</ol>` : `<p>The first stories are on the way.</p>`) +
+            `<p><a href="/">SportStrata Home</a></p></section>`;
+
+        const html = await (await rawShell(env, request.url)).text();
+        return htmlResponse(fillHead(html, { title, desc, canonical, ogImage: null, jsonld, sport: 'home', snapshot }));
+    } catch (e) {
+        return failSafe(env, request.url, 'home');
     }
 }
