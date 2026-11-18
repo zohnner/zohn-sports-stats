@@ -4024,7 +4024,7 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 
 ## D-209 — The route crawl retries a page that drops one request (2026-11-17)
 
-**Context:** The manual Integrity Audit right after D-207 merged passed. The next one, 46 minutes later, failed on the route crawl: three small-college NCAAF team pages (`/ncaaf/team/2023`, `/507`, `/74`) answered "0", the crawler's code for a fetch that threw (a 20s timeout or a dropped connection), out of roughly 400 pages. All three answered 200 in under 1.3s minutes later. D-207 had given contract checks one retry but not the crawl.
+**Context:** The manual Integrity Audit right after D-207 merged passed. The next one, 46 minutes later, failed on the route crawl: three small-college NCAAF team pages (`/ncaaf/team/2023`, `/507`, `/74`) answered "0", the crawler's code for a fetch that threw (a 20s timeout or a dropped connection), out of roughly 400 pages. Minutes later all three answered 200, each in under 1.3s. D-207 had given contract checks one retry but not the crawl.
 
 **Decision:** `crawlHttp` (`tools/audit/route-crawl.cjs`) retries a page once, after 3s, when it gives no answer or a 5xx. A recovery passes with a note naming the URL and the first failure, so a page that flakes every run stays visible. A 404, a wrong redirect, or a page that fails both tries is still a finding. A status-0 finding now carries the fetch error, so the next one says whether it was a timeout.
 
