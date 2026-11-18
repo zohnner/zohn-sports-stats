@@ -477,7 +477,7 @@ async function _espnFetch(proxyUrl, init) {
         Logger.warn('ESPN athlete proxy failed, fetching core API direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnAthleteResponse(am[1], q.get('id'), q.get('season'), init);
     }
-    const lm = String(proxyUrl).match(/\/api\/(nfl|ncaaf|wnba|nba)stats/);
+    const lm = String(proxyUrl).match(/\/api\/(nfl|ncaaf|ncaab|wnba|nba)stats/);
     if (lm) {
         Logger.warn('ESPN leaders proxy failed, building from site/v3', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnLeadersResponse(lm[1], new URL(proxyUrl, location.origin).searchParams.get('season'), init);
@@ -517,7 +517,11 @@ const _ESPN_LEADER_CATS = {
     ncaaf: [..._FB_LEADER_CATS, ['totalTackles', 'Tackles', 'TOT'], ['sacks', 'Sacks', 'SCK'], ['interceptions', 'Interceptions', 'INT']],
     wnba: _BB_LEADER_CATS,
     nba: _BB_LEADER_CATS,
+    // No FG%/FT%: ESPN sets no attempts minimum for college and the feed has no
+    // attempt counts (FG% led at 85.7% on 2026-11-17). Mirrors functions/api/ncaabstats.js.
+    ncaab: [..._BB_LEADER_CATS.slice(0, 5), ['3PointsMadePerGame', '3-Pointers Made Per Game', '3PM']],
 };
+const _ESPN_COLLEGE_LEADERS = { ncaaf: true, ncaab: true };
 
 function _espnLeaderRow(sport, l) {
     const a = l.athlete || {};
@@ -529,9 +533,9 @@ function _espnLeaderRow(sport, l) {
         pos: (a.position && a.position.abbreviation) || '',
         team: t.abbreviation || '',
     };
-    if (sport === 'ncaaf') row.logo = (t.logos && t.logos[0] && t.logos[0].href) || '';
+    if (_ESPN_COLLEGE_LEADERS[sport]) row.logo = (t.logos && t.logos[0] && t.logos[0].href) || '';
     row.headshot = (a.headshot && a.headshot.href)
-        || (id && sport !== 'ncaaf' ? `https://a.espncdn.com/i/headshots/${sport}/players/full/${id}.png` : '');
+        || (id && !_ESPN_COLLEGE_LEADERS[sport] ? `https://a.espncdn.com/i/headshots/${sport}/players/full/${id}.png` : '');
     row.value = l.displayValue;
     return row;
 }

@@ -65,17 +65,19 @@ module.exports = {
         },
         {
             id: 'ncaab-leaders-v3',
-            mirrors: 'story source: ESPN site/v3 leaders',
+            mirrors: 'functions/api/ncaabstats.js + js/config.js _espnLeadersResponse (ncaab-leaders view, /ncaab/leaders); story source',
             sources: [/site\/v3\/sports\/basketball\/mens-college-basketball\/leaders/],
             route: c => `https://site.web.api.espn.com/apis/site/v3/sports/basketball/mens-college-basketball/leaders${c.season == null ? '' : `?season=${c.season}&seasontype=2`}`,
             paths: [
                 'leaders.categories[].name',
                 'leaders.categories[].leaders[].value',
+                'leaders.categories[].leaders[].displayValue',
                 'leaders.categories[].leaders[].athlete.id',
                 'leaders.categories[].leaders[].athlete.displayName',
+                'leaders.categories[].leaders[].team.abbreviation',
             ],
             invariants: [
-                L.hasNames('leaders.categories', ['pointsPerGame', 'reboundsPerGame', 'assistsPerGame']),
+                L.hasNames('leaders.categories', ['pointsPerGame', 'reboundsPerGame', 'assistsPerGame', 'stealsPerGame', 'blocksPerGame', '3PointsMadePerGame']),
                 L.eachNonEmpty('leaders.categories[].leaders'),
             ],
         },
