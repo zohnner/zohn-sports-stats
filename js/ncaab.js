@@ -111,7 +111,8 @@ async function fetchNCAABScoreboard(opts = {}) {
 // groups=50 fix are confirmed live against last season's real historical
 // dates, but the season-boundary math and end-to-end adapter have not.
 async function fetchNCAABSeasonGames() {
-    const cacheKey = `ncaabSeasonGames${NCAAB_SEASON}`;
+    // "R": rows carry ranks at kickoff (#169); see fetchNCAAFSeasonGames.
+    const cacheKey = `ncaabSeasonGamesR${NCAAB_SEASON}`;
     const cached = ApiCache.get(cacheKey);
     if (cached) return cached;
 
@@ -140,6 +141,8 @@ async function fetchNCAABSeasonGames() {
             homeScore: g.homeTeam.score,
             awayScore: g.awayTeam.score,
             date:      g.date,
+            homeRank:  g.homeTeam.rank,
+            awayRank:  g.awayTeam.rank,
         }));
 
     ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
@@ -430,7 +433,9 @@ async function displayNCAABRankings() {
                 <tbody>${rows}</tbody>
             </table>
         </div>
-        <p class="standings-legend">${_escHtml(p.name)}${p.occurrence ? ' · ' + _escHtml(p.occurrence) : ''}. Source: ESPN. ▲/▼ = movement vs the previous poll.</p>`;
+        <p class="standings-legend">${_escHtml(p.name)}${p.occurrence ? ' · ' + _escHtml(p.occurrence) : ''}. Source: ESPN. ▲/▼ = movement vs the previous poll.</p>
+        <div id="ncaabRankedGames"></div>`;
+    if (typeof _rankedGamesMount === 'function') _rankedGamesMount(document.getElementById('ncaabRankedGames'), fetchNCAABSeasonGames);
 }
 
 // ── Standings + Teams (shared site.web.api conference tree) ───

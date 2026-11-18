@@ -283,7 +283,10 @@ async function fetchNCAAFScoreboard(opts = {}) {
 // groups=80 is already baked into fetchNCAAFScoreboard (D-135), so FCS
 // crossover games are included here too, not filtered out.
 async function fetchNCAAFSeasonGames() {
-    const cacheKey = `ncaafSeasonGames${NCAAF_SEASON}`;
+    // "R": rows carry each side's rank at kickoff for the Rankings page's
+    // ranked-games list (#169). A pre-rank array cached under the old key
+    // must never reach that list.
+    const cacheKey = `ncaafSeasonGamesR${NCAAF_SEASON}`;
     const cached = ApiCache.get(cacheKey);
     if (cached) return cached;
 
@@ -301,6 +304,8 @@ async function fetchNCAAFSeasonGames() {
             homeScore: g.homeTeam.score,
             awayScore: g.awayTeam.score,
             date:      g.date,
+            homeRank:  g.homeTeam.rank,
+            awayRank:  g.awayTeam.rank,
         }));
 
     ApiCache.set(cacheKey, games, ApiCache.TTL.SEASON);
@@ -758,7 +763,9 @@ async function displayNCAAFRankings() {
                 <tbody>${rows}</tbody>
             </table>
         </div>
-        <p class="standings-legend">${_escHtml(p.name)}${p.occurrence ? ' · ' + _escHtml(p.occurrence) : ''}. Source: ESPN. ▲/▼ = movement vs the previous poll.</p>`;
+        <p class="standings-legend">${_escHtml(p.name)}${p.occurrence ? ' · ' + _escHtml(p.occurrence) : ''}. Source: ESPN. ▲/▼ = movement vs the previous poll.</p>
+        <div id="ncaafRankedGames"></div>`;
+    if (typeof _rankedGamesMount === 'function') _rankedGamesMount(document.getElementById('ncaafRankedGames'), fetchNCAAFSeasonGames);
 }
 
 // ── Standings + Teams (shared site.web.api conference tree) ────
