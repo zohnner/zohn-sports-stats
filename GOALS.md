@@ -4,7 +4,7 @@
 
 This file says what SportStrata is for, what rules never bend, and what the next season of work is aiming at. It is short on purpose. History lives in `DECISIONS.md`. The previous version of this file (frozen 2026-09-14) is kept at `docs/archive/GOALS-2026-09-14.md` for its reasoning trail.
 
-Last resynced: 2026-11-17, against `DECISIONS.md` through D-209.
+Last resynced: 2026-11-18, against `DECISIONS.md` through D-211.
 
 ---
 
@@ -54,7 +54,7 @@ Ads and sponsorships are permitted in principle (D-069) but deliberately on hold
 |---|---|---|
 | MLB | Flagship, full depth | None open. Offseason until spring training |
 | NFL | Live | No team-season history for "first since 1999" checks (#148) |
-| NCAA Football | Live | Team pages lack results and a game log (#167); no ranked-games list (#169) |
+| NCAA Football | Live | Team pages lack results and a game log (#167) |
 | NCAA Men's Basketball | Live, thinnest | No team pages (#116), player pages (#117) or player game log |
 | NBA | Live (D-161) | No Playoff Picture |
 | WNBA | Live, offseason | No team page, no player game log, no Stories |
@@ -70,7 +70,7 @@ The sports calendar sets the deadlines. Dates are approximate and should be chec
 
 | When (approx.) | What happens | What SportStrata needs ready |
 |---|---|---|
-| Early–mid December | Conference championships, CFP selection, bowls begin | NCAAF ranked-games list (#169) and team-page results (#167) |
+| Early–mid December | Conference championships, CFP selection, bowls begin | NCAAF team-page results (#167). The ranked-games list (#169) shipped 2026-11-18 |
 | Mid December | Fantasy football playoffs | In-season fantasy tools working. Nothing new required |
 | January – mid February | NFL playoffs and Super Bowl | NFL team-season history (#148) so Stories can verify historical claims |
 | Mid February | MLB spring training | Confirm the MLB season rollover (D-206) |
@@ -85,7 +85,7 @@ The sports calendar sets the deadlines. Dates are approximate and should be chec
 
 In order:
 
-1. **NCAAF before CFP selection:** ship #169 and #167. They are the only items with a deadline inside a month.
+1. **NCAAF before CFP selection:** ship #167, the only item left with a deadline inside a month. (#169, the ranked-games list on NCAAF and NCAAB Rankings, shipped 2026-11-18.)
 2. **NCAAB before March:** team pages (#116), then player pages (#117), then the player game log. The tournament is NCAAB's biggest traffic window, and NCAAB has the most `no` cells in the audit matrix.
 3. **NFL history before the playoffs:** #148, which also clears a group of open `derived-stat` issues.
 4. **NBA Playoff Picture before April.**
