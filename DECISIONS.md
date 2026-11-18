@@ -4022,7 +4022,6 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 - a network error that recovers;
 - a 404, which is fetched once.
 
-<<<<<<< HEAD
 ## D-208 — A retired story 301s to the page with the corrected numbers (2026-11-17)
 
 **Context:** #172 unpublished the Vikings 6-2 story because its count used weeks 1-8, which dropped every team with an early bye (#138). Links shared before the unpublish kept bringing readers in: it was the third-ranked entry page in the 2026-11-17 desk brief, and every one of those readers got a 404.
