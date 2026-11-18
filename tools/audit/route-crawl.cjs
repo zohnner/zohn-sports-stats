@@ -190,7 +190,7 @@ function teamUrls(sitemapXml) {
 
 // One fetched team page -> null or a finding.
 function judgeTeamPage(t, res) {
-    if (res.status !== 200) return { kind: 'bad-status', sport: t.sport, link: 'team', id: t.id, detail: `${t.url} answered ${res.status}` };
+    if (res.status !== 200) return { kind: 'bad-status', sport: t.sport, link: 'team', id: t.id, detail: `${t.url} answered ${res.status}${res.error ? ` (${res.error})` : ''}` };
     const m = /__SS_ROUTE\s*=\s*['"]([^'"]+)['"]/.exec(res.body || '');
     if (!m || !new RegExp(`^${t.sport}-team-`).test(m[1])) {
         return { kind: 'misroute', sport: t.sport, link: 'team', id: t.id, detail: `${t.url} hydrates ${m ? m[1] : 'no route'}, expected ${t.sport}-team-…` };
@@ -228,10 +228,27 @@ function nbaTeamUrls(base, src = fs.readFileSync(path.join(__dirname, '..', '..'
     return [...src.matchAll(/\['([A-Z]{2,4})', '[^']+'\]/g)].map(m => ({ url: `${base}/nba/team/${m[1].toLowerCase()}`, sport: 'nba', id: m[1].toLowerCase() }));
 }
 
-async function crawlHttp(base, fetcher = get, nba = nbaTeamUrls(base)) {
+// A page that drops one request (no answer, or a 5xx) gets one more try after a
+// pause, as contract checks do (D-207). One flake among ~400 pages failed the
+// 2026-11-17 audit. A page that is really down fails both tries.
+const RETRY_DELAY_MS = 3000;
+const transient = res => res.status === 0 || res.status >= 500;
+
+async function crawlHttp(base, fetcher = get, nba = nbaTeamUrls(base), { retryDelayMs = RETRY_DELAY_MS } = {}) {
+    const notes = [];
+    const firstFetch = fetcher;
+    fetcher = async url => {
+        let res = await firstFetch(url);
+        if (transient(res)) {
+            const first = res.status ? `HTTP ${res.status}` : `no answer${res.error ? ` (${res.error})` : ''}`;
+            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            res = await firstFetch(url);
+            if (!transient(res)) notes.push(`${url}: first try got ${first}; answered ${res.status} on retry`);
+        }
+        return res;
+    };
     const sm = await fetcher(`${base}/sitemap.xml`);
     const listed = teamUrls(sm.body || '');
-    const notes = [];
     const listedNba = listed.filter(t => t.sport === 'nba').length;
     if (listedNba < nba.length) notes.push(`sitemap.xml lists ${listedNba} of ${nba.length} NBA team pages (checked all ${nba.length} directly)`);
     const teams = [...listed, ...nba.filter(t => !listed.some(l => l.sport === 'nba' && l.id === t.id))];
