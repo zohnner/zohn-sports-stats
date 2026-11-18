@@ -21,7 +21,7 @@ function loadStoryLinks() {
         .replace(/^export /gm, '');
     const ctx = { URL, core: require(path.join(ROOT, 'tools', 'stories', 'story-core.cjs')) };
     vm.createContext(ctx);
-    vm.runInContext(`${src}\n;globalThis.__out = { readStories, readAllStories, storiesForTeam, siblingStories, storyListHtml };`, ctx);
+    vm.runInContext(`${src}\n;globalThis.__out = { readStories, isPublished, readAllStories, storiesForTeam, siblingStories, storyListHtml, RETIRED_STORIES, retiredStoryTarget };`, ctx);
     return ctx.__out;
 }
 const L = loadStoryLinks();
@@ -101,6 +101,13 @@ test('hash views map to the path URL their edge template serves', () => {
     for (const [view, want] of Object.entries(cases)) assert.equal(ctx.__v(view), want, view);
 });
 
+test('NFL Stats tab and sort variants canonicalize to /nfl/leaders', () => {
+    const ctx = loadViewPath();
+    for (const view of ['nfl-leaders', 'nfl-leaders-receiving', 'nfl-leaders-defense~defensive.sacks-desc', 'nfl-leaders~passing.interceptions-asc']) {
+        assert.equal(ctx.__v(view), '/nfl/leaders', view);
+    }
+});
+
 test('every mapped path round-trips through the edge fail-safe route table', () => {
     const shellSrc = fs.readFileSync(path.join(ROOT, 'functions', '_shell.js'), 'utf8').replace(/^export /gm, '');
     const ctx = loadViewPath(`${shellSrc}\n;globalThis.__r = failSafeRoute;`);
@@ -117,4 +124,26 @@ test('sitemap gap check lists only story URLs the sitemap lacks', () => {
     fs.writeFileSync(path.join(dir, 'sitemap.xml'), '<urlset><url><loc>https://sportstrata.cc/nfl/stories/a</loc></url></urlset>');
     assert.deepEqual(missingStoryUrls(dir), ['/nfl/stories/c', '/nfl/stories/b']);
     fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('an unpublished story is not served: a slug missing from the index is not published', () => {
+    const index = [S('2026-11-09-a', '2026-11-09', ['DEN']), S('2026-11-10-b', '2026-11-10', ['MIN'])];
+    assert.equal(L.isPublished(index, '2026-11-09-a'), true);
+    assert.equal(L.isPublished(index, '2026-11-10-deleted'), false);
+    // An index that could not be read must not take every story down with it.
+    assert.equal(L.isPublished([], '2026-11-10-deleted'), true);
+});
+
+test('a retired story 301s to the page with the corrected numbers, and is never also published', () => {
+    assert.equal(L.retiredStoryTarget('nfl', '2026-11-10-vikings-6-2-fewest-points-scored'), '/nfl/team/min/minnesota-vikings');
+    assert.equal(L.retiredStoryTarget('nfl', '2026-11-09-a'), null);
+    assert.equal(L.retiredStoryTarget('mlb', '2026-11-10-vikings-6-2-fewest-points-scored'), null);
+    assert.equal(L.retiredStoryTarget('nfl', 'constructor'), null);
+    for (const [sport, slugs] of Object.entries(L.RETIRED_STORIES)) {
+        const index = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', sport, 'stories', 'index.json'), 'utf8')).stories;
+        for (const [slug, target] of Object.entries(slugs)) {
+            assert.ok(!index.some(s => s.slug === slug), `${slug} is retired but still published`);
+            assert.match(target, /^\/[a-z]/, `${slug} target must be a site path`);
+        }
+    }
 });

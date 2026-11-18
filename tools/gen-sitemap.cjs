@@ -12,7 +12,7 @@
  *   landings /mlb /nfl /ncaaf /ncaab /wnba /nba · the 5 static stubs (mock-draft/
  *   draft-kit/playoff-odds/ask/pickem) · /mlb/standings
  *   /mlb/leaders · /nfl/leaders · /nfl/pickem · /nfl/standings · /ncaaf/standings · /ncaaf/rankings
- *   /ncaab/standings · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
+ *   /ncaab/standings · /ncaab/leaders · /wnba/standings · /wnba/leaders · /nba/standings · /nba/leaders ·
  *   /glossary · /nfl/glossary · /about · /<sport>/stories · /<sport>/stories/{slug} (from content/<sport>/stories/index.json;
  *   a sport's index page is listed only once it has a story)
  *   /mlb/team/{abbr} · /mlb/player/{id}/{slug} · /mlb/game/{pk} (rolling window)
@@ -44,7 +44,15 @@ const path = require('path');
 
 const BASE = 'https://sportstrata.cc';
 const now = new Date();
-const MLB_SEASON  = (now.getUTCMonth() + 1 >= 3 && now.getUTCMonth() + 1 <= 11) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+// MLB season from statsapi's calendar, the same resolve the site uses (D-206).
+// functions/_mlbSeason.js is ESM and this workflow's Node may predate loading
+// it from CommonJS, so evaluate its import-free source the way the tests do.
+let MLB_SEASON;
+async function resolveMlbSeason() {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'functions', '_mlbSeason.js'), 'utf8').replace(/^export /gm, '');
+    const { mlbSeason } = new Function(src + '\nreturn { mlbSeason };')();
+    return (await mlbSeason(now)).season;
+}
 const CFB_SEASON  = (now.getUTCMonth() + 1 >= 8) ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 const DRY = process.argv.includes('--dry');
 const GAME_WINDOW_DAYS = 14;
@@ -70,6 +78,7 @@ async function jget(url) {
 function idFromRef(ref) { const m = /\/athletes\/(\d+)/.exec(ref || ''); return m ? m[1] : null; }
 
 async function main() {
+    MLB_SEASON = await resolveMlbSeason();
     const urls = [];
     const seen = new Set();
     const add = (tag) => { if (!seen.has(tag)) { seen.add(tag); urls.push(tag); } };
@@ -86,6 +95,7 @@ async function main() {
     add(urlTag('/ncaaf/standings', 'daily', '0.7'));
     add(urlTag('/ncaaf/rankings', 'weekly', '0.7'));
     add(urlTag('/ncaab/standings', 'daily', '0.7'));
+    add(urlTag('/ncaab/leaders', 'daily', '0.7'));
     add(urlTag('/wnba/standings', 'daily', '0.7'));
     add(urlTag('/wnba/leaders', 'daily', '0.7'));
     add(urlTag('/nba/standings', 'daily', '0.7'));
@@ -93,17 +103,20 @@ async function main() {
     add(urlTag('/glossary', 'monthly', '0.6'));
     add(urlTag('/about', 'monthly', '0.5'));
     add(urlTag('/nfl/glossary', 'monthly', '0.6'));
+    let newestStory = '';
     for (const sport of Object.keys(require('./stories/story-core.cjs').STORY_SPORTS)) {
         try {
             const idx = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', sport, 'stories', 'index.json'), 'utf8'));
             const stories = idx.stories || [];
             const newest = stories.map(s => s.date).sort().pop();
             if (stories.length) add(urlTag(`/${sport}/stories`, 'daily', '0.7', newest));
+            if (newest && newest > newestStory) newestStory = newest;
             for (const s of stories) add(urlTag(s.url, 'monthly', '0.6', s.date));
         } catch (e) {
             console.warn(`${sport} stories index unreadable, skipping story URLs: ${e.message}`);
         }
     }
+    if (newestStory) add(urlTag('/stories', 'daily', '0.7', newestStory));
 
     // 2) MLB teams
     try {

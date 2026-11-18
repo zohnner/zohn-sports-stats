@@ -77,6 +77,6 @@ export async function onRequest(context) {
         return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
     } catch (e) {
         try { return await shell(env, request.url); }
-        catch (_) { return Response.redirect('https://sportstrata.cc/#nfl-players', 302); }
+        catch (_) { return Response.redirect('https://sportstrata.cc/#nfl-leaders', 302); }
     }
 }

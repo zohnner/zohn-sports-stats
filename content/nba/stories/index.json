@@ -1,6 +1,192 @@
 {
   "stories": [
     {
+      "slug": "2026-11-17-grizzlies-129-points-three-straight",
+      "title": "Memphis has scored 129 or more in 3 straight games, its longest run this season",
+      "dek": "The Grizzlies average 135.7 points over the 3 games, 14.0 more than their season average.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "MEM",
+        "NO",
+        "BKN",
+        "WSH"
+      ],
+      "players": [
+        "5041935",
+        "4600663"
+      ],
+      "hero_stat": "135.7 points a game over 3 games, 16.9 above what those opponents usually allow",
+      "url": "/nba/stories/2026-11-17-grizzlies-129-points-three-straight",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-17-magic-four-straight-first-boston-home-loss",
+      "title": "Orlando has won 4 straight, handing Boston its first home loss",
+      "dek": "The Magic were 2-7 before the streak, and the win in Boston came after 3 wins over the league's 3 worst teams.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "ORL",
+        "BOS",
+        "SAC",
+        "UTAH",
+        "MIL"
+      ],
+      "players": [
+        "4066320",
+        "4566434"
+      ],
+      "hero_stat": "4 straight wins after a 2-7 start, including Boston's first home loss",
+      "url": "/nba/stories/2026-11-17-magic-four-straight-first-boston-home-loss",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-17-pelicans-72-point-swing-warriors",
+      "title": "7 days after losing by 51, New Orleans beat Golden State by 21",
+      "dek": "The 72-point swing ended New Orleans' 6-game losing streak and handed Golden State a 3rd straight loss.",
+      "date": "2026-11-17",
+      "season": 2027,
+      "teams": [
+        "NO",
+        "GS"
+      ],
+      "players": [
+        "5144091",
+        "4397136",
+        "5175737"
+      ],
+      "hero_stat": "72-point swing in 7 days, from a 51-point loss to a 21-point win",
+      "url": "/nba/stories/2026-11-17-pelicans-72-point-swing-warriors",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-16-celtics-lead-nba-differential",
+      "title": "Boston now leads the NBA in point differential",
+      "dek": "The Celtics' 37-point win over Dallas moved them past San Antonio to plus-13.1 a game, and they allow a league-low 102.4.",
+      "date": "2026-11-16",
+      "season": 2027,
+      "teams": [
+        "BOS",
+        "DAL"
+      ],
+      "players": [
+        "4065648",
+        "3078576"
+      ],
+      "hero_stat": "plus-13.1 points a game — best differential in the NBA",
+      "url": "/nba/stories/2026-11-16-celtics-lead-nba-differential",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-16-rockets-147-season-high",
+      "title": "Houston scored 147 points, the most by any NBA team this season",
+      "dek": "The Rockets beat Washington 147-119 with 6 players in double figures and none scoring more than 26.",
+      "date": "2026-11-16",
+      "season": 2027,
+      "teams": [
+        "HOU",
+        "WSH"
+      ],
+      "players": [
+        "4684740",
+        "3202",
+        "4871144",
+        "4433192"
+      ],
+      "hero_stat": "147 points — the most by any NBA team this season",
+      "url": "/nba/stories/2026-11-16-rockets-147-season-high",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-15-proctor-first-triple-double",
+      "title": "Tyrese Proctor's first triple-double: 24 points, 11 rebounds, 10 assists",
+      "dek": "Proctor posted 24 points, 11 rebounds and 10 assists in Cleveland's 127-117 win over Dallas, his first career triple-double.",
+      "date": "2026-11-15",
+      "season": 2027,
+      "teams": [
+        "CLE",
+        "DAL"
+      ],
+      "players": [
+        "5023693"
+      ],
+      "hero_stat": "24 points, 11 rebounds, 10 assists — his first career triple-double",
+      "url": "/nba/stories/2026-11-15-proctor-first-triple-double",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-14-antetokounmpo-adebayo-37-each-heat-history",
+      "title": "Giannis and Bam each scored 37, the 2nd Heat duo to each score 35-plus",
+      "dek": "The pair combined for 74 points on 28-of-39 shooting in Miami's 133-121 win over Cleveland, the Heat's 3rd straight win after an 0-4 start.",
+      "date": "2026-11-14",
+      "season": 2027,
+      "teams": [
+        "MIA",
+        "CLE"
+      ],
+      "players": [
+        "3032977",
+        "4066261",
+        "4278053",
+        "5107157"
+      ],
+      "hero_stat": "37 points each — the 2nd Heat duo to each score 35-plus",
+      "url": "/nba/stories/2026-11-14-antetokounmpo-adebayo-37-each-heat-history",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-14-spurs-defense-11-game-win-streak",
+      "title": "Spurs hold opponents 10.3 points below their norm during 11-game win streak",
+      "dek": "Golden State scored 85 points on Friday, 34.3 below its average in its other games and the Warriors' lowest total of the season by 20.",
+      "date": "2026-11-14",
+      "season": 2027,
+      "teams": [
+        "SAS",
+        "GS"
+      ],
+      "players": [
+        "4845367",
+        "5104157"
+      ],
+      "hero_stat": "104.6 points allowed a game during the 11-game win streak",
+      "url": "/nba/stories/2026-11-14-spurs-defense-11-game-win-streak",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-13-cade-cunningham-52-points-10-assists-no-turnovers",
+      "title": "Cade Cunningham posts the NBA's first 50-point, 10-assist, 0-turnover game",
+      "dek": "He scored 30 of his 52 points in the 4th quarter and the overtimes, and his previous career high was 46.",
+      "date": "2026-11-13",
+      "season": 2027,
+      "teams": [
+        "DET",
+        "WSH"
+      ],
+      "players": [
+        "4432166",
+        "4684742"
+      ],
+      "hero_stat": "52 points, 11 assists, 0 turnovers",
+      "url": "/nba/stories/2026-11-13-cade-cunningham-52-points-10-assists-no-turnovers",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-13-timberwolves-best-point-differential-nba",
+      "title": "Minnesota leads the NBA at plus-13.4 points a game through 12 games",
+      "dek": "The Timberwolves have won 5 straight by 16.4 points a game, including a 39-point rout of Dallas.",
+      "date": "2026-11-13",
+      "season": 2027,
+      "teams": [
+        "MIN",
+        "DAL"
+      ],
+      "players": [],
+      "hero_stat": "plus-13.4 points a game, best in the NBA",
+      "url": "/nba/stories/2026-11-13-timberwolves-best-point-differential-nba",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-12-towns-11-double-doubles-ties-knicks-record",
       "title": "Towns has a double-double in all 11 games, tying a Knicks record",
       "dek": "He averages 13.5 rebounds, the league's best, and no other player has more than 9 double-doubles.",

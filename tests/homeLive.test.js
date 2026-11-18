@@ -156,3 +156,71 @@ test('pickHero: a game with no known start still counts as today, and nothing yi
     assert.equal(H.pickHero([cand('no date', { score: 3 })], NOW).name, 'no date');
     assert.equal(H.pickHero([], NOW), null);
 });
+
+// D-205: the home hero's standings fallback showed a finished race in November.
+const row = (name, wins, losses, gb, clinched = '') => ({ teamName: name, wins, losses, gb, clinched });
+const div = (division, ...teams) => ({ division, teams });
+
+test('tightestRace: a tied second place ("-") is a 0-game race, not skipped', () => {
+    const H = load();
+    const r = H.tightestRace([
+        div('AL Central', row('Guardians', 60, 50, '—'), row('Tigers', 59, 51, '1.0')),
+        div('AL East', row('Rays', 62, 48, '—'), row('Yankees', 62, 48, '-')),
+    ]);
+    assert.equal(r.div, 'AL East');
+    assert.equal(r.gb, 0);
+    assert.equal(r.leader.teamName, 'Rays');
+});
+
+test('tightestRace: clinched divisions and unplayed tables are not races', () => {
+    const H = load();
+    assert.equal(H.tightestRace([
+        div('AL Central', row('Guardians', 85, 77, '—', 'y'), row('White Sox', 84, 78, '1.0', 'w')),
+        div('AL East', row('Rays', 98, 64, '—', 'z'), row('Yankees', 93, 68, '4.5', 'w')),
+    ]), null);
+    assert.equal(H.tightestRace([div('AL West', row('Astros', 0, 0, '—'), row('Rangers', 0, 0, '-'))]), null);
+    const r = H.tightestRace([
+        div('AL Central', row('Guardians', 85, 77, '—', 'y'), row('White Sox', 84, 78, '1.0')),
+        div('NL East', row('Braves', 80, 70, '—', 'x'), row('Phillies', 77, 73, '3.0')),
+    ]);
+    assert.equal(r.div, 'NL East');
+    assert.equal(r.gb, 3);
+});
+
+test('tightestRace: empty or malformed input is null', () => {
+    const H = load();
+    assert.equal(H.tightestRace(null), null);
+    assert.equal(H.tightestRace([div('X', row('A', 1, 0, '—'))]), null);
+});
+
+const leadCand = o => ({ live: false, tier: 0, fav: false, ranked: false, sport: 'ncaaf', ...o });
+
+test('planted fault: an unranked college game never leads the home page, live or not', () => {
+    const H = load();
+    assert.equal(H.leadWorthy(leadCand({ sport: 'ncaaf' })), false, 'EMU at WMU, upcoming');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'ncaaf', live: true })), false, 'EMU at WMU, live');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'ncaab', live: true })), false);
+});
+
+test('leadWorthy: what may lead', () => {
+    const H = load();
+    assert.equal(H.leadWorthy(leadCand({ sport: 'ncaaf', ranked: true })), true, 'a ranked team is in it');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'ncaaf', fav: true })), true, 'a followed team');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'mlb', tier: 3 })), true, 'postseason');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'nfl' })), true);
+    assert.equal(H.leadWorthy(leadCand({ sport: 'mlb' })), true);
+    assert.equal(H.leadWorthy(leadCand({ sport: 'nba', live: true })), true);
+    assert.equal(H.leadWorthy(leadCand({ sport: 'nba' })), false, 'an ordinary upcoming NBA tip');
+    assert.equal(H.leadWorthy(leadCand({ sport: 'wnba' })), false);
+    assert.equal(H.leadWorthy(null), false);
+});
+
+test('storyCanLead: a story leads for three days from its date, never before it', () => {
+    const H = load();
+    const at = s => new Date(s).getTime();
+    assert.equal(H.storyCanLead({ date: '2026-11-16' }, at('2026-11-17T12:00:00')), true);
+    assert.equal(H.storyCanLead({ date: '2026-11-14' }, at('2026-11-16T23:00:00')), true);
+    assert.equal(H.storyCanLead({ date: '2026-11-13' }, at('2026-11-17T12:00:00')), false);
+    assert.equal(H.storyCanLead({ date: '2026-11-18' }, at('2026-11-17T12:00:00')), false);
+    assert.equal(H.storyCanLead({}, at('2026-11-17T12:00:00')), false);
+});

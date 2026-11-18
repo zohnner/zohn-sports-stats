@@ -4,7 +4,7 @@
 // Offline: navigation requests fall back to /offline.html
 // ============================================================
 
-const CACHE_NAME    = 'sportstrata-v343';
+const CACHE_NAME    = 'sportstrata-v360';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -31,6 +31,7 @@ const STATIC_ASSETS = [
     '/css/bballGameCenter.css',
     '/css/auth.css',
     '/css/nflPickem.css',
+    '/css/tonightsStakes.css',
     '/js/math.min.js',
     '/js/config.js',
     '/js/detailFrame.js',
@@ -45,12 +46,14 @@ const STATIC_ASSETS = [
     '/js/standings.js',
     '/js/charts.js',
     '/js/statBuilder.js',
+    '/js/mlbSeason.js',
     '/js/mlb.js',
     '/js/odds.js',
     '/js/scorecard.js',
     '/js/liveGame.js',
     '/js/shareCard.js',
     '/js/highlightCard.js',
+    '/js/nflStatsTable.js',
     '/js/nfl.js',
     '/js/nflStandings.js',
     '/js/fieldViewer.js',
@@ -79,6 +82,7 @@ const STATIC_ASSETS = [
     '/js/scorebug.js',
     '/js/homeLive.js',
     '/js/app.js',
+    '/js/tonightsStakes.js',
 ];
 
 // Install — pre-cache the static shell, bypassing the HTTP cache so a CACHE_NAME
@@ -167,7 +171,10 @@ self.addEventListener('fetch', e => {
     // copy instantly but refreshes it in the background, so the next load is current.
     e.respondWith(
         caches.match(e.request).then(cached => {
-            const network = fetch(e.request).then(resp => {
+            // Revalidate rather than read the browser's HTTP cache, which the zone
+            // rule lets keep /js/* for 4h: a stale copy from there would overwrite
+            // the fresh one install just precached (#142, D-211). Usually a 304.
+            const network = fetch(new Request(e.request, { cache: 'no-cache' })).then(resp => {
                 if (resp && resp.status === 200 && resp.type !== 'opaque') {
                     const clone = resp.clone();
                     caches.open(CACHE_NAME).then(c => c.put(e.request, clone));

@@ -11,7 +11,7 @@
 // application/json type -- this still arrives as a normal JSON body here.
 export const VALID_SPORTS = new Set(['mlb', 'nfl', 'nhl', 'nba', 'ncaaf', 'ncaab', 'wnba', 'home', 'shared']);
 // Mirrors VisitBeacon.refBucket() in js/visitBeacon.js.
-export const REF_BUCKETS = new Set(['direct', 'internal', 'google', 'search', 'reddit', 'x', 'meta', 'ai', 'other']);
+export const REF_BUCKETS = new Set(['direct', 'internal', 'google', 'search', 'reddit', 'x', 'meta', 'tiktok', 'ai', 'other']);
 const PATH_RE = /^\/[A-Za-z0-9/_.-]{0,63}$/;
 
 export function parseRow(body) {

@@ -67,5 +67,45 @@ const HomeLive = (() => {
             .map(x => x.c)[0] || null;
     }
 
-    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero };
+    // The closest division race in fetchMLBStandingsFull rows, or null.
+    // statsapi writes a tied second place's games back as "-", which
+    // parseFloat reads as NaN, so a tie dropped the division. A division
+    // whose leader has clinched it (y, or z for a bye) is no longer a race,
+    // and a table nobody has played in yet (before Opening Day) isn't one.
+    function tightestRace(divs) {
+        let best = null;
+        (divs || []).forEach(d => {
+            const [leader, second] = (d && d.teams) || [];
+            if (!leader || !second) return;
+            if (leader.clinched === 'y' || leader.clinched === 'z') return;
+            if (!((Number(leader.wins) || 0) + (Number(leader.losses) || 0))) return;
+            const raw = String(second.gb == null ? '' : second.gb).trim();
+            const gb = (raw === '-' || raw === '—') ? 0 : parseFloat(raw);
+            if (!isFinite(gb)) return;
+            if (!best || gb < best.gb) best = { div: d.division, leader, second, gb };
+        });
+        return best;
+    }
+
+    // Whether a game may lead the home page: a postseason game, a followed
+    // team's game, any MLB or NFL game, a live NBA or WNBA game, or a
+    // college game with a ranked team in it. An unranked college game never
+    // leads, live or not: on 2026-11-17 Eastern Michigan at Western Michigan
+    // led the site while that day's NFL story sat four screens down.
+    function leadWorthy(c) {
+        if (!c) return false;
+        if (c.tier > 0 || c.fav) return true;
+        if (c.sport === 'mlb' || c.sport === 'nfl') return true;
+        if (c.sport === 'nba' || c.sport === 'wnba') return !!c.live;
+        return (c.sport === 'ncaaf' || c.sport === 'ncaab') && !!c.ranked;
+    }
+
+    // A story may lead the page for three days from its date.
+    const STORY_LEAD_MS = 3 * 24 * 60 * 60 * 1000;
+    function storyCanLead(story, now) {
+        const t = Date.parse(`${story && story.date}T00:00:00`);
+        return Number.isFinite(t) && now - t < STORY_LEAD_MS && now >= t;
+    }
+
+    return { liveSports, signature, mlbTier, mlbCanClinch, pickHero, tightestRace, leadWorthy, storyCanLead };
 })();

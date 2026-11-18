@@ -1,6 +1,8 @@
 name: Contract Check
 
-# Nightly check of production /api/* proxies against tools/contracts/*.cjs.
+# Nightly check of production /api/* proxies, and of the upstream routes stories
+# cite, against tools/contracts/*.cjs. Ends with story coverage per sport
+# (tools/contract-coverage.cjs); an uncovered story fails the run.
 # Spec: docs/superpowers/specs/2026-09-28-contract-monitor-design.md
 # 11:00 UTC = after overnight finals settle (last West Coast MLB/NFL games).
 
@@ -16,7 +18,7 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

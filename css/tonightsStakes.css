@@ -1,0 +1,101 @@
+/* ============================================================
+   TONIGHT'S STAKES — home record-watch strip (.ts-* namespace)
+   Section chrome reuses .home-zone / .home-section-hdr from
+   main.css; cards mirror the .home-game-card anatomy (surface,
+   border, 3px team-color identity edge, color wash). All color
+   through variables.css tokens — the only literal allowed is
+   the per-card --team-color value injected from data (team
+   colors are data, DESIGN.md).
+   ============================================================ */
+
+.ts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: 0.65rem;
+}
+
+.ts-card {
+    --team-color: var(--accent);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--team-color);
+    border-radius: var(--radius-lg);
+    padding: 0.85rem 0.9rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+.ts-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--team-color) 8%, transparent) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+.ts-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+}
+
+.ts-game {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.ts-entity {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+.ts-stake {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.ts-detail {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.ts-need {
+    margin-top: auto;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+.ts-need-value {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+.ts-need-label {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+.ts-source {
+    font-size: var(--text-xs);
+    color: var(--text-subtle);
+}

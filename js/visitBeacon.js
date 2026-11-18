@@ -28,9 +28,10 @@ const VisitBeacon = (() => {
         [/(^|\.)reddit\.com$|^redd\.it$/, 'reddit'],
         [/(^|\.)(x\.com|twitter\.com)$|^t\.co$/, 'x'],
         [/(^|\.)(facebook\.com|instagram\.com|threads\.net)$|^fb\.me$/, 'meta'],
+        [/(^|\.)tiktok\.com$/, 'tiktok'],
         [/(^|\.)(chatgpt\.com|perplexity\.ai|claude\.ai|gemini\.google\.com)$/, 'ai'],
     ];
-    const UTM_BUCKETS = { google: 'google', reddit: 'reddit', x: 'x', twitter: 'x', facebook: 'meta', instagram: 'meta', threads: 'meta', bing: 'search' };
+    const UTM_BUCKETS = { google: 'google', reddit: 'reddit', x: 'x', twitter: 'x', facebook: 'meta', instagram: 'meta', threads: 'meta', bing: 'search', tiktok: 'tiktok' };
 
     function refBucket(referrer, ownHost, search) {
         const utm = /[?&]utm_source=([^&#]*)/i.exec(search || '');

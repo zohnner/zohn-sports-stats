@@ -22,6 +22,30 @@ export async function readStories(env, url, sport) {
     } catch (_) { return []; }
 }
 
+// Is this slug in the sport's published index? An index that could not be
+// read (empty list) answers yes, so an asset hiccup never 404s every story.
+export function isPublished(stories, slug) {
+    return !stories.length || stories.some(s => s.slug === slug);
+}
+
+// Unpublished stories that readers still reach from links shared before the
+// unpublish. Each one 301s to the page that carries the corrected numbers,
+// instead of a 404. Add a slug only when a correct page exists to send it to;
+// a slug here must not also be in the published index (a test checks).
+export const RETIRED_STORIES = {
+    nfl: {
+        // #172: counted weeks 1-8, which dropped every team with an early bye (#138).
+        // The team page's start-history module counts each team's first 8 games.
+        '2026-11-10-vikings-6-2-fewest-points-scored': '/nfl/team/min/minnesota-vikings',
+    },
+};
+
+export function retiredStoryTarget(sport, slug) {
+    const target = Object.hasOwn(RETIRED_STORIES, sport) && Object.hasOwn(RETIRED_STORIES[sport], slug)
+        ? RETIRED_STORIES[sport][slug] : null;
+    return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') ? target : null;
+}
+
 export async function readAllStories(env, url) {
     const lists = await Promise.all(STORY_SPORT_IDS.map(sp => readStories(env, url, sp)));
     return lists.flat().sort((a, b) => String(b.date).localeCompare(String(a.date)));

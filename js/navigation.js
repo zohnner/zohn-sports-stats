@@ -40,6 +40,8 @@ function setupNavigation() {
         if (t) navigateTo(t.dataset.view);
     });
     document.getElementById('menuPanel')?.addEventListener('click', e => {
+        const go = e.target.closest('[data-sport-go]');
+        if (go) { _goSport(go.dataset.sportGo); _closeMenu(); return; }
         const t = e.target.closest('.nav-tab[data-view]');
         if (t) { navigateTo(t.dataset.view); _closeMenu(); }
     });
@@ -53,13 +55,7 @@ function setupNavigation() {
         // the visible switcher shows nothing active — which made switchSport()
         // early-return and silently do nothing on click. Same fix
         // _renderSportPicker's card click handler (app.js) already applies.
-        if (sp === AppState.currentSport) {
-            const meta = (typeof SPORTS_META !== 'undefined') ? SPORTS_META[sp] : null;
-            if (typeof _applySportUI === 'function') _applySportUI(sp);
-            navigateTo(meta ? meta.defaultView : sp + '-players');
-        } else {
-            switchSport(sp);
-        }
+        _goSport(sp);
         _closeSportSwitchMenu();
     });
 
@@ -391,7 +387,62 @@ function _seedSportTicker(sport) {
     }
 }
 
-function switchSport(sport) {
+// A person picking a sport in the header switcher or the home menu. Unlike a
+// bare switchSport(), which code calls before routing somewhere itself, this
+// keeps the reader's section and keeps the address bar truthful.
+function _goSport(sp) {
+    // switchSport() returns early when the sport is already current, which it
+    // can be on a neutral view like Home.
+    const same = sp === AppState.currentSport;
+    const storiesHref = same ? null : _switchStoriesHref(sp, location.pathname, AppState.currentView);
+    if (storiesHref) { location.assign(storiesHref); return; }
+    const meta = SPORTS_META[sp];
+    const view = same ? (meta ? meta.defaultView : sp + '-players') : _switchTarget(sp, AppState.currentView);
+    // navigateTo() only rewrites the hash, so leaving an edge-rendered path
+    // page left the old path in the address bar (/mlb/stories#nfl-home).
+    // From a path page, write the new view's own path instead.
+    const fromPath = location.pathname !== '/';
+    if (same) { _applySportUI(sp); navigateTo(view, !fromPath); }
+    else switchSport(sp, view, !fromPath);
+    if (fromPath) history.pushState({ view }, '', `${_viewPath(view) || '/'}#${view}`);
+}
+
+// The section a view belongs to, so a sport switch can keep it: 'standings'
+// from 'nfl-standings', 'scores' from either scores spelling, 'news' as is.
+// Entity and tool views (a player, a game, Draft HQ) have no section.
+function _viewSection(view) {
+    const v = String(view || '');
+    if (v === 'news') return 'news';
+    const m = /^(?:mlb|nfl|ncaaf|ncaab|wnba|nba)-([a-z]+)$/.exec(v);
+    if (!m) return null;
+    return (m[1] === 'games' || m[1] === 'scores') ? 'scores' : m[1];
+}
+
+// Where a sport switch lands: the same section in the new sport when that
+// sport's nav offers it, else the sport's landing page. It used to be the
+// landing page every time, so Standings -> other sport's Standings took two
+// clicks and a re-orientation.
+function _switchTarget(sport, fromView) {
+    const cfg = SPORTS_META[sport] || SPORTS_META.mlb;
+    const section = _viewSection(fromView);
+    if (!section || section === 'home') return cfg.defaultView;
+    if (section === 'news') return 'news';
+    if (section === 'scores') return _SPORT_SCORES_VIEW[sport] || `${sport}-games`;
+    const want = `${sport}-${section}`;
+    const offered = (SUB_NAV_TABS[sport] || [])
+        .flatMap(t => (t.cols ? t.cols.flatMap(c => c.items) : [t])).some(t => t.v === want);
+    return offered ? want : cfg.defaultView;
+}
+
+// On a stories page the switcher goes to the new sport's stories, when it has any.
+function _switchStoriesHref(sport, pathname, view) {
+    if (view !== 'static-page' || !/^\/(?:[a-z]+\/)?stories(?:\/|$)/.test(pathname)) return null;
+    const href = `/${sport}/stories`;
+    return (SUB_NAV_TABS[sport] || []).some(t => t.href === href) ? href : null;
+}
+
+
+function switchSport(sport, view, push = true) {
     if (sport === AppState.currentSport) return;
     AppState.currentSport = sport;
 
@@ -404,7 +455,7 @@ function switchSport(sport) {
 
     _seedSportTicker(sport);
 
-    navigateTo(cfg.defaultView);
+    navigateTo(view || cfg.defaultView, push);
 }
 
 // ── Breadcrumb ───────────────────────────────────────────────
@@ -431,7 +482,6 @@ const _NAV_META = {
     'mlb-highlight-card': { label: 'Highlight Card' },
     'mlb-compare':   { label: 'Compare' },
     'mlb-scorecard': { label: 'Scorecard' },
-    'nfl-players':   { label: 'NFL Players' },
     'nfl-rankings':  { label: 'Draft HQ · ADP Rankings' },
     'nfl-draftkit':  { label: 'Draft HQ' },
     'nfl-mock':      { label: 'Draft HQ · Mock Draft' },
@@ -442,7 +492,7 @@ const _NAV_META = {
     // that isn't reachable through Draft HQ's own nav strip anymore.
     'nfl-myleague':  { label: 'Fantasy · My League' },
     'nfl-compare':   { label: 'Player Compare' },
-    'nfl-leaders':   { label: 'NFL Leaders' },
+    'nfl-leaders':   { label: 'NFL Stats' },
     'nfl-trending':  { label: 'Fantasy · Trending' },
     'nfl-injuries':  { label: 'Fantasy · Injury Report' },
     'nfl-waivers':   { label: 'Fantasy · Waiver Wire' },
@@ -468,6 +518,7 @@ const _NAV_META = {
     'ncaab-standings': { label: 'College Standings' },
     'ncaab-teams':     { label: 'College Teams' },
     'ncaab-rankings':  { label: 'CBB Rankings' },
+    'ncaab-leaders':   { label: 'College Basketball Leaders' },
     'ncaab-home':      { label: 'College Basketball' },
     'wnba-scores':     { label: 'WNBA Scores' },
     'wnba-standings':  { label: 'WNBA Standings' },
@@ -721,11 +772,10 @@ function _syncNFLOffseasonStrip(view) {
     strip.setAttribute('role', 'status');
     strip.setAttribute('aria-live', 'polite');
     strip.innerHTML = `<span class="nfl-offseason-strip__msg">NFL is in the offseason — preseason returns in August, the regular season in September. Standings &amp; tools are open year-round:
-            <button class="nfl-offseason-strip__link" data-view="nfl-players">Players</button> ·
+            <button class="nfl-offseason-strip__link" data-view="nfl-leaders">Stats</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
-            <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button> ·
-            <button class="nfl-offseason-strip__link" data-view="nfl-leaders">2025 Leaders</button></span>
+            <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button></span>
         <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">✕</button>`;
     main.insertBefore(strip, grid);
 
@@ -758,6 +808,11 @@ function _renderNFLView(view) {
     if (view.startsWith('nfl-player-')) {
         if (viewCount) viewCount.textContent = 'NFL Player';
         showNFLPlayerDetail(view.slice('nfl-player-'.length));
+        return;
+    }
+    if (/^nfl-leaders(?:$|[-~])/.test(view)) {
+        if (viewCount) viewCount.textContent = 'NFL Stats';
+        loadNFLStats(view);
         return;
     }
     if (view.startsWith('nfl-team-')) {
@@ -794,8 +849,8 @@ function _renderNFLView(view) {
             if (typeof loadNFLSOS === 'function') loadNFLSOS();
             break;
         case 'nfl-players':
-            if (viewCount) viewCount.textContent = 'NFL Players';
-            loadNFLPlayers();
+            if (viewCount) viewCount.textContent = 'NFL Stats';
+            loadNFLStats('nfl-leaders');
             break;
         case 'nfl-rankings':
             if (viewCount) viewCount.textContent = 'Draft HQ · Rankings';
@@ -804,10 +859,6 @@ function _renderNFLView(view) {
         case 'nfl-compare':
             if (viewCount) viewCount.textContent = 'Player Compare';
             loadNFLCompare();
-            break;
-        case 'nfl-leaders':
-            if (viewCount) viewCount.textContent = 'NFL Leaders';
-            loadNFLStatLeaders();
             break;
         case 'nfl-powerrankings':
             if (viewCount) viewCount.textContent = 'NFL Power Rankings';
@@ -965,6 +1016,29 @@ async function _restoreMLBComparison(group, id1, id2) {
     });
 }
 
+// The server named a route this copy of the router has no branch for, so the
+// HTML is newer than this script: the service worker served a cached
+// navigation.js from before the route shipped (#142, D-211). Reload once, after
+// the new worker takes over, instead of booting to home. One try per route per
+// session, so a route that is really unknown still lands on home.
+function _staleCodeReload(route, env = {
+    storage: (() => { try { return window.sessionStorage; } catch (_) { return null; } })(),
+    sw: navigator.serviceWorker,
+    reload: () => location.reload(),
+    wait: ms => new Promise(r => setTimeout(r, ms)),
+}) {
+    const key = `zs_route_reload:${route}`;
+    try {
+        if (!env.storage || env.storage.getItem(key)) return false;
+        env.storage.setItem(key, '1');
+    } catch (_) { return false; }
+    Logger.warn('Server route unknown to this script; reloading for fresh code', { route }, 'NAV');
+    const changed = env.sw ? new Promise(r => env.sw.addEventListener('controllerchange', r, { once: true })) : Promise.resolve();
+    const update = env.sw && env.sw.getRegistration ? env.sw.getRegistration().then(reg => reg && reg.update()).catch(() => {}) : Promise.resolve();
+    update.then(() => Promise.race([changed, env.wait(3000)])).then(() => env.reload());
+    return true;
+}
+
 function _loadFromHash() {
     // D-041 Phase 1: edge-prerendered path URLs (e.g. /mlb/team/nyy) set window.__SS_ROUTE
     // so the SPA boots straight to the entity. Additive — normal loads never set it.
@@ -1031,6 +1105,7 @@ function _loadFromHash() {
             if (typeof _applySportUI === 'function') _applySportUI(_sp);
             navigateTo(_r); return;
         }
+        if (_staleCodeReload(_r)) return;
     }
     const hash = window.location.hash.slice(1);
     if (!hash) { navigateTo('home', false); return; }
@@ -1041,6 +1116,7 @@ function _loadFromHash() {
     const mlbScorecardMatch  = hash.match(/^mlb-scorecard-(\d+)$/);
     const mlbLiveMatch       = hash.match(/^mlb-live-(\d+)$/);
     const nflEspnMatch       = hash.match(/^nfl-player-espn-(\d+)$/);
+    const nflStatsMatch      = /^nfl-leaders[-~]/.test(hash);
     const nflPlayerMatch     = hash.match(/^nfl-player-([A-Za-z0-9]+)$/);
     const nflTeamMatch       = hash.match(/^nfl-team-([A-Za-z]+)$/);
     const nflCompareMatch    = hash.match(/^nfl-compare-([A-Za-z0-9]+)-([A-Za-z0-9]+)$/);
@@ -1076,6 +1152,10 @@ function _loadFromHash() {
         _restoreMLBPlayerDetail(parseInt(mlbPlayerMatch[1]), mlbPlayerMatch[2] || 'hitting');
     } else if (mlbTeamMatch) {
         _restoreMLBTeamDetail(parseInt(mlbTeamMatch[1]));
+    } else if (nflStatsMatch) {
+        AppState.currentSport = 'nfl';
+        _applySportUI('nfl');
+        navigateTo(hash, false);
     } else if (nflEspnMatch) {
         AppState.currentSport = 'nfl';
         _applySportUI('nfl');
@@ -1143,7 +1223,7 @@ function _loadFromHash() {
         const nflViews = ['nfl-home', 'nfl-players', 'nfl-rankings', 'nfl-draftkit', 'nfl-sos', 'nfl-leaders', 'nfl-powerrankings', 'nfl-trending', 'nfl-injuries', 'nfl-waivers', 'nfl-pickem', 'nfl-teams', 'nfl-games', 'nfl-standings', 'nfl-mock', 'nfl-mydrafts', 'nfl-myleague', 'nfl-compare', 'nfl-highlight-card'];
         const nhlViews = ['nhl-players', 'nhl-leaders', 'nhl-teams', 'nhl-games', 'nhl-standings'];
         const ncaafViews = ['ncaaf-home', 'ncaaf-scores', 'ncaaf-standings', 'ncaaf-teams', 'ncaaf-rankings', 'ncaaf-leaders', 'ncaaf-powerrankings'];
-        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings', 'ncaab-powerrankings'];
+        const ncaabViews = ['ncaab-home', 'ncaab-scores', 'ncaab-standings', 'ncaab-teams', 'ncaab-rankings', 'ncaab-leaders', 'ncaab-powerrankings'];
         const wnbaViews = ['wnba-home', 'wnba-scores', 'wnba-standings', 'wnba-teams', 'wnba-leaders', 'wnba-playoffs', 'wnba-powerrankings'];
         // nba-* array added D-161 follow-up (2026-09-14) -- this was missing
         // entirely (unlike every other sport above), a real bug live-verified
@@ -1208,6 +1288,16 @@ function _loadFromHash() {
 // dropdown can render as one or several labeled columns in the full-width mega-panel
 // (see _renderSubNav). A `cols` entry with no `t` renders as an untitled single column.
 const SUB_NAV_TABS = {
+    // Home (the D-042 front door) and sport-neutral pages (/stories, /about)
+    // render this cross-sport set. They used to borrow MLB's, so "Stories" on
+    // the home page silently meant MLB stories. Nothing here may be scoped to
+    // one sport (tests/homeNav.test.js).
+    home: [
+        { v: 'home', l: 'Today' },
+        { href: '/stories', l: 'Stories' },
+        { v: 'arcade', l: 'Arcade' },
+        { href: '/about', l: 'About' },
+    ],
     mlb: [
         { v: 'mlb-players', l: 'Players' },
         { v: 'mlb-teams', l: 'Teams' },
@@ -1225,11 +1315,11 @@ const SUB_NAV_TABS = {
         { v: 'news', l: 'News' },
     ],
     nfl: [
-        { v: 'nfl-players', l: 'Players' },
+        { v: 'nfl-leaders', l: 'Stats' },
         { v: 'nfl-teams', l: 'Teams' },
         { v: 'nfl-standings', l: 'Standings' },
-        { l: 'Stats & Leaders', cols: [
-            { items: [{ v: 'nfl-leaders', l: 'Leaders' }, { v: 'nfl-powerrankings', l: 'Power Rankings' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
+        { l: 'Analytics', cols: [
+            { items: [{ v: 'nfl-powerrankings', l: 'Power Rankings' }, { v: 'nfl-compare', l: 'Compare' }, { v: 'nfl-highlight-card', l: 'Highlight' }] },
         ] },
         // Grouped into Draft Prep / In-Season (D-103) — mirrors what MENU_TABS.nfl's
         // mobile grouping already did; the desktop dropdown was the one place this
@@ -1265,6 +1355,7 @@ const SUB_NAV_TABS = {
         { v: 'ncaab-standings', l: 'Standings' },
         { v: 'ncaab-teams', l: 'Teams' },
         { v: 'ncaab-rankings', l: 'Rankings' },
+        { v: 'ncaab-leaders', l: 'Leaders' },
         { v: 'ncaab-powerrankings', l: 'Power Rankings' },
         { href: '/ncaab/stories', l: 'Stories' },
         { v: 'news', l: 'News' },
@@ -1374,6 +1465,15 @@ const _NAV_ICONS = {
 // mislabeled under 'Tools' on both sports — Compare is stat-browsing, not a
 // tool) to match the desktop mega-menu's Stats & Leaders / Tools split.
 const MENU_TABS = {
+    // `sports: true` expands to one button per SPORTS entry: on mobile the
+    // switcher shows only the active sport, and home has none.
+    home: [
+        { group:'SportStrata' },
+        { v:'home', l:'Today', i:'scores' }, { href:'/stories', l:'Stories', i:'trending' },
+        { v:'arcade', l:'Arcade', i:'arcade' }, { href:'/about', l:'About', i:'extra' },
+        { group:'Sports' },
+        { sports: true },
+    ],
     mlb: [
         { group:'Stats & Leaders' },
         { v:'mlb-players', l:'Players', i:'players' }, { v:'mlb-leaders', l:'Leaders', i:'leaders' },
@@ -1385,7 +1485,7 @@ const MENU_TABS = {
     ],
     nfl: [
         { group:'Stats & Leaders' },
-        { v:'nfl-players', l:'Players', i:'players' }, { v:'nfl-leaders', l:'Leaders', i:'leaders' },
+        { v:'nfl-leaders', l:'Stats', i:'leaders' },
         { v:'nfl-teams', l:'Teams', i:'teams' }, { v:'nfl-standings', l:'Standings', i:'standings' },
         { v:'nfl-games', l:'Scores', i:'scores' }, { v:'nfl-compare', l:'Compare', i:'compare' },
         { v:'nfl-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/nfl/stories', l:'Stories', i:'extra' }, { v:'news', l:'News', i:'extra' },
@@ -1411,6 +1511,7 @@ const MENU_TABS = {
         { group:'College Basketball' },
         { v:'ncaab-scores', l:'Scores', i:'scores' }, { v:'ncaab-standings', l:'Standings', i:'standings' },
         { v:'ncaab-teams', l:'Teams', i:'teams' }, { v:'ncaab-rankings', l:'Rankings', i:'leaders' },
+        { v:'ncaab-leaders', l:'Leaders', i:'leaders' },
         { v:'ncaab-powerrankings', l:'Power Rankings', i:'leaders' }, { href:'/ncaab/stories', l:'Stories', i:'extra' },
         { v:'news', l:'News', i:'extra' },
     ],
@@ -1436,8 +1537,11 @@ function _renderMenuPanel(sport) {
     if (!grid) return;
     const tabs = MENU_TABS[sport] || MENU_TABS.mlb;
     grid.setAttribute('aria-label', `${(sport || 'mlb').toUpperCase()} navigation`);
-    grid.innerHTML = tabs.map(t => t.group
+    const items = tabs.flatMap(t => (t.sports ? SPORTS.map(s => ({ sport: s.id, l: s.label, i: 'teams' })) : [t]));
+    grid.innerHTML = items.map(t => t.group
         ? `<div class="menu-section" role="presentation">${t.group}</div>`
+        : t.sport
+            ? `<button class="nav-tab menu-item" type="button" data-sport-go="${t.sport}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
         : t.href
             ? `<a class="nav-tab menu-item${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></a>`
             : `<button class="nav-tab menu-item" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span>${t.l}</span></button>`
@@ -1446,14 +1550,19 @@ function _renderMenuPanel(sport) {
 }
 
 const BOTTOM_NAV_TABS = {
+    home: [
+        { v: 'home', l: 'Today', i: 'scores' }, { href: '/stories', l: 'Stories', i: 'trending' },
+        { v: 'arcade', l: 'Arcade', i: 'arcade' }, { href: '/about', l: 'About', i: 'leaders' },
+        { more: true, l: 'More', i: 'extra' },
+    ],
     mlb: [
         { v: 'mlb-games', l: 'Scores', i: 'scores' }, { v: 'mlb-players', l: 'Players', i: 'players' },
         { v: 'mlb-leaders', l: 'Leaders', i: 'leaders' }, { v: 'mlb-standings', l: 'Standings', i: 'standings' },
         { more: true, l: 'More', i: 'extra' },
     ],
     nfl: [
-        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-players', l: 'Players', i: 'players' },
-        { v: 'nfl-leaders', l: 'Leaders', i: 'leaders' }, { v: 'nfl-standings', l: 'Standings', i: 'standings' },
+        { v: 'nfl-games', l: 'Scores', i: 'scores' }, { v: 'nfl-leaders', l: 'Stats', i: 'leaders' },
+        { v: 'nfl-standings', l: 'Standings', i: 'standings' }, { v: 'nfl-teams', l: 'Teams', i: 'teams' },
         { more: true, l: 'More', i: 'extra' },
     ],
     ncaaf: [
@@ -1484,6 +1593,8 @@ function _renderBottomNav(sport) {
     const tabs = BOTTOM_NAV_TABS[sport] || BOTTOM_NAV_TABS.mlb;
     nav.innerHTML = tabs.map(t => t.more
         ? `<button class="nav-tab bottom-more" type="button" aria-label="More options"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
+        : t.href
+            ? `<a class="nav-tab${_navLinkCurrent(t.href) ? ' active' : ''}" href="${t.href}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></a>`
         : `<button class="nav-tab" data-view="${t.v}"><span class="nav-icon">${_NAV_ICONS[t.i] || ''}</span><span class="bottom-nav-label">${t.l}</span></button>`
     ).join('');
     nav.querySelectorAll(`.nav-tab[data-view="${AppState.currentView}"]`).forEach(t => t.classList.add('active'));
@@ -1746,9 +1857,11 @@ async function _renderFavRail() {
     });
 }
 
-function _applySportSearchPlaceholder(sport) {
-    const label = (SPORTS.find(s => s.id === sport) || {}).label || '';
-    const ph = label ? `Search ${label} players, teams, stats…` : 'Search players, teams, stats…';
+// The search covers every sport it indexes at once, whichever sport is
+// active, so the prompt never names one (it read "Search MLB players" on
+// home and "Search NCAAF players" where no NCAAF player is searchable).
+function _applySportSearchPlaceholder() {
+    const ph = 'Search players, teams, stats…';
     const box = document.getElementById('searchBox'); if (box) box.placeholder = ph;
     const modal = document.getElementById('searchModalInput'); if (modal) modal.placeholder = ph;
     const gbtn = document.getElementById('globalSearchBtn'); if (gbtn) gbtn.setAttribute('data-label', ph);
@@ -1758,20 +1871,19 @@ function _applySportUI(sport) {
     const brandIcon = document.getElementById('brandIcon');
     const brandSub  = document.getElementById('brandSub');
     // Home is the sport-agnostic front door (D-042): neutral brand, no sport forced
-    // active in the switcher; the home picker band is the launchpad. Nav context
-    // defaults to mlb so the sub-nav is never empty. Amends the old CLAUDE.md rule
-    // that loadHome must call _applySportUI('mlb').
+    // active in the switcher; the home picker band is the launchpad. The nav
+    // surfaces render their own cross-sport 'home' set, never one sport's.
     if (sport === 'home') {
         // .innerHTML, not .textContent (2026-09-07 emoji removal) -- 'house'
         // is an _ICON key rendered as SVG, not a raw emoji character.
         if (brandIcon) brandIcon.innerHTML = _iconSvg('house', 20);
         if (brandSub)  brandSub.textContent  = 'Multi-Sport Analytics';
         document.getElementById('nflOffseasonStrip')?.remove();
-        _renderSubNav('mlb');
-        _renderBottomNav('mlb');
-        _renderMenuPanel('mlb');
+        _renderSubNav('home');
+        _renderBottomNav('home');
+        _renderMenuPanel('home');
         _renderSportSwitch(null);
-        _applySportSearchPlaceholder('mlb');
+        _applySportSearchPlaceholder();
         return;
     }
     const meta = SPORTS_META[sport] || SPORTS_META.mlb;
@@ -1814,6 +1926,7 @@ const _PAGE_META = {
     'ncaab-standings': { title: 'SportStrata — College Basketball Standings', desc: 'NCAA men\'s basketball standings by conference.' },
     'ncaab-teams':     { title: 'SportStrata — College Basketball Teams',     desc: 'Browse NCAA men\'s basketball teams by conference.' },
     'ncaab-rankings':  { title: 'SportStrata — College Basketball Rankings',  desc: 'AP and Coaches Poll Top 25 for NCAA men\'s basketball.' },
+    'ncaab-leaders':   { title: 'SportStrata — College Basketball Leaders',   desc: 'NCAA men\'s basketball statistical leaders: points, rebounds, assists, steals, blocks and threes per game.' },
     'wnba-scores':     { title: 'SportStrata — WNBA Scores',    desc: 'Live WNBA scores and today\'s scoreboard.' },
     'wnba-standings':  { title: 'SportStrata — WNBA Standings', desc: 'WNBA standings by conference.' },
     'wnba-teams':      { title: 'SportStrata — WNBA Teams',     desc: 'Browse WNBA teams by conference.' },
@@ -1852,7 +1965,7 @@ function _canonicalUrl(serverCanon, host, pathname) {
 // inverted), or null. Navigation only rewrites the hash, so without this every
 // view reached in-app would keep the canonical of the page the visit began on.
 const _PATH_SINGLE_VIEWS = new Set(['mlb-leaders', 'mlb-standings', 'nfl-leaders', 'nfl-standings', 'nfl-pickem',
-    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
+    'ncaaf-standings', 'ncaaf-rankings', 'ncaab-standings', 'ncaab-leaders', 'wnba-standings', 'wnba-leaders', 'nba-standings', 'nba-leaders']);
 function _viewPath(view) {
     const v = String(view || '');
     if (v === 'home') return '/';
@@ -1866,6 +1979,7 @@ function _viewPath(view) {
     if ((m = /^mlb-live-(\d+)$/.exec(v))) return `/mlb/game/${m[1]}`;
     if ((m = /^(mlb|wnba|nba)-player-(\d+)$/.exec(v))) return `/${m[1]}/player/${m[2]}`;
     if ((m = /^nba-team-([A-Z]{2,4})$/i.exec(v))) return `/nba/team/${m[1].toLowerCase()}`;
+    if (/^nfl-leaders[-~]/.test(v)) return '/nfl/leaders';
     return null;
 }
 

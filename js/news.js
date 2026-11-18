@@ -194,7 +194,7 @@ function storiesBlockHtml(stories, heading, sport) {
             <span class="story-row__title">${tag(s)}${_escHtml(s.title)}</span>
             <span class="story-row__dek">${_escHtml(s.dek)}</span>
         </a>`).join('');
-    const more = sport ? `<a class="stories-block__more" href="/${_escHtml(sport)}/stories">All stories →</a>` : '';
+    const more = `<a class="stories-block__more" href="${sport ? `/${_escHtml(sport)}/stories` : '/stories'}">All stories →</a>`;
     return `<section class="stories-block">
         <div class="stories-block__hdr"><span class="eyebrow">${_escHtml(heading)}</span>${more}</div>
         ${rows}

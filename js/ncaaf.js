@@ -1315,13 +1315,13 @@ async function _loadNCAAFGameLog(id, season) {
     if (!host || !id) return;
     let data;
     try {
-        const cacheKey = `ncaaf:gamelog:${id}:${season}`;
+        const cacheKey = `ncaaf:gamelog2:${id}:${season}`;
         data = ApiCache.get(cacheKey);
         if (!data) {
-            const res = await fetch(`/api/ncaafgamelog?id=${encodeURIComponent(id)}&season=${season}`);
+            const res = await _espnFetch(`/api/ncaafgamelog?id=${encodeURIComponent(id)}&season=${season}`);
             if (!res.ok) return;
             data = await res.json();
-            ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
+            if (!/fetch failed/.test(data.reason || '')) ApiCache.set(cacheKey, data, ApiCache.TTL.DAILY);
         }
     } catch (_) { return; }
     if (!data || !data.found || !data.games || !data.games.length) return;

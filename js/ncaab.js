@@ -2,9 +2,8 @@
 // NCAA Men's Basketball (college-basketball) — 4th sport (D-052)
 // ESPN public API via same-origin /api/ncaab Pages Function.
 // Bounded P2/P3 scope, mirroring NCAAF's original D-042 phase-1:
-// Scores, Standings (conference-grouped), Teams, Rankings.
-// Player leaders/detail deferred pending a live data-depth check,
-// same deferral NCAAF carried until D-044 found the data was fine.
+// Scores, Standings (conference-grouped), Teams, Rankings, Leaders (#191, D-210).
+// No player detail page yet (#117).
 // Season model mirrors nfl.js/ncaaf.js. No keys, no D1.
 // ============================================================
 
@@ -176,20 +175,7 @@ function _ncaabOffseasonState() {
 }
 
 function _ncaabGameCard(g) {
-    const row = (t) => `
-        <div class="hgc-row">
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:28px;height:28px">` : '<span style="width:28px"></span>'}
-            <span class="hgc-team">${t.rank ? `<span class="hgc-rank">#${t.rank}</span> ` : ''}${_escHtml(t.abbr)}</span>
-            <span class="hgc-score ${g.isFinal && t.winner ? 'hgc-score--win' : ''}" style="margin-left:auto">${(g.isFinal || g.isLive) ? t.score : ''}</span>
-        </div>`;
-    const pill = g.isLive ? '<span class="ticker-status-pill ticker-status-pill--live">LIVE</span>'
-        : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
-        : `<span class="hgc-status">${_escHtml(g.statusText)}</span>`;
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('ncaab-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')navigateTo('ncaab-game-${_escHtml(String(g.id))}')">
-        ${row(g.awayTeam)}
-        ${row(g.homeTeam)}
-        <div class="hgc-card-footer">${pill}</div>
-    </div>`;
+    return Scorebug.renderScoreCard(Scorebug.normalizeNCAABGame(g), { go: `ncaab-game-${g.id}` });
 }
 
 // Live-game dashboard lives in js/bballLiveGame.js, shared with WNBA — see
@@ -292,6 +278,7 @@ function _renderNCAABView(view) {
         case 'ncaab-standings':      displayNCAABStandings();          break;
         case 'ncaab-teams':          displayNCAABTeams();              break;
         case 'ncaab-rankings':       displayNCAABRankings();           break;
+        case 'ncaab-leaders':        displayNCAABLeaders();            break;
         case 'ncaab-powerrankings':  if (typeof _prShow === 'function') _prShow('ncaab'); break;
         case 'ncaab-scores':
         case 'ncaab-home':
@@ -314,6 +301,61 @@ const _ncaab = { season: NCAAB_LAST_SEASON, poll: 0 };
 
 function _ncaabErr(msg, retryFn) {
     return `<div class="nfl-offseason" style="grid-column:1/-1"><p class="nfl-offseason-text">${_escHtml(msg)}</p><div class="nfl-offseason-actions"><button class="nfl-offseason-btn nfl-offseason-btn--ghost" onclick="${retryFn}()">Retry</button></div></div>`;
+}
+
+// ── Leaders (#191, via /api/ncaabstats or its browser fallback) ──
+// Names are plain text: NCAAB has no player page yet (#117).
+const _NCAAB_LCOLORS = ['#d97706', '#3b7dd8', '#2e9e6b', '#8b5cf6', '#d6455f', '#0d9488'];
+
+async function displayNCAABLeaders() {
+    const grid = document.getElementById('playersGrid');
+    if (!grid) return;
+    grid.className = 'players-grid';
+    grid.innerHTML = Array.from({ length: 6 }, () => `<div class="skeleton-card" style="min-height:240px"></div>`).join('');
+    const cacheKey = `ncaab:leaders:${_ncaab.season}`;
+    let data;
+    try {
+        data = ApiCache.get(cacheKey);
+        if (!data) {
+            const res = await _espnFetch(`/api/ncaabstats?season=${_ncaab.season}`);
+            if (!res.ok) throw new Error('leaders ' + res.status);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.MEDIUM);
+        }
+    } catch (err) {
+        Logger.warn('NCAAB leaders failed', err, 'NCAAB');
+        grid.className = 'standings-container';
+        grid.innerHTML = _ncaabErr("Couldn't load college basketball leaders.", 'displayNCAABLeaders');
+        return;
+    }
+    if (!data.categories || !data.categories.length) {
+        grid.className = 'standings-container';
+        grid.innerHTML = _ncaabOffseasonState();
+        return;
+    }
+    const cards = data.categories.map((cat, ci) => {
+        const color = _NCAAB_LCOLORS[ci % _NCAAB_LCOLORS.length];
+        const rows = cat.leaders.map((l, i) => {
+            const img = l.headshot || l.logo;
+            return `
+            <div class="nfl-lrow">
+                <span class="nfl-lrow-rank">${i + 1}</span>
+                <div class="nfl-lrow-av">${img ? `<img src="${_escHtml(img)}" alt="" loading="lazy" data-hide-on-error>` : ''}</div>
+                <div class="nfl-lrow-main">
+                    <div class="nfl-lrow-name">${_escHtml(l.name)}</div>
+                    <div class="nfl-lrow-meta">${_escHtml(l.team)}${l.pos ? ' · ' + _escHtml(l.pos) : ''}</div>
+                </div>
+                <span class="nfl-lrow-val" style="color:${color}">${_escHtml(String(l.value))}</span>
+            </div>`;
+        }).join('');
+        return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
+            <div class="nfl-card-head" style="justify-content:space-between">
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+            </div>${rows}</div>`;
+    }).join('');
+    const yr = Number(data.season) || _ncaab.season;
+    grid.innerHTML = cards +
+        `<p class="standings-legend" style="grid-column:1/-1;font-size:0.75rem;color:var(--text-muted)">${_escHtml(String(yr - 1))}-${_escHtml(String(yr).slice(2))} Division I leaders, per game. Source: ESPN. Shooting percentages are left out until ESPN applies an attempts minimum.${freshnessHtml(ApiCache.getTimestamp(cacheKey))}</p>`;
 }
 
 // ── Rankings (AP / Coaches polls) ─────────────────────────────

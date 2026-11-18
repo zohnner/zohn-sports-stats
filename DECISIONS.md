@@ -3885,3 +3885,181 @@ Inventory, matrix and design: `docs/espn-source-health-2026-11-03.md`.
 **Verified.** The share-queue script against a fake `gh` (three cases, one of which fails when the same-week match is broken); the merge retry loop against a fake `gh` (flaky 405, other error, clean, persistent 405). **Not verified.** Neither workflow has run in GitHub Actions with these changes yet.
 
 **Update (2026-11-13), owner-approved: Muse's playbook (from Muse's 2026-11-10 letter).** `tools/stories/PLAYBOOK.md`: Source health is two lines, the server's `/api/sourcehealth` reading and whether Muse's own direct ESPN fetches answered. `[derived-stat]` issues are filed one per reusable query, titled as the query, with later stories as +1s, which feeds the parity run's grouping above. `[muse-found]` now also covers behavior bugs: wrong page opened, page fails, control does nothing. Everyone posts as the same GitHub account, so issue bodies and comments are signed `**Muse**`, `**Parity run**` or `**Audit run**` (both run books gained the same rule), and an unsigned comment is the owner's.
+
+## D-201 — Integrity close-out: story coverage, route crawl, derived stats, one audit
+
+**Date:** 2026-11-15. **Status:** proposed (four PRs; owner merges).
+
+**Context.** Stories publish with no owner review, and the checks around them had gaps that each looked small: Contract Check covered 3 of 5 story sports, nothing clicked a card to see where it went, twelve `[derived-stat]` filings had no owner, and no single run said whether the whole thing held.
+
+**Decision.**
+- **Story coverage (PR #137).** Contracts for NBA and NCAAB, and for the routes the other sports were missing; 14 contracts became 39. Coverage is per route, not per sport: every contract lists the upstream routes it stands behind (`sources`), and a story is under contract only when every route its `.facts.json` cites matches one. Every Contract Check run ends with the table, and one uncovered story fails the run. Third-party citations are listed, never counted as covered.
+- **Route crawl (PR #136).** `tools/audit/route-crawl.cjs` clicks game cards and team links on production in a browser and checks every team path URL over HTTP. Each run plants a card that opens the wrong view and fails if the plant is not reported.
+- **Derived stats (PR #168).** Three capabilities built, each with a contract that recomputes it nightly: NFL start history (`/api/nflstarts`), the NBA player game log, and largest margins on the Power Rankings pages. A contract for a derived stat either recomputes it with separate code from the raw upstream, or runs the site function and compares it with a second feed.
+- **Audit (this PR).** `tools/audit/integrity-audit.cjs` runs the four checks and the planted-fault tests and prints one report. It holds no checking logic: a green line means the command under it passed.
+
+**A control must have caught a planted fault.** Every check above has tests named "planted fault" that break one thing on purpose. The audit counts them and fails if none ran.
+
+**What it found.**
+- The Vikings story claim (fewest points by a 6-2 team since 1999) is wrong: three earlier teams scored fewer. The count used weeks 1-8, which drops teams with an early bye. Filed as #138, story untouched. "Through N games" on this site means the first N games in week order.
+- Within two days of the coverage table existing, 8 of 17 new stories cited a route with no contract. Contracts were added; the table went back to 0.
+- Third-party citations grew from 26 facts in 3 stories to 74 facts in 10 stories in the same two days.
+- Both routing bugs in the brief were already fixed on `main` (#123, #131); the crawl confirmed it.
+
+**Owner decisions (2026-11-15).**
+1. An uncovered route does not block a story from publishing. The nightly run reports it and a contract is added afterwards. So no CI test may assert on the published story set; CI runs on story PRs.
+2. A third-party citation does not fail the run, but every source is reviewed. `tools/contracts/third-party-sources.cjs` lists each host as `ok` or `blocked` with a reason; a story dated on or after a host was blocked fails the nightly run, and an unlisted host prints as UNREVIEWED. First review: nine hosts ok, sportbursts.com blocked from 2026-11-16.
+3. `.facts.json` stays as it is: no field paths. No run recomputes a story number; the number checker and the source contracts are the controls.
+
+**Verified 2026-11-15, against production.** Coverage 60 of 60. Route crawl 57 clicks, 0 mis-routes, plant caught, 492 team path URLs. Sitemap: 60 stories and 5 indexes, all with the right `<lastmod>`. 22 planted faults caught. 519 tests pass.
+
+**Not verified.** `nfl-starts` fails until #168 is deployed (the route 404s on production). The NFL team-page card has not been seen in a browser. MLB game cards could not be clicked: no MLB games in November.
+
+## D-202 — Agent numbers layer: TikTok channel, audit tools out of the visit log, key-gated stats route
+
+**Date:** 2026-11-15. **Status:** accepted.
+
+**Context.** Stories bring most new readers, but the visit log had no TikTok bucket although TikTok is the site's active social channel. The audit tools' own browser visits were being logged as new direct visitors. Scheduled agents had no way to read the numbers at all, since they cannot reach D1.
+
+**Decision.** Three changes in this PR: a TikTok channel bucket in the visit log, with `?utm_source=tiktok` on the profile link; `tools/audit/no-track.cjs`, used by the page walk and route crawl so their visits are not counted; and `GET /api/stats`, a read-only route gated by `STATS_KEY` that returns aggregates only. Owner decisions, 2026-11-15: the four-agent roster is approved (Muse, a daily read-only desk run, the parity run widened into a build run, and the Monday audit run with a growth half). Raw traffic counts stay out of the public brief issue because the repo is public. The share queue goes to manual dispatch in a later PR. Owner setup owed after merge: add `STATS_KEY` (a random string of at least 32 bytes) as a Secret in Cloudflare Pages and also to the desk and audit routines' environments, and set the TikTok profile link. Design: `docs/superpowers/specs/2026-11-15-agent-roster-design.md`.
+
+**Continuation (2026-11-15, desk run).** `tools/desk/RUNBOOK.md` is the second part of the roster: a daily read-only run that posts one brief on a monthly `[desk] Daily brief` issue. It may open that issue and post one comment a day, and nothing else. Owner setup: create the routine (09:30 ET, same cloud environment as the audit run), add `STATS_KEY` to that environment, and create the `desk` label. TikTok measurement is set aside for now (owner decision 2026-11-15): the profile cannot carry a link yet, and the post log in the spec (Part 6) is not being built. The `tiktok` channel bucket stays in the visit log and will start counting once a link with `?utm_source=tiktok` exists.
+
+## D-203 — NFL Stats: one sortable table replaces Players and Leaders
+
+**Date:** 2026-11-16. **Status:** built on `feat/nfl-stats-table`, awaiting owner review.
+
+**Why.** The NFL stats surfaces could not compete with Pro-Football-Reference, ESPN or NFL.com, which all lead with one dense, sortable table per category. Leaders showed nine cards of five names and one number each (the cap was structural: `/api/nflstats` resolves five athletes per category, and it currently returns 502 under the D-176 block). Players, the first NFL tab, showed 120 bio cards ordered by ADP and no stats at all.
+
+**What.** One page, `#nfl-leaders` labeled "Stats", with Passing/Rushing/Receiving/Defense/Kicking/Scoring tables of every qualified player. It has click-to-sort columns, name search, team and position filters, a Totals/Per game toggle, a Qualified/All players toggle on the offensive tabs, a season selector back to 2000, and a top-three leader strip. Cells are shaded by percentile, ranked only among qualified players with 5+ games, so a backup's one completion never paints as league-best. Tab and sort live in the hash so a link reproduces the view.
+
+**Data.** ESPN `site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byathlete`, read from the browser. It sends open CORS headers and the host was already in `connect-src`, so the Cloudflare block on ESPN (D-176) does not apply and no proxy was added. Verified live 2026-11-15/16:
+- **Sorting** works in both directions.
+- **One call returns a whole category, up to ESPN's 1,000-row page cap.** Defense runs to about 1,330 rows, so the client reads the remaining pages.
+- **Kicking** answers only as `specialTeams:kicking`.
+- **Seasons** go back to 2000.
+
+The rejected options were a Pages Function proxy, blocked by D-176, and nflverse player CSVs, which are multi-megabyte and a week behind.
+
+**Choices.**
+- **The view keeps the id `nfl-leaders`,** not the `nfl-stats` named in the spec. The audit matrix, `/nfl/leaders`, `failSafeRoute` and `_PATH_SINGLE_VIEWS` already key on it.
+- **`nfl-players` redirects to it.** The ADP bio-card page was removed, because ADP Rankings already lists players by ADP with tiers and injury status.
+- **Defense keeps defensive positions only.** ESPN's list includes every receiver and kicker with a special-teams tackle, which would flood the table and drag the percentile curve.
+- **Switching tabs resets to qualified players.** Carried into Passing, "All players" ranked a punter's one trick-play throw as the league's fewest interceptions.
+- **The offseason strip's hardcoded "2025 Leaders" link is gone.**
+
+**Checks.** `tests/nflStatsTable.test.js` runs against a trimmed real response. Contract `nfl-stats-byathlete` checks every column the table reads, with a floor of 20 qualified passers. It is 20 and not 32 because the nightly run probes the latest game day, and early in Week 1 few passers qualify. Spec: `docs/superpowers/specs/2026-11-16-nfl-stats-table-design.md`; plan: `docs/superpowers/plans/2026-11-16-nfl-stats-table.md`.
+
+**Not done.** Team offense/defense tables, postseason (`seasontype=3`), Next Gen/EPA columns and CSV export. Each can build on this table.
+
+## D-204 — NFL player pages read ESPN from the browser when the proxies are blocked (2026-11-16)
+
+**Found:** verifying D-203 live. Every NFL player page on production showed "Season stats aren't available … we couldn't match this player" (even the passing-yards leader), and every ESPN-only player page showed "Player not found". Cause: `/api/nflplayer`, `/api/nflathlete`, `/api/nflcareer` and `/api/nflgamelog` all get 403 from ESPN since D-176, and D-176's browser fallback never covered them. `/api/nflplayer` reported the blocked roster fetch as "not on roster", which is why the page blamed name matching. Compare and the live-game Fantasy Watch use the same endpoints and were broken the same way.
+
+**Decision:** browser ports of all four in `js/config.js` (`_espnNFLPlayerResponse`), reached through `_espnFetch`; all five upstream ESPN routes send `Access-Control-Allow-Origin: *` (checked 2026-11-16). The proxies now say "roster fetch failed" / "stats fetch failed" for an upstream failure (ESPN's 404 for a season with no stats still means "no stats"), and the client retries only on "fetch failed", so a genuine miss costs no extra ESPN calls. The client no longer caches failed answers, and its cache keys were versioned so a cached failure from before this fix is ignored. A failed load now says ESPN didn't answer instead of blaming name matching.
+
+**Guards:** `tests/nflPlayerFallback.test.js` runs each proxy and its port on one real ESPN payload (trimmed, Jordan Love 2026) and requires identical JSON. Nightly contracts `nfl-player-stats`, `-athlete`, `-career`, `-gamelog` run the real fallback against the season's passing leader (`tools/contract-check.cjs` now routes those four proxies through `_espnFetch`).
+
+**Found while building:** the first port declared `_nflEspnSeason`, a name `js/nfl.js` already declares; classic scripts share one global scope, so `nfl.js` failed to load at all. The unit tests load files one at a time and missed it; the browser check caught it. The same test file now loads every `index.html` script in order into one context and fails on any redeclaration (planted-fault checked against the original clash).
+
+**Known residue:** browsers that fetched an old "not on roster" answer keep it up to 6 hours (`max-age=21600`); those visitors see the old message for that player until it expires. Not worked around.
+
+**Update 2026-11-17 — NCAAF player game logs too.** `/api/ncaafgamelog` had the same 403 (checked on production: `gamelog fetch failed`), so NCAAF player pages showed no game log. It has the NFL game log's shape, so `_espnNFLPlayerResponse` now also serves it (college-football route, August season start, `bowl` counted as postseason like the proxy). New contract `ncaaf-player-gamelog` against the FBS passing leader. Gap spotted in an unpushed parallel branch (`fix/nfl-player-stats-blocked`, another session, 2026-11-16) whose NFL half duplicates this decision; that branch was left untouched.
+
+## D-205 — Home hero no longer shows a finished MLB division race (2026-11-17)
+
+**Found:** owner screenshot, 2026-11-16 23:40 CT. With every ticker game final, the home hero read "Cleveland Guardians lead the AL Central — 1 game clear of Detroit Tigers at 88–74". That is the final 2025 table (checked against statsapi `season=2025`); the 2026 season had ended with Cleveland 85–77, White Sox 1.0 back. Three causes stacked: when `HomeLive.pickHero` finds no live or today game, `_renderHomeHero` fell back to `_heroFromStandings()` (D-046) unconditionally, so D-046's "hidden if nothing to show" state was unreachable once the season ended; that fallback had no season check; and `MLB_SEASON` is the previous year in Nov–Feb, so in November it reads two seasons back.
+
+**Decision:** the standings fallback runs only when `HomeLive.mlbRaceSeasonOpen(MLB_SEASON, now)`, i.e. `MLB_SEASON` equals the calendar year. That reuses `MLB_SEASON`'s Mar–Oct rule rather than adding a second calendar rule. Otherwise a null pick hides the hero as before. `_mlbPennantStatMoment()` (the home Insights pennant line) read the same standings the same way and gets the same gate. Both now pick the race through one pure function, `HomeLive.tightestRace(divs)`, which also:
+- reads a tied second place's games back (`"-"` from statsapi) as 0 instead of NaN, so a tied division is no longer silently dropped and the existing "tied atop" copy can show;
+- skips a division whose leader has clinched it (`clinchIndicator` `y` or `z`), which covers October postseason off-days and late September, when the gate is open but the table is final;
+- skips a table no one has played in, so the tie fix can't turn a pre-Opening-Day 0–0 table into "tied atop … 0–0 apiece".
+
+**Not changed:** `MLB_SEASON`'s Nov/Dec value (year − 1, arguably the just-finished season) is used across the whole MLB section; changing it is a separate owner decision. This fix does not depend on it: whichever value it takes in Nov–Feb, it is not the calendar year, so the gate stays closed. `pickHero` eligibility is unchanged.
+
+**Guards:** `tests/homeLive.test.js` — gate open/closed across Jul, Nov and Feb; tie read as 0; clinched and unplayed divisions skipped.
+
+## D-206 — MLB season and phase come from statsapi's calendar: the season ends when the World Series does (2026-11-17)
+
+**Owner direction:** "we need dynamic handling for the seasons timing, it could be as simple as when the world series is over the season is over." Follows D-205, which left `MLB_SEASON`'s Nov/Dec value flagged for this decision.
+
+**Before:** three month rules disagreed. The client's `MLB_SEASON` was the calendar year Mar–Oct and the previous year Nov–Feb, so in Nov/Dec it skipped the season that had just ended. The edge templates `/mlb/leaders` and `/mlb/player/*` used Jan–Feb as the previous year, so today they showed 2026 while the app showed 2025. And `_sportPickerStatus` called all of Mar–Oct "Regular season".
+
+**Decision:** one rule, read from statsapi `/seasons/{year}?sportId=1`. Checked 2026-11-17: `postSeasonEndDate` is the date of the real last World Series game (2024 ended in five on Oct 30 and reads `2024-10-30`; 2025 went seven, `2025-11-01`; 2026 `2026-10-28`), so the day after it the phase is `offseason`. `season` is the calendar year once that year's regular season has started, otherwise the year before; spring training shows last season instead of empty boards. `js/mlbSeason.js` (`MLBSeason`, loaded before `mlb.js`) is the client copy, and `functions/_mlbSeason.js` is the edge copy, using the date in Eastern time. Both fall back to a calendar guess when statsapi doesn't answer.
+
+**How the client stays synchronous:** `MLB_SEASON` is still set at script load, from dates stored in localStorage (`zs_mlb_season_dates`), or the guess on a first visit. Boot then calls `MLBSeason.refresh()` through `mlbFetch`: every 12h, or hourly during the postseason in case `postSeasonEndDate` holds a scheduled date until the Series ends (not verified either way; the hourly check bounds it). If the season or phase changed, it resets MLB state the way the season selector does (`_resetMLBSeasonState`, extracted from it) and re-renders home or an MLB list view. Detail pages keep what they loaded.
+
+**Consumers moved:** D-205's hero and pennant gate now open only in phase `regular`, and `HomeLive.mlbRaceSeasonOpen` is removed. The MLB sport-picker status reads the phase (Regular season / Postseason / Spring training / Offseason). Both edge templates use `functions/_mlbSeason.js`, and so does `tools/gen-sitemap.cjs`, which had a fourth rule (Mar–Nov current); it evaluates the import-free source the way the tests do, because its workflow pins no Node version. Dry run: 1,554 URLs against 1,553 committed.
+
+**Effect today (2026-11-17):** MLB Leaders, Players, Teams and the rest show 2026, the season that just ended, where they showed 2025.
+
+**Guards:** `tests/mlbSeason.test.js` covers:
+- every phase boundary on the real 2026 dates;
+- a World Series that ends early;
+- the calendar fallback;
+- refresh freshness, including the hourly postseason re-check and the new-year refetch;
+- client and edge resolving every day of 2026 identically, with a planted one-character drift confirmed to fail it.
+
+Browser check on a local server, cold and warm loads: `MLB_SEASON` 2026, phase `offseason` from stored API dates, every MLB request at `season=2026`, picker "MLB Offseason", no race text, no exceptions.
+
+**Found while building:** the first picker version put its status table in a top-level `const` below `_sportPickerStatus`. Boot renders home synchronously before that line runs (the temporal dead zone CLAUDE.md warns about), so home threw on every load. The browser check caught it, and the table moved inside the function.
+
+**Not covered:** `tools/contracts/mlb.cjs` still guesses the season by month (Jan–Feb is the previous year) when its offseason probe finds none. It builds routes synchronously, so moving it means restructuring the contract run; in March before Opening Day its `/teams/145/stats` contract may ask for a season with no stats yet. NBA's `CURRENT_SEASON` and the other sports' season models are unchanged. The worker `push-game-alerts.js` has no MLB season rule.
+
+## D-207 — Contract runs retry a transient upstream error once; the desk stops treating late cron as missing (2026-11-17)
+
+**Found:** the desk run's 2026-11-17 brief. The first scheduled Integrity Audit (2026-11-16 23:16 UTC) failed on one contract, `ncaab-leaders-v3`: ESPN's site/v3 leaders feed answered HTTP 500 ("general error: unknown error"). The other five audit checks held. The same URL answered 200 twice on 2026-11-17, and the nightly Contract Check passed it hours earlier. One transient upstream error failed the whole weekly audit.
+
+**Decision:** `runContract` (`tools/contract-check.cjs`) retries once, after 3 seconds, on a 5xx or network error. A 4xx is never retried, since it is an answer, not a hiccup. A retry that recovers passes with a note ("first try got HTTP 500; passed on retry"), which Contract Check and the audit both print, so a feed that flakes every night is still visible. Two failures in a row still fail.
+
+**Also:** the same brief flagged "Contract Check's 06:00 ET run has not appeared today". It hadn't run because GitHub starts this repo's scheduled jobs hours late:
+- Contract Check ran at 17:29 and 20:45 UTC against an 11:00 UTC cron;
+- the Integrity Audit ran 9 hours late.
+
+The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md` now says cron times are targets and only the 36-hour and 8-day rules count.
+
+**Guards:** `tests/contractCheck.test.js` covers:
+- a 500 that recovers (passes, with a note);
+- a 500 twice (fails);
+- a network error that recovers;
+- a 404, which is fetched once.
+
+## D-208 — A retired story 301s to the page with the corrected numbers (2026-11-17)
+
+**Context:** #172 unpublished the Vikings 6-2 story because its count used weeks 1-8, which dropped every team with an early bye (#138). Links shared before the unpublish kept bringing readers in: it was the third-ranked entry page in the 2026-11-17 desk brief, and every one of those readers got a 404.
+
+**Decision:** `RETIRED_STORIES` in `functions/_storyLinks.js` maps an unpublished slug to the page that now carries the correct numbers, and `renderStoryPage` answers it with a 301 before anything else. The Vikings slug goes to `/nfl/team/min/minnesota-vikings`, whose start-history module (D-201) counts each team's first 8 games. Unpublishing is still "delete the story"; a slug redirects only when someone lists it, and only when a correct page exists. With no such page, a pulled story keeps its 404.
+
+**Guard:** `tests/storyLinks.test.js` fails if a retired slug is still in its sport's published index, or if a target is not a site path.
+
+## D-209 — The route crawl retries a page that drops one request (2026-11-17)
+
+**Context:** The manual Integrity Audit right after D-207 merged passed. The next one, 46 minutes later, failed on the route crawl: three small-college NCAAF team pages (`/ncaaf/team/2023`, `/507`, `/74`) answered "0", the crawler's code for a fetch that threw (a 20s timeout or a dropped connection), out of roughly 400 pages. Minutes later all three answered 200, each in under 1.3s. D-207 had given contract checks one retry but not the crawl.
+
+**Decision:** `crawlHttp` (`tools/audit/route-crawl.cjs`) retries a page once, after 3s, when it gives no answer or a 5xx. A recovery passes with a note naming the URL and the first failure, so a page that flakes every run stays visible. A 404, a wrong redirect, or a page that fails both tries is still a finding. A status-0 finding now carries the fetch error, so the next one says whether it was a timeout.
+
+**Guard:** `tests/routeCrawl.test.js`: a timeout that recovers passes with a note; a 503 on both tries and a 404 are findings; the 404 is fetched once. The test fails against the crawler without the retry.
+
+## D-210 — NCAAB Leaders, without shooting percentages (2026-11-17)
+
+**Context:** #191 (audit run): NCAAB was the only one of six sports with no Leaders page, three weeks into a season ESPN already serves leaders for. The owner said build it.
+
+**Decision:** `ncaab-leaders` view (`displayNCAABLeaders`, `js/ncaab.js`), a new `/api/ncaabstats`, its browser fallback in `_espnLeadersResponse`, and a crawlable `/ncaab/leaders`. The source is ESPN site/v3 `/leaders`, which carries names, teams and headshots inline. The core-API route the other basketball proxies use would need a team-id table for about 360 schools. Categories: points, rebounds, assists, steals, blocks and 3-pointers made, per game.
+
+**FG% and FT% are left out.** ESPN applies no attempts minimum to college leaders: on 2026-11-17 its FG% leaders were at 85.7% and every FT% leader was at 100%. The feed carries no attempt counts, so a minimum can't be applied here. The page says so. Add them back only with a minimum.
+
+**Names are plain text:** NCAAB has neither a team page nor a player page yet (#116, #117, both `parity-ready`). When #117 ships, the rows and the edge template should link to it.
+
+**Guard:** `tests/ncaabLeaders.test.js`: the proxy and the browser fallback return identical JSON from a trimmed real response, and FG%/FT% are dropped. It fails against `js/config.js` without the NCAAB entry. Contract `ncaab-leaders-v3` now requires all six categories and each row's team abbreviation.
+
+## D-211 — A page newer than its cached router reloads once instead of booting home (2026-11-17)
+
+**Context:** #142 (muse-found): the first direct visit to `/nba/team/det` rendered home, and a reload rendered the team page. The parity run couldn't reproduce it. Reading `sw.js` confirms its hypothesis. Page loads are network-first, so the HTML (with `__SS_ROUTE=nba-team-DET`) is always current. Scripts are stale-while-revalidate from Cache Storage, so a returning visitor's first load after a deploy can run a `navigation.js` from before the route existed. `_loadFromHash` had no fallback for a server route it didn't know and fell through to home, while the same load refreshed the cache in the background. A second gap: that background refresh went through the browser's HTTP cache, where the zone rule keeps `/js/*` up to 4h, so a stale copy could overwrite the fresh one the new worker had just precached.
+
+**Decision:**
+- `_staleCodeReload` (`js/navigation.js`): when the server names a route the router has no branch for, it asks the worker to update and waits for `controllerchange` (3s at most), then reloads once. A per-route `sessionStorage` flag stops a second try, so a route that is really unknown still lands on home. Blocked storage means no reload.
+- `sw.js`: the stale-while-revalidate refresh fetches with `cache: 'no-cache'` (revalidate, usually a 304).
+
+**Limits:** copies of the old router already in browsers don't have the guard, so this protects routes added after it ships. Versioning script URLs would close the gap fully, but it needs a build step or a per-deploy token in about 50 script tags (see CLAUDE.md's "no build step").
+
+**Guard:** `tests/staleRouteReload.test.js` covers the one-reload rule, the flag, the no-worker and blocked-storage cases, the wiring in `_loadFromHash`, and the `sw.js` fetch mode. Checked in Chrome by injecting an unknown route on every load: two loads, then home, no exceptions.

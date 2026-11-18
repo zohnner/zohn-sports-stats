@@ -122,22 +122,6 @@ function _nbaOffseasonState() {
     </div>`;
 }
 
-// Live label from the status clock: "2:38 Q1", "OT", or ESPN's own text
-// for breaks ("Halftime", "End of 1st") where the clock reads 0.0.
-function _nbaLiveLabel(g) {
-    if (/HALFTIME|END_PERIOD/.test(g.statusName) || !g.period) return g.statusText;
-    const per = g.period <= 4 ? 'Q' + g.period : (g.period === 5 ? 'OT' : (g.period - 4) + 'OT');
-    return g.clock ? `${g.clock} ${per}` : per;
-}
-
-// ESPN's statusText is fixed to Eastern; the ISO date is the real instant.
-function _nbaTipLabel(g) {
-    const d = new Date(g.date);
-    if (isNaN(d) || /TBD/i.test(g.statusText)) return g.statusText;
-    const sameDay = d.toDateString() === new Date().toDateString();
-    return d.toLocaleString([], { ...(sameDay ? {} : { weekday: 'short' }), hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-}
-
 // 4th quarter or OT, within 5. Uses only the scoreboard's own score and
 // status; no per-card summary fetch.
 function _nbaIsClose(g) {
@@ -145,22 +129,8 @@ function _nbaIsClose(g) {
 }
 
 function _nbaGameCard(g) {
-    const row = (t) => `
-        <div class="hgc-row">
-            ${t.logo ? `<img class="hgc-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error style="width:28px;height:28px">` : '<span style="width:28px"></span>'}
-            <span class="hgc-team">${_escHtml(t.abbr)}</span>
-            <span class="hgc-score ${g.isFinal && t.winner ? 'hgc-score--win' : ''}" style="margin-left:auto">${(g.isFinal || g.isLive) ? t.score : ''}</span>
-        </div>`;
-    const pill = g.isLive ? `<span class="ticker-status-pill ticker-status-pill--live">LIVE · ${_escHtml(_nbaLiveLabel(g))}</span>`
-        : g.isFinal ? '<span class="ticker-status-pill ticker-status-pill--final">F</span>'
-        : `<span class="hgc-status">${_escHtml(_nbaTipLabel(g))}</span>`;
     const close = _nbaIsClose(g) ? '<span class="nba-close-badge" title="4th quarter or overtime, within 5 points">Close</span>' : '';
-    const id = _escHtml(String(g.id));
-    return `<div class="home-game-card${g.isLive ? ' home-game-card--live' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('nba-game-${id}')" onkeydown="if(event.key==='Enter')navigateTo('nba-game-${id}')">
-        ${row(g.awayTeam)}
-        ${row(g.homeTeam)}
-        <div class="hgc-card-footer">${pill}${close}</div>
-    </div>`;
+    return Scorebug.renderScoreCard(Scorebug.normalizeNBAGame(g), { go: `nba-game-${g.id}`, badge: close });
 }
 
 async function displayNBAScores(opts = {}) {
@@ -524,14 +494,61 @@ function _nbaTeamGames(events, teamId, nRecent = 5, nNext = 3) {
             oppAbbr: ot.abbreviation || '', oppName: ot.displayName || '',
             oppLogo: (ot.logos && ot.logos[0] && ot.logos[0].href) || '',
             done: !!st.completed, live: st.state === 'in',
+            reg: !ev.seasonType || ev.seasonType.type === 2,
             my: score(me), opp: score(opp), won: me.winner === true,
         };
     }).filter(Boolean);
     const t = r => (r.date ? new Date(r.date).getTime() : 0);
+    let w = 0, l = 0;
+    const log = rows.filter(r => r.done && r.reg && r.my != null && r.opp != null).sort((a, b) => t(a) - t(b)).map(r => {
+        if (r.won) w++; else l++;
+        return { ...r, margin: r.my - r.opp, record: `${w}-${l}` };
+    }).reverse();
     return {
         recent: rows.filter(r => r.done).sort((a, b) => t(b) - t(a)).slice(0, nRecent),
         upcoming: rows.filter(r => !r.done).sort((a, b) => t(a) - t(b)).slice(0, nNext),
+        log,
     };
+}
+
+// W-L and per-game points for/against/margin over the newest `n` games of a
+// newest-first log (n = null for the whole season).
+function _nbaTeamSplit(log, n) {
+    const g = n == null ? log : log.slice(0, n);
+    if (!g.length) return null;
+    const sum = f => g.reduce((s, r) => s + f(r), 0);
+    const per = v => Math.round((v / g.length) * 10) / 10;
+    const w = g.filter(r => r.won).length;
+    return { n: g.length, w, l: g.length - w, pf: per(sum(r => r.my)), pa: per(sum(r => r.opp)), margin: per(sum(r => r.margin)) };
+}
+
+const _nbaSigned = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(Number.isInteger(v) ? 0 : 1);
+
+function _nbaTeamGameLogCard(log) {
+    if (!log.length) return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2><div class="team-empty">No games played yet this season.</div></div>`;
+    const spans = [['Last 5', 5], ['Last 10', 10], ['Season', null]]
+        .filter(([, n]) => n == null || log.length > n)
+        .map(([label, n]) => [label, _nbaTeamSplit(log, n)]);
+    const splitRows = spans.map(([label, s]) => `<tr><td class="gl-l">${label}</td><td>${s.w}-${s.l}</td><td>${s.pf.toFixed(1)}</td><td>${s.pa.toFixed(1)}</td><td style="color:${s.margin >= 0 ? 'var(--color-win)' : 'var(--color-loss)'}">${_nbaSigned(s.margin)}</td></tr>`).join('');
+    const row = g => {
+        let day = '';
+        try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        return `<tr class="roster-row--clickable" role="button" tabindex="0" onclick="navigateTo('nba-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
+            <td class="gl-l">${_escHtml(day)}</td>
+            <td class="gl-l">${g.isHome ? 'vs' : '@'} <span title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span></td>
+            <td style="font-family:var(--font-mono)"><span class="${g.won ? 'gl-res--w' : 'gl-res--l'}">${g.won ? 'W' : 'L'}</span> ${g.my}-${g.opp}</td>
+            <td style="font-family:var(--font-mono)">${_nbaSigned(g.margin)}</td>
+            <td>${g.record}</td></tr>`;
+    };
+    const table = rows => `<div class="table-wrapper" style="overflow-x:auto"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th class="gl-l">Date</th><th class="gl-l">Opp</th><th>Result</th><th>Margin</th><th>Record</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`;
+    const SHOWN = 10;
+    const rest = log.length > SHOWN
+        ? `<details style="margin-top:0.5rem"><summary style="cursor:pointer;color:var(--text-secondary);font-size:0.8125rem">All ${log.length} games</summary>${table(log.slice(SHOWN))}</details>`
+        : '';
+    return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2>
+        <div class="table-wrapper" style="overflow-x:auto;margin-bottom:0.75rem"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th></th><th>W-L</th><th title="Points per game">PF/G</th><th title="Points allowed per game">PA/G</th><th title="Average margin">Margin</th></tr></thead><tbody>${splitRows}</tbody></table></div>
+        ${table(log.slice(0, SHOWN))}${rest}
+        <p class="detail-note" style="margin-top:0.5rem">Regular season, newest first. Margin is points scored minus points allowed.</p></div>`;
 }
 
 function _nbaTeamGamesCard(title, games, emptyText) {
@@ -610,8 +627,8 @@ function displayNBATeamDetail(team, roster, sched, std) {
             ...(athletes.length ? [{ label: 'Players', value: athletes.length }] : []),
         ],
         recordChips, recordSeasonLabel: recordChips.length && seasonName ? `${seasonName} Season` : '',
-        scheduleHtmlTop: _nbaTeamGamesCard('Recent Results', games.recent, 'No games played yet this season.')
-            + _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.'),
+        scheduleHtmlTop: _nbaTeamGamesCard('Upcoming', games.upcoming, 'No upcoming games on the schedule.')
+            + _nbaTeamGameLogCard(games.log),
         groups, rosterTitle: 'Roster',
         rosterCaption: `Grouped by position${injured ? ' · injury status from ESPN' : ''}`,
         rosterEmpty: 'Roster data unavailable for this team right now.',
@@ -755,8 +772,70 @@ function displayNBAPlayerDetail(data) {
         ? detailSection({ title: 'Season Stats', body: `<p class="detail-prose">No ${data.season} season stats for ${_escHtml(bio.name)} yet — common for reserves and early-season players.</p>` })
         : '';
 
-    grid.innerHTML = header + profile + statSections + noStats +
+    grid.innerHTML = header + profile + statSections + noStats + '<div id="nbaGameLog"></div>' +
         `<p class="detail-note" style="margin-top:0.75rem">${data.season} regular season · Source: ESPN.</p>`;
+    if (data.id) _loadNBAGameLog(data.id, _nba.season);
+}
+
+// ── Player game log (D-201; derived stats #92, #107, #126) ───
+// ESPN's common/v3 gamelog sends CORS headers and has no /api proxy, so it is
+// read direct. The totals come from BballMath, which the nightly contract
+// checks against ESPN's season totals.
+function _nbaGameLogHtml(rows, sum) {
+    if (!rows.length || !sum) return '';
+    const esc = _escHtml;
+    const chips = [
+        ['Games', sum.games], ['Points', sum.points], ['Per game', sum.ppg.toFixed(1)], ['High', sum.high],
+        ['30-point games', sum.thirty], ['40-point games', sum.forty],
+        ['Double-doubles', `${sum.doubleDoubles} in ${sum.games} games`],
+        ...(sum.tripleDoubles ? [['Triple-doubles', sum.tripleDoubles]] : []),
+        ...(sum.ptsPerMin != null ? [['Points per minute', sum.ptsPerMin.toFixed(2)]] : []),
+    ].map(([l, v]) => `<div class="ncf-stat"><span class="ncf-stat-v">${esc(String(v))}</span><span class="ncf-stat-l">${esc(l)}</span></div>`).join('');
+    const show = v => (v == null || v === '' ? '—' : esc(String(v)));
+    const body = rows.map(g => {
+        let dt = '';
+        try { dt = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
+        const resCls = g.result === 'W' ? 'gl-res--w' : g.result === 'L' ? 'gl-res--l' : '';
+        const perMin = g.min ? (g.pts / g.min).toFixed(2) : '—';
+        return `<tr${g.eventId ? ` style="cursor:pointer" onclick="navigateTo('nba-game-${esc(g.eventId)}')"` : ''}>
+            <td class="gl-l">${esc(dt)}</td>
+            <td class="gl-l">${esc(g.atVs)}${g.atVs ? ' ' : ''}${esc(g.opp)}</td>
+            <td class="gl-l ${resCls}">${esc(g.result)} ${esc(g.score)}</td>
+            <td>${show(g.min)}</td><td><strong>${show(g.pts)}</strong></td><td>${show(g.reb)}</td><td>${show(g.ast)}</td><td>${show(g.stl)}</td><td>${show(g.blk)}</td>
+            <td>${show(g.fg)}</td><td>${show(g.tp)}</td><td>${show(g.ft)}</td><td>${perMin}</td>
+        </tr>`;
+    }).join('');
+    const head = '<th class="gl-l">Date</th><th class="gl-l">Opp</th><th class="gl-l">Res</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>FG</th><th>3PT</th><th>FT</th><th>PTS/MIN</th>';
+    return detailSection({
+        title: 'Game Log',
+        body: `<div class="ncf-statline">${chips}</div>
+            <div class="table-wrapper" style="overflow-x:auto;margin-top:0.75rem"><table class="stats-table gl-table" style="white-space:nowrap"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+            <p class="pct-caption" style="margin-top:0.5rem">Regular season. A double-double is 10 or more in two of points, rebounds, assists, steals and blocks.</p>`,
+    });
+}
+
+async function _loadNBAGameLog(id, season) {
+    const host = document.getElementById('nbaGameLog');
+    if (!host || typeof BballMath === 'undefined') return;
+    const cacheKey = `nba:gamelog:${id}:${season}`;
+    let data = ApiCache.get(cacheKey);
+    if (!data) {
+        try {
+            const res = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${encodeURIComponent(id)}/gamelog?season=${season}`);
+            if (!res.ok) throw new Error('gamelog ' + res.status);
+            data = await res.json();
+            ApiCache.set(cacheKey, data, ApiCache.TTL.MEDIUM);
+            if (typeof noteFetched === 'function') noteFetched('nba/gamelog', Date.now());
+        } catch (err) {
+            Logger.warn('NBA game log fetch failed', err, 'NBA');
+            host.remove();
+            return;
+        }
+    }
+    if (!host.isConnected) return;
+    const rows = BballMath.gameLog(data);
+    const html = _nbaGameLogHtml(rows, BballMath.gameLogSummary(rows));
+    if (html) host.innerHTML = html; else host.remove();
 }
 
 window.displayNBALeaders      = displayNBALeaders;
