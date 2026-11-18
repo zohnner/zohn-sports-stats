@@ -111,3 +111,24 @@ test('crawlHttp checks NBA teams the sitemap has not listed yet, and says so', a
     assert.equal(r.findings.length, 6);
     assert.ok(r.findings.every(f => f.kind === 'bad-redirect'));
 });
+
+test('crawlHttp retries a page that gave no answer or a 5xx once; a 404 or a page still down fails', async () => {
+    const tries = {};
+    const fetcher = async url => {
+        tries[url] = (tries[url] || 0) + 1;
+        if (url.endsWith('/sitemap.xml')) return { status: 200, body: SITEMAP.replace(/sportstrata\.cc/g, 'x.test') };
+        if (/\/nba\/team\/(sas|gsw|nyk|nop|uta|was)$/.test(url)) return { status: 301, location: url.replace(/\/[a-z]+$/, '/' + { sas: 'sa', gsw: 'gs', nyk: 'ny', nop: 'no', uta: 'utah', was: 'wsh' }[url.split('/').pop()]) };
+        if (url.endsWith('/nba/team/ny') && tries[url] === 1) return { status: 0, error: 'The operation was aborted due to timeout' };
+        if (url.endsWith('/nba/team/mia')) return { status: 503 };
+        if (url.endsWith('/nba/team/bos')) return { status: 404 };
+        const m = /\/(mlb|nba)\/team\/([a-z]+)/.exec(url);
+        return { status: 200, body: `<script>window.__SS_ROUTE = '${m[1]}-team-${m[2].toUpperCase()}';</script>` };
+    };
+    const nba = ['ny', 'mia', 'bos'].map(id => ({ url: `https://x.test/nba/team/${id}`, sport: 'nba', id }));
+    const r = await crawlHttp('https://x.test', fetcher, nba, { retryDelayMs: 0 });
+    assert.equal(tries['https://x.test/nba/team/ny'], 2);
+    assert.equal(tries['https://x.test/nba/team/mia'], 2);
+    assert.equal(tries['https://x.test/nba/team/bos'], 1);
+    assert.deepEqual(r.findings.map(f => f.id).sort(), ['bos', 'mia']);
+    assert.ok(r.notes.some(n => /nba\/team\/ny: first try got no answer \(.*timeout\); answered 200 on retry/.test(n)));
+});
