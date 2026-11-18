@@ -26,7 +26,7 @@ const SINGLE_VIEW = {
     'mlb/leaders': 'mlb-leaders', 'mlb/standings': 'mlb-standings',
     'nfl/leaders': 'nfl-leaders', 'nfl/standings': 'nfl-standings', 'nfl/pickem': 'nfl-pickem',
     'ncaaf/standings': 'ncaaf-standings', 'ncaaf/rankings': 'ncaaf-rankings',
-    'ncaab/standings': 'ncaab-standings',
+    'ncaab/standings': 'ncaab-standings', 'ncaab/leaders': 'ncaab-leaders',
     'wnba/standings': 'wnba-standings', 'wnba/leaders': 'wnba-leaders',
     'nba/standings': 'nba-standings', 'nba/leaders': 'nba-leaders',
 };
