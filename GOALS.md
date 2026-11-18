@@ -1,384 +1,123 @@
-# SportStrata — Vision, Goals & Principles
+# SportStrata — Goals
 
 > **"Serious stats for serious fans."**
-> SportStrata is a free, fast, no-login **MLB analytics dashboard** built for broadcast professionals, fantasy players, and data-obsessed baseball fans.
+
+This file says what SportStrata is for, what rules never bend, and what the next season of work is aiming at. It is short on purpose. History lives in `DECISIONS.md`. The previous version of this file (frozen 2026-09-14) is kept at `docs/archive/GOALS-2026-09-14.md` for its reasoning trail.
+
+Last resynced: 2026-11-17, against `DECISIONS.md` through D-209.
 
 ---
 
-## Vision (v2 — ratified 2026-07-01, owner + all seniors; supersedes v1)
+## What SportStrata is
 
-SportStrata runs a deliberate **two-season barbell**:
+A free sports analytics site at [sportstrata.cc](https://sportstrata.cc) covering six live sports: MLB, NFL, NCAA Football, NCAA Men's Basketball, NBA and WNBA. One vanilla JavaScript app, no framework, no build step, hosted on Cloudflare Pages with edge-rendered pages for search engines.
 
-- **Baseball months:** the broadcast/desk reference for MLB — serious, printable, provably accurate, announcer-ready.
-- **Football months:** the **no-login fantasy edge tool** for NFL — mock draft, VORP value engine, Draft Kit, SOS.
+Two things set it apart from a scoreboard site:
 
-Both legs share one spine: **no friction, visible provenance, correct math.** Every stat a broadcaster or drafter needs should load in under 2 seconds and be shareable as a URL.
+1. **Numbers you can check.** Every computed number shows where it came from. Stories carry a `.facts.json` with a source for every figure, a nightly contract check watches the upstream feeds, and an integrity audit plants faults on purpose to prove the checks catch them.
+2. **Original data stories.** SportStrata Stories are written daily by a scheduled agent (Muse) from live data, number-checked before they publish, and never cover injuries, trades, rumors or quotes.
 
-MLB is the flagship; NFL is a live public beta (D-012). NBA and NHL are parked previews — no investment without an explicit owner decision reviving them.
+The original "two-season barbell" (MLB in baseball months, NFL fantasy in football months, ratified 2026-07-01) still describes the two strongest surfaces, but the site now runs year-round across six sports, so the calendar below replaces it as the planning frame.
 
-### Constitutional rule — the no-login experience must never regress
+---
+
+## Rules that never bend
+
+### The no-login experience must never regress (constitutional, ratified 2026-07-01)
 
 Accounts (D-031) are **additive-only**. Every current capability stays available logged-out, forever. Sign-in may add things (follows, sync, league-aware tools); it may never gate what is free today. Any proposal that would violate this rule is out of scope until GOALS.md is re-ratified again.
 
----
-
-## Current Milestone — Public Beta
-
-**Definition of done:** the product is ready for a public repo and public link without risk or embarrassment.
-
-| Gate | Status | Owner |
-|---|---|---|
-| P1-006 resolved — BDL key out of source, Worker deployed | ✅ Resolved — key rotated, Worker deployed, BDL_PROXY_URL wired. Git history scrub (optional hygiene) remains available but non-blocking since old key is dead. | Axiom |
-| Skeleton coverage on 3 P2 loading gaps (player deep-link, home hot strip, home starters) | ✅ Verified correct — Vera behavior check complete 2026-06-01. All three states (loading, error, not-found) implemented per spec. | Axiom + Vera |
-| Data freshness timestamp visible on players and leaders views | ✅ Complete — leaders view `aria-label` added 2026-06-01. Kael to decide >60min format (non-blocking). | Finn + Vera |
-| First-visit value statement on home page (renders once for new visitors) | ✅ Complete — dismiss button ruled unnecessary by Vera 2026-06-01. Kael to confirm accent vs surface background (non-blocking). | Finn + Vera |
-| Scorecard Phase 1 shipped and smoke-tested | ✅ Shipped — smoke test passed 2026-06-01. Full 10-inning render, correct notation + diamond fills, paper texture, nav routing all verified. P3: header scores show `—` on cold deep-link (boxscore `runs` field path). See ISSUES.md. | Axiom |
-
-**All five gates closed 2026-06-01. Public Beta milestone complete.**
-
----
-
-## Target Audience
-
-| Persona | What they need |
-|---|---|
-| **Sports announcer** | Quick player bio, current-season rank, head-to-head comparison, career history, game-prep sheet |
-| **Fantasy player** | Leaderboards, advanced efficiency metrics (FIP, BABIP, ISO), week-to-week trends |
-| **Casual fan** | Scores, standings, beautiful team/player cards, arcade games |
-| **Data analyst** | Raw stat tables, CSV export, custom stat formula builder, multi-season history |
-
----
-
-## Strategic Goals
-
 ### G1 — Speed & Reliability
-Every view must render a useful state within **2 seconds** on a standard broadband connection.  
+Every view must render a useful state within **2 seconds** on a standard broadband connection.
 Degraded/partial data is acceptable; a broken blank screen is not.
 
-### G2 — MLB Depth First
-MLB must reach **full feature parity** before other sports expand.  
-
-**Completed:** players, leaderboards (47 categories including Statcast), teams, scores (with pitcher matchups), standings (with L10 + power rankings), stat builder, player detail, game prep sheet, starred favorites, live ticker, Statcast metrics (exit velocity, barrel%, xBA, xSLG, xwOBA, sprint speed via Savant), career year-by-year stats table with trend chart, player H2H comparison (P3-001, P3-003), live game expanded panel with pitch zone + base diagram (P3-025 Phases 1–2), baseball scorecard Phases 1–4.  
-**Remaining:** All G2 depth targets met. ✅ wRC+ shipped 2026-06-08 (hardcoded FanGraphs guts constants, 2025 preliminary).  
-
-Advanced computed stats (FIP, BABIP, ISO, WHIP, FIP, K-BB%, LOB%, RC, SB%) differentiate SportStrata from ESPN's surface-level scoreboard.
-
-### G3 — Announcer-Ready
-Every key fact should be surfaceable in **3 clicks or fewer**.  
-Player detail → comparison → export should be a single workflow.  
-Print layout (`⌘P`) produces a clean game-prep sheet with no chrome.  
-
-**Completed:** Game Prep view with pitcher matchups, lineup context, print button. Search (⌘K) surfaces players with AVG/ERA hint. Player detail with full stat bars, career chart, Statcast percentile card, predictive analytics badge (Breakout/Regression/Sell High/Buy Low). Side-by-side comparison with shareable URL (P3-001). Broadcast Blurb button on player detail (Cloudflare Worker, needs deployment — P2-005). All G3 depth targets met.  
-**Remaining:** Broadcast Blurb Worker deployment (P2-005 — authorization pending).
-
 ### G4 — Zero Friction (amended 2026-07-01)
-The logged-out product has no login wall, no paywall, and full functionality — governed by the constitutional rule above.  
+The logged-out product has no login wall, no paywall, and full functionality — governed by the constitutional rule above.
 Favorites, notes, and preferences save to `localStorage`; nothing leaves the browser unless the user explicitly shares a link or opts into an account (D-031, optional and additive-only).
 
 ### G5 — Maintainable Solo Codebase
-No frameworks, no build step, no CI pipeline complexity.  
-Vanilla JS + CSS modules. Each sport is one file (or at most two).  
+No frameworks, no build step, no CI pipeline complexity.
+Vanilla JS + CSS modules. Each sport is one file (or at most two).
 The codebase should be readable by a future contributor in 30 minutes.
 
-### G6 — Sport Scope (re-ratified 2026-09-14, corrected again same day — the 2026-07-01 version below had gone stale months before the first correction, flagged 2026-08-15 and left unfixed until then; kept visible as the reasoning trail, not silently overwritten)
-**Seven sports are live** as of 2026-09-14: MLB (flagship), NFL (public beta, D-012), NCAA Football (D-042), NCAA Men's Basketball (D-052), WNBA (D-092), and **NBA (D-161)** — shipped the same day this line was first drafted saying NBA was merely "being actively revived," so that language is corrected here rather than left to go stale the way the "six sports" count above it did. NBA rebuilt fresh on the ESPN-proxy-clone pattern (not the old BDL-era code, which predates the `SPORTS` registry and `DESIGN.md`/D-040 entirely and is now mostly dead — three of its five old files deleted outright, two kept only for a single live utility function each unrelated features still depend on, see DECISIONS.md D-161). Shipped same-day: Scores/Standings/Teams/Leaders/player detail, live game panel, the same editorial home-page layout every other live sport has, and a Scorebug basketball normalizer that also retroactively fixed NCAAB/WNBA's own long-standing absence from the home page's merged ticker. NHL stays parked — preview only, no feature work without an owner decision recorded here first.
+### Accuracy over volume
+Fewer stats shown correctly beats many stats shown wrong. A number the site can't source doesn't ship, in the app or in a story.
 
-**Original 2026-07-01 language, superseded above but kept for history:** "MLB (flagship) and NFL (live beta, D-012) are the two invested sports — the barbell... NBA and NHL are parked: no feature work, and their currently-unreachable client code should be delivery-gated or removed (deep-review 2026-07-01, finding X5). Reviving either requires an owner decision in DECISIONS.md." The "two-sport barbell" framing stopped being accurate the moment D-042 shipped and was never corrected here until now, despite `CLAUDE.md`'s Sport Focus section and this project's own `ISSUES.md` (2026-08-15 NAV/SEO pass) both flagging the drift explicitly.
-
----
-
----
-
-## Monetization (re-scoped 2026-07-01 — supersedes R1–R5)
-
-The former revenue goals (Pro tier, $499 Enterprise seats, paid API, DFS affiliate deals) were aspiration written ahead of any foundation, and several contradicted G4. They are retired. What stands:
-
-**Freemium on top of accounts, later (D-031).** Reference and analytics stay free forever (constitutional rule). A future paid tier may unlock the fantasy edge that depends on per-user infrastructure — projections, alerts, AI-assisted insights, advanced tools. (Note: this line originally also named "league sync" as paid-tier fodder — D-065 shipped league import free to every signed-in user, so that's no longer an available paid feature; the constitutional rule forbids retroactively paywalling it. Corrected 2026-08-09.) Monetization work starts only after the auth foundation is shipped, hardened, and security-reviewed — that gate cleared with D-031, and the paid tier now has its own three-gate spec (see ISSUES.md, DECISIONS.md D-069).
-
-**Amended 2026-08-09 (owner ratification, D-069) — ads are no longer categorically excluded.** The original 2026-07-01 rule below is superseded on the ads clause only; trackers and data sales remain permanently excluded, no change there. Following D-031 shipping, owner directed a monetization push covering both a curated sportsbook affiliate/sponsor relationship and general sports-focused ad network placement, pursued alongside — not instead of — the subscription tier above. Sportsbook affiliate deals carry real, state-by-state licensing requirements and are not to be entered into without real legal review — see `docs/sponsorship-outreach.md` for sourced research and DECISIONS.md D-069 for full reasoning.
-
-**Share cards remain the organic-growth channel** (scorecard PNGs, stat cards, draft cheat sheets) — every exported artifact is branded and links back to the live view. No trackers, no data sales — ever. (Ads: no longer a blanket site-wide exclusion per the amendment above — but whether sponsor placements ever belong on the share-card exports themselves is a separate, not-yet-decided question worth a deliberate Kael call rather than a default, since these exports are explicitly the brand's clean acquisition artifact.)
+### No trackers, no data sales, ever
+Ads and sponsorships are permitted in principle (D-069) but deliberately on hold (D-151) until traffic clears a real threshold. Trackers and selling user data stay excluded permanently.
 
 ---
 
-## Game-Changing Feature Goals
+## Sport scope
 
-### F1 — AI Stat Narratives (Broadcast-Ready Context)
-Use Gemini to generate a **2-sentence broadcast blurb** for any player on demand:
-> *"Aaron Judge is batting .382 over his last 14 games with 6 HR, placing him 1st in MLB in OPS (.1.187) over that span. He's historically been a .310 hitter in April, but 2025 has been his best April since 2022."*
-
-Trigger: "Broadcast Blurb" button on player detail page → fetches and renders inline (a single request/response, not streamed).  
-Infrastructure: Cloudflare Worker (`worker/broadcast-blurb.js`) calling Gemini's Interactions API, TTL-cached in Workers KV (`BLURB_CACHE`) so a given player's blurb regenerates on a fixed schedule rather than on every click — required by D-039's "nothing meters per user action, ever" rule. Anthropic is not used anywhere on this site (owner decision, 2026-08-08) — Gemini is the one LLM vendor for the whole project, the same one already proven in the sportstrata-video repo.  
-This is the single feature that makes SportStrata irreplaceable for announcers.
-
-### F2 — Real-Time Statcast Layer
-Full **Baseball Savant integration** via Cloudflare Worker proxy:
-- Exit velocity, launch angle, barrel%, hard hit%, sprint speed on every hitter card
-- Whiff%, chase%, spin rate, extension on every pitcher card
-- Statcast leaderboards alongside standard stat leaderboards (12 new categories)
-- Heat-map zone charts: where each hitter hits the ball, where pitchers locate their fastball
-
-This bridges the gap between SportStrata and Fangraphs/Baseball Savant — in one UI.
-
-### F3 — Predictive Analytics Engine
-A **regression/breakout model** surfaced as a badge on player cards:
-- "Breakout Candidate" — BABIP significantly below career norm, solid exit velocity, high xBA vs AVG gap
-- "Regression Risk" — sky-high BABIP, mediocre exit velo, unsustainable HR/FB%
-- "Sell High" / "Buy Low" — fantasy-friendly framing of the model output
-- Model inputs: current vs career BABIP, xBA vs AVG gap, barrel%, K%, BB%, LOB%
-
-No ML infrastructure needed at first — rules-based scoring computable client-side from Statcast + standard stats.
-
-### F4 — Historical Database (2015–Present)
-Store multi-season data in **Cloudflare D1** and surface it in the UI:
-- Season-over-season stat tables on every player card
-- Career trajectory chart: OPS, ERA, WAR-proxy plotted year-by-year
-- "Player Comparison" with career arcs side-by-side for any two players
-- All-time single-season leaderboards: "Greatest HR seasons since 2015"
-
-This makes SportStrata useful 365 days a year, not just in-season.
-
-### F5 — Installable PWA with Push Notifications
-Convert to a **Progressive Web App** with:
-- "Add to Home Screen" prompt after 2nd visit
-- Push notifications for: player milestones (HR #50, no-hitter in progress), game-start alerts for favorited teams
-- Offline mode: last-fetched standings/leaderboards available without network
-- App-store-quality experience without app store distribution
-
-### F7 — Interactive Baseball Scorecard
-A **play-by-play scorecard view** for any MLB game — historical or live:
-- 9×9 CSS Grid with inline SVG diamonds per cell, notation symbols, and base progression fill states
-- Historical mode: completed game loads pre-filled from `/game/{gameId}/playByPlay`
-- Live mode: 20s polling, active at-bat cell pulses, pitch count updates in real time
-- Cell hover shows full pitch sequence; player name links to player detail
-- Share card: completed scorecard exported as a branded PNG (team colors, game date, SportStrata watermark)
-- Printable via jsPDF if html2canvas spike validates viability
-
-This is the highest-engagement depth feature for the broadcaster audience — a completed scorecard is a shareable artifact with social distribution value that no other stat surface produces.
-
-Implementation is phase-gated. See `DECISIONS.md D-007` and full roadmap in `ISSUES.md`.
-
-### F6 — Multi-Sport Full Parity
-Once MLB goals are met, bring **NBA, NFL, and NHL** to the same depth:
-- NBA: play-by-play splits, lineup net ratings, shot charts, advanced box scores
-- NFL: PFF-style grades, target share, DVOA-proxy, snap count trends
-- NHL: advanced stats (xGF%, HDCA, zone entry data), goalie save percentage by shot type
-
-Unified player search across all sports — type any name, get any sport.
-
----
-
-## Non-Goals
-
-- **Not a real-time broadcast tool** — 5-minute polling is sufficient; sub-second WebSocket feeds are out of scope unless a specific broadcaster partnership requires it
-- **Not a social platform** — no comments, follows, or user-generated content
-- **Not a pure betting site** — odds as contextual reference only; partner referrals are acceptable
-- **Not a native app** — PWA covers the mobile use case; no React Native or Electron
-
----
-
-## Success Metrics
-
-| Metric | Current | Target |
+| Sport | Status | Biggest gap (from the audit matrix, issue #190) |
 |---|---|---|
-| MLB features complete | ✅ G2/G3 depth targets met (2026-06-08) | Maintain; new depth via P9/P10 (parked on Savant schema verification) |
-| Leaderboard categories | ✅ 47 standard + 11 Statcast (incl. HH%, SS%, Whiff%, CSW%, xBA, xSLG, xwOBA, EV, Barrel%, K%, BB%) — P3-023/P3-024 shipped | — |
-| Advanced computed stats | ✅ ISO, BABIP, FIP, K-BB%, LOB%, RC, SB%, BB%, K%, wOBA, wRC+ (Statcast) | — |
-| Time to first meaningful paint | ✅ FCP 710ms, LCP 1.72s (Lighthouse, 2026-06-09) | < 1s cached, < 3s cold — met |
-| Stat Builder covers MLB | ✅ Hitting + pitching, 36-stat palette | Full formula examples pre-loaded (open) |
-| Announcer workflow (3 clicks) | ✅ Player → detail → Game Prep (print button live) | Player → compare → share URL |
-| Starred favorites system | ✅ Heart on cards, home page chip section, localStorage | |
-| Live scores + ticker | ✅ Header ticker + live polling home page | |
-| Brand identity | ✅ Orange/gold palette, SportStrata icon in header | |
-| API key in source code | ✅ Resolved — key removed, Worker proxy live, CORS allowlist (P1-006 closed 2026-06-09) | — |
-| Lighthouse Performance | ✅ 93 (2026-06-09, D-011 pass: lazy math.js, deferred CSS, icon resize) | ≥ 90 — met |
-| WCAG AA accessibility | ✅ 100/100 on players, player detail, leaders (D-004 closed 2026-06-09) | Full pass — met |
+| MLB | Flagship, full depth | None open. Offseason until spring training |
+| NFL | Live | No team-season history for "first since 1999" checks (#148) |
+| NCAA Football | Live | Team pages lack results and a game log (#167); no ranked-games list (#169) |
+| NCAA Men's Basketball | Live, thinnest | No team pages (#116), player pages (#117) or player game log |
+| NBA | Live (D-161) | No Playoff Picture |
+| WNBA | Live, offseason | No team page, no player game log, no Stories |
+| NHL | Parked | Preview only. No work without an owner decision recorded here first |
+
+Adding a seventh sport, or reviving NHL, needs an explicit owner decision. Measure nav capacity live before building; every sport added so far has caused a header overflow bug.
 
 ---
 
-## Annual Maintenance
+## The 2026–27 calendar
 
-- **Park factors refresh (each April):** `_PARK_FACTORS` in `js/mlb.js` — re-verify at season start every year; relocations (e.g. Athletics) and park changes (e.g. Camden Yards' 2024 wall renovation) shift the rolling 3-year window. (Relay)
-- **wRC+ guts constants:** self-healing as of 2026-07-01 — seasons without a static entry derive lgwOBA/lgR-PA from MLB Stats API league totals (`_ensureWrcConstants`, † shown in UI). Optionally add the official FanGraphs entry when published to drop the dagger.
-- **Park factors — refreshed 2026-07-31 (Relay):** `_PARK_FACTORS` now reflects the 2023–2025 rolling 3-year average (source: RotoWire "The Z Files" 2026 Park Factors, same methodology as B-Ref) — was stuck on 2022–2024 for over a year. Three teams use a non-standard window per the source data itself (Athletics 2025-only, Orioles 2024–2025, Rays 2022–2024) — see the code comment. Next refresh due April 2027.
+The sports calendar sets the deadlines. Dates are approximate and should be checked before anything is scheduled against them.
 
----
-
-## Design Principles
-
-1. **Data accuracy over data volume** — fewer stats shown correctly beats many stats shown wrong
-2. **Progressive disclosure** — home page is simple; drill-down reveals depth
-3. **Dark mode first** — default is dark; light mode is the toggle, not the reverse
-4. **Fail gracefully** — every view has a skeleton, an error state, and a retry button
-5. **No magic strings** — all team names, abbreviations, and IDs live in `config.js`
-6. **Cache aggressively, invalidate clearly** — TTL buckets (5m/30m/60m) documented in `cache.js`
-7. **One number, one home** — a stat appears once per view, paired with the context system suited to its type: counting stats get rank badges, rates get percentile bars. Showing the same number in two sections is not reinforcement, it is noise. (Owner + Kael, 2026-06-11)
+| When (approx.) | What happens | What SportStrata needs ready |
+|---|---|---|
+| Early–mid December | Conference championships, CFP selection, bowls begin | NCAAF ranked-games list (#169) and team-page results (#167) |
+| Mid December | Fantasy football playoffs | In-season fantasy tools working. Nothing new required |
+| January – mid February | NFL playoffs and Super Bowl | NFL team-season history (#148) so Stories can verify historical claims |
+| Mid February | MLB spring training | Confirm the MLB season rollover (D-206) |
+| Mid March | Selection Sunday and the NCAA tournament | NCAAB team pages, player pages and game log, live and crawlable |
+| Late March | MLB Opening Day | Stories back on MLB; refresh park factors (due April 2027) |
+| April | NBA playoffs | NBA Playoff Picture |
+| May | WNBA season opens | WNBA team page and Stories |
 
 ---
 
-## Design Direction Notes
+## Current priorities
 
-### Design System Overhaul Must Precede Feature Expansion
-**Contributor:** Kael | **Date:** 2026-05-17
+In order:
 
-The 2026 initiative pairs a design system overhaul with feature gap closure (spray charts, H2H matchups, team leaderboard filters). These two goals are in direct tension and need a sequencing decision before work begins.
+1. **NCAAF before CFP selection:** ship #169 and #167. They are the only items with a deadline inside a month.
+2. **NCAAB before March:** team pages (#116), then player pages (#117), then the player game log. The tournament is NCAAB's biggest traffic window, and NCAAB has the most `no` cells in the audit matrix.
+3. **NFL history before the playoffs:** #148, which also clears a group of open `derived-stat` issues.
+4. **NBA Playoff Picture before April.**
+5. **Keep the integrity layer green.** A red Contract Check or Integrity Audit is fixed before new features.
 
-The overhaul goes first. Adding spray charts and matchup views onto a partially inconsistent visual system means those components will inherit the inconsistency and need to be revisited when the overhaul eventually lands. That's rework. Do the system once, then build features into it.
-
-What "design system overhaul" concretely means here: audit every component against the `variables.css` token set, eliminate any hardcoded values or one-off color choices that don't map to a token, and establish explicit rules for where each stat-color token applies and where it doesn't. The token system is solid; the discipline of applying it consistently is what's missing.
-
-### Design System Overhaul — Current Status
-**Contributor:** Kael | **Date:** 2026-05-29
-
-**Complete:**
-- Hero gradient clean — `.home-hero-glow` uses `color-mix` + token vars only, no hardcoded purple/indigo. Confirmed 2026-05-29.
-- Three-button system defined: `.btn-primary`, `.btn-secondary`, `.btn-ghost` in `css/components.css`. All token-based, disabled states included.
-- Feature card colors unified — single orange accent, SVG icons, no arbitrary per-card border colors.
-- Brand gradient fixed — uses `var(--accent-light)` → `var(--accent)` only.
-- `--font-display` (Barlow Semi Condensed) applied to feature card titles, leaderboard values, game scores.
-- `--color-chip` / `--color-chip-bg` / `--color-chip-border` tokens defined and applied; 8 hardcoded `#818cf8` values eliminated.
-
-**CSS classes written, waiting on Axiom JS wiring:**
-- `.mlb-view-btn` / `.mlb-view-btn--active` — Cards/Table toggle. Replaces `_styleMLBViewBtn` inline styles, fixes emerald active-state semantic bug.
-- `.mlb-group-btn` / `.mlb-group-btn--active` + `.mlb-group-toggle-row` + `.mlb-group-sep` — Hitters/Pitchers toggle. Replaces `_styleMLBGroupBtn` inline styles.
-- `.mlb-pos-btn` / `.mlb-pos-btn--active` — Position filter chips. Replaces `_styleMLBPosBtn` inline styles, promotes hardcoded rgba values to `var(--color-chip-*)` tokens.
-- Full implementation spec in ISSUES.md under "Player View Toggles."
-
-**SVG specs written, waiting on Axiom JS update:**
-- Three text-only leaderboard section dividers ("Active Hitting Streaks," "Hot Right Now," "Statcast Leaders") need SVG icons added to match the two existing icon-bearing dividers.
-- Exact `innerHTML` strings documented in ISSUES.md under "Leaderboard Section Dividers."
-
-**Design system overhaul complete — 2026-06-04 (Kael)**
-- Inline `style=` audit complete: `leaderboard-more-btn` (JS hover → CSS `:hover`) and team filter wrapper (`style.cssText` → `.leaderboard-team-filter` class) moved to `css/components.css`. Data-driven color inline styles (team colors, stat category borders) remain intentionally — CSS custom properties are not appropriate for every-render dynamic values.
-- Light-mode token verification complete: toggle classes confirmed. `--color-chip-*` tokens added to `[data-theme="light"]` with AA-compliant indigo values.
-- `--text-subtle` raised in dark mode (`#6d8fb8`) and light mode (`#64748b`) for WCAG AA compliance.
-- Ticker live pill text corrected (`var(--color-live)` → `var(--text-primary)`) for contrast compliance.
+The scheduled parity run builds `[parity]` issues in +1 order (D-198). Where that order and this list disagree, this list wins for anything with a calendar deadline.
 
 ---
 
-### Broadcast-Grade Posture Is the North Star — Protect It
-**Contributor:** Kael | **Date:** 2026-05-17
+## How the work runs
 
-SportStrata's intended posture is broadcast-grade authority: dense, legible, trustworthy. The reference point is Baseball Savant crossed with a broadcast lower-third system — not a fantasy sports app, not a consumer scoreboard.
-
-The stat-color palette (amber, emerald, sky, violet, pink per stat category) is a sound semantic system when applied with restraint. The risk is that as the feature set grows, color gets used decoratively rather than categorically — every new component reaching for the palette to "look alive." That's the point where a semantic system becomes a gamification palette, and the product's posture shifts in a direction that undermines its credibility with the broadcast audience.
-
-The rule to hold: stat colors mark category, not importance. Everything else uses the surface and text token hierarchy. No exceptions without a documented rationale.
-
----
-
-## UX Direction Notes
-
-### Mobile Nav Must Reflect the Announcer's Workflow — Not Implementation Order
-**Contributor:** Vera | **Date:** 2026-05-17
-
-The five slots in the bottom tab bar are the most valuable real estate on mobile. Every design decision about what occupies them is a statement about which users and which tasks matter most. The current lineup (Players | Leaders | Scores | Standings | Builder) was assembled by convention, not by audience analysis.
-
-Game Prep is the product's primary differentiator for the broadcast professional persona — it is the feature that delivers on G3 ("every key fact in 3 clicks or fewer") for the audience segment targeted by the Enterprise tier at $499/month. It is currently absent from the tab bar and requires 3 taps to reach on mobile. Builder — a power-user stat-formula tool that most users encounter only after extended product exploration — occupies the tab bar slot that Prep should have.
-
-The principle to hold going forward: the mobile tab bar is ordered by the primary audience's actual workflow, not by feature recency or implementation sequence. Before any new feature is considered for the tab bar, compare it against the announcer workflow: does an announcer need it in real-time conditions? If no, it goes in the menu panel. The tab bar is for what an announcer needs in the booth — not what a developer thought was important when they added it.
+- **Muse** (scheduled agent) writes Stories daily, one PR per sport, auto-merged when CI passes (D-187). It files `[muse-found]`, `[parity]` and `[derived-stat]` issues (D-197).
+- **Parity / build run** (scheduled Claude Code) builds `[parity]` issues, one open PR at a time. The owner merges (D-198).
+- **Desk run** posts one daily brief issue, read-only (D-202).
+- **Audit run** (Mondays) looks for gaps and faults on purpose and files up to three `[audit]` issues (D-199).
+- **The owner** merges every code PR. Nothing but Stories merges itself.
 
 ---
 
-### Data Freshness Is a Trust Feature, Not a Nice-to-Have
-**Contributor:** Vera | **Date:** 2026-05-17
+## Non-goals
 
-The Enterprise tier (R2) targets broadcast professionals who will cite SportStrata stats on-air. A broadcaster needs to know not just what the stat is, but whether it reflects last night's performance or data from two days ago. Without a freshness signal, SportStrata is asking broadcast professionals to trust the product on faith — which is not how professionals in high-stakes, live environments operate.
-
-"Stats updated [time]" is the minimum viable trust signal. It is also the explanation for stat discrepancies: when a broadcaster sees a different number on SportStrata than on another source, a timestamp tells them whether the difference is a calculation question or a timing question. Without it, the question becomes "is SportStrata wrong?" — which is the worst possible framing.
-
-This feature should be implemented before Enterprise marketing begins. The data is already computed — the cache stores write timestamps. Surfacing it is a display problem, not a data problem. The implementation is small; the trust value is large. For the R2 pitch, being able to say "SportStrata shows when its data was last updated" is a concrete differentiator from tools that do not.
-
----
-
-### First-Visit Orientation Is Required Before Pro Tier Launch
-**Contributor:** Vera | **Date:** 2026-05-17
-
-The home page today is designed for returning users who already understand what SportStrata is. For a first-time visitor arriving via a shared link, a search result, or a referral, the page offers game cards, shortcut tiles, and a hot strip — with no framing that explains the product or its value proposition.
-
-For the free-tier user acquisition that precedes R1 (Pro at $9.99/month), the first-visit experience becomes a conversion variable. A broadcaster who arrives via a Google search for "baseball game prep stats" and sees the home page cold has roughly 10 seconds to answer one question: "Is this worth my time?" Nothing on the current home page answers that question within 10 seconds.
-
-The fix does not need to be a tour or an onboarding flow. It can be as simple as a conditional value statement above the game cards — one or two sentences that render for users with no prior interaction history (detectable via localStorage) and disappear after the user's first navigation. The content: who this is for and why it is better than ESPN. It does not need to be permanent or prominent — it needs to exist for the user who needs it.
-
-This is a pre-Pro-tier launch requirement, not a backlog item. Acquisition-at-scale without a first-visit hook is a funnel with a large hole at the top.
+- **Not a social platform.** No comments or user-generated content. Follows exist only as personal sync.
+- **Not a betting site.** Odds appear as context only.
+- **Not a native app.** The PWA covers mobile.
+- **Not a real-time broadcast feed.** Polling is enough; no sub-second WebSocket feeds without a specific partnership.
+- **No runtime LLM calls billed per reader** (D-039). Stories are written ahead of time and committed.
 
 ---
 
-## Engineering Direction Notes
+## Annual maintenance
 
-### P1-006 Is a Launch Prerequisite, Not a Backlog Item
-**Contributor:** Axiom | **Date:** 2026-05-17
-
-The BDL API key at `js/api.js:11` is plaintext in source. That's the single item that has to be resolved before any public push — full stop. The fix is already written: `worker/bdl-proxy.js` exists, the deployment path is documented in `ISSUES.md`. This isn't a complex engineering problem. It's an execution gap. It needs to be treated with the same urgency as a production incident, because the moment this repo goes public it becomes one.
-
-Until it's fixed, no other launch-readiness work matters. Lighthouse scores don't matter. WCAG audits don't matter. A live API key in a public repo is an incident waiting for a timestamp.
-
-### Scorecard Feature — Architecture Constraints and Risk Flags
-**Contributor:** Axiom | **Date:** 2026-05-17
-
-The scorecard introduces the first DOM-heavy, stateful, multi-phase feature we've built on this stack. Three architectural decisions are locked before Finn touches any code.
-
-First: the play-by-play data model. The MLB Stats API `allPlays` array is more complex than it looks — mid-inning base advances (stolen bases, wild pitches during an active at-bat) are embedded as `playEvents` within the enclosing play object, not as separate play entries. The diamond fill state for any given batter is derived from the accumulated `runners` array across all events in the half-inning, not just the batter's outcome. Phase 0 exists to map this precisely. Skipping it produces incorrect base state rendering on anything more complex than a strikeout or clean hit.
-
-Second: live mode interval lifecycle. `setInterval()` in a hash-based SPA without a cleanup hook is a background-polling leak. The interval handle lives in `scorecard.js` module scope. The cleanup lives in `navigateTo()` in `navigation.js` as a pre-navigation check against `AppState.mlbLiveGameId`. This is a shared-routing-logic touch — Axiom reviews that specific change before it ships.
-
-Third: html2canvas is unproven in our rendering context. The scorecard design uses CSS `transform: rotate(45deg)` on the diamond, inline SVG, and CSS custom properties throughout. html2canvas has documented issues with all three. The spike in Phase 4 is not optional — it gates whether the export feature ships at all and in what form.
-
-D3 is not entering this codebase. Diamond animations are CSS. Any proposal to add D3 for base-path animations gets declined without further discussion.
-
-### AppState Is Load-Bearing — Treat Its Growth as a Structural Decision
-**Contributor:** Axiom | **Date:** 2026-05-17
-
-`AppState` in `api.js` is the entire runtime data model. It's working well and the pattern is sound: fields are populated lazily, views check for existing data before fetching, `mlbFetch()` centralizes caching. The architecture earns its simplicity.
-
-The risk going into the 2026 feature push is that AppState grows by accretion rather than by design. Each new feature adds a field, and the "check if populated, fetch if not, then render" pattern gets repeated across more views against more interdependent fields. That's fine until two views race to populate the same field and either double-fetch or render on stale data. No confirmed incidents yet — but `mlbLeaderSplits`, `mlbHotStats`, and `mlbSavantLeaderboard` are already three heavyweight async dependencies that several views share. Adding more without auditing the fetch coordination will eventually produce a timing bug that's hard to reproduce.
-
-The goal before the feature push: document which AppState fields each view depends on, identify any fields that multiple views independently fetch, and consolidate those fetches to a single call site. This doesn't require a rewrite — it requires deliberate accounting.
-
----
-
-## NFL Fantasy — Cutting-Edge Tools (added 2026-06-14)
-
-Goal: make the NFL surface a destination for fantasy players, not a stats mirror. Owner direction; extends D-012 (NFL in beta) and D-013 (data via proxy). Full roadmap + decisions in DECISIONS.md D-014.
-
-> **Historical — resolved by D-031/D-034 (2026-08-04), kept for the reasoning trail, not current state.** At the time this section was written, SportStrata was no-login/no-accounts/free and "add accounts?" was an open, un-ratified question. It's since been answered: D-031 shipped an optional, additive-only account tier (sign-in, follows/prefs cross-device sync), and D-034 ratified the constitutional rule that the no-login experience must never regress as a result. The two-tier split below is what motivated that decision, not a description of what's true today — see D-031/D-034 in DECISIONS.md and the "Current State" section further down this file for the shipped reality.
-
-The proposed features split into two tiers by whether they need **user accounts** — and SportStrata was, at the time, **no-login / no-accounts / free**. That identity was the central decision:
-
-- **No-account tier (fits today's static Pages + Functions):** a mock-draft simulator (practice vs. ADP/tier-based AI opponents, Monte Carlo value ranges), an immersive draft-board UI, and projections/ADP/rankings/tiers browsing. This is the cutting-edge hook and needs no login.
-- **Account tier (a product-identity change):** personalized fantasy grades, league import, AI trade/waiver insights (LLM), multiplayer draft rooms, and freemium monetization. These require accounts, persistent storage, a compute/real-time backend, and (for monetization) payments.
-
-Principle at the time: **lead no-login.** Ship the mock-draft simulator first (Sleeper data, ToS-clean); gate the account tier on an explicit "add accounts?" decision. That gate was cleared by D-031 — accounts shipped as additive-only, never replacing the no-login path.
-
----
-
-## Current State — 2026-08-02 (resynced by Folio; previous snapshot below was frozen at 2026-06-14/D-034 and had drifted far behind DECISIONS.md)
-
-**MLB (primary):** public beta, full depth, unchanged as the reference sport. Home now has a data-story hero, live-game states, headlines/insights rail, pennant-race viz, team favorites, and edge-rendered SEO surfaces (home + team/player/standings/leaders path URLs, D-045).
-
-**NFL (live beta, far past the light-surface v1 in the old snapshot):** Players, real stat Leaders (ESPN core API, 2000+, season selector), Trending (Sleeper add/drop), Advanced/Next Gen Stats via nflverse (2016+, percentile bars), multi-season player detail + game logs, and Mock Draft "next level" (D-027) — Draft Assistant recommendations, tiers/cliffs, Superflex/scoring-aware AI, full snake draft board, deep post-draft analysis. Value-based drafting (D-028): a transparent VBD engine trained on 2015–2025 real production data, a Draft Kit/Rankings page, and Strength of Schedule. A venue-durability factor (D-053, "MetLife effect") feeds both the VBD engine and a mock-draft badge. Path-URL landing + content pages (team/player) shipped under D-045. Retired/all-time player lookup (D-020) and drag-and-drop-in-spirit board interactivity (D-021, superseded by D-027) are the two oldest open threads still worth revisiting.
-
-**NFL expansion push — 2026-08-02, owner-directed, three initiatives sequenced one at a time, all three now shipped (locally; deploy still pending):** team roster grouped by individual position (**N-16** — replaces the 3 broad Offense/Defense/Special-Teams units with 9 position-specific groups). **Injury Report** (**N-17**) — a new Draft HQ tab surfacing every currently-rostered injury league-wide, grouped by status, with body-part/notes detail that had never been shown anywhere on the site before. **Waiver Wire** (**N-18**) — a new Draft HQ tab built on top of the existing Trending add feed, differentiated by a same-team/injury-status correlation (N-17's data) that surfaces *why* a player might be trending rather than just the raw add count. Full specs, live-verification notes, and one caught-and-fixed design correction (a token CLAUDE.md itself mis-documented) all in ISSUES.md N-16/N-17/N-18.
-
-**NCAA Football — new since the old snapshot (D-042, opened 2026-07-06):** promoted to a full third live sport, not just previewed. Scores (offseason-aware), conference-grouped Standings + Teams, AP/Coaches/CFP Rankings, and — going further than D-042's original bounded scope once Relay found the data actually supports it (D-044) — a full player surface: Leaders, player detail on the shared cross-sport frame (profile + season stat groups + a "% of the FBS leader" radar + game-trend chart + game log), and rich team pages (roster-by-unit, schedule, team leaders). The home's sport-agnostic front door (a registry-driven sport-picker band beneath the seasonal hero) shipped alongside it and is what makes a third sport a data entry instead of a rewrite.
-
-**Cross-sport plumbing shipped along the way:** a shared `detailFrame.js` builder now backs NFL and NCAAF player/team detail (D-044) so MLB's benchmark structure — hero, stat cards, radar/trend charts — extends to other sports without three divergent code paths. A `SPORTS` registry (D-042) replaced sport-specific if/else chains in navigation. Path-URL edge-render now covers landings + content templates for all three sports (D-045).
-
-**SEO growth (D-056/D-057, 2026-08-02) — largely shipped, resynced by Folio (this section had drifted stale again within the same day):** the sitemap-unreachable root cause is fixed (resubmitted, then regenerated at 1552 URLs including `/mlb/leaders` and a rolling `/mlb/game/{pk}` discovery window). The NCAAF pre-season `/api/ncaafstats` 502 the sitemap regen surfaced is fixed and live-verified for both real consumers. Ahead of the NFL season and CFB's Aug–Jan window, D-057 shipped and live-verified four new crawlable path templates: `/nfl/leaders`, `/nfl/game/{id}`, `/ncaaf/standings`, `/ncaaf/rankings`. **Still open, unscheduled:** dynamic per-page `og:image` (D-056 Finding 4 — every edge-rendered page still shares one static image, undercutting the share-link-CTR metric D-041 named); an audit of other NCAAF/NFL endpoints for the same Aug/Sep season-flip 502 pattern `ncaafstats.js` had (e.g. `functions/api/ncaafathlete.js` — not yet checked, not assumed broken). **A different, more urgent upstream issue was found and fixed 2026-08-07 (D-062):** `site.api.espn.com` (NFL scores/teams/standings, NCAAF's equivalent, and both leagues' `/api/news`) started returning an Akamai WAF 403 to every request — unrelated to the season-flip 502 pattern, a separate host-level block. Fixed with a browser-realistic User-Agent header; not yet live-verified post-deploy.
-
-**Adjacent, separate repo, build paused (D-086, 2026-08-10):** a long-form YouTube pipeline ("Draft Instincts," D-054) renders SportStrata's own tokens/data into episodes — idea → data brief → AI script → video, narration recorded externally and dubbed in (or a picture-locked placeholder render via `--scratch`). Lives in its own repo (`sportstrata-video`), not part of this codebase's build-free constraint. After a week of build effort it had produced zero videos with confirmed audience data, while a same-day manual workflow (copyright-free clips + SEO-optimized title/description, no pipeline involved) drew 50,000 views in a day — feature work (M2/M3) is paused pending real performance data from Draft Instincts' own output; near-term effort is redirected to the manual workflow, using `youtube-insights.html` (D-083/084/085) as the feedback loop.
-
-**Open, owner-gated (not yet ratified — see DECISIONS.md):** D-025 (NFL percentile "Key Metrics" card), D-043 (home hub tabbed scoreboard/seasonal promo/cross-sport search), D-052 (next sport-expansion candidate — team recommends men's college basketball over NBA/NHL revival), D-053 pt. 2 ("Player Card mode" as an original-IP alternative to the rejected Madden mode), D-031 (accounts/auth foundation — all six senior gates drafted, execution not started).
-
-<details>
-<summary>Previous snapshot — 2026-06-14 (kept for history, superseded by the above)</summary>
-
-**MLB (primary):** public beta, full depth. Recent: live-game full-page fix, leader qualification (3.1 PA / 1 IP per game), De-AI passes (no rainbow stat colors, fonts restored), pitcher-Statcast Savant fix, Players-grid + main.css repairs. Data liabilities cleared (old BDL key dead, no PII/trackers, Kalshi off).
-
-**NFL (now live beta):** sport switcher + NFL Scores (ESPN Week-1 schedule via `/api/nfl` proxy), Teams (32), offseason Standings state. Validated live.
-
-**NFL Fantasy — Mock Draft v1 SHIPPED + validated live:** no-login snake mock draft (`js/fantasy.js`), Sleeper ADP data via `/api/sleeper`, ADP/need-based AI opponents, Monte Carlo "% to return," roster panel, value-vs-ADP grade. Path: no-login-first, accounts planned in parallel; audience: casual/redraft (D-014).
-
-**Next NFL (in scope):** deepen NFL by reusing existing MLB component logic — NFL leaderboards (leaderboard panels), NFL player cards/detail (player-card pattern) on ESPN data via proxy. Then projections-dependent fantasy (VORP/PAR), DST, year-round standings source, and the accounts tier (grades, league import, multiplayer, monetization).
-
-</details>
+- **Park factors (each April):** `_PARK_FACTORS` in `js/mlb.js`. Last refreshed 2026-07-31 (2023–2025 window). Next due April 2027.
+- **NFL home fields (before each season):** re-check end zone paint in `content/nfl/fields/` against current photos (D-174).
+- **wRC+ constants:** self-healing; optionally add the official FanGraphs entry when published to drop the dagger.
+- **This file:** resync it whenever a sport changes status or a calendar deadline passes.
