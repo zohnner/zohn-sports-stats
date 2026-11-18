@@ -8,7 +8,7 @@
 // Unknown slug → the shell with HTTP 404. Any other error → the plain shell.
 import core from '../tools/stories/story-core.cjs';
 import { shell, rawShell } from './_shell.js';
-import { readStories, isPublished, siblingStories, storyListHtml } from './_storyLinks.js';
+import { readStories, isPublished, retiredStoryTarget, siblingStories, storyListHtml } from './_storyLinks.js';
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -60,7 +60,9 @@ export async function renderStoryPage(context, sport) {
         const label = core.STORY_SPORTS[sport].label;
         const slug = String(params.slug || '');
         if (!core.SLUG_RE.test(slug)) return notFound(env, request.url);
-        const r = await env.ASSETS.fetch(new URL(`/content/${sport}/stories/${slug}.md`, request.url));
+        const moved = retiredStoryTarget(sport, slug);
+        if (moved) return Response.redirect(`https://sportstrata.cc${moved}`, 301);
+        const r =await env.ASSETS.fetch(new URL(`/content/${sport}/stories/${slug}.md`, request.url));
         if (!r.ok) return notFound(env, request.url);
         const { meta, body } = core.parseStory(await r.text());
         if (core.validateMeta(meta, sport).length) return shell(env, request.url);
