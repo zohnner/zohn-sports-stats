@@ -337,6 +337,140 @@ function _prMarginsHtml(games) {
     </div>`;
 }
 
+// Finished games with a ranked team in them, newest first (#169). Ranks are
+// the ones ESPN's scoreboard listed at kickoff (homeRank/awayRank, 1-25 or
+// null). filter: 'all' | 'top10' (both top 10) | 'no1' | 'upsets'. team: an
+// abbreviation; teamRecord is then its W-L against ranked opponents.
+// vsUnranked counts only games with exactly one ranked side.
+function rankedGames(games, opts = {}) {
+    const filter = opts.filter || 'all';
+    const team = String(opts.team || '').trim().toUpperCase();
+    const all = (games || [])
+        .filter(g => (g.homeRank || g.awayRank)
+            && Number.isFinite(Number(g.homeScore)) && Number.isFinite(Number(g.awayScore))
+            && Number(g.homeScore) !== Number(g.awayScore))
+        .map(g => {
+            const homeWon = Number(g.homeScore) > Number(g.awayScore);
+            const winnerRank = (homeWon ? g.homeRank : g.awayRank) || null;
+            const loserRank = (homeWon ? g.awayRank : g.homeRank) || null;
+            return {
+                date: g.date || '',
+                winner: homeWon ? g.home : g.away, loser: homeWon ? g.away : g.home,
+                winnerScore: Number(homeWon ? g.homeScore : g.awayScore),
+                loserScore: Number(homeWon ? g.awayScore : g.homeScore),
+                winnerRank, loserRank,
+                margin: Math.abs(Number(g.homeScore) - Number(g.awayScore)),
+                upset: !!loserRank && (!winnerRank || winnerRank > loserRank),
+            };
+        })
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+    const vsUnranked = { w: 0, l: 0 };
+    for (const r of all) {
+        if (r.winnerRank && !r.loserRank) vsUnranked.w++;
+        else if (!r.winnerRank && r.loserRank) vsUnranked.l++;
+    }
+
+    const keep = {
+        all: () => true,
+        top10: r => r.winnerRank && r.loserRank && r.winnerRank <= 10 && r.loserRank <= 10,
+        no1: r => r.winnerRank === 1 || r.loserRank === 1,
+        upsets: r => r.upset,
+    }[filter] || (() => true);
+    let rows = all.filter(keep);
+
+    let teamRecord = null;
+    if (team) {
+        rows = rows.filter(r => r.winner.toUpperCase() === team || r.loser.toUpperCase() === team);
+        teamRecord = { w: 0, l: 0 };
+        for (const r of all) {
+            if (r.winner.toUpperCase() === team && r.loserRank) teamRecord.w++;
+            else if (r.loser.toUpperCase() === team && r.winnerRank) teamRecord.l++;
+        }
+    }
+    return { rows, vsUnranked, teamRecord };
+}
+
+const _RG_FILTERS = [['all', 'All'], ['top10', 'Top 10 vs Top 10'], ['no1', 'No. 1'], ['upsets', 'Upsets']];
+const _RG_SHOWN = 25;
+
+function _rankedGamesResultsHtml(games, state) {
+    const esc = (typeof _escHtml === 'function') ? _escHtml : (s => String(s));
+    const day = d => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); } catch (_) { return ''; } };
+    const side = (abbr, rank, score) => `${rank ? `No. ${rank} ` : ''}${esc(abbr)} ${score}`;
+    const r = rankedGames(games, state);
+    const row = g => `<div class="detail-row"><span class="detail-label">${g.date ? `${esc(day(g.date))} · ` : ''}${side(g.winner, g.winnerRank, g.winnerScore)}, ${side(g.loser, g.loserRank, g.loserScore)}</span><span class="detail-value">${g.upset ? '<span class="win-badge" style="margin:0 0.5rem 0 0">Upset</span>' : ''}${g.margin} pts</span></div>`;
+    const teamLine = r.teamRecord
+        ? `<p class="md-note" style="margin:0.5rem 0">${esc(state.team.trim().toUpperCase())} is ${r.teamRecord.w}-${r.teamRecord.l} against ranked opponents.</p>`
+        : '';
+    if (!r.rows.length) return `${teamLine}<p class="md-note">No ranked games match.</p>`;
+    const head = r.rows.slice(0, _RG_SHOWN).map(row).join('');
+    const rest = r.rows.slice(_RG_SHOWN);
+    return `${teamLine}${head}${rest.length ? `<details><summary class="md-note" style="cursor:pointer;margin:0.5rem 0">${rest.length} more</summary>${rest.map(row).join('')}</details>` : ''}`;
+}
+
+// The whole section; state = { filter, team }.
+function _rankedGamesHtml(games, state) {
+    const esc = (typeof _escHtml === 'function') ? _escHtml : (s => String(s));
+    const all = rankedGames(games);
+    if (!all.rows.length) return '';
+    const teams = [...new Set(all.rows.flatMap(g => [g.winner, g.loser]))].sort();
+    const pills = _RG_FILTERS.map(([k, l]) =>
+        `<button type="button" class="standings-tab${k === state.filter ? ' active' : ''}" data-rg-filter="${k}">${l}</button>`).join('');
+    return `<div class="stats-card" style="margin-top:1.25rem">
+        <h2 class="detail-section-title">Ranked games this season</h2>
+        <p class="md-note" style="margin:0 0 0.75rem">Ranked teams are ${all.vsUnranked.w}-${all.vsUnranked.l} against unranked opponents.</p>
+        <div class="standings-tabs" style="margin-bottom:0.75rem">${pills}</div>
+        <div class="search-input-wrap" style="margin-bottom:0.75rem">
+            <input type="search" class="ncaaf-team-filter-input" data-rg-team placeholder="Team record vs ranked (e.g. ${esc(teams[0] || 'OU')})" aria-label="Team abbreviation" list="rgTeams" value="${esc(state.team || '')}" autocomplete="off">
+            <datalist id="rgTeams">${teams.map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+        </div>
+        <div data-rg-results>${_rankedGamesResultsHtml(games, state)}</div>
+        <p class="pct-caption" style="margin-top:0.5rem">Finished regular-season games. Ranks as ESPN listed them at kickoff. An upset is a win over a better-ranked team.</p>
+    </div>`;
+}
+
+// Loads only once the host nears the viewport: the NCAAB season fetch is one
+// request per day played, and most poll readers never scroll this far.
+function _rankedGamesMount(host, fetchSeasonGames) {
+    if (!host || typeof fetchSeasonGames !== 'function') return;
+    host.innerHTML = '<div class="skeleton-line" style="height:160px;margin-top:1.25rem;border-radius:var(--radius-md)"></div>';
+    const load = async () => {
+        let games;
+        try { games = await fetchSeasonGames(); }
+        catch (err) {
+            if (typeof Logger !== 'undefined') Logger.warn('Ranked games failed', err && err.message, 'POWERRANKINGS');
+            host.innerHTML = '';
+            return;
+        }
+        if (!host.isConnected) return;
+        const state = { filter: 'all', team: '' };
+        host.innerHTML = _rankedGamesHtml(games, state);
+        const results = host.querySelector('[data-rg-results]');
+        if (!results) return;
+        const refresh = () => { results.innerHTML = _rankedGamesResultsHtml(games, state); };
+        host.addEventListener('click', e => {
+            const b = e.target.closest('[data-rg-filter]');
+            if (!b) return;
+            state.filter = b.dataset.rgFilter;
+            host.querySelectorAll('[data-rg-filter]').forEach(x => x.classList.toggle('active', x === b));
+            refresh();
+        });
+        host.addEventListener('input', e => {
+            if (!e.target.matches('[data-rg-team]')) return;
+            state.team = e.target.value;
+            refresh();
+        });
+    };
+    if (typeof IntersectionObserver !== 'function') { load(); return; }
+    const io = new IntersectionObserver(entries => {
+        if (!entries.some(en => en.isIntersecting)) return;
+        io.disconnect();
+        load();
+    }, { rootMargin: '400px' });
+    io.observe(host);
+}
+
 async function _prShow(sport) {
     const cfg = _PWR_SPORTS[sport];
     const grid = document.getElementById('playersGrid');
@@ -385,6 +519,8 @@ async function _prShow(sport) {
 if (typeof window !== 'undefined') {
     window.computeSRS = computeSRS;
     window.largestMargins = largestMargins;
+    window.rankedGames = rankedGames;
+    window._rankedGamesMount = _rankedGamesMount;
     window._PWR_SPORTS = _PWR_SPORTS;
     window._prRenderRows = _prRenderRows;
     window._prShow = _prShow;

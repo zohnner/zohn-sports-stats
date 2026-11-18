@@ -42,7 +42,7 @@ module.exports = {
         {
             id: 'ncaaf-scoreboard',
             needs: 'probe',
-            mirrors: 'js/ncaaf.js fetchNCAAFScoreboard (groups=80, D-135)',
+            mirrors: 'js/ncaaf.js fetchNCAAFScoreboard (groups=80, D-135), fetchNCAAFSeasonGames ranks (#169)',
             sources: [/college-football\/scoreboard/, /\/api\/ncaaf\?path=\/scoreboard/],
             route: scoreboard,
             paths: [
@@ -54,6 +54,8 @@ module.exports = {
                 'events[].competitions[0].competitors[].team.abbreviation',
                 'events[].competitions[0].competitors[].team.displayName',
                 'events[].competitions[0].competitors[].score',
+                // Rank at kickoff (99 = unranked), read by the Rankings page's ranked-games list (#169).
+                'events[].competitions[0].competitors[].curatedRank.current',
             ],
             invariants: [
                 L.minCount('events', 40, { fullSlateOnly: true }),

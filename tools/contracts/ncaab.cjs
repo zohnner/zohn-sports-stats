@@ -13,7 +13,7 @@ module.exports = {
         {
             id: 'ncaab-scoreboard',
             needs: 'probe',
-            mirrors: 'js/ncaab.js fetchNCAABScoreboard (groups=50)',
+            mirrors: 'js/ncaab.js fetchNCAABScoreboard (groups=50), fetchNCAABSeasonGames ranks (#169)',
             sources: [/mens-college-basketball\/scoreboard/, /\/api\/ncaab\?path=\/scoreboard/],
             route: scoreboard,
             paths: [
@@ -25,6 +25,8 @@ module.exports = {
                 'events[].competitions[0].competitors[].team.abbreviation',
                 'events[].competitions[0].competitors[].team.displayName',
                 'events[].competitions[0].competitors[].score',
+                // Rank at kickoff (99 = unranked), read by the Rankings page's ranked-games list (#169).
+                'events[].competitions[0].competitors[].curatedRank.current',
             ],
             invariants: [
                 // A regular-season Saturday runs 60-150 Division I games; holiday
