@@ -1,6 +1,43 @@
 {
   "stories": [
     {
+      "slug": "2026-11-18-grimes-47-lakers-ninth-straight-win",
+      "title": "Quentin Grimes scored 47 with 10 threes, joining Kobe Bryant in Lakers history",
+      "dek": "The career-high 47, with 21 in the 4th quarter, rallied the Lakers from 18 down for their 9th straight win.",
+      "date": "2026-11-18",
+      "season": 2027,
+      "teams": [
+        "LAL",
+        "CHA"
+      ],
+      "players": [
+        "4397014",
+        "3945274",
+        "4066457"
+      ],
+      "hero_stat": "47 points, 10 threes — 2nd Laker ever with 10 in a game",
+      "url": "/nba/stories/2026-11-18-grimes-47-lakers-ninth-straight-win",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-18-sensabaugh-40-jazz-end-12-game-skid",
+      "title": "Brice Sensabaugh scored 40 off the bench as the Jazz ended a 12-game skid",
+      "dek": "Sensabaugh scored 25 in the 4th quarter, and Utah outscored the Clippers 44-21 in the period.",
+      "date": "2026-11-18",
+      "season": 2027,
+      "teams": [
+        "UTA",
+        "LAC"
+      ],
+      "players": [
+        "5105839",
+        "4433627"
+      ],
+      "hero_stat": "40 points off the bench, 25 in the 4th quarter",
+      "url": "/nba/stories/2026-11-18-sensabaugh-40-jazz-end-12-game-skid",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-17-grizzlies-129-points-three-straight",
       "title": "Memphis has scored 129 or more in 3 straight games, its longest run this season",
       "dek": "The Grizzlies average 135.7 points over the 3 games, 14.0 more than their season average.",
