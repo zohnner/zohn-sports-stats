@@ -1,6 +1,42 @@
 {
   "stories": [
     {
+      "slug": "2026-11-18-stojakovic-46-duke-cameron-record",
+      "title": "Andrej Stojakovic scored 46 at Duke, the most ever by a visitor at Cameron",
+      "dek": "The 46 broke a 69-year-old record and ended Duke's 35-game home winning streak.",
+      "date": "2026-11-18",
+      "season": 2027,
+      "teams": [
+        "ILL",
+        "DUKE"
+      ],
+      "players": [
+        "5175007",
+        "5307569"
+      ],
+      "hero_stat": "46 points — the most ever by an opponent at Cameron Indoor",
+      "url": "/ncaab/stories/2026-11-18-stojakovic-46-duke-cameron-record",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-18-tennessee-holds-michigan-state-nine-field-goals",
+      "title": "No. 14 Tennessee held No. 2 Michigan State to 9 made field goals",
+      "dek": "The Spartans shot 18 percent — the first Top 20 team under 10 makes in 77 years.",
+      "date": "2026-11-18",
+      "season": 2027,
+      "teams": [
+        "MSU",
+        "TENN"
+      ],
+      "players": [
+        "4711255",
+        "5142710"
+      ],
+      "hero_stat": "9 field goals — Michigan State's fewest in a Top 20 game in 77 years",
+      "url": "/ncaab/stories/2026-11-18-tennessee-holds-michigan-state-nine-field-goals",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-16-memphis-beats-no-10-louisville-98-78",
       "title": "Memphis beat No. 10 Louisville by 20 — the widest ranked loss this season",
       "dek": "The Tigers are 2-1 against ranked teams, and ranked teams are now 78-3 against unranked opponents.",
