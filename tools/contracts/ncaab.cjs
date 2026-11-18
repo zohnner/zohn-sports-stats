@@ -67,7 +67,10 @@ module.exports = {
             id: 'ncaab-leaders-v3',
             mirrors: 'functions/api/ncaabstats.js + js/config.js _espnLeadersResponse (ncaab-leaders view, /ncaab/leaders); story source',
             sources: [/site\/v3\/sports\/basketball\/mens-college-basketball\/leaders/],
-            route: c => `https://site.web.api.espn.com/apis/site/v3/sports/basketball/mens-college-basketball/leaders${c.season == null ? '' : `?season=${c.season}&seasontype=2`}`,
+            // limit=5 is what the site asks for first (js/config.js _espnLeadersResponse,
+            // functions/api/ncaabstats.js). Without it the endpoint can 500 persistently
+            // (2026-11-18 ~05:05 UTC: four unlimited tries 500, two limit=5 tries 200).
+            route: c => `https://site.web.api.espn.com/apis/site/v3/sports/basketball/mens-college-basketball/leaders?${c.season == null ? '' : `season=${c.season}&seasontype=2&`}limit=5`,
             paths: [
                 'leaders.categories[].name',
                 'leaders.categories[].leaders[].value',
