@@ -745,8 +745,7 @@ function _homeSkeletonCards(n = 6) {
 // that instead of showing whatever AppState.currentSport happens to still be
 // set to. Merges MLB/NFL/NCAAF through Scorebug's already-normalized model
 // (D-047 S2) — a data-merge over fetches every sport already makes elsewhere,
-// not a new component. NCAAB has no Scorebug normalizer yet (D-052 shipped
-// its own standalone ticker fn) and NHL is preview-only — both out of scope.
+// not a new component. NHL is preview-only and out of scope.
 // D-173: `live` is set only by the 30s home poll. On those ticks any sport
 // with a game in progress fetches fresh (bypassing its 5-minute cache) under
 // its own in-flight key, so it never joins a cached request already running;
@@ -4158,9 +4157,7 @@ async function _loadNCAABLandingSpotlight() {
 }
 // ── NCAAB landing Games module (Phase 4) — reuses _ncaabGameCard (js/ncaab.js),
 // the same compact card displayNCAABScores() already renders, instead of a
-// new card shape. Not routed through Scorebug -- NCAAB has no Scorebug
-// normalizer (a separate, pre-existing gap noted in CLAUDE.md for the
-// ticker; fixing that architecture is out of scope here). Labeled "Upcoming
+// new card shape (since 2026-11-17 a Scorebug card, like every game card). Labeled "Upcoming
 // Games" rather than NFL/NCAAF's "This Week's Games": NCAAB's schedule can
 // be genuinely weeks away from the landing page's own default view (e.g.
 // the whole offseason, when every game on the board is opening week), and

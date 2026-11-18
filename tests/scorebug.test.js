@@ -118,6 +118,75 @@ test('renderTickerItem: NFL uses data-game-id', () => {
     assert.match(html, /data-game-id="401"/); assert.doesNotMatch(html, /data-game-pk/);
     assert.match(html, /data-sport="nfl"/); assert.match(html, /ticker-logo/);
 });
+// An unplayed game has no score yet. ESPN sends score 0 before tip, which
+// rendered as 0-0 on the home cards and in every ticker.
+const nbaUpcoming = { id: 'n1', isLive: false, isFinal: false, date: '2026-11-18T00:30:00Z', statusText: '7:30 PM EST',
+    homeTeam: { abbr: 'BOS', score: 0, logo: 'bos.png' }, awayTeam: { abbr: 'NY', score: 0, logo: 'ny.png' } };
+const nflUpcoming = { id: '404', isLive: false, isFinal: false, date: '2026-11-23T18:00:00Z', statusText: 'Sun, November 23rd at 1:00 PM EST',
+    homeTeam: { abbr: 'DET', score: 0 }, awayTeam: { abbr: 'GB', score: 0 } };
+const mlbPostponed = { ...upcomingGame, status: { detailedState: 'Postponed', abstractGameState: 'Final' } };
+
+test('planted fault: an unplayed game shows its start time, never 0-0', () => {
+    const S = load();
+    for (const m of [S.normalizeNBAGame(nbaUpcoming), S.normalizeNFLGame(nflUpcoming), S.normalizeMLBGame(upcomingGame), S.normalizeMLBGame(mlbPostponed)]) {
+        assert.equal(m.hasScore, false, m.key);
+        const card = S.renderScoreCard(m);
+        assert.doesNotMatch(card, /class="hgc-score[^"]*">0</, `${m.key} card`);
+        assert.doesNotMatch(card, /aria-label="[^"]* 0 at /, `${m.key} aria`);
+        const tick = S.renderTickerItem(m);
+        assert.doesNotMatch(tick, /ticker-score/, `${m.key} ticker`);
+        assert.doesNotMatch(tick, />SCH</, `${m.key} ticker pill`);
+    }
+});
+
+test('live and final games still show their scores', () => {
+    const S = load();
+    assert.match(S.renderScoreCard(S.normalizeNFLGame(nflLive)), /class="hgc-score[^"]*">14</);
+    assert.match(S.renderTickerItem(S.normalizeNFLGame(nflFinal)), /ticker-score[^>]*>38</);
+});
+
+test('planted fault: start times are right in winter, not an hour late', () => {
+    const S = load();
+    const nov17 = Date.parse('2026-11-17T20:00:00Z');
+    assert.equal(S.startLabel('2026-11-18T00:00:00Z', nov17), '7:00 PM ET', 'EST is UTC-5');
+    assert.equal(S.startLabel('2026-07-12T23:05:00Z', Date.parse('2026-07-12T16:00:00Z')), '7:05 PM ET', 'EDT is UTC-4');
+});
+
+test('startLabel: another Eastern day carries its weekday; short form drops ET', () => {
+    const S = load();
+    const nov17 = Date.parse('2026-11-17T20:00:00Z');
+    assert.equal(S.startLabel('2026-11-23T18:00:00Z', nov17), 'Mon 1:00 PM ET');
+    // 11:30 PM ET on the 17th is 04:30Z on the 18th: still today in Eastern.
+    assert.equal(S.startLabel('2026-11-18T04:30:00Z', nov17), '11:30 PM ET');
+    assert.equal(S.startLabel('2026-11-18T00:00:00Z', nov17, true), '7:00 PM');
+    assert.equal(S.startLabel('', nov17), 'Scheduled');
+});
+
+test('a postponed or TBD game says so instead of a time or a Final', () => {
+    const S = load();
+    assert.equal(S.normalizeNBAGame({ ...nbaUpcoming, statusText: 'Postponed' }).pillLabel, 'Postponed');
+    const nbaPpd = S.normalizeNBAGame({ ...nbaUpcoming, isFinal: true, statusText: 'Postponed' });
+    assert.equal(nbaPpd.status, 'upcoming', 'NBA isFinal is ESPN state "post", which a postponement has');
+    assert.equal(nbaPpd.hasScore, false);
+    assert.equal(S.normalizeNFLGame({ ...nflUpcoming, statusText: 'TBD' }).startShort, 'TBD');
+    const mlbTbd = { ...upcomingGame, status: { detailedState: 'Scheduled', abstractGameState: 'Preview', startTimeTBD: true } };
+    assert.equal(S.normalizeMLBGame(mlbTbd).pillLabel, 'TBD');
+    const ppd = S.normalizeMLBGame(mlbPostponed);
+    assert.equal(ppd.pillLabel, 'Postponed', 'statsapi marks a postponement abstractGameState Final');
+    assert.notEqual(ppd.status, 'final');
+});
+
+test('one card for the basketball Scores pages: ranking, click target, badge slot', () => {
+    const S = load();
+    const g = { ...nbaUpcoming, id: 'c7', homeTeam: { ...nbaUpcoming.homeTeam, abbr: 'DUKE', rank: 5 }, awayTeam: { ...nbaUpcoming.awayTeam, abbr: 'ILL', rank: 10 } };
+    const html = S.renderScoreCard(S.normalizeNCAABGame(g), { go: 'ncaab-game-c7', badge: '<span class="nba-close-badge">Close</span>' });
+    assert.match(html, /<span class="hgc-rank">5<\/span>DUKE/);
+    assert.match(html, /aria-label="No\. 10 [^"]* at No\. 5 /);
+    assert.match(html, /onclick="navigateTo\('ncaab-game-c7'\)"/);
+    assert.match(html, /nba-close-badge/);
+    assert.doesNotMatch(S.renderScoreCard(S.normalizeNCAABGame(nbaUpcoming)), /hgc-rank|onclick/);
+});
+
 test('normalizeNCAAFGame + ticker: id, logo, sport', () => {
     const S = load(); const m = S.normalizeNCAAFGame(ncaafFinal);
     assert.equal(m.sport, 'ncaaf'); assert.equal(m.id, 'g99'); assert.equal(m.home.logo, 'uga.png');

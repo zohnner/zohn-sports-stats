@@ -36,6 +36,40 @@
         return `<span class="hgc-outs" aria-hidden="true">${[0, 1, 2].map(i => `<span class="hgc-out-dot${i < o ? ' hgc-out-dot--on' : ''}"></span>`).join('')}</span>`;
     }
 
+    // Start time in Eastern, the convention US broadcasts use. The zone comes
+    // from Intl, not a fixed UTC-4: that offset put every November-March start
+    // an hour late ("8:00 PM ET" for a 7:00 PM EST tip). A game on another
+    // Eastern day carries its weekday. short drops " ET" for the ticker.
+    const ET = 'America/New_York';
+    function startLabel(dateStr, now, short) {
+        const d = new Date(dateStr || NaN);
+        if (isNaN(d)) return short ? 'TBD' : 'Scheduled';
+        const day = x => x.toLocaleDateString('en-US', { timeZone: ET });
+        const time = d.toLocaleTimeString('en-US', { timeZone: ET, hour: 'numeric', minute: '2-digit' });
+        const wd = day(d) === day(new Date(now == null ? Date.now() : now))
+            ? '' : d.toLocaleDateString('en-US', { timeZone: ET, weekday: 'short' }) + ' ';
+        return wd + time + (short ? '' : ' ET');
+    }
+    // statsapi files a postponed or canceled game under abstractGameState
+    // "Final" (checked 2026-11-17: all 13 from April-May 2026), and NBA's
+    // isFinal is ESPN state "post", which a postponement also has. It was
+    // never played, so it is not a final.
+    const NOT_PLAYED = /postpon|cancel/i;
+    // A game that will not start at its listed time says so instead of a time.
+    function offScheduleLabel(text) {
+        const t = String(text || '');
+        if (/postpon/i.test(t)) return 'Postponed';
+        if (/cancel/i.test(t)) return 'Canceled';
+        if (/suspend/i.test(t)) return 'Suspended';
+        if (/delay/i.test(t)) return 'Delayed';
+        if (/\bTBD\b|\bTBA\b/i.test(t)) return 'TBD';
+        return '';
+    }
+    function upcomingLabels(dateStr, statusText, tbd) {
+        const off = offScheduleLabel(statusText) || (tbd ? 'TBD' : '');
+        return off ? { pillLabel: off, startShort: off } : { pillLabel: startLabel(dateStr), startShort: startLabel(dateStr, null, true) };
+    }
+
     // ── Normalizer: MLB schedule game → model ──
     function normalizeMLBGame(g) {
         const t = g.teams || {};
@@ -50,22 +84,20 @@
         };
         const away = side('away'), home = side('home');
         const status = g.status?.detailedState || '', abstract = g.status?.abstractGameState || '';
-        const isFinal = abstract === 'Final' || /final|game over|completed/i.test(status);
+        const notPlayed = NOT_PLAYED.test(status);
+        const isFinal = !notPlayed && (abstract === 'Final' || /final|game over|completed/i.test(status));
         const isLive = !isFinal && (abstract === 'Live' || /in progress/i.test(status));
         const st = isLive ? 'live' : isFinal ? 'final' : 'upcoming';
         home.winner = isFinal && (home.score ?? 0) > (away.score ?? 0);
         away.winner = isFinal && (away.score ?? 0) > (home.score ?? 0);
-        const hasScore = isFinal || isLive || (home.score ?? 0) > 0 || (away.score ?? 0) > 0;
+        const hasScore = isFinal || isLive;
 
         const ls = g.linescore || null;
         const inningTag = isLive ? mlbInningTag(ls) : null;
-        let pillLabel;
+        let pillLabel, startShort = '';
         if (isFinal) pillLabel = 'Final';
         else if (isLive) pillLabel = inningTag || 'Live';
-        else if (g.gameDate) {
-            const d = new Date(g.gameDate), etH = (d.getUTCHours() - 4 + 24) % 24;
-            pillLabel = `${etH % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
-        } else pillLabel = 'Scheduled';
+        else ({ pillLabel, startShort } = upcomingLabels(g.gameDate, status, g.status?.startTimeTBD));
 
         const inState = ls?.inningState || '';
         const activeHalf = isLive && /top|bottom/i.test(inState);
@@ -87,18 +119,10 @@
 
         return {
             sport: 'mlb', key: `mlb-${g.gamePk}`, id: g.gamePk,
-            status: st, pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched', pillLabel,
+            status: st, pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched', pillLabel, startShort,
             hasScore, away, home, liveHtml, matchHtml,
             ariaExtra: activeHalf ? `, ${inningTag || 'live'}, ${outs} out${outs === 1 ? '' : 's'}` : '',
         };
-    }
-
-    // Kickoff time in ET, same format MLB's normalizer already uses (D-043 3a) —
-    // reused rather than reinvented so a mixed "All" tab reads consistently.
-    function _kickoffLabel(dateStr) {
-        if (!dateStr) return 'Scheduled';
-        const d = new Date(dateStr), etH = (d.getUTCHours() - 4 + 24) % 24;
-        return `${etH % 12 || 12}:${String(d.getUTCMinutes()).padStart(2, '0')} ${etH >= 12 ? 'PM' : 'AM'} ET`;
     }
 
     // ESPN's displayClock sits at "0:00" through halftime and every quarter
@@ -121,18 +145,21 @@
         const mk = t => ({
             abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
             score: t ? t.score : 0, logo: (t && t.logo) || '', color: '', winner: !!(t && t.winner),
+            rank: (t && t.rank) || null,
         });
-        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal;
+        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal && !NOT_PLAYED.test(g.statusText || '');
         // D-043 3a (Kael): broadcast network is a football-specific need next to
         // kickoff time — MLB's card doesn't carry the equivalent. Muted caption,
         // same slot MLB uses for probable-pitcher text (matchHtml), not a new one.
         const matchHtml = g.broadcast ? `<div class="hgc-pitchers">${esc(g.broadcast)}</div>` : '';
+        const up = (isLive || isFinal) ? { startShort: '' } : upcomingLabels(g.date, g.statusText);
         return {
             sport, key: `${sport}-${g.id}`, id: g.id,
             status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
             pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
-            pillLabel: isLive ? _footballLivePill(g) : isFinal ? 'Final' : _kickoffLabel(g.date),
-            hasScore: true,
+            pillLabel: isLive ? _footballLivePill(g) : isFinal ? 'Final' : up.pillLabel,
+            startShort: up.startShort,
+            hasScore: isLive || isFinal,
             home: mk(g.homeTeam), away: mk(g.awayTeam),
             liveHtml: '', matchHtml, ariaExtra: '',
         };
@@ -156,18 +183,18 @@
         const mk = t => ({
             abbr: (t && t.abbr) || '?', name: (t && (t.name || t.abbr)) || '?',
             score: t ? t.score : 0, logo: (t && t.logo) || '', color: '', winner: !!(t && t.winner),
+            rank: (t && t.rank) || null,
         });
-        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal;
+        const isLive = !!g.isLive, isFinal = !g.isLive && !!g.isFinal && !NOT_PLAYED.test(g.statusText || '');
+        const up = (isLive || isFinal) ? { startShort: '' } : upcomingLabels(g.date, g.statusText);
         return {
             sport, key: `${sport}-${g.id}`, id: g.id,
             status: isLive ? 'live' : isFinal ? 'final' : 'upcoming',
             pillCls: isFinal ? 'final' : isLive ? 'live' : 'sched',
-            // g.statusText already carries ESPN's own clock/period text while live
-            // (e.g. "12:04 - 2nd") and the kickoff-style time while upcoming isn't
-            // available on this shape the way football's raw date-only field is —
-            // reuse it directly rather than re-deriving a label from g.date.
-            pillLabel: isLive ? (g.statusText || 'LIVE') : isFinal ? 'Final' : _kickoffLabel(g.date),
-            hasScore: true,
+            // Live, g.statusText is ESPN's own clock/period text ("12:04 - 2nd").
+            pillLabel: isLive ? (g.statusText || 'LIVE') : isFinal ? 'Final' : up.pillLabel,
+            startShort: up.startShort,
+            hasScore: isLive || isFinal,
             home: mk(g.homeTeam), away: mk(g.awayTeam),
             liveHtml: '', matchHtml: '', ariaExtra: '',
         };
@@ -195,12 +222,17 @@
     function renderScoreCard(m, opts) {
         opts = opts || {};
         const star = typeof opts.favStar === 'function' ? opts.favStar : () => '';
-        const fmt = n => m.hasScore ? (n ?? 0) : '–';
+        const fmt = n => m.hasScore ? (n ?? 0) : '';
+        const ariaScore = n => m.hasScore ? ` ${n ?? 0}` : '';
+        const ariaRank = s => s.rank ? `No. ${s.rank} ` : '';
         const glyph = _leagueGlyph(m.sport);
+        // opts.go: a view to open on click, for grids that have no click wiring of their own.
+        const go = opts.go ? esc(opts.go) : '';
+        const goAttrs = go ? ` onclick="navigateTo('${go}')" onkeydown="if(event.key==='Enter')navigateTo('${go}')"` : '';
         const row = (s) => `
                 <div class="hgc-row">
-                    ${s.logo ? `<img class="hgc-team-logo${s.darkSafe ? ' hgc-team-logo--chip' : ''}" src="${s.logo}" alt="${esc(s.abbr)}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
-                    <span class="hgc-abbr${s.winner ? ' hgc-abbr--win' : ''}" title="${esc(s.name)}">${esc(s.abbr)}</span>
+                    ${s.logo ? `<img class="hgc-team-logo${s.darkSafe ? ' hgc-team-logo--chip' : ''}" src="${esc(s.logo)}" alt="${esc(s.abbr)}" data-hide-on-error>` : `<span class="hgc-logo-ph"></span>`}
+                    <span class="hgc-abbr${s.winner ? ' hgc-abbr--win' : ''}" title="${esc(s.name)}">${s.rank ? `<span class="hgc-rank">${esc(s.rank)}</span>` : ''}${esc(s.abbr)}</span>
                     <span class="hgc-score${s.winner ? ' hgc-score--win' : ''}">${fmt(s.score)}</span>
                     ${star(s.abbr)}
                 </div>`;
@@ -213,9 +245,9 @@
         const weatherHtml = (opts.showWeather && (m.sport === 'nfl' || m.sport === 'ncaaf') && m.home.abbr)
             ? `<span class="game-weather" data-${m.sport}-weather-team="${esc(m.home.abbr)}"></span>` : '';
         return `
-            <div class="home-game-card${m.status === 'live' ? ' home-game-card--live' : ''}" data-game-key="${m.key}" data-game-status="${m.pillCls}" role="button" tabindex="0"
-                 aria-label="${esc(m.away.name)} ${fmt(m.away.score)} at ${esc(m.home.name)} ${fmt(m.home.score)}, ${esc(m.pillLabel)}${esc(m.ariaExtra)}"
-                 style="--hgc-team-color:${m.home.color}">
+            <div class="home-game-card${m.status === 'live' ? ' home-game-card--live' : ''}" data-game-key="${esc(m.key)}" data-game-status="${m.pillCls}" role="button" tabindex="0"${goAttrs}
+                 aria-label="${ariaRank(m.away)}${esc(m.away.name)}${ariaScore(m.away.score)} at ${ariaRank(m.home)}${esc(m.home.name)}${ariaScore(m.home.score)}, ${esc(m.pillLabel)}${esc(m.ariaExtra)}"
+                 style="--hgc-team-color:${esc(m.home.color)}">
                 ${row(m.away)}
                 ${row(m.home)}
                 ${m.liveHtml}
@@ -223,6 +255,7 @@
                 <div class="hgc-card-footer">
                     ${glyph ? `<span class="hgc-glyph" aria-hidden="true">${_iconSvg(glyph)}</span>` : ''}
                     <span class="hgc-pill hgc-pill--${m.pillCls}">${esc(m.pillLabel)}</span>
+                    ${opts.badge || ''}
                     ${weatherHtml}
                 </div>
             </div>`;
@@ -243,7 +276,7 @@
     // which is what made the strip read as two mismatched typefaces glued together.
     function renderTickerItem(m) {
         const itemCls = m.status === 'live' ? ' ticker__item--live' : m.status === 'final' ? ' ticker__item--final' : '';
-        const pillLbl = m.status === 'final' ? 'F' : m.status === 'live' ? m.pillLabel : 'SCH';
+        const pillLbl = m.status === 'final' ? 'F' : m.status === 'live' ? m.pillLabel : (m.startShort || 'SCH');
         const scoreCls = w => w && m.status === 'final' ? ' ticker-score--win' : '';
         const glyph = _leagueGlyph(m.sport);
         // MLB click wiring reads data-game-pk; the others read data-game-id (setupTickerClicks).
@@ -253,7 +286,7 @@
                 <span class="ticker-side ticker-side--${align}">
                     ${s.logo ? `<img class="ticker-logo${s.darkSafe ? ' ticker-logo--chip' : ''}" src="${s.logo}" alt="" loading="lazy" data-hide-on-error>` : ''}
                     <span class="ticker-team">${esc(s.abbr)}</span>
-                    <span class="ticker-score${scoreCls(s.winner)}">${s.score ?? 0}</span>
+                    ${m.hasScore ? `<span class="ticker-score${scoreCls(s.winner)}">${s.score ?? 0}</span>` : ''}
                 </span>`;
         return `
             <div class="ticker__item${itemCls}" ${idAttr}data-sport="${m.sport}" style="cursor:pointer">
@@ -291,6 +324,6 @@
     global.Scorebug = {
         normalizeMLBGame, normalizeNFLGame, normalizeNCAAFGame,
         normalizeNBAGame, normalizeNCAABGame, normalizeWNBAGame,
-        renderScoreCard, renderTickerItem, fillTicker,
+        renderScoreCard, renderTickerItem, fillTicker, startLabel,
     };
 })(typeof window !== 'undefined' ? window : globalThis);
