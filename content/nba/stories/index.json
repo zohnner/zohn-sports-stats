@@ -1,6 +1,38 @@
 {
   "stories": [
     {
+      "slug": "2026-11-19-bucks-1-14-worse-than-15-67-team",
+      "title": "The Bucks are 1-14, worse through 15 games than the 15-67 team",
+      "dek": "Milwaukee has lost 11 straight, matching the 15-67 team's longest skid, and the 11 losses have come by 15.9 points a game.",
+      "date": "2026-11-19",
+      "season": 2027,
+      "teams": [
+        "MIL"
+      ],
+      "players": [],
+      "hero_stat": "1-14 — worse through 15 games than the 15-67 team",
+      "url": "/nba/stories/2026-11-19-bucks-1-14-worse-than-15-67-team",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-19-johnson-triple-double-hawks-first-home-loss-thunder",
+      "title": "Jalen Johnson's 2nd triple-double in 5 days ended OKC's perfect home record",
+      "dek": "Johnson had 16 points, 12 rebounds and 11 assists as the Hawks won 117-112 at Oklahoma City, where the Thunder had been 5-0.",
+      "date": "2026-11-19",
+      "season": 2027,
+      "teams": [
+        "ATL",
+        "OKC"
+      ],
+      "players": [
+        "4701230",
+        "4278073"
+      ],
+      "hero_stat": "16 points, 12 rebounds, 11 assists — Johnson's 2nd triple-double in 5 days",
+      "url": "/nba/stories/2026-11-19-johnson-triple-double-hawks-first-home-loss-thunder",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-18-grimes-47-lakers-ninth-straight-win",
       "title": "Quentin Grimes scored 47 with 10 threes, joining Kobe Bryant in Lakers history",
       "dek": "The career-high 47, with 21 in the 4th quarter, rallied the Lakers from 18 down for their 9th straight win.",
