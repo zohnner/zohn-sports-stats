@@ -2344,13 +2344,13 @@ function _heroFromNCAABGame(g, kind) {
         hook = leadTeam
             ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
             : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
-        cta = 'Watch on the scoreboard →';
+        cta = 'Watch live →';
     } else {
         const d = g.date ? new Date(g.date) : null;
         const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
         kicker = `<span class="hero-kicker">${g.statusText && g.statusText !== 'TBD' ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
         hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Tip-off soon';
-        cta = 'Full scoreboard →';
+        cta = 'Game preview →';
     }
     const board = _heroLogoBoard(g, kind === 'live');
     const html = `
@@ -2361,7 +2361,10 @@ function _heroFromNCAABGame(g, kind) {
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
         <div class="hero-visual">${board}</div>`;
-    return { kind, html, onClick: () => navigateTo('ncaab-scores') };
+    return { kind, html, onClick: () => {
+        if (AppState.currentSport !== 'ncaab') switchSport('ncaab');
+        navigateTo('ncaab-game-' + g.id);
+    } };
 }
 
 // WNBA landing Game hero (Phase 5 of the sport-landing port) -- same simple
