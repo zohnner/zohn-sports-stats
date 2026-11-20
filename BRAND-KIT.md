@@ -15,28 +15,24 @@
 
 ---
 
-## Colors
+## Colors (Ink + Ice, D-212, 2026-11-20)
 
-Primary palette is **dark** — this is the default and should be the base for any intro/outro background.
+SportStrata dropped black + orange entirely. Dark is the default face and the base for any intro/outro background. Surfaces are flat: no gradients, no glows, no glassmorphism.
 
-| Role | Hex | Use |
+| Token | Hex | Use |
 |---|---|---|
-| Background (base) | `#0d1014` | Engineered near-black — the canvas. Not pure black, not navy. |
-| Background (surface) | `#14181d` | Panels, cards, slightly lifted off base. |
-| Background (raised) | `#1d232b` | Further-lifted elements. |
-| Text — primary | `#f5f7fa` | Headlines, wordmark. |
-| Text — secondary | `#c5cbd3` | Subheads, captions. |
-| Text — muted | `#8a93a3` | Timestamps, fine print. |
-| **Accent (brand orange)** | `#ff7a00` | The signature color. Logo, wordmark accent, primary CTA only — never decorative, never a full background wash. Scarcity is what makes it read as "the brand is speaking." |
-| Accent — light | `#ffb347` | Hover/glow states of the accent. |
-| Accent — dark | `#d96a00` | Pressed/deep variant. |
-| Win / positive | `#16c784` | Green — states only, never decoration. |
-| Loss / negative | `#e5484d` | Red — states only. |
-| Live | `#ff006e` | Hot pink/magenta — "this is happening now." Distinct from the brand orange on purpose. |
+| `--bg` (ink) | `#070B16` | Page background, the canvas. |
+| `--surface` | `#0F182A` | Cards, panels, nav. |
+| `--accent` (ice) | `#4CC9F0` | Data emphasis, state (active, selected, primary CTA) and wayfinding (links). A scalpel, not a wash. |
+| `--text` | `#F2F7FC` | Primary text, headlines, the wordmark. |
+| `--muted` | `#8FA3BF` | Secondary text and labels only, never body copy at small sizes. |
+| Win / positive | `#16C784` | States only. |
+| Loss / negative | `#E5484D` | States only. |
+| Live | `#FF006E` | "This is happening now." |
 
-Light-theme variant exists (`#f5f7fa` background, `#d96a00` deepened accent for contrast) but dark is the brand's default face — use it unless a specific light-background deliverable is needed.
+Contrast: ice on ink is 10.2:1, text on ink 18.2:1, muted on ink 7.6:1. The light theme uses a deepened ice (`#0B6F91`, 5.7:1 on white) because `#4CC9F0` on white is only about 1.9:1.
 
-**Rule for prompts:** describe the background as "engineered near-black, not pure black" and the accent as "a single scarce orange highlight, not a wash of color." Over-saturating orange is the single most common way an AI generation drifts off-brand.
+**Rule for prompts:** describe the background as "deep ink navy, nearly black, flat" and the accent as "one cool ice-blue highlight on data, never a wash". Headlines are white, not ice.
 
 ---
 
@@ -62,20 +58,20 @@ All paths below are on this machine, in the project folder — attach the actual
 
 | Asset | Path |
 |---|---|
-| Primary logo (full color) | `assets/PrimaryLogo.PNG` |
-| Secondary logo | `assets/SecondaryLogo.PNG` |
-| Wordmark, mono white (for dark backgrounds) | `assets/brand/mark-on-dark.svg` |
-| Wordmark, mono black (for light backgrounds) | `assets/brand/mark-on-light.svg` |
-| Icon only, SVG | `assets/icon.svg` |
+| Strata S mark, source of record (1080 square, on ink) | `assets/brand/strata-s-1080.png` |
+| Strata S mark, SVG (transparent, for dark backgrounds) | `assets/brand/strata-s.svg` |
+| App icon / favicon, SVG (mark on an ink tile) | `assets/icon.svg` |
 | Icon, PNG (512px) | `assets/icon-512.png` |
 
-**Wordmark rule:** the "SportStrata" text itself is never re-colored or themed — it stays neutral text-primary. Only the small brand icon/mark may carry the orange accent. Don't let an AI tool render "SportStrata" entirely in orange.
+The mark is five stacked bars forming a digital S: ice bars with the middle one in text white. Don't redraw it; the SVGs transcribe the PNG's measured geometry.
+
+**Wordmark rule:** "SPORTSTRATA" is set in one color, text-primary, next to the mark. It is never split into two colors and never rendered in ice.
 
 ---
 
 ## Existing intro/outro precedent
 
-There's already a native title-card and outro built (in the paused Draft Instincts pipeline, `videocreation/scenes/templates/title-card.html` and `outro.html`) — useful as a visual reference even if you're generating new ones with AI:
+*(Orange-era, superseded by D-212: recolor before reuse.)* There's already a native title-card and outro built (in the paused Draft Instincts pipeline, `videocreation/scenes/templates/title-card.html` and `outro.html`) — useful as a visual reference even if you're generating new ones with AI:
 
 - **Intro:** near-black background with a soft radial orange glow centered behind the text (`radial-gradient` from `--accent-subtle` fading to transparent). Small tracked-out kicker label up top, then the big Space Grotesk wordmark, then an episode badge + subtitle row, then a thin orange rule line that draws in left-to-right. Bottom-right corner: a small "● sportstrata.cc" watermark, dot in accent orange.
 - **Outro:** same near-black background, centered "SportStrata" wordmark (orange only on the "Strata" half, per the theme's tribute styling — most renders keep the whole wordmark neutral per the rule above), a CTA line, a "Subscribe" badge, and the URL in monospace with the `.cc` in orange.
@@ -87,7 +83,7 @@ There's already a native title-card and outro built (in the paused Draft Instinc
 
 Use this as a starting block, then add the specific ask (e.g., "...for a 3-second outro card with a subscribe CTA"):
 
-> Broadcast-grade sports data brand, SportStrata. Background: engineered near-black (#0d1014), not pure black. Single accent color: a scarce, confident orange (#ff7a00) — used only for one highlight element, never a wash. Primary text in off-white (#f5f7fa). Typography feel: tight geometric grotesque for headlines (Space Grotesk), semi-condensed for any numbers (Barlow Semi Condensed) — no rounded, playful, or "AI-generated-looking" fonts. Mood: a professional broadcast lower-third / trading-terminal aesthetic, precise and trustworthy — not a consumer app, not gradient-heavy, not a sportsbook promo. Motion (if video): gentle fades and slide-ins, ~150ms, staggered — no bounce, no lens flare, no particles.
+> Broadcast-grade sports data brand, SportStrata. Background: flat deep ink navy (#070B16), nearly black, no gradients or glows. Single accent color: cool ice blue (#4CC9F0), used only on data and one highlight element, never a wash. Primary text in off-white (#F2F7FC); secondary text in slate (#8FA3BF). Mood: a professional broadcast lower-third / trading-terminal aesthetic, precise and trustworthy, not a consumer app, not a sportsbook promo. Motion (if video): gentle fades and slide-ins, ~150ms, staggered, no bounce, no lens flare, no particles.
 
 ---
 

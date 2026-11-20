@@ -103,7 +103,7 @@
     position: absolute;
     top: 0; left: 0;
     width: 4px; height: 100%;
-    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    background: linear-gradient(180deg, #facc15, #fbbf24);
     border-radius: 14px 0 0 14px;
 }
 
@@ -394,17 +394,17 @@
 }
 
 /* Per-game accent colors — icon tint */
-.arcade-game-card[data-game="otd"]       .arcade-game-icon-wrap { background: rgba(245,158,11,0.13);  color: #f59e0b; }
+.arcade-game-card[data-game="otd"]       .arcade-game-icon-wrap { background: rgba(250,204,21,0.13);  color: #facc15; }
 .arcade-game-card[data-game="statdle"]   .arcade-game-icon-wrap { background: rgba(99,102,241,0.13);  color: #818cf8; }
 .arcade-game-card[data-game="shuffle"]   .arcade-game-icon-wrap { background: rgba(34,211,238,0.13);  color: #22d3ee; }
 .arcade-game-card[data-game="blueprint"] .arcade-game-icon-wrap { background: rgba(16,185,129,0.13);  color: #10b981; }
-.arcade-game-card[data-game="trade"]     .arcade-game-icon-wrap { background: rgba(249,115,22,0.13);  color: #f97316; }
+.arcade-game-card[data-game="trade"]     .arcade-game-icon-wrap { background: rgba(244,63,94,0.13);  color: #f43f5e; }
 
 /* Accent stripes — missing 3 (shuffle + trade already defined above) */
 .arcade-game-card--otd::before {
     content: ''; position: absolute; top: 0; left: 0;
     width: 4px; height: 100%;
-    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+    background: linear-gradient(180deg, #facc15, #fbbf24);
     border-radius: 14px 0 0 14px;
 }
 .arcade-game-card--statdle::before {
@@ -745,7 +745,7 @@
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    background: rgba(245, 158, 11, 0.15);
+    background: rgba(250, 204, 21, 0.15);
     color: #fbbf24;
     margin-bottom: 0.75rem;
 }
@@ -941,14 +941,14 @@
 }
 
 .trade-option-btn:not(:disabled):hover {
-    border-color: rgba(245, 158, 11, 0.4);
+    border-color: rgba(250, 204, 21, 0.4);
     color: var(--text-primary);
-    background: rgba(245, 158, 11, 0.05);
+    background: rgba(250, 204, 21, 0.05);
 }
 
 .trade-option-btn--selected {
-    background: rgba(245, 158, 11, 0.12) !important;
-    border-color: #f59e0b !important;
+    background: rgba(250, 204, 21, 0.12) !important;
+    border-color: #facc15 !important;
     color: #fbbf24 !important;
     font-weight: 600;
 }
@@ -1453,7 +1453,7 @@
     position: absolute;
     top: 0; left: 0;
     width: 4px; height: 100%;
-    background: linear-gradient(180deg, #f97316, #fb923c);
+    background: linear-gradient(180deg, #f43f5e, #fb7185);
     border-radius: 14px 0 0 14px;
 }
 
@@ -1516,8 +1516,8 @@
 }
 
 .statdle-row--live {
-    background: rgba(249, 115, 22, 0.05);
-    border-color: rgba(249, 115, 22, 0.18);
+    background: rgba(244, 63, 94, 0.05);
+    border-color: rgba(244, 63, 94, 0.18);
 }
 
 .statdle-num {
@@ -1601,16 +1601,16 @@
 }
 
 .statdle-input:focus {
-    border-color: #f97316;
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.12);
+    border-color: #f43f5e;
+    box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.12);
 }
 
 .statdle-guess-btn {
     padding: 0.6rem 1.1rem;
     border-radius: 8px;
     border: 1px solid transparent;
-    background: linear-gradient(135deg, rgba(249,115,22,0.35), rgba(249,115,22,0.2));
-    color: #fb923c;
+    background: linear-gradient(135deg, rgba(244,63,94,0.35), rgba(244,63,94,0.2));
+    color: #fb7185;
     font-weight: 700;
     font-size: 0.85rem;
     font-family: inherit;
@@ -1620,8 +1620,8 @@
 }
 
 .statdle-guess-btn:hover {
-    background: linear-gradient(135deg, rgba(249,115,22,0.5), rgba(249,115,22,0.32));
-    color: #fdba74;
+    background: linear-gradient(135deg, rgba(244,63,94,0.5), rgba(244,63,94,0.32));
+    color: #fde68a;
 }
 
 .statdle-skip-btn {
@@ -1638,8 +1638,8 @@
 }
 
 .statdle-skip-btn:hover {
-    border-color: #fb923c;
-    color: #fb923c;
+    border-color: #fb7185;
+    color: #fb7185;
 }
 
 /* Result card */
@@ -1707,9 +1707,9 @@
 .statdle-share-btn {
     padding: 0.5rem 1.4rem;
     border-radius: 8px;
-    border: 1px solid rgba(249, 115, 22, 0.3);
+    border: 1px solid rgba(244, 63, 94, 0.3);
     background: transparent;
-    color: #fb923c;
+    color: #fb7185;
     font-weight: 600;
     font-size: 0.82rem;
     font-family: inherit;
@@ -1722,8 +1722,8 @@
 .statdle-share-btn svg { width: 1em; height: 1em; }
 
 .statdle-share-btn:hover {
-    background: rgba(249, 115, 22, 0.08);
-    color: #fdba74;
+    background: rgba(244, 63, 94, 0.08);
+    color: #fde68a;
 }
 
 /* ── Daily Quest ─────────────────────────────────────────────── */
@@ -1755,9 +1755,9 @@
 .quest-streak {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #f97316;
-    background: #f9731618;
-    border: 1px solid #f9731630;
+    color: #f43f5e;
+    background: #f43f5e18;
+    border: 1px solid #f43f5e30;
     border-radius: 20px;
     padding: 0.15rem 0.6rem;
 }

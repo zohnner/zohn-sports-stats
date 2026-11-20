@@ -28,9 +28,9 @@ import core from '../tools/stories/story-core.cjs';
 const WIDTH = 1200;
 const HEIGHT = 630;
 const BAR_HEIGHT = 120;
-const BAR_MUTED = '#3a4252';
-const BRAND_ACCENT = '#ff8100';
-const BRAND_GOLD = '#ffd200';
+const BAR_MUTED = '#22304a';
+const BRAND_ACCENT = '#4cc9f0';
+const STAT_LINE_COLOR = '#4cc9f0';
 const FONT_FILES = ['BarlowSemiCondensed-Bold.ttf', 'BarlowSemiCondensed-SemiBold.ttf', 'BarlowSemiCondensed-Regular.ttf'];
 const FONT_WEIGHTS = [700, 600, 400];
 
@@ -97,13 +97,13 @@ function buildTree({ eyebrow, title, subtitle, statLine, accentColor, bars, barH
     } });
     if (subtitle) {
         content.push({ type: 'div', props: {
-            style: { display: 'flex', fontSize: 32, fontWeight: 400, color: '#a0a8b8', marginTop: 14 },
+            style: { display: 'flex', fontSize: 32, fontWeight: 400, color: '#8fa3bf', marginTop: 14 },
             children: subtitle,
         } });
     }
     if (statLine) {
         content.push({ type: 'div', props: {
-            style: { display: 'flex', fontSize: 36, fontWeight: 600, color: BRAND_GOLD, marginTop: 34 },
+            style: { display: 'flex', fontSize: 36, fontWeight: 600, color: STAT_LINE_COLOR, marginTop: 34 },
             children: statLine,
         } });
     }
@@ -112,14 +112,14 @@ function buildTree({ eyebrow, title, subtitle, statLine, accentColor, bars, barH
     return {
         type: 'div',
         props: {
-            style: { width: WIDTH, height: HEIGHT, display: 'flex', background: '#0b0d12', fontFamily: 'Barlow' },
+            style: { width: WIDTH, height: HEIGHT, display: 'flex', background: '#070b16', fontFamily: 'Barlow' },
             children: [
                 { type: 'div', props: { style: { display: 'flex', width: 14, height: HEIGHT, background: accent }, children: [] } },
                 { type: 'div', props: {
-                    style: { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1, padding: '64px 70px', color: 'white' },
+                    style: { display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1, padding: '64px 70px', color: '#f2f7fc' },
                     children: [
                         { type: 'div', props: { style: { display: 'flex', flexDirection: 'column' }, children: content } },
-                        { type: 'div', props: { style: { display: 'flex', fontSize: 22, color: '#5a6272', fontWeight: 600, letterSpacing: 1 }, children: 'SPORTSTRATA.CC' } },
+                        { type: 'div', props: { style: { display: 'flex', fontSize: 22, color: '#8fa3bf', fontWeight: 600, letterSpacing: 1 }, children: 'SPORTSTRATA.CC' } },
                     ],
                 } },
             ],

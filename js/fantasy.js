@@ -1445,7 +1445,8 @@ if (typeof window !== 'undefined') {
 function _mdBuildShareCard() {
     const s = _md.summary || {};
     const roster = (_md.rosters && _md.rosters[_md.userTeam]) || [];
-    const BG='#0b1526', SURF='#0e1c33', BORDER='#2a3850', TEXT='#f0f4fa', MUTED='#7fa5c8', SUBTLE='#556d8f', ACCENT='#ff8100', ACCENT2='#ffd200', GOOD='#34d399', BAD='#f87171';
+    // Export palette: fixed Ink + Ice hex so the PNG never depends on the viewer's theme.
+    const BG='#070b16', SURF='#0f182a', BORDER='#22304a', TEXT='#f2f7fc', MUTED='#8fa3bf', SUBTLE='#5e6e85', ACCENT='#4cc9f0', ACCENT2='#82dbf5', GOOD='#34d399', BAD='#f87171';
     const ord = n => (n%10===1&&n%100!==11)?'st':(n%10===2&&n%100!==12)?'nd':(n%10===3&&n%100!==13)?'rd':'th';
     const fmt = `${_md.teams}-team ${_escFan(_md.scoring)}${_md.superflex?' Superflex':''} · Pick ${_md.slot}`;
     const finishLine = s.finish ? `Projected finish ${s.finish}${ord(s.finish)} of ${_md.teams}` : '';

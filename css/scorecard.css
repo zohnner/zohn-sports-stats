@@ -250,7 +250,7 @@
     max-width: 158px;
     transition: color 0.15s;
 }
-.sc-player-btn:hover { color: #5c3a10; text-decoration: underline; }
+.sc-player-btn:hover { color: #0b6f91; text-decoration: underline; }
 .sc-player-btn:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
@@ -380,13 +380,13 @@
     color: var(--color-live);
 }
 .game-card-scorecard-btn--live:hover {
-    background: rgba(245, 158, 11, 0.08);
+    background: rgba(234, 179, 8, 0.08);
 }
 
 /* ── Phase 3 placeholder: active at-bat pulse (live mode) ─────── */
 @keyframes activeAtBatPulse {
-    0%, 100% { outline-color: rgba(245, 158, 11, 0.90); }
-    50%       { outline-color: rgba(245, 158, 11, 0.30); }
+    0%, 100% { outline-color: rgba(234, 179, 8, 0.90); }
+    50%       { outline-color: rgba(234, 179, 8, 0.30); }
 }
 .sc-cell.pa--active {
     outline: 2px solid var(--scorecard-active-border);

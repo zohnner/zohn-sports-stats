@@ -795,8 +795,8 @@ function _createNFLGameCard(game, isTopLeverage) {
         const flowPair = _matchupTeamColors(awayColorRaw ? { primary: awayColorRaw } : null, homeColor ? { primary: homeColor } : null);
         const flowHomeColor = flowPair.home || 'var(--text-secondary)';
         // Live-verified (2026-08-15) that _NFL_TEAM_COLOR has real duplicate
-        // hexes across unrelated teams -- GB/PIT both #FFB612, CIN/DEN both
-        // #FB4F14, ATL/HOU/KC all #E31837, NE/SF both #C8102E -- so two brand
+        // hexes across unrelated teams -- GB/PIT, CIN/DEN, ATL/HOU/KC and
+        // NE/SF each share one color -- so two brand
         // colors in the same matchup can be visually identical. A 2-series
         // chart with indistinguishable series colors is a real dataviz
         // failure (can't tell whose bar is whose), not a cosmetic nit, so the
@@ -889,6 +889,7 @@ let _nflPoolMap = null;     // { [sleeper_id]: rawPlayer }
 const _NFL_POS_FILTERS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'];
 // NFL team primary colors (curated for visibility on the dark UI) — drives player
 // card + profile accents so they read as the team, not the position.
+// ss-team-colors:start  (team colors are data, exempt from tools/check-orange.cjs)
 const _NFL_TEAM_COLOR = {
     ARI: '#C41E3A', ATL: '#E31837', BAL: '#5B43A8', BUF: '#0E63D6', CAR: '#0085CA',
     CHI: '#E64100', CIN: '#FB4F14', CLE: '#FF6A00', DAL: '#2A6FDB', DEN: '#FB4F14',
@@ -898,6 +899,7 @@ const _NFL_TEAM_COLOR = {
     PHI: '#1A8C8C', PIT: '#FFB612', SEA: '#69BE28', SF: '#C8102E', TB: '#D50A0A',
     TEN: '#4B92DB', WAS: '#C9243F',
 };
+// ss-team-colors:end
 const _NFL_TEAM_COLOR_ALIAS = { OAK: 'LV', SD: 'LAC', STL: 'LAR', LA: 'LAR', WSH: 'WAS', ARZ: 'ARI', JAC: 'JAX' };
 function getNFLTeamColor(abbr) {
     if (!abbr) return null;
@@ -1820,7 +1822,7 @@ function _nflStatByPos(items, pos, keyOf) {
 // a plain table, same as it already was.
 const _NFL_CAREER_TREND = {
     passing:   [{ key: 'YDS', label: 'YDS', color: '#60a5fa' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'INT', label: 'INT', color: '#f87171' }, { key: 'RTG', label: 'RTG', color: '#a78bfa' }],
-    rushing:   [{ key: 'YDS', label: 'YDS', color: '#fb923c' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'AVG', label: 'AVG', color: '#60a5fa' }],
+    rushing:   [{ key: 'YDS', label: 'YDS', color: '#fb7185' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'AVG', label: 'AVG', color: '#60a5fa' }],
     receiving: [{ key: 'YDS', label: 'YDS', color: '#a78bfa' }, { key: 'TD', label: 'TD', color: '#34d399' }, { key: 'REC', label: 'REC', color: '#60a5fa' }],
 };
 
@@ -2132,7 +2134,7 @@ async function _loadNFLAdvanced(p, season) {
         const radarCard = document.getElementById('nfl-radar-card');
         const _radarAxes = data.metrics.filter(m => m.pct != null).length;
         if (radarCard && _radarAxes >= 3 && window.StatsCharts && StatsCharts.nflRadar) {
-            const radarColor = getNFLTeamColor(p.team) || '#ff7a00';
+            const radarColor = getNFLTeamColor(p.team) || 'var(--accent)';
             radarCard.style.display = '';
             StatsCharts.nflRadar('nfl-player-radar', [{
                 label: p.full_name,
@@ -2678,8 +2680,8 @@ function displayNFLRankings() {
 }
 
 // ── Player Compare (two-player side-by-side; reuses .cmp-* + /api/nflplayer) ──
-const _NFL_CMP_A = '#ff8100';
-const _NFL_CMP_B = '#60a5fa';
+const _NFL_CMP_A = '#4cc9f0';
+const _NFL_CMP_B = '#a78bfa';
 
 async function loadNFLCompare() {
     const grid = document.getElementById('playersGrid');

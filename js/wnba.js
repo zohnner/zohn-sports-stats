@@ -488,7 +488,7 @@ window._renderWNBAView      = _renderWNBAView;
 window.updateWNBATicker     = updateWNBATicker;
 
 // ── Leaders (real season stats via /api/wnbastats) ────────────
-const _WNBA_LCOLORS = ['#f5580a','#3b7dd8','#2e9e6b','#b0842f','#8b5cf6','#d6455f','#0d9488'];
+const _WNBA_LCOLORS = ['#4cc9f0','#3b7dd8','#2e9e6b','#b59a2a','#8b5cf6','#d6455f','#0d9488'];
 
 async function displayWNBALeaders() {
     const grid = document.getElementById('playersGrid');
@@ -576,7 +576,7 @@ function displayWNBAPlayerDetail(data) {
         sub: `${bio.team || '—'} · ${bio.pos || '—'}`, badge: 'WNBA', action: null,
     });
 
-    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.wnba && SPORTS_META.wnba.accent) || '#f5580a';
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.wnba && SPORTS_META.wnba.accent) || 'var(--accent)';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';
     const teamRow = `${bio.teamLogo ? `<img src="${_escHtml(bio.teamLogo)}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}<span>${_escHtml(bio.team || '')}</span>`;

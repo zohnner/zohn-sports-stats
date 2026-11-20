@@ -36,7 +36,16 @@ class StatsCharts {
             tooltipBg:    get('--chart-tooltip-bg')   || 'rgba(8,15,30,0.95)',
             tooltipBorder:get('--chart-tooltip-border')|| 'rgba(255,255,255,0.1)',
             font:         get('--font-sans')           || 'Inter, sans-serif',
+            accent:       get('--accent')              || '#4cc9f0',
         };
+    }
+
+    // Canvas can't read var(); callers may pass one (e.g. SPORTS_META accents), so resolve it here.
+    static #color(c, t) {
+        if (!c) return t.accent;
+        const m = /^var\((--[\w-]+)\)$/.exec(c);
+        if (!m) return c;
+        return getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim() || t.accent;
     }
 
     // ── Internal: create & register a chart ───────────────────
@@ -191,9 +200,9 @@ class StatsCharts {
                     backgroundColor: [
                         'rgba(244,114,182,0.55)',
                         'rgba(167,139,250,0.55)',
-                        'rgba(251,146, 60,0.55)',
+                        'rgba(76,201,240,0.55)',
                     ],
-                    borderColor: ['#f472b6', '#a78bfa', '#ff7a00'],
+                    borderColor: ['#f472b6', '#a78bfa', '#4cc9f0'],
                     borderWidth: 1.5,
                     borderRadius: 6,
                     borderSkipped: false,
@@ -255,9 +264,10 @@ class StatsCharts {
      */
     // Generic radar for pre-normalized (0–100) values with custom axes.
     // Used by NCAAF "% of FBS leader" profile — no hardcoded keys/maxes.
-    static radarProfile(canvasId, labels, values, color = '#ff7a00') {
+    static radarProfile(canvasId, labels, values, color) {
         if (!window.Chart || !labels || labels.length < 3) return null;
         const t = this.#getTheme();
+        color = this.#color(color, t);
         const fill = color.startsWith('#') ? color + '26' : color.replace(/[\d.]+\)$/, '0.15)');
         return this.#create(canvasId, {
             type: 'radar',
@@ -505,9 +515,10 @@ class StatsCharts {
      * @param {string} color  — primary player/team color
      * @returns {Chart|null}
      */
-    static mlbGameTrend(canvasId, logs, group, color = '#ff7a00') {
+    static mlbGameTrend(canvasId, logs, group, color) {
         if (!logs || logs.length === 0) return null;
         const t = this.#getTheme();
+        color = this.#color(color, t);
 
         // Sort ascending (oldest → newest)
         const sorted = [...logs]
@@ -1016,6 +1027,7 @@ class StatsCharts {
     static nflGameTrend(canvasId, games, columns, color = '#60a5fa') {
         if (!games || !games.length || !window.Chart || !columns) return null;
         const t = this.#getTheme();
+        color = this.#color(color, t);
         const sorted = [...games].filter(g => g.stats)
             .sort((a, b) => (a.date && b.date) ? (new Date(a.date) - new Date(b.date)) : ((a.wk || 0) - (b.wk || 0)));
         if (!sorted.length) return null;
@@ -1042,7 +1054,7 @@ class StatsCharts {
             yAxisID: 'y', tension: 0.35, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: color, borderWidth: 2, spanGaps: true,
         }];
         if (tdData) datasets.push({
-            label: 'TD', data: tdData, type: 'bar', backgroundColor: 'rgba(245,158,11,0.45)', borderColor: '#f59e0b',
+            label: 'TD', data: tdData, type: 'bar', backgroundColor: 'rgba(250,204,21,0.45)', borderColor: '#facc15',
             yAxisID: 'yTd', borderWidth: 1, barPercentage: 0.5,
         });
 
@@ -1056,7 +1068,7 @@ class StatsCharts {
                 scales: {
                     x: { ticks: { color: t.tick, font: { family: t.font, size: 10 }, maxTicksLimit: 12 }, grid: { color: 'rgba(255,255,255,0.04)' } },
                     y: { type: 'linear', position: 'left', min: 0, ticks: { color, font: { family: t.font, size: 10 }, maxTicksLimit: 5 }, grid: { color: t.grid }, title: { display: true, text: spec[1], color: t.tick, font: { size: 10 } } },
-                    ...(tdData ? { yTd: { type: 'linear', position: 'right', min: 0, ticks: { color: '#f59e0b', font: { family: t.font, size: 10 }, maxTicksLimit: 4, precision: 0 }, grid: { display: false }, title: { display: true, text: 'TD', color: '#f59e0b', font: { size: 10 } } } } : {}),
+                    ...(tdData ? { yTd: { type: 'linear', position: 'right', min: 0, ticks: { color: '#facc15', font: { family: t.font, size: 10 }, maxTicksLimit: 4, precision: 0 }, grid: { display: false }, title: { display: true, text: 'TD', color: '#facc15', font: { size: 10 } } } } : {}),
                 },
             },
         });
@@ -1176,7 +1188,7 @@ class StatsCharts {
 
         const statDefs = group === 'pitching' ? [
             { label: 'ERA',  value: f2(stats.era),              color: '#f87171' },
-            { label: 'WHIP', value: f2(stats.whip),             color: '#fb923c' },
+            { label: 'WHIP', value: f2(stats.whip),             color: '#fb7185' },
             { label: 'K',    value: stats.strikeOuts ?? '—',    color: '#a78bfa' },
             { label: 'W',    value: stats.wins ?? '—',          color: '#34d399' },
             { label: 'IP',   value: stats.inningsPitched ?? '—',color: '#60a5fa' },
@@ -1186,7 +1198,7 @@ class StatsCharts {
             { label: 'OBP',  value: lead(stats.obp),             color: '#34d399' },
             { label: 'SLG',  value: lead(stats.slg),             color: '#60a5fa' },
             { label: 'HR',   value: stats.homeRuns ?? '—',       color: '#f87171' },
-            { label: 'RBI',  value: stats.rbi ?? '—',            color: '#fb923c' },
+            { label: 'RBI',  value: stats.rbi ?? '—',            color: '#fb7185' },
             { label: 'OPS',  value: lead(stats.ops),             color: '#a78bfa' },
         ] : [
             { label: 'PTS',  value: f1(stats.pts),     color: '#fbbf24' },

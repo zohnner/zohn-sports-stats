@@ -8,7 +8,7 @@ const LEADERBOARD_CATEGORIES = [
     { key: 'ast',      label: 'Assists',         unit: 'APG',  color: '#60a5fa', decimals: 1 },
     { key: 'stl',      label: 'Steals',          unit: 'SPG',  color: '#a78bfa', decimals: 1 },
     { key: 'blk',      label: 'Blocks',          unit: 'BPG',  color: '#f472b6', decimals: 1 },
-    { key: 'fg_pct',   label: 'FG%',             unit: 'FG%',  color: '#fb923c', decimals: 1, pct: true },
+    { key: 'fg_pct',   label: 'FG%',             unit: 'FG%',  color: '#a3e635', decimals: 1, pct: true },
     { key: 'fg3_pct',  label: '3-Point %',       unit: '3P%',  color: '#818cf8', decimals: 1, pct: true },
     { key: 'ft_pct',   label: 'Free Throw %',    unit: 'FT%',  color: '#38bdf8', decimals: 1, pct: true },
     { key: 'turnover', label: 'Turnovers',        unit: 'TOV',  color: '#f87171', decimals: 1 },

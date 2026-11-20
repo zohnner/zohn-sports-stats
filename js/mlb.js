@@ -45,7 +45,7 @@ function _parkFactorBadge(teamAbbr, style = 'inline') {
     if (!tf) return '';
     if (style === 'dot') {
         // Compact colored dot for leaderboard rows
-        const color = tf.tier >= 2 ? '#ef4444' : tf.tier === 1 ? '#f97316' : tf.tier <= -2 ? '#22d3ee' : '#60a5fa';
+        const color = tf.tier >= 2 ? '#ef4444' : tf.tier === 1 ? '#f43f5e' : tf.tier <= -2 ? '#22d3ee' : '#60a5fa';
         return `<span class="park-dot" style="background:${color}" title="${tf.label}"></span>`;
     }
     // Full badge for player detail hero
@@ -63,6 +63,7 @@ function _parkFactorBadge(teamAbbr, style = 'inline') {
 // ── Team colours ─────────────────────────────────────────────
 // Keys use the abbreviation returned by the MLB Stats API.
 // Alternate spellings (BBREF/Fangraphs style) are aliased below the main table.
+// ss-team-colors:start  (team colors are data, exempt from tools/check-orange.cjs)
 const _MLB_COLORS_BASE = {
     // American League East
     'BAL': { primary: '#DF4601', secondary: '#000000' },
@@ -101,6 +102,7 @@ const _MLB_COLORS_BASE = {
     'SD':  { primary: '#2F241D', secondary: '#FFC425' },
     'SF':  { primary: '#FD5A1E', secondary: '#27251F' },
 };
+// ss-team-colors:end
 
 // Alternate abbreviation aliases — BBREF/Fangraphs style and legacy spellings
 const _MLB_ABBR_ALIASES = {
@@ -630,7 +632,7 @@ function _renderSprayChartSVG(hits, mode = 'outcome') {
     if (!hits || !hits.length) return '<p class="spray-no-data">No batted ball data available for this season.</p>';
 
     const HITS = new Set(['single', 'double', 'triple', 'home_run']);
-    const COLOR = { single: '#22d3a0', double: '#38bdf8', triple: '#ffd200', home_run: '#ff8100' };
+    const COLOR = { single: '#22d3a0', double: '#a78bfa', triple: '#ffd200', home_run: '#4cc9f0' };
     const OUT_FILL = 'rgba(255,255,255,0.18)';
     const hasEv = hits.some(r => r.ev != null);
     const evMode = mode === 'ev' && hasEv;
@@ -666,9 +668,9 @@ function _renderSprayChartSVG(hits, mode = 'outcome') {
             <span class="spray-legend-item"><span class="spray-dot" style="background:${_sprayEvColor(79)}"></span>&lt;85 (${evBucket(0, 85)})</span>
         </div>` : `
         <div class="spray-legend">
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#ff8100"></span>HR (${count('home_run')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#4cc9f0"></span>HR (${count('home_run')})</span>
             <span class="spray-legend-item"><span class="spray-dot" style="background:#ffd200"></span>3B (${count('triple')})</span>
-            <span class="spray-legend-item"><span class="spray-dot" style="background:#38bdf8"></span>2B (${count('double')})</span>
+            <span class="spray-legend-item"><span class="spray-dot" style="background:#a78bfa"></span>2B (${count('double')})</span>
             <span class="spray-legend-item"><span class="spray-dot" style="background:#22d3a0"></span>1B (${count('single')})</span>
             <span class="spray-legend-item"><span class="spray-dot" style="background:rgba(255,255,255,0.2)"></span>Out (${outs})</span>
         </div>`;
@@ -689,7 +691,7 @@ function _renderSprayChartSVG(hits, mode = 'outcome') {
             <!-- Outfield fence arc -->
             <path d="M22,28 Q125,-12 228,28" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="1.5"/>
             <!-- Infield dirt -->
-            <circle cx="125" cy="148" r="54" fill="rgba(180,120,55,0.09)" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+            <circle cx="125" cy="148" r="54" fill="rgba(168,150,120,0.09)" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
             <!-- Base paths (rough diamond) -->
             <polygon points="125,199 161,163 125,127 89,163" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.8"/>
             <!-- Home plate -->
@@ -745,7 +747,7 @@ async function _fetchPitchArsenal(pitcherId) {
 }
 
 const _PITCH_COLORS = {
-    FF: '#ef4444', SI: '#f97316', FC: '#eab308',
+    FF: '#ef4444', SI: '#f43f5e', FC: '#eab308',
     SL: '#06b6d4', ST: '#3b82f6', SW: '#0ea5e9',
     CU: '#8b5cf6', KC: '#a78bfa', CS: '#7c3aed',
     CH: '#10b981', FS: '#34d399', FO: '#6ee7b7',
@@ -2745,13 +2747,13 @@ const _MLB_CAREER_TREND_HITTING = [
     { key: 'slg',         label: 'SLG',  color: '#60a5fa' },
     { key: 'ops',         label: 'OPS',  color: '#a78bfa' },
     { key: 'homeRuns',    label: 'HR',   color: '#f87171' },
-    { key: 'rbi',         label: 'RBI',  color: '#fb923c' },
+    { key: 'rbi',         label: 'RBI',  color: '#fb7185' },
     { key: 'stolenBases', label: 'SB',   color: '#4ade80' },
 ];
 
 const _MLB_CAREER_TREND_PITCHING = [
     { key: 'era',            label: 'ERA',  color: '#f87171' },
-    { key: 'whip',           label: 'WHIP', color: '#fb923c' },
+    { key: 'whip',           label: 'WHIP', color: '#fb7185' },
     { key: 'strikeOuts',     label: 'K',    color: '#a78bfa' },
     { key: 'wins',           label: 'W',    color: '#34d399' },
     { key: 'inningsPitched', label: 'IP',   color: '#60a5fa' },
@@ -2814,7 +2816,7 @@ function _renderStatcastCard(data, group) {
         if (p >= 90)  return '#22c55e';   // elite green
         if (p >= 70)  return '#86efac';   // good green
         if (p >= 50)  return '#fbbf24';   // average yellow
-        if (p >= 30)  return '#fb923c';   // below avg orange
+        if (p >= 30)  return '#fb7185';   // below avg rose
         return '#f87171';                  // poor red
     };
 
@@ -4438,19 +4440,19 @@ const MLB_LEADER_CATS = [
     { key: 'iso',                label: 'Iso Power',       unit: 'ISO',   color: '#c4b5fd', group: 'hitting',  desc: true,  decimals: 3 },
     { key: 'babip',              label: 'BABIP',           unit: 'BABIP', color: '#fcd34d', group: 'hitting',  desc: true,  decimals: 3 },
     { key: 'homeRuns',           label: 'Home Runs',       unit: 'HR',    color: '#ef4444', group: 'hitting',  desc: true,  decimals: 0 },
-    { key: 'rbi',                label: 'RBI',             unit: 'RBI',   color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'rbi',                label: 'RBI',             unit: 'RBI',   color: '#facc15', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'plateAppearances',   label: 'Plate Appearances',unit: 'PA',   color: '#a5b4fc', group: 'hitting',  desc: true,  decimals: 0 },
-    { key: 'hits',               label: 'Hits',            unit: 'H',     color: '#fdba74', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'hits',               label: 'Hits',            unit: 'H',     color: '#fde68a', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'runs',               label: 'Runs',            unit: 'R',     color: '#86efac', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'doubles',            label: 'Doubles',         unit: '2B',    color: '#67e8f9', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'baseOnBalls',        label: 'Walks',           unit: 'BB',    color: '#22d3ee', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'stolenBases',        label: 'Stolen Bases',    unit: 'SB',    color: '#10b981', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'bbPct',              label: 'Walk Rate',       unit: 'BB%',   color: '#5eead4', group: 'hitting',  desc: true,  decimals: 1 },
     { key: 'kPct',               label: 'Strikeout Rate',  unit: 'K%',    color: '#f87171', group: 'hitting',  desc: false, decimals: 1 },
-    { key: 'totalBases',         label: 'Total Bases',     unit: 'TB',    color: '#fb923c', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'totalBases',         label: 'Total Bases',     unit: 'TB',    color: '#fb7185', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'triples',            label: 'Triples',         unit: '3B',    color: '#a3e635', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'groundIntoDoublePlay',label:'Grounded Into DP',unit: 'GIDP',  color: '#94a3b8', group: 'hitting',  desc: false, decimals: 0 },
-    { key: 'rc',                 label: 'Runs Created',    unit: 'RC',    color: '#f59e0b', group: 'hitting',  desc: true,  decimals: 0 },
+    { key: 'rc',                 label: 'Runs Created',    unit: 'RC',    color: '#facc15', group: 'hitting',  desc: true,  decimals: 0 },
     { key: 'sbPct',              label: 'Stolen Base %',   unit: 'SB%',   color: '#10b981', group: 'hitting',  desc: true,  decimals: 1 },
     { key: 'woba',               label: 'wOBA',            unit: 'wOBA',  color: '#818cf8', group: 'hitting',  desc: true,  decimals: 3 },
     { key: 'bbK',                label: 'BB/K',            unit: 'BB/K',  color: '#22d3ee', group: 'hitting',  desc: true,  decimals: 2 },
@@ -4460,7 +4462,7 @@ const MLB_LEADER_CATS = [
     { key: 'era',                label: 'ERA',             unit: 'ERA',   color: '#f472b6', group: 'pitching', desc: false, decimals: 2 },
     { key: 'whip',               label: 'WHIP',            unit: 'WHIP',  color: '#818cf8', group: 'pitching', desc: false, decimals: 2 },
     { key: 'fip',                label: 'FIP',             unit: 'FIP',   color: '#e879f9', group: 'pitching', desc: false, decimals: 2 },
-    { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',   color: '#fb923c', group: 'pitching', desc: true,  decimals: 1 },
+    { key: 'strikeoutsPer9Inn',  label: 'K/9',             unit: 'K/9',   color: '#fb7185', group: 'pitching', desc: true,  decimals: 1 },
     { key: 'kBbPct',             label: 'K-BB%',           unit: 'K-BB%', color: '#a3e635', group: 'pitching', desc: true,  decimals: 1 },
     { key: 'walksPer9Inn',       label: 'Walks per 9',     unit: 'BB/9',  color: '#fcd34d', group: 'pitching', desc: false, decimals: 2 },
     { key: 'hitsPer9Inn',        label: 'Hits per 9',      unit: 'H/9',   color: '#38bdf8', group: 'pitching', desc: false, decimals: 2 },
@@ -4481,9 +4483,9 @@ const MLB_LEADER_CATS = [
 ];
 
 const STATCAST_LEADER_CATS = [
-    { key: 'exit_velocity_avg',  label: 'Exit Velocity',  unit: 'EV',      color: '#f97316', desc: true, decimals: 1, suffix: ' mph' },
+    { key: 'exit_velocity_avg',  label: 'Exit Velocity',  unit: 'EV',      color: '#f43f5e', desc: true, decimals: 1, suffix: ' mph' },
     { key: 'barrel_batted_rate', label: 'Barrel Rate',    unit: 'Barrel%', color: '#ef4444', desc: true, decimals: 1, suffix: '%'    },
-    { key: 'hard_hit_percent',   label: 'Hard Hit Rate',  unit: 'HH%',     color: '#fb923c', desc: true, decimals: 1, suffix: '%'    },
+    { key: 'hard_hit_percent',   label: 'Hard Hit Rate',  unit: 'HH%',     color: '#fb7185', desc: true, decimals: 1, suffix: '%'    },
     { key: 'sweet_spot_percent', label: 'Sweet Spot Rate',unit: 'SS%',     color: '#38bdf8', desc: true, decimals: 1, suffix: '%'    },
     { key: 'xba',                label: 'Expected BA',    unit: 'xBA',     color: '#fbbf24', desc: true, decimals: 3, suffix: ''     },
     { key: 'xslg',               label: 'Expected SLG',   unit: 'xSLG',    color: '#a78bfa', desc: true, decimals: 3, suffix: ''     },
@@ -4492,7 +4494,7 @@ const STATCAST_LEADER_CATS = [
 
 const STATCAST_PITCHER_CATS = [
     { key: 'k_percent',       label: 'Pitcher K Rate',  unit: 'K%',     color: '#c084fc', desc: true,  decimals: 1, suffix: '%'    },
-    { key: 'whiff_percent',   label: 'Whiff Rate',       unit: 'Whiff%', color: '#fb923c', desc: true,  decimals: 1, suffix: '%'    },
+    { key: 'whiff_percent',   label: 'Whiff Rate',       unit: 'Whiff%', color: '#fb7185', desc: true,  decimals: 1, suffix: '%'    },
     { key: 'bb_percent',      label: 'Pitcher BB Rate',  unit: 'BB%',    color: '#fcd34d', desc: false, decimals: 1, suffix: '%'    },
     { key: 'exit_velocity_avg',label: 'EV Allowed',      unit: 'EV Alw', color: '#34d399', desc: false, decimals: 1, suffix: ' mph' },
 ];
@@ -4588,7 +4590,7 @@ function _appendMLBByPositionGrid(fragment, splits, season) {
             })
             .slice(0, 5);
 
-        const accent = isPit ? '#f97316' : '#818cf8';
+        const accent = isPit ? '#f43f5e' : '#818cf8';
         const unitLabel = isPit ? 'ERA' : 'OPS';
 
         let rows = '';
@@ -4659,10 +4661,10 @@ function _appendMLBStreakPanel(fragment, splits, season) {
 
     const header = document.createElement('div');
     header.className = 'leaderboard-header';
-    header.style.borderLeftColor = '#f97316';
+    header.style.borderLeftColor = '#f43f5e';
     header.innerHTML = `
         <span class="leaderboard-title">Consecutive Games with a Hit</span>
-        <span class="leaderboard-unit" style="color:#f97316">${streakers.length} active</span>
+        <span class="leaderboard-unit" style="color:#f43f5e">${streakers.length} active</span>
     `;
 
     const list = document.createElement('div');
@@ -4712,7 +4714,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
     const _parseIP = ip => { const p = String(ip || '0').split('.'); return parseInt(p[0]) + (parseInt(p[1] || 0) / 3); };
 
     const HOT_CATS = [
-        { key: 'ops',               label: 'Last 7 — OPS',    unit: 'OPS',  color: '#f97316', group: 'hitting',  desc: true,  decimals: 3,
+        { key: 'ops',               label: 'Last 7 — OPS',    unit: 'OPS',  color: '#f43f5e', group: 'hitting',  desc: true,  decimals: 3,
           qualify: s => (s.stat?.plateAppearances ?? 0) >= 10 },
         { key: 'avg',               label: 'Last 7 — AVG',    unit: 'AVG',  color: '#fbbf24', group: 'hitting',  desc: true,  decimals: 3,
           qualify: s => (s.stat?.plateAppearances ?? 0) >= 10 },

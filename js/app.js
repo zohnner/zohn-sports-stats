@@ -4761,11 +4761,11 @@ function _applyTheme(theme, opts) {
     if (logoEl) {
         const ccLogo = _CC_TEAM_LOGOS[theme];
         if (ccLogo) {
-            logoEl.onerror = () => { logoEl.src = '/assets/icon-64.png'; logoEl.onerror = null; };
+            logoEl.onerror = () => { logoEl.src = '/assets/icon.svg'; logoEl.onerror = null; };
         } else {
             logoEl.onerror = null;
         }
-        logoEl.src = ccLogo || '/assets/icon-64.png';
+        logoEl.src = ccLogo || '/assets/icon.svg';
         logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
     // F9: keep the browser UI tint in sync with the active theme background token.
