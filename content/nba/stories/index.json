@@ -1,6 +1,25 @@
 {
   "stories": [
     {
+      "slug": "2026-11-20-warriors-five-game-road-skid",
+      "title": "The Warriors have lost 5 straight, all on the road, by 23.2 points a game",
+      "dek": "Golden State has scored under 100 points in 4 of the 5 losses, and its last 5-game skid ended in March 2026.",
+      "date": "2026-11-20",
+      "season": 2027,
+      "teams": [
+        "GS",
+        "HOU",
+        "SA",
+        "NO",
+        "DAL",
+        "MEM"
+      ],
+      "players": [],
+      "hero_stat": "5 straight losses, all on the road, by 23.2 points a game",
+      "url": "/nba/stories/2026-11-20-warriors-five-game-road-skid",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-19-bucks-1-14-worse-than-15-67-team",
       "title": "The Bucks are 1-14, worse through 15 games than the 15-67 team",
       "dek": "Milwaukee has lost 11 straight, matching the 15-67 team's longest skid, and the 11 losses have come by 15.9 points a game.",
