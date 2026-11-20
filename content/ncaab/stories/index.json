@@ -1,6 +1,27 @@
 {
   "stories": [
     {
+      "slug": "2026-11-20-houston-players-era-title",
+      "title": "Houston beat No. 1 Florida and No. 11 Kansas to win the Players Era title",
+      "dek": "The Cougars are 6-0 after 3 wins in Las Vegas, capped by a 92-83 win over Kansas in the final.",
+      "date": "2026-11-20",
+      "season": 2027,
+      "teams": [
+        "HOU",
+        "FLA",
+        "KU",
+        "RUTG"
+      ],
+      "players": [
+        "4873086",
+        "5108093",
+        "4873093"
+      ],
+      "hero_stat": "3 wins in 3 days, over No. 1 Florida and No. 11 Kansas",
+      "url": "/ncaab/stories/2026-11-20-houston-players-era-title",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-19-no-1-florida-no-3-uconn-first-losses",
       "title": "No. 1 Florida and No. 3 UConn both lost for the first time on the same night",
       "dek": "No. 8 Houston beat Florida 86-76 and No. 12 Arizona beat UConn 85-79, the only 2 ranked-vs-ranked games of the night.",
