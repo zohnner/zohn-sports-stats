@@ -355,12 +355,12 @@ async function displayNCAABLeaders() {
         }).join('');
         return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
             <div class="nfl-card-head" style="justify-content:space-between">
-                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:var(--text-2xs)">${_escHtml(cat.unit)}</span>
             </div>${rows}</div>`;
     }).join('');
     const yr = Number(data.season) || _ncaab.season;
     grid.innerHTML = cards +
-        `<p class="standings-legend" style="grid-column:1/-1;font-size:0.75rem;color:var(--text-muted)">${_escHtml(String(yr - 1))}-${_escHtml(String(yr).slice(2))} Division I leaders, per game. Source: ESPN. Shooting percentages are left out until ESPN applies an attempts minimum.${freshnessHtml(ApiCache.getTimestamp(cacheKey))}</p>`;
+        `<p class="standings-legend" style="grid-column:1/-1;font-size:var(--text-xs);color:var(--text-muted)">${_escHtml(String(yr - 1))}-${_escHtml(String(yr).slice(2))} Division I leaders, per game. Source: ESPN. Shooting percentages are left out until ESPN applies an attempts minimum.${freshnessHtml(ApiCache.getTimestamp(cacheKey))}</p>`;
 }
 
 // ── Rankings (AP / Coaches polls) ─────────────────────────────
@@ -514,7 +514,7 @@ async function displayNCAABStandings() {
     }
     document.getElementById('ncaabStdBody').innerHTML = confs.map(c => `
         <section class="mlb-division-panel" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Conf</th><th>Overall</th></tr></thead>
@@ -556,7 +556,7 @@ async function displayNCAABTeams() {
     // no click-through, so this never links into a view that doesn't exist.
     document.getElementById('ncaabTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:var(--text-sm)">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip">
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>

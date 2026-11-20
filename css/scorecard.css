@@ -30,7 +30,7 @@
     background: none;
     border: 1px solid var(--border-default);
     color: var(--text-secondary);
-    padding: 0.35rem 0.75rem;
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius);
     cursor: pointer;
     font-size: var(--text-sm);
@@ -76,7 +76,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: var(--space-4) var(--space-5);
     border-bottom: 2px solid var(--scorecard-border);
     background: var(--scorecard-paper);
     gap: var(--space-3);
@@ -102,7 +102,7 @@
 .sc-header-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
 }
 .sc-header-info--right { align-items: flex-end; }
 .sc-header-abbr {
@@ -121,7 +121,7 @@
 }
 .sc-header-score {
     font-family: var(--font-sans);
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     font-weight: 700;
     color: var(--scorecard-ink);
     opacity: 0.35;
@@ -135,7 +135,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: var(--space-0-5);
     flex-shrink: 0;
 }
 .sc-header-status {
@@ -162,7 +162,7 @@
     text-transform: uppercase;
     color: var(--scorecard-ink);
     opacity: 0.55;
-    padding: 6px 16px 5px;
+    padding: var(--space-1) var(--space-4) var(--space-1);
     border-bottom: 1px solid var(--scorecard-border-light);
     background: var(--scorecard-paper);
     position: relative;
@@ -208,7 +208,7 @@
 }
 .sc-header-cell.sc-name-col {
     justify-content: flex-start;
-    padding-left: 10px;
+    padding-left: var(--space-2);
     letter-spacing: 0.06em;
     border-right: 2px solid var(--scorecard-border);
 }
@@ -225,7 +225,7 @@
 .sc-name-cell {
     display: flex;
     align-items: center;
-    padding: 0 6px 0 10px;
+    padding: 0 var(--space-1) 0 var(--space-2);
     border-right: 2px solid var(--scorecard-border);
     border-bottom: 1px solid var(--scorecard-border-light);
     background: var(--scorecard-paper);
@@ -238,7 +238,7 @@
     border: none;
     cursor: pointer;
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--scorecard-ink);
     padding: 0;
@@ -264,7 +264,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    padding: 4px 4px 6px;
+    padding: var(--space-1) var(--space-1) var(--space-1);
     border-right: 1px solid var(--scorecard-border-light);
     border-bottom: 1px solid var(--scorecard-border-light);
     background: var(--scorecard-paper);
@@ -286,7 +286,7 @@
     top: 4px;
     left: 5px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--text-2xs);
     font-weight: 600;
     color: var(--scorecard-ink);
     line-height: 1;
@@ -333,21 +333,21 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: var(--space-0-5);
     border-right: 1px solid var(--scorecard-border-light);
     border-top: 1px solid var(--scorecard-border);
     background: rgba(196, 168, 130, 0.12);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--text-2xs);
     font-weight: 700;
     color: var(--scorecard-ink);
     opacity: 0.8;
-    padding: 2px 0;
+    padding: var(--space-0-5) 0;
 }
 .sc-footer-cell.sc-name-col {
     align-items: flex-start;
-    padding-left: 10px;
-    gap: 3px;
+    padding-left: var(--space-2);
+    gap: var(--space-0-5);
     border-right: 2px solid var(--scorecard-border);
 }
 .sc-footer-h { opacity: 0.6; }
@@ -357,7 +357,7 @@
     display: block;
     width: 100%;
     margin-top: var(--space-2);
-    padding: 0.3rem;
+    padding: var(--space-1);
     background: none;
     border: 1px solid var(--border-default);
     border-radius: var(--radius);
@@ -404,7 +404,7 @@
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
     border-radius: var(--radius);
-    padding: 0.5rem 0.75rem;
+    padding: var(--space-2) var(--space-3);
     max-width: 240px;
     min-width: 150px;
     box-shadow: var(--shadow-md);
@@ -415,12 +415,12 @@
 }
 .sc-tip-outcome {
     color: var(--text-primary);
-    margin-bottom: 0.2rem;
+    margin-bottom: var(--space-1);
 }
 .sc-tip-pitches {
     border-top: 1px solid var(--border-default);
-    margin-top: 0.2rem;
-    padding-top: 0.2rem;
+    margin-top: var(--space-1);
+    padding-top: var(--space-1);
 }
 .sc-tip-row {
     color: var(--text-secondary);
@@ -429,8 +429,8 @@
 }
 .sc-tip-count {
     border-top: 1px solid var(--border-default);
-    margin-top: 0.2rem;
-    padding-top: 0.2rem;
+    margin-top: var(--space-1);
+    padding-top: var(--space-1);
     color: var(--text-muted);
     font-style: italic;
 }
@@ -455,7 +455,7 @@
     background: var(--bg-surface);
     border-top: 1px solid var(--border-default);
     border-radius: var(--radius) var(--radius) 0 0;
-    padding: 0.75rem 1.25rem 2rem;
+    padding: var(--space-3) var(--space-5) var(--space-8);
     max-height: 60vh;
     overflow-y: auto;
     animation: scSheetUp 200ms ease-out forwards;
@@ -472,12 +472,12 @@
     height: 4px;
     background: var(--border-mid);
     border-radius: var(--radius-full);
-    margin: 0 auto 0.75rem;
+    margin: 0 auto var(--space-3);
 }
 .sc-sheet-body { font-size: var(--text-sm); line-height: 1.6; }
 .sc-sheet-body .sc-tip-outcome {
     font-size: var(--text-base);
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--space-2);
 }
 .sc-sheet-body .sc-tip-row { white-space: normal; }
 .sc-sheet-close {
@@ -489,7 +489,7 @@
     color: var(--text-muted);
     font-size: var(--text-lg);
     cursor: pointer;
-    padding: 0.25rem;
+    padding: var(--space-1);
     line-height: 1;
 }
 .sc-sheet-close:hover { color: var(--text-secondary); }
@@ -509,7 +509,7 @@
     background: none;
     border: 1px solid var(--border-default);
     color: var(--text-secondary);
-    padding: 0.35rem 0.75rem;
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius);
     cursor: pointer;
     font-size: var(--text-sm);
@@ -537,7 +537,7 @@
     bottom: 4px;
     right: 5px;
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: var(--text-2xs);
     font-weight: 700;
     color: var(--color-live);
     line-height: 1;
@@ -556,9 +556,9 @@
         padding: var(--space-3) var(--space-2) calc(var(--space-3) + 70px);
     }
     .sc-header-logo { width: 36px; height: 36px; }
-    .sc-header-score { font-size: 2rem; }
-    .scorecard-header { padding: 12px 14px; gap: var(--space-2); }
-    .sc-player-btn { max-width: 148px; font-size: 12px; }
+    .sc-header-score { font-size: var(--text-3xl); }
+    .scorecard-header { padding: var(--space-3) var(--space-3); gap: var(--space-2); }
+    .sc-player-btn { max-width: 148px; font-size: var(--text-xs); }
     .scorecard-grid {
         grid-template-columns: 160px repeat(var(--scorecard-innings, 9), minmax(44px, 1fr));
         grid-template-rows: 36px repeat(var(--scorecard-batters, 9), 80px) 28px;

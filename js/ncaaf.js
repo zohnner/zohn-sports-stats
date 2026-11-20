@@ -449,7 +449,7 @@ function _renderNCAAFScoresNav() {
         border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
         background:${active ? 'var(--accent)' : 'transparent'};
         color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-        font-weight:700;font-size:0.74rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+        font-weight:700;font-size:var(--text-xs);cursor:pointer;white-space:nowrap;flex-shrink:0`;
 
     const todayBtn = `<button data-ncaaf-stoday="1" style="${pillStyle(!f)}">Today</button>`;
     const typeBtns = _NCAAF_SEASONTYPES.map(t =>
@@ -460,7 +460,7 @@ function _renderNCAAFScoresNav() {
         border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
         background:${active ? 'var(--accent)' : 'transparent'};
         color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-        font-weight:600;font-size:0.7rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+        font-weight:600;font-size:var(--text-xs);cursor:pointer;white-space:nowrap;flex-shrink:0`;
     const subBtns = typeMeta.postseasonGroups
         ? typeMeta.postseasonGroups.map(g => `<button data-ncaaf-sweek="${g.value}" style="${subPillStyle(!!f && f.week === g.value)}">${g.label}</button>`).join('')
         : Array.from({ length: typeMeta.weeks }, (_, i) => i + 1)
@@ -472,7 +472,7 @@ function _renderNCAAFScoresNav() {
     nav.innerHTML = `
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem">
             ${todayBtn}${typeBtns}
-            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">${season}</span>
+            <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted)">${season}</span>
         </div>
         <div class="nfl-week-scroll" style="display:flex;align-items:center;gap:0.35rem;overflow-x:auto;padding-bottom:2px">${subBtns}</div>
     `;
@@ -853,7 +853,7 @@ async function displayNCAAFStandings() {
     }
     document.getElementById('ncaafStdBody').innerHTML = confs.map(c => `
         <section class="mlb-division-panel" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Conf</th><th>Overall</th></tr></thead>
@@ -915,7 +915,7 @@ async function displayNCAAFTeams() {
         const sorted = c.teams.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         return `
         <section id="ncaaf-conf-${i}" class="ncaaf-conf-section" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:var(--text-sm)">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${sorted.map(t => {
                 // Overall record is already parsed by _ncaafStandingRow for the Standings
                 // view (t.overall) — the Teams grid just never rendered it. "0-0" reads as
@@ -1010,7 +1010,7 @@ async function displayNCAAFLeaders() {
             </div>`).join('');
         return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
             <div class="nfl-card-head" style="justify-content:space-between">
-                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:var(--text-2xs)">${_escHtml(cat.unit)}</span>
             </div>${rows}</div>`;
     }).join('');
 }
@@ -1108,7 +1108,7 @@ function displayNCAAFPlayerDetail(data, requestedSeason) {
     // the athlete-stats endpoint fell back to a prior year.
     const fellBack = Number(data.season) !== Number(requestedSeason);
     const fallbackNote = fellBack
-        ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${requestedSeason} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+        ? `<p style="color:var(--text-secondary);font-size:var(--text-sm);background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${requestedSeason} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
         : '';
 
     grid.innerHTML = header + profile + fallbackNote + statSections +

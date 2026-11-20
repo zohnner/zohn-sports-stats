@@ -231,7 +231,7 @@ function createPlayerCard(player, stats, ppgRank) {
                     <span class="detail-value">${stats.fg3_pct != null ? (stats.fg3_pct * 100).toFixed(1) + '%' : '—'}</span>
                 </div>
             ` : `
-                <div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">
+                <div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:var(--text-sm)">
                     No season stats available
                 </div>
             `}
@@ -305,7 +305,7 @@ function displayPlayersTable(players) {
                     const inits  = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
-                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:var(--text-2xs);font-weight:800;color:#fff;position:relative;overflow:hidden">
                                 ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>` : ''}
                                 <span>${inits}</span>
                             </div>
@@ -388,7 +388,7 @@ function renderPositionFilters() {
 function _styleFilterBtn(btn, active) {
     btn.style.cssText = `
         padding:0.3rem 0.75rem;border-radius:var(--radius);cursor:pointer;font-weight:700;
-        font-size:0.8rem;transition:all 0.2s;font-family:inherit;
+        font-size:var(--text-sm);transition:all 0.2s;font-family:inherit;
         border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.12)'};
         background:${active ? 'rgba(102,126,234,0.2)' : 'rgba(255,255,255,0.04)'};
         color:${active ? '#818cf8' : '#64748b'};

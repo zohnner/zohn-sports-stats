@@ -697,7 +697,7 @@ function _renderSavedStats() {
                 <div>
                     <div class="saved-stat-name">${_escHtml(s.name)}</div>
                     <div class="saved-stat-meta">${_escHtml(s.playerName)}</div>
-                    <div class="saved-stat-meta" style="font-size:0.7rem;margin-top:0.1rem">${new Date(s.timestamp).toLocaleDateString()}</div>
+                    <div class="saved-stat-meta" style="font-size:var(--text-xs);margin-top:0.1rem">${new Date(s.timestamp).toLocaleDateString()}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.75rem">
                     <span class="saved-stat-value">${s.result}</span>

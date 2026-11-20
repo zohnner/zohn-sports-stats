@@ -409,7 +409,7 @@ async function startStatlineShuffle() {
                 <div class="arcade-error">
                     <p style="margin:0 0 0.5rem;display:flex;justify-content:center">${_iconSvg('baseball', 32)}</p>
                     <p>Could not load today's puzzle.</p>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">${err.message}</p>
+                    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:0.35rem">${err.message}</p>
                     <button class="arcade-play-btn" onclick="startStatlineShuffle()" style="margin-top:1rem">Retry</button>
                 </div>
             </div>
@@ -1720,7 +1720,7 @@ function _buildQuestQualifiers(quest) {
                 onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${p.id},'${quest.group}')">
                 <span class="quest-qual-rank">${i + 1}</span>
                 <div class="quest-qual-hs" style="background:${clr.primary}22">
-                    ${hs ? `<img src="${hs}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="font-size:0.7rem;font-weight:700;color:${clr.primary}">${init}</span>`}
+                    ${hs ? `<img src="${hs}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="font-size:var(--text-xs);font-weight:700;color:${clr.primary}">${init}</span>`}
                 </div>
                 <div class="quest-qual-info">
                     <span class="quest-qual-name">${_escHtml(p.fullName || '—')}</span>

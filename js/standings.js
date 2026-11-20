@@ -206,7 +206,7 @@ function displayPowerRankings(rows) {
             ? Array.from({ length: 10 }, (_, i) =>
                 `<span class="power-pip ${i < l10W ? 'power-pip--win' : 'power-pip--loss'}"></span>`
               ).join('')
-            : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
+            : '<span style="color:var(--text-muted);font-size:var(--text-xs)">—</span>';
 
         // Heat label
         const heat = team._score >= 0.65 ? { icon: 'fire',       label: 'HOT',   cls: 'power-heat--hot'  }

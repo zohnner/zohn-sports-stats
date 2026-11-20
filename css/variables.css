@@ -217,7 +217,8 @@
     --color-accent-border:var(--accent-border);
     --color-accent-glow:  var(--accent-glow);
 
-    /* ── Spacing ── */
+    /* ── Spacing (D-212: every padding/margin/gap in css/ snaps to this scale) ── */
+    --space-0-5: 0.125rem;  /*  2px — hairline */
     --space-1:   0.25rem;   /*  4px */
     --space-2:   0.5rem;    /*  8px */
     --space-3:   0.75rem;   /* 12px */
@@ -267,7 +268,8 @@
     --color-chip-bg:     rgba(99,102,241,0.12);
     --color-chip-border: rgba(99,102,241,0.45);
 
-    /* Fluid type: clamp(min, preferred, max) */
+    /* Type scale (D-212): every font-size in css/ and js/ uses one of these steps. */
+    --text-2xs:  0.625rem;   /* 10px — micro labels */
     --text-xs:   0.72rem;    /* 11.5px */
     --text-sm:   0.8125rem;  /* 13px   */
     --text-base: 0.9375rem;  /* 15px   */
@@ -276,7 +278,8 @@
     --text-xl:   1.25rem;    /* 20px   */
     --text-2xl:  1.5rem;     /* 24px   */
     --text-3xl:  clamp(1.75rem, 4vw, 2.25rem);
-    --text-4xl:  clamp(2rem,   5vw, 3rem);
+    --text-4xl:  clamp(2rem,   5vw, 3rem);
+    --text-5xl:  clamp(2.5rem, 6vw, 3.5rem);
 
     /* ── Z-index scale ── */
     --z-base:    0;

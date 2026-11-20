@@ -548,7 +548,7 @@ function _renderNFLScoresNav() {
         border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
         background:${active ? 'var(--accent)' : 'transparent'};
         color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-        font-weight:700;font-size:0.74rem;cursor:pointer;white-space:nowrap;flex-shrink:0`;
+        font-weight:700;font-size:var(--text-xs);cursor:pointer;white-space:nowrap;flex-shrink:0`;
 
     const todayBtn = `<button data-nfl-stoday="1" style="${pillStyle(!f)}">Today</button>`;
     const typeBtns = _NFL_SEASONTYPES.map(t =>
@@ -565,7 +565,7 @@ function _renderNFLScoresNav() {
             border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
             background:${active ? 'var(--accent)' : 'transparent'};
             color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-            font-weight:600;font-size:0.7rem;cursor:pointer;white-space:nowrap;flex-shrink:0">${weekLabel(w)}</button>`;
+            font-weight:600;font-size:var(--text-xs);cursor:pointer;white-space:nowrap;flex-shrink:0">${weekLabel(w)}</button>`;
     }).join('');
 
     const nav = document.createElement('div');
@@ -574,7 +574,7 @@ function _renderNFLScoresNav() {
     nav.innerHTML = `
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem">
             ${todayBtn}${typeBtns}
-            <span style="margin-left:auto;font-size:0.7rem;color:var(--text-muted)">${season}</span>
+            <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted)">${season}</span>
         </div>
         <div class="nfl-week-scroll" style="display:flex;align-items:center;gap:0.35rem;overflow-x:auto;padding-bottom:2px">${weekBtns}</div>
     `;
@@ -1092,12 +1092,12 @@ function displayNFLTrending(adds, drops) {
             <div class="nfl-card-head" style="gap:0.4rem">
                 <span style="display:inline-flex">${icon}</span> ${title}
             </div>
-            ${rows || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.82rem">No trending data</div>'}`;
+            ${rows || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:var(--text-sm)">No trending data</div>'}`;
         return card;
     };
 
     const note = document.createElement('div');
-    note.style.cssText = 'grid-column:1/-1;font-size:0.74rem;color:var(--text-muted);padding:0 0.25rem 0.4rem';
+    note.style.cssText = 'grid-column:1/-1;font-size:var(--text-xs);color:var(--text-muted);padding:0 0.25rem 0.4rem';
     note.textContent = 'Most-added and most-dropped players across fantasy leagues in the last 24 hours. Source: Sleeper.';
 
     grid.appendChild(note);
@@ -1167,11 +1167,11 @@ function displayNFLInjuries() {
             border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
             background:${active ? 'var(--accent)' : 'transparent'};
             color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+            font-weight:700;font-size:var(--text-xs);cursor:pointer">${f}</button>`;
     };
     const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
         ${_NFL_POS_FILTERS.map(chip).join('')}
-        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">${filtered.length} reported</span>
+        <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted)">${filtered.length} reported</span>
     </div>`;
 
     let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-injuries', 'season') : '') + bar;
@@ -1207,7 +1207,7 @@ function displayNFLInjuries() {
                     <div class="nfl-lrow-name">${_escHtml(p.full_name)}</div>
                     <div class="nfl-lrow-meta">${_escHtml(p.team || 'FA')}${p.position ? ' · ' + _escHtml(p.position) : ''}${detail ? ' · ' + _escHtml(detail) : ''}</div>
                 </div>
-                <span class="nfl-lrow-val" style="color:${color};font-size:0.7rem">${_escHtml(status)}</span>
+                <span class="nfl-lrow-val" style="color:${color};font-size:var(--text-xs)">${_escHtml(status)}</span>
             </div>`;
         }).join('');
         html += `<div class="card" style="padding:0;overflow:hidden;grid-column:1/-1">
@@ -1277,11 +1277,11 @@ function displayNFLWaivers(adds) {
             border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
             background:${active ? 'var(--accent)' : 'transparent'};
             color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-            font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+            font-weight:700;font-size:var(--text-xs);cursor:pointer">${f}</button>`;
     };
     const bar = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
         ${_NFL_POS_FILTERS.map(chip).join('')}
-        <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">Top ${shown.length} adds, last 24h · Source: Sleeper</span>
+        <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted)">Top ${shown.length} adds, last 24h · Source: Sleeper</span>
     </div>`;
 
     let html = (typeof _hqStrip === 'function' ? _hqStrip('nfl-waivers', 'season') : '') + bar;
@@ -1416,11 +1416,11 @@ function displayNFLStatLeaders(data, cfg = {}) {
     let opts = '';
     for (let y = NFL_STATS_SEASON; y >= NFL_LEADERS_MIN_SEASON; y--) opts += `<option value="${y}" ${y === data.season ? 'selected' : ''}>${y}</option>`;
     bar.innerHTML = `
-        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-secondary);font-weight:700">
+        <label style="display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);color:var(--text-secondary);font-weight:700">
             Season
             <select id="nflLeaderSeason" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${opts}</select>
         </label>
-        <span style="font-size:0.74rem;color:var(--text-muted)">${data.season} regular-season leaders · Source: ESPN</span>`;
+        <span style="font-size:var(--text-xs);color:var(--text-muted)">${data.season} regular-season leaders · Source: ESPN</span>`;
     grid.appendChild(bar);
     if (cfg.fallback) {
         const note = document.createElement('p');
@@ -1455,7 +1455,7 @@ function displayNFLStatLeaders(data, cfg = {}) {
         }).join('');
         card.innerHTML = `
             <div class="nfl-card-head" style="justify-content:space-between">
-                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:var(--text-2xs)">${_escHtml(cat.unit)}</span>
             </div>
             ${rows}`;
         grid.appendChild(card);
@@ -1927,7 +1927,7 @@ function _nflStatsUnavailable(host, name, failed) {
         ? `ESPN, our stats source, didn't answer. Try again in a few minutes.`
         : `we couldn't match this player to a stats source. This is common for free agents and recent roster moves.`;
     host.innerHTML = `<h2 class="detail-section-title">Season Stats</h2>
-        <p style="color:var(--text-muted);font-size:0.85rem;margin:0;line-height:1.5">Season stats aren't available for ${_escHtml(name || 'this player')} right now — ${why}</p>`;
+        <p style="color:var(--text-muted);font-size:var(--text-sm);margin:0;line-height:1.5">Season stats aren't available for ${_escHtml(name || 'this player')} right now — ${why}</p>`;
 }
 
 // Season stat line on the player-detail page. Sleeper has no game stats, so we
@@ -1968,7 +1968,7 @@ async function _loadNFLPlayerStats(p, season) {
             const tiles = g.stats.map(([l, v]) =>
                 `<div class="stat-item"><div class="stat-value">${_escHtml(String(v))}</div><div class="stat-label">${_escHtml(l)}</div></div>`).join('');
             return `<div style="margin-bottom:0.9rem">
-                <div style="font-size:0.68rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:${color};margin-bottom:0.5rem">${_escHtml(g.label)}</div>
+                <div style="font-size:var(--text-xs);font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:${color};margin-bottom:0.5rem">${_escHtml(g.label)}</div>
                 <div class="stats-grid">${tiles}</div>
             </div>`;
         }).join('');
@@ -1981,7 +1981,7 @@ async function _loadNFLPlayerStats(p, season) {
         // that reads "2025 Season Stats" easy to miss right after clicking "2026".
         const fellBack = Number(data.season) !== Number(season);
         const fallbackNote = fellBack
-            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${season} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+            ? `<p style="color:var(--text-secondary);font-size:var(--text-sm);background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${season} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
             : '';
 
         host.className = 'stats-card';
@@ -1989,7 +1989,7 @@ async function _loadNFLPlayerStats(p, season) {
             <h2 class="detail-section-title">${data.season} Season Stats${data.gp ? ` · ${_escHtml(String(data.gp))} GP` : ''}</h2>
             ${fallbackNote}
             ${groupsHtml}
-            <p style="color:var(--text-muted);font-size:0.72rem;margin:0.25rem 0 0">Source: ESPN.</p>
+            <p style="color:var(--text-muted);font-size:var(--text-xs);margin:0.25rem 0 0">Source: ESPN.</p>
         `;
 
         // Hero share button (mirrors MLB's #mlb-hero-share, P3-027 Phase 2) — only the
@@ -2119,7 +2119,7 @@ async function _loadNFLAdvanced(p, season) {
         // (2023) -- a flat "(latest available)" reads the same for a 1-year
         // gap and a 3-year one, which understates how stale this actually is.
         const _ngsNote = _ngsGap > 0
-            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${_reqSeason} Next Gen Stats aren't published yet — showing ${data.season}${_ngsGap > 1 ? `, the most recent complete season nflverse has released` : ' instead'}.</p>`
+            ? `<p style="color:var(--text-secondary);font-size:var(--text-sm);background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${_reqSeason} Next Gen Stats aren't published yet — showing ${data.season}${_ngsGap > 1 ? `, the most recent complete season nflverse has released` : ' instead'}.</p>`
             : '';
         host.className = 'stats-card';
         host.innerHTML = `
@@ -2224,15 +2224,15 @@ function _nflRecentGamesCard(games) {
         return `
             <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
                 <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                    <span style="font-weight:900;font-size:0.875rem;min-width:26px;color:${outClr}">${outcome}</span>
-                    <span style="color:var(--color-text-muted);font-size:0.75rem;min-width:54px">${dateStr}</span>
-                    <span style="color:var(--color-text-muted);font-size:0.75rem">${ha}</span>
+                    <span style="font-weight:900;font-size:var(--text-sm);min-width:26px;color:${outClr}">${outcome}</span>
+                    <span style="color:var(--color-text-muted);font-size:var(--text-xs);min-width:54px">${dateStr}</span>
+                    <span style="color:var(--color-text-muted);font-size:var(--text-xs)">${ha}</span>
                     ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.oppAbbr)}</span>
+                    <span style="font-weight:600;font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.oppAbbr)}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
-                    <span style="font-weight:700;font-size:0.95rem;color:${scoreClr}">${scoreStr}</span>
-                    <span style="font-size:0.65rem;color:#334155">›</span>
+                    <span style="font-weight:700;font-size:var(--text-base);color:${scoreClr}">${scoreStr}</span>
+                    <span style="font-size:var(--text-2xs);color:#334155">›</span>
                 </div>
             </div>`;
     }).join('');
@@ -2262,13 +2262,13 @@ function _nflUpcomingCard(games) {
         return `
             <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
                 <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
-                    <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${ha}</span>
+                    <span style="color:var(--text-muted);font-size:var(--text-xs);min-width:42px">${ha}</span>
                     ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:0.875rem">${_escHtml(g.oppAbbr)}</span>
+                    <span style="font-weight:600;font-size:var(--text-sm)">${_escHtml(g.oppAbbr)}</span>
                 </div>
                 <div style="text-align:right;flex-shrink:0">
-                    <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600">${dateStr}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted)">${timeStr}</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-secondary);font-weight:600">${dateStr}</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted)">${timeStr}</div>
                 </div>
             </div>`;
     }).join('');
@@ -2345,7 +2345,7 @@ function _renderTeamPage(m) {
         <div class="player-detail-header" style="background:var(--bg-card);border-top:3px solid ${color}88">
             <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:${color}cc;color:#fff;font-size:1.5rem;font-weight:800">
+                <div class="player-detail-avatar" style="background:${color}cc;color:#fff;font-size:var(--text-2xl);font-weight:800">
                     ${logo ? `<img class="player-headshot player-headshot--detail" src="${esc(logo)}" alt="${esc(m.name)}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : esc(m.abbr || '?')}
                 </div>
                 <div class="player-hero-info">
@@ -2400,7 +2400,7 @@ function _renderTeamPage(m) {
                 </div>
             </div>`
         ).join('');
-        return `<h3 class="detail-section-title" style="font-size:0.9rem;margin-top:1.1rem">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h3><div class="roster-list">${rows}</div>`;
+        return `<h3 class="detail-section-title" style="font-size:var(--text-base);margin-top:1.1rem">${esc(grp.label)} <span class="team-section__count">${grp.players.length}</span></h3><div class="roster-list">${rows}</div>`;
     }).join('');
     // Phase 2 competitor-feature pass ("depth chart quick-view"): this roster
     // was already grouped by position and sorted by depth_chart_order with a
@@ -2639,13 +2639,13 @@ function displayNFLRankings() {
 
     const chip = f => {
         const a = f === _nflRankPos;
-        return `<button data-nfl-rank-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);border:1px solid ${a ? 'var(--accent)' : 'var(--border-default)'};background:${a ? 'var(--accent)' : 'transparent'};color:${a ? '#0b0b0d' : 'var(--text-secondary)'};font-weight:700;font-size:0.72rem;cursor:pointer">${f}</button>`;
+        return `<button data-nfl-rank-pos="${f}" style="padding:0.32rem 0.74rem;border-radius:var(--radius-full);border:1px solid ${a ? 'var(--accent)' : 'var(--border-default)'};background:${a ? 'var(--accent)' : 'transparent'};color:${a ? '#0b0b0d' : 'var(--text-secondary)'};font-weight:700;font-size:var(--text-xs);cursor:pointer">${f}</button>`;
     };
 
     let html = `<div style="max-width:760px;margin:0 auto">
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;padding:0 0.25rem 0.85rem">
             ${['ALL', 'QB', 'RB', 'WR', 'TE', 'K'].map(chip).join('')}
-            <span style="margin-left:auto;font-size:0.72rem;color:var(--text-muted)">${NFL_FANTASY_SEASON} rankings · ADP via Sleeper</span>
+            <span style="margin-left:auto;font-size:var(--text-xs);color:var(--text-muted)">${NFL_FANTASY_SEASON} rankings · ADP via Sleeper</span>
         </div>`;
 
     let lastTier = null;
@@ -2654,24 +2654,24 @@ function displayNFLRankings() {
         if (tier !== lastTier) {
             lastTier = tier;
             const label = isAll ? `Round ${tier}` : `${_escHtml(_nflRankPos)} Tier ${tier}`;
-            html += `<div style="font-size:0.66rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:var(--accent);margin:0.9rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border-mid)">${label}</div>`;
+            html += `<div style="font-size:var(--text-2xs);font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:var(--accent);margin:0.9rem 0 0.35rem;padding-bottom:0.2rem;border-bottom:1px solid var(--border-mid)">${label}</div>`;
         }
         const pos = r.pos, pc = _NFL_POS_COLOR[pos] || 'var(--accent)';
         const hs = getNFLSleeperHeadshot(r.p.player_id);
         const rankNum = isAll ? r.overall : r.posRank;
         const posTag = (isAll && pos) ? `${_escHtml(pos)}${r.posRank}` : '';
-        const inj = r.p.injury_status ? ` <span style="color:var(--color-loss);font-size:0.62rem;font-weight:700">${_escHtml(r.p.injury_status)}</span>` : '';
+        const inj = r.p.injury_status ? ` <span style="color:var(--color-loss);font-size:var(--text-2xs);font-weight:700">${_escHtml(r.p.injury_status)}</span>` : '';
         html += `<div onclick="navigateTo('nfl-player-${r.p.player_id}')" style="display:flex;align-items:center;gap:0.7rem;padding:0.4rem 0.5rem;border-bottom:1px solid var(--border-subtle);cursor:pointer">
-            <span style="width:28px;text-align:right;font-weight:800;font-size:0.95rem;color:var(--text-primary)">${rankNum}</span>
+            <span style="width:28px;text-align:right;font-weight:800;font-size:var(--text-base);color:var(--text-primary)">${rankNum}</span>
             <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle);border:1px solid var(--border-subtle)">
                 <img src="${hs}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
             </div>
             <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(r.p.full_name)}${inj}</div>
-                <div style="font-size:0.68rem;color:var(--text-muted)">${_escHtml(r.p.team || 'FA')}</div>
+                <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(r.p.full_name)}${inj}</div>
+                <div style="font-size:var(--text-xs);color:var(--text-muted)">${_escHtml(r.p.team || 'FA')}</div>
             </div>
-            ${posTag ? `<span style="font-size:0.7rem;font-weight:800;color:${pc};min-width:38px;text-align:right">${posTag}</span>` : ''}
-            <span style="font-size:0.72rem;color:var(--text-secondary);min-width:56px;text-align:right">ADP ${r.p._adp}</span>
+            ${posTag ? `<span style="font-size:var(--text-xs);font-weight:800;color:${pc};min-width:38px;text-align:right">${posTag}</span>` : ''}
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);min-width:56px;text-align:right">ADP ${r.p._adp}</span>
         </div>`;
     });
     html += `</div>`;
@@ -2753,8 +2753,8 @@ async function _updateNFLCompare() {
     const headCard = (p, d, color) => `
         <div style="flex:1;text-align:center;min-width:0">
             <div style="width:54px;height:54px;border-radius:50%;overflow:hidden;margin:0 auto 0.4rem;border:2px solid ${color};background:var(--bg-subtle)"><img src="${getNFLSleeperHeadshot(p.player_id)}" alt="" style="width:100%;height:100%;object-fit:cover" data-hide-on-error></div>
-            <div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(p.full_name)}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted)">${_escHtml(p.team || 'FA')} · ${_escHtml(p.position || '')}${d && d.gp ? ' · ' + _escHtml(String(d.gp)) + ' GP' : ''}</div>
+            <div style="font-weight:800;font-size:var(--text-base);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(p.full_name)}</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)">${_escHtml(p.team || 'FA')} · ${_escHtml(p.position || '')}${d && d.gp ? ' · ' + _escHtml(String(d.gp)) + ' GP' : ''}</div>
         </div>`;
 
     const rows = keys.map(k => {
@@ -2763,19 +2763,19 @@ async function _updateNFLCompare() {
         if (na != null && nb != null && (na + nb) > 0) { barA = Math.round(na / (na + nb) * 100); barB = 100 - barA; }
         const aWin = na != null && nb != null && na > nb, bWin = nb != null && na != null && nb > na;
         return `<div style="display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;gap:0.6rem;padding:0.35rem 0;border-bottom:1px solid var(--border-subtle)">
-            <span style="text-align:right;font-weight:${aWin ? '800' : '600'};color:${aWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${va != null ? _escHtml(String(va)) : '—'}</span>
+            <span style="text-align:right;font-weight:${aWin ? '800' : '600'};color:${aWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:var(--text-sm)">${va != null ? _escHtml(String(va)) : '—'}</span>
             <div style="min-width:0">
-                <div style="font-size:0.62rem;text-align:center;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${_escHtml(k.split(' · ')[1])}</div>
+                <div style="font-size:var(--text-2xs);text-align:center;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${_escHtml(k.split(' · ')[1])}</div>
                 <div style="display:flex;height:7px;border-radius:var(--radius);overflow:hidden;background:var(--bg-subtle)"><div style="width:${barA}%;background:${_NFL_CMP_A}"></div><div style="width:${barB}%;background:${_NFL_CMP_B}"></div></div>
             </div>
-            <span style="text-align:left;font-weight:${bWin ? '800' : '600'};color:${bWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${vb != null ? _escHtml(String(vb)) : '—'}</span>
+            <span style="text-align:left;font-weight:${bWin ? '800' : '600'};color:${bWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:var(--text-sm)">${vb != null ? _escHtml(String(vb)) : '—'}</span>
         </div>`;
     }).join('');
 
     results.innerHTML = `
-        <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.8rem">${headCard(pA, dA, _NFL_CMP_A)}<div style="align-self:center;font-weight:900;color:var(--text-muted);font-size:0.8rem">VS</div>${headCard(pB, dB, _NFL_CMP_B)}</div>
+        <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.8rem">${headCard(pA, dA, _NFL_CMP_A)}<div style="align-self:center;font-weight:900;color:var(--text-muted);font-size:var(--text-sm)">VS</div>${headCard(pB, dB, _NFL_CMP_B)}</div>
         ${keys.length ? rows : '<p style="text-align:center;color:var(--text-muted);padding:1rem">No season stats to compare for these players.</p>'}
-        <p style="color:var(--text-muted);font-size:0.7rem;margin:0.7rem 0 0;text-align:center">${NFL_STATS_SEASON} season · bar = share of each stat · Source: ESPN</p>`;
+        <p style="color:var(--text-muted);font-size:var(--text-xs);margin:0.7rem 0 0;text-align:center">${NFL_STATS_SEASON} season · bar = share of each stat · Source: ESPN</p>`;
 }
 
 // Career-row click dispatcher — works on the Sleeper detail and the all-time (ESPN) detail.
@@ -2850,11 +2850,11 @@ async function showNFLEspnPlayer(espnId) {
             <div class="nlg-main">
                 <div id="nfl-career"></div>
                 ${years.length ? `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.6rem 0 0.45rem;padding:0 0.1rem">
-                    <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Game log season</span>
+                    <span style="font-size:var(--text-xs);font-weight:700;color:var(--text-secondary)">Game log season</span>
                     <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
                 </div>` : ''}
                 <div id="nfl-gamelog"></div>
-                <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
+                <p style="color:var(--text-muted);font-size:var(--text-xs);margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
             </div>
             <aside class="nlg-side">
                 <div id="nfl-trophy-case"></div>
