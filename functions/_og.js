@@ -31,7 +31,7 @@ const BAR_HEIGHT = 120;
 const BAR_MUTED = '#22304a';
 const BRAND_ACCENT = '#4cc9f0';
 const STAT_LINE_COLOR = '#4cc9f0';
-const FONT_FILES = ['BarlowSemiCondensed-Bold.ttf', 'BarlowSemiCondensed-SemiBold.ttf', 'BarlowSemiCondensed-Regular.ttf'];
+const FONT_FILES = ['Inter-Bold.ttf', 'Inter-SemiBold.ttf', 'Inter-Regular.ttf'];
 const FONT_WEIGHTS = [700, 600, 400];
 
 let resvgWasmReady = null;
@@ -50,7 +50,7 @@ async function loadFonts(env, url) {
         if (!res.ok) throw new Error(`font fetch failed: ${name} (${res.status})`);
         return res.arrayBuffer();
     }));
-    fontCache = bufs.map((data, i) => ({ name: 'Barlow', data, weight: FONT_WEIGHTS[i], style: 'normal' }));
+    fontCache = bufs.map((data, i) => ({ name: 'Inter', data, weight: FONT_WEIGHTS[i], style: 'normal' }));
     return fontCache;
 }
 
@@ -112,7 +112,7 @@ function buildTree({ eyebrow, title, subtitle, statLine, accentColor, bars, barH
     return {
         type: 'div',
         props: {
-            style: { width: WIDTH, height: HEIGHT, display: 'flex', background: '#070b16', fontFamily: 'Barlow' },
+            style: { width: WIDTH, height: HEIGHT, display: 'flex', background: '#070b16', fontFamily: 'Inter' },
             children: [
                 { type: 'div', props: { style: { display: 'flex', width: 14, height: HEIGHT, background: accent }, children: [] } },
                 { type: 'div', props: {

@@ -299,7 +299,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         <div class="sl-layout">
             <div class="sl-primary">
                 <div class="home-myteams home-zone" id="slMyTeams"></div>
-                <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
+                <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius)')}</div>
                 ${STORY_SPORTS.includes(sport) ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
                 ${slots.games ? `<div id="slGames"></div>` : ''}
@@ -313,7 +313,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
                             <span class="sl-link-body"><span class="sl-link-title">${_escHtml(t)}</span><span class="sl-link-desc">${_escHtml(d)}</span></span>
                         </a>`).join('')}
                 </nav>
-                ${slots.signature ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-sm)')}</div>` : ''}
+                ${slots.signature ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius)')}</div>` : ''}
                 ${slots.fantasyPulse ? `<div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, '0px')}</div>` : ''}
                 ${slots.matchup ? `<div class="sl-matchup" id="slMatchup"></div>` : ''}
             </div>
@@ -357,14 +357,14 @@ setupNavigation();
         tickerEl.innerHTML = Array.from({ length: 6 }, () =>
             `<div class="ticker__item" style="opacity:0.35">
                 <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle"></span>
                 <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle;margin:0 4px"></span>
                 <span class="ticker-divider">–</span>
                 <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle;margin:0 4px"></span>
                 <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle"></span>
             </div>`
         ).join('');
     }
@@ -999,7 +999,7 @@ function loadHome() {
                         <span class="home-section-title">By the Numbers</span>
                     </div>
                     <div class="rail-panel" id="railInsights">
-                        ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+                        ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius);margin-bottom:6px"></div>`).join('')}
                     </div>
                 </div>
             </div>

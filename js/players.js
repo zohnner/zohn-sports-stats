@@ -54,14 +54,14 @@ function showSkeletonCards(count = 9) {
                     <div class="skeleton-line" style="width:140px;height:18px;margin-bottom:8px"></div>
                     <div class="skeleton-line" style="width:70px;height:12px"></div>
                 </div>
-                <div class="skeleton-line" style="width:52px;height:28px;border-radius:20px"></div>
+                <div class="skeleton-line" style="width:52px;height:28px;border-radius:var(--radius)"></div>
             </div>
             <div class="skeleton-card-rows">
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -198,7 +198,7 @@ function createPlayerCard(player, stats, ppgRank) {
         <div class="player-card-top">
             ${rankBadge}
             ${favBtn}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
+            <div class="player-avatar" style="background:${colors.primary}cc">
                 ${headshotImg}<span class="avatar-text">${initials}</span>
             </div>
             <div class="player-name">${player.first_name} ${player.last_name}</div>
@@ -231,7 +231,7 @@ function createPlayerCard(player, stats, ppgRank) {
                     <span class="detail-value">${stats.fg3_pct != null ? (stats.fg3_pct * 100).toFixed(1) + '%' : '—'}</span>
                 </div>
             ` : `
-                <div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">
+                <div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:var(--text-sm)">
                     No season stats available
                 </div>
             `}
@@ -305,7 +305,7 @@ function displayPlayersTable(players) {
                     const inits  = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
-                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:var(--text-2xs);font-weight:800;color:#fff;position:relative;overflow:hidden">
                                 ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>` : ''}
                                 <span>${inits}</span>
                             </div>
@@ -387,8 +387,8 @@ function renderPositionFilters() {
 
 function _styleFilterBtn(btn, active) {
     btn.style.cssText = `
-        padding:0.3rem 0.75rem;border-radius:20px;cursor:pointer;font-weight:700;
-        font-size:0.8rem;transition:all 0.2s;font-family:inherit;
+        padding:0.3rem 0.75rem;border-radius:var(--radius);cursor:pointer;font-weight:700;
+        font-size:var(--text-sm);transition:all 0.2s;font-family:inherit;
         border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.12)'};
         background:${active ? 'rgba(102,126,234,0.2)' : 'rgba(255,255,255,0.04)'};
         color:${active ? '#818cf8' : '#64748b'};

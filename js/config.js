@@ -362,7 +362,7 @@ if (typeof window !== 'undefined') {
             e.target.remove();
         } else if ('logoFallback' in e.target.dataset) {
             const span = document.createElement('span');
-            span.style.cssText = 'font-size:1.4rem;font-weight:800;color:#fff';
+            span.style.cssText = 'font-size:var(--text-2xl);font-weight:800;color:#fff';
             span.textContent = e.target.dataset.logoFallback;
             e.target.replaceWith(span);
         }

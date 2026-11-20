@@ -70,7 +70,7 @@ function _buildPillControl(labelText, options, current, onSelect) {
 
     const lbl = document.createElement('span');
     lbl.textContent = labelText;
-    lbl.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text-subtle);letter-spacing:0.4px;margin-right:0.1rem;white-space:nowrap;flex-shrink:0;';
+    lbl.style.cssText = 'font-size:var(--text-xs);font-weight:700;color:var(--text-subtle);letter-spacing:0.4px;margin-right:0.1rem;white-space:nowrap;flex-shrink:0;';
     wrap.appendChild(lbl);
 
     options.forEach(opt => {
@@ -80,8 +80,8 @@ function _buildPillControl(labelText, options, current, onSelect) {
         const btn = document.createElement('button');
         btn.textContent = text;
         btn.style.cssText = `
-            padding:0.2rem 0.55rem;border-radius:20px;cursor:pointer;font-weight:600;
-            font-size:0.72rem;font-family:inherit;transition:all 0.18s;
+            padding:0.2rem 0.55rem;border-radius:var(--radius);cursor:pointer;font-weight:600;
+            font-size:var(--text-xs);font-family:inherit;transition:all 0.18s;
             border:1px solid ${active ? 'var(--color-chip-border)' : 'var(--border-default)'};
             background:${active ? 'var(--color-chip-bg)' : 'transparent'};
             color:${active ? 'var(--color-chip)' : 'var(--text-subtle)'};
@@ -256,7 +256,7 @@ function _buildPanel(cat) {
     list.className = 'leaderboard-list';
 
     if (eligible.length === 0) {
-        list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+        list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:var(--text-sm)">No data available</p>`;
     } else {
         const topPlayerStats = AppState.playerStats[eligible[0].id];
         const topVal = cat.computed ? cat.computed(topPlayerStats) : topPlayerStats[cat.key];
@@ -281,8 +281,8 @@ function _buildPanel(cat) {
             moreBtn.textContent = `Show ${extra.length} more`;
             moreBtn.style.cssText = `
                 width:100%;padding:0.5rem;margin-top:0.5rem;background:var(--bg-subtle);
-                border:1px solid var(--border-default);border-radius:var(--radius-sm);
-                color:var(--text-muted);font-size:0.75rem;cursor:pointer;
+                border:1px solid var(--border-default);border-radius:var(--radius);
+                color:var(--text-muted);font-size:var(--text-xs);cursor:pointer;
                 transition:background var(--transition-fast);
             `;
             moreBtn.addEventListener('mouseenter', () => moreBtn.style.background = 'var(--bg-card)');

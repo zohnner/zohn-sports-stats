@@ -12,7 +12,7 @@ When a user finishes any interaction they should feel *capable and informed*, ne
 
 ## The brand is the default dark theme
 
-**Ice on ink** (D-212, Ink + Ice rebrand 2026-11-20: `--bg` #070B16, `--surface` #0F182A, `--accent` #4CC9F0, `--text` #F2F7FC, `--muted` #8FA3BF; the mark is the Strata S) — Space Grotesk for display, Barlow for numerals, minimal chrome — that is SportStrata's face. **Amended by D-048 (phased redesign migration, underway):** the base moved off deep navy to a neutral, temperature-controlled dark so the product reads as a precision instrument, not a consumer app. The prior "no brand refresh to chase" line is superseded — the refresh *is* the D-048 palette/type/motion migration, executed as value-swaps on existing tokens, one gated phase at a time.
+**Ice on ink** (D-212, Ink + Ice rebrand 2026-11-20: `--bg` #070B16, `--surface` #0F182A, `--accent` #4CC9F0, `--text` #F2F7FC, `--muted` #8FA3BF; the mark is the Strata S) — Inter for everything you read, JetBrains Mono for live scores and receipts, flat surfaces, minimal chrome — that is SportStrata's face. **Amended by D-048 (phased redesign migration, underway):** the base moved off deep navy to a neutral, temperature-controlled dark so the product reads as a precision instrument, not a consumer app. The prior "no brand refresh to chase" line is superseded — the refresh *is* the D-048 palette/type/motion migration, executed as value-swaps on existing tokens, one gated phase at a time.
 
 - The **theme set is deliberately small (D-047, supersedes D-038's "frozen at the current set"):** dark (default) + light + one tribute, `nl-monarchs`. The 8 City Connect + Bananas/Expos/Trash-Pandas themes were **retired** — archived in `css/themes-retired/` as candidates for future premium unlockables. The default is always the argument; themes are never it.
 - **The wordmark is never themed.** The brand icon may wear team colors (jersey rule); "SportStrata" does not (D-038 identity rule).
@@ -23,7 +23,7 @@ When a user finishes any interaction they should feel *capable and informed*, ne
 SportStrata reads as *a broadcast graphics package meets a trading terminal* — live, precise, quantitative; one visual voice regardless of sport. **The cohesion test:** a scorebug screenshot from any sport (MLB grid card, NFL ticker, NCAAF row) should be indistinguishable by sport except by its content — same anatomy, type, state language, accent logic. These never vary by sport or theme:
 
 1. **State language.** live = `--color-live` + pulse + a LIVE badge; final = muted/receded; upcoming = **neutral** scheduled pill (`--bg-subtle`/`--text-muted`, distinguished by its time/"Scheduled" label). Identical vocabulary in ticker, grid, hero, and landings. *(D-047 S3c amended this from "accent scheduled pill" — that conflicted with invariant #3, "orange = brand only"; the owner-approved accent re-scope resolves it in favor of #3.)*
-2. **Numeric voice.** live scores render in `--font-mono`; stat values in `--font-display` + `tabular-nums`. Numerals never fall back to the body face.
+2. **Numeric voice.** live scores and aligned receipts render in `--font-mono`; stat values render in Inter with `tabular-nums` (tables get it by default). Prose keeps proportional figures, so "26-3" in a sentence never looks spaced out.
 3. **Ice is a scalpel, not a wash (D-212).** Ice marks data emphasis, state (active nav, selected, primary CTA) and wayfinding (links). Headlines and the wordmark stay text-colored. No orange anywhere: `tools/check-orange.cjs` (run by `tests/inkIce.test.js`) fails on any orange-family color outside the `ss-team-colors` fences, because team colors are data.
 4. **Eyebrow labels.** one `.eyebrow` utility, one recipe, everywhere (S4).
 5. **Logos are never naked on a surface.** every team mark gets the container/chip treatment (S5).
@@ -42,9 +42,8 @@ All color through `css/variables.css` tokens — a hex literal in a style attrib
 
 ## Typography does the heavy lifting
 
-- **Inter** — the interface voice: labels, body, controls.
-- **Barlow Semi Condensed** (`--font-display`) — numbers on display: scores, leaderboard values, stat tiles, view titles. If a number is the point of the component, it's Barlow.
-- **JetBrains Mono** — tabular receipts: aligned columns of values (odds, VORP), where digit alignment is meaning.
+- **Two fonts, no third (D-212).** Inter is the voice for labels, body, controls, headlines and stat values. JetBrains Mono is for live scores and tabular receipts: aligned columns of values (odds, VORP), where digit alignment is meaning. `button`/`input`/`select` inherit the page font; nothing renders in a browser default.
+- **One type scale.** Every `font-size` is a `--text-*` step (`2xs` 10px through `5xl`); `tests/designSystem.test.js` fails on a raw size. Export cards (stat share card, Highlight Card) keep fixed sizes because they lay out a fixed PNG.
 - Rate stats drop the leading zero (`.338`, never `0.338`). IP strings honor thirds. These are craft signals our audience notices.
 
 ## Iconography (added 2026-09-07, site-wide emoji removal)
@@ -77,7 +76,7 @@ Motion communicates state — loading, transition, liveness — never decorates.
 
 ## Density and space
 
-Data is the hero; chrome is minimal. Dense tables are the product, not a problem — but density needs rhythm: consistent row heights, aligned numerals, breathing room between panels. **Column priority is a design decision:** at constrained widths, what a fan checks daily (record, GB, odds) out-earns what they check monthly (home/away splits). Wide-only columns (`standings-col--wide`) are the pressure valve.
+Data is the hero; chrome is minimal. **Flat surfaces (D-212):** no gradients, glows or glass; cards, header and nav are solid `--bg-surface`/`--bg-base`. Gradients survive only where they encode data (legend scales, field markings). **One radius** (`--radius`, 8px) plus `--radius-full` for pills and 50% for circles. **One spacing scale** (`--space-*`, 4px steps plus a 2px hairline); negative margins and `calc()` are the only raw lengths. Dense tables are the product, not a problem — but density needs rhythm: consistent row heights, aligned numerals, breathing room between panels. **Column priority is a design decision:** at constrained widths, what a fan checks daily (record, GB, odds) out-earns what they check monthly (home/away splits). Wide-only columns (`standings-col--wide`) are the pressure valve.
 
 ## Enforcement
 

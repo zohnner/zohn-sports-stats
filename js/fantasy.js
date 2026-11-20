@@ -912,7 +912,7 @@ function _mlRenderLinkForm(errorMsg) {
           <h1 class="md-title">My League</h1>
           <p class="md-sub">Link your Sleeper username to see your real roster, record, and lineup right here.</p>
           <div class="md-setup-row">
-            <label>Sleeper username<input type="text" id="mlUsername" placeholder="e.g. zohnner" autocomplete="off" style="font-size:0.9rem;padding:0.4rem 0.6rem;border-radius:var(--radius-md);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-primary)"></label>
+            <label>Sleeper username<input type="text" id="mlUsername" placeholder="e.g. zohnner" autocomplete="off" style="font-size:0.9rem;padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-primary)"></label>
           </div>
           <button class="md-btn md-btn--primary" id="mlLookupBtn">Find my leagues</button>
           ${errorMsg ? `<p class="md-note" style="color:var(--color-loss)">${_escFan(errorMsg)}</p>` : ''}
@@ -1466,7 +1466,7 @@ function _mdBuildShareCard() {
       <div style="padding:26px 28px 18px;background:linear-gradient(135deg,#12243f,${BG})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
           <div><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:${ACCENT};font-weight:800">My Mock Draft</div><div style="font-size:15px;color:${MUTED};margin-top:6px">${fmt}</div></div>
-          ${s.grade?`<div style="flex:0 0 auto;width:72px;height:72px;border-radius:16px;background:${ACCENT};color:${BG};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800">${_escFan(s.grade)}</div>`:''}
+          ${s.grade?`<div style="flex:0 0 auto;width:72px;height:72px;border-radius:var(--radius);background:${ACCENT};color:${BG};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800">${_escFan(s.grade)}</div>`:''}
         </div>
         ${(finishLine||valLine)?`<div style="margin-top:14px;font-size:15px;color:${TEXT};font-weight:700">${finishLine}${finishLine&&valLine?` <span style="color:${SUBTLE}">·</span> `:''}${valLine?`<span style="color:${s.avg>=0?GOOD:BAD}">${valLine}</span>`:''}</div>`:''}
       </div>

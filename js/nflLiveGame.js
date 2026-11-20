@@ -1054,7 +1054,7 @@ function _nlgFantasyWatchStarters(homeAbbr, awayAbbr) {
 
 function _nlgFantasyWatchSkeletonHtml() {
     return `<div class="nlg-card nlg-fantasywatch"><div class="nlg-sum">Fantasy Watch <span class="nlg-sum-teams">Last 5 games</span></div>
-        <div class="nlg-fantasywatch-body">${Array.from({ length: 4 }).map(() => `<div class="skeleton-line" style="height:38px;border-radius:8px;margin-bottom:0.4rem"></div>`).join('')}</div></div>`;
+        <div class="nlg-fantasywatch-body">${Array.from({ length: 4 }).map(() => `<div class="skeleton-line" style="height:38px;border-radius:var(--radius);margin-bottom:0.4rem"></div>`).join('')}</div></div>`;
 }
 
 function _nlgFantasyWatchSection(data, home, away) {

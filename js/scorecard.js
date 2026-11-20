@@ -557,9 +557,9 @@ function _renderScorecardSkeleton() {
     </div>
     <div class="scorecard-wrapper">
         <div class="scorecard-header">
-            <div class="skeleton-line" style="width:130px;height:36px;border-radius:var(--radius-sm)"></div>
-            <div class="skeleton-line" style="width:60px;height:20px;margin:0 auto;border-radius:var(--radius-sm)"></div>
-            <div class="skeleton-line" style="width:130px;height:36px;border-radius:var(--radius-sm)"></div>
+            <div class="skeleton-line" style="width:130px;height:36px;border-radius:var(--radius)"></div>
+            <div class="skeleton-line" style="width:60px;height:20px;margin:0 auto;border-radius:var(--radius)"></div>
+            <div class="skeleton-line" style="width:130px;height:36px;border-radius:var(--radius)"></div>
         </div>
         <div style="padding:0.5rem 1rem 1rem">
             <div class="skeleton-line" style="width:80px;height:12px;margin-bottom:0.5rem"></div>

@@ -971,7 +971,7 @@ async function _restoreMLBPlayerDetail(playerId, group) {
                         </div>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.25rem">
-                        ${Array(16).fill('<div class="skeleton-line" style="height:48px;border-radius:var(--radius-md)"></div>').join('')}
+                        ${Array(16).fill('<div class="skeleton-line" style="height:48px;border-radius:var(--radius)"></div>').join('')}
                     </div>
                     ${Array(3).fill('<div class="skeleton-card" style="margin-bottom:0.75rem;height:80px"></div>').join('')}
                 </div>`;

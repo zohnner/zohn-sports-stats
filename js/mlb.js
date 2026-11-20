@@ -815,7 +815,7 @@ function _buildMovementSVG(rows, total) {
         </svg>
         <div id="arsenal-mvmt-tooltip" style="display:none;position:absolute;z-index:10;width:160px;
             background:var(--bg-raised);border:1px solid var(--border-default);
-            border-radius:var(--radius-sm);padding:0.4rem 0.6rem;font-size:0.75rem;
+            border-radius:var(--radius);padding:0.4rem 0.6rem;font-size:var(--text-xs);
             color:var(--text-primary);pointer-events:none"></div>
     </div>`;
 }
@@ -1105,13 +1105,13 @@ async function loadMLBPlayers() {
                     <div class="skeleton-line" style="width:140px;height:18px;margin-bottom:8px"></div>
                     <div class="skeleton-line" style="width:70px;height:12px"></div>
                 </div>
-                <div class="skeleton-line" style="width:52px;height:28px;border-radius:20px"></div>
+                <div class="skeleton-line" style="width:52px;height:28px;border-radius:var(--radius)"></div>
             </div>
             <div class="skeleton-card-rows">
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -1445,7 +1445,7 @@ function displayMLBPlayersTable(group) {
                     const inits  = (player.fullName || '').split(' ').map(w => w[0]).slice(0, 2).join('');
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
-                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:var(--text-2xs);font-weight:800;color:#fff;position:relative;overflow:hidden">
                                 <img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>
                                 <span>${inits}</span>
                             </div>
@@ -1534,7 +1534,7 @@ function _createMLBPlayerCard(player, stats, group, rank) {
             <div class="detail-row"><span class="detail-label">K/9</span><span class="detail-value">${stats.strikeoutsPer9Inn ? parseFloat(stats.strikeoutsPer9Inn).toFixed(1) : '—'}</span></div>
             <div class="detail-row"><span class="detail-label">SV</span><span class="detail-value">${stats.saves ?? '—'}</span></div>
         `)
-        : `<div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:0.82rem">No stats available</div>`;
+        : `<div class="detail-row" style="justify-content:center;color:var(--color-text-muted);font-size:var(--text-sm)">No stats available</div>`;
 
     const rankLabel  = group === 'hitting' ? 'AVG' : 'ERA';
     const rankBadge  = rank != null
@@ -1547,7 +1547,7 @@ function _createMLBPlayerCard(player, stats, group, rank) {
         <div class="player-card-top">
             ${rankBadge}
             ${favBtn}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
+            <div class="player-avatar" style="background:${colors.primary}cc">
                 ${headshotUrl ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
             </div>
@@ -1836,7 +1836,7 @@ function _mlbSavantVisualCard(player, group) {
         return `
             <h2 class="detail-section-title">Spray Chart <span class="statcast-badge">${year} season</span></h2>
             <div id="spray-chart-area" class="spray-loading">
-                <div class="skeleton-line" style="height:220px;border-radius:var(--radius-sm)"></div>
+                <div class="skeleton-line" style="height:220px;border-radius:var(--radius)"></div>
             </div>
             <div class="savant-link-row" style="margin-top:0.75rem">
                 <a href="${sprayUrl}" target="_blank" rel="noopener" class="savant-link-btn">View on Savant ↗</a>
@@ -2089,8 +2089,8 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             </div>
             <div class="player-hero">
                 <div class="player-detail-avatar"
-                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:2.5rem;font-weight:800">
+                     style="background:${colors.primary}cc;
+                            color:#fff;font-size:var(--text-4xl);font-weight:800">
                     ${headshotImg}${initials}
                 </div>
                 <div class="player-hero-info">
@@ -2163,14 +2163,14 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-splits-card">
             <h2 class="detail-section-title">Splits</h2>
             <div style="height:64px;display:flex;align-items:center;justify-content:center">
-                <div class="skeleton-line" style="width:100%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:100%;height:40px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
         ${group === 'pitching' ? `
         <div class="stats-card" id="mlb-last-starts-card">
             <div style="height:36px;display:flex;align-items:center">
-                <div class="skeleton-line" style="width:80%;height:20px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:80%;height:20px;border-radius:var(--radius)"></div>
             </div>
         </div>
         ` : ''}
@@ -2178,14 +2178,14 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-trend-card">
             <h2 class="detail-section-title">${group === 'hitting' ? 'Last 20 Games' : 'Last 8 Outings'}</h2>
             <div style="position:relative;height:220px;display:flex;align-items:center;justify-content:center">
-                <div class="skeleton-line" style="width:100%;height:100%;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:100%;height:100%;border-radius:var(--radius)"></div>
             </div>
         </div>
 
         <div class="stats-card" id="mlb-statcast-card">
             <h2 class="detail-section-title">Statcast</h2>
             <div style="height:48px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:28px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
@@ -2193,7 +2193,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-arsenal-card">
             <h2 class="detail-section-title">Pitch Arsenal</h2>
             <div style="height:80px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:60px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:60px;border-radius:var(--radius)"></div>
             </div>
         </div>
         ` : ''}
@@ -2201,7 +2201,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-career-card">
             <h2 class="detail-section-title">Career Stats</h2>
             <div style="height:48px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:28px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
@@ -2728,7 +2728,7 @@ function _renderMLBCareerTable(rows, group) {
 
     return `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-            <span style="font-size:0.75rem;color:var(--text-muted)">${rows.length} season${rows.length !== 1 ? 's' : ''}</span>
+            <span style="font-size:var(--text-xs);color:var(--text-muted)">${rows.length} season${rows.length !== 1 ? 's' : ''}</span>
             <button class="lb-export-btn" id="mlb-career-csv-btn" title="Download CSV">↓ CSV</button>
         </div>
         <div class="career-table-wrap"><table class="career-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>
@@ -2897,7 +2897,7 @@ function _renderStatcastCard(data, group) {
         rows += _row('xwOBA vs',       data.xwoba,               data.p_xwoba);
     }
 
-    if (!rows.trim()) return '<p style="color:var(--text-muted);font-size:0.85rem;padding:0.5rem 0">No Statcast data available for this season.</p>';
+    if (!rows.trim()) return '<p style="color:var(--text-muted);font-size:var(--text-sm);padding:0.5rem 0">No Statcast data available for this season.</p>';
 
     return `<div class="sc-grid">${rows}</div>
             <p class="sc-note">Percentile rankings among all qualified ${group === 'hitting' ? 'hitters' : 'pitchers'} · ${MLB_SEASON} MLB season</p>`;
@@ -3128,9 +3128,9 @@ async function _loadMLBGamesForOffset(offset) {
         <div class="skeleton-card" style="min-height:160px">
             <div class="skeleton-line" style="width:60%;height:14px;margin-bottom:1.25rem"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:var(--radius)"></div>
                 <div class="skeleton-line" style="width:12%;height:20px"></div>
-                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -3185,8 +3185,8 @@ function displayMLBGames(games, dateStr, offset) {
         : '';
     navRow.innerHTML = `
         <button class="mlb-date-nav-btn" onclick="_mlbGamesGoTo(${offset - 1})">← Prev</button>
-        <span style="font-weight:700;font-size:0.95rem;color:var(--text-primary)">${label}
-            <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);margin-left:0.4rem">${dateStr}</span>
+        <span style="font-weight:700;font-size:var(--text-base);color:var(--text-primary)">${label}
+            <span style="font-size:var(--text-xs);font-weight:400;color:var(--text-muted);margin-left:0.4rem">${dateStr}</span>
         </span>
         <div style="display:flex;gap:0.4rem;align-items:center">
             ${todayBtn}
@@ -3308,7 +3308,7 @@ function _createMLBGameCard(game) {
         </div>
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${homeTeam.name || homeAbbr}">
-                <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
+                <div class="game-team-logo" style="background:${homeColors.primary}cc">
                     ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" alt="${_escHtml(homeAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${homeAbbr}</span>
                 </div>
@@ -3321,7 +3321,7 @@ function _createMLBGameCard(game) {
                 <span class="game-score ${awayWon ? 'game-score--win' : hasScore && !awayWon ? 'game-score--loss' : ''}">${hasScore ? awayScore : '—'}</span>
             </div>
             <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}" data-team-id="${awayTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${awayTeam.name || awayAbbr}">
-                <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
+                <div class="game-team-logo" style="background:${awayColors.primary}cc">
                     ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" alt="${_escHtml(awayAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${awayAbbr}</span>
                 </div>
@@ -3448,7 +3448,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
         <div class="mlb-linescore-wrap">
             <div class="mlb-game-header">
                 <div class="mlb-gh-team ${awayWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${awayTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
-                    <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}44)">
+                    <div class="mlb-gh-logo" style="background:${awayColors.primary}cc">
                         ${awayLogo ? `<img src="${awayLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${awayAbbr}</span>
                     </div>
@@ -3461,7 +3461,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
                     <span class="${homeWon ? 'mlb-gh-score-val--win' : ''}">${homeScore}</span>
                 </div>
                 <div class="mlb-gh-team ${homeWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer;text-align:right" onclick="showMLBTeamDetail(${homeTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
-                    <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}44)">
+                    <div class="mlb-gh-logo" style="background:${homeColors.primary}cc">
                         ${homeLogo ? `<img src="${homeLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${homeAbbr}</span>
                     </div>
@@ -3720,16 +3720,16 @@ function displayMLBTeams(teams, standings = {}) {
                 <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;margin:0 auto 0.5rem">
                     ${logo
                         ? `<img src="${logo}" style="width:100%;height:100%;object-fit:contain" loading="lazy" data-logo-fallback="${_escHtml(abbr)}">`
-                        : `<span style="font-size:1.4rem;font-weight:800;color:#fff">${abbr}</span>`}
+                        : `<span style="font-size:var(--text-2xl);font-weight:800;color:#fff">${abbr}</span>`}
                 </div>
                 <h3 class="team-name">${team.name}</h3>
                 ${hasRec ? `
                     <div style="margin-top:0.375rem;display:flex;align-items:center;justify-content:center;gap:0.5rem">
-                        <span style="font-weight:800;font-size:1rem;color:#fff">${rec.wins}–${rec.losses}</span>
-                        <span style="font-size:0.75rem;color:rgba(255,255,255,0.6)">${rec.pct}</span>
-                        ${rec.streak ? `<span style="font-size:0.7rem;color:${rec.streak.startsWith('W') ? '#34d399' : '#f87171'};font-weight:700">${rec.streak}</span>` : ''}
+                        <span style="font-weight:800;font-size:var(--text-md);color:#fff">${rec.wins}–${rec.losses}</span>
+                        <span style="font-size:var(--text-xs);color:rgba(255,255,255,0.6)">${rec.pct}</span>
+                        ${rec.streak ? `<span style="font-size:var(--text-xs);color:${rec.streak.startsWith('W') ? '#34d399' : '#f87171'};font-weight:700">${rec.streak}</span>` : ''}
                     </div>
-                ` : `<p style="color:rgba(255,255,255,0.55);font-size:0.78rem;margin-top:0.25rem">${team.locationName || ''}</p>`}
+                ` : `<p style="color:rgba(255,255,255,0.55);font-size:var(--text-sm);margin-top:0.25rem">${team.locationName || ''}</p>`}
             </div>
             <div class="team-card-body">
                 <div class="team-stat-row">
@@ -3738,7 +3738,7 @@ function displayMLBTeams(teams, standings = {}) {
                 </div>
                 <div class="team-stat-row">
                     <span style="color:var(--color-text-muted)">Division</span>
-                    <span style="font-size:0.82rem">${divName || '—'}</span>
+                    <span style="font-size:var(--text-sm)">${divName || '—'}</span>
                 </div>
                 ${hasRec ? `
                     <div class="team-stat-row">
@@ -3748,7 +3748,7 @@ function displayMLBTeams(teams, standings = {}) {
                 ` : ''}
                 <div class="team-stat-row">
                     <span style="color:var(--color-text-muted)">Stadium</span>
-                    <span style="font-size:0.82rem">${team.venue?.name || '—'}</span>
+                    <span style="font-size:var(--text-sm)">${team.venue?.name || '—'}</span>
                 </div>
                 <div class="team-stat-row">
                     <span style="color:var(--color-text-muted)">Since</span>
@@ -3797,7 +3797,7 @@ async function showMLBTeamDetail(teamId, push = true) {
     grid.className = 'player-detail-container';
     grid.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:4rem">
-            <div class="player-detail-avatar" style="background:linear-gradient(135deg,${loadColors.primary}cc,${loadColors.primary}55);margin:0 auto 1.25rem">
+            <div class="player-detail-avatar" style="background:${loadColors.primary}cc;margin:0 auto 1.25rem">
                 ${loadLogo ? `<img src="${loadLogo}" style="width:100%;height:100%;object-fit:contain;padding:10px" loading="lazy" data-hide-on-error>` : (team?.abbreviation || '?')}
             </div>
             ${ssLoader('Loading roster')}
@@ -4055,14 +4055,14 @@ function _mlbTeamUpcomingCard(games, teamId, colors) {
         return `
             <div class="roster-row roster-row--split">
                 <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
-                    <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${ha}</span>
+                    <span style="color:var(--text-muted);font-size:var(--text-xs);min-width:42px">${ha}</span>
                     ${oppLogo ? `<img src="${oppLogo}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:0.875rem">${oppAbbr}</span>
+                    <span style="font-weight:600;font-size:var(--text-sm)">${oppAbbr}</span>
                     ${ppLine}
                 </div>
                 <div style="text-align:right;flex-shrink:0">
-                    <div style="font-size:0.75rem;color:var(--text-secondary);font-weight:600">${dateStr}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted)">${timeStr}</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-secondary);font-weight:600">${dateStr}</div>
+                    <div style="font-size:var(--text-xs);color:var(--text-muted)">${timeStr}</div>
                 </div>
             </div>`;
     }).join('');
@@ -4086,7 +4086,7 @@ function _mlbTeamOddsBio(teamId) {
     const val = v >= 99.5 ? '&gt;99' : ((typeof _oddsFmtPct === 'function') ? _oddsFmtPct(v) : String(Math.round(v)));
     const stamp = AppState.mlbOdds?.ts ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
     const sims = AppState.mlbOdds?.sims || 4000;
-    return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-display)">${val}%</span></div>`;
+    return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-sans)">${val}%</span></div>`;
 }
 
 function _mlbTeamHeader(team, teamId, colors, rec) {
@@ -4121,8 +4121,8 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
             <button onclick="backToMLBTeams()" class="back-button">← Teams</button>
             <div class="player-hero">
                 <div class="player-detail-avatar"
-                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
-                            color:#fff;font-size:1.75rem;font-weight:800">
+                     style="background:${colors.primary}cc;
+                            color:#fff;font-size:var(--text-3xl);font-weight:800">
                     ${logo ? `<img class="player-headshot player-headshot--detail" src="${logo}" alt="${name}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : abbr}
                 </div>
                 <div class="player-hero-info">
@@ -4185,15 +4185,15 @@ function _mlbRecentGamesCard(games, teamId) {
             <div class="roster-row roster-row--split ${clickable ? 'roster-row--clickable' : ''}"
                  ${clickable ? `onclick="showMLBGameDetail(${g.gamePk}, AppState._mlbTeamRecentGames[${teamId}].find(g=>g.gamePk===${g.gamePk}))"` : ''}>
                 <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                    <span style="font-weight:900;font-size:0.875rem;min-width:26px;color:${outClr}">${outcome}</span>
-                    <span style="color:var(--color-text-muted);font-size:0.75rem;min-width:54px">${dateStr}</span>
-                    <span style="color:var(--color-text-muted);font-size:0.75rem">${ha}</span>
+                    <span style="font-weight:900;font-size:var(--text-sm);min-width:26px;color:${outClr}">${outcome}</span>
+                    <span style="color:var(--color-text-muted);font-size:var(--text-xs);min-width:54px">${dateStr}</span>
+                    <span style="color:var(--color-text-muted);font-size:var(--text-xs)">${ha}</span>
                     ${oppLogo ? `<img src="${oppLogo}" alt="" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${oppAbbr}</span>
+                    <span style="font-weight:600;font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${oppAbbr}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
-                    <span style="font-weight:700;font-size:0.95rem;color:${scoreClr}">${scoreStr}</span>
-                    ${clickable ? '<span style="font-size:0.65rem;color:#334155">›</span>' : ''}
+                    <span style="font-weight:700;font-size:var(--text-base);color:${scoreClr}">${scoreStr}</span>
+                    ${clickable ? '<span style="font-size:var(--text-2xs);color:#334155">›</span>' : ''}
                 </div>
             </div>
         `;
@@ -4268,7 +4268,7 @@ function _mlbRosterCard(roster, colors) {
 
         return `
             <div class="roster-row${p.onIL ? ' roster-row--il' : ''}" ${clickAttr}>
-                <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden;${p.onIL ? 'opacity:0.65' : ''}">
+                <div class="roster-avatar" style="background:${colors.primary}cc;position:relative;overflow:hidden;${p.onIL ? 'opacity:0.65' : ''}">
                     ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
                     <span style="position:relative">${initials}</span>
                 </div>
@@ -4609,7 +4609,7 @@ function _appendMLBByPositionGrid(fragment, splits, season) {
                 rows += `<div class="lb-pos-row${i === 0 ? ' lb-pos-row--gold' : ''}"
                               ${pid ? `data-pid="${pid}" data-group="${isPit ? 'pitching' : 'hitting'}"` : ''}>
                     <span class="lb-pos-rank">${i + 1}</span>
-                    <div class="lb-pos-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-pos-avatar" style="background:${colors.primary}cc">
                         ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-pos-initials">${_escHtml(initials)}</span>
                     </div>
@@ -4689,7 +4689,7 @@ function _appendMLBStreakPanel(fragment, splits, season) {
         row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(pid, 'hitting'); });
         row.innerHTML = `
             <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-            <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+            <div class="lb-avatar" style="background:${colors.primary}cc">
                 ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="lb-avatar-initials">${initials}</span>
             </div>
@@ -4757,7 +4757,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
         list.className = 'leaderboard-list';
 
         if (sorted.length === 0) {
-            list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No qualifying players</p>`;
+            list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:var(--text-sm)">No qualifying players</p>`;
         } else {
             sorted.slice(0, 5).forEach((split, i) => {
                 const rawVal = split.stat[cat.key];
@@ -4781,7 +4781,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -4822,7 +4822,7 @@ function _buildTeamSelect(splits, current, onSelect) {
         'border:1px solid var(--border-default)',
         'border-radius:var(--radius-full)',
         'color:' + (current !== 'all' ? 'var(--accent)' : 'var(--text-subtle)'),
-        'font-size:0.72rem',
+        'font-size:var(--text-xs)',
         'font-weight:700',
         'font-family:inherit',
         'padding:0.2rem 0.6rem',
@@ -5044,7 +5044,7 @@ function displayMLBLeaderboards() {
             }
             row.innerHTML = `
                 <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                <div class="lb-avatar" style="background:${colors.primary}cc">
                     ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                     <span class="lb-avatar-initials">${initials}</span>
                 </div>
@@ -5081,7 +5081,7 @@ function displayMLBLeaderboards() {
         }
 
         if (sorted.length === 0) {
-            list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+            list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:var(--text-sm)">No data available</p>`;
         } else {
             sorted.slice(0, MLB_LB_INIT).forEach((split, i) => {
                 list.appendChild(_buildMLBLeaderboardRow(split, i));
@@ -5183,7 +5183,7 @@ function displayMLBLeaderboards() {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -5197,7 +5197,7 @@ function displayMLBLeaderboards() {
             };
 
             if (sorted.length === 0) {
-                list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+                list.innerHTML = `<p style="color:var(--color-text-muted);padding:1.5rem;text-align:center;font-size:var(--text-sm)">No data available</p>`;
             } else {
                 sorted.slice(0, MLB_LB_INIT).forEach((r, i) => list.appendChild(_buildSavantRow(r, i)));
                 const extra = sorted.slice(MLB_LB_INIT);
@@ -5266,7 +5266,7 @@ function displayMLBLeaderboards() {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -5344,7 +5344,7 @@ function displayMLBLeaderboards() {
                     }
                     row.innerHTML = `
                         <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                        <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                        <div class="lb-avatar" style="background:${colors.primary}cc">
                             ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                             <span class="lb-avatar-initials">${_escHtml(initials)}</span>
                         </div>
@@ -5358,7 +5358,7 @@ function displayMLBLeaderboards() {
                 };
 
                 if (sorted.length === 0) {
-                    list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:0.875rem">No data available</p>`;
+                    list.innerHTML = `<p style="color:var(--text-muted);padding:1.5rem;text-align:center;font-size:var(--text-sm)">No data available</p>`;
                 } else {
                     sorted.slice(0, 10).forEach((r, i) => list.appendChild(_buildPitcherSavantRow(r, i)));
                 }
@@ -5581,7 +5581,7 @@ async function loadMLBStandings() {
 
     grid.className = 'standings-container';
     grid.innerHTML = Array.from({ length: 18 }, () =>
-        `<div class="skeleton-line" style="height:38px;border-radius:8px;margin-bottom:4px"></div>`
+        `<div class="skeleton-line" style="height:38px;border-radius:var(--radius);margin-bottom:4px"></div>`
     ).join('');
 
     try {
@@ -5979,7 +5979,7 @@ async function displayMLBTransactions() {
                 <div class="skeleton-line" style="width:45%;height:12px"></div>
                 <div class="skeleton-line" style="width:78%;height:10px"></div>
             </div>
-            <div class="skeleton-line" style="width:32px;height:18px;border-radius:4px"></div>
+            <div class="skeleton-line" style="width:32px;height:18px;border-radius:var(--radius)"></div>
         </div>
     `).join('');
 
@@ -6066,7 +6066,7 @@ function _renderMLBTransactions(transactions) {
                      onclick="showMLBPlayerDetail(${pid})"
                      onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${pid})">
                     <span class="txn-emoji" aria-hidden="true">${emoji}</span>
-                    <div class="txn-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="txn-avatar" style="background:${colors.primary}cc">
                         ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="txn-avatar-initials">${_escHtml(initials)}</span>
                     </div>
@@ -6371,7 +6371,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
         blurbCard.style.display = '';
         blurbCard.innerHTML = `
             <h2 class="detail-section-title">Broadcast Blurb</h2>
-            <p style="color:var(--text-muted);font-size:0.85rem">
+            <p style="color:var(--text-muted);font-size:var(--text-sm)">
                 Deploy <code>worker/broadcast-blurb.js</code> and set <code>BROADCAST_BLURB_URL</code> in <code>api.js</code> to enable AI blurbs.
             </p>`;
         return;
@@ -6381,8 +6381,8 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
     blurbCard.innerHTML = `
         <h2 class="detail-section-title">Broadcast Blurb</h2>
         <div>
-            <div class="skeleton-line" style="width:100%;height:18px;border-radius:6px"></div>
-            <div class="skeleton-line" style="width:88%;height:18px;border-radius:6px;margin-top:8px"></div>
+            <div class="skeleton-line" style="width:100%;height:18px;border-radius:var(--radius)"></div>
+            <div class="skeleton-line" style="width:88%;height:18px;border-radius:var(--radius);margin-top:8px"></div>
         </div>`;
 
     const computed = group === 'hitting' ? _computeBattingRates(stats) : _computePitchingRates(stats);
@@ -6423,7 +6423,7 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
         Logger.warn('Broadcast blurb failed', err, 'MLB');
         blurbCard.innerHTML = `
             <h2 class="detail-section-title">Broadcast Blurb</h2>
-            <p style="color:var(--color-error);font-size:0.85rem">
+            <p style="color:var(--color-error);font-size:var(--text-sm)">
                 Blurb service unavailable — deploy <code>worker/broadcast-blurb.js</code> to enable AI blurbs.
             </p>`;
     }
@@ -6621,9 +6621,9 @@ async function displayGamePrep() {
         <div class="prep-page-wrap">
             <h1 class="prep-page-title">Game Prep</h1>
             <p class="prep-page-sub">Select a game to generate a broadcast prep sheet</p>
-            <div class="skeleton-line" style="height:80px;border-radius:12px;margin-bottom:0.75rem"></div>
-            <div class="skeleton-line" style="height:80px;border-radius:12px;margin-bottom:0.75rem"></div>
-            <div class="skeleton-line" style="height:80px;border-radius:12px"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius)"></div>
         </div>
     `;
 
@@ -6644,7 +6644,7 @@ async function displayGamePrep() {
     }
 
     if (!games.length) {
-        grid.innerHTML = `<div class="prep-page-wrap"><h1 class="prep-page-title">Game Prep</h1><div class="empty-state"><div class="empty-state-icon">${ErrorHandler.EMPTY_GLYPH}</div><p class="empty-state-title">No games scheduled today</p><p style="color:var(--text-muted);font-size:0.85rem">${todayStr}</p></div></div>`;
+        grid.innerHTML = `<div class="prep-page-wrap"><h1 class="prep-page-title">Game Prep</h1><div class="empty-state"><div class="empty-state-icon">${ErrorHandler.EMPTY_GLYPH}</div><p class="empty-state-title">No games scheduled today</p><p style="color:var(--text-muted);font-size:var(--text-sm)">${todayStr}</p></div></div>`;
         return;
     }
 
@@ -6710,10 +6710,10 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             <div class="prep-sheet-toolbar no-print">
                 <button class="back-button" onclick="displayGamePrep()">← All Games</button>
             </div>
-            <div class="skeleton-line" style="height:120px;border-radius:16px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:160px;border-radius:12px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:200px;border-radius:12px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:200px;border-radius:12px"></div>
+            <div class="skeleton-line" style="height:120px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:160px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:200px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:200px;border-radius:var(--radius)"></div>
         </div>
     `;
 
@@ -7156,7 +7156,7 @@ async function loadMLBCompare() {
 
     // Ensure player data is loaded
     if (!(AppState.mlbPlayers?.hitting?.length)) {
-        grid.innerHTML = `<div class="cmp-page-wrap"><div class="skeleton-line" style="height:48px;border-radius:12px;margin-bottom:1rem"></div><div class="skeleton-line" style="height:300px;border-radius:12px"></div></div>`;
+        grid.innerHTML = `<div class="cmp-page-wrap"><div class="skeleton-line" style="height:48px;border-radius:var(--radius);margin-bottom:1rem"></div><div class="skeleton-line" style="height:300px;border-radius:var(--radius)"></div></div>`;
         await loadMLBPlayers();
     }
 
@@ -7423,7 +7423,7 @@ if (typeof window !== 'undefined') {
         const batterId  = group === 'hitting' ? currentId : oppId;
         const pitcherId = group === 'hitting' ? oppId : currentId;
 
-        result.innerHTML = '<div class="skeleton-line" style="width:100%;height:48px;border-radius:8px;margin-top:1rem"></div>';
+        result.innerHTML = '<div class="skeleton-line" style="width:100%;height:48px;border-radius:var(--radius);margin-top:1rem"></div>';
         if (btn) btn.disabled = true;
 
         const data = await _fetchMLBH2H(batterId, pitcherId);

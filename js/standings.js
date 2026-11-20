@@ -13,7 +13,7 @@ async function loadStandings() {
 
     grid.className = 'standings-container';
     grid.innerHTML = `
-        <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);overflow:hidden">
+        <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius);overflow:hidden">
             <div class="skeleton-line" style="height:36px;border-radius:0;margin:0;opacity:0.5"></div>
             ${Array.from({ length: 15 }, () => `
                 <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1.25rem;border-top:1px solid var(--border-default)">
@@ -206,7 +206,7 @@ function displayPowerRankings(rows) {
             ? Array.from({ length: 10 }, (_, i) =>
                 `<span class="power-pip ${i < l10W ? 'power-pip--win' : 'power-pip--loss'}"></span>`
               ).join('')
-            : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>';
+            : '<span style="color:var(--text-muted);font-size:var(--text-xs)">—</span>';
 
         // Heat label
         const heat = team._score >= 0.65 ? { icon: 'fire',       label: 'HOT',   cls: 'power-heat--hot'  }

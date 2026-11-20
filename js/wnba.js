@@ -124,9 +124,9 @@ async function displayWNBAScores(opts = {}) {
                 <span class="home-section-date">${dateStr}</span>
             </div>
             <div class="home-today-grid" id="wnbaScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
             </div>
         </div>`;
 
@@ -321,7 +321,7 @@ async function displayWNBAStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_wnbaSeasonSelect()}</div>
-        <div id="wnbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="wnbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('wnbaSeasonSel').addEventListener('change', (ev) => {
         _wnba.season = parseInt(ev.target.value, 10); displayWNBAStandings();
     });
@@ -338,7 +338,7 @@ async function displayWNBAStandings() {
     }
     document.getElementById('wnbaStdBody').innerHTML = confs.map(c => `
         <section class="mlb-division-panel" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Overall</th><th>GB</th><th>Streak</th></tr></thead>
@@ -362,7 +362,7 @@ async function displayWNBATeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_wnbaSeasonSelect()}</div>
-        <div id="wnbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="wnbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('wnbaSeasonSel').addEventListener('change', (ev) => {
         _wnba.season = parseInt(ev.target.value, 10); displayWNBATeams();
     });
@@ -382,7 +382,7 @@ async function displayWNBATeams() {
     // links into a view that doesn't exist.
     document.getElementById('wnbaTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:var(--text-sm)">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip">
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
@@ -446,7 +446,7 @@ async function displayWNBAPlayoffPicture() {
         return;
     }
 
-    grid.innerHTML = `<div id="wnbaPlayoffBody"><div class="skeleton-line" style="height:420px;border-radius:var(--radius-md)"></div></div>`;
+    grid.innerHTML = `<div id="wnbaPlayoffBody"><div class="skeleton-line" style="height:420px;border-radius:var(--radius)"></div></div>`;
     let confs;
     try { confs = await fetchWNBAStandings(_wnba.season); }
     catch (err) {
@@ -530,7 +530,7 @@ async function displayWNBALeaders() {
             </div>`).join('');
         return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
             <div class="nfl-card-head" style="justify-content:space-between">
-                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:var(--text-2xs)">${_escHtml(cat.unit)}</span>
             </div>${rows}</div>`;
     }).join('');
 }
