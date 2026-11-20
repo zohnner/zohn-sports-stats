@@ -2430,7 +2430,7 @@
     white-space: nowrap;
 }
 .park-badge--hit       { background: rgba(239,68,68,0.14); color: #ef4444; }
-.park-badge--hit-light { background: rgba(249,115,22,0.12); color: #f97316; }
+.park-badge--hit-light { background: rgba(244,63,94,0.12); color: #f43f5e; }
 .park-badge--pit       { background: rgba(34,211,238,0.13); color: #22d3ee; }
 .park-badge--pit-light { background: rgba(96,165,250,0.13); color: #60a5fa; }
 
@@ -3525,7 +3525,7 @@
 }
 .bullpen-pill-rest { font-weight: 400; font-size: 0.67rem; }
 .bullpen-pill--hot   { background: rgba(239,68,68,0.14);   color: #ef4444; }
-.bullpen-pill--warm  { background: rgba(249,115,22,0.12);  color: #f97316; }
+.bullpen-pill--warm  { background: rgba(244,63,94,0.12);  color: #f43f5e; }
 .bullpen-pill--ok    { background: rgba(251,191,36,0.12);  color: #fbbf24; }
 .bullpen-pill--fresh { background: rgba(52,211,153,0.10);  color: #34d399; }
 .prep-two-col {
@@ -4866,7 +4866,7 @@
     box-sizing: border-box;
 }
 .hcs-card *, .hcs-preview-mount.hcs-card * { box-sizing: border-box; }
-.hcs-wash { position: absolute; inset: 0; opacity: 0.16; background: var(--team-color, #ff8100); clip-path: polygon(0 0, 60% 0, 30% 100%, 0 100%); }
+.hcs-wash { position: absolute; inset: 0; opacity: 0.16; background: var(--team-color, var(--accent)); clip-path: polygon(0 0, 60% 0, 30% 100%, 0 100%); }
 .hcs-card-inner { position: relative; display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-6); }
 
 .hcs-card-head { display: flex; align-items: center; gap: var(--space-3); }
@@ -4885,13 +4885,12 @@
 .hcs-id-meta { font-family: var(--font-mono); font-size: 0.76rem; color: #7fa5c8; letter-spacing: 0.02em; margin-top: 3px; }
 
 .hcs-stat-row { display: flex; flex-wrap: wrap; gap: var(--space-4); }
-.hcs-stat { flex: 1 1 96px; min-width: 96px; display: flex; flex-direction: column; gap: 5px; padding-top: var(--space-2); border-top: 3px solid var(--stat-color, var(--team-color, #ff8100)); }
+.hcs-stat { flex: 1 1 96px; min-width: 96px; display: flex; flex-direction: column; gap: 5px; padding-top: var(--space-2); border-top: 3px solid var(--stat-color, var(--team-color, var(--accent))); }
 .hcs-stat-value { font-family: var(--font-display); font-size: 2.2rem; line-height: 1; color: #f0f4fa; font-variant-numeric: tabular-nums; }
 .hcs-stat-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--stat-color, var(--team-color, #7fa5c8)); }
 
 .hcs-footer { display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-4); border-top: 1px solid #2a3850; }
-.hcs-wordmark { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; color: #f0f4fa; }
-.hcs-wordmark .accent { color: #ff8100; }
+.hcs-wordmark { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; color: #f2f7fc; }
 .hcs-domain { font-size: 0.68rem; color: #7fa5c8; }
 
 .hcs-export-btn {

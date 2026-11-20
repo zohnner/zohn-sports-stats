@@ -968,7 +968,7 @@ function _ncaafErr(msg, retryFn) {
 }
 
 // ── Leaders (real season stats via /api/ncaafstats) ──────────
-const _NCF_LCOLORS = ['#c8452b','#3b7dd8','#2e9e6b','#b0842f','#8b5cf6','#d6455f','#0d9488','#c2410c','#6366f1','#0891b2'];
+const _NCF_LCOLORS = ['#4cc9f0','#3b7dd8','#2e9e6b','#b59a2a','#8b5cf6','#d6455f','#0d9488','#be185d','#6366f1','#0891b2'];
 
 async function displayNCAAFLeaders() {
     const grid = document.getElementById('playersGrid');
@@ -1070,7 +1070,7 @@ function displayNCAAFPlayerDetail(data, requestedSeason) {
         sub: `${bio.team || '—'} · ${bio.pos || '—'}`, badge: 'NCAAF', action: null,
     });
 
-    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || 'var(--accent)';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';
     const teamRow = `${bio.teamLogo ? `<img src="${_escHtml(bio.teamLogo)}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}<span>${_escHtml(bio.team || '')}</span>`;
@@ -1308,7 +1308,7 @@ async function _loadNCAAFRadar(groups) {
     }
     if (labels.length < 3) return;
     if (!document.body.contains(host)) return;
-    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || 'var(--accent)';
     host.innerHTML = detailSection({
         title: 'Season Profile', id: 'ncaaf-radar-sec',
         body: `<div style="position:relative;height:260px"><canvas id="ncaaf-radar-chart"></canvas></div>` +
@@ -1359,7 +1359,7 @@ async function _loadNCAAFGameLog(id, season) {
         : '';
     host.innerHTML = chartSection + tableSection;
     if (canChart) {
-        const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || '#c8452b';
+        const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.ncaaf && SPORTS_META.ncaaf.accent) || 'var(--accent)';
         const chart = StatsCharts.nflGameTrend('ncaaf-gl-chart', data.games, cols, accent);
         if (!chart) { const sec = document.getElementById('ncaaf-gl-trend'); if (sec) sec.remove(); }
     }

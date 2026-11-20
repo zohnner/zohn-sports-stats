@@ -37,8 +37,8 @@
 /* "N LIVE" badge inside the title pill */
 .ticker-live-badge {
     display: inline-block;
-    background: rgba(245,158,11,0.25);
-    border: 1px solid rgba(245,158,11,0.5);
+    background: var(--color-live-subtle);
+    border: 1px solid var(--color-live-border);
     color: var(--color-live);
     font-size: 0.58rem;
     font-weight: 900;
@@ -196,9 +196,9 @@
     border: 1px solid rgba(34,211,160,0.25);
 }
 .ticker-status-pill--live {
-    background: rgba(245,158,11,0.14);
+    background: var(--color-live-subtle);
     color: var(--text-primary);
-    border: 1px solid rgba(245,158,11,0.3);
+    border: 1px solid var(--color-live-border);
     animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
 .ticker-status-pill--sched {

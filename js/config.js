@@ -4,6 +4,7 @@
 // Used for avatar backgrounds, card accents, and detail views.
 // ============================================================
 
+// ss-team-colors:start  (team colors are data, exempt from tools/check-orange.cjs)
 const NBA_TEAM_COLORS = {
     ATL: { primary: '#E03A3E', secondary: '#C1D32F', name: 'Atlanta Hawks' },
     BOS: { primary: '#007A33', secondary: '#BA9653', name: 'Boston Celtics' },
@@ -36,6 +37,7 @@ const NBA_TEAM_COLORS = {
     UTA: { primary: '#002B5C', secondary: '#00471B', name: 'Utah Jazz' },
     WAS: { primary: '#002B5C', secondary: '#E31837', name: 'Washington Wizards' },
 };
+// ss-team-colors:end
 
 /**
  * Get colours for a team by abbreviation.

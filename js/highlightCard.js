@@ -423,7 +423,7 @@ function _hcCardHtml(hasPhoto) {
             </div>
             <div class="hcs-stat-row">${statHtml}</div>
             <div class="hcs-footer">
-                <span class="hcs-wordmark">Sport<span class="accent">Strata</span></span>
+                <span class="hcs-wordmark">SPORTSTRATA</span>
                 <span class="hcs-domain">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
             </div>
         </div>`;
@@ -904,7 +904,7 @@ function _hcNflCardHtml(hasPhoto) {
             </div>
             <div class="hcs-stat-row">${statHtml}</div>
             <div class="hcs-footer">
-                <span class="hcs-wordmark">Sport<span class="accent">Strata</span></span>
+                <span class="hcs-wordmark">SPORTSTRATA</span>
                 <span class="hcs-domain">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
             </div>
         </div>`;

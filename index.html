@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0d1014">
+    <meta name="theme-color" content="#070b16">
     <meta name="description" content="SportStrata — Serious stats for serious fans. Free MLB, NFL, NCAA Football, NCAA Basketball, WNBA and NBA scores, standings, stat leaders and live games.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SportStrata">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
-    <link rel="icon" type="image/png" sizes="64x64" href="assets/icon-64.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <!-- CSP meta-tag fallback (edge _headers file is the primary enforcement layer).
@@ -54,19 +55,21 @@
       /* Boot splash (D-048) — branded loading overlay. Inline + critical so it paints
          before the deferred script chain; app.js fades it out on first render. */
       #bootSplash{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;gap:22px;background:#0d1014;transition:opacity .45s ease}
-      html[data-theme="light"] #bootSplash{background:#f5f7fa}
+        align-items:center;justify-content:center;gap:22px;background:#070b16;transition:opacity .45s ease}
+      html[data-theme="light"] #bootSplash{background:#f2f7fc}
       #bootSplash.boot-hide{opacity:0;pointer-events:none}
-      #bootSplash .bm{display:flex;flex-direction:column;gap:7px;width:84px}
-      #bootSplash .bm i{height:12px;border-radius:3px;background:#ff7a00;transform-origin:left center;
+      #bootSplash .bm{display:flex;flex-direction:column;gap:7px;width:72px}
+      #bootSplash .bm i{height:11px;border-radius:4px;background:#4cc9f0;transform-origin:left center;
         animation:bootbar .9s ease-in-out infinite}
-      #bootSplash .bm i:nth-child(2){width:64%;background:#ffb347;animation-delay:.12s}
-      #bootSplash .bm i:nth-child(3){width:88%;animation-delay:.24s}
+      #bootSplash .bm i:nth-child(2){width:34.4%;animation-delay:.08s}
+      #bootSplash .bm i:nth-child(3){background:#f2f7fc;animation-delay:.16s}
+      html[data-theme="light"] #bootSplash .bm i:nth-child(3){background:#070b16}
+      #bootSplash .bm i:nth-child(4){width:34.4%;align-self:flex-end;transform-origin:right center;animation-delay:.24s}
+      #bootSplash .bm i:nth-child(5){animation-delay:.32s}
       @keyframes bootbar{0%,100%{transform:scaleX(.28);opacity:.4}50%{transform:scaleX(1);opacity:1}}
       #bootSplash .bw{font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;font-weight:700;
-        letter-spacing:.02em;font-size:16px;color:#c5cbd3}
-      html[data-theme="light"] #bootSplash .bw{color:#313944}
-      #bootSplash .bw b{color:#ff7a00}
+        letter-spacing:.08em;text-transform:uppercase;font-size:15px;color:#c3cede}
+      html[data-theme="light"] #bootSplash .bw{color:#24324a}
       @media (prefers-reduced-motion:reduce){#bootSplash .bm i{animation:none;transform:none;opacity:.9}}
     </style>
     <!-- Turnstile (D-031) — loaded async; auth.js renders the widget on-demand when the
@@ -99,8 +102,8 @@
 </head>
 <body>
     <div id="bootSplash" role="status" aria-label="Loading SportStrata">
-      <div class="bm" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="bw">Sport<b>Strata</b></div>
+      <div class="bm" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="bw">SportStrata</div>
     </div>
     <script>setTimeout(function(){var s=document.getElementById('bootSplash');if(s){s.classList.add('boot-hide');setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},500);}},8000);</script>
 
@@ -108,10 +111,10 @@
         <a class="skip-link" href="#main" onclick="event.preventDefault();var m=document.getElementById('main');if(m){m.focus();m.scrollIntoView();}">Skip to main content</a>
         <div class="header-inner">
             <button class="brand" onclick="navigateTo('home')" aria-label="SportStrata home">
-                <img class="brand-logo-img" src="assets/icon-64.png" width="64" height="64" alt="SportStrata">
+                <img class="brand-logo-img" src="assets/icon.svg" width="40" height="40" alt="SportStrata">
                 <span id="brandIcon" hidden></span>
                 <div class="brand-text">
-                    <span class="brand-name">Sport<span class="brand-name__accent">Strata</span></span>
+                    <span class="brand-name">SportStrata</span>
                     <span class="brand-sub" id="brandSub">MLB Analytics</span>
                 </div>
             </button>

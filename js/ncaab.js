@@ -310,7 +310,7 @@ function _ncaabErr(msg, retryFn) {
 
 // ── Leaders (#191, via /api/ncaabstats or its browser fallback) ──
 // Names are plain text: NCAAB has no player page yet (#117).
-const _NCAAB_LCOLORS = ['#d97706', '#3b7dd8', '#2e9e6b', '#8b5cf6', '#d6455f', '#0d9488'];
+const _NCAAB_LCOLORS = ['#4cc9f0', '#3b7dd8', '#2e9e6b', '#8b5cf6', '#d6455f', '#0d9488'];
 
 async function displayNCAABLeaders() {
     const grid = document.getElementById('playersGrid');

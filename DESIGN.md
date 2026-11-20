@@ -12,7 +12,7 @@ When a user finishes any interaction they should feel *capable and informed*, ne
 
 ## The brand is the default dark theme
 
-Orange on an **engineered near-black** — Space Grotesk for display, Barlow for numerals, minimal chrome — that is SportStrata's face. **Amended by D-048 (phased redesign migration, underway):** the base moved off deep navy to a neutral, temperature-controlled dark so the product reads as a precision instrument, not a consumer app. The prior "no brand refresh to chase" line is superseded — the refresh *is* the D-048 palette/type/motion migration, executed as value-swaps on existing tokens, one gated phase at a time.
+**Ice on ink** (D-212, Ink + Ice rebrand 2026-11-20: `--bg` #070B16, `--surface` #0F182A, `--accent` #4CC9F0, `--text` #F2F7FC, `--muted` #8FA3BF; the mark is the Strata S) — Space Grotesk for display, Barlow for numerals, minimal chrome — that is SportStrata's face. **Amended by D-048 (phased redesign migration, underway):** the base moved off deep navy to a neutral, temperature-controlled dark so the product reads as a precision instrument, not a consumer app. The prior "no brand refresh to chase" line is superseded — the refresh *is* the D-048 palette/type/motion migration, executed as value-swaps on existing tokens, one gated phase at a time.
 
 - The **theme set is deliberately small (D-047, supersedes D-038's "frozen at the current set"):** dark (default) + light + one tribute, `nl-monarchs`. The 8 City Connect + Bananas/Expos/Trash-Pandas themes were **retired** — archived in `css/themes-retired/` as candidates for future premium unlockables. The default is always the argument; themes are never it.
 - **The wordmark is never themed.** The brand icon may wear team colors (jersey rule); "SportStrata" does not (D-038 identity rule).
@@ -22,9 +22,9 @@ Orange on an **engineered near-black** — Space Grotesk for display, Barlow for
 
 SportStrata reads as *a broadcast graphics package meets a trading terminal* — live, precise, quantitative; one visual voice regardless of sport. **The cohesion test:** a scorebug screenshot from any sport (MLB grid card, NFL ticker, NCAAF row) should be indistinguishable by sport except by its content — same anatomy, type, state language, accent logic. These never vary by sport or theme:
 
-1. **State language.** live = `--color-live` + pulse + a LIVE badge; final = muted/receded; upcoming = **neutral** scheduled pill (`--bg-subtle`/`--text-muted`, distinguished by its time/"Scheduled" label). Identical vocabulary in ticker, grid, hero, and landings. *(D-047 S3c amended this from "accent scheduled pill" — that conflicted with invariant #3, "orange = brand only"; the owner-approved orange re-scope resolves it in favor of #3.)*
+1. **State language.** live = `--color-live` + pulse + a LIVE badge; final = muted/receded; upcoming = **neutral** scheduled pill (`--bg-subtle`/`--text-muted`, distinguished by its time/"Scheduled" label). Identical vocabulary in ticker, grid, hero, and landings. *(D-047 S3c amended this from "accent scheduled pill" — that conflicted with invariant #3, "orange = brand only"; the owner-approved accent re-scope resolves it in favor of #3.)*
 2. **Numeric voice.** live scores render in `--font-mono`; stat values in `--font-display` + `tabular-nums`. Numerals never fall back to the body face.
-3. **Brand orange = brand only.** logo/wordmark, primary CTA, active nav. Every other job it drifted into (scheduled pills, eyebrows, section titles, filters) moves to semantic tokens (S3).
+3. **Ice is a scalpel, not a wash (D-212).** Ice marks data emphasis, state (active nav, selected, primary CTA) and wayfinding (links). Headlines and the wordmark stay text-colored. No orange anywhere: `tools/check-orange.cjs` (run by `tests/inkIce.test.js`) fails on any orange-family color outside the `ss-team-colors` fences, because team colors are data.
 4. **Eyebrow labels.** one `.eyebrow` utility, one recipe, everywhere (S4).
 5. **Logos are never naked on a surface.** every team mark gets the container/chip treatment (S5).
 
@@ -34,7 +34,7 @@ Migration order to reach this: DECISIONS.md D-047 (S1 done → S6).
 
 All color through `css/variables.css` tokens — a hex literal in a style attribute is a defect (tracked debt: D-038 K3). The vocabulary:
 
-- **Accent** (`--accent`) means *SportStrata is speaking*: primary actions, active nav, the brand. Scarcity is what makes it audible.
+- **Accent** (`--accent`, ice) means *data, state, wayfinding*: primary actions, active nav, links, the one focal series in a chart. Never a headline color, never a wash. Scarcity is what makes it audible. Text-bearing uses clear 4.5:1 in both themes (`tools/check-themes.cjs`); light theme uses the deepened ice `#0B6F91`.
 - **Stat-category colors** mark *category, never importance* (2026-05-17 rule). A number is never colored to shout.
 - **Semantic trio:** `--color-win` green, `--color-loss` red, `--color-live` hot pink/magenta (`#ff006e`) — states, nowhere else. (Corrected 2026-08-08 — this line said "amber" for weeks after the token itself was fixed 2026-08-02 during N-17's injury-badge work; CLAUDE.md had the right value, this page didn't. Per this page's own enforcement rule, the correction belongs here in the same pass it's noticed, not deferred.) Thresholded values (odds ≥75%, streaks) may borrow win/loss; decoration may not.
 - **Border = identity, badge = state** (D-038 K2). Card borders belong to teams; liveness/status lives in badges and glows. Never encode state in the border channel.

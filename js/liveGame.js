@@ -1178,9 +1178,9 @@ function _collectPitcherPitchTypeStats(allPlays, pitcherId) {
 // headline stat. Anything outside this set falls into "Other" rather than
 // growing the palette per-game (Kael, D-117 Phase 3).
 const LG_PITCH_TYPE_COLORS = {
-    FF: '#8ab4f8', SI: '#7cc7a4', FC: '#c58af9', SL: '#f4a261',
+    FF: '#8ab4f8', SI: '#7cc7a4', FC: '#c58af9', SL: '#e9c46a',
     CU: '#5aa9e6', CH: '#e8c468', FS: '#e07a9e', KC: '#9d8df1',
-    ST: '#6ec6b0', SV: '#d98b6b',
+    ST: '#6ec6b0', SV: '#d47fa6',
 };
 const LG_PITCH_TYPE_OTHER_COLOR = 'var(--text-muted)';
 

@@ -83,8 +83,8 @@
 
 /* ── Glow pulse for live elements ── */
 @keyframes glowPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.35); }
-    50%      { box-shadow: 0 0 0 6px rgba(245, 166, 35, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 110, 0.35); }
+    50%      { box-shadow: 0 0 0 6px rgba(255, 0, 110, 0); }
 }
 
 /* ── Stagger utility classes ── */

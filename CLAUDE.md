@@ -365,10 +365,10 @@ TTL guidance: `SHORT` (5m) for scores/games, `MEDIUM` (30m) for season stats/pla
 **Key design tokens:**
 - Surfaces: `--bg-base`, `--bg-surface`, `--bg-raised`, `--bg-card`, `--bg-card-hover`
 - Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-subtle`, `--text-disabled`
-- Accent (brand orange-gold): `--accent` (`#ff8100`), `--accent-light` (`#ffd200`), `--accent-dark`, `--accent-subtle`, `--accent-border`
+- Accent (ice, D-212 Ink + Ice): `--accent` (`#4cc9f0`; light theme `#0b6f91`), `--accent-light`, `--accent-dark`, `--accent-subtle`, `--accent-border`. Surfaces: ink `--bg-base` `#070b16`, `--bg-surface` `#0f182a`. **No orange anywhere:** `tests/inkIce.test.js` runs `tools/check-orange.cjs` and fails on any orange-family color outside an `ss-team-colors:start/end` fence (team colors are data). Brand mark: the Strata S (`assets/brand/strata-s-1080.png` is the source of record, `assets/brand/strata-s.svg` and `assets/icon.svg` transcribe its measured geometry)
 - Borders: `--border-default`, `--border-mid`, `--border-strong`, `--border-accent`
 - Semantic: `--color-win` (green), `--color-loss` (red), `--color-live` (hot pink/magenta, `#ff006e` — corrected 2026-08-02; was documented as "amber" but never was, caught while designing N-17's injury-status badges), `--color-error`
-- Stat colors: `--color-pts` (amber), `--color-reb` (emerald), `--color-ast` (sky), `--color-stl` (violet), `--color-blk` (pink), `--color-pct` (orange), `--color-min` (indigo), `--color-tov` (red-light)
+- Stat colors: `--color-pts` (amber), `--color-reb` (emerald), `--color-ast` (sky), `--color-stl` (violet), `--color-blk` (pink), `--color-pct` (lime), `--color-min` (indigo), `--color-tov` (red-light)
 - Layout: `--header-height` (60px), `--ticker-height` (38px), `--header-sub-h` (36px), `--sidebar-w` (280px)
 - Radii: `--radius-xs` through `--radius-full`
 - Shadows: `--shadow-sm/md/lg`, `--shadow-card`, `--shadow-card-hov`, `--shadow-live`
