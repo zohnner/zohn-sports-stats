@@ -1758,7 +1758,7 @@ main {
    fixed near-white regardless of theme, since it sits behind the logo itself,
    not the card; harmless on light theme's already-light background. */
 .hgc-team-logo--chip {
-    background: #f5f7fa;
+    background: #f2f7fc;
     border-radius: 50%;
     padding: var(--space-0-5);
     box-sizing: border-box;
@@ -2930,12 +2930,6 @@ main {
 .recent-game-date { color: var(--text-subtle); font-size: var(--text-sm); margin-bottom: var(--space-2); font-weight: 600; }
 .recent-game-matchup { color: var(--text-primary); font-weight: 700; margin-bottom: var(--space-2); display: flex; justify-content: space-between; font-size: var(--text-base); }
 
-.shooting-stats-grid { display: flex; flex-direction: column; gap: var(--space-5); }
-.shooting-stat-item { background: var(--bg-subtle); padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--border-default); }
-.shooting-stat-header { display: flex; justify-content: space-between; margin-bottom: var(--space-2); font-size: var(--text-sm); }
-.shooting-stat-bar { width: 100%; height: 6px; background: var(--bg-interactive); border-radius: var(--radius); overflow: hidden; }
-.shooting-stat-fill { height: 100%; border-radius: var(--radius); transition: width 0.5s var(--ease-out); }
-
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
     .header-inner { padding: 0 var(--space-4); gap: var(--space-2); }
@@ -3282,26 +3276,7 @@ main {
 }
 .theme-toggle-icon { display: inline-flex; align-items: center; }
 
-.waffle-panel-footer {
-    padding: var(--space-3);
-    border-top: 1px solid var(--border-default);
-    margin-top: var(--space-1);
-}
-
 /* Universal section (Arcade — not sport-specific) */
-.waffle-universal-section {
-    margin-top: var(--space-3);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--border-default);
-}
-.waffle-section-label {
-    font-size: var(--text-xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding: 0 var(--space-1) var(--space-2);
-}
 
 /* ── Back to top button ──────────────────────────────────────── */
 .back-to-top {
@@ -3546,13 +3521,16 @@ a:focus:not(:focus-visible),
        menu + bottom bar, in-page search + breadcrumb, interactive controls.
        Selectors match the live DOM (see index.html header/nav structure). */
     header,
-    .menu-panel, #menuPanel,
-    .bottom-nav, #bottomNav,
-    .search-container, #searchBar,
-    .view-header, #viewHeader,
+    .menu-panel,
+    #menuPanel,
+    .bottom-nav,
+    #bottomNav,
+    .search-container,
+    #searchBar,
+    .view-header,
+    #viewHeader,
     .back-button,
     .share-btn,
-    .per36-btn,
     .compare-select,
     #pd-compare-chart-wrap,
     .builder-panel,
@@ -3649,11 +3627,9 @@ a:focus:not(:focus-visible),
     .career-table thead th { background: #eee !important; color: #111 !important; }
 
     /* Charts — hide interactive charts except career table */
-    .chart-wrap,
-    .charts-duo { display: none !important; }
+    .chart-wrap { display: none !important; }
 
     /* Shooting card — keep bars */
-    .shooting-stat-fill { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
     /* Force page breaks between hero and stats */
     .player-detail-header { page-break-after: avoid; }
@@ -3875,7 +3851,7 @@ a:focus:not(:focus-visible),
     width: 100%;
     height: 44px;
     border-radius: var(--radius);
-    background: var(--sw-bg, #060c18);
+    background: var(--sw-bg, var(--bg-base));
     position: relative;
     overflow: hidden;
 }

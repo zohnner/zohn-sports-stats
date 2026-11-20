@@ -106,7 +106,7 @@
 }
 /* D-047 S5: dark-team logos need a neutral chip on the near-black ticker row too — see main.css .hgc-team-logo--chip */
 .ticker-logo--chip {
-    background: #f5f7fa;
+    background: #f2f7fc;
     border-radius: 50%;
     padding: var(--space-0-5);
     box-sizing: border-box;

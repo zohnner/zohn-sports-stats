@@ -342,7 +342,7 @@
                 <input class="search-modal-input" id="searchModalInput"
                        type="text" placeholder="Search players and teams…"
                        autocomplete="off" spellcheck="false" aria-label="Search">
-                <button class="search-modal-close" id="searchModalClose" aria-label="Close search">✕</button>
+                <button class="search-modal-close" id="searchModalClose" aria-label="Close search"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
             </div>
             <div class="search-modal-results" id="searchModalResults"></div>
             <div class="search-modal-footer">
@@ -393,12 +393,12 @@
             <div class="search-input-wrap">
                 <span class="search-icon"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
                 <input type="text" id="searchBox" placeholder="Search players by name or team…">
-                <button class="search-clear" id="searchClear" style="display:none">✕</button>
+                <button class="search-clear" id="searchClear" style="display:none" aria-label="Clear search"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></button>
             </div>
             <div class="search-meta">
                 <p id="resultCount">Loading players…</p>
                 <div class="view-toggle">
-                    <button class="fav-filter-btn" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only">♥ Starred</button>
+                    <button class="fav-filter-btn" id="favFilterBtn" onclick="toggleFavFilter()" title="Show favorites only"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13.5S2.5 10.2 2.5 6.2A2.75 2.75 0 0 1 8 5a2.75 2.75 0 0 1 5.5 1.2C13.5 10.2 8 13.5 8 13.5z"/></svg> Starred</button>
                     <button class="view-toggle-btn active" id="cardViewBtn" onclick="setPlayerView('cards')" title="Card view">⊞</button>
                     <button class="view-toggle-btn" id="tableViewBtn" onclick="setPlayerView('table')" title="Table view">≡</button>
                 </div>

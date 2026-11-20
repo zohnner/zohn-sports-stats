@@ -277,7 +277,7 @@ async function displayStatBuilder(mlbGroup) {
                             <select class="cond-stat builder-select">${filterOptHtml}</select>
                             <select class="cond-op builder-select">${opOptHtml}</select>
                             <input class="cond-val builder-cond-input" type="number" step="any" placeholder="value">
-                            <button class="cond-remove" aria-label="Remove">✕</button>
+                            <button class="cond-remove" aria-label="Remove">${_iconSvg('x', 14)}</button>
                         </div>
                     </template>
                 </div>
@@ -701,7 +701,7 @@ function _renderSavedStats() {
                 </div>
                 <div style="display:flex;align-items:center;gap:0.75rem">
                     <span class="saved-stat-value">${s.result}</span>
-                    <button class="saved-stat-del" onclick="deleteSavedStat(${s.id})" title="Delete">✕</button>
+                    <button class="saved-stat-del" onclick="deleteSavedStat(${s.id})" title="Delete" aria-label="Delete">${_iconSvg('x', 14)}</button>
                 </div>
             </div>
             <code class="saved-stat-formula">${_escHtml(s.formula)}</code>

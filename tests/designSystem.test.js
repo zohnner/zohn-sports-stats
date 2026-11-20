@@ -41,3 +41,15 @@ test('only Inter and JetBrains Mono are loaded or named', () => {
 test('planted fault: a raw font-size is reported', () => {
     assert.strictEqual(offenders(/font-size:\s*[\d.]+(px|rem)\b/, '.x { font-size: 0.8rem; }', 'css/planted.css').length, 1);
 });
+
+test('no token is defined twice in one theme block (a later copy silently wins)', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'css', 'variables.css'), 'utf8');
+    for (const m of css.matchAll(/(:root|\[data-theme="[\w-]+"\])\s*\{/g)) {
+        let i = css.indexOf('{', m.index), depth = 0;
+        const start = i;
+        for (; i < css.length; i++) { if (css[i] === '{') depth++; if (css[i] === '}' && --depth === 0) break; }
+        const names = [...css.slice(start, i).matchAll(/(--[\w-]+)\s*:/g)].map(t => t[1]);
+        const dupes = names.filter((n, k) => names.indexOf(n) !== k);
+        assert.deepStrictEqual(dupes, [], m[1]);
+    }
+});

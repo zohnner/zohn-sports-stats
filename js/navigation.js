@@ -776,7 +776,7 @@ function _syncNFLOffseasonStrip(view) {
             <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button></span>
-        <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">✕</button>`;
+        <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">${_iconSvg('x', 14)}</button>`;
     main.insertBefore(strip, grid);
 
     strip.querySelector('.nfl-offseason-strip__close').addEventListener('click', () => {

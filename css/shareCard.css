@@ -17,7 +17,7 @@
 .shc-card {
     width: 600px;
     height: 315px;
-    background: #0b1526;
+    background: #070b16;
     border: 1px solid #2a3850;
     border-radius: 12px;
     position: relative;
@@ -166,7 +166,7 @@
 /* ── Mock-draft result card (variable height, exported at 2x) ── */
 .shc-md-card {
     width: 560px;
-    background: #0b1526;
+    background: #070b16;
     border: 1px solid #2a3850;
     border-radius: 16px;
     overflow: hidden;
