@@ -208,7 +208,7 @@ function displayNHLGames({ games, currentDate, prevDate, nextDate }) {
     const _navBtn = (label, onClick) => {
         const btn = document.createElement('button');
         btn.textContent = label;
-        btn.style.cssText = 'padding:0.3rem 0.75rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;border:1px solid var(--border-mid);background:var(--bg-elevated);color:var(--text-secondary);transition:all 0.15s';
+        btn.style.cssText = 'padding:0.3rem 0.75rem;border-radius:var(--radius);cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;border:1px solid var(--border-mid);background:var(--bg-elevated);color:var(--text-secondary);transition:all 0.15s';
         btn.addEventListener('click', onClick);
         return btn;
     };

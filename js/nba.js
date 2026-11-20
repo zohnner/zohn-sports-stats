@@ -151,9 +151,9 @@ async function displayNBAScores(opts = {}) {
                 <span class="home-section-date">${dateStr}</span>
             </div>
             <div class="home-today-grid" id="nbaScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
             </div>
         </div>`;
 
@@ -349,7 +349,7 @@ async function displayNBAStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_nbaSeasonSelect()}</div>
-        <div id="nbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="nbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('nbaSeasonSel').addEventListener('change', (ev) => {
         _nba.season = parseInt(ev.target.value, 10); displayNBAStandings();
     });
@@ -390,7 +390,7 @@ async function displayNBATeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_nbaSeasonSelect()}</div>
-        <div id="nbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="nbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('nbaSeasonSel').addEventListener('change', (ev) => {
         _nba.season = parseInt(ev.target.value, 10); displayNBATeams();
     });

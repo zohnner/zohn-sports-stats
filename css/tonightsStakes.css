@@ -19,7 +19,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border-default);
     border-left: 3px solid var(--team-color);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius);
     padding: 0.85rem 0.9rem 0.7rem;
     display: flex;
     flex-direction: column;

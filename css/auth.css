@@ -63,7 +63,7 @@
     min-width: 160px;
     background: var(--bg-card);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius);
     box-shadow: var(--shadow-md);
     padding: 6px;
 }
@@ -72,7 +72,7 @@
     width: 100%;
     text-align: left;
     padding: 8px 10px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     background: none;
     border: none;
     color: var(--text-primary);
@@ -97,7 +97,7 @@
     width: min(380px, calc(100vw - 32px));
     background: var(--bg-card);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
     padding: 20px;
 }
@@ -109,7 +109,7 @@
         bottom: 0;
         transform: none;
         width: 100%;
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border-radius: var(--radius) var(--radius) 0 0;
         max-height: 80vh;
         overflow-y: auto;
     }
@@ -138,7 +138,7 @@
     padding: 11px 14px;
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius);
     color: var(--text-primary);
     font-family: inherit;
     font-size: 0.88rem;
@@ -159,7 +159,7 @@
     padding: 10px 12px;
     background: var(--bg-base);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius);
     color: var(--text-primary);
     font-family: inherit;
     font-size: 0.88rem;
@@ -167,7 +167,7 @@
 .auth-email-input:focus { outline: none; border-color: var(--accent-border); }
 
 .auth-sheet-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
-.auth-sheet-note--info { padding: 12px; background: var(--bg-raised); border-radius: var(--radius-md); }
+.auth-sheet-note--info { padding: 12px; background: var(--bg-raised); border-radius: var(--radius); }
 #authSheetError { color: var(--color-error, #e5484d); }
 .auth-sheet-loading { padding: 24px 0; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
 

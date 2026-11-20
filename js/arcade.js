@@ -372,7 +372,7 @@ async function startStatlineShuffle() {
                 <span class="arcade-date-badge">${_arcToday()}</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;
@@ -722,7 +722,7 @@ async function startTradeTree(sessionOffset = 0) {
                 <span class="arcade-game-title-inline">${_iconSvg('swap', 15)} Trade Tree Tracker</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:240px;max-width:640px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:240px;max-width:640px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;
@@ -931,7 +931,7 @@ async function startBallparkBlueprint(sessionOffset = 0) {
                 <span class="arcade-game-title-inline">${_iconSvg('house', 15)} Ballpark Blueprint</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;

@@ -968,7 +968,7 @@ function _buildPregamePreview(feed, gamePk) {
     }
 
     return _lgAssemblePregameHtml(pp, away, home,
-        `<div class="skeleton-line" style="height:90px;border-radius:12px;margin-top:var(--space-3)"></div>`,
+        `<div class="skeleton-line" style="height:90px;border-radius:var(--radius);margin-top:var(--space-3)"></div>`,
         '');
 }
 

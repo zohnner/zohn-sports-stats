@@ -43,7 +43,7 @@
     font-size: 0.58rem;
     font-weight: 900;
     padding: 1px 5px;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius);
     letter-spacing: 0.3px;
     animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
@@ -185,7 +185,7 @@
     font-weight: 800;
     letter-spacing: 0.4px;
     padding: 1px 5px;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius);
     margin-left: 3px;
     flex-shrink: 0;
     text-transform: uppercase;

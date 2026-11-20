@@ -124,9 +124,9 @@ async function displayWNBAScores(opts = {}) {
                 <span class="home-section-date">${dateStr}</span>
             </div>
             <div class="home-today-grid" id="wnbaScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
             </div>
         </div>`;
 
@@ -321,7 +321,7 @@ async function displayWNBAStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_wnbaSeasonSelect()}</div>
-        <div id="wnbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="wnbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('wnbaSeasonSel').addEventListener('change', (ev) => {
         _wnba.season = parseInt(ev.target.value, 10); displayWNBAStandings();
     });
@@ -362,7 +362,7 @@ async function displayWNBATeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_wnbaSeasonSelect()}</div>
-        <div id="wnbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="wnbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('wnbaSeasonSel').addEventListener('change', (ev) => {
         _wnba.season = parseInt(ev.target.value, 10); displayWNBATeams();
     });
@@ -446,7 +446,7 @@ async function displayWNBAPlayoffPicture() {
         return;
     }
 
-    grid.innerHTML = `<div id="wnbaPlayoffBody"><div class="skeleton-line" style="height:420px;border-radius:var(--radius-md)"></div></div>`;
+    grid.innerHTML = `<div id="wnbaPlayoffBody"><div class="skeleton-line" style="height:420px;border-radius:var(--radius)"></div></div>`;
     let confs;
     try { confs = await fetchWNBAStandings(_wnba.season); }
     catch (err) {

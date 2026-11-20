@@ -215,9 +215,9 @@ async function displayNCAABScores(opts = {}) {
                 <span class="home-section-date">${dateStr}</span>
             </div>
             <div class="home-today-grid" id="ncaabScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
             </div>
         </div>`;
 
@@ -391,7 +391,7 @@ async function displayNCAABRankings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs" id="ncaabPollTabs"></div>
-        <div id="ncaabRankBody"><div class="skeleton-line" style="height:340px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaabRankBody"><div class="skeleton-line" style="height:340px;border-radius:var(--radius)"></div></div>`;
     let polls;
     try { polls = await fetchNCAABRankings(); }
     catch (err) {
@@ -497,7 +497,7 @@ async function displayNCAABStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_ncaabSeasonSelect()}</div>
-        <div id="ncaabStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaabStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('ncaabSeasonSel').addEventListener('change', (ev) => {
         _ncaab.season = parseInt(ev.target.value, 10); displayNCAABStandings();
     });
@@ -537,7 +537,7 @@ async function displayNCAABTeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_ncaabSeasonSelect()}</div>
-        <div id="ncaabTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaabTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('ncaabSeasonSel').addEventListener('change', (ev) => {
         _ncaab.season = parseInt(ev.target.value, 10); displayNCAABTeams();
     });

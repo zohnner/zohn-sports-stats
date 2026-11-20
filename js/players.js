@@ -54,14 +54,14 @@ function showSkeletonCards(count = 9) {
                     <div class="skeleton-line" style="width:140px;height:18px;margin-bottom:8px"></div>
                     <div class="skeleton-line" style="width:70px;height:12px"></div>
                 </div>
-                <div class="skeleton-line" style="width:52px;height:28px;border-radius:20px"></div>
+                <div class="skeleton-line" style="width:52px;height:28px;border-radius:var(--radius)"></div>
             </div>
             <div class="skeleton-card-rows">
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -387,7 +387,7 @@ function renderPositionFilters() {
 
 function _styleFilterBtn(btn, active) {
     btn.style.cssText = `
-        padding:0.3rem 0.75rem;border-radius:20px;cursor:pointer;font-weight:700;
+        padding:0.3rem 0.75rem;border-radius:var(--radius);cursor:pointer;font-weight:700;
         font-size:0.8rem;transition:all 0.2s;font-family:inherit;
         border:1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.12)'};
         background:${active ? 'rgba(102,126,234,0.2)' : 'rgba(255,255,255,0.04)'};

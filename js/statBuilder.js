@@ -179,8 +179,8 @@ async function displayStatBuilder(mlbGroup) {
         grid.innerHTML = `
             <div class="builder-panel">
                 <div class="skeleton-line" style="height:20px;width:160px;margin-bottom:1.5rem"></div>
-                <div class="skeleton-line" style="height:120px;margin-bottom:1rem;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:40px;width:65%;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:120px;margin-bottom:1rem;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:40px;width:65%;border-radius:var(--radius)"></div>
             </div>
         `;
         try {

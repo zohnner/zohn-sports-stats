@@ -8,7 +8,7 @@
    choice exactly. */
 .nlg-wrap--high-leverage {
     animation: nlgLeveragePulse 2.2s ease-in-out infinite;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius);
 }
 @keyframes nlgLeveragePulse {
     0%, 100% { box-shadow: 0 0 0 0 transparent; }
@@ -127,13 +127,13 @@
        top of the Summary tab regardless. */
     .nlg-header-pin .nlg-situation { display: none; }
 }
-.nlg-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 1.1rem 1rem; margin: 0.6rem 0 1rem; }
+.nlg-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 1.1rem 1rem; margin: 0.6rem 0 1rem; }
 /* Tension cue -- battle state: sustained (not one-shot) for as long as it's
    4th down, the NFL analog of MLB's 2-strike .lg-hero--battle treatment --
    an ongoing "this drive ends here" state, re-applied every render while
    true, not an animation. */
 .nlg-score--battle { border-color: var(--color-warn-border); background: var(--color-warn-subtle); }
-.nlg-team { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; border-top: 3px solid var(--tc); cursor: pointer; color: var(--text-primary); border-radius: var(--radius-md); padding: 0.5rem 0.3rem; }
+.nlg-team { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; border-top: 3px solid var(--tc); cursor: pointer; color: var(--text-primary); border-radius: var(--radius); padding: 0.5rem 0.3rem; }
 .nlg-team img { width: 52px; height: 52px; object-fit: contain; }
 .nlg-team-abbr { font-weight: 800; font-size: 0.95rem; }
 .nlg-team-name { font-size: 0.68rem; color: var(--text-muted); }
@@ -149,7 +149,7 @@
    without borrowing --color-live (that's reserved for an actually-live
    game's own badge, .nlg-status--live/.nlg-livebadge just above). */
 .nlg-countdown { font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-top: 0.15rem; }
-.nlg-situation { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; background: color-mix(in srgb, var(--color-live) 8%, transparent); border: 1px solid color-mix(in srgb, var(--color-live) 30%, transparent); border-radius: var(--radius-md); padding: 0.5rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem; }
+.nlg-situation { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; background: color-mix(in srgb, var(--color-live) 8%, transparent); border: 1px solid color-mix(in srgb, var(--color-live) 30%, transparent); border-radius: var(--radius); padding: 0.5rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem; }
 /* Tension cue -- situation flash: fires once per genuine down/distance/
    possession change (never on a poll that re-fetches the same state) --
    mirrors css/liveGame.css's .lg-situation--flash. Element is freshly
@@ -171,7 +171,7 @@
    real contrast, not just a muted trailing span. */
 .nlg-lastplay { width: 100%; display: flex; gap: 0.4rem; text-align: left; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); border-top: 1px solid color-mix(in srgb, var(--color-live) 25%, transparent); padding-top: 0.4rem; margin-top: 0.1rem; }
 .nlg-lastplay::before { content: 'LAST PLAY'; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.04em; color: var(--text-subtle); align-self: flex-start; margin-top: 0.15rem; }
-.nlg-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); margin-bottom: 1rem; overflow: hidden; }
+.nlg-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
 .nlg-sum { cursor: pointer; padding: 0.6rem 1rem; font-weight: 800; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; }
 .nlg-sum::-webkit-details-marker { display: none; }
 .nlg-sum-teams { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-size: 0.7rem; }
@@ -189,7 +189,7 @@
 .nlg-ls-team { text-align: left !important; font-weight: 700; color: var(--text-primary); }
 .nlg-ls-total { font-weight: 800; color: var(--text-primary); }
 .nlg-plays { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
-.nlg-play { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); background: var(--bg-raised); font-size: 0.8rem; }
+.nlg-play { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: var(--radius); background: var(--bg-raised); font-size: 0.8rem; }
 .nlg-play img { width: 18px; height: 18px; object-fit: contain; }
 .nlg-play-when { font-size: 0.66rem; font-weight: 700; color: var(--text-subtle); min-width: 56px; }
 .nlg-play-text { flex: 1; color: var(--text-secondary); }
@@ -261,7 +261,7 @@
    real projected SVG geometry instead of trusting a CSS transform to warp
    painted content -- see .fv-field3d's own comment. This rule stays flat
    until NCAAF's copy gets the same treatment. */
-.fv-field { position: relative; height: 100px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; box-shadow: var(--shadow-md); }
+.fv-field { position: relative; height: 100px; border-radius: var(--radius); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); display: flex; box-shadow: var(--shadow-md); }
 /* Stadium light: soft overhead glow + top/bottom vignette, layered above every
    child (endzones, turf, ball, arrow -- z-index:3 beats the ball's 2) so the
    whole field reads as lit from above rather than flat-printed. Pure CSS,
@@ -359,7 +359,7 @@
 @keyframes fvToUsed { 0% { background: var(--color-loss); transform: scale(1.5); } 100% { background: var(--border-mid); transform: scale(1); } }
 .fv-key { display: flex; align-items: center; gap: 0.9rem; font-size: 0.6rem; color: var(--text-muted); font-weight: 700; }
 .fv-key span { display: inline-flex; align-items: center; gap: 0.3rem; }
-.fv-key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.fv-key i { width: 8px; height: 8px; border-radius: var(--radius); display: inline-block; }
 @media (max-width: 640px) { .fv-field { height: 76px; } .fv-endzone { width: 26px; } .fv-endzone-logo { width: 15px; height: 15px; } .fv-endzone-abbr { font-size: 0.44rem; } .fv-yardnums { padding: 0 26px; } }
 /* NFL's real perspective field (D-148) -- everything drawn inside
    .fv-field3d-svg is genuine projected geometry computed in JS
@@ -370,7 +370,7 @@
    the old flat field on purpose -- a single tilted plane needs real vertical
    room to read as depth at all; a slim ~90px bar never had that. Uses
    --shadow-md (theme-aware) rather than a hardcoded dark-only shadow. */
-.fv-field3d { position: relative; height: 240px; border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); box-shadow: var(--shadow-md); }
+.fv-field3d { position: relative; height: 240px; border-radius: var(--radius); overflow: hidden; background: var(--bg-subtle); border: 1px solid var(--border-default); box-shadow: var(--shadow-md); }
 .fv-field3d-svg { display: block; width: 100%; height: 100%; }
 /* Stadium light: same overhead-glow/vignette treatment the old flat .fv-field
    had (see its own ::after above) -- never ported when the field was rebuilt
@@ -423,7 +423,7 @@
 .gv-tab--active { color: var(--accent); border-bottom-color: var(--accent); }
 .gv-tabpanel { min-height: 120px; }
 
-.nlg-side-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 0.8rem 0.9rem; }
+.nlg-side-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 0.8rem 0.9rem; }
 .nlg-side-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin: 0 0 0.5rem; }
 .nlg-leader-team { margin-bottom: 0.5rem; }
 .nlg-leader-team:last-child { margin-bottom: 0; }
@@ -474,12 +474,12 @@
 .nlg-wp-legend { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.66rem; font-weight: 700; margin-top: 0.2rem; }
 .nlg-wp-legend > span:first-child { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 800; }
 
-.nlg-empty-tab { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+.nlg-empty-tab { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius); }
 .nlg-empty-tab-title { font-weight: 700; color: var(--text-secondary); margin-bottom: 0.3rem; }
 
 /* Play-by-Play */
 .nlg-pbp-plays { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.25rem; }
-.nlg-pbp-play { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.78rem; }
+.nlg-pbp-play { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem; align-items: baseline; padding: 0.3rem 0.5rem; border-radius: var(--radius); font-size: 0.78rem; }
 .nlg-pbp-play--score { background: color-mix(in srgb, var(--color-live) 8%, transparent); }
 .nlg-pbp-dd { font-size: 0.64rem; font-weight: 700; color: var(--text-muted); }
 .nlg-pbp-text { color: var(--text-secondary); }
@@ -497,7 +497,7 @@
 .nlg-fantasy-chip { background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-full); color: var(--text-muted); font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.6rem; cursor: pointer; }
 .nlg-fantasy-chip--active { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent); }
 .nlg-fantasy-list { display: flex; flex-direction: column; gap: 0.15rem; }
-.nlg-fantasy-row { display: grid; grid-template-columns: 1.5rem 1fr auto auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; }
+.nlg-fantasy-row { display: grid; grid-template-columns: 1.5rem 1fr auto auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem; }
 .nlg-fantasy-row:nth-child(odd) { background: var(--bg-raised); }
 .nlg-fantasy-rank { color: var(--text-subtle); font-weight: 700; }
 .nlg-fantasy-name { color: var(--text-primary); font-weight: 600; }
@@ -507,7 +507,7 @@
 /* Key Plays (2026-09-13) -- same list/row/zebra-stripe recipe as
    .nlg-fantasy-list/-row above, not a new pattern. */
 .nlg-keyplay-list { display: flex; flex-direction: column; gap: 0.15rem; }
-.nlg-keyplay-row { display: grid; grid-template-columns: 1.2rem 1fr auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.78rem; }
+.nlg-keyplay-row { display: grid; grid-template-columns: 1.2rem 1fr auto; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem; border-radius: var(--radius); font-size: 0.78rem; }
 .nlg-keyplay-row:nth-child(odd) { background: var(--bg-raised); }
 .nlg-keyplay-rank { color: var(--text-subtle); font-weight: 700; }
 .nlg-keyplay-text { color: var(--text-secondary); line-height: 1.35; }
@@ -517,7 +517,7 @@
 
 /* Break card (2026-10-04) -- takes the field graphic's slot during dead time.
    Left edge = the team whose drive just ended (border = identity, DESIGN.md). */
-.nlg-break { background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--tc, var(--accent)); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.nlg-break { background: var(--bg-card); border: 1px solid var(--border-default); border-left: 3px solid var(--tc, var(--accent)); border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.45rem; }
 .nlg-break--enter { animation: nlgBreakIn 420ms ease-out; }
 @keyframes nlgBreakIn { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .nlg-break--enter, .nlg-keyplay-row--focus { animation: none; } }
@@ -557,13 +557,13 @@
    -- response — no new fetch, no new endpoint. -- */
 .nlg-inj { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.6rem; }
 .nlg-inj-row { display: grid; grid-template-columns: 1.7rem 1fr auto 1fr; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.78rem; }
-.nlg-inj-status { font-weight: 800; color: var(--text-secondary); background: var(--bg-raised); border-radius: var(--radius-sm); text-align: center; font-size: 0.66rem; padding: 0.1rem 0; }
+.nlg-inj-status { font-weight: 800; color: var(--text-secondary); background: var(--bg-raised); border-radius: var(--radius); text-align: center; font-size: 0.66rem; padding: 0.1rem 0; }
 .nlg-inj-name { color: var(--text-primary); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-inj-pos { color: var(--text-subtle); font-size: 0.68rem; }
 .nlg-inj-detail { color: var(--text-muted); font-size: 0.72rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .nlg-news { padding: 0 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
-.nlg-news-row { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.5rem; border-radius: var(--radius-sm); background: var(--bg-raised); color: inherit; text-decoration: none; }
+.nlg-news-row { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.5rem; border-radius: var(--radius); background: var(--bg-raised); color: inherit; text-decoration: none; }
 .nlg-news-row:hover { background: var(--bg-card-hover); }
 .nlg-news-headline { color: var(--text-primary); font-weight: 600; font-size: 0.8rem; }
 .nlg-news-meta { color: var(--text-subtle); font-size: 0.66rem; }
@@ -573,7 +573,7 @@
 .nlg-st-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: baseline; padding: 0.15rem 0; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
 /* Border = identity (D-038 K2) — the playing team's row is marked by its own
    team color on the border, matching .nlg-team's --tc pattern, not accent. */
-.nlg-st-row--playing { border-left: 2px solid var(--tc); margin-left: -0.4rem; padding-left: 0.4rem; background: var(--bg-raised); border-radius: var(--radius-sm); }
+.nlg-st-row--playing { border-left: 2px solid var(--tc); margin-left: -0.4rem; padding-left: 0.4rem; background: var(--bg-raised); border-radius: var(--radius); }
 .nlg-st-row--playing .nlg-st-team { font-weight: 800; }
 .nlg-st-team { font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-st-rec { color: var(--text-secondary); text-align: right; }
@@ -593,7 +593,7 @@
 .nlg-form-row { display: flex; align-items: center; gap: 0.6rem; }
 .nlg-form-abbr { font-weight: 800; font-size: 0.78rem; min-width: 34px; color: var(--text-primary); }
 .nlg-form-chips { display: flex; gap: 0.25rem; }
-.nlg-form-chip { width: 22px; height: 22px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 800; color: #fff; }
+.nlg-form-chip { width: 22px; height: 22px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 0.66rem; font-weight: 800; color: #fff; }
 .nlg-form-chip--w { background: var(--color-win); }
 .nlg-form-chip--l { background: var(--color-loss); }
 .nlg-form-chip--t { background: var(--text-muted); }
@@ -605,7 +605,7 @@
 .nlg-fw-name { font-weight: 600; color: var(--text-primary); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nlg-fw-meta { font-size: 0.66rem; color: var(--text-subtle); }
 .nlg-fw-bars { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
-.nlg-fw-bar { width: 6px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: 0.85; }
+.nlg-fw-bar { width: 6px; background: var(--accent); border-radius: var(--radius) var(--radius) 0 0; opacity: 0.85; }
 .nlg-fw-avg { font-family: var(--font-sans); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* NFL game viewer parity pass (D-194): freshness receipt, line-style keys,
@@ -630,7 +630,7 @@
 .nlg-pbp-meta { display: flex; flex-direction: column; gap: 0.1rem; }
 .nlg-pbp-when { font-size: 0.64rem; font-weight: 800; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .nlg-pbp-team { font-size: 0.62rem; font-weight: 800; color: var(--text-muted); }
-.nlg-pbp-tag { display: inline-block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.05rem 0.35rem; margin-right: 0.4rem; border-radius: var(--radius-xs); border: 1px solid var(--border-strong); color: var(--text-primary); background: var(--bg-raised); vertical-align: 0.1em; }
+.nlg-pbp-tag { display: inline-block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.04em; padding: 0.05rem 0.35rem; margin-right: 0.4rem; border-radius: var(--radius); border: 1px solid var(--border-strong); color: var(--text-primary); background: var(--bg-raised); vertical-align: 0.1em; }
 .nlg-pbp-tag--pen { color: var(--text-muted); border-color: var(--border-default); }
 .nlg-pbp-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
 .nlg-pbp-wp { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -642,7 +642,7 @@
 
 /* Win-probability scrubber (D-194). The readout stands in for the legend while
    a play is selected, clamped so the sidebar barely moves. */
-.nlg-wp-chart[data-wp-size] { cursor: crosshair; touch-action: pan-y; border-radius: var(--radius-sm); }
+.nlg-wp-chart[data-wp-size] { cursor: crosshair; touch-action: pan-y; border-radius: var(--radius); }
 .nlg-wp-chart[data-wp-size]:focus-visible { outline: 2px solid var(--border-strong); outline-offset: 2px; }
 .nlg-wp-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-muted); pointer-events: none; transform: translateX(-0.5px); }
 .nlg-wp-marker { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-card); pointer-events: none; transform: translate(-50%, -50%); }

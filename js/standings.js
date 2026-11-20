@@ -13,7 +13,7 @@ async function loadStandings() {
 
     grid.className = 'standings-container';
     grid.innerHTML = `
-        <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);overflow:hidden">
+        <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius);overflow:hidden">
             <div class="skeleton-line" style="height:36px;border-radius:0;margin:0;opacity:0.5"></div>
             ${Array.from({ length: 15 }, () => `
                 <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1.25rem;border-top:1px solid var(--border-default)">

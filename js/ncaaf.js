@@ -721,7 +721,7 @@ async function displayNCAAFRankings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs" id="ncaafPollTabs"></div>
-        <div id="ncaafRankBody"><div class="skeleton-line" style="height:340px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaafRankBody"><div class="skeleton-line" style="height:340px;border-radius:var(--radius)"></div></div>`;
     let polls;
     try { polls = await fetchNCAAFRankings(); }
     catch (err) {
@@ -836,7 +836,7 @@ async function displayNCAAFStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_ncaafSeasonSelect()}</div>
-        <div id="ncaafStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaafStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('ncaafSeasonSel').addEventListener('change', (ev) => {
         _ncaaf.season = parseInt(ev.target.value, 10); displayNCAAFStandings();
     });
@@ -876,7 +876,7 @@ async function displayNCAAFTeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_ncaafSeasonSelect()}</div>
-        <div id="ncaafTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="ncaafTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('ncaafSeasonSel').addEventListener('change', (ev) => {
         _ncaaf.season = parseInt(ev.target.value, 10); displayNCAAFTeams();
     });
@@ -1108,7 +1108,7 @@ function displayNCAAFPlayerDetail(data, requestedSeason) {
     // the athlete-stats endpoint fell back to a prior year.
     const fellBack = Number(data.season) !== Number(requestedSeason);
     const fallbackNote = fellBack
-        ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${requestedSeason} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+        ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${requestedSeason} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
         : '';
 
     grid.innerHTML = header + profile + fallbackNote + statSections +

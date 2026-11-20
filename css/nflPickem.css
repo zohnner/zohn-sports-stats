@@ -8,11 +8,11 @@
 .pk-controls label { font-size: 0.78rem; color: var(--text-secondary); }
 .pk-controls select, .pk-controls input {
     background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary);
-    border-radius: var(--radius-md); padding: 6px 10px; font-family: var(--font-sans); font-size: 0.85rem;
+    border-radius: var(--radius); padding: 6px 10px; font-family: var(--font-sans); font-size: 0.85rem;
 }
 .pk-controls input[type="number"] { width: 72px; }
 .pk-controls button {
-    background: var(--accent); color: #14181d; border: none; border-radius: var(--radius-md);
+    background: var(--accent); color: #14181d; border: none; border-radius: var(--radius);
     padding: 7px 16px; font-weight: 600; cursor: pointer; font-family: var(--font-sans); font-size: 0.85rem;
 }
 .pk-controls button.pk-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
@@ -20,7 +20,7 @@
 .pk-status { color: var(--text-muted); font-size: 0.9rem; padding: 30px 0; text-align: center; }
 .pk-status.err { color: var(--color-error, #ff5a5a); }
 .pk-summary {
-    display: block; background: var(--bg-surface); border-radius: var(--radius-md); padding: 10px 14px;
+    display: block; background: var(--bg-surface); border-radius: var(--radius); padding: 10px 14px;
     margin-bottom: 16px; font-size: 0.82rem; color: var(--text-secondary); box-shadow: var(--shadow-card);
 }
 .pk-summary b { color: var(--text-primary); }
@@ -34,7 +34,7 @@
 .pk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pk-row {
     display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px;
-    background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+    background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius);
     padding: 10px 12px; box-shadow: var(--shadow-card); cursor: grab;
 }
 .pk-row.pk-dragging { opacity: 0.4; }
@@ -51,7 +51,7 @@
 .pk-conf-arrows button:hover { color: var(--accent); }
 .pk-matchup { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pk-team {
-    display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: var(--radius-md);
+    display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: var(--radius);
     border: 2px solid transparent; cursor: pointer; font-size: 0.85rem; font-weight: 600;
 }
 .pk-team img { width: 22px; height: 22px; object-fit: contain; }

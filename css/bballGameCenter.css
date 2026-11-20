@@ -11,7 +11,7 @@
 .bgc-score { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 .bgc-stat { display: block; font-family: var(--font-sans); font-weight: 800; font-size: 1.05rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .bgc-stat-sub { display: block; font-size: 0.66rem; color: var(--text-subtle); font-weight: 600; }
-.bgc-est { display: inline-block; margin-left: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--border-default); border-radius: var(--radius-sm); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; text-transform: lowercase; color: var(--text-muted); background: var(--bg-subtle); vertical-align: 1px; }
+.bgc-est { display: inline-block; margin-left: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--border-default); border-radius: var(--radius); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; text-transform: lowercase; color: var(--text-muted); background: var(--bg-subtle); vertical-align: 1px; }
 .bgc-better { font-weight: 800; color: var(--text-primary); }
 .bgc-link, .bgc-plink { background: none; border: 0; padding: 0; font: inherit; color: var(--text-primary); cursor: pointer; text-align: left; }
 .bgc-link { font-size: 0.74rem; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
@@ -24,14 +24,14 @@
 .bgc-fresh--stale { color: var(--color-loss); }
 
 /* Game-state strip */
-.bgc-strip { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1px; margin: -0.4rem 0 1rem; background: var(--border-default); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
+.bgc-strip { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1px; margin: -0.4rem 0 1rem; background: var(--border-default); border: 1px solid var(--border-default); border-radius: var(--radius); overflow: hidden; }
 .bgc-strip-cell { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.55rem 0.8rem; background: var(--bg-card); min-width: 0; }
 .bgc-strip-play { font-size: 0.8rem; color: var(--text-primary); line-height: 1.3; }
 .bgc-strip-sub { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); }
 .bgc-strip-big { display: flex; align-items: center; font-family: var(--font-sans); font-weight: 800; font-size: 1.1rem; color: var(--text-primary); }
 .bgc-strip-team { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; font-size: 0.74rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .bgc-strip-team strong { color: var(--text-primary); min-width: 2.4rem; }
-.bgc-tag { padding: 0 0.35rem; border-radius: var(--radius-sm); background: var(--bg-subtle); border: 1px solid var(--border-strong); color: var(--text-primary); font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.bgc-tag { padding: 0 0.35rem; border-radius: var(--radius); background: var(--bg-subtle); border: 1px solid var(--border-strong); color: var(--text-primary); font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
 @media (max-width: 900px) { .bgc-strip { grid-template-columns: 1fr 1fr; } .bgc-strip-cell--play { grid-column: 1 / -1; } }
 
 /* Game Story */
@@ -71,14 +71,14 @@
 .bgc-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0 1rem 0.7rem; }
 .gv-tabpanel > .bgc-filters { padding: 0 0 0.8rem; }
 .bgc-filters label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.bgc-filters select { font: inherit; font-size: 0.78rem; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--text-primary); background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: 0.25rem 0.4rem; max-width: 12rem; }
+.bgc-filters select { font: inherit; font-size: 0.78rem; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--text-primary); background: var(--bg-raised); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 0.25rem 0.4rem; max-width: 12rem; }
 .bgc-chips { display: flex; gap: 0.3rem; }
 .bgc-chip { font: inherit; font-size: 0.74rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); border: 1px solid var(--border-default); background: var(--bg-raised); color: var(--text-secondary); cursor: pointer; }
 .bgc-chip--on { background: var(--text-primary); color: var(--bg-base); border-color: var(--text-primary); }
 
 /* Shot chart */
 .bgc-court-wrap { padding: 0 1rem; max-width: 520px; margin: 0 auto; }
-.bgc-court { display: block; width: 100%; height: auto; background: var(--bg-raised); border-radius: var(--radius-md); }
+.bgc-court { display: block; width: 100%; height: auto; background: var(--bg-raised); border-radius: var(--radius); }
 .bgc-court-lines { stroke: var(--border-strong); stroke-width: 2; }
 .bgc-shot { stroke-width: 1.5; }
 .bgc-shot--made { fill-opacity: 0.85; }
@@ -89,7 +89,7 @@
 .bgc-legend-mark--miss { fill: none; stroke-width: 2; }
 
 /* Scrubbable charts */
-.bgc-chart { position: relative; height: 70px; cursor: crosshair; touch-action: pan-y; border-radius: var(--radius-sm); }
+.bgc-chart { position: relative; height: 70px; cursor: crosshair; touch-action: pan-y; border-radius: var(--radius); }
 .bgc-chart--large { height: 180px; }
 .bgc-chart-svg { display: block; width: 100%; height: 100%; }
 .bgc-chart-tick { stroke: var(--border-subtle); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -118,7 +118,7 @@
 .bgc-bx-sep th { padding-top: 0.7rem; }
 .bgc-bx-total th, .bgc-bx-total td { font-weight: 800; color: var(--text-primary); border-bottom: none; }
 .bgc-bx .bgc-bx-dnp { text-align: left; color: var(--text-subtle); font-style: italic; }
-.bgc-badge { display: inline-block; margin: 0.15rem 0.3rem 0 0; padding: 0 0.3rem; border-radius: var(--radius-sm); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; background: var(--bg-subtle); border: 1px solid var(--border-default); color: var(--text-secondary); white-space: nowrap; }
+.bgc-badge { display: inline-block; margin: 0.15rem 0.3rem 0 0; padding: 0 0.3rem; border-radius: var(--radius); font-size: 0.58rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; background: var(--bg-subtle); border: 1px solid var(--border-default); color: var(--text-secondary); white-space: nowrap; }
 .bgc-badge--court { color: var(--text-primary); border-color: var(--text-primary); }
 .bgc-badge--warn { color: var(--color-loss); border-color: var(--color-loss); }
 
@@ -135,4 +135,4 @@
 @media (max-width: 640px) { .bgc-info-row { grid-template-columns: 1fr; gap: 0.1rem; } }
 
 /* Scoreboard: close-game badge (state lives in a badge, never the border) */
-.nba-close-badge { margin-left: 0.35rem; padding: 1px 5px; border-radius: var(--radius-xs); border: 1px solid var(--border-strong); background: var(--bg-subtle); color: var(--text-primary); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; }
+.nba-close-badge { margin-left: 0.35rem; padding: 1px 5px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--bg-subtle); color: var(--text-primary); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; }

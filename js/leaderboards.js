@@ -80,7 +80,7 @@ function _buildPillControl(labelText, options, current, onSelect) {
         const btn = document.createElement('button');
         btn.textContent = text;
         btn.style.cssText = `
-            padding:0.2rem 0.55rem;border-radius:20px;cursor:pointer;font-weight:600;
+            padding:0.2rem 0.55rem;border-radius:var(--radius);cursor:pointer;font-weight:600;
             font-size:0.72rem;font-family:inherit;transition:all 0.18s;
             border:1px solid ${active ? 'var(--color-chip-border)' : 'var(--border-default)'};
             background:${active ? 'var(--color-chip-bg)' : 'transparent'};
@@ -281,7 +281,7 @@ function _buildPanel(cat) {
             moreBtn.textContent = `Show ${extra.length} more`;
             moreBtn.style.cssText = `
                 width:100%;padding:0.5rem;margin-top:0.5rem;background:var(--bg-subtle);
-                border:1px solid var(--border-default);border-radius:var(--radius-sm);
+                border:1px solid var(--border-default);border-radius:var(--radius);
                 color:var(--text-muted);font-size:0.75rem;cursor:pointer;
                 transition:background var(--transition-fast);
             `;

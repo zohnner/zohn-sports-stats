@@ -815,7 +815,7 @@ function _buildMovementSVG(rows, total) {
         </svg>
         <div id="arsenal-mvmt-tooltip" style="display:none;position:absolute;z-index:10;width:160px;
             background:var(--bg-raised);border:1px solid var(--border-default);
-            border-radius:var(--radius-sm);padding:0.4rem 0.6rem;font-size:0.75rem;
+            border-radius:var(--radius);padding:0.4rem 0.6rem;font-size:0.75rem;
             color:var(--text-primary);pointer-events:none"></div>
     </div>`;
 }
@@ -1105,13 +1105,13 @@ async function loadMLBPlayers() {
                     <div class="skeleton-line" style="width:140px;height:18px;margin-bottom:8px"></div>
                     <div class="skeleton-line" style="width:70px;height:12px"></div>
                 </div>
-                <div class="skeleton-line" style="width:52px;height:28px;border-radius:20px"></div>
+                <div class="skeleton-line" style="width:52px;height:28px;border-radius:var(--radius)"></div>
             </div>
             <div class="skeleton-card-rows">
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
-                <div class="skeleton-line" style="height:34px;border-radius:7px"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:34px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -1836,7 +1836,7 @@ function _mlbSavantVisualCard(player, group) {
         return `
             <h2 class="detail-section-title">Spray Chart <span class="statcast-badge">${year} season</span></h2>
             <div id="spray-chart-area" class="spray-loading">
-                <div class="skeleton-line" style="height:220px;border-radius:var(--radius-sm)"></div>
+                <div class="skeleton-line" style="height:220px;border-radius:var(--radius)"></div>
             </div>
             <div class="savant-link-row" style="margin-top:0.75rem">
                 <a href="${sprayUrl}" target="_blank" rel="noopener" class="savant-link-btn">View on Savant ↗</a>
@@ -2163,14 +2163,14 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-splits-card">
             <h2 class="detail-section-title">Splits</h2>
             <div style="height:64px;display:flex;align-items:center;justify-content:center">
-                <div class="skeleton-line" style="width:100%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:100%;height:40px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
         ${group === 'pitching' ? `
         <div class="stats-card" id="mlb-last-starts-card">
             <div style="height:36px;display:flex;align-items:center">
-                <div class="skeleton-line" style="width:80%;height:20px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:80%;height:20px;border-radius:var(--radius)"></div>
             </div>
         </div>
         ` : ''}
@@ -2178,14 +2178,14 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-trend-card">
             <h2 class="detail-section-title">${group === 'hitting' ? 'Last 20 Games' : 'Last 8 Outings'}</h2>
             <div style="position:relative;height:220px;display:flex;align-items:center;justify-content:center">
-                <div class="skeleton-line" style="width:100%;height:100%;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:100%;height:100%;border-radius:var(--radius)"></div>
             </div>
         </div>
 
         <div class="stats-card" id="mlb-statcast-card">
             <h2 class="detail-section-title">Statcast</h2>
             <div style="height:48px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:28px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
@@ -2193,7 +2193,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-arsenal-card">
             <h2 class="detail-section-title">Pitch Arsenal</h2>
             <div style="height:80px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:60px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:60px;border-radius:var(--radius)"></div>
             </div>
         </div>
         ` : ''}
@@ -2201,7 +2201,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
         <div class="stats-card" id="mlb-career-card">
             <h2 class="detail-section-title">Career Stats</h2>
             <div style="height:48px;display:flex;align-items:center;padding:0 0.5rem">
-                <div class="skeleton-line" style="width:100%;height:28px;border-radius:6px"></div>
+                <div class="skeleton-line" style="width:100%;height:28px;border-radius:var(--radius)"></div>
             </div>
         </div>
 
@@ -3128,9 +3128,9 @@ async function _loadMLBGamesForOffset(offset) {
         <div class="skeleton-card" style="min-height:160px">
             <div class="skeleton-line" style="width:60%;height:14px;margin-bottom:1.25rem"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:var(--radius)"></div>
                 <div class="skeleton-line" style="width:12%;height:20px"></div>
-                <div class="skeleton-line" style="width:30%;height:40px;border-radius:8px"></div>
+                <div class="skeleton-line" style="width:30%;height:40px;border-radius:var(--radius)"></div>
             </div>
         </div>
     `).join('');
@@ -5581,7 +5581,7 @@ async function loadMLBStandings() {
 
     grid.className = 'standings-container';
     grid.innerHTML = Array.from({ length: 18 }, () =>
-        `<div class="skeleton-line" style="height:38px;border-radius:8px;margin-bottom:4px"></div>`
+        `<div class="skeleton-line" style="height:38px;border-radius:var(--radius);margin-bottom:4px"></div>`
     ).join('');
 
     try {
@@ -5979,7 +5979,7 @@ async function displayMLBTransactions() {
                 <div class="skeleton-line" style="width:45%;height:12px"></div>
                 <div class="skeleton-line" style="width:78%;height:10px"></div>
             </div>
-            <div class="skeleton-line" style="width:32px;height:18px;border-radius:4px"></div>
+            <div class="skeleton-line" style="width:32px;height:18px;border-radius:var(--radius)"></div>
         </div>
     `).join('');
 
@@ -6381,8 +6381,8 @@ async function _fetchBroadcastBlurb(player, stats, statcast, group, colors) {
     blurbCard.innerHTML = `
         <h2 class="detail-section-title">Broadcast Blurb</h2>
         <div>
-            <div class="skeleton-line" style="width:100%;height:18px;border-radius:6px"></div>
-            <div class="skeleton-line" style="width:88%;height:18px;border-radius:6px;margin-top:8px"></div>
+            <div class="skeleton-line" style="width:100%;height:18px;border-radius:var(--radius)"></div>
+            <div class="skeleton-line" style="width:88%;height:18px;border-radius:var(--radius);margin-top:8px"></div>
         </div>`;
 
     const computed = group === 'hitting' ? _computeBattingRates(stats) : _computePitchingRates(stats);
@@ -6621,9 +6621,9 @@ async function displayGamePrep() {
         <div class="prep-page-wrap">
             <h1 class="prep-page-title">Game Prep</h1>
             <p class="prep-page-sub">Select a game to generate a broadcast prep sheet</p>
-            <div class="skeleton-line" style="height:80px;border-radius:12px;margin-bottom:0.75rem"></div>
-            <div class="skeleton-line" style="height:80px;border-radius:12px;margin-bottom:0.75rem"></div>
-            <div class="skeleton-line" style="height:80px;border-radius:12px"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius);margin-bottom:0.75rem"></div>
+            <div class="skeleton-line" style="height:80px;border-radius:var(--radius)"></div>
         </div>
     `;
 
@@ -6710,10 +6710,10 @@ async function _openGamePrepSheet(gamePk, awayTeamId, homeTeamId, awayPitcherId,
             <div class="prep-sheet-toolbar no-print">
                 <button class="back-button" onclick="displayGamePrep()">← All Games</button>
             </div>
-            <div class="skeleton-line" style="height:120px;border-radius:16px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:160px;border-radius:12px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:200px;border-radius:12px;margin-bottom:1rem"></div>
-            <div class="skeleton-line" style="height:200px;border-radius:12px"></div>
+            <div class="skeleton-line" style="height:120px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:160px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:200px;border-radius:var(--radius);margin-bottom:1rem"></div>
+            <div class="skeleton-line" style="height:200px;border-radius:var(--radius)"></div>
         </div>
     `;
 
@@ -7156,7 +7156,7 @@ async function loadMLBCompare() {
 
     // Ensure player data is loaded
     if (!(AppState.mlbPlayers?.hitting?.length)) {
-        grid.innerHTML = `<div class="cmp-page-wrap"><div class="skeleton-line" style="height:48px;border-radius:12px;margin-bottom:1rem"></div><div class="skeleton-line" style="height:300px;border-radius:12px"></div></div>`;
+        grid.innerHTML = `<div class="cmp-page-wrap"><div class="skeleton-line" style="height:48px;border-radius:var(--radius);margin-bottom:1rem"></div><div class="skeleton-line" style="height:300px;border-radius:var(--radius)"></div></div>`;
         await loadMLBPlayers();
     }
 
@@ -7423,7 +7423,7 @@ if (typeof window !== 'undefined') {
         const batterId  = group === 'hitting' ? currentId : oppId;
         const pitcherId = group === 'hitting' ? oppId : currentId;
 
-        result.innerHTML = '<div class="skeleton-line" style="width:100%;height:48px;border-radius:8px;margin-top:1rem"></div>';
+        result.innerHTML = '<div class="skeleton-line" style="width:100%;height:48px;border-radius:var(--radius);margin-top:1rem"></div>';
         if (btn) btn.disabled = true;
 
         const data = await _fetchMLBH2H(batterId, pitcherId);

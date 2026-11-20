@@ -435,7 +435,7 @@ function _rankedGamesHtml(games, state) {
 // request per day played, and most poll readers never scroll this far.
 function _rankedGamesMount(host, fetchSeasonGames) {
     if (!host || typeof fetchSeasonGames !== 'function') return;
-    host.innerHTML = '<div class="skeleton-line" style="height:160px;margin-top:1.25rem;border-radius:var(--radius-md)"></div>';
+    host.innerHTML = '<div class="skeleton-line" style="height:160px;margin-top:1.25rem;border-radius:var(--radius)"></div>';
     const load = async () => {
         let games;
         try { games = await fetchSeasonGames(); }

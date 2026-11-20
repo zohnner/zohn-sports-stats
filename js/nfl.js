@@ -1418,7 +1418,7 @@ function displayNFLStatLeaders(data, cfg = {}) {
     bar.innerHTML = `
         <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-secondary);font-weight:700">
             Season
-            <select id="nflLeaderSeason" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${opts}</select>
+            <select id="nflLeaderSeason" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${opts}</select>
         </label>
         <span style="font-size:0.74rem;color:var(--text-muted)">${data.season} regular-season leaders · Source: ESPN</span>`;
     grid.appendChild(bar);
@@ -1981,7 +1981,7 @@ async function _loadNFLPlayerStats(p, season) {
         // that reads "2025 Season Stats" easy to miss right after clicking "2026".
         const fellBack = Number(data.season) !== Number(season);
         const fallbackNote = fellBack
-            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${season} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
+            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${season} season stats aren't posted by ESPN yet — showing ${data.season} instead.</p>`
             : '';
 
         host.className = 'stats-card';
@@ -2119,7 +2119,7 @@ async function _loadNFLAdvanced(p, season) {
         // (2023) -- a flat "(latest available)" reads the same for a 1-year
         // gap and a 3-year one, which understates how stale this actually is.
         const _ngsNote = _ngsGap > 0
-            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${_reqSeason} Next Gen Stats aren't published yet — showing ${data.season}${_ngsGap > 1 ? `, the most recent complete season nflverse has released` : ' instead'}.</p>`
+            ? `<p style="color:var(--text-secondary);font-size:0.78rem;background:var(--bg-interactive);border-radius:var(--radius);padding:0.5rem 0.75rem;margin:0 0 0.75rem">${_reqSeason} Next Gen Stats aren't published yet — showing ${data.season}${_ngsGap > 1 ? `, the most recent complete season nflverse has released` : ' instead'}.</p>`
             : '';
         host.className = 'stats-card';
         host.innerHTML = `
@@ -2766,7 +2766,7 @@ async function _updateNFLCompare() {
             <span style="text-align:right;font-weight:${aWin ? '800' : '600'};color:${aWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${va != null ? _escHtml(String(va)) : '—'}</span>
             <div style="min-width:0">
                 <div style="font-size:0.62rem;text-align:center;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${_escHtml(k.split(' · ')[1])}</div>
-                <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--bg-subtle)"><div style="width:${barA}%;background:${_NFL_CMP_A}"></div><div style="width:${barB}%;background:${_NFL_CMP_B}"></div></div>
+                <div style="display:flex;height:7px;border-radius:var(--radius);overflow:hidden;background:var(--bg-subtle)"><div style="width:${barA}%;background:${_NFL_CMP_A}"></div><div style="width:${barB}%;background:${_NFL_CMP_B}"></div></div>
             </div>
             <span style="text-align:left;font-weight:${bWin ? '800' : '600'};color:${bWin ? 'var(--text-primary)' : 'var(--text-secondary)'};font-size:0.84rem">${vb != null ? _escHtml(String(vb)) : '—'}</span>
         </div>`;
@@ -2851,7 +2851,7 @@ async function showNFLEspnPlayer(espnId) {
                 <div id="nfl-career"></div>
                 ${years.length ? `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.6rem 0 0.45rem;padding:0 0.1rem">
                     <span style="font-size:0.74rem;font-weight:700;color:var(--text-secondary)">Game log season</span>
-                    <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius-sm,6px);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
+                    <select onchange="_nflEspnSetSeason(this.value)" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-default);border-radius:var(--radius);padding:0.3rem 0.5rem;font-weight:700;cursor:pointer">${yearOpts}</select>
                 </div>` : ''}
                 <div id="nfl-gamelog"></div>
                 <p style="color:var(--text-muted);font-size:0.72rem;margin:0.6rem 0 0;text-align:center">All-time player data · Source: ESPN</p>
