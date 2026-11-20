@@ -13,10 +13,10 @@
 }
 
 button, input, select, textarea { font-family: inherit; }
+table { font-variant-numeric: tabular-nums; }
 
 body {
     font-family: var(--font-sans);
-    font-variant-numeric: tabular-nums;
     background: var(--bg-base);
     min-height: 100vh;
     color: var(--text-primary);
