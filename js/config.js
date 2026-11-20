@@ -291,6 +291,9 @@ const _ICON = {
     building:      '<rect x="3" y="5" width="4" height="9"/><rect x="9" y="2" width="4" height="12"/><path d="M4.5 7.5h1M4.5 10h1M10.5 4.5h1M10.5 7h1M10.5 9.5h1"/>',
     target:        '<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r="0.6" fill="currentColor" stroke="none"/>',
     xCircle:       '<circle cx="8" cy="8" r="6"/><path d="M6 6l4 4M10 6l-4 4"/>',
+    check:         '<path d="M3.5 8.5l3 3 6-7"/>',
+    x:             '<path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/>',
+    heart:         '<path d="M8 13.5S2.5 10.2 2.5 6.2A2.75 2.75 0 0 1 8 5a2.75 2.75 0 0 1 5.5 1.2C13.5 10.2 8 13.5 8 13.5z"/>',
     lightbulb:     '<path d="M5.5 11.5h5M6 13.5h4"/><path d="M8 2a4.5 4.5 0 0 0-2.5 8.2c.3.2.5.6.5 1h4c0-.4.2-.8.5-1A4.5 4.5 0 0 0 8 2z"/>',
 };
 // Full <svg> wrapper for an _ICON key — the ~85 call sites this replaces

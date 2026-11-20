@@ -6,7 +6,7 @@
 // identical regardless of the viewer's active theme (Kael, P3-027).
 // ============================================================
 
-const _SHC_BG      = '#0b1526';
+const _SHC_BG      = '#070b16';
 const _SHC_SURFACE = '#0f182a';
 const _SHC_BORDER  = '#22304a';
 const _SHC_TEXT    = '#f2f7fc';
@@ -162,7 +162,7 @@ async function shareStatCard(d) {
         } else {
             _shcDownloadBlob(blob, _shcFileName(d));
         }
-        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
+        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">' + _iconSvg('check', 16) + '</span>';
     } catch (err) {
         Logger.warn('Stat card generation failed', err, 'MLB');
         _shcToast('Couldn’t generate card — try again');
@@ -223,7 +223,7 @@ async function shareCardElement({ cardEl, fileName, title, text, btn }) {
         } else {
             _shcDownloadBlob(blob, fileName);
         }
-        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
+        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">' + _iconSvg('check', 16) + '</span>';
     } catch (err) {
         Logger.warn('Share card generation failed', err, 'MLB');
         _shcToast('Couldn’t generate card — try again');

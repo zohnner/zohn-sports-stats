@@ -24,7 +24,7 @@
 }
 .auth-control--signed-out {
     background: var(--accent);
-    color: #0d1014;
+    color: var(--text-on-accent);
 }
 .auth-control--signed-out:hover { background: var(--accent-light); }
 .auth-control--signed-in {
@@ -149,7 +149,7 @@
 }
 .auth-method-btn:hover { border-color: var(--accent-border); }
 .auth-method-icon { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); }
-.auth-method-btn--secondary { background: var(--accent); color: #0d1014; border-color: transparent; justify-content: center; }
+.auth-method-btn--secondary { background: var(--accent); color: var(--text-on-accent); border-color: transparent; justify-content: center; }
 .auth-method-btn--secondary:hover { background: var(--accent-light); }
 .auth-method-btn--danger { border-color: var(--color-error, #e5484d); color: var(--color-error, #e5484d); justify-content: center; }
 

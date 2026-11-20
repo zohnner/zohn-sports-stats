@@ -1231,7 +1231,7 @@ function _hfTeamChip(sport, abbr) {
 function _hfPlayerChip(sport, id, name, teamAbbr, sub) {
     return `
         <button class="home-recent-chip" data-follow-kind="player" data-follow-sport="${sport}" data-follow-id="${id}">
-            <span class="home-recent-badge home-recent-badge--${sport}">♥</span>
+            <span class="home-recent-badge home-recent-badge--${sport}">${_iconSvg('heart', 12)}</span>
             <span class="home-recent-name">${_escHtml(name)}</span>
             <span class="home-recent-sub">${_escHtml(teamAbbr || '')}${sub ? ' · ' + _escHtml(sub) : ''}</span>
         </button>`;

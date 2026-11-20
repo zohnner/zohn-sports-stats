@@ -2395,7 +2395,7 @@ function _renderTeamPage(m) {
                     <span style="position:relative">${esc(initials(p.name))}</span>
                 </div>
                 <div class="roster-info">
-                    <span class="roster-name">${esc(p.name)}${p.starter ? ` <span style="color:${color}" title="Projected starter">★</span>` : ''}${p.injury ? ` <span class="roster-il-badge${_nflInjurySeverityClass(p.injury)}">${esc(p.injury)}</span>` : ''}</span>
+                    <span class="roster-name">${esc(p.name)}${p.starter ? ` <span style="color:${color}" title="Projected starter">${_iconSvg('star', 12)}</span>` : ''}${p.injury ? ` <span class="roster-il-badge${_nflInjurySeverityClass(p.injury)}">${esc(p.injury)}</span>` : ''}</span>
                     <span class="roster-meta">${esc(p.pos)}${p.number ? ' · #' + esc(String(p.number)) : ''}</span>
                 </div>
             </div>`
@@ -2411,7 +2411,7 @@ function _renderTeamPage(m) {
     // previously only had a hover tooltip, invisible on touch devices).
     const rosterHead = m.rosterTitle
         ? `<h2 class="detail-section-title">${esc(m.rosterTitle)}</h2>${m.rosterCaption ? `<p class="pct-caption" style="margin:-0.4rem 0 0.6rem">${esc(m.rosterCaption)}</p>` : ''}`
-        : `<h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">★</span> = starter</p>`;
+        : `<h2 class="detail-section-title">Depth Chart</h2><p class="pct-caption" style="margin:-0.4rem 0 0.6rem">Grouped by position, ordered by depth chart · <span style="color:${color}">${_iconSvg('star', 12)}</span> = starter</p>`;
     const rosterCard = groups
         ? `<div class="stats-card mlb-roster-card" style="grid-column:1/-1">${rosterHead}${groups}</div>`
         : (m.rosterEmpty ? `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Roster</h2><p style="color:var(--color-text-muted);text-align:center;padding:2rem">${esc(m.rosterEmpty)}</p></div>` : '');

@@ -1138,7 +1138,8 @@
     margin: var(--space-1) 0;
     color: #fbbf24;
 }
-.bp-star--lit svg { width: 0.85em; height: 0.85em; vertical-align: -1px; fill: currentColor; }
+.bp-star svg, .wam-star svg { width: 0.85em; height: 0.85em; vertical-align: -1px; }
+.bp-star--lit svg, .wam-star--lit svg { fill: currentColor; }
 
 /* Reveal logo */
 

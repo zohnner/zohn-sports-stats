@@ -501,7 +501,7 @@ function _mdRenderDraft() {
 
     const recBanner = rec ? `
         <div class="md-rec" data-pid="${rec.p.id}" role="button" tabindex="0">
-            <div class="md-rec-tag">★ Recommended</div>
+            <div class="md-rec-tag">${_iconSvg('star', 12)} Recommended</div>
             <div class="md-rec-body">
                 <span class="md-rec-pos" style="color:${_MD_POS_COLOR[rec.p.pos]}">${rec.p.pos}</span>
                 <strong>${_escFan(rec.p.name)}</strong> <span class="md-rl-team">${rec.p.team}</span>
@@ -577,7 +577,7 @@ function _mdListHtml(players, surv) {
         const isRec = p.id === _md._recId ? ' md-row--rec' : '';
         return `<button class="md-row${isRec}" data-pid="${p.id}">
             <span class="md-row-pos" style="color:${_MD_POS_COLOR[p.pos]||'var(--text-muted)'}">${p.pos}</span>
-            <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
+            <span class="md-row-name">${p.id===_md._recId?_iconSvg('star', 12)+' ':''}${_escFan(p.name)}</span>
             <span class="md-row-team">${p.team}${_nflVenueBadge(p.team)}</span>
             ${cliff}
             ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP) — trained rest-of-season model'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
