@@ -1,6 +1,22 @@
 {
   "stories": [
     {
+      "slug": "2026-11-20-colts-3-points-fewest-since-2022",
+      "title": "The Colts scored 3 points, their fewest in a game since December 2022",
+      "dek": "Indianapolis managed 167 yards and 8 first downs in a 26-3 loss at Houston on Thursday.",
+      "date": "2026-11-20",
+      "season": 2026,
+      "week": 11,
+      "teams": [
+        "IND",
+        "HOU"
+      ],
+      "players": [],
+      "hero_stat": "3 points, the Colts' fewest since December 2022",
+      "url": "/nfl/stories/2026-11-20-colts-3-points-fewest-since-2022",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-17-chargers-first-win-after-0-8-start",
       "title": "The Chargers won their first game after an 0-8 start, a first since 2013",
       "dek": "Los Angeles beat Baltimore 23-20 on Monday, and only 6 of the 18 teams to start 0-8 since 1999 won their 9th game.",
