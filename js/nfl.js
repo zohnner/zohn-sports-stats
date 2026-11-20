@@ -770,7 +770,7 @@ function _createNFLGameCard(game, isTopLeverage) {
         const color = getNFLTeamColor(team.abbr);
         return `
         <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" data-team-abbr="${_escHtml(team.abbr)}" style="cursor:pointer" role="button" tabindex="0" aria-label="${_escHtml(team.name || team.abbr)}">
-            <div class="game-team-logo" ${color ? `style="background:linear-gradient(135deg,${color}cc,${color}55)"` : ''}>
+            <div class="game-team-logo" ${color ? `style="background:${color}cc"` : ''}>
                 ${team.logo ? `<img class="game-logo-img" src="${_escHtml(team.logo)}" alt="${_escHtml(team.abbr)}" loading="lazy" data-remove-on-error>` : ''}
                 <span class="game-logo-text">${_escHtml(team.abbr)}</span>
             </div>
@@ -2342,10 +2342,10 @@ function _renderTeamPage(m) {
     const factGrid = factItems.length ? `<div class="player-bio-grid" style="margin-top:0.75rem">${factItems.join('')}</div>` : '';
 
     const header = `
-        <div class="player-detail-header" style="background:radial-gradient(ellipse at top left,${color}1a 0%,var(--bg-card) 55%);border-top:3px solid ${color}88">
+        <div class="player-detail-header" style="background:var(--bg-card);border-top:3px solid ${color}88">
             <button class="back-button" onclick="navigateTo('${m.backView}')">← ${esc(m.backLabel || 'Back')}</button>
             <div class="player-hero">
-                <div class="player-detail-avatar" style="background:linear-gradient(135deg,${color}cc,${color}55);color:#fff;font-size:1.5rem;font-weight:800">
+                <div class="player-detail-avatar" style="background:${color}cc;color:#fff;font-size:1.5rem;font-weight:800">
                     ${logo ? `<img class="player-headshot player-headshot--detail" src="${esc(logo)}" alt="${esc(m.name)}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : esc(m.abbr || '?')}
                 </div>
                 <div class="player-hero-info">
@@ -2390,7 +2390,7 @@ function _renderTeamPage(m) {
         if (!grp.players.length) return '';
         const rows = grp.players.map(p =>
             `<div class="roster-row" role="button" tabindex="0" style="cursor:pointer" onclick="navigateTo('${m.playerPrefix}${p.id}')" onkeydown="if(event.key==='Enter')this.click()">
-                <div class="roster-avatar" style="background:linear-gradient(135deg,${color}cc,${color}44);position:relative;overflow:hidden">
+                <div class="roster-avatar" style="background:${color}cc;position:relative;overflow:hidden">
                     ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
                     <span style="position:relative">${esc(initials(p.name))}</span>
                 </div>

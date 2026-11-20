@@ -44,7 +44,7 @@ function _shcBuildCard(d, withPhoto) {
         <div class="shc-wash" style="background:${colors.primary}"></div>
         <div class="shc-body">
             <div class="shc-left">
-                <div class="shc-avatar" style="border-color:${_SHC_ACCENT};background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">${avatar}</div>
+                <div class="shc-avatar" style="border-color:${_SHC_ACCENT};background:${colors.primary}cc">${avatar}</div>
                 <div class="shc-id">
                     <div class="shc-name" style="color:${_SHC_TEXT}">${name}</div>
                     <div class="shc-team" style="color:${_SHC_MUTED}">${teamLine}</div>

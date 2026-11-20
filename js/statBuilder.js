@@ -593,7 +593,7 @@ function _runFormula(formula, name, players, cfg) {
         return `
             <div class="leaderboard-row">
                 <span class="${rankCls}">${i + 1}</span>
-                <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">${initials}</div>
+                <div class="lb-avatar" style="background:${colors.primary}cc">${initials}</div>
                 <div class="lb-player">
                     <span class="lb-name">${_escHtml(name)}</span>
                     <span class="lb-team">${_escHtml(abbr)}${pos ? ' · ' + _escHtml(pos) : ''}</span>

@@ -515,7 +515,7 @@ function _ncaafGameCard(g) {
 
     const teamBlock = (t, won, extraCls) => `
         <div class="game-team ${extraCls || ''} ${won ? 'game-team--winner' : ''}" ${t.id ? `onclick="event.stopPropagation(); navigateTo('ncaaf-team-${_escHtml(String(t.id))}')" role="button" tabindex="0"` : ''} aria-label="${_escHtml(t.name || t.abbr)}">
-            <div class="game-team-logo" ${t.color ? `style="background:linear-gradient(135deg,#${_escHtml(t.color)}cc,#${_escHtml(t.color)}55)"` : ''}>
+            <div class="game-team-logo" ${t.color ? `style="background:#${_escHtml(t.color)}cc"` : ''}>
                 ${t.logo ? `<img class="game-logo-img" src="${_escHtml(t.logo)}" alt="${_escHtml(t.abbr)}" loading="lazy" data-remove-on-error>` : ''}
                 <span class="game-logo-text">${_escHtml(t.abbr)}</span>
             </div>
@@ -560,7 +560,7 @@ function _ncaafGameCard(g) {
     }
 
     const ghostHtml = g.homeTeam.color
-        ? `<div class="game-card-ghost-logo" style="background:radial-gradient(circle, #${_escHtml(g.homeTeam.color)} 0%, transparent 70%)"></div>`
+        ? `<div class="game-card-ghost-logo" style="background:transparent"></div>`
         : '';
 
     return `<div class="game-card${g.isLive ? ' game-card--live' : ''}" style="cursor:pointer" onclick="navigateTo('ncaaf-game-${_escHtml(String(g.id))}')">
@@ -853,7 +853,7 @@ async function displayNCAAFStandings() {
     }
     document.getElementById('ncaafStdBody').innerHTML = confs.map(c => `
         <section class="mlb-division-panel" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Conf</th><th>Overall</th></tr></thead>
@@ -915,7 +915,7 @@ async function displayNCAAFTeams() {
         const sorted = c.teams.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         return `
         <section id="ncaaf-conf-${i}" class="ncaaf-conf-section" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${sorted.map(t => {
                 // Overall record is already parsed by _ncaafStandingRow for the Standings
                 // view (t.overall) — the Teams grid just never rendered it. "0-0" reads as

@@ -115,7 +115,7 @@
 }
 
 .lg-abbr {
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-size: var(--text-lg);
     font-weight: 700;
     color: var(--text-muted);
@@ -125,7 +125,7 @@
 .lg-abbr.lg-winner { color: var(--text-primary); }
 
 .lg-score {
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-size: var(--text-4xl);
     font-weight: 800;
     color: var(--text-primary);
@@ -1290,7 +1290,7 @@
    own semantic-color-separate-from-accent rule. */
 .lg-hero--battle {
     border-color: var(--color-warn-border);
-    background: linear-gradient(180deg, var(--color-warn-subtle), var(--bg-surface) 70%);
+    background: var(--color-warn-subtle);
 }
 .lg-hero--battle .lg-hero-count { color: var(--color-warn); }
 

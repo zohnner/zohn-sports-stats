@@ -1445,7 +1445,7 @@ function displayMLBPlayersTable(group) {
                     const inits  = (player.fullName || '').split(' ').map(w => w[0]).slice(0, 2).join('');
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
-                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
                                 <img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>
                                 <span>${inits}</span>
                             </div>
@@ -1547,7 +1547,7 @@ function _createMLBPlayerCard(player, stats, group, rank) {
         <div class="player-card-top">
             ${rankBadge}
             ${favBtn}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
+            <div class="player-avatar" style="background:${colors.primary}cc">
                 ${headshotUrl ? `<img class="player-headshot" src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 ${initials}
             </div>
@@ -2089,7 +2089,7 @@ function showMLBPlayerDetail(playerId, group = AppState.mlbStatsGroup) {
             </div>
             <div class="player-hero">
                 <div class="player-detail-avatar"
-                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                     style="background:${colors.primary}cc;
                             color:#fff;font-size:2.5rem;font-weight:800">
                     ${headshotImg}${initials}
                 </div>
@@ -3308,7 +3308,7 @@ function _createMLBGameCard(game) {
         </div>
         <div class="game-matchup">
             <div class="game-team ${homeWon ? 'game-team--winner' : ''}" data-team-id="${homeTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${homeTeam.name || homeAbbr}">
-                <div class="game-team-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}55)">
+                <div class="game-team-logo" style="background:${homeColors.primary}cc">
                     ${homeLogo ? `<img class="game-logo-img" src="${homeLogo}" alt="${_escHtml(homeAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${homeAbbr}</span>
                 </div>
@@ -3321,7 +3321,7 @@ function _createMLBGameCard(game) {
                 <span class="game-score ${awayWon ? 'game-score--win' : hasScore && !awayWon ? 'game-score--loss' : ''}">${hasScore ? awayScore : '—'}</span>
             </div>
             <div class="game-team game-team--away ${awayWon ? 'game-team--winner' : ''}" data-team-id="${awayTeam.id}" style="cursor:pointer" role="button" tabindex="0" aria-label="${awayTeam.name || awayAbbr}">
-                <div class="game-team-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}55)">
+                <div class="game-team-logo" style="background:${awayColors.primary}cc">
                     ${awayLogo ? `<img class="game-logo-img" src="${awayLogo}" alt="${_escHtml(awayAbbr)}" loading="lazy" data-remove-on-error>` : ''}
                     <span class="game-logo-text">${awayAbbr}</span>
                 </div>
@@ -3448,7 +3448,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
         <div class="mlb-linescore-wrap">
             <div class="mlb-game-header">
                 <div class="mlb-gh-team ${awayWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer" onclick="showMLBTeamDetail(${awayTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
-                    <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${awayColors.primary}cc,${awayColors.primary}44)">
+                    <div class="mlb-gh-logo" style="background:${awayColors.primary}cc">
                         ${awayLogo ? `<img src="${awayLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${awayAbbr}</span>
                     </div>
@@ -3461,7 +3461,7 @@ function _renderMLBGameDetail(grid, stub, ls, bs, gamePk) {
                     <span class="${homeWon ? 'mlb-gh-score-val--win' : ''}">${homeScore}</span>
                 </div>
                 <div class="mlb-gh-team ${homeWon ? 'mlb-gh-team--winner' : ''}" role="button" tabindex="0" style="cursor:pointer;text-align:right" onclick="showMLBTeamDetail(${homeTeam.id})" onkeydown="if(event.key==='Enter')this.click()">
-                    <div class="mlb-gh-logo" style="background:linear-gradient(135deg,${homeColors.primary}cc,${homeColors.primary}44)">
+                    <div class="mlb-gh-logo" style="background:${homeColors.primary}cc">
                         ${homeLogo ? `<img src="${homeLogo}" loading="lazy" data-hide-on-error>` : ''}
                         <span>${homeAbbr}</span>
                     </div>
@@ -3797,7 +3797,7 @@ async function showMLBTeamDetail(teamId, push = true) {
     grid.className = 'player-detail-container';
     grid.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:4rem">
-            <div class="player-detail-avatar" style="background:linear-gradient(135deg,${loadColors.primary}cc,${loadColors.primary}55);margin:0 auto 1.25rem">
+            <div class="player-detail-avatar" style="background:${loadColors.primary}cc;margin:0 auto 1.25rem">
                 ${loadLogo ? `<img src="${loadLogo}" style="width:100%;height:100%;object-fit:contain;padding:10px" loading="lazy" data-hide-on-error>` : (team?.abbreviation || '?')}
             </div>
             ${ssLoader('Loading roster')}
@@ -4086,7 +4086,7 @@ function _mlbTeamOddsBio(teamId) {
     const val = v >= 99.5 ? '&gt;99' : ((typeof _oddsFmtPct === 'function') ? _oddsFmtPct(v) : String(Math.round(v)));
     const stamp = AppState.mlbOdds?.ts ? new Date(AppState.mlbOdds.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
     const sims = AppState.mlbOdds?.sims || 4000;
-    return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-display)">${val}%</span></div>`;
+    return `<div class="player-bio-item" title="Playoff odds · ${sims.toLocaleString()} simulated seasons${stamp ? ' · ' + stamp : ''}"><span class="bio-label">Playoff Odds</span><span class="bio-value" style="color:${clr};font-weight:800;font-family:var(--font-sans)">${val}%</span></div>`;
 }
 
 function _mlbTeamHeader(team, teamId, colors, rec) {
@@ -4121,7 +4121,7 @@ function _mlbTeamHeader(team, teamId, colors, rec) {
             <button onclick="backToMLBTeams()" class="back-button">← Teams</button>
             <div class="player-hero">
                 <div class="player-detail-avatar"
-                     style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55);
+                     style="background:${colors.primary}cc;
                             color:#fff;font-size:1.75rem;font-weight:800">
                     ${logo ? `<img class="player-headshot player-headshot--detail" src="${logo}" alt="${name}" loading="lazy" style="object-fit:contain;object-position:center;padding:10px" data-hide-on-error>` : abbr}
                 </div>
@@ -4268,7 +4268,7 @@ function _mlbRosterCard(roster, colors) {
 
         return `
             <div class="roster-row${p.onIL ? ' roster-row--il' : ''}" ${clickAttr}>
-                <div class="roster-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44);position:relative;overflow:hidden;${p.onIL ? 'opacity:0.65' : ''}">
+                <div class="roster-avatar" style="background:${colors.primary}cc;position:relative;overflow:hidden;${p.onIL ? 'opacity:0.65' : ''}">
                     ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1" data-hide-on-error>` : ''}
                     <span style="position:relative">${initials}</span>
                 </div>
@@ -4609,7 +4609,7 @@ function _appendMLBByPositionGrid(fragment, splits, season) {
                 rows += `<div class="lb-pos-row${i === 0 ? ' lb-pos-row--gold' : ''}"
                               ${pid ? `data-pid="${pid}" data-group="${isPit ? 'pitching' : 'hitting'}"` : ''}>
                     <span class="lb-pos-rank">${i + 1}</span>
-                    <div class="lb-pos-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-pos-avatar" style="background:${colors.primary}cc">
                         ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-pos-initials">${_escHtml(initials)}</span>
                     </div>
@@ -4689,7 +4689,7 @@ function _appendMLBStreakPanel(fragment, splits, season) {
         row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showMLBPlayerDetail(pid, 'hitting'); });
         row.innerHTML = `
             <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-            <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+            <div class="lb-avatar" style="background:${colors.primary}cc">
                 ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                 <span class="lb-avatar-initials">${initials}</span>
             </div>
@@ -4781,7 +4781,7 @@ function _appendMLBHotStrip(fragment, hotStats, season) {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -5044,7 +5044,7 @@ function displayMLBLeaderboards() {
             }
             row.innerHTML = `
                 <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                <div class="lb-avatar" style="background:${colors.primary}cc">
                     ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                     <span class="lb-avatar-initials">${initials}</span>
                 </div>
@@ -5183,7 +5183,7 @@ function displayMLBLeaderboards() {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -5266,7 +5266,7 @@ function displayMLBLeaderboards() {
                 }
                 row.innerHTML = `
                     <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                    <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="lb-avatar" style="background:${colors.primary}cc">
                         ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="lb-avatar-initials">${initials}</span>
                     </div>
@@ -5344,7 +5344,7 @@ function displayMLBLeaderboards() {
                     }
                     row.innerHTML = `
                         <span class="lb-rank ${i < 3 ? `lb-rank-${i + 1}` : ''}">${i + 1}</span>
-                        <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                        <div class="lb-avatar" style="background:${colors.primary}cc">
                             ${headshotUrl ? `<img src="${headshotUrl}" alt="" loading="lazy" data-hide-on-error>` : ''}
                             <span class="lb-avatar-initials">${_escHtml(initials)}</span>
                         </div>
@@ -6066,7 +6066,7 @@ function _renderMLBTransactions(transactions) {
                      onclick="showMLBPlayerDetail(${pid})"
                      onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${pid})">
                     <span class="txn-emoji" aria-hidden="true">${emoji}</span>
-                    <div class="txn-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">
+                    <div class="txn-avatar" style="background:${colors.primary}cc">
                         ${headshot ? `<img src="${headshot}" alt="" loading="lazy" data-hide-on-error>` : ''}
                         <span class="txn-avatar-initials">${_escHtml(initials)}</span>
                     </div>

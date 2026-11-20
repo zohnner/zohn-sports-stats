@@ -120,7 +120,7 @@
     justify-content: space-between;
     margin-bottom: 16px;
 }
-.auth-sheet-title { font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.05rem; }
+.auth-sheet-title { font-family: var(--font-sans); font-weight: 700; font-size: 1.05rem; }
 .auth-sheet-close {
     background: none;
     border: none;
@@ -218,7 +218,7 @@
 
 /* Account page */
 .auth-account-page { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }
-.auth-account-title { font-family: var(--font-display, inherit); font-size: 1.4rem; margin-bottom: 20px; }
+.auth-account-title { font-family: var(--font-sans); font-size: 1.4rem; margin-bottom: 20px; }
 .auth-account-section {
     padding: 16px 0;
     border-bottom: 1px solid var(--border-default);

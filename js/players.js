@@ -198,7 +198,7 @@ function createPlayerCard(player, stats, ppgRank) {
         <div class="player-card-top">
             ${rankBadge}
             ${favBtn}
-            <div class="player-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}55)">
+            <div class="player-avatar" style="background:${colors.primary}cc">
                 ${headshotImg}<span class="avatar-text">${initials}</span>
             </div>
             <div class="player-name">${player.first_name} ${player.last_name}</div>
@@ -305,7 +305,7 @@ function displayPlayersTable(players) {
                     const inits  = (player.first_name?.[0] || '') + (player.last_name?.[0] || '');
                     return `<td>
                         <div style="display:flex;align-items:center;gap:0.5rem">
-                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,${clrs.primary}cc,${clrs.primary}44);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
+                            <div style="width:28px;height:28px;border-radius:50%;background:${clrs.primary}cc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#fff;position:relative;overflow:hidden">
                                 ${hsUrl ? `<img src="${hsUrl}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%" data-hide-on-error>` : ''}
                                 <span>${inits}</span>
                             </div>
