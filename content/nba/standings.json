@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-18",
-  "gamesCounted": 222,
+  "throughDate": "2026-11-19",
+  "gamesCounted": 226,
   "source": "balldontlie",
   "sections": [
     {
@@ -18,7 +18,7 @@
         },
         {
           "name": "New York Knicks",
-          "record": "8-6"
+          "record": "9-6"
         },
         {
           "name": "Toronto Raptors",
@@ -51,7 +51,7 @@
         },
         {
           "name": "Milwaukee Bucks",
-          "record": "1-14"
+          "record": "1-15"
         }
       ]
     },
@@ -85,11 +85,11 @@
       "teams": [
         {
           "name": "Minnesota Timberwolves",
-          "record": "11-4"
+          "record": "11-5"
         },
         {
           "name": "Portland Trail Blazers",
-          "record": "9-5"
+          "record": "10-5"
         },
         {
           "name": "Denver Nuggets",
@@ -114,7 +114,7 @@
         },
         {
           "name": "Golden State Warriors",
-          "record": "8-7"
+          "record": "8-8"
         },
         {
           "name": "Phoenix Suns",
@@ -122,7 +122,7 @@
         },
         {
           "name": "LA Clippers",
-          "record": "4-9"
+          "record": "4-10"
         },
         {
           "name": "Sacramento Kings",
@@ -135,7 +135,7 @@
       "teams": [
         {
           "name": "San Antonio Spurs",
-          "record": "12-3"
+          "record": "13-3"
         },
         {
           "name": "Houston Rockets",
@@ -143,7 +143,7 @@
         },
         {
           "name": "Memphis Grizzlies",
-          "record": "11-4"
+          "record": "12-4"
         },
         {
           "name": "Dallas Mavericks",
