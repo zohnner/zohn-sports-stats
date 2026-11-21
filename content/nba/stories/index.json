@@ -1,6 +1,45 @@
 {
   "stories": [
     {
+      "slug": "2026-11-21-jokic-24-second-half-points-nuggets-rockets",
+      "title": "Jokic's 24-point second half followed a 2-point first half",
+      "dek": "Jokic had 18 in the third quarter alone as Denver beat Houston 133-124.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "hook": "Nikola Jokic's big second half sends the Nuggets to a 133-124 win over the Rockets",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401909312",
+      "teams": [
+        "DEN",
+        "HOU"
+      ],
+      "players": [
+        "3112335",
+        "4871144"
+      ],
+      "hero_stat": "24 second-half points after 2 in the first half",
+      "url": "/nba/stories/2026-11-21-jokic-24-second-half-points-nuggets-rockets",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-21-raptors-end-six-game-skid-barnes-29",
+      "title": "Scottie Barnes scored 29 as the Raptors ended a 6-game skid at Detroit",
+      "dek": "Toronto's 105-102 win came on the road against a 10-5 Pistons team, and Barnes shot 14 of 21 from the field.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "hook": "Scottie Barnes scores 29, including key layup, as Raptors end skid with 105-102 win over Pistons",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401909308",
+      "teams": [
+        "TOR",
+        "DET"
+      ],
+      "players": [
+        "4433134"
+      ],
+      "hero_stat": "29 points on 14-of-21 shooting in a 105-102 win",
+      "url": "/nba/stories/2026-11-21-raptors-end-six-game-skid-barnes-29",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-20-warriors-five-game-road-skid",
       "title": "The Warriors have lost 5 straight, all on the road, by 23.2 points a game",
       "dek": "Golden State has scored under 100 points in 4 of the 5 losses, and its last 5-game skid ended in March 2026.",
