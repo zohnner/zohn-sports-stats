@@ -9,7 +9,7 @@ hero_stat: 2 top-3 teams, 2 first losses, 1 night
 accent: #c8102e
 ---
 
-No. 1 Florida and No. 3 UConn both lost for the first time this season on the same night — and both lost to ranked teams. No. 8 Houston beat Florida 86-76 in Gainesville, and No. 12 Arizona beat UConn 85-79 in Tucson.
+No. 1 Florida and No. 3 UConn both lost for the first time this season on the same night — and both lost to ranked teams. No. 8 Houston beat Florida 86-76 in Las Vegas, and No. 12 Arizona beat UConn 85-79 in Tucson.
 
 Florida made 15 of 26 threes, shooting 58% from deep, and still lost. Houston won inside and at the line: 44 points in the paint to Florida's 18, 25 of 27 free throws, and 13 offensive rebounds. Florida turned it over 12 times to Houston's 6. Dedan Thomas Jr. scored 30 points for Houston on 10-of-17 shooting and 8-of-8 at the line; Denzel Aberdeen scored 26 for Florida, making 6 of 9 threes.
 
