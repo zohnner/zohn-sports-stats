@@ -1,6 +1,46 @@
 {
   "stories": [
     {
+      "slug": "2026-11-21-indiana-6-0-kentucky-arkansas",
+      "title": "Indiana is 6-0 after beating Kentucky 90-76",
+      "dek": "The Hoosiers beat No. 20 Arkansas on Wednesday and Kentucky on Friday, and have scored 90 or more in 4 of their 6 games.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "teams": [
+        "IU",
+        "UK",
+        "ARK"
+      ],
+      "players": [
+        "5174291",
+        "4873184"
+      ],
+      "hero_stat": "6-0, with wins over No. 20 Arkansas and Kentucky",
+      "url": "/ncaab/stories/2026-11-21-indiana-6-0-kentucky-arkansas",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-21-seton-hall-bench-53-nc-state-baha-mar",
+      "title": "Seton Hall's bench scored 53 of its 87 points in an overtime win",
+      "dek": "Rodney Brown Jr. had 24 and Terry Copeland Jr. 22 off the bench as the Pirates beat NC State 87-81 for the Baha Mar title.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "hook": "Reserves Brown, Copeland send Seton Hall past NC State in Baha Mar Championship, 87-81 in OT",
+      "hook_url": "https://www.espn.com/ncb/recap?gameId=401921691",
+      "teams": [
+        "HALL",
+        "NCSU",
+        "WISC"
+      ],
+      "players": [
+        "5037870",
+        "5243058"
+      ],
+      "hero_stat": "53 bench points — Brown 24, Copeland 22 — in an 87-81 OT win",
+      "url": "/ncaab/stories/2026-11-21-seton-hall-bench-53-nc-state-baha-mar",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-20-houston-players-era-title",
       "title": "Houston beat No. 1 Florida and No. 11 Kansas to win the Players Era title",
       "dek": "The Cougars are 6-0 after 3 wins in Las Vegas, capped by a 92-83 win over Kansas in the final.",
