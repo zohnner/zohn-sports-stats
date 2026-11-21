@@ -1,6 +1,26 @@
 {
   "stories": [
     {
+      "slug": "2026-11-21-oregon-seven-points-back-to-back-michigan-state",
+      "title": "Oregon has allowed 7 points in back-to-back games",
+      "dek": "The Ducks held Michigan State to 200 yards in a 45-7 win, 6 days after holding Michigan to 7.",
+      "date": "2026-11-21",
+      "season": 2026,
+      "hook": "Smith runs for 121 yards and 2 TDs, Oregon routs Michigan State 45-7",
+      "hook_url": "https://www.espn.com/ncf/recap?gameId=401858529",
+      "week": 12,
+      "teams": [
+        "ORE",
+        "MSU"
+      ],
+      "players": [
+        "5198506"
+      ],
+      "hero_stat": "7 points allowed in each of the last 2 games",
+      "url": "/ncaaf/stories/2026-11-21-oregon-seven-points-back-to-back-michigan-state",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-16-oklahoma-beats-no-19-ole-miss-24-17",
       "title": "Oklahoma beat No. 19 Ole Miss on a 75-yard punt return",
       "dek": "The Sooners threw for 111 yards and were outgained 306-299, and the return was the 7-point difference.",
