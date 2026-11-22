@@ -120,7 +120,8 @@ export async function renderStoryPage(context, sport) {
             `<p class="ss-story__disclosure">${esc(core.DISCLOSURE)} <a href="/content/${sport}/stories/${esc(slug)}.facts.json">See the data behind this story</a>.</p>` +
             storyListHtml(siblings, `More ${label} stories`, { sport, more: false }) +
             `<p class="ss-story__more">More stories: ${sportLinks(everySport, null).reverse().join(' · ')} · <a href="/${sport}">${label} Home</a></p>` +
-            `</article>`;
+            `</article>` +
+            `<div class="newsletter-card" data-newsletter-source="story"></div>`;
 
         const html = await (await rawShell(env, request.url)).text();
         return htmlResponse(fillHead(html, { title, desc, canonical, ogImage, jsonld, sport, snapshot }));

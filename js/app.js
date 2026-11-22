@@ -991,6 +991,9 @@ function loadHome() {
                      tabbed rail below so it is visible without a click. -->
                 <div class="home-stories home-zone" id="homeStories"></div>
 
+                <!-- Weekly email signup (D-214), filled by js/newsletter.js. -->
+                <div class="home-zone" id="homeNewsletter" data-newsletter-source="home"></div>
+
                 <!-- Computed stat lines (D-046 P3): the site's own numbers. The wire
                      headlines that shared this box as a second tab sent readers off
                      the site and live on each sport's News page instead. -->
@@ -1023,6 +1026,7 @@ function loadHome() {
     _loadHomeTodayGames();
     _wireHomeSportTabs();
     _renderHomeStories();
+    if (typeof mountNewsletterForms === 'function') mountNewsletterForms();
     _renderHomeInsights();
 
     // Background-load leaderboard data for the Insights rail if not yet cached
