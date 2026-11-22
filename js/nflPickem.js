@@ -266,7 +266,7 @@ function _pkRender() {
         let resultBadge = '';
         if (isFinal) {
             const won = g[g.pick] && g[g.pick].winner;
-            resultBadge = '<div class="' + (won ? 'pk-result-correct' : 'pk-result-wrong') + '">' + (won ? '✓ +' + g.confidence : '✗ 0') + '</div>';
+            resultBadge = '<div class="' + (won ? 'pk-result-correct' : 'pk-result-wrong') + '">' + (won ? _iconSvg('check', 14) + ' +' + g.confidence : _iconSvg('x', 14) + ' 0') + '</div>';
         }
 
         const gapHtml = g.gapPts != null ? '<span class="pk-gap">Δ' + Math.round(g.gapPts) + 'pt gap</span>' : '';

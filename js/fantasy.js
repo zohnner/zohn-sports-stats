@@ -501,7 +501,7 @@ function _mdRenderDraft() {
 
     const recBanner = rec ? `
         <div class="md-rec" data-pid="${rec.p.id}" role="button" tabindex="0">
-            <div class="md-rec-tag">★ Recommended</div>
+            <div class="md-rec-tag">${_iconSvg('star', 12)} Recommended</div>
             <div class="md-rec-body">
                 <span class="md-rec-pos" style="color:${_MD_POS_COLOR[rec.p.pos]}">${rec.p.pos}</span>
                 <strong>${_escFan(rec.p.name)}</strong> <span class="md-rl-team">${rec.p.team}</span>
@@ -577,7 +577,7 @@ function _mdListHtml(players, surv) {
         const isRec = p.id === _md._recId ? ' md-row--rec' : '';
         return `<button class="md-row${isRec}" data-pid="${p.id}">
             <span class="md-row-pos" style="color:${_MD_POS_COLOR[p.pos]||'var(--text-muted)'}">${p.pos}</span>
-            <span class="md-row-name">${p.id===_md._recId?'★ ':''}${_escFan(p.name)}</span>
+            <span class="md-row-name">${p.id===_md._recId?_iconSvg('star', 12)+' ':''}${_escFan(p.name)}</span>
             <span class="md-row-team">${p.team}${_nflVenueBadge(p.team)}</span>
             ${cliff}
             ${(()=>{const v=_mdVorp(p);if(v==null)return '<span class="md-row-vorp"></span>';const imp=_mdVorpIsImplied(p);return `<span class="md-row-vorp${imp?' dk-val--est':''}" style="color:${v>0&&!imp?'var(--color-win)':'var(--text-subtle)'}" title="${imp?'Market-implied VORP — no prior-season production, priced from ADP neighbors':'Projected points over positional replacement (VORP) — trained rest-of-season model'}">${imp?'~':''}${v>0?'+':''}${v}</span>`;})()}
@@ -912,7 +912,7 @@ function _mlRenderLinkForm(errorMsg) {
           <h1 class="md-title">My League</h1>
           <p class="md-sub">Link your Sleeper username to see your real roster, record, and lineup right here.</p>
           <div class="md-setup-row">
-            <label>Sleeper username<input type="text" id="mlUsername" placeholder="e.g. zohnner" autocomplete="off" style="font-size:0.9rem;padding:0.4rem 0.6rem;border-radius:var(--radius-md);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-primary)"></label>
+            <label>Sleeper username<input type="text" id="mlUsername" placeholder="e.g. zohnner" autocomplete="off" style="font-size:0.9rem;padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-mid);background:var(--bg-raised);color:var(--text-primary)"></label>
           </div>
           <button class="md-btn md-btn--primary" id="mlLookupBtn">Find my leagues</button>
           ${errorMsg ? `<p class="md-note" style="color:var(--color-loss)">${_escFan(errorMsg)}</p>` : ''}
@@ -1445,7 +1445,8 @@ if (typeof window !== 'undefined') {
 function _mdBuildShareCard() {
     const s = _md.summary || {};
     const roster = (_md.rosters && _md.rosters[_md.userTeam]) || [];
-    const BG='#0b1526', SURF='#0e1c33', BORDER='#2a3850', TEXT='#f0f4fa', MUTED='#7fa5c8', SUBTLE='#556d8f', ACCENT='#ff8100', ACCENT2='#ffd200', GOOD='#34d399', BAD='#f87171';
+    // Export palette: fixed Ink + Ice hex so the PNG never depends on the viewer's theme.
+    const BG='#070b16', SURF='#0f182a', BORDER='#22304a', TEXT='#f2f7fc', MUTED='#8fa3bf', SUBTLE='#5e6e85', ACCENT='#4cc9f0', ACCENT2='#82dbf5', GOOD='#34d399', BAD='#f87171';
     const ord = n => (n%10===1&&n%100!==11)?'st':(n%10===2&&n%100!==12)?'nd':(n%10===3&&n%100!==13)?'rd':'th';
     const fmt = `${_md.teams}-team ${_escFan(_md.scoring)}${_md.superflex?' Superflex':''} · Pick ${_md.slot}`;
     const finishLine = s.finish ? `Projected finish ${s.finish}${ord(s.finish)} of ${_md.teams}` : '';
@@ -1465,7 +1466,7 @@ function _mdBuildShareCard() {
       <div style="padding:26px 28px 18px;background:linear-gradient(135deg,#12243f,${BG})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
           <div><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:${ACCENT};font-weight:800">My Mock Draft</div><div style="font-size:15px;color:${MUTED};margin-top:6px">${fmt}</div></div>
-          ${s.grade?`<div style="flex:0 0 auto;width:72px;height:72px;border-radius:16px;background:${ACCENT};color:${BG};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800">${_escFan(s.grade)}</div>`:''}
+          ${s.grade?`<div style="flex:0 0 auto;width:72px;height:72px;border-radius:var(--radius);background:${ACCENT};color:${BG};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800">${_escFan(s.grade)}</div>`:''}
         </div>
         ${(finishLine||valLine)?`<div style="margin-top:14px;font-size:15px;color:${TEXT};font-weight:700">${finishLine}${finishLine&&valLine?` <span style="color:${SUBTLE}">·</span> `:''}${valLine?`<span style="color:${s.avg>=0?GOOD:BAD}">${valLine}</span>`:''}</div>`:''}
       </div>

@@ -6,40 +6,40 @@
 
 :root {
     /* ── Base palette ── */
-    --bg-base:            #0d1014;
-    --bg-surface:         #14181d;
-    --bg-raised:          #1d232b;
+    --bg-base:            #070b16;
+    --bg-surface:         #0f182a;
+    --bg-raised:          #16223a;
     --bg-elevated:        var(--bg-raised);  /* N-9: referenced across nfl/nhl/css but never defined → rendered transparent. Alias to the raised surface; resolves lazily so it follows each theme's own --bg-raised. */
-    --bg-card:            rgba(20, 24, 29, 0.86);
-    --bg-card-hover:      rgba(29, 35, 43, 0.96);
-    --bg-overlay:         rgba(8, 10, 13, 0.96);
-    --bg-subtle:          rgba(255, 255, 255, 0.028);
-    --bg-interactive:     rgba(255, 255, 255, 0.05);
-    --bg-interactive-hov: rgba(255, 255, 255, 0.08);
+    --bg-card:            #0f182a;
+    --bg-card-hover:      #16223a;
+    --bg-overlay:         rgba(4, 7, 15, 0.96);
+    --bg-subtle:          rgba(242, 247, 252, 0.028);
+    --bg-interactive:     rgba(242, 247, 252, 0.05);
+    --bg-interactive-hov: rgba(242, 247, 252, 0.08);
 
     /* ── Borders ── */
-    --border-default:     rgba(255, 255, 255, 0.11); /* D-048 P6: load-bearing on near-flat surfaces */
-    --border-mid:         rgba(255, 255, 255, 0.15);
-    --border-strong:      rgba(255, 255, 255, 0.24);
-    --border-accent:      rgba(255, 122, 0, 0.32);
+    --border-default:     rgba(242, 247, 252, 0.11);
+    --border-mid:         rgba(242, 247, 252, 0.15);
+    --border-strong:      rgba(242, 247, 252, 0.24);
+    --border-accent:      rgba(76, 201, 240, 0.32);
     --border-subtle:      var(--border-default);  /* N-10: referenced across nfl/css but never defined → border shorthands were voided (invisible separators). Alias to the lightest defined border; resolves lazily per theme. */
-    --border-accent-hov:  rgba(255, 122, 0, 0.55);
+    --border-accent-hov:  rgba(76, 201, 240, 0.55);
 
     /* ── Text ── */
-    --text-primary:       #f5f7fa;
-    --text-secondary:     #c5cbd3;
-    --text-muted:         #8a93a3;
-    --text-subtle:        #7c8794; /* D-048: neutral near-black ramp (was navy #6d8fb8) */
-    --text-disabled:      #3a414b;
+    --text-primary:       #f2f7fc;
+    --text-secondary:     #c3cede;
+    --text-muted:         #8fa3bf;
+    --text-subtle:        #8fa3bf;
+    --text-disabled:      #3a4760;
 
-    /* ── Brand (orange-gold) ── */
-    --accent:             #ff7a00;
-    --accent-light:       #ffb347;
-    --accent-dark:        #d96a00;
-    --accent-subtle:      rgba(255, 122, 0, 0.10);
-    --accent-border:      rgba(255, 122, 0, 0.28);
-    --accent-glow:        rgba(255, 122, 0, 0.22);
-    --brand-ink:          #b34700; /* D-048 P2: orange for text/icons on LIGHT surfaces (used by light theme / P7) */
+    /* ── Brand (Ink + Ice: ice is the one accent — data, state, wayfinding) ── */
+    --accent:             #4cc9f0;
+    --accent-light:       #82dbf5;
+    --accent-dark:        #2aa9d2;
+    --accent-subtle:      rgba(76, 201, 240, 0.10);
+    --accent-border:      rgba(76, 201, 240, 0.28);
+    --accent-glow:        rgba(76, 201, 240, 0.22);
+    --brand-ink:          #0b6f91;
 
     /* ── Semantic ── */
     --color-win:          #16c784;
@@ -51,25 +51,25 @@
     --color-info:         #4da3ff;
     /* D-105: reserved for the live field viewer's first-down marker only --
        broadcast-standard yellow, deliberately distinct from --accent
-       (orange) and --color-warn (amber) so it never reads as "another
-       orange thing" or a real warning state. Not a decoration; it's the
+       (ice) and --color-warn (amber) so it never reads as "another
+       accent thing" or a real warning state. Not a decoration; it's the
        one place on the site this specific meaning (yardage needed) shows
        up, always paired with a text label, never color-alone. */
     --color-first-down:       #ffd500;
-    --color-first-down-glow:  rgba(255,213,0,0.45);
+    --color-first-down-glow:  transparent;
     /* Line of scrimmage marker — broadcast-standard blue, paired with the
        first-down yellow the same way TV score bugs draw both lines. */
     --color-scrimmage:        #3b82f6;
-    --color-scrimmage-glow:   rgba(59,130,246,0.45);
+    --color-scrimmage-glow:   transparent;
 
     /* ── Chart chrome + categorical (D-048 P4) ── */
     --chart-grid:            rgba(255,255,255,0.06);
-    --chart-tick:            var(--text-muted);
-    --chart-tooltip-bg:      rgba(20,24,29,0.95);
+    --chart-tick:            #8fa3bf;
+    --chart-tooltip-bg:      rgba(15, 24, 42, 0.97);
     --chart-tooltip-border:  rgba(255,255,255,0.10);
-    /* Categorical series — orange is the FOCAL series only; rotate the other five. */
+    /* Categorical series — ice (--accent) is the FOCAL series only; rotate the other five. */
     --chart-focal:           var(--accent);
-    --chart-1:               #4da3ff;
+    --chart-1:               #818cf8;
     --chart-2:               #a78bfa;
     --chart-3:               #2dd4bf;
     --chart-4:               #f472b6;
@@ -85,7 +85,7 @@
     --color-ast:          #60a5fa;   /* Assists   — sky blue    */
     --color-stl:          #c084fc;   /* Steals    — violet      */
     --color-blk:          #f472b6;   /* Blocks    — pink        */
-    --color-pct:          #fb923c;   /* FG%       — orange      */
+    --color-pct:          #a3e635;
     --color-min:          #7c8df0;   /* Minutes   — indigo      */
     --color-tov:          #f87171;   /* Turnovers — red-light   */
 
@@ -99,7 +99,7 @@
     --color-loss-border:      rgba(229,72,77,0.25);
     /* DESIGN.md fix: --color-warn existed but had no subtle/border pair, so the
        one real "mild caution, not brand, not alarm" use case (injury severity)
-       reached for --accent-light instead -- a brand-orange misuse. Same rgba
+       reached for --accent-light instead -- a brand-accent misuse. Same rgba
        derivation as the win/loss pairs above, from --color-warn's #f5b301. */
     --color-warn-subtle:      rgba(245,179,1,0.08);
     --color-warn-border:      rgba(245,179,1,0.25);
@@ -131,11 +131,11 @@
     --nfl-pos-k:           #a78bfa;
     --nfl-stat-passing:    #60a5fa;
     --nfl-stat-rushing:    #34d399;
-    --nfl-stat-receiving:  #f59e0b;
+    --nfl-stat-receiving:  #facc15;
     --nfl-stat-defense:    #a78bfa;
     --nfl-stat-kicking:    #f43f5e;
     --nfl-cat-1:           #ef4444;
-    --nfl-cat-2:           #f97316;
+    --nfl-cat-2:           #fb7185;
     --nfl-cat-3:           #34d399;
     --nfl-cat-4:           #10b981;
     --nfl-cat-5:           #60a5fa;
@@ -167,7 +167,7 @@
     --color-cmp-b:             rgba(52,211,153,0.35);
 
     /* ── Text on accent backgrounds (buttons, badges, active states) ── */
-    --text-on-accent:          #0f172a;   /* dark text on #ff8100 orange (~7:1) */
+    --text-on-accent:          #070b16;
 
     /* ── UI state (not stat categories, not semantic status) ── */
     --color-fav:               #f472b6;   /* favorite/heart icon */
@@ -175,13 +175,13 @@
     --color-fav-border:        rgba(244,114,182,0.40);
 
     /* ── Award / hardware (D-116) ──
-       Trophy Case tiles only. Distinct from --accent (brand orange,
-       D-047 invariant #3: brand orange = brand only), from stat-category
+       Trophy Case tiles only. Distinct from --accent (brand ice,
+       D-047 invariant #3: brand accent = brand only), from stat-category
        tokens (mark category, not achievement), and from --color-tier-*
        (performance grading, not "did they win it"). ── */
-    --color-award:         #e0a52c;
-    --color-award-subtle:  rgba(224,165,44,0.10);
-    --color-award-border:  rgba(224,165,44,0.28);
+    --color-award:         #e6b830;
+    --color-award-subtle:  rgba(230, 184, 48, 0.10);
+    --color-award-border:  rgba(230, 184, 48, 0.28);
 
     /* ── Scorecard surface ──
        Paper-physical aesthetic — intentional break from dark-mode surface.
@@ -190,15 +190,15 @@
     --scorecard-ink:           #1a1209;
     --scorecard-border:        #c4a882;
     --scorecard-border-light:  #ddd0b8;
-    --scorecard-highlight:     #e8a830;
-    --scorecard-run:           #d4380d;
-    --scorecard-active-border: rgba(245,158,11,0.90);
+    --scorecard-highlight:     #e8c230;
+    --scorecard-run:           #c81e3a;
+    --scorecard-active-border: rgba(234, 179, 8, 0.90);
     --scorecard-shadow:        0 4px 24px rgba(0,0,0,0.30), 0 0 0 1px rgba(180,160,130,0.25);
 
     /* Back-compat aliases */
     --color-bg:           var(--bg-base);
     --color-surface:      var(--bg-card);
-    --color-surface-raised: rgba(17, 30, 56, 0.95);
+    --color-surface-raised: #16223a;
     --color-surface-subtle: var(--bg-subtle);
     --color-surface-hover:  var(--bg-interactive);
     --color-border:       var(--border-default);
@@ -217,7 +217,8 @@
     --color-accent-border:var(--accent-border);
     --color-accent-glow:  var(--accent-glow);
 
-    /* ── Spacing ── */
+    /* ── Spacing (D-212: every padding/margin/gap in css/ snaps to this scale) ── */
+    --space-0-5: 0.125rem;  /*  2px — hairline */
     --space-1:   0.25rem;   /*  4px */
     --space-2:   0.5rem;    /*  8px */
     --space-3:   0.75rem;   /* 12px */
@@ -229,28 +230,23 @@
     --space-12:  3rem;      /* 48px */
     --space-16:  4rem;      /* 64px */
 
-    /* ── Border radius ── */
-    --radius-xs:    4px;
-    --radius-sm:    6px;
-    --radius-md:    10px;
-    --radius-lg:    14px;
-    --radius-xl:    20px;
-    --radius-2xl:   28px;
+    /* ── Border radius (D-212: one radius; --radius-full for pills, 50% for circles) ── */
+    --radius:       8px;
     --radius-full:  9999px;
 
     /* ── Shadows ── */
     --shadow-sm:      0 1px 8px  rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.04);
     --shadow-md:      0 4px 20px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.05);
     --shadow-lg:      0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
-    --shadow-accent:  0 8px 32px var(--accent-glow);
+    --shadow-accent:  none;
     --shadow-card:    0 2px 12px rgba(0,0,0,0.35), 0 0 0 1px var(--border-default);
     --shadow-card-hov:0 8px 32px rgba(0,0,0,0.5),  0 0 0 1px var(--border-accent);
 
-    /* ── Glassmorphism ── */
-    --blur-sm:   blur(12px);
-    --blur-md:   blur(20px);
-    --blur-lg:   blur(28px);
-    --blur-xl:   blur(40px);
+    /* ── Blur (D-212: flat surfaces, no glass; kept as tokens so a reintroduction is one deliberate edit) ── */
+    --blur-sm:   none;
+    --blur-md:   none;
+    --blur-lg:   none;
+    --blur-xl:   none;
 
     /* ── Easing curves ── */
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -263,21 +259,17 @@
     --transition-base: 220ms var(--ease-out);
     --transition-slow: 380ms var(--ease-out);
 
-    /* ── Deprecated aliases ── */
-    --blur-md: blur(20px);
-
     /* ── Typography ── */
     --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, 'Roboto Mono', monospace;
-    --font-display: 'Barlow Semi Condensed', var(--font-sans);
-    --font-brand:   'Space Grotesk', var(--font-sans); /* D-048 P5: brand/display headers (numerals stay --font-display/Barlow) */
 
-    /* ── Selection / chip accent (indigo — secondary interactive, distinct from orange nav) ── */
+    /* ── Selection / chip accent (indigo — secondary interactive, distinct from ice nav) ── */
     --color-chip:        #818cf8;
     --color-chip-bg:     rgba(99,102,241,0.12);
     --color-chip-border: rgba(99,102,241,0.45);
 
-    /* Fluid type: clamp(min, preferred, max) */
+    /* Type scale (D-212): every font-size in css/ and js/ uses one of these steps. */
+    --text-2xs:  0.625rem;   /* 10px — micro labels */
     --text-xs:   0.72rem;    /* 11.5px */
     --text-sm:   0.8125rem;  /* 13px   */
     --text-base: 0.9375rem;  /* 15px   */
@@ -286,7 +278,8 @@
     --text-xl:   1.25rem;    /* 20px   */
     --text-2xl:  1.5rem;     /* 24px   */
     --text-3xl:  clamp(1.75rem, 4vw, 2.25rem);
-    --text-4xl:  clamp(2rem,   5vw, 3rem);
+    --text-4xl:  clamp(2rem,   5vw, 3rem);
+    --text-5xl:  clamp(2.5rem, 6vw, 3.5rem);
 
     /* ── Z-index scale ── */
     --z-base:    0;
@@ -313,24 +306,18 @@
     --team-color:     #667eea;   /* fallback; overridden per element */
     --team-color-dim: rgba(102,126,234,0.15);
 
-    /* ── Chart.js ── */
-    --chart-grid:           rgba(255,255,255,0.05);
-    --chart-tick:           #5b7497;
-    --chart-tooltip-bg:     rgba(6,12,24,0.97);
-    --chart-tooltip-border: rgba(255,255,255,0.08);
-
     /* ── Theme-aware surface tokens (used in place of raw rgba) ── */
     /* Skeleton shimmer */
     --skeleton-from:        rgba(255,255,255,0.04);
     --skeleton-mid:         rgba(255,255,255,0.09);
 
-    --bg-header:            rgba(6, 12, 24, 0.96);
-    --bg-waffle-panel:      rgba(4, 9, 20, 0.98);
-    --bg-table-head:        rgba(6, 12, 24, 0.85);
-    --bg-table-sub:         rgba(6, 12, 24, 0.55);
-    --bg-mobile-nav:        rgba(6, 12, 24, 0.97);
-    --bg-toast:             rgba(6, 12, 24, 0.97);
-    --shadow-header:        0 1px 0 rgba(255,129,0,0.12), 0 4px 24px rgba(0,0,0,0.40);
+    --bg-header:            #070b16;
+    --bg-waffle-panel:       #0f182a;
+    --bg-table-head:        rgba(15, 24, 42, 0.85);
+    --bg-table-sub:         rgba(15, 24, 42, 0.55);
+    --bg-mobile-nav:        #070b16;
+    --bg-toast:             #0f182a;
+    --shadow-header:        0 1px 0 rgba(242, 247, 252, 0.08), 0 4px 24px rgba(0, 0, 0, 0.40);
     --shadow-mobile-nav:    0 -4px 24px rgba(0,0,0,0.50);
     --shadow-waffle-panel:  0 8px 32px rgba(0,0,0,0.55);
 }
@@ -341,56 +328,56 @@
    ─────────────────────────────────────────────────────────── */
 [data-theme="light"] {
     /* Backgrounds */
-    --bg-base:              #f5f7fa;
+    --bg-base:              #f2f7fc;
     --bg-surface:           #ffffff;
-    --bg-raised:            #edf1f6;
+    --bg-raised:            #e6eef7;
     --bg-card:              rgba(255, 255, 255, 1.0);
-    --bg-card-hover:        rgba(248, 250, 252, 1.0);
-    --bg-overlay:           rgba(248, 250, 252, 0.97);
-    --bg-subtle:            rgba(0, 0, 0, 0.025);
-    --bg-interactive:       rgba(0, 0, 0, 0.04);
-    --bg-interactive-hov:   rgba(0, 0, 0, 0.07);
+    --bg-card-hover:        rgba(246, 250, 253, 1.0);
+    --bg-overlay:           rgba(242, 247, 252, 0.97);
+    --bg-subtle:            rgba(7, 11, 22, 0.025);
+    --bg-interactive:       rgba(7, 11, 22, 0.04);
+    --bg-interactive-hov:   rgba(7, 11, 22, 0.07);
 
     /* Borders */
-    --border-default:       rgba(0, 0, 0, 0.08);
-    --border-mid:           rgba(0, 0, 0, 0.13);
-    --border-strong:        rgba(0, 0, 0, 0.22);
-    --border-accent:        rgba(217, 106, 0, 0.32);
-    --border-accent-hov:    rgba(217, 106, 0, 0.58);
+    --border-default:       rgba(7, 11, 22, 0.08);
+    --border-mid:           rgba(7, 11, 22, 0.13);
+    --border-strong:        rgba(7, 11, 22, 0.22);
+    --border-accent:        rgba(11, 111, 145, 0.32);
+    --border-accent-hov:    rgba(11, 111, 145, 0.58);
 
     /* Text */
-    --text-primary:         #14181d;
-    --text-secondary:       #313944;
-    --text-muted:           #5e6978;
-    --text-subtle:          #5e6978; /* AA on white */
-    --text-disabled:        #cbd5e1;
+    --text-primary:         #070b16;
+    --text-secondary:       #24324a;
+    --text-muted:           #4a5a73;
+    --text-subtle:          #4a5a73;
+    --text-disabled:        #b8c4d4;
 
-    /* Text on accent backgrounds — white on #d96a00 clears AA (~4.7:1) */
+    /* Text on accent backgrounds — white on #0b6f91 = 5.7:1 */
     --text-on-accent:       #ffffff;
 
     /* Accent — slightly deeper for light-bg contrast */
-    --accent:               #d96a00;
-    --accent-light:         #ff8100;
-    --accent-dark:          #b35200;
-    --accent-subtle:        rgba(217, 106, 0, 0.08);
-    --accent-border:        rgba(217, 106, 0, 0.26);
-    --accent-glow:          rgba(217, 106, 0, 0.12);
+    --accent:               #0b6f91;
+    --accent-light:         #0e86ae;
+    --accent-dark:          #085a76;
+    --accent-subtle:        rgba(11, 111, 145, 0.07);
+    --accent-border:        rgba(11, 111, 145, 0.26);
+    --accent-glow:          rgba(11, 111, 145, 0.12);
 
     /* Shadows (much lighter on white) */
     --shadow-sm:            0 1px 8px  rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
     --shadow-md:            0 4px 20px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05);
     --shadow-lg:            0 8px 40px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06);
-    --shadow-accent:        0 8px 32px var(--accent-glow);
+    --shadow-accent:        none;
     --shadow-card:          0 2px 12px rgba(0,0,0,0.07), 0 0 0 1px var(--border-default);
     --shadow-card-hov:      0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--border-accent);
 
     /* Charts */
     --chart-grid:           rgba(0, 0, 0, 0.06);
-    --chart-tick:           #64748b;
+    --chart-tick:           #4a5a73;
     --chart-tooltip-bg:     rgba(255, 255, 255, 0.98);
     --chart-tooltip-border: rgba(0, 0, 0, 0.10);
 
-    /* Semantic — accessible on light (>= 4.5:1 on #f5f7fa); D-048 P7 */
+    /* Semantic — accessible on light (>= 4.5:1 on #f2f7fc); D-048 P7 */
     --color-win:            #0a7c4e;
     --color-loss:           #c4272b;
     --color-live:           #c7005b;
@@ -401,11 +388,11 @@
     /* D-105: darkened for >= 4.5:1 contrast on light surfaces, same
        treatment as --color-warn above. */
     --color-first-down:       #8a6d00;
-    --color-first-down-glow:  rgba(138,109,0,0.25);
+    --color-first-down-glow:  transparent;
     --color-scrimmage:        #1667c7;
-    --color-scrimmage-glow:   rgba(22,103,199,0.30);
+    --color-scrimmage-glow:   transparent;
     /* Chart categorical — darkened for white (D-048 P7); --chart-focal inherits --accent */
-    --chart-1:              #2563eb;
+    --chart-1:              #4f46e5;
     --chart-2:              #7c3aed;
     --chart-3:              #0d9488;
     --chart-4:              #db2777;
@@ -422,8 +409,8 @@
     --color-error-border:     rgba(196,39,43,0.20);
     --color-live-subtle:      rgba(199,0,91,0.10);
     --color-live-border:      rgba(199,0,91,0.28);
-    --color-pts-subtle:       rgba(217,119,6,0.08);
-    --color-pts-border:       rgba(217,119,6,0.22);
+    --color-pts-subtle:       rgba(202, 138, 4, 0.08);
+    --color-pts-border:       rgba(202, 138, 4, 0.22);
     --color-reb-subtle:       rgba(16,185,129,0.08);
     --color-reb-border:       rgba(16,185,129,0.25);
     --color-al-subtle:        rgba(59,130,246,0.12);
@@ -441,13 +428,13 @@
     --skeleton-from:        rgba(0,0,0,0.05);
     --skeleton-mid:         rgba(0,0,0,0.11);
 
-    --bg-header:            rgba(255, 255, 255, 0.96);
-    --bg-waffle-panel:      rgba(255, 255, 255, 0.98);
-    --bg-table-head:        rgba(248, 250, 252, 0.95);
-    --bg-table-sub:         rgba(241, 245, 249, 0.70);
-    --bg-mobile-nav:        rgba(255, 255, 255, 0.97);
-    --bg-toast:             rgba(255, 255, 255, 0.98);
-    --shadow-header:        0 1px 0 rgba(217,106,0,0.10), 0 4px 24px rgba(0,0,0,0.08);
+    --bg-header:            #ffffff;
+    --bg-waffle-panel:       #ffffff;
+    --bg-table-head:        rgba(246, 250, 253, 0.95);
+    --bg-table-sub:         rgba(230, 238, 247, 0.70);
+    --bg-mobile-nav:        #ffffff;
+    --bg-toast:             #ffffff;
+    --shadow-header:        0 1px 0 rgba(7, 11, 22, 0.08), 0 4px 24px rgba(0, 0, 0, 0.08);
     --shadow-mobile-nav:    0 -4px 24px rgba(0,0,0,0.08);
     --shadow-waffle-panel:  0 8px 32px rgba(0,0,0,0.10);
 

@@ -110,7 +110,7 @@ function _newsFilterBar(sport, injuryCount, total) {
         border:1px solid ${active ? 'var(--accent)' : 'var(--border-default)'};
         background:${active ? 'var(--accent)' : 'transparent'};
         color:${active ? '#0b0b0d' : 'var(--text-secondary)'};
-        font-weight:700;font-size:0.72rem;cursor:pointer">${label}</button>`;
+        font-weight:700;font-size:var(--text-xs);cursor:pointer">${label}</button>`;
     return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.4rem;margin-bottom:0.85rem">
         ${chip(!_newsInjuryOnly, `All (${total})`, 'newsFilterAll')}
         ${chip(_newsInjuryOnly, `<span style="display:inline-flex;vertical-align:-2px;margin-right:0.2rem">${_iconSvg('stethoscope', 12)}</span>Injury-Related (${injuryCount})`, 'newsFilterInjury')}

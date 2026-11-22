@@ -968,7 +968,7 @@ function _buildPregamePreview(feed, gamePk) {
     }
 
     return _lgAssemblePregameHtml(pp, away, home,
-        `<div class="skeleton-line" style="height:90px;border-radius:12px;margin-top:var(--space-3)"></div>`,
+        `<div class="skeleton-line" style="height:90px;border-radius:var(--radius);margin-top:var(--space-3)"></div>`,
         '');
 }
 
@@ -1178,9 +1178,9 @@ function _collectPitcherPitchTypeStats(allPlays, pitcherId) {
 // headline stat. Anything outside this set falls into "Other" rather than
 // growing the palette per-game (Kael, D-117 Phase 3).
 const LG_PITCH_TYPE_COLORS = {
-    FF: '#8ab4f8', SI: '#7cc7a4', FC: '#c58af9', SL: '#f4a261',
+    FF: '#8ab4f8', SI: '#7cc7a4', FC: '#c58af9', SL: '#e9c46a',
     CU: '#5aa9e6', CH: '#e8c468', FS: '#e07a9e', KC: '#9d8df1',
-    ST: '#6ec6b0', SV: '#d98b6b',
+    ST: '#6ec6b0', SV: '#d47fa6',
 };
 const LG_PITCH_TYPE_OTHER_COLOR = 'var(--text-muted)';
 
@@ -1908,10 +1908,10 @@ function _buildWinProb(feed) {
         : '';
 
     return `<div class="lg-winprob" role="group" aria-label="Win probability">
-        <div class="lg-winprob-seg lg-winprob-seg--away" style="width:${awayPct}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
+        <div class="lg-winprob-seg lg-winprob-seg--away" style="width:${awayPct}%;background:${awayClr}cc">
             <span class="lg-winprob-label">${_escHtml(away.abbreviation || '')} ${awayPct}%</span>
         </div>
-        <div class="lg-winprob-seg lg-winprob-seg--home" style="width:${homePct}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
+        <div class="lg-winprob-seg lg-winprob-seg--home" style="width:${homePct}%;background:${homeClr}cc">
             <span class="lg-winprob-label">${_escHtml(home.abbreviation || '')} ${homePct}%</span>
         </div>
     </div>
@@ -2243,7 +2243,7 @@ function _buildMatchupWithCount(feed) {
         const awayClr = getMLBTeamColors(away.abbreviation)?.primary || 'var(--accent)';
         const homeClr = getMLBTeamColors(home.abbreviation)?.primary || 'var(--accent)';
         const side = (abbr, p, color) => `<div class="lg-hero-side">
-            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${color}cc,${color}55)">${_lgInitial(p?.fullName)}</div>
+            <div class="player-avatar lg-hero-badge" style="background:${color}cc">${_lgInitial(p?.fullName)}</div>
             <div class="lg-hero-body">
                 <div class="lg-hero-role">${_escHtml(abbr || '')} Probable</div>
                 <div class="lg-hero-name">${p?.fullName ? _escHtml(p.fullName) : 'TBD'}</div>
@@ -2326,7 +2326,7 @@ function _buildMatchupWithCount(feed) {
 
     return `<div class="lg-hero${changed ? ' lg-hero--new' : ''}${isBattle ? ' lg-hero--battle' : ''}" data-batter-id="${batterId}">
         <div class="lg-hero-side">
-            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${batClr}cc,${batClr}55)">${_lgInitial(batterName)}</div>
+            <div class="player-avatar lg-hero-badge" style="background:${batClr}cc">${_lgInitial(batterName)}</div>
             <div class="lg-hero-body">
                 <div class="lg-hero-role">Batting</div>
                 <button type="button" class="lg-hero-name lg-player-name-trigger" data-player-id="${batterId}" data-player-side="${bSide}" data-player-role="batting">${_escHtml(batterName)}</button>
@@ -2336,7 +2336,7 @@ function _buildMatchupWithCount(feed) {
         </div>
         <div class="lg-hero-divider"></div>
         <div class="lg-hero-side">
-            <div class="player-avatar lg-hero-badge" style="background:linear-gradient(135deg,${pitClr}cc,${pitClr}55)">${_lgInitial(pitcherName)}</div>
+            <div class="player-avatar lg-hero-badge" style="background:${pitClr}cc">${_lgInitial(pitcherName)}</div>
             <div class="lg-hero-body">
                 <div class="lg-hero-role">Pitching</div>
                 <button type="button" class="lg-hero-name lg-player-name-trigger" data-player-id="${pitcherId}" data-player-side="${pSide}" data-player-role="pitching">${_escHtml(pitcherName)}</button>
@@ -2644,10 +2644,10 @@ async function _lgBuildSeasonSeries(awayTeamId, homeTeamId, awayAbbr, homeAbbr) 
         return `<div class="lg-side-card">
             <div class="lg-box-section-title">Season Series</div>
             <div class="lg-series-bar" role="group" aria-label="Season series ${_escHtml(awayAbbr)} ${awayWins}, ${_escHtml(homeAbbr)} ${homeWins}">
-                <div class="lg-series-seg" style="width:${awayPct.toFixed(1)}%;background:linear-gradient(135deg,${awayClr}cc,${awayClr}55)">
+                <div class="lg-series-seg" style="width:${awayPct.toFixed(1)}%;background:${awayClr}cc">
                     <span class="lg-series-label">${_escHtml(awayAbbr)} ${awayWins}</span>
                 </div>
-                <div class="lg-series-seg" style="width:${homePct.toFixed(1)}%;background:linear-gradient(135deg,${homeClr}cc,${homeClr}55)">
+                <div class="lg-series-seg" style="width:${homePct.toFixed(1)}%;background:${homeClr}cc">
                     <span class="lg-series-label">${_escHtml(homeAbbr)} ${homeWins}</span>
                 </div>
             </div>

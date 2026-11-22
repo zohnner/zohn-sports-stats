@@ -1,6 +1,85 @@
 {
   "stories": [
     {
+      "slug": "2026-11-22-michigan-beats-no-4-ucla-triple-overtime",
+      "title": "6-5 Michigan ended No. 4 UCLA's unbeaten run 18-16 in triple overtime",
+      "dek": "The Wolverines beat the highest-ranked team they have faced this season; UCLA had been 10-0.",
+      "date": "2026-11-22",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "MICH",
+        "UCLA"
+      ],
+      "players": [
+        "5159046",
+        "5141741"
+      ],
+      "hero_stat": "18-16 in 3OT, UCLA's first loss of the season",
+      "url": "/ncaaf/stories/2026-11-22-michigan-beats-no-4-ucla-triple-overtime",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-22-utah-last-unbeaten-team-fbs",
+      "title": "Utah stands 11-0 as the FBS's last unbeaten team",
+      "dek": "The Utes beat TCU 38-17 with a 21-0 fourth quarter, and they average 37.9 points a game while allowing 18.5.",
+      "date": "2026-11-22",
+      "season": 2026,
+      "hook": "Utah extends longest active winning streak in FBS, clinches Big 12 title bid",
+      "hook_url": "https://www.espn.com/college-football/story/_/id/50561074/no-2-utah-seals-spot-big-12-title-game-beating-tcu",
+      "week": 12,
+      "teams": [
+        "UTAH",
+        "TCU"
+      ],
+      "players": [
+        "5105849",
+        "4685704"
+      ],
+      "hero_stat": "11-0, the FBS's only unbeaten record",
+      "url": "/ncaaf/stories/2026-11-22-utah-last-unbeaten-team-fbs",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-22-washington-beats-no-8-indiana-overtime",
+      "title": "Washington beat No. 8 Indiana 27-24 in overtime for its first ranked win",
+      "dek": "Washington scored 24 points, the most Indiana has allowed all season, and outgained the Hoosiers 443-392.",
+      "date": "2026-11-22",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "WASH",
+        "IU"
+      ],
+      "players": [
+        "5079653",
+        "5146735"
+      ],
+      "hero_stat": "27-24 in OT, Washington's first ranked win of the season",
+      "url": "/ncaaf/stories/2026-11-22-washington-beats-no-8-indiana-overtime",
+      "sport": "ncaaf"
+    },
+    {
+      "slug": "2026-11-21-oregon-seven-points-back-to-back-michigan-state",
+      "title": "Oregon has allowed 7 points in back-to-back games",
+      "dek": "The Ducks held Michigan State to 200 yards in a 45-7 win, 6 days after holding Michigan to 7.",
+      "date": "2026-11-21",
+      "season": 2026,
+      "hook": "Smith runs for 121 yards and 2 TDs, Oregon routs Michigan State 45-7",
+      "hook_url": "https://www.espn.com/ncf/recap?gameId=401858529",
+      "week": 12,
+      "teams": [
+        "ORE",
+        "MSU"
+      ],
+      "players": [
+        "5198506"
+      ],
+      "hero_stat": "7 points allowed in each of the last 2 games",
+      "url": "/ncaaf/stories/2026-11-21-oregon-seven-points-back-to-back-michigan-state",
+      "sport": "ncaaf"
+    },
+    {
       "slug": "2026-11-16-oklahoma-beats-no-19-ole-miss-24-17",
       "title": "Oklahoma beat No. 19 Ole Miss on a 75-yard punt return",
       "dek": "The Sooners threw for 111 yards and were outgained 306-299, and the return was the 7-point difference.",

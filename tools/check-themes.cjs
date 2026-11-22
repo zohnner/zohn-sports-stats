@@ -69,7 +69,14 @@ const PAIRS = [
     ['--accent',         '--accent-subtle', 3.0], // btn-secondary / badge / pill label text on its own tint
     ['--text-muted',     '--bg-surface',    3.0], // muted captions on surface-level panels
     ['--text-primary',   '--bg-interactive', 4.5], // nav/tab/list-row text on hover/active backgrounds
+    // Ink + Ice rebrand (2026-11-20): the accent carries text (links, active tabs, data
+    // emphasis), so it is held to body-text contrast, not the 3:1 large-text floor.
+    ['--accent',         '--bg-surface',    4.5],
+    ['--text-on-accent', '--accent',        4.5], // primary buttons / filled pills
+    ['--text-muted',     '--bg-base',       4.5],
 ];
+// Tribute themes predate this rebrand and are judged on the original contract only.
+const BRAND_ONLY = new Set(['--accent|--bg-surface', '--text-on-accent|--accent', '--text-muted|--bg-base']);
 const REQUIRED = [...new Set(PAIRS.flat().filter(t => String(t).startsWith('--')))];
 
 const strict = process.argv.includes('--strict');
@@ -80,6 +87,7 @@ for (const name of ['(root/dark)', ...themeNames]) {
     const missing = REQUIRED.filter(t => !ctx[t]);
     if (missing.length) { console.log(`⚠️  ${name}: missing tokens (inherit :root): ${missing.join(', ')}`); }
     for (const [fgT, bgT, min] of PAIRS) {
+        if (!['(root/dark)', 'light'].includes(name) && BRAND_ONLY.has(`${fgT}|${bgT}`)) continue;
         const bgBase = parseColor(ctx['--bg-base'], ctx) || [0, 0, 0, 1];
         const bgRaw = parseColor(ctx[bgT], ctx);
         const fgRaw = parseColor(ctx[fgT], ctx);

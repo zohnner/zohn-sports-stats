@@ -102,3 +102,38 @@ test('ticker: every sport with a game view opens the game', () => {
 test('ticker: an MLB game opens through openMLBGame', () => {
     assert.deepEqual(clickTicker({ sport: 'mlb', gamePk: '776123' }, { live: true }), [['openMLBGame', 776123, true]]);
 });
+
+// The home hero (and the NCAAB landing hero, which reuses it) is a third
+// click surface. NCAAB's sent readers to the scores list until 2026-11-18,
+// after cards and ticker were fixed, because it was written before
+// ncaab-game-{id} existed.
+function clickHero(fnName, game, kind, { currentSport = 'home' } = {}) {
+    const { ctx, calls } = page(currentSport);
+    ctx._heroLogoBoard = () => '';
+    ctx._escHtml = s => String(s == null ? '' : s);
+    const src = extract(new RegExp(`^function ${fnName}\\([\\s\\S]*?^}`, 'm'), fnName);
+    vm.runInContext(`${src}\nglobalThis.__hero = ${fnName}(__game, __kind);`,
+        Object.assign(ctx, { __game: game, __kind: kind }));
+    ctx.__hero.onClick();
+    return { calls, html: ctx.__hero.html };
+}
+
+const BBALL_GAME = {
+    id: '401820123',
+    homeTeam: { name: 'Kansas', abbr: 'KU', score: 41, rank: 4 },
+    awayTeam: { name: 'Duke', abbr: 'DUKE', score: 38, rank: 6 },
+    statusText: '2nd Half 12:04',
+};
+
+test('hero: an NCAAB game opens that game, not the scores list', () => {
+    for (const kind of ['live', 'upcoming']) {
+        const { calls, html } = clickHero('_heroFromNCAABGame', BBALL_GAME, kind);
+        assert.deepEqual(calls, [['switchSport', 'ncaab'], ['navigateTo', 'ncaab-game-401820123']], kind);
+        assert.doesNotMatch(html, /scoreboard/i, `${kind} CTA still promises the scoreboard`);
+    }
+});
+
+test('hero: an NCAAB hero clicked from the NCAAB landing does not re-switch sport', () => {
+    const { calls } = clickHero('_heroFromNCAABGame', BBALL_GAME, 'live', { currentSport: 'ncaab' });
+    assert.deepEqual(calls, [['navigateTo', 'ncaab-game-401820123']]);
+});

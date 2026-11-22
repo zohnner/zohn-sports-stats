@@ -104,7 +104,7 @@ function loadArcade() {
                 </div>
                 <div class="arcade-game-grid">
                     ${_card('otd', otdSave,
-                        `<div class="arcade-completed-badge">✓ ${otdSave?.correct ? 'Correct' : 'Missed'}</div>`,
+                        `<div class="arcade-completed-badge">${_iconSvg('check', 14)} ${otdSave?.correct ? 'Correct' : 'Missed'}</div>`,
                         'On This Day',
                         'Identify the standout player from a game played on this date in MLB history.',
                         'Easy',
@@ -112,7 +112,7 @@ function loadArcade() {
                         'Play Again'
                     )}
                     ${_card('statdle', statdleSave?.answered,
-                        `<div class="arcade-completed-badge">✓ ${statdleSave?.won ? 'Got it' : 'Missed'}</div>`,
+                        `<div class="arcade-completed-badge">${_iconSvg('check', 14)} ${statdleSave?.won ? 'Got it' : 'Missed'}</div>`,
                         'Statdle',
                         'Guess the mystery MLB hitter from per-game statlines. One new clue per guess.',
                         'Medium',
@@ -120,7 +120,7 @@ function loadArcade() {
                         'Play Again'
                     )}
                     ${_card('shuffle', shuffleSave,
-                        `<div class="arcade-completed-badge">✓ ${shuffleSave ? `${shuffleSave.score}/3` : ''}</div>`,
+                        `<div class="arcade-completed-badge">${_iconSvg('check', 14)} ${shuffleSave ? `${shuffleSave.score}/3` : ''}</div>`,
                         'Statline Shuffle',
                         'Match yesterday\'s anonymous statlines to the right players. New puzzle every day.',
                         'Easy–Hard',
@@ -128,7 +128,7 @@ function loadArcade() {
                         'Play Again'
                     )}
                     ${_card('trade', tradeSave,
-                        `<div class="arcade-completed-badge">✓ ${tradeSave?.correct ? 'Correct' : 'Missed'}</div>`,
+                        `<div class="arcade-completed-badge">${_iconSvg('check', 14)} ${tradeSave?.correct ? 'Correct' : 'Missed'}</div>`,
                         'Trade Tree Tracker',
                         'Fill in the missing player from a famous MLB trade chain. Deep knowledge rewarded.',
                         'Hard',
@@ -136,7 +136,7 @@ function loadArcade() {
                         'Play Again'
                     )}
                     ${_card('blueprint', blueprintSave,
-                        `<div class="arcade-completed-badge">✓ ${blueprintSave ? `${blueprintSave.score}/3` : ''}</div>`,
+                        `<div class="arcade-completed-badge">${_iconSvg('check', 14)} ${blueprintSave ? `${blueprintSave.score}/3` : ''}</div>`,
                         'Ballpark Blueprint',
                         'Identify the MLB stadium from its field dimensions. Use fewer clues for a better score.',
                         'Medium',
@@ -372,7 +372,7 @@ async function startStatlineShuffle() {
                 <span class="arcade-date-badge">${_arcToday()}</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;
@@ -409,7 +409,7 @@ async function startStatlineShuffle() {
                 <div class="arcade-error">
                     <p style="margin:0 0 0.5rem;display:flex;justify-content:center">${_iconSvg('baseball', 32)}</p>
                     <p>Could not load today's puzzle.</p>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem">${err.message}</p>
+                    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:0.35rem">${err.message}</p>
                     <button class="arcade-play-btn" onclick="startStatlineShuffle()" style="margin-top:1rem">Retry</button>
                 </div>
             </div>
@@ -555,7 +555,7 @@ function _renderShuffleGame() {
                 </div>
                 ${submitted ? `
                     <div class="shuffle-reveal-row ${correct ? 'shuffle-reveal--correct' : 'shuffle-reveal--wrong'}">
-                        ${correct ? '✓' : '✗'} <strong>${perf.name}</strong>
+                        ${_iconSvg(correct ? 'check' : 'x', 14)} <strong>${perf.name}</strong>
                     </div>` : ''}
             </div>
         `;
@@ -722,7 +722,7 @@ async function startTradeTree(sessionOffset = 0) {
                 <span class="arcade-game-title-inline">${_iconSvg('swap', 15)} Trade Tree Tracker</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:240px;max-width:640px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:240px;max-width:640px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;
@@ -791,8 +791,8 @@ function _renderTradeGame() {
     const revealSection = revealed ? `
         <div class="trade-reveal-banner ${isCorrect ? 'trade-reveal--correct' : 'trade-reveal--wrong'}">
             ${isCorrect
-                ? `✓ Correct! <strong>${trade.hiddenPlayer}</strong>`
-                : `✗ It was <strong>${trade.hiddenPlayer}</strong>`}
+                ? `${_iconSvg('check', 14)} Correct! <strong>${trade.hiddenPlayer}</strong>`
+                : `${_iconSvg('x', 14)} It was <strong>${trade.hiddenPlayer}</strong>`}
         </div>
         <div class="trade-context">${trade.context}</div>
         <div class="trade-end-actions">
@@ -931,7 +931,7 @@ async function startBallparkBlueprint(sessionOffset = 0) {
                 <span class="arcade-game-title-inline">${_iconSvg('house', 15)} Ballpark Blueprint</span>
             </div>
             <div class="arcade-loading">
-                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:12px"></div>
+                <div class="skeleton-card" style="height:200px;max-width:600px;margin:0 auto;border-radius:var(--radius)"></div>
             </div>
         </div>
     `;
@@ -1019,10 +1019,10 @@ function _renderBlueprintGame() {
 
     const actionsHtml = revealed ? `
         <div class="trade-reveal-banner ${isCorrect ? 'trade-reveal--correct' : 'trade-reveal--wrong'}">
-            ${isCorrect ? `✓ Correct! <strong>${stadium.name}</strong>` : `✗ It was <strong>${stadium.name}</strong>`}
+            ${isCorrect ? `${_iconSvg('check', 14)} Correct! <strong>${stadium.name}</strong>` : `${_iconSvg('x', 14)} It was <strong>${stadium.name}</strong>`}
         </div>
         <div class="bp-score-row">
-            ${`<span class="bp-star bp-star--lit">${_iconSvg('star', 14)}</span>`.repeat(score)}${'☆'.repeat(3 - score)} &nbsp; ${score}/3 clues
+            ${`<span class="bp-star bp-star--lit">${_iconSvg('star', 14)}</span>`.repeat(score)}${`<span class="bp-star">${_iconSvg('star', 14)}</span>`.repeat(3 - score)} &nbsp; ${score}/3 clues
         </div>
         ${logoUrl ? `<img src="${logoUrl}" class="bp-reveal-logo" alt="${stadium.teamAbbr}" data-hide-on-error>` : ''}
         <div class="trade-context">${stadium.knownFor}</div>
@@ -1033,12 +1033,12 @@ function _renderBlueprintGame() {
     ` : selected ? `
         <div class="bp-action-row">
             <button class="arcade-submit-btn" onclick="_confirmBlueprintAnswer()">Lock In Answer</button>
-            ${canRevealMore ? `<button class="bp-reveal-btn" onclick="_revealNextClue()">Reveal Clue ${cluesRevealed + 1} of ${clues.length} <span class="bp-cost">−1★</span></button>` : ''}
+            ${canRevealMore ? `<button class="bp-reveal-btn" onclick="_revealNextClue()">Reveal Clue ${cluesRevealed + 1} of ${clues.length} <span class="bp-cost">−1 ${_iconSvg('star', 12)}</span></button>` : ''}
         </div>
     ` : `
         <div class="bp-action-row">
             <p class="trade-pick-hint">Select your answer above</p>
-            ${canRevealMore ? `<button class="bp-reveal-btn" onclick="_revealNextClue()">Reveal Clue ${cluesRevealed + 1} of ${clues.length} <span class="bp-cost">−1★</span></button>` : ''}
+            ${canRevealMore ? `<button class="bp-reveal-btn" onclick="_revealNextClue()">Reveal Clue ${cluesRevealed + 1} of ${clues.length} <span class="bp-cost">−1 ${_iconSvg('star', 12)}</span></button>` : ''}
         </div>
     `;
 
@@ -1189,7 +1189,7 @@ function _wamGetClues(player, stats) {
 
 function _wamStars(n, max = 5) {
     return Array.from({ length: max }, (_, i) =>
-        `<span class="wam-star${i < n ? ' wam-star--lit' : ''}">${i < n ? '★' : '☆'}</span>`
+        `<span class="wam-star${i < n ? ' wam-star--lit' : ''}">${_iconSvg('star', 14)}</span>`
     ).join('');
 }
 
@@ -1215,7 +1215,7 @@ function _renderWhoAmI() {
                         ? `<span class="wam-clue-label">${c.label}</span>
                            <span class="wam-clue-value">${c.value}</span>`
                         : `<span class="wam-clue-label">Clue ${i + 1}</span>
-                           <span class="wam-clue-locked">Reveal for −1★</span>`
+                           <span class="wam-clue-locked">Reveal for −1 ${_iconSvg('star', 12)}</span>`
                     }
                 </span>
             </div>`;
@@ -1278,11 +1278,11 @@ function _renderWhoAmI() {
                 <div class="wam-actions">
                     ${canReveal ? `
                     <button class="wam-reveal-btn" onclick="_wamReveal()">
-                        ${_iconSvg('lock', 13)} Reveal Next Clue <span class="wam-cost">−1★</span>
+                        ${_iconSvg('lock', 13)} Reveal Next Clue <span class="wam-cost">−1 ${_iconSvg('star', 12)}</span>
                     </button>` : ''}
                     <button class="wam-submit-btn${canSubmit ? '' : ' wam-submit-btn--disabled'}"
                             onclick="_wamSubmit()" ${canSubmit ? '' : 'disabled'}>
-                        ✓ Submit Answer
+                        ${_iconSvg('check', 14)} Submit Answer
                     </button>
                 </div>` : ''}
             </div>
@@ -1720,7 +1720,7 @@ function _buildQuestQualifiers(quest) {
                 onkeydown="if(event.key==='Enter')showMLBPlayerDetail(${p.id},'${quest.group}')">
                 <span class="quest-qual-rank">${i + 1}</span>
                 <div class="quest-qual-hs" style="background:${clr.primary}22">
-                    ${hs ? `<img src="${hs}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="font-size:0.7rem;font-weight:700;color:${clr.primary}">${init}</span>`}
+                    ${hs ? `<img src="${hs}" alt="" loading="lazy" data-hide-on-error style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : `<span style="font-size:var(--text-xs);font-weight:700;color:${clr.primary}">${init}</span>`}
                 </div>
                 <div class="quest-qual-info">
                     <span class="quest-qual-name">${_escHtml(p.fullName || '—')}</span>

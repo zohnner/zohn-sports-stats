@@ -154,9 +154,9 @@ function displayNHLTeams(teams) {
             <div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center">
                 <img src="${team.logo}" alt="${_escHtml(team.abbr)}" style="width:100%;height:100%;object-fit:contain" loading="lazy" data-hide-on-error>
             </div>
-            <div style="font-weight:800;font-size:0.86rem;color:var(--text-primary)">${_escHtml(team.commonName)}</div>
-            <div style="font-size:0.68rem;color:var(--text-muted)">${_escHtml(team.division)}</div>
-            <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">
+            <div style="font-weight:800;font-size:var(--text-sm);color:var(--text-primary)">${_escHtml(team.commonName)}</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted)">${_escHtml(team.division)}</div>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--text-secondary)">
                 ${team.wins}-${team.losses}-${team.otLosses}
                 <span style="color:var(--accent)">${team.points} pts</span>
             </div>
@@ -208,7 +208,7 @@ function displayNHLGames({ games, currentDate, prevDate, nextDate }) {
     const _navBtn = (label, onClick) => {
         const btn = document.createElement('button');
         btn.textContent = label;
-        btn.style.cssText = 'padding:0.3rem 0.75rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit;border:1px solid var(--border-mid);background:var(--bg-elevated);color:var(--text-secondary);transition:all 0.15s';
+        btn.style.cssText = 'padding:0.3rem 0.75rem;border-radius:var(--radius);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:inherit;border:1px solid var(--border-mid);background:var(--bg-elevated);color:var(--text-secondary);transition:all 0.15s';
         btn.addEventListener('click', onClick);
         return btn;
     };
@@ -217,7 +217,7 @@ function displayNHLGames({ games, currentDate, prevDate, nextDate }) {
     else nav.appendChild(document.createElement('span'));
 
     const cur = document.createElement('span');
-    cur.style.cssText = 'font-weight:800;font-size:0.88rem;color:var(--text-primary);text-align:center';
+    cur.style.cssText = 'font-weight:800;font-size:var(--text-base);color:var(--text-primary);text-align:center';
     cur.textContent = _nhlFmtDate(currentDate, true);
     nav.appendChild(cur);
 
@@ -228,7 +228,7 @@ function displayNHLGames({ games, currentDate, prevDate, nextDate }) {
 
     if (!games?.length) {
         const empty = document.createElement('div');
-        empty.style.cssText = 'text-align:center;padding:2rem;color:var(--text-muted);font-size:0.9rem';
+        empty.style.cssText = 'text-align:center;padding:2rem;color:var(--text-muted);font-size:var(--text-base)';
         empty.textContent = 'No games scheduled for this date.';
         grid.appendChild(empty);
         return;
@@ -298,7 +298,7 @@ function _createNHLGameCard(game) {
             </div>
         </div>
         <div class="game-status ${statusCls}">${_escHtml(statusText)}</div>
-        ${hasScore ? `<div style="font-size:0.64rem;color:var(--text-subtle);text-align:center;margin-top:2px">SOG: ${as} – ${hs}</div>` : ''}
+        ${hasScore ? `<div style="font-size:var(--text-2xs);color:var(--text-subtle);text-align:center;margin-top:2px">SOG: ${as} – ${hs}</div>` : ''}
     `;
     return card;
 }
@@ -348,7 +348,7 @@ function displayNHLStandings(rows) {
     for (const conf of confOrder) {
         if (!grouped[conf]) continue;
         const confWrap = document.createElement('div');
-        confWrap.innerHTML = `<h2 style="font-size:1rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;
+        confWrap.innerHTML = `<h2 style="font-size:var(--text-md);font-weight:900;letter-spacing:1px;text-transform:uppercase;
             color:var(--accent);margin:0 0 0.75rem;padding:0.5rem 0;border-bottom:2px solid var(--border-mid)">${conf}ern Conference</h2>`;
 
         const divsGrid = document.createElement('div');
@@ -365,7 +365,7 @@ function displayNHLStandings(rows) {
 
             const header = `<div style="display:grid;grid-template-columns:22px 1fr repeat(6,auto);align-items:center;
                 gap:0.35rem;padding:0.4rem 0.75rem;background:var(--bg-elevated);
-                border-bottom:1px solid var(--border-subtle);font-size:0.63rem;font-weight:800;
+                border-bottom:1px solid var(--border-subtle);font-size:var(--text-2xs);font-weight:800;
                 letter-spacing:0.4px;text-transform:uppercase;color:var(--text-subtle)">
                 <span></span><span>${_escHtml(div)}</span>
                 <span>GP</span><span>W</span><span>L</span><span>OT</span><span>PTS</span><span>L10</span>
@@ -376,13 +376,13 @@ function displayNHLStandings(rows) {
                     gap:0.35rem;padding:0.42rem 0.75rem;
                     border-bottom:${i < teams.length - 1 ? '1px solid var(--border-subtle)' : 'none'}">
                     <img src="${t.logo}" alt="" style="width:20px;height:20px;object-fit:contain" loading="lazy" data-hide-on-error>
-                    <span style="font-weight:700;font-size:0.82rem;color:var(--text-primary)">${_escHtml(t.commonName)}</span>
-                    <span style="font-size:0.72rem;color:var(--text-muted);text-align:right">${t.gp}</span>
-                    <span style="font-weight:700;font-size:0.78rem;color:var(--text-primary);text-align:right">${t.wins}</span>
-                    <span style="font-size:0.75rem;color:var(--text-secondary);text-align:right">${t.losses}</span>
-                    <span style="font-size:0.72rem;color:var(--text-muted);text-align:right">${t.otLosses}</span>
-                    <span style="font-weight:800;font-size:0.82rem;color:var(--accent);text-align:right">${t.points}</span>
-                    <span style="font-size:0.7rem;color:var(--text-muted);text-align:right">${_escHtml(t.l10)}</span>
+                    <span style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary)">${_escHtml(t.commonName)}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);text-align:right">${t.gp}</span>
+                    <span style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);text-align:right">${t.wins}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-secondary);text-align:right">${t.losses}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);text-align:right">${t.otLosses}</span>
+                    <span style="font-weight:800;font-size:var(--text-sm);color:var(--accent);text-align:right">${t.points}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-muted);text-align:right">${_escHtml(t.l10)}</span>
                 </div>
             `).join('');
 
@@ -436,7 +436,7 @@ function displayNHLLeaderboards({ skaters, goalies }) {
 
     const _sectionTitle = text => {
         const h = document.createElement('h2');
-        h.style.cssText = 'font-size:0.9rem;font-weight:900;letter-spacing:0.8px;text-transform:uppercase;color:var(--accent);margin:1.25rem 0 0.75rem;padding-bottom:0.4rem;border-bottom:2px solid var(--border-mid)';
+        h.style.cssText = 'font-size:var(--text-base);font-weight:900;letter-spacing:0.8px;text-transform:uppercase;color:var(--accent);margin:1.25rem 0 0.75rem;padding-bottom:0.4rem;border-bottom:2px solid var(--border-mid)';
         h.textContent = text;
         return h;
     };
@@ -462,26 +462,26 @@ function displayNHLLeaderboards({ skaters, goalies }) {
                 return `
                     <div style="display:flex;align-items:center;gap:0.55rem;padding:0.5rem 0.7rem;
                         border-bottom:${i < 4 ? '1px solid var(--border-subtle)' : 'none'}">
-                        <span style="font-size:0.65rem;font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
+                        <span style="font-size:var(--text-2xs);font-weight:800;color:var(--text-subtle);width:14px;text-align:center">${i + 1}</span>
                         <div style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-subtle)">
                             <img src="${p.headshot || ''}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" data-hide-on-error>
                         </div>
                         <div style="flex:1;min-width:0">
-                            <div style="font-weight:700;font-size:0.78rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(short)}</div>
-                            <div style="font-size:0.65rem;color:var(--text-muted)">${_escHtml(abbr)}</div>
+                            <div style="font-weight:700;font-size:var(--text-sm);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(short)}</div>
+                            <div style="font-size:var(--text-2xs);color:var(--text-muted)">${_escHtml(abbr)}</div>
                         </div>
-                        <span style="font-weight:900;font-size:0.9rem;color:var(--accent)">${val}</span>
+                        <span style="font-weight:900;font-size:var(--text-base);color:var(--accent)">${val}</span>
                     </div>
                 `;
             }).join('');
 
             card.innerHTML = `
                 <div style="padding:0.55rem 0.7rem;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);
-                    font-size:0.7rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
+                    font-size:var(--text-xs);font-weight:800;letter-spacing:0.5px;text-transform:uppercase;
                     display:flex;align-items:center;gap:0.35rem;color:var(--text-secondary)">
                     <span style="display:inline-flex">${_iconSvg(cat.icon, 13)}</span> ${_escHtml(cat.label)}
                 </div>
-                ${rowsHtml || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:0.8rem">No data</div>'}
+                ${rowsHtml || '<div style="padding:1rem;color:var(--text-muted);text-align:center;font-size:var(--text-sm)">No data</div>'}
             `;
             g.appendChild(card);
         });

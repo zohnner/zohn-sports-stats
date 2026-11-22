@@ -866,7 +866,7 @@ function _showPushNudge(sport, entityType, entityId) {
     if (typeof ErrorHandler === 'undefined' || typeof ErrorHandler.toast !== 'function') return;
     ErrorHandler.toast(
         'Get a heads-up before their games start.' +
-        ' <button class="md-btn md-btn--ghost" id="pushNudgeEnableBtn" style="padding:0.15rem 0.6rem;font-size:0.75rem;margin-left:0.4rem">Enable game alerts</button>',
+        ' <button class="md-btn md-btn--ghost" id="pushNudgeEnableBtn" style="padding:0.15rem 0.6rem;font-size:var(--text-xs);margin-left:0.4rem">Enable game alerts</button>',
         'info',
         { title: 'Following your first team', duration: 12000 },
     );

@@ -299,7 +299,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
         <div class="sl-layout">
             <div class="sl-primary">
                 <div class="home-myteams home-zone" id="slMyTeams"></div>
-                <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius-sm)')}</div>
+                <div class="sl-spotlight" id="slSpotlight">${skel(280, 'var(--radius)')}</div>
                 ${STORY_SPORTS.includes(sport) ? `<div id="slStories"></div>` : ''}
                 ${slots.news ? `<div id="slNews"></div>` : ''}
                 ${slots.games ? `<div id="slGames"></div>` : ''}
@@ -313,7 +313,7 @@ function _renderEditorialLanding(sport, meta, cfg, st) {
                             <span class="sl-link-body"><span class="sl-link-title">${_escHtml(t)}</span><span class="sl-link-desc">${_escHtml(d)}</span></span>
                         </a>`).join('')}
                 </nav>
-                ${slots.signature ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius-sm)')}</div>` : ''}
+                ${slots.signature ? `<div class="sl-signature" id="slSignature">${skel(90, 'var(--radius)')}</div>` : ''}
                 ${slots.fantasyPulse ? `<div class="sl-fantasy-pulse" id="slFantasyPulse">${skel(120, '0px')}</div>` : ''}
                 ${slots.matchup ? `<div class="sl-matchup" id="slMatchup"></div>` : ''}
             </div>
@@ -357,14 +357,14 @@ setupNavigation();
         tickerEl.innerHTML = Array.from({ length: 6 }, () =>
             `<div class="ticker__item" style="opacity:0.35">
                 <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle"></span>
                 <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle;margin:0 4px"></span>
                 <span class="ticker-divider">–</span>
                 <span class="ticker-score" style="display:inline-block;width:20px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle;margin:0 4px"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle;margin:0 4px"></span>
                 <span class="ticker-team" style="display:inline-block;width:28px;height:10px;
-                    background:var(--border-mid);border-radius:4px;vertical-align:middle"></span>
+                    background:var(--border-mid);border-radius:var(--radius);vertical-align:middle"></span>
             </div>`
         ).join('');
     }
@@ -999,7 +999,7 @@ function loadHome() {
                         <span class="home-section-title">By the Numbers</span>
                     </div>
                     <div class="rail-panel" id="railInsights">
-                        ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius-sm);margin-bottom:6px"></div>`).join('')}
+                        ${[0,1,2].map(() => `<div class="skeleton-line" style="height:34px;border-radius:var(--radius);margin-bottom:6px"></div>`).join('')}
                     </div>
                 </div>
             </div>
@@ -1231,7 +1231,7 @@ function _hfTeamChip(sport, abbr) {
 function _hfPlayerChip(sport, id, name, teamAbbr, sub) {
     return `
         <button class="home-recent-chip" data-follow-kind="player" data-follow-sport="${sport}" data-follow-id="${id}">
-            <span class="home-recent-badge home-recent-badge--${sport}">♥</span>
+            <span class="home-recent-badge home-recent-badge--${sport}">${_iconSvg('heart', 12)}</span>
             <span class="home-recent-name">${_escHtml(name)}</span>
             <span class="home-recent-sub">${_escHtml(teamAbbr || '')}${sub ? ' · ' + _escHtml(sub) : ''}</span>
         </button>`;
@@ -2344,13 +2344,13 @@ function _heroFromNCAABGame(g, kind) {
         hook = leadTeam
             ? `${_esc(leadTeam.name || leadTeam.abbr)} lead by ${diff} · ${_esc(g.statusText || '')}`
             : `Tied at ${g.homeTeam.score ?? 0} · ${_esc(g.statusText || '')}`;
-        cta = 'Watch on the scoreboard →';
+        cta = 'Watch live →';
     } else {
         const d = g.date ? new Date(g.date) : null;
         const time = d && !isNaN(d) ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '';
         kicker = `<span class="hero-kicker">${g.statusText && g.statusText !== 'TBD' ? _esc(g.statusText) : 'UPCOMING'}${time ? ' · ' + _esc(time) : ''}</span>`;
         hook = (g.homeTeam.rank && g.awayTeam.rank) ? `#${g.awayTeam.rank} vs #${g.homeTeam.rank}` : 'Tip-off soon';
-        cta = 'Full scoreboard →';
+        cta = 'Game preview →';
     }
     const board = _heroLogoBoard(g, kind === 'live');
     const html = `
@@ -2361,7 +2361,10 @@ function _heroFromNCAABGame(g, kind) {
             <div class="hero-meta"><span class="hero-cta">${cta}</span></div>
         </div>
         <div class="hero-visual">${board}</div>`;
-    return { kind, html, onClick: () => navigateTo('ncaab-scores') };
+    return { kind, html, onClick: () => {
+        if (AppState.currentSport !== 'ncaab') switchSport('ncaab');
+        navigateTo('ncaab-game-' + g.id);
+    } };
 }
 
 // WNBA landing Game hero (Phase 5 of the sport-landing port) -- same simple
@@ -4758,11 +4761,11 @@ function _applyTheme(theme, opts) {
     if (logoEl) {
         const ccLogo = _CC_TEAM_LOGOS[theme];
         if (ccLogo) {
-            logoEl.onerror = () => { logoEl.src = '/assets/icon-64.png'; logoEl.onerror = null; };
+            logoEl.onerror = () => { logoEl.src = '/assets/icon.svg'; logoEl.onerror = null; };
         } else {
             logoEl.onerror = null;
         }
-        logoEl.src = ccLogo || '/assets/icon-64.png';
+        logoEl.src = ccLogo || '/assets/icon.svg';
         logoEl.alt = _CC_THEME_ALTS[theme] || 'SportStrata';
     }
     // F9: keep the browser UI tint in sync with the active theme background token.

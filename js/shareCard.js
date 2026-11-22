@@ -6,14 +6,14 @@
 // identical regardless of the viewer's active theme (Kael, P3-027).
 // ============================================================
 
-const _SHC_BG      = '#0b1526';
-const _SHC_SURFACE = '#0e1c33';
-const _SHC_BORDER  = '#2a3850';
-const _SHC_TEXT    = '#f0f4fa';
-const _SHC_MUTED   = '#7fa5c8';
-const _SHC_SUBTLE  = '#556d8f';
-const _SHC_ACCENT  = '#ff8100';
-const _SHC_ACCENT2 = '#ffd200';
+const _SHC_BG      = '#070b16';
+const _SHC_SURFACE = '#0f182a';
+const _SHC_BORDER  = '#22304a';
+const _SHC_TEXT    = '#f2f7fc';
+const _SHC_MUTED   = '#8fa3bf';
+const _SHC_SUBTLE  = '#5e6e85';
+const _SHC_ACCENT  = '#4cc9f0';
+const _SHC_ACCENT2 = '#82dbf5';
 const _SHC_GOLD    = '#facc15';
 
 function _shcPreloadImage(url) {
@@ -44,7 +44,7 @@ function _shcBuildCard(d, withPhoto) {
         <div class="shc-wash" style="background:${colors.primary}"></div>
         <div class="shc-body">
             <div class="shc-left">
-                <div class="shc-avatar" style="border-color:${_SHC_ACCENT};background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">${avatar}</div>
+                <div class="shc-avatar" style="border-color:${_SHC_ACCENT};background:${colors.primary}cc">${avatar}</div>
                 <div class="shc-id">
                     <div class="shc-name" style="color:${_SHC_TEXT}">${name}</div>
                     <div class="shc-team" style="color:${_SHC_MUTED}">${teamLine}</div>
@@ -58,7 +58,7 @@ function _shcBuildCard(d, withPhoto) {
             </div>
         </div>
         <div class="shc-footer" style="background:${_SHC_SURFACE};border-color:${_SHC_BORDER}">
-            <span class="shc-wordmark" style="color:${_SHC_TEXT}">SPORT<span style="color:${_SHC_ACCENT}">STRATA</span></span>
+            <span class="shc-wordmark" style="color:${_SHC_TEXT}">SPORTSTRATA</span>
             <span class="shc-domain" style="color:${_SHC_MUTED}">${typeof SITE_DOMAIN !== 'undefined' ? SITE_DOMAIN : location.hostname}</span>
         </div>`;
     return card;
@@ -162,7 +162,7 @@ async function shareStatCard(d) {
         } else {
             _shcDownloadBlob(blob, _shcFileName(d));
         }
-        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
+        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">' + _iconSvg('check', 16) + '</span>';
     } catch (err) {
         Logger.warn('Stat card generation failed', err, 'MLB');
         _shcToast('Couldn’t generate card — try again');
@@ -223,7 +223,7 @@ async function shareCardElement({ cardEl, fileName, title, text, btn }) {
         } else {
             _shcDownloadBlob(blob, fileName);
         }
-        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">✓</span>';
+        if (btn) btn.innerHTML = '<span class="shc-done" aria-hidden="true">' + _iconSvg('check', 16) + '</span>';
     } catch (err) {
         Logger.warn('Share card generation failed', err, 'MLB');
         _shcToast('Couldn’t generate card — try again');

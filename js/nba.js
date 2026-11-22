@@ -151,9 +151,9 @@ async function displayNBAScores(opts = {}) {
                 <span class="home-section-date">${dateStr}</span>
             </div>
             <div class="home-today-grid" id="nbaScoresGrid">
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:96px;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:96px;border-radius:var(--radius)"></div>
             </div>
         </div>`;
 
@@ -349,7 +349,7 @@ async function displayNBAStandings() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_nbaSeasonSelect()}</div>
-        <div id="nbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="nbaStdBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('nbaSeasonSel').addEventListener('change', (ev) => {
         _nba.season = parseInt(ev.target.value, 10); displayNBAStandings();
     });
@@ -366,7 +366,7 @@ async function displayNBAStandings() {
     }
     document.getElementById('nbaStdBody').innerHTML = confs.map(c => `
         <section class="mlb-division-panel" style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.5rem">${_escHtml(c.name)}</h2>
             <div class="standings-table-wrap">
                 <table class="standings-table">
                     <thead><tr><th class="standings-th-team">Team</th><th>Overall</th><th>GB</th><th>Streak</th></tr></thead>
@@ -390,7 +390,7 @@ async function displayNBATeams() {
     if (!grid) return;
     grid.className = 'standings-container';
     grid.innerHTML = `<div class="standings-tabs">${_nbaSeasonSelect()}</div>
-        <div id="nbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius-md)"></div></div>`;
+        <div id="nbaTeamsBody"><div class="skeleton-line" style="height:360px;border-radius:var(--radius)"></div></div>`;
     document.getElementById('nbaSeasonSel').addEventListener('change', (ev) => {
         _nba.season = parseInt(ev.target.value, 10); displayNBATeams();
     });
@@ -407,7 +407,7 @@ async function displayNBATeams() {
     }
     document.getElementById('nbaTeamsBody').innerHTML = confs.map(c => `
         <section style="margin-bottom:var(--space-4)">
-            <h2 class="standings-team-name" style="font-family:var(--font-display);font-size:1.02rem;margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:0.8rem">· ${c.teams.length}</span></h2>
+            <h2 class="standings-team-name" style="font-family:var(--font-sans);font-size:var(--text-md);margin:0 0 0.6rem">${_escHtml(c.name)} <span class="standings-gb" style="font-size:var(--text-sm)">· ${c.teams.length}</span></h2>
             <div class="ncaaf-team-grid">${c.teams.map(t => `<div class="ncaaf-team-chip${t.abbr ? ' ncaaf-team-chip--link' : ''}"${t.abbr ? ` role="button" tabindex="0" aria-label="${_escHtml(t.name)}" onclick="navigateTo('nba-team-${_escHtml(t.abbr)}')"` : ''}>
                 ${t.logo ? `<img class="standings-logo" src="${_escHtml(t.logo)}" alt="" loading="lazy" data-hide-on-error>` : '<span class="standings-logo"></span>'}
                 <span class="ncaaf-team-chip-name">${_escHtml(t.name)}</span>
@@ -543,7 +543,7 @@ function _nbaTeamGameLogCard(log, gamePrefix = 'nba-game-') {
     const table = rows => `<div class="table-wrapper" style="overflow-x:auto"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th class="gl-l">Date</th><th class="gl-l">Opp</th><th>Result</th><th>Margin</th><th>Record</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`;
     const SHOWN = 10;
     const rest = log.length > SHOWN
-        ? `<details style="margin-top:0.5rem"><summary style="cursor:pointer;color:var(--text-secondary);font-size:0.8125rem">All ${log.length} games</summary>${table(log.slice(SHOWN))}</details>`
+        ? `<details style="margin-top:0.5rem"><summary style="cursor:pointer;color:var(--text-secondary);font-size:var(--text-sm)">All ${log.length} games</summary>${table(log.slice(SHOWN))}</details>`
         : '';
     return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2>
         <div class="table-wrapper" style="overflow-x:auto;margin-bottom:0.75rem"><table class="stats-table gl-table gl-table--compact" style="white-space:nowrap"><thead><tr><th></th><th>W-L</th><th title="Points per game">PF/G</th><th title="Points allowed per game">PA/G</th><th title="Average margin">Margin</th></tr></thead><tbody>${splitRows}</tbody></table></div>
@@ -561,15 +561,15 @@ function _nbaTeamGamesCard(title, games, emptyText, gamePrefix = 'nba-game-') {
         } else {
             let d = '';
             try { d = new Date(g.date).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (_) {}
-            right = `<span style="font-size:0.75rem;color:var(--text-secondary)">${_escHtml(d)}</span>`;
+            right = `<span style="font-size:var(--text-xs);color:var(--text-secondary)">${_escHtml(d)}</span>`;
         }
         let day = '';
         if (g.done) { try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {} }
         return `<div class="roster-row roster-row--clickable roster-row--split" role="button" tabindex="0" onclick="navigateTo('${gamePrefix}${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
                 <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
-                    <span style="color:var(--text-muted);font-size:0.7rem;min-width:42px">${day ? _escHtml(day) : ''} ${g.isHome ? 'vs' : '@'}</span>
+                    <span style="color:var(--text-muted);font-size:var(--text-xs);min-width:42px">${day ? _escHtml(day) : ''} ${g.isHome ? 'vs' : '@'}</span>
                     ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:0.875rem" title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span>
+                    <span style="font-weight:600;font-size:var(--text-sm)" title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span>
                 </div>
                 <div style="text-align:right;flex-shrink:0">${right}</div>
             </div>`;
@@ -654,7 +654,7 @@ window._renderNBAView      = _renderNBAView;
 window.updateNBATicker     = updateNBATicker;
 
 // ── Leaders (real season stats via /api/nbastats) ────────────
-const _NBA_LCOLORS = ['#c8102e','#3b7dd8','#2e9e6b','#b0842f','#8b5cf6','#d6455f','#0d9488'];
+const _NBA_LCOLORS = ['#c8102e','#3b7dd8','#2e9e6b','#b59a2a','#8b5cf6','#d6455f','#0d9488'];
 
 async function displayNBALeaders() {
     const grid = document.getElementById('playersGrid');
@@ -696,7 +696,7 @@ async function displayNBALeaders() {
             </div>`).join('');
         return `<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${color}">
             <div class="nfl-card-head" style="justify-content:space-between">
-                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:0.64rem">${_escHtml(cat.unit)}</span>
+                <span>${_escHtml(cat.label)}</span><span style="color:${color};font-size:var(--text-2xs)">${_escHtml(cat.unit)}</span>
             </div>${rows}</div>`;
     }).join('');
 }
@@ -739,7 +739,7 @@ function displayNBAPlayerDetail(data) {
         sub: `${bio.team || '—'} · ${bio.pos || '—'}`, badge: 'NBA', action: null,
     });
 
-    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.nba && SPORTS_META.nba.accent) || '#c8102e';
+    const accent = (typeof SPORTS_META !== 'undefined' && SPORTS_META.nba && SPORTS_META.nba.accent) || 'var(--accent)';
     const initials = bio.name.split(' ').map(w => w[0] || '').slice(0, 2).join('');
     const headshotImg = bio.headshot ? `<img class="player-headshot" src="${_escHtml(bio.headshot)}" alt="" loading="lazy" data-hide-on-error>` : '';
     const teamRow = `${bio.teamLogo ? `<img src="${_escHtml(bio.teamLogo)}" alt="" class="player-hero-team-logo" loading="lazy" data-hide-on-error>` : ''}<span>${_escHtml(bio.team || '')}</span>`;

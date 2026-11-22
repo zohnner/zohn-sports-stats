@@ -1,6 +1,135 @@
 {
   "stories": [
     {
+      "slug": "2026-11-22-kings-end-eight-game-skid-beat-celtics",
+      "title": "The 2-14 Kings ended an 8-game skid by beating the 11-5 Celtics 97-96",
+      "dek": "Keegan Murray's tip-in with 5.0 seconds left won it; Boston shot 13-of-58 from 3-point range.",
+      "date": "2026-11-22",
+      "season": 2027,
+      "teams": [
+        "SAC",
+        "BOS"
+      ],
+      "players": [
+        "4594327",
+        "3155942",
+        "5142620",
+        "4065732"
+      ],
+      "hero_stat": "97-96, Murray's tip with 5.0 seconds left",
+      "url": "/nba/stories/2026-11-22-kings-end-eight-game-skid-beat-celtics",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-22-wembanyama-50-points-first-half-history",
+      "title": "Wembanyama scored 50 with 5 blocks after a 32-point first half",
+      "dek": "He added 19 rebounds and 4 steals in a 114-91 win over New Orleans, and his first half was a play-by-play-era first.",
+      "date": "2026-11-22",
+      "season": 2027,
+      "hook": "Wembanyama makes history in 18 minutes, finishes game with 50 points",
+      "hook_url": "https://www.espn.com/nba/story/_/id/50559763/victor-wembanyama-shows-50-point-5-block-performance",
+      "teams": [
+        "SA",
+        "NO"
+      ],
+      "players": [
+        "5104157"
+      ],
+      "hero_stat": "50 points, 19 rebounds, 5 blocks, 4 steals",
+      "url": "/nba/stories/2026-11-22-wembanyama-50-points-first-half-history",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-21-jokic-24-second-half-points-nuggets-rockets",
+      "title": "Jokic's 24-point second half followed a 2-point first half",
+      "dek": "Jokic had 18 in the third quarter alone as Denver beat Houston 133-124.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "hook": "Nikola Jokic's big second half sends the Nuggets to a 133-124 win over the Rockets",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401909312",
+      "teams": [
+        "DEN",
+        "HOU"
+      ],
+      "players": [
+        "3112335",
+        "4871144"
+      ],
+      "hero_stat": "24 second-half points after 2 in the first half",
+      "url": "/nba/stories/2026-11-21-jokic-24-second-half-points-nuggets-rockets",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-21-raptors-end-six-game-skid-barnes-29",
+      "title": "Scottie Barnes scored 29 as the Raptors ended a 6-game skid at Detroit",
+      "dek": "Toronto's 105-102 win came on the road against a 10-5 Pistons team, and Barnes shot 14 of 21 from the field.",
+      "date": "2026-11-21",
+      "season": 2027,
+      "hook": "Scottie Barnes scores 29, including key layup, as Raptors end skid with 105-102 win over Pistons",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401909308",
+      "teams": [
+        "TOR",
+        "DET"
+      ],
+      "players": [
+        "4433134"
+      ],
+      "hero_stat": "29 points on 14-of-21 shooting in a 105-102 win",
+      "url": "/nba/stories/2026-11-21-raptors-end-six-game-skid-barnes-29",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-20-warriors-five-game-road-skid",
+      "title": "The Warriors have lost 5 straight, all on the road, by 23.2 points a game",
+      "dek": "Golden State has scored under 100 points in 4 of the 5 losses, and its last 5-game skid ended in March 2026.",
+      "date": "2026-11-20",
+      "season": 2027,
+      "teams": [
+        "GS",
+        "HOU",
+        "SA",
+        "NO",
+        "DAL",
+        "MEM"
+      ],
+      "players": [],
+      "hero_stat": "5 straight losses, all on the road, by 23.2 points a game",
+      "url": "/nba/stories/2026-11-20-warriors-five-game-road-skid",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-19-bucks-1-14-worse-than-15-67-team",
+      "title": "The Bucks are 1-14, worse through 15 games than the 15-67 team",
+      "dek": "Milwaukee has lost 11 straight, matching the 15-67 team's longest skid, and the 11 losses have come by 15.9 points a game.",
+      "date": "2026-11-19",
+      "season": 2027,
+      "teams": [
+        "MIL"
+      ],
+      "players": [],
+      "hero_stat": "1-14 — worse through 15 games than the 15-67 team",
+      "url": "/nba/stories/2026-11-19-bucks-1-14-worse-than-15-67-team",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-19-johnson-triple-double-hawks-first-home-loss-thunder",
+      "title": "Jalen Johnson's 2nd triple-double in 5 days ended OKC's perfect home record",
+      "dek": "Johnson had 16 points, 12 rebounds and 11 assists as the Hawks won 117-112 at Oklahoma City, where the Thunder had been 5-0.",
+      "date": "2026-11-19",
+      "season": 2027,
+      "teams": [
+        "ATL",
+        "OKC"
+      ],
+      "players": [
+        "4701230",
+        "4278073"
+      ],
+      "hero_stat": "16 points, 12 rebounds, 11 assists — Johnson's 2nd triple-double in 5 days",
+      "url": "/nba/stories/2026-11-19-johnson-triple-double-hawks-first-home-loss-thunder",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-18-grimes-47-lakers-ninth-straight-win",
       "title": "Quentin Grimes scored 47 with 10 threes, joining Kobe Bryant in Lakers history",
       "dek": "The career-high 47, with 21 in the 4th quarter, rallied the Lakers from 18 down for their 9th straight win.",

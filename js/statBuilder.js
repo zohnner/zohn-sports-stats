@@ -179,8 +179,8 @@ async function displayStatBuilder(mlbGroup) {
         grid.innerHTML = `
             <div class="builder-panel">
                 <div class="skeleton-line" style="height:20px;width:160px;margin-bottom:1.5rem"></div>
-                <div class="skeleton-line" style="height:120px;margin-bottom:1rem;border-radius:var(--radius-md)"></div>
-                <div class="skeleton-line" style="height:40px;width:65%;border-radius:var(--radius-md)"></div>
+                <div class="skeleton-line" style="height:120px;margin-bottom:1rem;border-radius:var(--radius)"></div>
+                <div class="skeleton-line" style="height:40px;width:65%;border-radius:var(--radius)"></div>
             </div>
         `;
         try {
@@ -277,7 +277,7 @@ async function displayStatBuilder(mlbGroup) {
                             <select class="cond-stat builder-select">${filterOptHtml}</select>
                             <select class="cond-op builder-select">${opOptHtml}</select>
                             <input class="cond-val builder-cond-input" type="number" step="any" placeholder="value">
-                            <button class="cond-remove" aria-label="Remove">✕</button>
+                            <button class="cond-remove" aria-label="Remove">${_iconSvg('x', 14)}</button>
                         </div>
                     </template>
                 </div>
@@ -593,7 +593,7 @@ function _runFormula(formula, name, players, cfg) {
         return `
             <div class="leaderboard-row">
                 <span class="${rankCls}">${i + 1}</span>
-                <div class="lb-avatar" style="background:linear-gradient(135deg,${colors.primary}cc,${colors.primary}44)">${initials}</div>
+                <div class="lb-avatar" style="background:${colors.primary}cc">${initials}</div>
                 <div class="lb-player">
                     <span class="lb-name">${_escHtml(name)}</span>
                     <span class="lb-team">${_escHtml(abbr)}${pos ? ' · ' + _escHtml(pos) : ''}</span>
@@ -697,11 +697,11 @@ function _renderSavedStats() {
                 <div>
                     <div class="saved-stat-name">${_escHtml(s.name)}</div>
                     <div class="saved-stat-meta">${_escHtml(s.playerName)}</div>
-                    <div class="saved-stat-meta" style="font-size:0.7rem;margin-top:0.1rem">${new Date(s.timestamp).toLocaleDateString()}</div>
+                    <div class="saved-stat-meta" style="font-size:var(--text-xs);margin-top:0.1rem">${new Date(s.timestamp).toLocaleDateString()}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.75rem">
                     <span class="saved-stat-value">${s.result}</span>
-                    <button class="saved-stat-del" onclick="deleteSavedStat(${s.id})" title="Delete">✕</button>
+                    <button class="saved-stat-del" onclick="deleteSavedStat(${s.id})" title="Delete" aria-label="Delete">${_iconSvg('x', 14)}</button>
                 </div>
             </div>
             <code class="saved-stat-formula">${_escHtml(s.formula)}</code>

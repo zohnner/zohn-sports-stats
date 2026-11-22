@@ -17,7 +17,7 @@
 .shc-card {
     width: 600px;
     height: 315px;
-    background: #0b1526;
+    background: #070b16;
     border: 1px solid #2a3850;
     border-radius: 12px;
     position: relative;
@@ -76,7 +76,7 @@
     border-radius: 4px;
 }
 .shc-value {
-    font-family: 'Barlow Semi Condensed', -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
     font-size: 56px;
     font-weight: 600;
     line-height: 1;
@@ -117,7 +117,7 @@
 .shc-share-btn:hover,
 .shc-share-btn:focus-visible {
     color: var(--accent);
-    background: var(--accent-subtle, rgba(255, 129, 0, 0.10));
+    background: var(--accent-subtle, rgba(76, 201, 240, 0.10));
 }
 .shc-share-btn:focus-visible {
     outline: 2px solid var(--accent);
@@ -166,7 +166,7 @@
 /* ── Mock-draft result card (variable height, exported at 2x) ── */
 .shc-md-card {
     width: 560px;
-    background: #0b1526;
+    background: #070b16;
     border: 1px solid #2a3850;
     border-radius: 16px;
     overflow: hidden;

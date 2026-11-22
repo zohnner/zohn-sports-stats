@@ -776,7 +776,7 @@ function _syncNFLOffseasonStrip(view) {
             <button class="nfl-offseason-strip__link" data-view="nfl-standings">Standings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-rankings">Rankings</button> ·
             <button class="nfl-offseason-strip__link" data-view="nfl-mock">Mock Draft</button></span>
-        <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">✕</button>`;
+        <button class="nfl-offseason-strip__close" type="button" aria-label="Dismiss offseason notice">${_iconSvg('x', 14)}</button>`;
     main.insertBefore(strip, grid);
 
     strip.querySelector('.nfl-offseason-strip__close').addEventListener('click', () => {
@@ -971,7 +971,7 @@ async function _restoreMLBPlayerDetail(playerId, group) {
                         </div>
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.25rem">
-                        ${Array(16).fill('<div class="skeleton-line" style="height:48px;border-radius:var(--radius-md)"></div>').join('')}
+                        ${Array(16).fill('<div class="skeleton-line" style="height:48px;border-radius:var(--radius)"></div>').join('')}
                     </div>
                     ${Array(3).fill('<div class="skeleton-card" style="margin-bottom:0.75rem;height:80px"></div>').join('')}
                 </div>`;
@@ -1629,13 +1629,13 @@ const _SPORT_SCORES_VIEW = {
     ncaaf: 'ncaaf-scores', ncaab: 'ncaab-scores', wnba: 'wnba-scores', nba: 'nba-scores',
 };
 const SPORTS_META = {
-    nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'nba-home',     accent: '#c8102e' },
-    mlb:   { id: 'mlb',   label: 'MLB',   icon: 'baseball',   sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: '#ff8100' },
-    nfl:   { id: 'nfl',   label: 'NFL',   icon: 'football',   sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: '#3b7dd8' },
-    nhl:   { id: 'nhl',   label: 'NHL',   icon: 'puck',       sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: '#00a0dc' },
-    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: 'football',   sub: 'College Football', defaultView: 'ncaaf-home',   accent: '#c8452b' },
-    ncaab: { id: 'ncaab', label: 'NCAAB', icon: 'basketball', sub: 'College Basketball', defaultView: 'ncaab-home', accent: '#d97706' },
-    wnba:  { id: 'wnba',  label: 'WNBA',  icon: 'basketball', sub: 'WNBA',              defaultView: 'wnba-home',  accent: '#f5580a' },
+    nba:   { id: 'nba',   label: 'NBA',   icon: 'basketball', sub: 'NBA Analytics',    defaultView: 'nba-home',     accent: 'var(--accent)' },
+    mlb:   { id: 'mlb',   label: 'MLB',   icon: 'baseball',   sub: 'MLB Analytics',    defaultView: 'mlb-home',     accent: 'var(--accent)' },
+    nfl:   { id: 'nfl',   label: 'NFL',   icon: 'football',   sub: 'NFL Analytics',    defaultView: 'nfl-home',     accent: 'var(--accent)' },
+    nhl:   { id: 'nhl',   label: 'NHL',   icon: 'puck',       sub: 'NHL Analytics',    defaultView: 'nhl-players',  accent: 'var(--accent)' },
+    ncaaf: { id: 'ncaaf', label: 'NCAAF', icon: 'football',   sub: 'College Football', defaultView: 'ncaaf-home',   accent: 'var(--accent)' },
+    ncaab: { id: 'ncaab', label: 'NCAAB', icon: 'basketball', sub: 'College Basketball', defaultView: 'ncaab-home', accent: 'var(--accent)' },
+    wnba:  { id: 'wnba',  label: 'WNBA',  icon: 'basketball', sub: 'WNBA',              defaultView: 'wnba-home',  accent: 'var(--accent)' },
 };
 // Ordered list shown in the sport switcher + home picker band (the live barbell + college sports).
 // ncaab added here in P2 (D-052) — its data layer (functions/api/ncaab.js, js/ncaab.js) and

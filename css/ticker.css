@@ -9,13 +9,13 @@
 .ticker-title {
     background: var(--bg-raised);
     color: var(--accent);
-    padding: 0 14px;
+    padding: 0 var(--space-3);
     align-self: stretch;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-1);
     font-weight: 900;
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.8px;
     text-transform: uppercase;
     white-space: nowrap;
@@ -37,13 +37,13 @@
 /* "N LIVE" badge inside the title pill */
 .ticker-live-badge {
     display: inline-block;
-    background: rgba(245,158,11,0.25);
-    border: 1px solid rgba(245,158,11,0.5);
+    background: var(--color-live-subtle);
+    border: 1px solid var(--color-live-border);
     color: var(--color-live);
-    font-size: 0.58rem;
+    font-size: var(--text-2xs);
     font-weight: 900;
-    padding: 1px 5px;
-    border-radius: var(--radius-xs);
+    padding: var(--space-0-5) var(--space-1);
+    border-radius: var(--radius);
     letter-spacing: 0.3px;
     animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
@@ -62,9 +62,9 @@
 .ticker-fresh {
     flex-shrink: 0;
     align-self: center;
-    padding: 0 12px;
+    padding: 0 var(--space-3);
     border-left: 1px solid var(--border-default);
-    font-size: 0.62rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     color: var(--text-muted);
 }
@@ -75,9 +75,9 @@
 .ticker__item {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 0 18px;
-    font-size: 0.78rem;
+    gap: var(--space-1);
+    padding: 0 var(--space-4);
+    font-size: var(--text-sm);
     color: var(--text-secondary);
     font-family: var(--font-sans);
     border-right: 1px solid var(--border-default);
@@ -90,7 +90,7 @@
    ticker (ISSUES.md "Home — Cross-sport score ticker") is the reason this exists,
    shown on every ticker item for one consistent rendering path. */
 .ticker-glyph {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     line-height: 1;
     opacity: 0.55;
     filter: grayscale(1);
@@ -106,9 +106,9 @@
 }
 /* D-047 S5: dark-team logos need a neutral chip on the near-black ticker row too — see main.css .hgc-team-logo--chip */
 .ticker-logo--chip {
-    background: #f5f7fa;
+    background: #f2f7fc;
     border-radius: 50%;
-    padding: 1px;
+    padding: var(--space-0-5);
     box-sizing: border-box;
     opacity: 1;
 }
@@ -120,7 +120,7 @@
 .ticker-team {
     font-family: var(--font-mono);
     font-weight: 800;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-secondary);
     letter-spacing: 0.3px;
 }
@@ -128,7 +128,7 @@
 /* Score numbers */
 .ticker-score {
     font-weight: 900;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     color: var(--text-primary);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
@@ -144,7 +144,7 @@
 .ticker-side {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--space-1);
 }
 
 /* Live game: pulsing dot before the item */
@@ -157,7 +157,7 @@
     background: var(--color-live);
     animation: liveDot 1.4s ease-in-out infinite;
     flex-shrink: 0;
-    margin-right: 6px;
+    margin-right: var(--space-1);
     align-self: center;
 }
 
@@ -176,17 +176,17 @@
 .ticker-divider {
     color: var(--text-subtle);
     font-weight: 300;
-    margin: 0 1px;
+    margin: 0 var(--space-0-5);
 }
 
 /* Status pill */
 .ticker-status-pill {
-    font-size: 0.62rem;
+    font-size: var(--text-2xs);
     font-weight: 800;
     letter-spacing: 0.4px;
-    padding: 1px 5px;
-    border-radius: var(--radius-xs);
-    margin-left: 3px;
+    padding: var(--space-0-5) var(--space-1);
+    border-radius: var(--radius);
+    margin-left: var(--space-0-5);
     flex-shrink: 0;
     text-transform: uppercase;
 }
@@ -196,9 +196,9 @@
     border: 1px solid rgba(34,211,160,0.25);
 }
 .ticker-status-pill--live {
-    background: rgba(245,158,11,0.14);
+    background: var(--color-live-subtle);
     color: var(--text-primary);
-    border: 1px solid rgba(245,158,11,0.3);
+    border: 1px solid var(--color-live-border);
     animation: tickerLivePulse 1.8s ease-in-out infinite;
 }
 .ticker-status-pill--sched {
@@ -215,8 +215,8 @@
 /* Mobile — slightly smaller */
 @media (max-width: 600px) {
     .ticker-wrap  { height: 32px; }
-    .ticker-title { padding: 0 10px; font-size: 0.62rem; }
-    .ticker__item { padding: 0 12px; font-size: 0.72rem; }
+    .ticker-title { padding: 0 var(--space-2); font-size: var(--text-2xs); }
+    .ticker__item { padding: 0 var(--space-3); font-size: var(--text-xs); }
     .ticker-logo  { width: 15px; height: 15px; }
 }
 
