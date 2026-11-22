@@ -1,6 +1,24 @@
 {
   "stories": [
     {
+      "slug": "2026-11-22-villanova-beats-no-18-michigan",
+      "title": "Villanova beat No. 18 Michigan 79-73; ranked teams are now 107-5",
+      "dek": "Tyler Perkins scored 23 for the Wildcats, and Michigan's Trey McKenney had 22 in the loss.",
+      "date": "2026-11-22",
+      "season": 2027,
+      "teams": [
+        "VILL",
+        "MICH"
+      ],
+      "players": [
+        "5182412",
+        "5041954"
+      ],
+      "hero_stat": "79-73, Villanova's win over No. 18 Michigan",
+      "url": "/ncaab/stories/2026-11-22-villanova-beats-no-18-michigan",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-21-indiana-6-0-kentucky-arkansas",
       "title": "Indiana is 6-0 after beating Kentucky 90-76",
       "dek": "The Hoosiers beat No. 20 Arkansas on Wednesday and Kentucky on Friday, and have scored 90 or more in 4 of their 6 games.",
