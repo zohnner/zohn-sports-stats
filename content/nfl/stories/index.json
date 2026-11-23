@@ -1,6 +1,38 @@
 {
   "stories": [
     {
+      "slug": "2026-11-23-49ers-9-1-first-since-2019",
+      "title": "The 49ers are 9-1 for the first time since 2019",
+      "dek": "Brock Purdy went 21-of-26 for 255 yards and 3 touchdowns in Mexico City, and Minnesota scored nothing in the second half.",
+      "date": "2026-11-23",
+      "season": 2026,
+      "week": 11,
+      "teams": [
+        "SF",
+        "MIN"
+      ],
+      "players": [],
+      "hero_stat": "9-1, first since 2019; Purdy 21-of-26, 3 touchdowns, 0 interceptions",
+      "url": "/nfl/stories/2026-11-23-49ers-9-1-first-since-2019",
+      "sport": "nfl"
+    },
+    {
+      "slug": "2026-11-23-prescott-28-of-33-cowboys-51-points",
+      "title": "Prescott went 28-of-33 as the Cowboys scored a season-high 51 points",
+      "dek": "CeeDee Lamb caught 11 passes for 132 yards and George Pickens added 102, the first game this season with 2 Dallas 100-yard receivers.",
+      "date": "2026-11-23",
+      "season": 2026,
+      "week": 11,
+      "teams": [
+        "DAL",
+        "TEN"
+      ],
+      "players": [],
+      "hero_stat": "51 points, a season high; Prescott 28-of-33 with 4 touchdowns",
+      "url": "/nfl/stories/2026-11-23-prescott-28-of-33-cowboys-51-points",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-20-colts-3-points-fewest-since-2022",
       "title": "The Colts scored 3 points, their fewest in a game since December 2022",
       "dek": "Indianapolis managed 167 yards and 8 first downs in a 26-3 loss at Houston on Thursday.",
