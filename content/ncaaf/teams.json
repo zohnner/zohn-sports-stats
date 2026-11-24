@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "asOf": "2026-11-22",
+ "asOf": "2026-11-24",
  "teams": {
   "2": {
    "name": "Auburn Tigers",
@@ -54,13 +54,13 @@
    "name": "Arizona State Sun Devils",
    "abbr": "ASU",
    "conference": "Big 12 Conference",
-   "overall": "6-4",
-   "conf": "4-3",
-   "home": "4-1",
+   "overall": "6-5",
+   "conf": "4-4",
+   "home": "4-2",
    "away": "1-3",
-   "streak": "W2",
-   "pf": "282",
-   "pa": "259"
+   "streak": "L1",
+   "pf": "309",
+   "pa": "289"
   },
   "12": {
    "name": "Arizona Wildcats",
@@ -90,13 +90,13 @@
    "name": "San Diego State Aztecs",
    "abbr": "SDSU",
    "conference": "Pac-12 Conference",
-   "overall": "5-5",
-   "conf": "4-2",
+   "overall": "6-5",
+   "conf": "5-2",
    "home": "5-1",
-   "away": "0-4",
-   "streak": "W2",
-   "pf": "268",
-   "pa": "322"
+   "away": "1-4",
+   "streak": "W3",
+   "pf": "290",
+   "pa": "342"
   },
   "23": {
    "name": "San José State Spartans",
@@ -282,13 +282,13 @@
    "name": "Hawai'i Rainbow Warriors",
    "abbr": "HAW",
    "conference": "Mountain West Conference",
-   "overall": "3-7",
-   "conf": "2-5",
+   "overall": "3-8",
+   "conf": "2-6",
    "home": "1-4",
-   "away": "2-3",
-   "streak": "L1",
-   "pf": "196",
-   "pa": "231"
+   "away": "2-4",
+   "streak": "L2",
+   "pf": "204",
+   "pa": "247"
   },
   "66": {
    "name": "Iowa State Cyclones",
@@ -306,13 +306,13 @@
    "name": "Boise State Broncos",
    "abbr": "BOIS",
    "conference": "Pac-12 Conference",
-   "overall": "9-1",
-   "conf": "6-0",
-   "home": "5-0",
+   "overall": "9-2",
+   "conf": "6-1",
+   "home": "5-1",
    "away": "4-1",
-   "streak": "W9",
-   "pf": "397",
-   "pa": "268"
+   "streak": "L1",
+   "pf": "417",
+   "pa": "290"
   },
   "77": {
    "name": "Northwestern Wildcats",
@@ -666,13 +666,13 @@
    "name": "Oklahoma State Cowboys",
    "abbr": "OKST",
    "conference": "Big 12 Conference",
-   "overall": "6-4",
-   "conf": "4-3",
+   "overall": "7-4",
+   "conf": "5-3",
    "home": "4-1",
-   "away": "2-3",
-   "streak": "L1",
-   "pf": "422",
-   "pa": "297"
+   "away": "3-3",
+   "streak": "W1",
+   "pf": "452",
+   "pa": "324"
   },
   "201": {
    "name": "Oklahoma Sooners",
@@ -702,13 +702,13 @@
    "name": "Oregon State Beavers",
    "abbr": "ORST",
    "conference": "Pac-12 Conference",
-   "overall": "5-5",
-   "conf": "3-3",
-   "home": "3-2",
+   "overall": "6-5",
+   "conf": "4-3",
+   "home": "4-2",
    "away": "2-3",
-   "streak": "L3",
-   "pf": "383",
-   "pa": "288"
+   "streak": "W1",
+   "pf": "414",
+   "pa": "312"
   },
   "213": {
    "name": "Penn State Nittany Lions",
@@ -870,13 +870,13 @@
    "name": "Utah Utes",
    "abbr": "UTAH",
    "conference": "Big 12 Conference",
-   "overall": "10-0",
-   "conf": "7-0",
+   "overall": "11-0",
+   "conf": "8-0",
    "home": "6-0",
-   "away": "4-0",
-   "streak": "W10",
-   "pf": "379",
-   "pa": "186"
+   "away": "5-0",
+   "streak": "W11",
+   "pf": "417",
+   "pa": "203"
   },
   "256": {
    "name": "James Madison Dukes",
@@ -1050,13 +1050,13 @@
    "name": "Utah State Aggies",
    "abbr": "USU",
    "conference": "Pac-12 Conference",
-   "overall": "4-6",
-   "conf": "3-3",
+   "overall": "4-7",
+   "conf": "3-4",
    "home": "4-1",
-   "away": "0-5",
-   "streak": "L1",
-   "pf": "165",
-   "pa": "215"
+   "away": "0-6",
+   "streak": "L2",
+   "pf": "189",
+   "pa": "246"
   },
   "333": {
    "name": "Alabama Crimson Tide",
@@ -1422,13 +1422,13 @@
    "name": "Nevada Wolf Pack",
    "abbr": "NEV",
    "conference": "Mountain West Conference",
-   "overall": "4-6",
-   "conf": "3-3",
-   "home": "2-3",
+   "overall": "5-6",
+   "conf": "4-3",
+   "home": "3-3",
    "away": "2-3",
-   "streak": "W1",
-   "pf": "215",
-   "pa": "219"
+   "streak": "W2",
+   "pf": "231",
+   "pa": "227"
   },
   "2449": {
    "name": "North Dakota State Bison",
@@ -1542,13 +1542,13 @@
    "name": "TCU Horned Frogs",
    "abbr": "TCU",
    "conference": "Big 12 Conference",
-   "overall": "5-5",
-   "conf": "3-4",
-   "home": "4-2",
+   "overall": "5-6",
+   "conf": "3-5",
+   "home": "4-3",
    "away": "1-2",
-   "streak": "W1",
-   "pf": "234",
-   "pa": "152"
+   "streak": "L1",
+   "pf": "251",
+   "pa": "190"
   },
   "2633": {
    "name": "Tennessee Volunteers",
