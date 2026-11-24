@@ -155,13 +155,13 @@ async function main() {
         }
     } catch (e) { console.error('MLB games:', e.message); }
 
-    // 4) NCAAF teams (all FBS)
+    // 4) NCAAF teams: FBS only, from the committed snapshot the team page itself
+    // renders from (tools/ncaaf-teams.cjs). ESPN's all-teams list put ~260 FCS and
+    // Division II pages in the sitemap that never had anything to show.
     try {
-        const ct = await jget('https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams?limit=400');
-        const teams = (ct.sports && ct.sports[0] && ct.sports[0].leagues && ct.sports[0].leagues[0] && ct.sports[0].leagues[0].teams) || [];
-        for (const w of teams) {
-            const t = w.team;
-            if (t && t.id) add(urlTag(`/ncaaf/team/${t.id}/${slug(t.displayName || t.name)}`, 'weekly', '0.6'));
+        const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'content', 'ncaaf', 'teams.json'), 'utf8'));
+        for (const [id, t] of Object.entries(snap.teams || {})) {
+            add(urlTag(`/ncaaf/team/${id}/${slug(t.name)}`, 'weekly', '0.6'));
         }
     } catch (e) { console.error('NCAAF teams:', e.message); }
 

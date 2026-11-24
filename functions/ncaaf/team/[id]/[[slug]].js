@@ -24,6 +24,26 @@ function esc(s) {
     }[c]));
 }
 
+// While ESPN refuses Cloudflare (D-176), the page renders from the daily
+// committed snapshot (tools/ncaaf-teams.cjs) instead of the empty shell.
+async function snapshotTeam(env, url, id) {
+    try {
+        const r = await env.ASSETS.fetch(new URL('/content/ncaaf/teams.json', url));
+        if (!r.ok) return null;
+        const snap = await r.json();
+        const t = snap && snap.teams && snap.teams[id];
+        return t && t.name ? { ...t, season: snap.season, asOf: snap.asOf } : null;
+    } catch (_) { return null; }
+}
+
+function recordHtml(t) {
+    const rows = [['Overall', t.overall], ['Conference', t.conf], ['Home', t.home], ['Away', t.away], ['Streak', t.streak],
+        ['Points for', t.pf], ['Points against', t.pa]].filter(([, v]) => v);
+    if (!rows.length) return '';
+    return `<h2>${esc(t.season)} record</h2><ul>${rows.map(([k, v]) => `<li>${k}: ${esc(v)}</li>`).join('')}</ul>` +
+        `<p>${esc(t.conference)} · regular season, as of ${esc(t.asOf)}. Data: ESPN.</p>`;
+}
+
 export async function onRequest(context) {
     const { request, env, params } = context;
     const id = String(params.id || '').replace(/[^0-9]/g, '');
@@ -33,13 +53,13 @@ export async function onRequest(context) {
             maxStaleMs: TOLERANCE.team, validate: SHAPES.team, waitUntil: p => context.waitUntil(p),
             init: { headers: { 'User-Agent': ESPN_UA }, cf: { cacheTtl: 3600, cacheEverything: true } },
         });
-        if (!src.data) return shell(env, request.url);
-        const team = src.data.team;
+        const snap = src.data ? null : await snapshotTeam(env, request.url, id);
+        const team = src.data ? src.data.team : snap && { displayName: snap.name, abbreviation: snap.abbr };
         if (!team || !(team.displayName || team.name)) return shell(env, request.url);
 
         const name = team.displayName || team.name;
         const abbr = team.abbreviation || '';
-        const summary = team.standingSummary || '';
+        const summary = team.standingSummary || (snap ? [snap.overall, snap.conference].filter(Boolean).join(' · ') : '');
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         const canonical = `https://sportstrata.cc/ncaaf/team/${id}/${slug}`;
         const route = 'ncaaf-team-' + id;
@@ -53,6 +73,7 @@ export async function onRequest(context) {
             `<section class="ss-prerender"><h1>${esc(name)}</h1>` +
             `<p>${esc([abbr, summary].filter(Boolean).join(' · '))}</p>` +
             `<p>${esc(name)} college football team stats, leaders and standing on SportStrata — free, no login.</p>` +
+            (snap ? recordHtml(snap) : '') +
             stories +
             `<p><a href="/ncaaf">College Football Home</a> · <a href="/ncaaf/standings">Standings</a> · <a href="/ncaaf/rankings">Rankings</a></p>` + staleNote(src, 'Team details') + `</section>`;
 

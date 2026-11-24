@@ -1,0 +1,395 @@
+{
+ "name": "FBS",
+ "children": [
+  {
+   "uid": "s:20~l:23~g:18",
+   "id": "18",
+   "name": "FBS Independents",
+   "abbreviation": "ind",
+   "shortName": "FBS Indep.",
+   "isConference": true,
+   "standings": {
+    "entries": [
+     {
+      "team": {
+       "id": "87",
+       "displayName": "Notre Dame Fighting Irish",
+       "abbreviation": "ND"
+      },
+      "stats": [
+       {
+        "type": "pointsagainst",
+        "displayValue": "141"
+       },
+       {
+        "type": "pointsfor",
+        "displayValue": "419"
+       },
+       {
+        "type": "streak",
+        "displayValue": "W4"
+       },
+       {
+        "type": "total",
+        "displayValue": "10-1",
+        "summary": "10-1"
+       },
+       {
+        "type": "homerecord",
+        "displayValue": "6-0",
+        "summary": "6-0"
+       },
+       {
+        "type": "awayrecord",
+        "displayValue": "2-1",
+        "summary": "2-1"
+       },
+       {
+        "type": "vsconf",
+        "displayValue": "0-0",
+        "summary": "0-0"
+       }
+      ]
+     },
+     {
+      "team": {
+       "id": "41",
+       "displayName": "UConn Huskies",
+       "abbreviation": "CONN"
+      },
+      "stats": [
+       {
+        "type": "pointsagainst",
+        "displayValue": "283"
+       },
+       {
+        "type": "pointsfor",
+        "displayValue": "371"
+       },
+       {
+        "type": "streak",
+        "displayValue": "W2"
+       },
+       {
+        "type": "total",
+        "displayValue": "6-5",
+        "summary": "6-5"
+       },
+       {
+        "type": "homerecord",
+        "displayValue": "4-3",
+        "summary": "4-3"
+       },
+       {
+        "type": "awayrecord",
+        "displayValue": "2-2",
+        "summary": "2-2"
+       },
+       {
+        "type": "vsconf",
+        "displayValue": "0-0",
+        "summary": "0-0"
+       }
+      ]
+     }
+    ]
+   },
+   "children": []
+  },
+  {
+   "uid": "s:20~l:23~g:8",
+   "id": "8",
+   "name": "Southeastern Conference",
+   "abbreviation": "sec",
+   "shortName": "SEC",
+   "isConference": true,
+   "standings": {
+    "entries": [
+     {
+      "team": {
+       "id": "61",
+       "displayName": "Georgia Bulldogs",
+       "abbreviation": "UGA"
+      },
+      "stats": [
+       {
+        "type": "pointsagainst",
+        "displayValue": "153"
+       },
+       {
+        "type": "pointsfor",
+        "displayValue": "452"
+       },
+       {
+        "type": "streak",
+        "displayValue": "W4"
+       },
+       {
+        "type": "total",
+        "displayValue": "10-1",
+        "summary": "10-1"
+       },
+       {
+        "type": "homerecord",
+        "displayValue": "5-1",
+        "summary": "5-1"
+       },
+       {
+        "type": "awayrecord",
+        "displayValue": "4-0",
+        "summary": "4-0"
+       },
+       {
+        "type": "vsconf",
+        "displayValue": "8-1",
+        "summary": "8-1"
+       }
+      ]
+     },
+     {
+      "team": {
+       "id": "251",
+       "displayName": "Texas Longhorns",
+       "abbreviation": "TEX"
+      },
+      "stats": [
+       {
+        "type": "pointsagainst",
+        "displayValue": "181"
+       },
+       {
+        "type": "pointsfor",
+        "displayValue": "347"
+       },
+       {
+        "type": "streak",
+        "displayValue": "W5"
+       },
+       {
+        "type": "total",
+        "displayValue": "9-2",
+        "summary": "9-2"
+       },
+       {
+        "type": "homerecord",
+        "displayValue": "6-1",
+        "summary": "6-1"
+       },
+       {
+        "type": "awayrecord",
+        "displayValue": "3-0",
+        "summary": "3-0"
+       },
+       {
+        "type": "vsconf",
+        "displayValue": "6-2",
+        "summary": "6-2"
+       }
+      ]
+     }
+    ]
+   },
+   "children": []
+  },
+  {
+   "uid": "s:20~l:23~g:37",
+   "id": "37",
+   "name": "Sun Belt Conference",
+   "abbreviation": "belt",
+   "shortName": "Sun Belt",
+   "children": [
+    {
+     "uid": "s:20~l:23~g:167",
+     "id": "167",
+     "name": "Sun Belt - East",
+     "abbreviation": "belte",
+     "shortName": "Sun Belt - East",
+     "isConference": false,
+     "standings": {
+      "entries": [
+       {
+        "team": {
+         "id": "256",
+         "displayName": "James Madison Dukes",
+         "abbreviation": "JMU"
+        },
+        "stats": [
+         {
+          "type": "pointsagainst",
+          "displayValue": "239"
+         },
+         {
+          "type": "pointsfor",
+          "displayValue": "428"
+         },
+         {
+          "type": "streak",
+          "displayValue": "L1"
+         },
+         {
+          "type": "total",
+          "displayValue": "8-3",
+          "summary": "8-3"
+         },
+         {
+          "type": "homerecord",
+          "displayValue": "4-1",
+          "summary": "4-1"
+         },
+         {
+          "type": "awayrecord",
+          "displayValue": "4-2",
+          "summary": "4-2"
+         },
+         {
+          "type": "vsconf",
+          "displayValue": "5-2",
+          "summary": "5-2"
+         }
+        ]
+       },
+       {
+        "team": {
+         "id": "290",
+         "displayName": "Georgia Southern Eagles",
+         "abbreviation": "GASO"
+        },
+        "stats": [
+         {
+          "type": "pointsagainst",
+          "displayValue": "201"
+         },
+         {
+          "type": "pointsfor",
+          "displayValue": "318"
+         },
+         {
+          "type": "streak",
+          "displayValue": "W5"
+         },
+         {
+          "type": "total",
+          "displayValue": "7-4",
+          "summary": "7-4"
+         },
+         {
+          "type": "homerecord",
+          "displayValue": "3-2",
+          "summary": "3-2"
+         },
+         {
+          "type": "awayrecord",
+          "displayValue": "4-2",
+          "summary": "4-2"
+         },
+         {
+          "type": "vsconf",
+          "displayValue": "6-1",
+          "summary": "6-1"
+         }
+        ]
+       }
+      ]
+     },
+     "children": []
+    },
+    {
+     "uid": "s:20~l:23~g:168",
+     "id": "168",
+     "name": "Sun Belt - West",
+     "abbreviation": "beltw",
+     "shortName": "Sun Belt - West",
+     "isConference": false,
+     "standings": {
+      "entries": [
+       {
+        "team": {
+         "id": "2348",
+         "displayName": "Louisiana Tech Bulldogs",
+         "abbreviation": "LT"
+        },
+        "stats": [
+         {
+          "type": "pointsagainst",
+          "displayValue": "218"
+         },
+         {
+          "type": "pointsfor",
+          "displayValue": "413"
+         },
+         {
+          "type": "streak",
+          "displayValue": "W8"
+         },
+         {
+          "type": "total",
+          "displayValue": "9-2",
+          "summary": "9-2"
+         },
+         {
+          "type": "homerecord",
+          "displayValue": "6-0",
+          "summary": "6-0"
+         },
+         {
+          "type": "awayrecord",
+          "displayValue": "3-2",
+          "summary": "3-2"
+         },
+         {
+          "type": "vsconf",
+          "displayValue": "7-0",
+          "summary": "7-0"
+         }
+        ]
+       },
+       {
+        "team": {
+         "id": "309",
+         "displayName": "Louisiana Ragin' Cajuns",
+         "abbreviation": "UL"
+        },
+        "stats": [
+         {
+          "type": "pointsagainst",
+          "displayValue": "241"
+         },
+         {
+          "type": "pointsfor",
+          "displayValue": "349"
+         },
+         {
+          "type": "streak",
+          "displayValue": "W3"
+         },
+         {
+          "type": "total",
+          "displayValue": "8-3",
+          "summary": "8-3"
+         },
+         {
+          "type": "homerecord",
+          "displayValue": "6-0",
+          "summary": "6-0"
+         },
+         {
+          "type": "awayrecord",
+          "displayValue": "2-3",
+          "summary": "2-3"
+         },
+         {
+          "type": "vsconf",
+          "displayValue": "5-2",
+          "summary": "5-2"
+         }
+        ]
+       }
+      ]
+     },
+     "children": []
+    }
+   ],
+   "isConference": true
+  }
+ ]
+}
