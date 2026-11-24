@@ -1,6 +1,44 @@
 {
   "stories": [
     {
+      "slug": "2026-11-24-mcdaniels-career-high-34-wolves-142",
+      "title": "Jaden McDaniels scored a career-high 34 as Minnesota put up 142",
+      "dek": "The 142 points are Minnesota's most in 18 games this season; its previous high was 133.",
+      "date": "2026-11-24",
+      "season": 2027,
+      "teams": [
+        "MIN",
+        "BKN"
+      ],
+      "players": [
+        "4431671"
+      ],
+      "hero_stat": "Career-high 34 for McDaniels; Minnesota's season-high 142 points",
+      "url": "/nba/stories/2026-11-24-mcdaniels-career-high-34-wolves-142",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-24-spurs-8-0-road-only-unbeaten",
+      "title": "The Spurs are 8-0 on the road, the NBA's only unbeaten road team",
+      "dek": "San Antonio won 123-107 at Sacramento without Wembanyama, Fox and Harper, and its 15-3 record is tied for the league's best.",
+      "date": "2026-11-24",
+      "season": 2027,
+      "hook": "Castle helps Spurs stay unbeaten on road with 123-107 win over Kings minus Wemby, Fox and Harper",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401910045",
+      "teams": [
+        "SAS",
+        "SAC"
+      ],
+      "players": [
+        "4845367",
+        "4592479",
+        "3064560"
+      ],
+      "hero_stat": "8-0 on the road, the NBA's only unbeaten road team; 15-3 overall",
+      "url": "/nba/stories/2026-11-24-spurs-8-0-road-only-unbeaten",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-23-nuggets-151-murray-45-jokic-triple-double",
       "title": "Denver scored 151, the NBA's most this season, behind Murray's 45",
       "dek": "Nikola Jokic added 37 points, 18 rebounds and 11 assists in the 151-145 overtime win over Chicago.",
