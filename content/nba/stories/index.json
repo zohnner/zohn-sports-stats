@@ -1,6 +1,25 @@
 {
   "stories": [
     {
+      "slug": "2026-11-25-pistons-hold-magic-86-fewest-allowed",
+      "title": "Detroit held Orlando to 86 points, the fewest Detroit has allowed all season",
+      "dek": "Detroit won 104-86 at Orlando without Cade Cunningham, and the Pistons are 2-0 in games he has missed.",
+      "date": "2026-11-25",
+      "season": 2027,
+      "teams": [
+        "DET",
+        "ORL"
+      ],
+      "players": [
+        "4432166",
+        "5107199",
+        "4395702"
+      ],
+      "hero_stat": "86 points allowed, the fewest Detroit has allowed this season; also the fewest Orlando has scored",
+      "url": "/nba/stories/2026-11-25-pistons-hold-magic-86-fewest-allowed",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-24-mcdaniels-career-high-34-wolves-142",
       "title": "Jaden McDaniels scored a career-high 34 as Minnesota put up 142",
       "dek": "The 142 points are Minnesota's most in 18 games this season; its previous high was 133.",
