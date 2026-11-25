@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-23",
-  "gamesCounted": 258,
+  "throughDate": "2026-11-24",
+  "gamesCounted": 261,
   "source": "balldontlie",
   "sections": [
     {
@@ -14,7 +14,7 @@
         },
         {
           "name": "Boston Celtics",
-          "record": "11-6"
+          "record": "12-6"
         },
         {
           "name": "New York Knicks",
@@ -35,7 +35,7 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "10-6"
+          "record": "11-6"
         },
         {
           "name": "Cleveland Cavaliers",
@@ -68,11 +68,11 @@
         },
         {
           "name": "Orlando Magic",
-          "record": "7-9"
+          "record": "7-10"
         },
         {
           "name": "Washington Wizards",
-          "record": "7-11"
+          "record": "7-12"
         },
         {
           "name": "Charlotte Hornets",
@@ -88,12 +88,12 @@
           "record": "13-5"
         },
         {
-          "name": "Denver Nuggets",
-          "record": "10-5"
-        },
-        {
           "name": "Portland Trail Blazers",
           "record": "11-6"
+        },
+        {
+          "name": "Denver Nuggets",
+          "record": "10-6"
         },
         {
           "name": "Oklahoma City Thunder",
@@ -147,7 +147,7 @@
         },
         {
           "name": "Dallas Mavericks",
-          "record": "10-7"
+          "record": "11-7"
         },
         {
           "name": "New Orleans Pelicans",
