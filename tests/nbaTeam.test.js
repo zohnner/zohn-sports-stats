@@ -121,7 +121,7 @@ test('schedule: last five finals newest first, next three unfinished oldest firs
 });
 
 test('render: team page shows record, roster, games and links to player and game pages', () => {
-    const { ctx: c, els } = load(['nba.js', 'nfl.js'], { renderFollowStar: (s, t, a) => `<star ${s}:${t}:${a}>` });
+    const { ctx: c, els } = load(['teamPage.js', 'nba.js', 'nfl.js'], { renderFollowStar: (s, t, a) => `<star ${s}:${t}:${a}>` });
     const std = { row: c._nbaStandingRow(FX.standings.SA.entry), division: FX.standings.SA.division };
     c.displayNBATeamDetail(FX.roster.team, FX.roster, FX.schedule, std);
     const html = els.playersGrid.innerHTML;
@@ -142,7 +142,7 @@ test('render: team page shows record, roster, games and links to player and game
 });
 
 test('render: standings unavailable still renders identity, roster and games', () => {
-    const { ctx: c, els } = load(['nba.js', 'nfl.js']);
+    const { ctx: c, els } = load(['teamPage.js', 'nba.js', 'nfl.js']);
     c.displayNBATeamDetail(FX.roster.team, FX.roster, FX.schedule, null);
     const html = els.playersGrid.innerHTML;
     assert.match(html, /San Antonio Spurs/);
