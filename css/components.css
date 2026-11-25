@@ -15,7 +15,7 @@
     gap: var(--space-2);
     padding: var(--space-2) var(--space-5);
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--radius);
     font-family: var(--font-sans);
@@ -4921,3 +4921,22 @@
 .story-row__title { display: block; font-weight: 600; color: var(--text-primary); }
 .story-row__sport { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; color: var(--text-muted); margin-right: var(--space-2); }
 .story-row__dek { display: block; font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* Weekly email signup (D-214, js/newsletter.js). On home the .home-zone host
+   supplies the card; on story pages .newsletter-card does. */
+.newsletter-card {
+    margin-top: var(--space-6);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius);
+    padding: var(--space-4) var(--space-4) var(--space-5);
+}
+.newsletter-title { margin: var(--space-1) 0 var(--space-2); font-size: var(--text-lg); color: var(--text-primary); }
+.newsletter-dek { margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-secondary); }
+.newsletter-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.newsletter-input { flex: 1 1 14rem; min-width: 0; margin: 0; }
+.newsletter-check { flex-basis: 100%; }
+.newsletter-check:empty { display: none; }
+.newsletter-status { flex-basis: 100%; margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.newsletter-status:empty { display: none; }
+.newsletter-status--error { color: var(--color-error); }

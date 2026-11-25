@@ -78,6 +78,11 @@ function snapshotHtml() {
         `Every number in a story is listed, with the exact source it came from, in a data file linked at the end of the story, and an automated check refuses to publish a story with a number that isn't in that file. ` +
         `Stories analyze numbers rather than report news; a story may link the news event that prompted it. Each story carries this disclosure: "${esc(core.DISCLOSURE)}"</p>` +
 
+        `<h2 id="email">The weekly email</h2>` +
+        `<p>The weekly email collects that week's SportStrata Stories. Signing up needs only an email address and a confirmation click; no account. ` +
+        `We store the address, whether it's confirmed, when, and which page you signed up from. Nothing else, and it is never sold or shared. ` +
+        `Every email has a one-click unsubscribe link, and unsubscribing stops all mail at once. Email is sent through Resend.</p>` +
+
         `<h2 id="contact">Contact</h2>` +
         `<p>Corrections, data questions, press and partnerships: <a href="mailto:sportstrata@proton.me">sportstrata@proton.me</a>. ` +
         `If a number looks wrong, send the page link and it will be checked against the source.</p>` +

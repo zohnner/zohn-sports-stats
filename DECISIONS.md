@@ -4095,3 +4095,20 @@ The run book's own 36-hour rule wouldn't have flagged it. `tools/desk/RUNBOOK.md
 **Guard:** `tests/ncaafTeamSnapshot.test.js`: the pure builder against a trimmed live standings fixture (FBS Independents, the SEC, and Sun Belt's nested divisions), the season rollover, and the page with ESPN down, ESPN live, a team missing from the snapshot, and a planted fault (no snapshot file serves the old empty shell).
 
 **Next (not this branch):** the same pattern for NBA/WNBA player pages, the three leaders pages, and NCAAF rankings and standings, in that order of sitemap weight.
+
+## D-214 — Weekly email, part 1: signup with double opt-in (2026-11-21)
+
+**Context:** the 2026-11-21 growth audit found real readers at roughly 10-25 sessions a day, almost all first-time visitors who don't return, and no channel the site owns. The owner approved a weekly email the same day and chose, from offered options: Resend (already sends sign-in mail; the alternative, beehiiv, adds open-tracking pixels that sit badly with GOALS.md's no-trackers rule), email-only signup with double opt-in (no account), and auto-drafted issues he approves before anything sends.
+
+**Decision (part 1 of 3):**
+- `migrations/0010_newsletter.sql`: `newsletter_subscribers` (email, status pending/confirmed/unsubscribed, SHA-256 of the link token, a fixed source bucket, timestamps). No IP, no user agent, no tie to accounts. Owner applies it.
+- `functions/api/newsletter.js`: POST signup (Turnstile, same site key as sign-in) stores a pending row and sends one confirmation through Resend; a pending address is re-sent only after 10 minutes with a fresh token; a confirmed address gets the same reply and no email, so the form can't reveal who is subscribed. Confirm and unsubscribe links show a page with a button and act only on POST, because mail scanners open every link in a message. Unsubscribe also accepts RFC 8058 one-click POSTs for part 3's `List-Unsubscribe` header. Fails closed (503) without `USER_DB` and `RESEND_API_KEY`.
+- `js/newsletter.js` (after `news.js` in the chain): fills `[data-newsletter-source]` hosts on home (after Stories) and on every story page; Turnstile renders on first focus only. `/about` gains a "weekly email" paragraph saying what is stored.
+
+**Not yet:** part 2 (a Monday job drafts the issue from the week's published stories and opens a PR; merging is approval) and part 3 (a key-gated send route mails confirmed subscribers in batches with `List-Unsubscribe`). Before part 3 sends a sponsored issue, CAN-SPAM wants a postal address in commercial email; that is the owner's call (not legal advice).
+
+**Owner setup:** apply the migration; optionally set `NEWSLETTER_FROM` (defaults to `SportStrata <weekly@sportstrata.cc>`, same verified domain as sign-in); turn off open and click tracking for the domain in Resend; add a DMARC record (`_dmarc.sportstrata.cc` has none; Gmail and Yahoo expect one from bulk senders).
+
+**Guard:** `tests/newsletter.test.js` (14 tests): email validation, hashed tokens, double opt-in, no membership leak, cooldown, Resend failure, GET never changes state, one-click unsubscribe, resubscribe, stale tokens, fail-closed, and a planted fault (a GET that confirmed on load).
+
+**Also fixed here:** `.btn-primary` hardcoded `color: #fff`, a pre-rebrand literal. On D-212's light ice accent it measured 1.92:1 in the dark theme (WCAG wants 4.5:1). It now uses `--text-on-accent` (ink in dark, 10.22:1; white in light, unchanged at 5.68:1). Its only other user is the phone install prompt.

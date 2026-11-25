@@ -81,6 +81,7 @@ const STATIC_ASSETS = [
     '/js/navigation.js',
     '/js/auth.js',
     '/js/news.js',
+    '/js/newsletter.js',
     '/js/scorebug.js',
     '/js/homeLive.js',
     '/js/app.js',
