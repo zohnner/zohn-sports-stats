@@ -48,6 +48,8 @@ function load(file) {
     ctx.noteFetched = (key, ts) => { net.noted.push([key, ts]); };
     ctx.globalThis = ctx; ctx.window = ctx;
     vm.createContext(ctx);
+    // nfl.js registers with the team-page shell at load, as in the real script chain.
+    if (file === 'nfl') vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'teamPage.js'), 'utf8'), ctx, { filename: 'teamPage.js' });
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', `${file}.js`), 'utf8'), ctx, { filename: `${file}.js` });
     return { ctx, net };
 }

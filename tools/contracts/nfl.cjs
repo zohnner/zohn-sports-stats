@@ -149,6 +149,27 @@ module.exports = {
                 }),
             ],
         },
+        {
+            // League-wide team stats, read straight from the browser by the NFL
+            // team page (State of the Team ranks: turnover margin, yards per game).
+            id: 'nfl-team-stats-byteam',
+            mirrors: 'js/nfl.js _nflParseTeamStats (NFL team page, TeamPage registration)',
+            sources: [/statistics\/byteam/],
+            route: c => `${ESPN}/common/v3/sports/football/nfl/statistics/byteam?region=us&lang=en&contentorigin=espn&seasontype=2${c.season == null ? '' : `&season=${c.season}`}`,
+            paths: ['teams[].team.abbreviation', 'teams[].categories[].values', 'categories[].names'],
+            invariants: [
+                L.minCount('teams', 32),
+                L.predicate('own and opponent splits carry the fields the team page reads', data => {
+                    const names = Object.fromEntries(((data && data.categories) || []).map(g => [g.name, g.names || []]));
+                    const need = { general: 'gamesPlayed', passing: 'netYardsPerGame', miscellaneous: 'turnOverDifferential' };
+                    const missing = Object.entries(need).filter(([g, f]) => !(names[g] || []).includes(f)).map(([g, f]) => `${g}.${f}`);
+                    const t = ((data && data.teams) || [])[0];
+                    const opp = t && (t.categories || []).some(x => x.name === 'passing' && String(x.splitId) === '900');
+                    if (!opp) missing.push('opponent split (splitId 900)');
+                    return missing.length ? `missing ${missing.join(', ')}` : null;
+                }),
+            ],
+        },
         // NFL player pages (js/nfl.js, Compare, live-game Fantasy Watch). Their
         // proxies are 403'd by ESPN (D-176); these run the real browser fallback
         // in js/config.js against the current passing leader.
