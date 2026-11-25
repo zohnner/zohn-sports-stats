@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "asOf": "2026-11-24",
+ "asOf": "2026-11-25",
  "teams": {
   "2": {
    "name": "Auburn Tigers",
@@ -630,13 +630,13 @@
    "name": "Miami (OH) RedHawks",
    "abbr": "M-OH",
    "conference": "Mid-American Conference",
-   "overall": "7-4",
-   "conf": "5-2",
+   "overall": "8-4",
+   "conf": "6-2",
    "home": "4-2",
-   "away": "3-2",
-   "streak": "W2",
-   "pf": "301",
-   "pa": "260"
+   "away": "4-2",
+   "streak": "W3",
+   "pf": "329",
+   "pa": "284"
   },
   "194": {
    "name": "Ohio State Buckeyes",
@@ -1230,13 +1230,13 @@
    "name": "Eastern Michigan Eagles",
    "abbr": "EMU",
    "conference": "Mid-American Conference",
-   "overall": "4-7",
-   "conf": "3-4",
-   "home": "2-2",
+   "overall": "5-7",
+   "conf": "4-4",
+   "home": "3-2",
    "away": "2-4",
-   "streak": "L4",
-   "pf": "226",
-   "pa": "300"
+   "streak": "W1",
+   "pf": "243",
+   "pa": "312"
   },
   "2226": {
    "name": "Florida Atlantic Owls",
@@ -1314,13 +1314,13 @@
    "name": "Kent State Golden Flashes",
    "abbr": "KENT",
    "conference": "Mid-American Conference",
-   "overall": "3-8",
-   "conf": "2-5",
+   "overall": "3-9",
+   "conf": "2-6",
    "home": "3-2",
-   "away": "0-6",
-   "streak": "L3",
-   "pf": "160",
-   "pa": "328"
+   "away": "0-7",
+   "streak": "L4",
+   "pf": "172",
+   "pa": "345"
   },
   "2335": {
    "name": "Liberty Flames",
@@ -1638,13 +1638,13 @@
    "name": "Western Michigan Broncos",
    "abbr": "WMU",
    "conference": "Mid-American Conference",
-   "overall": "8-3",
-   "conf": "6-1",
-   "home": "4-1",
+   "overall": "8-4",
+   "conf": "6-2",
+   "home": "4-2",
    "away": "4-2",
-   "streak": "W3",
-   "pf": "312",
-   "pa": "214"
+   "streak": "L1",
+   "pf": "336",
+   "pa": "242"
   },
   "2751": {
    "name": "Wyoming Cowboys",
