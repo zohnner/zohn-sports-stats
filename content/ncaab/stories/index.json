@@ -1,6 +1,57 @@
 {
   "stories": [
     {
+      "slug": "2026-11-25-colorado-erases-20-point-deficit-stanford",
+      "title": "Colorado erased a 20-point deficit to beat Stanford 70-65",
+      "dek": "The Buffaloes trailed 38-24 at halftime and outscored Stanford 46-27 in the second half.",
+      "date": "2026-11-25",
+      "season": 2027,
+      "hook": "Colorado rallies from 20-point deficit, beats Stanford 70-65 at Acrisure Series",
+      "hook_url": "https://www.espn.com/ncb/recap?gameId=401909763",
+      "teams": [
+        "COLO",
+        "STAN"
+      ],
+      "players": [],
+      "hero_stat": "Trailed by 20, won 70-65; second half 46-27",
+      "url": "/ncaab/stories/2026-11-25-colorado-erases-20-point-deficit-stanford",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-25-louisville-hands-no-5-texas-tech-first-loss",
+      "title": "No. 25 Louisville handed No. 5 Texas Tech its first loss, 72-64",
+      "dek": "Seth Trimble scored a season-high 24 points off the bench, and Texas Tech shot 6 of 27 from 3-point range.",
+      "date": "2026-11-25",
+      "season": 2027,
+      "hook": "Louisville's Kelsey tells 5th-year critics 'bring it' as Trimble shines in upset",
+      "hook_url": "https://www.espn.com/mens-college-basketball/story/_/id/50590635/louisville-kelsey-lauds-trimble-pushes-back-fifth-year-critics",
+      "teams": [
+        "LOU",
+        "TTU"
+      ],
+      "players": [],
+      "hero_stat": "72-64 over No. 5 Texas Tech; Trimble's 24 off the bench, a season high",
+      "url": "/ncaab/stories/2026-11-25-louisville-hands-no-5-texas-tech-first-loss",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-24-arizona-starters-86-of-96",
+      "title": "Arizona's starters scored 86 of its 96 points, all 5 in double figures",
+      "dek": "No. 8 Arizona beat Colorado State 96-83 in Maui, and its bench scored just 10 points.",
+      "date": "2026-11-24",
+      "season": 2027,
+      "hook": "No. 8 Arizona tops Colorado State 96-83 with all 5 starters reaching double figures in Maui",
+      "hook_url": "https://www.espn.com/ncb/recap?gameId=401909743",
+      "teams": [
+        "ARIZ",
+        "CSU"
+      ],
+      "players": [],
+      "hero_stat": "Starters scored 86 of 96 points; bench scored 10",
+      "url": "/ncaab/stories/2026-11-24-arizona-starters-86-of-96",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-22-villanova-beats-no-18-michigan",
       "title": "Villanova beat No. 18 Michigan 79-73; ranked teams are now 107-5",
       "dek": "Tyler Perkins scored 23 for the Wildcats, and Michigan's Trey McKenney had 22 in the loss.",

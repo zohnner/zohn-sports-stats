@@ -1,8 +1,8 @@
 {
   "season": 2027,
   "seasonLabel": "2026-27",
-  "throughDate": "2026-11-20",
-  "gamesCounted": 235,
+  "throughDate": "2026-11-23",
+  "gamesCounted": 258,
   "source": "balldontlie",
   "sections": [
     {
@@ -10,23 +10,23 @@
       "teams": [
         {
           "name": "Philadelphia 76ers",
-          "record": "13-3"
+          "record": "14-4"
         },
         {
           "name": "Boston Celtics",
-          "record": "11-4"
+          "record": "11-6"
         },
         {
           "name": "New York Knicks",
-          "record": "9-6"
+          "record": "11-6"
         },
         {
           "name": "Toronto Raptors",
-          "record": "6-10"
+          "record": "6-11"
         },
         {
           "name": "Brooklyn Nets",
-          "record": "3-12"
+          "record": "3-13"
         }
       ]
     },
@@ -35,23 +35,23 @@
       "teams": [
         {
           "name": "Detroit Pistons",
-          "record": "10-5"
+          "record": "10-6"
         },
         {
           "name": "Cleveland Cavaliers",
-          "record": "9-8"
+          "record": "9-9"
         },
         {
           "name": "Indiana Pacers",
-          "record": "5-11"
+          "record": "6-12"
         },
         {
           "name": "Chicago Bulls",
-          "record": "4-11"
+          "record": "5-12"
         },
         {
           "name": "Milwaukee Bucks",
-          "record": "1-15"
+          "record": "2-16"
         }
       ]
     },
@@ -60,23 +60,23 @@
       "teams": [
         {
           "name": "Atlanta Hawks",
-          "record": "10-6"
+          "record": "11-6"
         },
         {
           "name": "Miami Heat",
-          "record": "9-6"
+          "record": "10-6"
         },
         {
           "name": "Orlando Magic",
-          "record": "7-8"
+          "record": "7-9"
         },
         {
           "name": "Washington Wizards",
-          "record": "6-11"
+          "record": "7-11"
         },
         {
           "name": "Charlotte Hornets",
-          "record": "4-11"
+          "record": "4-12"
         }
       ]
     },
@@ -85,23 +85,23 @@
       "teams": [
         {
           "name": "Minnesota Timberwolves",
-          "record": "11-5"
-        },
-        {
-          "name": "Portland Trail Blazers",
-          "record": "10-5"
+          "record": "13-5"
         },
         {
           "name": "Denver Nuggets",
-          "record": "9-5"
+          "record": "10-5"
+        },
+        {
+          "name": "Portland Trail Blazers",
+          "record": "11-6"
         },
         {
           "name": "Oklahoma City Thunder",
-          "record": "10-6"
+          "record": "10-8"
         },
         {
           "name": "Utah Jazz",
-          "record": "3-14"
+          "record": "3-16"
         }
       ]
     },
@@ -110,23 +110,23 @@
       "teams": [
         {
           "name": "Los Angeles Lakers",
-          "record": "14-3"
+          "record": "15-3"
         },
         {
           "name": "Phoenix Suns",
-          "record": "8-7"
+          "record": "9-7"
         },
         {
           "name": "Golden State Warriors",
-          "record": "8-8"
+          "record": "9-8"
         },
         {
           "name": "LA Clippers",
-          "record": "4-10"
+          "record": "4-12"
         },
         {
           "name": "Sacramento Kings",
-          "record": "1-14"
+          "record": "2-15"
         }
       ]
     },
@@ -135,23 +135,23 @@
       "teams": [
         {
           "name": "San Antonio Spurs",
-          "record": "13-3"
-        },
-        {
-          "name": "Memphis Grizzlies",
-          "record": "12-4"
+          "record": "15-3"
         },
         {
           "name": "Houston Rockets",
-          "record": "12-5"
+          "record": "13-5"
+        },
+        {
+          "name": "Memphis Grizzlies",
+          "record": "13-5"
         },
         {
           "name": "Dallas Mavericks",
-          "record": "8-7"
+          "record": "10-7"
         },
         {
           "name": "New Orleans Pelicans",
-          "record": "5-12"
+          "record": "5-14"
         }
       ]
     }

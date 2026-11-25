@@ -1,6 +1,100 @@
 {
   "stories": [
     {
+      "slug": "2026-11-25-pistons-hold-magic-86-fewest-allowed",
+      "title": "Detroit held Orlando to 86 points, the fewest Detroit has allowed all season",
+      "dek": "Detroit won 104-86 at Orlando without Cade Cunningham, and the Pistons are 2-0 in games he has missed.",
+      "date": "2026-11-25",
+      "season": 2027,
+      "teams": [
+        "DET",
+        "ORL"
+      ],
+      "players": [
+        "4432166",
+        "5107199",
+        "4395702"
+      ],
+      "hero_stat": "86 points allowed, the fewest Detroit has allowed this season; also the fewest Orlando has scored",
+      "url": "/nba/stories/2026-11-25-pistons-hold-magic-86-fewest-allowed",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-24-mcdaniels-career-high-34-wolves-142",
+      "title": "Jaden McDaniels scored a career-high 34 as Minnesota put up 142",
+      "dek": "The 142 points are Minnesota's most in 18 games this season; its previous high was 133.",
+      "date": "2026-11-24",
+      "season": 2027,
+      "teams": [
+        "MIN",
+        "BKN"
+      ],
+      "players": [
+        "4431671"
+      ],
+      "hero_stat": "Career-high 34 for McDaniels; Minnesota's season-high 142 points",
+      "url": "/nba/stories/2026-11-24-mcdaniels-career-high-34-wolves-142",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-24-spurs-8-0-road-only-unbeaten",
+      "title": "The Spurs are 8-0 on the road, the NBA's only unbeaten road team",
+      "dek": "San Antonio won 123-107 at Sacramento without Wembanyama, Fox and Harper, and its 15-3 record is tied for the league's best.",
+      "date": "2026-11-24",
+      "season": 2027,
+      "hook": "Castle helps Spurs stay unbeaten on road with 123-107 win over Kings minus Wemby, Fox and Harper",
+      "hook_url": "https://www.espn.com/nba/recap?gameId=401910045",
+      "teams": [
+        "SAS",
+        "SAC"
+      ],
+      "players": [
+        "4845367",
+        "4592479",
+        "3064560"
+      ],
+      "hero_stat": "8-0 on the road, the NBA's only unbeaten road team; 15-3 overall",
+      "url": "/nba/stories/2026-11-24-spurs-8-0-road-only-unbeaten",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-23-nuggets-151-murray-45-jokic-triple-double",
+      "title": "Denver scored 151, the NBA's most this season, behind Murray's 45",
+      "dek": "Nikola Jokic added 37 points, 18 rebounds and 11 assists in the 151-145 overtime win over Chicago.",
+      "date": "2026-11-23",
+      "season": 2027,
+      "teams": [
+        "DEN",
+        "CHI"
+      ],
+      "players": [
+        "3936299",
+        "3112335",
+        "4871145"
+      ],
+      "hero_stat": "151 points, the most by any NBA team this season; Murray 45, Jokic 37-18-11",
+      "url": "/nba/stories/2026-11-23-nuggets-151-murray-45-jokic-triple-double",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-23-warriors-snap-skid-celtics-season-low-87",
+      "title": "The Warriors ended a 5-game skid by holding Boston to a season-low 87 points",
+      "dek": "Golden State won 88-87 after losing 5 straight on the road; Boston shot 39% and scored 12 points in the 4th quarter.",
+      "date": "2026-11-23",
+      "season": 2027,
+      "teams": [
+        "GSW",
+        "BOS"
+      ],
+      "players": [
+        "4709138",
+        "4065648"
+      ],
+      "hero_stat": "88-87; Boston's 87 is its fewest in 17 games this season",
+      "url": "/nba/stories/2026-11-23-warriors-snap-skid-celtics-season-low-87",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-22-kings-end-eight-game-skid-beat-celtics",
       "title": "The 2-14 Kings ended an 8-game skid by beating the 11-5 Celtics 97-96",
       "dek": "Keegan Murray's tip-in with 5.0 seconds left won it; Boston shot 13-of-58 from 3-point range.",
