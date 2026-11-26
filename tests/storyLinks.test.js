@@ -56,9 +56,36 @@ test('readAllStories merges every sport newest first', async () => {
     assert.deepEqual(got.map(s => s.slug), ['c', 'm', 'b', 'a']);
 });
 
-test('storiesForTeam matches any named team, case-insensitively', () => {
-    assert.deepEqual(plain(L.storiesForTeam(NFL, 'min')).map(s => s.slug), ['c', 'a']);
+test('storiesForTeam lists only stories whose subject (first team) is that team', () => {
+    assert.deepEqual(plain(L.storiesForTeam(NFL, 'tb')).map(s => s.slug), ['c']);
+    assert.deepEqual(plain(L.storiesForTeam(NFL, 'jax')).map(s => s.slug), ['a']);
+    assert.deepEqual(plain(L.storiesForTeam(NFL, 'min')), [], 'MIN is only ever the opponent here');
     assert.deepEqual(plain(L.storiesForTeam(NFL, '')), []);
+});
+
+// The team-page rail (js/news.js storiesAboutTeam) must apply the same rule as
+// the edge snapshot, or the crawlable page and the app list different stories.
+function loadNewsHelper() {
+    const ctx = { window: {}, fetch: () => Promise.resolve({ ok: false }) };
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'news.js'), 'utf8') + '\n;globalThis.__f = storiesAboutTeam;', ctx);
+    return ctx.__f;
+}
+
+test('team-page rail: subject team only, same answer as the edge for every team', () => {
+    const about = loadNewsHelper();
+    for (const t of ['TB', 'MIN', 'JAX', 'TEN', 'jax', '']) {
+        assert.deepEqual(plain(about(NFL, t)).map(s => s.slug), plain(L.storiesForTeam(NFL, t)).map(s => s.slug), t);
+    }
+    const nba = [S('x', '2026-11-01', ['SAS', 'SAC'])];
+    const norm = t => ({ SAS: 'SA' }[String(t).toUpperCase()] || String(t).toUpperCase());
+    assert.deepEqual(plain(about(nba, 'SA', norm)).map(s => s.slug), ['x']);
+    assert.deepEqual(plain(about(nba, 'SAC', norm)), []);
+});
+
+test('planted fault: the old any-named-team rule fails the subject test', () => {
+    const anyTeam = (stories, abbr) => stories.filter(s => (s.teams || []).includes(abbr));
+    assert.notDeepEqual(anyTeam(NFL, 'MIN').map(s => s.slug), []);
 });
 
 test('siblingStories excludes itself and ranks shared-team stories first', () => {

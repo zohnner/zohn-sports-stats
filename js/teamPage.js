@@ -229,6 +229,12 @@ const TeamPage = (() => {
         const t = v.toFixed(s.d || 0);
         return s.signed && v > 0 ? `+${t}` : t;
     }
+    // A signed stat's sign is a state (ahead or behind), so it takes the
+    // semantic win/loss color, as standings color a differential.
+    function signClass(v, s) {
+        if (!s.signed || !Number.isFinite(v) || v === 0) return '';
+        return (s.better === 'low' ? v < 0 : v > 0) ? ' tp-metric__val--pos' : ' tp-metric__val--neg';
+    }
     const rankText = r => `${r.tied ? 'T-' : ''}#${r.rank}`;
     const scopeName = (cfg, m) => !m.row ? '' : m.scope === 'conf' ? (cfg.confLabel || ident)(m.row.conf) : (cfg.groupLabel || ident)(m.row.group);
 
@@ -306,7 +312,7 @@ const TeamPage = (() => {
             if (!r) return '';
             return `<div class="tp-metric">
                 <span class="bio-label">${esc(s.label)}</span>
-                <span class="tp-metric__row"><span class="tp-metric__val">${esc(fmtStat(r.value, s))}</span><span class="tp-metric__rank">${esc(rankText(r))} <span class="tp-muted">of ${r.of}</span></span></span>
+                <span class="tp-metric__row"><span class="tp-metric__val${signClass(r.value, s)}">${esc(fmtStat(r.value, s))}</span><span class="tp-metric__rank">${esc(rankText(r))} <span class="tp-muted">of ${r.of}</span></span></span>
                 <span class="tp-bar" aria-hidden="true"><span style="width:${r.pctile}%"></span></span>
             </div>`;
         }).join('');
