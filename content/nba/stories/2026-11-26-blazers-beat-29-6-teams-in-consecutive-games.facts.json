@@ -1,0 +1,298 @@
+{
+  "facts": [
+    {
+      "key": "final_por",
+      "label": "Portland points vs San Antonio, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 116
+    },
+    {
+      "key": "final_sa",
+      "label": "San Antonio points at Portland, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 111
+    },
+    {
+      "key": "por_vs_phi",
+      "label": "Portland points vs Philadelphia, Nov 23",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 128
+    },
+    {
+      "key": "phi_vs_por",
+      "label": "Philadelphia points at Portland, Nov 23",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 111
+    },
+    {
+      "key": "phi_wins_before",
+      "label": "Philadelphia wins before playing Portland, Nov 23",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/20/schedule?season=2027",
+      "value": 14
+    },
+    {
+      "key": "phi_losses_before",
+      "label": "Philadelphia losses before playing Portland, Nov 23",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/20/schedule?season=2027",
+      "value": 3
+    },
+    {
+      "key": "sa_wins_before",
+      "label": "San Antonio wins before playing Portland, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 15
+    },
+    {
+      "key": "sa_losses_before",
+      "label": "San Antonio losses before playing Portland, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 3
+    },
+    {
+      "key": "combined_wins",
+      "label": "Combined wins of Philadelphia (14) and San Antonio (15) when Portland beat them",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 29
+    },
+    {
+      "key": "combined_losses",
+      "label": "Combined losses of Philadelphia (3) and San Antonio (3) when Portland beat them",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 6
+    },
+    {
+      "key": "por_wins",
+      "label": "Portland wins this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 12
+    },
+    {
+      "key": "por_losses",
+      "label": "Portland losses this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 6
+    },
+    {
+      "key": "sa_road_wins_before",
+      "label": "San Antonio road wins before playing Portland, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 8
+    },
+    {
+      "key": "sa_road_losses_before",
+      "label": "San Antonio road losses before playing Portland, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 0
+    },
+    {
+      "key": "sa_road_wins",
+      "label": "San Antonio road wins this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 8
+    },
+    {
+      "key": "sa_road_losses",
+      "label": "San Antonio road losses this season",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/24/schedule?season=2027",
+      "value": 1
+    },
+    {
+      "key": "sa_wins",
+      "label": "San Antonio wins this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 15
+    },
+    {
+      "key": "sa_losses",
+      "label": "San Antonio losses this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 4
+    },
+    {
+      "key": "phi_wins_after_loss",
+      "label": "Philadelphia wins after losing at Portland (14-4)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/20/schedule?season=2027",
+      "value": 14
+    },
+    {
+      "key": "phi_losses_after_loss",
+      "label": "Philadelphia losses after losing at Portland (14-4)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/20/schedule?season=2027",
+      "value": 4
+    },
+    {
+      "key": "phi_vs_mia",
+      "label": "Philadelphia points vs Miami, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909317",
+      "value": 111
+    },
+    {
+      "key": "mia_vs_phi",
+      "label": "Miami points at Philadelphia, Nov 25",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909317",
+      "value": 104
+    },
+    {
+      "key": "phi_wins",
+      "label": "Philadelphia wins this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 15
+    },
+    {
+      "key": "phi_losses",
+      "label": "Philadelphia losses this season",
+      "source": "https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?season=2027&seasontype=2",
+      "value": 4
+    },
+    {
+      "key": "avdija_pts",
+      "label": "Deni Avdija points vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 33
+    },
+    {
+      "key": "avdija_reb",
+      "label": "Deni Avdija rebounds vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 12
+    },
+    {
+      "key": "avdija_ast",
+      "label": "Deni Avdija assists vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 7
+    },
+    {
+      "key": "lillard_pts",
+      "label": "Damian Lillard points vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 29
+    },
+    {
+      "key": "avdija_rank_pts",
+      "label": "Rank of Avdija's 33 points among his scoring nights this season (2nd, after 34)",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/4683021/gamelog?season=2027",
+      "value": 2
+    },
+    {
+      "key": "avdija_season_high_pts",
+      "label": "Deni Avdija season-high points, 34 on Nov 13",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/4683021/gamelog?season=2027",
+      "value": 34
+    },
+    {
+      "key": "avdija_high_day",
+      "label": "Day of Avdija's 34-point game, Nov 13",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/4683021/gamelog?season=2027",
+      "value": 13
+    },
+    {
+      "key": "avdija_season_high_reb",
+      "label": "Deni Avdija season-high rebounds, 12",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/4683021/gamelog?season=2027",
+      "value": 12
+    },
+    {
+      "key": "por_3pm",
+      "label": "Portland 3-pointers made vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 19
+    },
+    {
+      "key": "por_3pa",
+      "label": "Portland 3-pointers attempted vs San Antonio",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 50
+    },
+    {
+      "key": "wemby_pts",
+      "label": "Victor Wembanyama points at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 44
+    },
+    {
+      "key": "wemby_reb",
+      "label": "Victor Wembanyama rebounds at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 16
+    },
+    {
+      "key": "wemby_rank_pts",
+      "label": "Rank of Wembanyama's 44 points among his scoring nights this season (3rd, after 52 and 50)",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/5104157/gamelog?season=2027",
+      "value": 3
+    },
+    {
+      "key": "wemby_top_pts",
+      "label": "Victor Wembanyama season-high points, 52 on Nov 4",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/5104157/gamelog?season=2027",
+      "value": 52
+    },
+    {
+      "key": "wemby_top_day",
+      "label": "Day of Wembanyama's 52-point game, Nov 4",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/5104157/gamelog?season=2027",
+      "value": 4
+    },
+    {
+      "key": "wemby_second_pts",
+      "label": "Victor Wembanyama second-highest points this season, 50 on Nov 21",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/5104157/gamelog?season=2027",
+      "value": 50
+    },
+    {
+      "key": "wemby_second_day",
+      "label": "Day of Wembanyama's 50-point game, Nov 21",
+      "source": "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/5104157/gamelog?season=2027",
+      "value": 21
+    },
+    {
+      "key": "sa_3pm",
+      "label": "San Antonio 3-pointers made at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 10
+    },
+    {
+      "key": "sa_3pa",
+      "label": "San Antonio 3-pointers attempted at Portland",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401909325",
+      "value": 36
+    },
+    {
+      "key": "por_margin_min1",
+      "label": "Portland margin vs Minnesota, Nov 17 (98-106)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": -8
+    },
+    {
+      "key": "por_margin_min2",
+      "label": "Portland margin vs Minnesota, Nov 18 (105-106)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": -1
+    },
+    {
+      "key": "por_margin_mil",
+      "label": "Portland margin vs Milwaukee, Nov 20 (124-114)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 10
+    },
+    {
+      "key": "por_margin_ny",
+      "label": "Portland margin vs New York, Nov 21 (96-97)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": -1
+    },
+    {
+      "key": "por_margin_phi",
+      "label": "Portland margin vs Philadelphia, Nov 23 (128-111)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 17
+    },
+    {
+      "key": "por_margin_sa",
+      "label": "Portland margin vs San Antonio, Nov 25 (116-111)",
+      "source": "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/22/schedule?season=2027",
+      "value": 5
+    }
+  ]
+}
