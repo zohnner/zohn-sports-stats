@@ -51,10 +51,12 @@ export async function readAllStories(env, url) {
     return lists.flat().sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
-// A story's `teams` frontmatter lists every team it names, as abbreviations.
+// A story's `teams` frontmatter lists every team it names, as abbreviations;
+// the first is its subject. A team page lists only stories about that team,
+// never ones naming it as an opponent. Same rule as storiesAboutTeam (js/news.js).
 export function storiesForTeam(stories, abbr) {
     const code = String(abbr || '').toUpperCase();
-    return code ? stories.filter(s => (s.teams || []).some(t => String(t).toUpperCase() === code)) : [];
+    return code ? stories.filter(s => (s.teams || []).length && String(s.teams[0]).toUpperCase() === code) : [];
 }
 
 // Same sport, stories sharing a team first, then newest; never the story itself.

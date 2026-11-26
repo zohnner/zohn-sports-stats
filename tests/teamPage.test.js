@@ -155,6 +155,26 @@ test('build + html: standings-sourced metrics are ranked; every metric shows a r
     assert.ok(html.includes('#1'));
 });
 
+test('signed metrics carry win/loss color by sign; unsigned and zero stay neutral', () => {
+    const T = load();
+    T.register({ ...REG, sport: 'sign', stateStats: [
+        { key: 'up', label: 'Up', better: 'high', signed: true },
+        { key: 'dn', label: 'Dn', better: 'high', signed: true },
+        { key: 'lo', label: 'Lo', better: 'low', signed: true },
+        { key: 'zero', label: 'Zero', better: 'high', signed: true },
+        { key: 'plain', label: 'Plain', better: 'high' },
+    ] });
+    const vals = v => ({ AAA: v, BBB: 1, CCC: 2, DDD: 3 });
+    const html = T.html(T.build('sign', { team: { abbr: 'AAA', name: 'Alpha' }, teams: TEAMS, games: GAMES, schedule: [],
+        metrics: { up: vals(5), dn: vals(-5), lo: vals(-5), zero: vals(0), plain: vals(-5) } }));
+    const cls = label => html.split(`>${label}<`)[1].match(/class="tp-metric__val([^"]*)"/)[1].trim();
+    assert.equal(cls('Up'), 'tp-metric__val--pos');
+    assert.equal(cls('Dn'), 'tp-metric__val--neg');
+    assert.equal(cls('Lo'), 'tp-metric__val--pos', 'negative is good when lower is better');
+    assert.equal(cls('Zero'), '');
+    assert.equal(cls('Plain'), '');
+});
+
 test('standings table: no cut line between two teams with the same record', () => {
     const T = load();
     T.register({ ...REG, sport: 'cut', standingsCut: { after: 1, label: 'Title' } });

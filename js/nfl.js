@@ -2337,16 +2337,14 @@ function _renderTeamPage(m) {
     return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}${storiesHost}`;
 }
 
-// SportStrata Stories that name this team in their frontmatter (D-166).
-// Shared by every _renderTeamPage caller that sets storiesSport (NFL, NCAAF).
-// `norm` maps a frontmatter team code to the page's key, for sports whose
-// stories spell one team more than one way (NBA: SAS and SA).
+// SportStrata Stories whose subject is this team (D-166; storiesAboutTeam in
+// js/news.js). Shared by the NFL, NCAAF and NBA team pages. `norm` maps a
+// frontmatter team code to the page's key, for sports whose stories spell
+// one team more than one way (NBA: SAS and SA).
 async function _loadTeamStories(sport, abbr, norm) {
     const host = document.getElementById('nflTeamStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
-    const code = String(abbr || '').toUpperCase();
-    const key = norm || (t => String(t).toUpperCase());
-    const stories = (await fetchStoriesIndex(sport)).filter(s => (s.teams || []).some(t => key(t) === code)).slice(0, 3);
+    const stories = storiesAboutTeam(await fetchStoriesIndex(sport), abbr, norm).slice(0, 3);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
     host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', sport);
