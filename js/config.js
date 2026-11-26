@@ -460,38 +460,87 @@ function _espnDirectUrl(proxyUrl) {
     return `${_ESPN_DIRECT}/site/v2/sports/${lg}${path}${qs ? '?' + qs : ''}`;
 }
 
-async function _espnFetch(proxyUrl, init) {
+// While ESPN blocks Cloudflare egress (D-176) every proxy call fails and the
+// browser falls back, so a page paid one dead round trip per ESPN request.
+// A proxy that failed is skipped for _ESPN_PROXY_SKIP_MS, per endpoint, and
+// only when a browser fallback exists. Calls that start while an endpoint's
+// first proxy request is still out wait for its answer instead of each paying
+// the same dead round trip (home fires 18 NFL weeks at once). The breaker is
+// off without sessionStorage: the contract monitor runs this function in a vm
+// without it, so it keeps probing the proxy on every call and still reports
+// proxyBlocked.
+const _ESPN_PROXY_SKIP_MS = 10 * 60 * 1000;
+const _espnProxyProbes = new Map();
+function _espnProxyKey(proxyUrl) {
+    const m = new URL(proxyUrl, location.origin).pathname.match(/^\/api\/([a-z]+)$/);
+    return m ? `ss_proxy_down:${m[1]}` : null;
+}
+function _espnProxySkipped(key) {
+    if (!key || typeof sessionStorage === 'undefined') return false;
+    try { return Date.now() - Number(sessionStorage.getItem(key) || 0) < _ESPN_PROXY_SKIP_MS; } catch { return false; }
+}
+function _espnMarkProxyDown(key) {
+    if (!key || typeof sessionStorage === 'undefined') return;
+    try { sessionStorage.setItem(key, String(Date.now())); } catch { /* storage off: no breaker */ }
+}
+
+// { res, up }: up is false when the caller should fall back to ESPN.
+async function _espnProxyAttempt(proxyUrl, init, url, nm) {
     let res = null;
     try { res = await fetch(proxyUrl, init); } catch (err) { if (init?.signal?.aborted) throw err; }
+    if (res && res.ok) {
+        if (!nm && !/standings|athlete/.test(url)) return { res, up: true };
+        const body = await res.clone().json().catch(() => null);
+        if (nm ? body && !/fetch failed/.test(body.reason || '') : body && body.ok !== false && body.found !== false) return { res, up: true };
+    }
+    return { res, up: false };
+}
+
+async function _espnFetch(proxyUrl, init) {
+    const url = String(proxyUrl);
     // NFL player proxies answer 200 {found:false} both for a real miss ("not on
     // roster", "no stats") and for an ESPN failure ("... fetch failed"); only the
     // failure is worth retrying from the browser.
-    const nm = String(proxyUrl).match(/\/api\/(nflplayer|nflathlete|nflcareer|nflgamelog|ncaafgamelog)\?/);
-    if (res && res.ok) {
-        if (!nm && !/standings|athlete/.test(String(proxyUrl))) return res;
-        const body = await res.clone().json().catch(() => null);
-        if (nm ? body && !/fetch failed/.test(body.reason || '') : body && body.ok !== false && body.found !== false) return res;
+    const nm = url.match(/\/api\/(nflplayer|nflathlete|nflcareer|nflgamelog|ncaafgamelog)\?/);
+    const am = url.match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
+    const lm = url.match(/\/api\/(nfl|ncaaf|ncaab|wnba|nba)stats/);
+    const tm = /\/api\/nfl\?(.*&)?path=(%2F|\/)teams(&|$)/.test(url);
+    const direct = _espnDirectUrl(url);
+    const key = _espnProxyKey(url);
+    const breaker = !!(key && (nm || am || lm || tm || direct) && typeof sessionStorage !== 'undefined');
+    let skip = breaker && _espnProxySkipped(key);
+    if (breaker && !skip && _espnProxyProbes.has(key)) skip = !(await _espnProxyProbes.get(key));
+    let res = null;
+    if (!skip) {
+        const attempt = _espnProxyAttempt(proxyUrl, init, url, nm);
+        if (breaker && !_espnProxyProbes.has(key)) {
+            // An aborted probe says nothing about the proxy: waiters try it themselves.
+            const probe = attempt.then(a => a.up, () => true);
+            _espnProxyProbes.set(key, probe);
+            probe.then(() => _espnProxyProbes.delete(key));
+        }
+        const a = await attempt;
+        if (a.up) return a.res;
+        res = a.res;
+        if (breaker) _espnMarkProxyDown(key);
     }
     if (nm) {
         Logger.warn('ESPN player proxy failed, fetching ESPN direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnNFLPlayerResponse(nm[1], new URL(proxyUrl, location.origin).searchParams, init);
     }
-    const am =String(proxyUrl).match(/\/api\/(ncaaf|wnba|nba)athlete\?/);
     if (am) {
         const q = new URL(proxyUrl, location.origin).searchParams;
         Logger.warn('ESPN athlete proxy failed, fetching core API direct', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnAthleteResponse(am[1], q.get('id'), q.get('season'), init);
     }
-    const lm = String(proxyUrl).match(/\/api\/(nfl|ncaaf|ncaab|wnba|nba)stats/);
     if (lm) {
         Logger.warn('ESPN leaders proxy failed, building from site/v3', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnLeadersResponse(lm[1], new URL(proxyUrl, location.origin).searchParams.get('season'), init);
     }
-    if (/\/api\/nfl\?(.*&)?path=(%2F|\/)teams(&|$)/.test(String(proxyUrl))) {
+    if (tm) {
         Logger.warn('ESPN teams proxy failed, building from core API', { proxy: String(proxyUrl), status: res?.status }, 'API');
         return _espnNFLTeamsResponse(init);
     }
-    const direct = _espnDirectUrl(String(proxyUrl));
     if (!direct) {
         if (res) return res;
         throw new Error(`ESPN proxy unreachable: ${proxyUrl}`);
