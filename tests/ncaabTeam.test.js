@@ -97,7 +97,7 @@ test('find standing: by id, or by abbreviation for the follow rail', () => {
 });
 
 test('render: team page links games to the NCAAB game view and leaves players unlinked', () => {
-    const { ctx: c, els } = load(['ncaab.js', 'nba.js', 'nfl.js'], { renderFollowStar: (s, t, a) => `<star ${s}:${t}:${a}>` });
+    const { ctx: c, els } = load(['teamPage.js', 'ncaab.js', 'nba.js', 'nfl.js'], { renderFollowStar: (s, t, a) => `<star ${s}:${t}:${a}>` });
     const std = { row: c._ncaabStandingRow(FX.standing.entry), conference: FX.standing.conference };
     c.displayNCAABTeamDetail(FX.roster.team, FX.roster, FX.schedule, std, { rank: 6, poll: 'AP Top 25' });
     const html = els.playersGrid.innerHTML;
@@ -117,7 +117,7 @@ test('render: team page links games to the NCAAB game view and leaves players un
 });
 
 test('render: no standings still shows identity, roster and game log', () => {
-    const { ctx: c, els } = load(['ncaab.js', 'nba.js', 'nfl.js']);
+    const { ctx: c, els } = load(['teamPage.js', 'ncaab.js', 'nba.js', 'nfl.js']);
     c.displayNCAABTeamDetail(FX.roster.team, FX.roster, FX.schedule, null, null);
     const html = els.playersGrid.innerHTML;
     assert.match(html, /Michigan State Spartans/);

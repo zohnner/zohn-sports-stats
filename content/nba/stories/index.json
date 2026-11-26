@@ -1,6 +1,62 @@
 {
   "stories": [
     {
+      "slug": "2026-11-26-blazers-beat-29-6-teams-in-consecutive-games",
+      "title": "Portland beat a 14-3 team and a 15-3 team in consecutive games",
+      "dek": "The Blazers beat San Antonio 116-111 2 nights after beating Philadelphia 128-111, ending the Spurs' 8-0 road record.",
+      "date": "2026-11-26",
+      "season": 2027,
+      "teams": [
+        "POR",
+        "SA",
+        "PHI"
+      ],
+      "players": [
+        "4683021",
+        "6606",
+        "5104157"
+      ],
+      "hero_stat": "Wins over teams a combined 29-6; San Antonio's first road loss after 8-0",
+      "url": "/nba/stories/2026-11-26-blazers-beat-29-6-teams-in-consecutive-games",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-26-lebron-first-triple-double-76ers",
+      "title": "LeBron James recorded his first triple-double of the season in a 76ers win",
+      "dek": "James had 25 points, 10 rebounds and 12 assists as Philadelphia beat Miami 111-104 to reach 15-4.",
+      "date": "2026-11-26",
+      "season": 2027,
+      "teams": [
+        "PHI",
+        "MIA"
+      ],
+      "players": [
+        "1966",
+        "4431678"
+      ],
+      "hero_stat": "25 points, 10 rebounds, 12 assists; first triple-double in 15 games this season",
+      "url": "/nba/stories/2026-11-26-lebron-first-triple-double-76ers",
+      "sport": "nba"
+    },
+    {
+      "slug": "2026-11-26-thunder-lose-third-straight-first-since-2024",
+      "title": "Oklahoma City lost 3 straight for the first time since April 2024",
+      "dek": "Minnesota beat the Thunder 113-106, and Jaden McDaniels scored 32 2 nights after his career-high 34.",
+      "date": "2026-11-26",
+      "season": 2027,
+      "teams": [
+        "OKC",
+        "MIN"
+      ],
+      "players": [
+        "4431671",
+        "4278073"
+      ],
+      "hero_stat": "3 straight losses, first since April 2024; none in 165 games across the last 2 seasons",
+      "url": "/nba/stories/2026-11-26-thunder-lose-third-straight-first-since-2024",
+      "sport": "nba"
+    },
+    {
       "slug": "2026-11-25-pistons-hold-magic-86-fewest-allowed",
       "title": "Detroit held Orlando to 86 points, the fewest Detroit has allowed all season",
       "dek": "Detroit won 104-86 at Orlando without Cade Cunningham, and the Pistons are 2-0 in games he has missed.",

@@ -106,7 +106,10 @@ function _nflOffseasonState(surface) {
 
 // `fresh` skips the cache READ but still writes the result back, so a live
 // poll gets current data and every other caller benefits from it.
-async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fresh = false } = {}) {
+// persist:false skips the localStorage write: the season loops below fetch 18
+// weekly scoreboards, which filled storage on a first home visit and raised the
+// "Caching off" toast (same fix as espnNCAAFFetch, #169).
+async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fresh = false, persist = true } = {}) {
     // Route through our same-origin Pages Function proxy (functions/api/nfl.js):
     // a server-side fetch fixes ESPN's browser CORS on /teams and /leaders.
     const url = new URL('/api/nfl', location.origin);
@@ -130,7 +133,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
 
     let json;
     try { json = await res.json(); } catch { throw new Error(`NFL API returned non-JSON (${path})`); }
-    ApiCache.set(cacheKey, json, ttl);
+    if (persist) ApiCache.set(cacheKey, json, ttl);
     noteFetched(`nfl${path}`, Date.now());
     return json;
 }
@@ -188,7 +191,7 @@ async function fetchNFLScoreboard(opts = {}) {
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
-    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
+    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh, persist: opts.persist !== false });
     // Only trust this response for _nflRealSeasonType when it's genuinely
     // "whatever ESPN considers current right now" -- an explicit historical
     // week/seasontype browse (opts.seasontype/opts.week set) describes
@@ -329,7 +332,7 @@ async function fetchNFLSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
-            fetchNFLScoreboard({ seasontype: 2, week }).catch(() => [])
+            fetchNFLScoreboard({ seasontype: 2, week, persist: false }).catch(() => [])
         )
     );
 
@@ -362,7 +365,7 @@ async function fetchNFLPriorSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
-            fetchNFLScoreboard({ seasontype: 2, week, season: priorSeason }).catch(() => [])
+            fetchNFLScoreboard({ seasontype: 2, week, season: priorSeason, persist: false }).catch(() => [])
         )
     );
 
@@ -2189,6 +2192,8 @@ async function fetchNFLTeamSchedule(abbr) {
             date:      ev.date,
             isHome,
             completed: !!comp.status?.type?.completed,
+            live:      comp.status?.type?.state === 'in',
+            venue:     comp.venue?.fullName || '',
             oppAbbr:   opp?.team?.abbreviation || '?',
             oppLogo:   opp?.team?.logos?.[0]?.href || getNFLTeamLogoUrl(opp?.team?.abbreviation),
             myScore:   me?.score?.value  ?? null,
@@ -2197,121 +2202,36 @@ async function fetchNFLTeamSchedule(abbr) {
     }).filter(Boolean);
 }
 
-// Recent Games card — mirrors MLB's _mlbRecentGamesCard exactly (same
-// .stats-card/.roster-list/.roster-row classes, same W/L color + score
-// treatment). Rows navigate through to the same nfl-game-{id} route the
-// Scores grid's cards already use (_createNFLGameCard), so this is the same
-// game-detail page (win probability, leaders, scoring plays) — no new page.
-function _nflRecentGamesCard(games) {
-    if (!games || !games.length) {
-        return `
-        <div class="stats-card" style="grid-column:1/-1">
-            <h2 class="detail-section-title">Recent Games</h2>
-            <p style="color:var(--color-text-muted);text-align:center;padding:2rem">No recent games found.</p>
-        </div>`;
-    }
-    const rows = games.map(g => {
-        const hasScore = g.myScore != null && g.oppScore != null;
-        const isWin    = hasScore && g.myScore > g.oppScore;
-        const isLoss   = hasScore && g.myScore < g.oppScore;
-        const outcome  = hasScore ? (isWin ? 'W' : isLoss ? 'L' : 'T') : '—';
-        const outClr   = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-muted)';
-        const scoreStr = hasScore ? `${g.myScore}–${g.oppScore}` : '—';
-        const scoreClr = isWin ? '#10b981' : isLoss ? '#f87171' : 'var(--color-text-secondary)';
-        const ha = g.isHome ? 'vs' : '@';
-        let dateStr = '—';
-        if (g.date) { try { dateStr = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {} }
-        return `
-            <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
-                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                    <span style="font-weight:900;font-size:var(--text-sm);min-width:26px;color:${outClr}">${outcome}</span>
-                    <span style="color:var(--color-text-muted);font-size:var(--text-xs);min-width:54px">${dateStr}</span>
-                    <span style="color:var(--color-text-muted);font-size:var(--text-xs)">${ha}</span>
-                    ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:18px;height:18px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_escHtml(g.oppAbbr)}</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
-                    <span style="font-weight:700;font-size:var(--text-base);color:${scoreClr}">${scoreStr}</span>
-                    <span style="font-size:var(--text-2xs);color:#334155">›</span>
-                </div>
-            </div>`;
-    }).join('');
-    return `
-        <div class="stats-card" style="grid-column:1/-1">
-            <h2 class="detail-section-title">Recent Games</h2>
-            <div class="roster-list">${rows}</div>
-        </div>`;
-}
-
-// Upcoming card — mirrors MLB's _mlbTeamUpcomingCard. Live games (completed:
-// false, in-progress) fall in here alongside scheduled ones, same as MLB's
-// _fetchMLBTeamUpcoming (`status.abstractGameState !== 'Final'`) — one
-// consistent convention, not a per-sport special case.
-function _nflUpcomingCard(games) {
-    if (!games || !games.length) return '';
-    const rows = games.map(g => {
-        const ha = g.isHome ? 'vs' : '@';
-        let dateStr = '—', timeStr = '';
-        if (g.date) {
-            try {
-                const d = new Date(g.date);
-                dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-            } catch (_) {}
-        }
-        return `
-            <div class="roster-row roster-row--clickable roster-row--split" onclick="navigateTo('nfl-game-${g.id}')">
-                <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
-                    <span style="color:var(--text-muted);font-size:var(--text-xs);min-width:42px">${ha}</span>
-                    ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}
-                    <span style="font-weight:600;font-size:var(--text-sm)">${_escHtml(g.oppAbbr)}</span>
-                </div>
-                <div style="text-align:right;flex-shrink:0">
-                    <div style="font-size:var(--text-xs);color:var(--text-secondary);font-weight:600">${dateStr}</div>
-                    <div style="font-size:var(--text-xs);color:var(--text-muted)">${timeStr}</div>
-                </div>
-            </div>`;
-    }).join('');
-    return `
-        <div class="stats-card" style="grid-column:1/-1">
-            <h2 class="detail-section-title">Upcoming</h2>
-            <div class="roster-list">${rows}</div>
-        </div>`;
-}
-
 async function showNFLTeamDetail(abbr) {
     const grid = document.getElementById('playersGrid');
     grid.className = '';
     grid.style.cssText = '';
     grid.innerHTML = `<div class="skeleton-card" style="min-height:360px"></div>`;
     if (window.setBreadcrumb) setBreadcrumb('nfl-teams', null);
-    let stdRow = null;
     try {
         if (!AppState.nflTeams.length) AppState.nflTeams = await fetchNFLTeams();
-        await fetchNFLSleeperPool();
-        if (!AppState.nflGames || !AppState.nflGames.length) { try { AppState.nflGames = await fetchNFLScoreboard(); } catch (err) { Logger.warn('Scoreboard fetch failed in team detail', err, 'NFL'); } }
-        // Team Record card (mirrors MLB's Team Batting/Pitching card) — reuses
-        // the same memoized fetch + fetchNFLStandings() the Standings view
-        // already calls (js/nflStandings.js), no new data source. NFL_STATS_SEASON
-        // and _nstd/fetchNFLStandings load after this file in the script chain but
-        // are resolved at call time here, not at parse time, so that's safe.
-        if (typeof fetchNFLStandings === 'function') {
-            try {
-                const season = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : new Date().getFullYear();
-                if (!_nstd.bySeason[season]) _nstd.bySeason[season] = await fetchNFLStandings(season);
-                stdRow = (_nstd.bySeason[season] || []).find(r => r.abbr === abbr) || null;
-            } catch (err) { Logger.warn('NFL standings fetch failed (team detail)', err, 'NFL'); }
-        }
     } catch (err) {
         ErrorHandler.handle(grid, err, () => showNFLTeamDetail(abbr), { tag: 'NFL', title: 'Failed to Load Team' });
         return;
     }
-    let schedule = [];
-    try {
-        if (typeof fetchNFLTeamSchedule === 'function') schedule = await fetchNFLTeamSchedule(abbr);
-    } catch (err) { Logger.warn('NFL team schedule fetch failed (team detail)', err, 'NFL'); }
-    _renderNFLTeamDetail(abbr, stdRow, schedule);
+    // Every source below is optional: a failed one drops its module, never the page.
+    const soft = (p, what) => p.catch(err => { Logger.warn(`${what} failed (team page)`, err, 'NFL'); return null; });
+    const season = NFL_STATS_SEASON;
+    const view = AppState.currentView;
+    const [, schedule, games, teamStats, ...lists] = await Promise.all([
+        soft(fetchNFLSleeperPool(), 'Sleeper pool'),
+        soft(fetchNFLTeamSchedule(abbr), 'Team schedule'),
+        soft(fetchNFLSeasonGames(), 'League games'),
+        soft(_nflTeamStatsLeague(season), 'Team stats'),
+        ..._NFL_TEAM_LEADER_CATS.map(c => soft(_nstFetch(NFLStatsTable.category(c), season, false), `${c} leaders`)),
+    ]);
+    if (AppState.currentView !== view) return;
+    const byCat = {};
+    _NFL_TEAM_LEADER_CATS.forEach((c, i) => { byCat[c] = lists[i]; });
+    _renderNFLTeamDetail(abbr, { schedule: schedule || [], games: games || [], teamStats, lists: byCat });
 }
+
+const _NFL_TEAM_LEADER_CATS = ['passing', 'rushing', 'receiving'];
 
 // Conference/division is stable NFL data, not in the ESPN team payload and empty
 // in the offseason standings — a small static map keeps the team hero populated year-round.
@@ -2420,48 +2340,116 @@ function _renderTeamPage(m) {
     return `${header}${recordCard}${m.scheduleHtmlTop || ''}${assetsCard}${rosterCard}${m.scheduleHtml || ''}${storiesHost}`;
 }
 
-// SportStrata Stories that name this team in their frontmatter (D-166).
-// Shared by every _renderTeamPage caller that sets storiesSport (NFL, NCAAF).
-// `norm` maps a frontmatter team code to the page's key, for sports whose
-// stories spell one team more than one way (NBA: SAS and SA).
+// SportStrata Stories whose subject is this team (D-166; storiesAboutTeam in
+// js/news.js). Shared by the NFL, NCAAF and NBA team pages. `norm` maps a
+// frontmatter team code to the page's key, for sports whose stories spell
+// one team more than one way (NBA: SAS and SA).
 async function _loadTeamStories(sport, abbr, norm) {
     const host = document.getElementById('nflTeamStories');
     if (!host || typeof fetchStoriesIndex !== 'function') return;
-    const code = String(abbr || '').toUpperCase();
-    const key = norm || (t => String(t).toUpperCase());
-    const stories = (await fetchStoriesIndex(sport)).filter(s => (s.teams || []).some(t => key(t) === code)).slice(0, 3);
+    const stories = storiesAboutTeam(await fetchStoriesIndex(sport), abbr, norm).slice(0, 3);
     if (!host.isConnected) return;
     if (!stories.length) { host.remove(); return; }
     host.innerHTML = storiesBlockHtml(stories, 'SportStrata Stories', sport);
 }
 
-function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
+// The NFL registration for the shared team-page shell (js/teamPage.js). All
+// NFL specifics live here and in the adapter below, never in the shell.
+TeamPage.register({
+    sport: 'nfl',
+    leaders: [
+        { key: 'passing',   label: 'Passing',   stat: 'passing.passingYards',     unit: 'YDS' },
+        { key: 'rushing',   label: 'Rushing',   stat: 'rushing.rushingYards',     unit: 'YDS' },
+        { key: 'receiving', label: 'Receiving', stat: 'receiving.receivingYards', unit: 'YDS' },
+    ],
+    stateStats: [
+        { key: 'ppg',    label: 'PTS / G',         better: 'high', d: 1, source: 'pf/g' },
+        { key: 'papg',   label: 'PTS ALLOWED / G', better: 'low',  d: 1, source: 'pa/g' },
+        { key: 'diff',   label: 'POINT DIFF',      better: 'high', signed: true, source: 'diff' },
+        { key: 'toDiff', label: 'TURNOVER DIFF',   better: 'high', signed: true },
+        { key: 'ypg',    label: 'YDS / G',         better: 'high', d: 1 },
+        { key: 'yapg',   label: 'YDS ALLOWED / G', better: 'low',  d: 1 },
+    ],
+    edges: [
+        { off: 'ppg', def: 'papg', offLabel: 'scoring offense', defLabel: 'scoring defense' },
+        { off: 'ypg', def: 'yapg', offLabel: 'total offense',   defLabel: 'total defense' },
+    ],
+    rosterGroups: [{ key: 'off', label: 'Offense' }, { key: 'def', label: 'Defense' }, { key: 'st', label: 'Special Teams' }],
+    standingsScope: 'group',
+    standingsCut: { after: 1, label: 'Division title' },
+    conferenceCut: 7,
+    formWindow: 5,
+    backView: 'nfl-teams', backLabel: 'Teams',
+    gameRoute: id => `nfl-game-${id}`,
+    teamRoute: abbr => `nfl-team-${abbr}`,
+    playerRoute: id => `nfl-player-${id}`,
+    injuryClass: s => _nflInjurySeverityClass(s),
+    rosterTitle: 'Depth Chart',
+    rosterCaption: 'Grouped by position, ordered by depth chart. Star = projected starter.',
+    rosterEmpty: 'Roster data unavailable for this team right now.',
+    stateReceipt: 'Points from every final regular-season game; yards and turnovers from ESPN team stats. Ranks among all 32 teams, ties share a rank',
+    leadersReceipt: 'Season yards. Rank is among every player with a stat in that category (ESPN).',
+});
+
+// League-wide team stats in one call: ESPN's byteam table, open CORS like
+// byathlete, so the Cloudflare block (D-176) never touches it. Each team has
+// an own split and an opponent split (splitId 900).
+const _NFL_BYTEAM = 'https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/statistics/byteam';
+
+function _nflParseTeamStats(json) {
+    const names = {};
+    ((json && json.categories) || []).forEach(c => { names[c.name] = c.names || []; });
+    const out = { toDiff: {}, ypg: {}, yapg: {} };
+    ((json && json.teams) || []).forEach(t => {
+        const abbr = t.team && t.team.abbreviation;
+        if (!abbr) return;
+        const val = (cat, field, opp) => {
+            const c = (t.categories || []).find(x => x.name === cat && (String(x.splitId) === '900') === opp);
+            const i = (names[cat] || []).indexOf(field);
+            const v = c && i >= 0 ? Number(c.values[i]) : NaN;
+            return Number.isFinite(v) ? v : null;
+        };
+        if (!val('general', 'gamesPlayed', false)) return;
+        const set = (k, v) => { if (v != null) out[k][abbr] = v; };
+        set('toDiff', val('miscellaneous', 'turnOverDifferential', false));
+        set('ypg', val('passing', 'netYardsPerGame', false));
+        set('yapg', val('passing', 'netYardsPerGame', true));
+    });
+    return out;
+}
+
+async function _nflTeamStatsLeague(season) {
+    const key = `nfl:byteam:${season}`;
+    const hit = ApiCache.get(key);
+    if (hit) return hit;
+    const res = await fetch(`${_NFL_BYTEAM}?region=us&lang=en&contentorigin=espn&seasontype=2&season=${season}`);
+    if (!res.ok) throw new Error(`NFL team stats ${res.status}`);
+    const parsed = _nflParseTeamStats(await res.json());
+    if (!Object.keys(parsed.ypg).length) throw new Error('NFL team stats: no teams');
+    parsed.fetchedAt = Date.now();
+    const live = season === NFL_STATS_SEASON && !_nflIsOffseason();
+    ApiCache.set(key, parsed, live ? ApiCache.TTL.SHORT : ApiCache.TTL.DAILY);
+    return parsed;
+}
+
+function _renderNFLTeamDetail(abbr, d) {
     const grid = document.getElementById('playersGrid');
     grid.className = 'player-detail-container';
     grid.style.cssText = '';
 
     const team = (AppState.nflTeams || []).find(t => t.abbr === abbr)
-        || { abbr, name: abbr, logo: getNFLTeamLogoUrl(abbr), color: '#334155', record: '' };
+        || { abbr, name: abbr, logo: getNFLTeamLogoUrl(abbr), color: '#334155' };
     if (window.setBreadcrumb) setBreadcrumb('nfl-teams', team.name || abbr);
     const sAbbr  = _nflSleeperAbbr(abbr);
-    // `p.active` is Sleeper's "still rostered somewhere in the league" flag, not
-    // "on this team's active/53-man roster" — it stays true for players on IR.
-    // Live-verified 2026-08-31 (Week 1 roster-cut audit): Sleeper's own `status`
-    // field is a clean binary league-wide (`Active`/`Inactive`, no other values),
-    // and every current `status:'Inactive'` player carries `injury_status:'IR'`.
-    // Without this check, IR players were counted in the Offense/Defense/Special
-    // Teams tallies and mixed into position groups as if roster-eligible, on
-    // every team's page. They're not dropped from the site — the Injury Report
-    // (displayNFLInjuries) is the dedicated place IR players surface, deliberately
-    // unfiltered there since that page's whole point is showing who's out.
+    // `p.active` is Sleeper's "still rostered somewhere in the league" flag and
+    // stays true for players on IR; `status: 'Inactive'` is the IR marker
+    // (live-verified 2026-08-31). IR players surface on the Injury Report.
     const roster = Object.values(_nflPoolMap || {})
         .filter(p => p && p.active && p.status !== 'Inactive' && p.team === sAbbr && p.position && p.position !== 'DEF');
-
     const sortFn = (a, b) =>
         (a.depth_chart_order || 99) - (b.depth_chart_order || 99) ||
         (a.search_rank || 1e9) - (b.search_rank || 1e9) ||
         (a.full_name || '').localeCompare(b.full_name || '');
-
     const groups = _NFL_ROSTER_GROUPS.map(([label, positions, side]) => ({
         label, side,
         players: roster.filter(p => positions.includes(p.position)).sort(sortFn).map(p => ({
@@ -2470,84 +2458,36 @@ function _renderNFLTeamDetail(abbr, stdRow, schedule = []) {
             headshot: getNFLSleeperHeadshot(p.player_id),
         })),
     }));
-    // Sum by side-of-ball rather than fixed indices — N-16 widened this from 3
-    // groups to 9, so groups[0]/[1]/[2] no longer mean Offense/Defense/ST.
-    const _sideCount = s => groups.filter(g => g.side === s).reduce((n, g) => n + g.players.length, 0);
 
-    const assets = roster
-        .filter(p => p.search_rank && p.search_rank < 9999)
-        .sort((a, b) => a.search_rank - b.search_rank)
-        .slice(0, 6)
-        .map(p => ({
-            id: p.player_id, name: p.full_name, pos: p.position, number: p.number,
-            adp: p._adp, injury: p.injury_status,
-            posColor: _NFL_POS_COLOR[p.position] || 'var(--accent)',
-            headshot: getNFLSleeperHeadshot(p.player_id),
-        }));
+    const teams = Object.keys(_NFL_DIVISIONS).map(a => {
+        const t = (AppState.nflTeams || []).find(x => x.abbr === a) || {};
+        return { abbr: a, name: t.name || a, logo: t.logo || getNFLTeamLogoUrl(a), group: _NFL_DIVISIONS[a], conf: _NFL_DIVISIONS[a].split(' ')[0] };
+    });
+    const cfg = TeamPage.config('nfl');
+    const players = {};
+    cfg.leaders.forEach(l => {
+        const list = d.lists[l.key];
+        if (list) players[l.key] = list.rows.map(r => ({ id: r.id, name: r.name, team: r.team, headshot: r.headshot, value: r.v[l.stat] }));
+    });
+    const stamps = [d.teamStats && d.teamStats.fetchedAt, ...Object.values(d.lists).map(x => x && x.fetchedAt)].filter(Boolean);
+    const ts = d.teamStats || {};
 
-    const division = _NFL_DIVISIONS[abbr] || '';
-    // Recent Games / Upcoming (parity with MLB's showMLBTeamDetail): split the
-    // per-team schedule fetched in showNFLTeamDetail into played vs not-yet-played,
-    // same bucketing convention as MLB's recentGames (fetchMLBTeamSchedule, desc)
-    // and upcomingGames (_fetchMLBTeamUpcoming, asc). Falls back to the old
-    // "schedule posts once the season nears" placeholder when both are empty
-    // (true offseason, or the schedule fetch failed) rather than showing two
-    // empty cards.
-    const recentGames  = schedule.filter(g => g.completed).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 12);
-    const upcomingGames = schedule.filter(g => !g.completed).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 6);
-    const scheduleHtml = (recentGames.length || upcomingGames.length)
-        ? `${_nflUpcomingCard(upcomingGames)}${_nflRecentGamesCard(recentGames)}`
-        : `<section class="stats-card" style="grid-column:1/-1">
-            <h3 class="detail-section-title">Schedule</h3>
-            <div class="team-empty">Full schedule & results post once the ${NFL_FANTASY_SEASON} season nears.</div>
-        </section>`;
-
-    // Team Record card (mirrors MLB's Team Batting/Pitching card). stdRow is
-    // whatever season fetchNFLStandings() resolved to (NFL_STATS_SEASON — the
-    // most recently COMPLETED season Sep-Feb, else prior year), so in the
-    // offseason this is honestly last season's real record, not a fake current
-    // one — recordSeasonLabel makes that explicit rather than implying it's live.
-    // stdHasPlayed guards the same all-zero-preseason-row case confirmed live
-    // on the NCAAF standings feed (see ncaaf.js) — belt-and-suspenders here
-    // since NFL_STATS_SEASON should already point at a completed season.
-    const stdHasPlayed = stdRow && ((stdRow.wins || 0) > 0 || (stdRow.losses || 0) > 0 || (stdRow.pf || 0) > 0 || (stdRow.pa || 0) > 0);
-    const recordChips = stdHasPlayed ? [
-        ['Record', `${stdRow.wins}-${stdRow.losses}${stdRow.ties ? '-' + stdRow.ties : ''}`],
-        ['PCT',    stdRow.pct != null ? stdRow.pct.toFixed(3).replace(/^0\./, '.') : '—'],
-        ['PF',     stdRow.pf ?? '—'],
-        ['PA',     stdRow.pa ?? '—'],
-        ['Diff',   stdRow.diff != null ? (stdRow.diff > 0 ? `+${stdRow.diff}` : String(stdRow.diff)) : '—'],
-        ...(stdRow.streak ? [['Streak', stdRow.streak]] : []),
-        ...(stdRow.homeRec ? [['Home', stdRow.homeRec]] : []),
-        ...(stdRow.awayRec ? [['Away', stdRow.awayRec]] : []),
-    ] : [];
-    const recordSeason = (typeof NFL_STATS_SEASON !== 'undefined') ? NFL_STATS_SEASON : '';
-    // The team list never carries a record, so the header said "Enters the 2026
-    // season" over a 4-1 Team Record card. Mar-Aug, stdRow is last season's
-    // final record (NFL_STATS_SEASON lags NFL_FANTASY_SEASON), which the header
-    // would present as current, so it's used only once the two seasons agree.
-    const headerRecord = team.record || (stdHasPlayed && recordSeason === NFL_FANTASY_SEASON ? recordChips[0][1] : '');
-
-    grid.innerHTML = _renderTeamPage({
-        sport: 'nfl', abbr, name: team.name, logo: team.logo, teamColor: team.color,
-        division, record: headerRecord,
-        seasonLabel: headerRecord ? '' : `Enters the ${NFL_FANTASY_SEASON} season`,
-        facts: [
-            { label: 'Players',       value: roster.length },
-            { label: 'Offense',       value: _sideCount('off') },
-            { label: 'Defense',       value: _sideCount('def') },
-            { label: 'Special Teams', value: _sideCount('st') },
-            ...(division ? [{ label: 'Division', value: division }] : []),
-        ],
-        recordChips, recordSeasonLabel: recordChips.length ? `${recordSeason} Season` : '',
-        assets, groups,
-        rosterEmpty: 'Roster data unavailable for this team right now.',
-        scheduleHtmlTop: scheduleHtml + '<div id="nflStartHistory" style="grid-column:1/-1"></div>',
-        backView: 'nfl-teams', backLabel: 'Teams', playerPrefix: 'nfl-player-', storiesSport: 'nfl',
+    const model = TeamPage.build('nfl', {
+        team: { abbr, name: team.name, logo: team.logo, color: team.color },
+        teams, games: d.games, schedule: d.schedule,
+        metrics: { toDiff: ts.toDiff, ypg: ts.ypg, yapg: ts.yapg },
+        players, groups,
+        fetchedAt: stamps.length ? Math.min(...stamps) : 0,
+        seasonLabel: `Enters the ${NFL_FANTASY_SEASON} season`,
+    });
+    grid.innerHTML = TeamPage.html(model, {
+        afterState: '<div id="nflStartHistory" style="grid-column:1/-1"></div>',
+        end: '<div class="nfl-team-stories" id="nflTeamStories" style="grid-column:1/-1"></div>',
     });
     _loadTeamStories('nfl', abbr);
     _loadNFLStartHistory(abbr);
 }
+
 
 // How this start compares with every start since 1999 (D-201; derived stats
 // #83, #98, #99, #105). /api/nflstarts does the counting from nflverse's

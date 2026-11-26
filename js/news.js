@@ -179,6 +179,15 @@ function fetchStoriesIndex(sport = 'nfl') {
     return _storiesIndexPromises[sport];
 }
 
+// A story's `teams` lists every team it names; the first is its subject.
+// A team page lists only stories about that team, not ones that mention it
+// as an opponent or comparison (functions/_storyLinks.js storiesForTeam).
+// `key` maps a frontmatter code to the page's code (NBA: SAS and SA).
+function storiesAboutTeam(stories, abbr, key = t => String(t).toUpperCase()) {
+    const code = String(abbr || '').toUpperCase();
+    return code ? (stories || []).filter(s => (s.teams || []).length && key(s.teams[0]) === code) : [];
+}
+
 // Every sport's stories, newest first — the home rail's cross-sport feed.
 function fetchAllStories() {
     return Promise.all(STORY_SPORTS.map(sp => fetchStoriesIndex(sp)))
