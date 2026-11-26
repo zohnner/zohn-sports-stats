@@ -1,6 +1,22 @@
 {
   "stories": [
     {
+      "slug": "2026-11-26-corum-184-rams-fifth-straight-win",
+      "title": "Blake Corum ran for 184 yards as the Rams won a 5th straight, 26-13",
+      "dek": "Corum's 184 yards are the 2nd-most by any player in a game this season, and the Rams ran for a season-high 241 while Matthew Stafford threw for a season-low 140.",
+      "date": "2026-11-26",
+      "season": 2026,
+      "week": 12,
+      "teams": [
+        "LAR",
+        "GB"
+      ],
+      "players": [],
+      "hero_stat": "184 rushing yards, Corum's season high by 84; Rams' 241 rushing yards, a season high",
+      "url": "/nfl/stories/2026-11-26-corum-184-rams-fifth-straight-win",
+      "sport": "nfl"
+    },
+    {
       "slug": "2026-11-24-washington-held-bengals-31-rushing-yards",
       "title": "Washington held Cincinnati to 31 rushing yards, its fewest allowed all season",
       "dek": "The Bengals managed 6 yards on 6 carries from Chase Brown, and Joe Burrow was sacked 3 times.",
