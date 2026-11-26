@@ -37,12 +37,29 @@ class ApiCache {
         return this.#NS + raw;
     }
 
+    // A cold home load wrote ~7 MB of raw ESPN/statsapi payloads (single day
+    // scoreboards run 1.1-1.3 MB) into a ~5 MB store, so every first visit hit
+    // the quota and wiped the whole cache (2026-11-25, measured). An entry
+    // bigger than this stays in memory for the life of the page instead, as
+    // its JSON string so each read is a fresh copy, as from localStorage.
+    static #MEM = new Map();
+    static #MAX_PERSIST_CHARS = 256 * 1024;
+
+    static #memEntry(raw) {
+        const k = this.#key(raw);
+        const e = this.#MEM.get(k);
+        if (e && Date.now() > e.exp) { this.#MEM.delete(k); return null; }
+        return e || null;
+    }
+
     /**
      * Read a cached value. Returns null on miss, stale, or error.
      * @param {string} raw  — cache key (usually a URL path+search string)
      * @returns {any|null}
      */
     static get(raw) {
+        const mem = this.#memEntry(raw);
+        if (mem) return JSON.parse(mem.json).data;
         try {
             const stored = localStorage.getItem(this.#key(raw));
             if (!stored) return null;
@@ -69,6 +86,8 @@ class ApiCache {
      * @returns {number|null}
      */
     static getTimestamp(raw) {
+        const mem = this.#memEntry(raw);
+        if (mem) return mem.ts;
         try {
             const stored = localStorage.getItem(this.#key(raw));
             if (!stored) return null;
@@ -100,11 +119,18 @@ class ApiCache {
     static #EVICT_COOLDOWN_MS = 30 * 1000;
 
     static set(raw, data, ttl = this.TTL.MEDIUM) {
+        const k = this.#key(raw);
+        const entry = { data, exp: Date.now() + ttl, ts: Date.now() };
+        let json;
+        try { json = JSON.stringify(entry); } catch { return; }
+        if (json.length > ApiCache.#MAX_PERSIST_CHARS) {
+            this.#MEM.set(k, { json, exp: entry.exp, ts: entry.ts });
+            try { localStorage.removeItem(k); } catch { /* storage off */ }
+            return;
+        }
+        this.#MEM.delete(k);
         try {
-            localStorage.setItem(
-                this.#key(raw),
-                JSON.stringify({ data, exp: Date.now() + ttl, ts: Date.now() })
-            );
+            localStorage.setItem(k, json);
         } catch (e) {
             // Quota exhaustion is the common case (large stat payloads), not
             // disabled storage — evict our namespace and retry before
@@ -115,10 +141,7 @@ class ApiCache {
                 ApiCache.#lastEvictAt = now;
                 try {
                     this.invalidate('');
-                    localStorage.setItem(
-                        this.#key(raw),
-                        JSON.stringify({ data, exp: Date.now() + ttl, ts: Date.now() })
-                    );
+                    localStorage.setItem(k, json);
                     Logger.info('Cache quota hit — evicted zs_* entries and retried OK', undefined, 'CACHE');
                     return;
                 } catch (_) { /* genuinely unavailable — fall through */ }
@@ -145,6 +168,7 @@ class ApiCache {
      */
     static invalidate(prefix = '') {
         const full = this.#NS + prefix;
+        [...this.#MEM.keys()].filter(k => k.startsWith(full)).forEach(k => this.#MEM.delete(k));
         Object.keys(localStorage)
             .filter(k => k.startsWith(full))
             .forEach(k => localStorage.removeItem(k));
@@ -153,7 +177,7 @@ class ApiCache {
 
     /** How many ZohnStats cache entries exist right now. */
     static get size() {
-        return Object.keys(localStorage).filter(k => k.startsWith(this.#NS)).length;
+        return Object.keys(localStorage).filter(k => k.startsWith(this.#NS)).length + this.#MEM.size;
     }
 }
 

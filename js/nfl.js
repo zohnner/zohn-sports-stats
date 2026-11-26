@@ -106,7 +106,10 @@ function _nflOffseasonState(surface) {
 
 // `fresh` skips the cache READ but still writes the result back, so a live
 // poll gets current data and every other caller benefits from it.
-async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fresh = false } = {}) {
+// persist:false skips the localStorage write: the season loops below fetch 18
+// weekly scoreboards, which filled storage on a first home visit and raised the
+// "Caching off" toast (same fix as espnNCAAFFetch, #169).
+async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fresh = false, persist = true } = {}) {
     // Route through our same-origin Pages Function proxy (functions/api/nfl.js):
     // a server-side fetch fixes ESPN's browser CORS on /teams and /leaders.
     const url = new URL('/api/nfl', location.origin);
@@ -130,7 +133,7 @@ async function espnNFLFetch(path, params = {}, ttl = ApiCache.TTL.MEDIUM, { fres
 
     let json;
     try { json = await res.json(); } catch { throw new Error(`NFL API returned non-JSON (${path})`); }
-    ApiCache.set(cacheKey, json, ttl);
+    if (persist) ApiCache.set(cacheKey, json, ttl);
     noteFetched(`nfl${path}`, Date.now());
     return json;
 }
@@ -188,7 +191,7 @@ async function fetchNFLScoreboard(opts = {}) {
     if (opts.seasontype) params.seasontype = opts.seasontype;
     if (opts.week)       params.week = opts.week;
     if (opts.season)     params.dates = opts.season;
-    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh });
+    const data = await espnNFLFetch('/scoreboard', params, ApiCache.TTL.SHORT, { fresh: !!opts.fresh, persist: opts.persist !== false });
     // Only trust this response for _nflRealSeasonType when it's genuinely
     // "whatever ESPN considers current right now" -- an explicit historical
     // week/seasontype browse (opts.seasontype/opts.week set) describes
@@ -329,7 +332,7 @@ async function fetchNFLSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
-            fetchNFLScoreboard({ seasontype: 2, week }).catch(() => [])
+            fetchNFLScoreboard({ seasontype: 2, week, persist: false }).catch(() => [])
         )
     );
 
@@ -362,7 +365,7 @@ async function fetchNFLPriorSeasonGames() {
 
     const weeks = await Promise.all(
         Array.from({ length: 18 }, (_, i) => i + 1).map(week =>
-            fetchNFLScoreboard({ seasontype: 2, week, season: priorSeason }).catch(() => [])
+            fetchNFLScoreboard({ seasontype: 2, week, season: priorSeason, persist: false }).catch(() => [])
         )
     );
 
