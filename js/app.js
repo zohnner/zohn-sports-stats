@@ -856,7 +856,7 @@ async function _updateHomeTicker({ live = false } = {}) {
         // D-190: the All tab and My Teams read this same data; the first call
         // counts as a change for them, since loadHome may have rendered before it landed.
         if (prev !== sig) {
-            if (AppState._homeSportTab === 'all' || AppState._homeSportTab === undefined) _loadHomeTodayGames();
+            if (AppState._homeSportTab === 'all' || AppState._homeSportTab === undefined) _loadHomeTodayGames({ guestsSettled: true });
             _renderMyTeams('homeMyTeams');
         }
     }
@@ -959,7 +959,7 @@ function loadHome() {
             <div class="sl-primary">
                 <!-- Data-Story hero (D-046 P2, cross-sport across all 5 since the
                      home redesign) — the day's focal narrative; hidden until populated -->
-                <div class="home-hero" id="homeHero" hidden></div>
+                <div class="home-hero home-hero--skel" id="homeHero" aria-busy="true"></div>
 
                 <!-- Today's Games — still MLB/NFL/NCAAF only; the sport-preview hub
                      (a later phase) subsumes this with one card per sport instead -->
@@ -989,7 +989,7 @@ function loadHome() {
 
                 <!-- SportStrata Stories: the site's own analysis, kept out of the
                      tabbed rail below so it is visible without a click. -->
-                <div class="home-stories home-zone" id="homeStories"></div>
+                <div class="home-stories home-zone" id="homeStories"><section class="stories-block home-stories__skel" aria-busy="true"><div class="stories-block__hdr"><span class="eyebrow">Latest SportStrata Stories</span></div></section></div>
 
                 <!-- Weekly email signup (D-214), filled by js/newsletter.js. -->
                 <div class="home-zone" id="homeNewsletter" data-newsletter-source="home"></div>
@@ -1813,7 +1813,7 @@ async function _renderHomeSportTab(sport, gridEl) {
     }
 }
 
-async function _loadHomeTodayGames() {
+async function _loadHomeTodayGames(opts = {}) {
     const gridEl = document.getElementById('homeTodayGrid');
     if (!gridEl) return;
     const tab = AppState._homeSportTab || 'all';
@@ -1876,6 +1876,12 @@ async function _loadHomeTodayGames() {
         }
 
         if (cards.length === 0) {
+            // Other sports come from the home ticker, which re-renders this tab
+            // once its fetches settle. Until then "no games" may be untrue, and
+            // the short message jumped the zones below when cards replaced it.
+            const guestPending = tab === 'all' && !opts.guestsSettled
+                && ['nfl', 'ncaaf', 'ncaab', 'nba', 'wnba'].some(s => AppState[s + 'Games'] === undefined && AppState['_home' + s.toUpperCase() + 'Games'] === undefined);
+            if (guestPending) return;
             gridEl.innerHTML = `<p class="home-no-games">No games scheduled today.</p>`;
             return;
         }
@@ -2594,9 +2600,27 @@ function _heroFromStory(s) {
     return { kind: 'story', html, onClick: () => { location.assign(s.url); } };
 }
 
+// The host starts as a sized placeholder (.home-hero--skel), so it must end
+// filled or hidden even if choosing the hero throws.
 async function _renderHomeHero(games) {
     const host = document.getElementById('homeHero');
     if (!host) return;
+    let hero = null;
+    try { hero = await _pickHomeHero(games); } catch (err) { Logger.warn('Home hero failed', err && err.message, 'APP'); }
+    host.removeAttribute('aria-busy');
+    if (!hero) { host.hidden = true; host.className = 'home-hero'; host.innerHTML = ''; host.onclick = null; return; }
+    host.className = `home-hero home-hero--${hero.kind}`;
+    host.innerHTML = hero.html;
+    host.hidden = false;
+    if (hero.onClick) {
+        host.setAttribute('role', 'button');
+        host.tabIndex = 0;
+        host.onclick = hero.onClick;
+        host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
+    }
+}
+
+async function _pickHomeHero(games) {
     const list = Array.isArray(games) ? games : (AppState._homeGames || []);
 
     const isLive     = g => g.status?.abstractGameState === 'Live' && !/final/i.test(g.status?.detailedState || '');
@@ -2666,25 +2690,18 @@ async function _renderHomeHero(games) {
     if (AppState._homeHeroStory !== leadUrl) { AppState._homeHeroStory = leadUrl; _renderHomeStories(); }
     if (!hero) hero = heroOf(HomeLive.pickHero(candidates, now));
     if (!hero && MLBSeason.phase() === 'regular') hero = await _heroFromStandings().catch(() => null);
-
-    if (!hero) { host.hidden = true; host.innerHTML = ''; host.onclick = null; return; }
-    host.className = `home-hero home-hero--${hero.kind}`;
-    host.innerHTML = hero.html;
-    host.hidden = false;
-    if (hero.onClick) {
-        host.setAttribute('role', 'button');
-        host.tabIndex = 0;
-        host.onclick = hero.onClick;
-        host.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hero.onClick(); } };
-    }
+    return hero;
 }
 
-// Every sport's stories, newest first. With none, the host stays empty (.home-zone:empty hides it).
+// Every sport's stories, newest first. The host starts with a placeholder of
+// about the block's height, so the zones below don't jump when it fills; with
+// no stories it is emptied (.home-zone:empty hides it).
 async function _renderHomeStories() {
     const host = document.getElementById('homeStories');
-    if (!host || typeof fetchAllStories !== 'function') return;
-    const stories = await fetchAllStories();
-    if (!host.isConnected || !stories.length) return;
+    if (!host) return;
+    let stories = [];
+    try { if (typeof fetchAllStories === 'function') stories = await fetchAllStories(); } catch { /* none shown */ }
+    if (!host.isConnected) return;
     const lead = AppState._homeHeroStory;
     host.innerHTML = storiesBlockHtml(stories.filter(s => s.url !== lead).slice(0, 4), 'Latest SportStrata Stories');
 }
