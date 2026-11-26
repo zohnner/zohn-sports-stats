@@ -1,6 +1,36 @@
 {
   "stories": [
     {
+      "slug": "2026-11-26-blackwell-25-duke-holds-uconn-63",
+      "title": "John Blackwell scored 25 as Duke held UConn to a season-low 63 points",
+      "dek": "Blackwell's season high came on 5-of-6 shooting from 3-point range, and UConn shot 31% in a 77-63 loss.",
+      "date": "2026-11-26",
+      "season": 2027,
+      "teams": [
+        "DUKE",
+        "CONN"
+      ],
+      "players": [],
+      "hero_stat": "Blackwell's 25, a season high by 8; UConn's 63, a season low by 16",
+      "url": "/ncaab/stories/2026-11-26-blackwell-25-duke-holds-uconn-63",
+      "sport": "ncaab"
+    },
+    {
+      "slug": "2026-11-26-krivas-31-17-arizona-ole-miss-first-loss",
+      "title": "Krivas had 31 points and 17 rebounds in Arizona's win over Ole Miss",
+      "dek": "Krivas set season highs in points and rebounds, and No. 8 Arizona erased a 7-point halftime deficit to beat previously unbeaten Ole Miss 84-73.",
+      "date": "2026-11-26",
+      "season": 2027,
+      "teams": [
+        "ARIZ",
+        "MISS"
+      ],
+      "players": [],
+      "hero_stat": "31 points and 17 rebounds, both season highs; Ole Miss falls to 6-1",
+      "url": "/ncaab/stories/2026-11-26-krivas-31-17-arizona-ole-miss-first-loss",
+      "sport": "ncaab"
+    },
+    {
       "slug": "2026-11-25-colorado-erases-20-point-deficit-stanford",
       "title": "Colorado erased a 20-point deficit to beat Stanford 70-65",
       "dek": "The Buffaloes trailed 38-24 at halftime and outscored Stanford 46-27 in the second half.",
