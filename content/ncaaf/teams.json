@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "asOf": "2026-11-25",
+ "asOf": "2026-11-27",
  "teams": {
   "2": {
    "name": "Auburn Tigers",
@@ -1542,13 +1542,13 @@
    "name": "TCU Horned Frogs",
    "abbr": "TCU",
    "conference": "Big 12 Conference",
-   "overall": "5-6",
-   "conf": "3-5",
+   "overall": "5-7",
+   "conf": "3-6",
    "home": "4-3",
-   "away": "1-2",
-   "streak": "L1",
-   "pf": "251",
-   "pa": "190"
+   "away": "1-3",
+   "streak": "L2",
+   "pf": "278",
+   "pa": "238"
   },
   "2633": {
    "name": "Tennessee Volunteers",
@@ -1590,13 +1590,13 @@
    "name": "Texas Tech Red Raiders",
    "abbr": "TTU",
    "conference": "Big 12 Conference",
-   "overall": "10-1",
-   "conf": "7-1",
-   "home": "6-0",
+   "overall": "11-1",
+   "conf": "8-1",
+   "home": "7-0",
    "away": "4-1",
-   "streak": "W4",
-   "pf": "410",
-   "pa": "254"
+   "streak": "W5",
+   "pf": "458",
+   "pa": "281"
   },
   "2649": {
    "name": "Toledo Rockets",
