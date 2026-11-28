@@ -524,7 +524,7 @@ function _nbaTeamSplit(log, n) {
 
 const _nbaSigned = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(Number.isInteger(v) ? 0 : 1);
 
-function _nbaTeamGameLogCard(log) {
+function _nbaTeamGameLogCard(log, gamePrefix = 'nba-game-') {
     if (!log.length) return `<div class="stats-card" style="grid-column:1/-1"><h2 class="detail-section-title">Game Log</h2><div class="team-empty">No games played yet this season.</div></div>`;
     const spans = [['Last 5', 5], ['Last 10', 10], ['Season', null]]
         .filter(([, n]) => n == null || log.length > n)
@@ -533,7 +533,7 @@ function _nbaTeamGameLogCard(log) {
     const row = g => {
         let day = '';
         try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {}
-        return `<tr class="roster-row--clickable" role="button" tabindex="0" onclick="navigateTo('nba-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
+        return `<tr class="roster-row--clickable" role="button" tabindex="0" onclick="navigateTo('${gamePrefix}${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
             <td class="gl-l">${_escHtml(day)}</td>
             <td class="gl-l">${g.isHome ? 'vs' : '@'} <span title="${_escHtml(g.oppName)}">${_escHtml(g.oppAbbr)}</span></td>
             <td style="font-family:var(--font-mono)"><span class="${g.won ? 'gl-res--w' : 'gl-res--l'}">${g.won ? 'W' : 'L'}</span> ${g.my}-${g.opp}</td>
@@ -551,7 +551,7 @@ function _nbaTeamGameLogCard(log) {
         <p class="detail-note" style="margin-top:0.5rem">Regular season, newest first. Margin is points scored minus points allowed.</p></div>`;
 }
 
-function _nbaTeamGamesCard(title, games, emptyText) {
+function _nbaTeamGamesCard(title, games, emptyText, gamePrefix = 'nba-game-') {
     const rows = games.map(g => {
         let right;
         if (g.done && g.my != null && g.opp != null) {
@@ -565,7 +565,7 @@ function _nbaTeamGamesCard(title, games, emptyText) {
         }
         let day = '';
         if (g.done) { try { day = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch (_) {} }
-        return `<div class="roster-row roster-row--clickable roster-row--split" role="button" tabindex="0" onclick="navigateTo('nba-game-${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
+        return `<div class="roster-row roster-row--clickable roster-row--split" role="button" tabindex="0" onclick="navigateTo('${gamePrefix}${_escHtml(String(g.id))}')" onkeydown="if(event.key==='Enter')this.click()">
                 <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
                     <span style="color:var(--text-muted);font-size:var(--text-xs);min-width:42px">${day ? _escHtml(day) : ''} ${g.isHome ? 'vs' : '@'}</span>
                     ${g.oppLogo ? `<img src="${_escHtml(g.oppLogo)}" alt="" style="width:20px;height:20px;object-fit:contain;flex-shrink:0" loading="lazy" data-hide-on-error>` : ''}

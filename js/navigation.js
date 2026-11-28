@@ -1127,6 +1127,7 @@ function _loadFromHash() {
     const wnbaPlayerMatch    = hash.match(/^wnba-player-(\d+)$/);
     const wnbaGameMatch      = hash.match(/^wnba-game-([A-Za-z0-9]+)$/);
     const ncaabGameMatch     = hash.match(/^ncaab-game-([A-Za-z0-9]+)$/);
+    const ncaabTeamMatch     = hash.match(/^ncaab-team-(\d+)$/);
     // D-185: neither had a branch, so a refreshed or shared #nba-game-{id} /
     // #nba-player-{id} landed on home.
     const nbaGameMatch       = hash.match(/^nba-game-([A-Za-z0-9]+)$/);
@@ -1189,6 +1190,10 @@ function _loadFromHash() {
         AppState.currentSport = 'ncaaf';
         _applySportUI('ncaaf');
         navigateTo('ncaaf-team-' + ncaafTeamMatch[1], false);
+    } else if (ncaabTeamMatch) {
+        AppState.currentSport = 'ncaab';
+        _applySportUI('ncaab');
+        navigateTo('ncaab-team-' + ncaabTeamMatch[1], false);
     } else if (ncaafGameMatch) {
         // D-132: mirrors nflGameMatch below -- was entirely missing, so a fresh
         // load of #ncaaf-game-{id} (a typed URL, bookmark, or shared hash link)
@@ -1717,9 +1722,10 @@ function _renderSportSwitch(sport) {
 //                                 so navigateTo() is correct here (unlike MLB).
 //   nba   — `nba-team-{abbr}`   — ESPN abbr; showNBATeam (js/nba.js) aliases
 //                                 the long forms (SAS, GSW, ...) itself.
-//   ncaab/wnba — no team-detail view exists yet (their Teams-view team chips
-//                aren't links either — see js/ncaab.js, js/wnba.js), so the
-//                Teams-list fallback is the correct destination, not a bug.
+//   ncaab — `ncaab-team-{id}`   — ESPN team id, resolved from fetchNCAABStandings()
+//                                 by abbreviation, the NCAAF pattern (#116).
+//   wnba — no team-detail view exists yet (its Teams-view chips aren't links
+//          either, see js/wnba.js), so the Teams-list fallback is correct.
 // Any lookup failure (offline, id not found, API error) falls back to the
 // sport's Teams list rather than doing nothing.
 async function _favRailGoToTeam(sport, abbr, fallbackView) {
@@ -1774,7 +1780,21 @@ async function _favRailGoToTeam(sport, abbr, fallbackView) {
         return;
     }
 
-    // ncaab / wnba — no team-detail view yet
+    if (sport === 'ncaab') {
+        try {
+            if (typeof fetchNCAABStandings === 'function' && typeof NCAAB_LAST_SEASON !== 'undefined') {
+                const confs = await fetchNCAABStandings(NCAAB_LAST_SEASON);
+                const found = _ncaabFindStanding(confs, null, abbr);
+                if (found && found.row.id) { navigateTo('ncaab-team-' + found.row.id); return; }
+            }
+        } catch (err) {
+            Logger.warn('Fav-rail NCAAB team lookup failed', err, 'NAV');
+        }
+        navigateTo(fallbackView);
+        return;
+    }
+
+    // wnba — no team-detail view yet
     navigateTo(fallbackView);
 }
 
