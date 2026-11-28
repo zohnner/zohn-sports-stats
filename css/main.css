@@ -594,8 +594,12 @@ a.nav-tab { text-decoration: none; }
 }
 
 /* ── Main Content Area ────────────────────────────────────── */
+/* At least a screen tall, so the footer starts below the fold: while a view
+   swaps a snapshot for a skeleton and then real content, a footer inside the
+   first screen jumped up and down (phone CLS up to 1.0, measured 2026-11-25). */
 main {
     max-width: var(--max-width);
+    min-height: 100vh;
     margin: var(--space-8) auto;
     padding: 0 var(--space-8);
 }
@@ -1633,6 +1637,9 @@ main {
    Latest rail) are never actually empty, so this can't hide real content. */
 .home-zone:empty { display: none; }
 .home-stories .stories-block { margin-bottom: 0; }
+/* About the filled block's height (measured 2026-11-25: 275px desktop, 306-471px phone, zone padding included). */
+.home-stories__skel { min-height: 238px; }
+@media (max-width: 768px) { .home-stories__skel { min-height: 380px; } }
 .my-teams-row { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
 .my-teams-row:last-child { border-bottom: 0; }
 .my-teams-detail { display: flex; flex-direction: column; gap: var(--space-0-5); min-width: 0; }
@@ -1990,6 +1997,12 @@ main {
 .home-hero--live { box-shadow: var(--shadow-live); }
 /* [hidden] must win over the explicit display below (UA [hidden] is display:none) */
 .home-hero[hidden] { display: none; }
+/* The hero nearly always renders and sits above every other zone, so it holds
+   about its height until it does (a live-game hero measured 314px desktop,
+   372px phone, 2026-11-25); it was hidden until filled, a 0.40 shift. */
+.home-hero--skel { min-height: 314px; cursor: default; }
+.home-hero--skel:hover { transform: none; border-color: var(--border-default); }
+@media (max-width: 560px) { .home-hero--skel { min-height: 372px; } }
 .hero-main {
     flex: 1 1 58%;
     min-width: 0;
@@ -3552,7 +3565,7 @@ a:focus:not(:focus-visible),
     .prep-page-sub { display: none !important; }
 
     /* With chrome gone, the active view fills the page */
-    main { padding: 0 !important; margin: 0 !important; }
+    main { padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
     .dk-wrap, .sos-wrap { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
 
     /* Ink-friendly Draft Kit + SOS surfaces — meaningful colors (position hues,
